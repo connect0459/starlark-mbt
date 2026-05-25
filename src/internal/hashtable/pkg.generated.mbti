@@ -1,37 +1,37 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/hashtable"
 
-import {
-  "connect0459/starlark/internal/value",
-}
-
 // Values
 
 // Errors
 
 // Types and methods
-type HEntry
+type HEntry[K, V]
 
-pub(all) struct Hashtable {
+pub(all) struct Hashtable[K, V] {
   mut slots : Array[Int]
-  mut entries : Array[HEntry]
+  mut entries : Array[HEntry[K, V]]
   mut free_head : Int
   mut head : Int
   mut tail : Int
   mut live_count : Int
   mut itercount : Int
   mut frozen : Bool
+  hash_fn : (K) -> Result[UInt, String]
+  eq_fn : (K, K) -> Bool
+  zero_key : K
+  zero_val : V
 }
-pub fn Hashtable::contains(Self, @value.Value) -> Result[Bool, String]
-pub fn Hashtable::delete(Self, @value.Value) -> Result[Bool, String]
-pub fn Hashtable::each(Self, (@value.Value, @value.Value) -> Unit) -> Unit
-pub fn Hashtable::each_key(Self, (@value.Value) -> Unit) -> Unit
-pub fn Hashtable::freeze(Self) -> Unit
-pub fn Hashtable::insert(Self, @value.Value, @value.Value) -> Result[Unit, String]
-pub fn Hashtable::is_frozen(Self) -> Bool
-pub fn Hashtable::length(Self) -> Int
-pub fn Hashtable::lookup(Self, @value.Value) -> Result[@value.Value?, String]
-pub fn Hashtable::new() -> Self
+pub fn[K, V] Hashtable::contains(Self[K, V], K) -> Result[Bool, String]
+pub fn[K, V] Hashtable::delete(Self[K, V], K) -> Result[Bool, String]
+pub fn[K, V] Hashtable::each(Self[K, V], (K, V) -> Unit) -> Unit
+pub fn[K, V] Hashtable::each_key(Self[K, V], (K) -> Unit) -> Unit
+pub fn[K, V] Hashtable::freeze(Self[K, V]) -> Unit
+pub fn[K, V] Hashtable::insert(Self[K, V], K, V) -> Result[Unit, String]
+pub fn[K, V] Hashtable::is_frozen(Self[K, V]) -> Bool
+pub fn[K, V] Hashtable::length(Self[K, V]) -> Int
+pub fn[K, V] Hashtable::lookup(Self[K, V], K) -> Result[V?, String]
+pub fn[K, V] Hashtable::new((K) -> Result[UInt, String], (K, K) -> Bool, K, V) -> Self[K, V]
 
 // Type aliases
 

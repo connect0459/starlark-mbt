@@ -55,6 +55,8 @@ pub(all) enum Value {
   BytesVal(Bytes)
   ListVal(StarlarkList)
   TupleVal(Array[Value])
+  DictVal(StarlarkDict)
+  SetVal(StarlarkSet)
 }
 
 ///|
@@ -68,6 +70,8 @@ pub fn type_name(v : Value) -> String {
     BytesVal(_) => "bytes"
     ListVal(_) => "list"
     TupleVal(_) => "tuple"
+    DictVal(_) => "dict"
+    SetVal(_) => "set"
   }
 }
 
@@ -80,8 +84,10 @@ pub fn truth(v : Value) -> Bool {
     FloatVal(f) => f != 0.0
     StrVal(s) => s.byte_len() > 0
     BytesVal(b) => b.length() > 0
-    ListVal(l) => !l.items.is_empty()
-    TupleVal(t) => !t.is_empty()
+    ListVal(l) => l.items.is_empty() == false
+    TupleVal(t) => t.is_empty() == false
+    DictVal(d) => d.length() > 0
+    SetVal(s) => s.length() > 0
   }
 }
 
@@ -194,7 +200,49 @@ pub fn repr(v : Value) -> String {
     BytesVal(b) => repr_bytes_val(b)
     ListVal(l) => repr_list(l)
     TupleVal(t) => repr_tuple(t)
+    DictVal(d) => repr_dict(d)
+    SetVal(s) => repr_set(s)
   }
+}
+
+///|
+fn repr_dict(d : StarlarkDict) -> String {
+  if d.length() == 0 {
+    return "{}"
+  }
+  let buf = StringBuilder::new()
+  buf.write_char('{')
+  let mut first = true
+  d.each(fn(k, v) {
+    if first == false {
+      buf.write_string(", ")
+    }
+    first = false
+    buf.write_string(repr(k))
+    buf.write_string(": ")
+    buf.write_string(repr(v))
+  })
+  buf.write_char('}')
+  buf.to_string()
+}
+
+///|
+fn repr_set(s : StarlarkSet) -> String {
+  if s.length() == 0 {
+    return "set()"
+  }
+  let buf = StringBuilder::new()
+  buf.write_char('{')
+  let mut first = true
+  s.each(fn(k) {
+    if first == false {
+      buf.write_string(", ")
+    }
+    first = false
+    buf.write_string(repr(k))
+  })
+  buf.write_char('}')
+  buf.to_string()
 }
 
 ///|

@@ -15,6 +15,8 @@ pub fn to_str(v : Value) -> String {
     BytesVal(b) => repr_bytes_val(b)
     ListVal(l) => repr_list(l)
     TupleVal(t) => repr_tuple(t)
+    DictVal(d) => repr_dict(d)
+    SetVal(s) => repr_set(s)
   }
 }
 
@@ -31,6 +33,8 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     (TupleVal(x), TupleVal(y)) => slice_equals(x[:], y[:])
     (IntVal(n), FloatVal(f)) => int_float_eq(n, f)
     (FloatVal(f), IntVal(n)) => int_float_eq(n, f)
+    (DictVal(x), DictVal(y)) => dict_equals(x, y)
+    (SetVal(x), SetVal(y)) => set_equals(x, y)
     _ => false
   }
 }
@@ -121,6 +125,8 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     BytesVal(b) => Ok(fnv1a(b))
     TupleVal(t) => hash_tuple(t)
     ListVal(_) => Err("unhashable type: list")
+    DictVal(_) => Err("unhashable type: dict")
+    SetVal(_) => Err("unhashable type: set")
   }
 }
 
@@ -219,4 +225,38 @@ pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
     (FloatVal(f), IntVal(n)) => Ok(-int_float_cmp(n, f))
     _ => Err("\{type_name(a)} < \{type_name(b)} not supported")
   }
+}
+
+///|
+fn dict_equals(a : StarlarkDict, b : StarlarkDict) -> Bool {
+  if a.length() != b.length() {
+    return false
+  }
+  let mut ok = true
+  a.each(fn(k, v) {
+    if ok {
+      match b.get(k) {
+        Ok(Some(bv)) => if starlark_equals(v, bv) == false { ok = false }
+        _ => ok = false
+      }
+    }
+  })
+  ok
+}
+
+///|
+fn set_equals(a : StarlarkSet, b : StarlarkSet) -> Bool {
+  if a.length() != b.length() {
+    return false
+  }
+  let mut ok = true
+  a.each(fn(k) {
+    if ok {
+      match b.contains(k) {
+        Ok(true) => ()
+        _ => ok = false
+      }
+    }
+  })
+  ok
 }

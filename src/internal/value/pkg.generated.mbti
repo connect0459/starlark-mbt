@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/value"
 
+import {
+  "connect0459/starlark/internal/hashtable",
+}
+
 // Values
 pub fn compare_values(Value, Value) -> Result[Int, String]
 
@@ -23,11 +27,35 @@ pub fn type_name(Value) -> String
 // Errors
 
 // Types and methods
+pub(all) struct StarlarkDict {
+  ht : @hashtable.Hashtable[Value, Value]
+}
+pub fn StarlarkDict::delete(Self, Value) -> Result[Bool, String]
+pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
+pub fn StarlarkDict::freeze(Self) -> Unit
+pub fn StarlarkDict::get(Self, Value) -> Result[Value?, String]
+pub fn StarlarkDict::is_frozen(Self) -> Bool
+pub fn StarlarkDict::length(Self) -> Int
+pub fn StarlarkDict::new() -> Self
+pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
+
 pub(all) struct StarlarkList {
   mut items : Array[Value]
   mut frozen : Bool
 }
 pub fn StarlarkList::new(Array[Value]) -> Self
+
+pub(all) struct StarlarkSet {
+  ht : @hashtable.Hashtable[Value, Value]
+}
+pub fn StarlarkSet::add(Self, Value) -> Result[Unit, String]
+pub fn StarlarkSet::contains(Self, Value) -> Result[Bool, String]
+pub fn StarlarkSet::each(Self, (Value) -> Unit) -> Unit
+pub fn StarlarkSet::freeze(Self) -> Unit
+pub fn StarlarkSet::is_frozen(Self) -> Bool
+pub fn StarlarkSet::length(Self) -> Int
+pub fn StarlarkSet::new() -> Self
+pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]
 
 pub(all) struct StarlarkString {
   raw : String
@@ -48,6 +76,8 @@ pub(all) enum Value {
   BytesVal(Bytes)
   ListVal(StarlarkList)
   TupleVal(Array[Value])
+  DictVal(StarlarkDict)
+  SetVal(StarlarkSet)
 }
 pub impl Eq for Value
 
