@@ -243,13 +243,13 @@ Reference: `starlark-go/starlark/value_test.go`, `starlark-go/starlark/int_test.
 
 ---
 
-## Phase 2: Lexer / Scanner
+## Phase 2: Lexer / Scanner ✅
 
 Tokenise Starlark source into a flat token stream.
 
 ### Tokens to handle
 
-- [ ] Literals
+- [x] Literals
   - Integer: decimal, hex (`0x`), octal (`0o`), binary (`0b`) — **no underscore separators**
   - Float: `1.0`, `1e5`, `1.5e-3`
   - String: single/double/triple-quoted
@@ -260,19 +260,20 @@ Tokenise Starlark source into a flat token stream.
     (`\xNN`, octal `\NNN`, `\n`, `\t`, etc.); Unicode escapes `\uNNNN` and `\UNNNNNNNN`
     are **not valid** inside bytes literals and must raise a `SyntaxError`.
   - Triple-quoted string termination rules
-- [ ] Keywords: `and`, `break`, `continue`, `def`, `elif`, `else`, `for`, `if`, `in`, `lambda`, `load`, `not`, `or`, `pass`, `return`, `while`
+- [x] Keywords: `and`, `break`, `continue`, `def`, `elif`, `else`, `for`, `if`, `in`, `lambda`, `load`, `not`, `or`, `pass`, `return`, `while`
 - [ ] Keyword literals: `None`, `True`, `False` — scanned as keywords and produce
       `Literal` tokens (not `Ident`), matching starlark-go scanner behavior
-- [ ] Note: old-style octal (`0755`) is **NOT** supported; only `0o755` is valid
-- [ ] Identifiers (including leading `_`)
-- [ ] Operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `~`, `&`, `|`, `^`, `<<`, `>>`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `=`, `+=`, `-=`, `*=`, `/=`, `//=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
-- [ ] Delimiters: `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;`, `:`, `.`, `*`, `**`
-- [ ] Indentation: `INDENT` / `DEDENT` tokens (tab/space rules)
-- [ ] Comments: `#` to end-of-line (skipped)
-- [ ] Newlines (logical vs physical)
-- [ ] **Explicit line continuation** `\<newline>`
-- [ ] **Implicit line continuation** inside `(`, `[`, `{`
-- [ ] Attach `Position` to every token
+      **Deferred to Phase 3**: Parser needs these; scanner currently emits `Ident`.
+- [x] Note: old-style octal (`0755`) is **NOT** supported; only `0o755` is valid (error emitted)
+- [x] Identifiers (including leading `_`)
+- [x] Operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `~`, `&`, `|`, `^`, `<<`, `>>`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `=`, `+=`, `-=`, `*=`, `/=`, `//=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
+- [x] Delimiters: `(`, `)`, `[`, `]`, `{`, `}`, `,`, `;`, `:`, `.`, `*`, `**`
+- [x] Indentation: `INDENT` / `DEDENT` tokens (tab = 8 spaces; starlark-go convention)
+- [x] Comments: `#` to end-of-line (skipped)
+- [x] Newlines (logical vs physical)
+- [x] **Explicit line continuation** `\<newline>`
+- [x] **Implicit line continuation** inside `(`, `[`, `{`
+- [x] Attach `Position` to every token
 
 ### String literal quoting helper
 
