@@ -77,6 +77,70 @@ pub fn[K, V] Hashtable::freeze(self : Hashtable[K, V]) -> Unit {
 }
 
 ///|
+pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
+  if self.frozen {
+    return Err("cannot clear frozen hash table")
+  }
+  if self.itercount > 0 {
+    return Err("cannot clear hash table during iteration")
+  }
+  self.slots = Array::make(8, empty_idx)
+  self.entries = []
+  self.free_head = empty_idx
+  self.head = empty_idx
+  self.tail = empty_idx
+  self.live_count = 0
+  Ok(())
+}
+
+///|
+pub fn[K, V] Hashtable::pop_first(
+  self : Hashtable[K, V],
+) -> Result[(K, V)?, String] {
+  if self.frozen {
+    return Err("cannot delete from frozen hash table")
+  }
+  if self.itercount > 0 {
+    return Err("cannot delete from hash table during iteration")
+  }
+  if self.head == empty_idx {
+    return Ok(None)
+  }
+  let idx = self.head
+  let key = self.entries[idx].key
+  let val = self.entries[idx].value
+  let h = self.entries[idx].hash
+  let s = slot_of(h, self.slots.length())
+  let mut prev_chain = empty_idx
+  let mut chain_idx = self.slots[s]
+  while chain_idx != empty_idx {
+    if chain_idx == idx {
+      let next_chain = self.entries[chain_idx].slot_next
+      if prev_chain == empty_idx {
+        self.slots[s] = next_chain
+      } else {
+        self.entries[prev_chain].slot_next = next_chain
+      }
+      break
+    }
+    prev_chain = chain_idx
+    chain_idx = self.entries[chain_idx].slot_next
+  }
+  let on = self.entries[idx].ord_next
+  self.head = on
+  if on != empty_idx {
+    self.entries[on].ord_prev = empty_idx
+  } else {
+    self.tail = empty_idx
+  }
+  self.entries[idx].hash = 0U
+  self.entries[idx].slot_next = self.free_head
+  self.free_head = idx
+  self.live_count -= 1
+  Ok(Some((key, val)))
+}
+
+///|
 fn normalize_hash(h : UInt) -> UInt {
   if h == 0U {
     hash_zero_sentinel

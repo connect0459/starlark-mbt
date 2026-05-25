@@ -883,6 +883,32 @@ test "exec_file: set.remove raises error when element is absent" {
   assert_true(exec_b("s = {1}\ns.remove(9)") is Err(_))
 }
 
+// --- dict.clear and dict.popitem ---
+
+///|
+test "exec_file: dict.clear removes all entries" {
+  match exec_b("d = {\"a\": 1, \"b\": 2}\nd.clear()\nn = len(d)") {
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::IntVal(0L)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: dict.popitem removes and returns an item as tuple" {
+  match exec_b("d = {\"x\": 1}\nt = d.popitem()\nn = len(d)") {
+    Ok(m) => {
+      assert_true(g(m, "n") == Some(@value.Value::IntVal(0L)))
+      assert_true(g(m, "t") is Some(@value.Value::TupleVal(_)))
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: dict.popitem raises error when dict is empty" {
+  assert_true(exec_b("{}.popitem()") is Err(_))
+}
+
 // --- Lambda ---
 
 ///|

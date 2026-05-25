@@ -22,6 +22,7 @@ pub(all) struct Hashtable[K, V] {
   zero_key : K
   zero_val : V
 }
+pub fn[K, V] Hashtable::clear(Self[K, V]) -> Result[Unit, String]
 pub fn[K, V] Hashtable::contains(Self[K, V], K) -> Result[Bool, String]
 pub fn[K, V] Hashtable::delete(Self[K, V], K) -> Result[Bool, String]
 pub fn[K, V] Hashtable::each(Self[K, V], (K, V) -> Unit) -> Unit
@@ -34,6 +35,7 @@ pub fn[K, V] Hashtable::iter_end(Self[K, V]) -> Unit
 pub fn[K, V] Hashtable::length(Self[K, V]) -> Int
 pub fn[K, V] Hashtable::lookup(Self[K, V], K) -> Result[V?, String]
 pub fn[K, V] Hashtable::new((K) -> Result[UInt, String], (K, K) -> Bool, K, V) -> Self[K, V]
+pub fn[K, V] Hashtable::pop_first(Self[K, V]) -> Result[(K, V)?, String]
 
 // Type aliases
 

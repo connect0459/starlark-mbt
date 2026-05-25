@@ -1349,7 +1349,18 @@ fn call_dict_method(
       }
       @value.Value::NoneVal
     }
-    "clear" => @value.Value::NoneVal
+    "clear" => {
+      check(ctx, d.clear())
+      @value.Value::NoneVal
+    }
+    "popitem" =>
+      match check(ctx, d.popitem()) {
+        None =>
+          raise EvalErr(
+            make_eval_error(ctx, "dict.popitem(): dictionary is empty"),
+          )
+        Some((k, v)) => @value.Value::TupleVal([k, v])
+      }
     "setdefault" => {
       if pos_args.length() < 1 {
         raise EvalErr(

@@ -81,6 +81,18 @@ pub fn StarlarkDict::keys(self : StarlarkDict) -> Array[Value] {
 }
 
 ///|
+pub fn StarlarkDict::clear(self : StarlarkDict) -> Result[Unit, String] {
+  self.ht.clear()
+}
+
+///|
+pub fn StarlarkDict::popitem(
+  self : StarlarkDict,
+) -> Result[(Value, Value)?, String] {
+  self.ht.pop_first()
+}
+
+///|
 pub(all) struct StarlarkSet {
   ht : @hashtable.Hashtable[Value, Value]
 }
@@ -149,4 +161,18 @@ pub fn StarlarkSet::iter_begin(self : StarlarkSet) -> Unit {
 ///|
 pub fn StarlarkSet::iter_end(self : StarlarkSet) -> Unit {
   self.ht.iter_end()
+}
+
+///|
+pub fn StarlarkSet::clear(self : StarlarkSet) -> Result[Unit, String] {
+  self.ht.clear()
+}
+
+///|
+pub fn StarlarkSet::pop_first(self : StarlarkSet) -> Result[Value?, String] {
+  match self.ht.pop_first() {
+    Err(e) => Err(e)
+    Ok(None) => Ok(None)
+    Ok(Some((k, _))) => Ok(Some(k))
+  }
 }

@@ -46,6 +46,7 @@ pub(all) struct StarlarkBuiltinFunc {
 pub(all) struct StarlarkDict {
   ht : @hashtable.Hashtable[Value, Value]
 }
+pub fn StarlarkDict::clear(Self) -> Result[Unit, String]
 pub fn StarlarkDict::delete(Self, Value) -> Result[Bool, String]
 pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
 pub fn StarlarkDict::freeze(Self) -> Unit
@@ -56,6 +57,7 @@ pub fn StarlarkDict::iter_end(Self) -> Unit
 pub fn StarlarkDict::keys(Self) -> Array[Value]
 pub fn StarlarkDict::length(Self) -> Int
 pub fn StarlarkDict::new() -> Self
+pub fn StarlarkDict::popitem(Self) -> Result[(Value, Value)?, String]
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
 
 pub(all) struct StarlarkFunction {
@@ -97,6 +99,7 @@ pub(all) struct StarlarkSet {
   ht : @hashtable.Hashtable[Value, Value]
 }
 pub fn StarlarkSet::add(Self, Value) -> Result[Unit, String]
+pub fn StarlarkSet::clear(Self) -> Result[Unit, String]
 pub fn StarlarkSet::contains(Self, Value) -> Result[Bool, String]
 pub fn StarlarkSet::each(Self, (Value) -> Unit) -> Unit
 pub fn StarlarkSet::freeze(Self) -> Unit
@@ -105,6 +108,7 @@ pub fn StarlarkSet::iter_begin(Self) -> Unit
 pub fn StarlarkSet::iter_end(Self) -> Unit
 pub fn StarlarkSet::length(Self) -> Int
 pub fn StarlarkSet::new() -> Self
+pub fn StarlarkSet::pop_first(Self) -> Result[Value?, String]
 pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]
 
 pub(all) struct StarlarkString {
