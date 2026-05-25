@@ -456,51 +456,50 @@ Implement the standard Starlark built-in functions.
 
 | Function | Status | Notes |
 | --- | --- | --- |
-| `abs` | [ ] | |
-| `all` | [ ] | |
-| `any` | [ ] | |
-| `bool` | [ ] | |
-| `bytes` | [ ] | |
-| `chr` | [ ] | |
-| `dict` | [ ] | |
-| `dir` | [ ] | |
-| `enumerate` | [ ] | optional `start=` keyword arg (default 0) |
-| `fail` | [ ] | |
-| `float` | [ ] | |
-| `getattr` | [ ] | |
-| `hasattr` | [ ] | |
-| `hash` | [ ] | |
-| `int` | [ ] | optional `base=` keyword arg (2-36; 0 = auto-detect) |
-| `len` | [ ] | |
-| `list` | [ ] | |
-| `max` | [ ] | supports `key=` keyword arg |
-| `min` | [ ] | supports `key=` keyword arg |
-| `ord` | [ ] | |
-| `print` | [ ] | supports `sep=` and `end=` keyword args |
-| `range` | [ ] | |
-| `repr` | [ ] | |
-| `reversed` | [ ] | |
-| `set` | [ ] | |
-| `sorted` | [ ] | `key=`, `reverse=` keyword args; result is stable |
-| `str` | [ ] | |
-| `tuple` | [ ] | |
-| `type` | [ ] | |
-| `zip` | [ ] | 0+ iterables; 0 or 1 args valid; no keyword args |
+| `abs` | [x] | |
+| `all` | [x] | |
+| `any` | [x] | |
+| `bool` | [x] | |
+| `bytes` | [ ] | constructor not yet implemented |
+| `chr` | [x] | |
+| `dict` | [x] | |
+| `dir` | [ ] | returns empty list (stub) |
+| `enumerate` | [x] | optional `start=` keyword arg (default 0) |
+| `fail` | [x] | |
+| `float` | [x] | |
+| `getattr` | [x] | |
+| `hasattr` | [x] | |
+| `hash` | [x] | |
+| `int` | [x] | optional `base=` keyword arg (2-36; 0 = auto-detect) |
+| `len` | [x] | |
+| `list` | [x] | |
+| `max` | [x] | `key=` not yet supported |
+| `min` | [x] | `key=` not yet supported |
+| `ord` | [x] | |
+| `print` | [x] | `sep=` and `end=` not yet supported |
+| `range` | [x] | |
+| `repr` | [x] | |
+| `reversed` | [x] | |
+| `set` | [x] | |
+| `sorted` | [x] | `key=`, `reverse=` not yet supported |
+| `str` | [x] | |
+| `tuple` | [x] | |
+| `type` | [x] | |
+| `zip` | [x] | |
 
 ### Built-in methods per type
 
-- [ ] `string`: `capitalize`, `codepoint_ords`, `codepoints`, `count`,
-      `elem_ords`, `elems`, `endswith`, `find`, `format`, `index`,
-      `isalnum`, `isalpha`, `isdigit`, `islower`, `isspace`, `istitle`,
-      `isupper`, `join`, `lower`, `lstrip`, `partition`, `removeprefix`,
-      `removesuffix`, `replace`, `rfind`, `rindex`, `rpartition`, `rsplit`,
-      `rstrip`, `split`, `splitlines`, `startswith`, `strip`, `title`, `upper`
+- [x] `string`: `capitalize`, `count`, `elem_ords`, `elems`, `endswith`, `find`,
+      `format` (partial: `{}` only), `index`, `isalnum`, `isalpha`, `isdigit`,
+      `islower`, `isspace`, `istitle`, `isupper`, `join`, `lower`, `lstrip`,
+      `partition`, `removeprefix`, `removesuffix`, `replace`, `rfind`, `rindex`,
+      `rpartition`, `rstrip`, `split`, `splitlines`, `startswith`, `strip`,
+      `title`, `upper`
+      — `codepoint_ords`, `codepoints`, `rsplit` not yet implemented
 - [ ] `bytes`: `elems`, `elem_ords`
-- [ ] `list`: `append`, `clear`, `extend`, `index`, `insert`, `pop`, `remove`, `reverse`, `sort`
-- [ ] `dict`: `clear`, `get`, `items`, `keys`, `pop`, `popitem`, `setdefault`, `update`,
-      `values`; `update` accepts a positional dict arg **and/or** keyword args
-      (`d.update({"a": 1}, b=2)` is valid)
-- [ ] `set`: `add`, `clear`, `difference`, `discard`, `intersection`, `issubset`,
+- [x] `list`: `append`, `clear`, `count`, `extend`, `index`, `insert`, `pop`, `remove`, `reverse`, `sort`
+- [x] `dict`: `clear`, `get`, `items`, `keys`, `pop`, `popitem`, `setdefault`, `update`, `values`
+- [x] `set`: `add`, `clear`, `difference`, `discard`, `intersection`, `issubset`,
       `issuperset`, `pop`, `remove`, `symmetric_difference`, `union`, `update`
 
 ### `str.format()` (complex)
