@@ -150,6 +150,49 @@ pub fn exec_file(
 }
 
 ///|
+pub fn exec_file_with_predeclared(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+  predeclared : Map[String, @value.Value],
+) -> Result[Module, @errors.EvalError] {
+  let file = match @parser.parse_file(filename, src) {
+    Ok(f) => f
+    Err(e) =>
+      return Err({
+        msg: e.to_string(),
+        call_stack: @errors.CallStack::new([]),
+        cause: None,
+      })
+  }
+  let ctx = EvalContext::new(thread, opts)
+  predeclared.each(fn(name, v) { ctx.global_env.bind(name, v) })
+  let extra_names : Array[String] = predeclared.keys().collect()
+  let resolve_opts = @resolver.ResolveOptions::default()
+  let resolved = @resolver.resolve(
+    file,
+    fn(name) { is_builtin(name) || extra_names.contains(name) },
+    fn(name) { name == "None" || name == "True" || name == "False" },
+    resolve_opts,
+  )
+  if !resolved.errors.is_empty() {
+    let msg = resolved.errors.map(fn(e) { e.to_string() }).join("; ")
+    return Err({ msg, call_stack: @errors.CallStack::new([]), cause: None })
+  }
+  ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
+    EvalErr(e) => return Err(e)
+  }
+  let m = Module::new()
+  ctx.global_env.locals.each(fn(name, v) {
+    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+    m.globals.set(key, v) |> ignore
+  })
+  m.freeze()
+  Ok(m)
+}
+
+///|
 pub fn eval_expr(
   thread : Thread,
   filename : String,

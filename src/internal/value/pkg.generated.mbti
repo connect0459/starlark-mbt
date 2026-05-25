@@ -34,6 +34,10 @@ pub fn type_name(Value) -> String
 // Errors
 
 // Types and methods
+pub(all) struct BuiltinCallCtx {
+  call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
+}
+
 pub(all) struct StarlarkBoundMethod {
   recv : Value
   method_name : String
@@ -41,6 +45,7 @@ pub(all) struct StarlarkBoundMethod {
 
 pub(all) struct StarlarkBuiltinFunc {
   name : String
+  body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[Value, String])?
 }
 
 pub(all) struct StarlarkDict {

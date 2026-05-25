@@ -126,8 +126,17 @@ pub(all) struct StarlarkFunction {
 }
 
 ///|
+pub(all) struct BuiltinCallCtx {
+  call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
+}
+
+///|
 pub(all) struct StarlarkBuiltinFunc {
   name : String
+  body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
+    Value,
+    String,
+  ])?
 }
 
 ///|

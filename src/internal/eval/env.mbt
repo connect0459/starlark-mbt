@@ -51,7 +51,7 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
     "module",
   ]
   for name in builtin_names {
-    base.bind(name, @value.Value::BuiltinFuncVal({ name, }))
+    base.bind(name, @value.Value::BuiltinFuncVal({ name, body: None }))
   }
   let global_env = EvalEnv::with_parent(base)
   { thread, opts, global_env }

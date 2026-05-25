@@ -308,7 +308,22 @@ fn call_value(
   match func_val {
     @value.Value::FuncVal(f) => call_func(ctx, f, pos_args, kw_args, pos)
     @value.Value::BuiltinFuncVal(f) =>
-      call_builtin(ctx, f.name, pos_args, kw_args, pos)
+      match f.body {
+        Some(body) => {
+          let call_ctx : @value.BuiltinCallCtx = {
+            call: fn(f2, args, kwargs) {
+              Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
+                EvalErr(e) => Err(e.msg)
+              }
+            },
+          }
+          match body(call_ctx, pos_args, kw_args) {
+            Ok(v) => v
+            Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
+          }
+        }
+        None => call_builtin(ctx, f.name, pos_args, kw_args, pos)
+      }
     @value.Value::BoundMethodVal(m) =>
       call_method(ctx, m.recv, m.method_name, pos_args, kw_args, pos)
     _ =>

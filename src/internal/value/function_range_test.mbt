@@ -155,19 +155,19 @@ test "Value: truth for function is always true" {
 
 ///|
 test "Value: type_name for builtin function is builtin_function_or_method" {
-  let f = StarlarkBuiltinFunc::{ name: "len" }
+  let f = StarlarkBuiltinFunc::{ name: "len", body: None }
   assert_eq(type_name(Value::BuiltinFuncVal(f)), "builtin_function_or_method")
 }
 
 ///|
 test "Value: repr for builtin function shows name" {
-  let f = StarlarkBuiltinFunc::{ name: "len" }
+  let f = StarlarkBuiltinFunc::{ name: "len", body: None }
   assert_eq(repr(Value::BuiltinFuncVal(f)), "<built-in function len>")
 }
 
 ///|
 test "Value: truth for builtin function is always true" {
-  let f = StarlarkBuiltinFunc::{ name: "len" }
+  let f = StarlarkBuiltinFunc::{ name: "len", body: None }
   assert_true(truth(Value::BuiltinFuncVal(f)))
 }
 

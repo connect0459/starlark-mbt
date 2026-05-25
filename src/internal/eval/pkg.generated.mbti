@@ -11,6 +11,8 @@ pub fn eval_expr(Thread, String, String, @value.StarlarkDict) -> Result[@value.V
 
 pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
+pub fn exec_file_with_predeclared(Thread, String, String, Options, Map[String, @value.Value]) -> Result[Module, @errors.EvalError]
+
 // Errors
 
 // Types and methods
