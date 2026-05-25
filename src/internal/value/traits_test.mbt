@@ -355,3 +355,15 @@ test "compare_values: different types are not orderable" {
   )
   assert_true(result is Err(_))
 }
+
+///|
+test "starlark_hash: module is unhashable" {
+  let m = StarlarkModule::new("assert", {})
+  assert_true(starlark_hash(Value::ModuleVal(m)) is Err(_))
+}
+
+///|
+test "to_str: module returns repr" {
+  let m = StarlarkModule::new("assert", {})
+  assert_eq(to_str(Value::ModuleVal(m)), "<module assert>")
+}

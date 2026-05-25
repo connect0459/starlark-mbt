@@ -78,6 +78,19 @@ pub fn Module::freeze(self : Module) -> Unit {
 }
 
 ///|
+let builtin_names : Array[String] = [
+  "None", "True", "False", "print", "len", "str", "repr", "type", "range", "list",
+  "tuple", "dict", "bool", "int", "float", "abs", "min", "max", "set", "enumerate",
+  "zip", "sorted", "reversed", "hasattr", "getattr", "fail", "any", "all", "hash",
+  "dir", "chr", "ord", "bytes", "module",
+]
+
+///|
+fn is_builtin(name : String) -> Bool {
+  builtin_names.contains(name)
+}
+
+///|
 pub fn exec_file(
   thread : Thread,
   filename : String,
@@ -95,15 +108,9 @@ pub fn exec_file(
   }
   let ctx = EvalContext::new(thread, opts)
   let resolve_opts = @resolver.ResolveOptions::default()
-  let builtin_names : Array[String] = [
-    "None", "True", "False", "print", "len", "str", "repr", "type", "range", "list",
-    "tuple", "dict", "bool", "int", "float", "abs", "min", "max", "set", "enumerate",
-    "zip", "sorted", "reversed", "hasattr", "getattr", "fail", "any", "all", "hash",
-    "dir", "chr", "ord", "bytes",
-  ]
   let resolved = @resolver.resolve(
     file,
-    fn(name) { builtin_names.contains(name) },
+    is_builtin,
     fn(name) { name == "None" || name == "True" || name == "False" },
     resolve_opts,
   )

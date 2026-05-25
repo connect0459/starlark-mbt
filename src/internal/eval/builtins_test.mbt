@@ -1714,3 +1714,42 @@ test "exec_file: str.codepoints on empty string returns empty list" {
     Err(e) => fail(e.to_string())
   }
 }
+
+///|
+test "exec_file: module() creates a named module with attributes" {
+  match exec_b("m = module(\"mymod\", x=1, y=2)") {
+    Ok(m) =>
+      match g(m, "m") {
+        Some(@value.Value::ModuleVal(mod)) => {
+          assert_eq(@value.type_name(@value.Value::ModuleVal(mod)), "module")
+          assert_eq(mod.name, "mymod")
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: module attribute access via dot returns correct value" {
+  match exec_b("m = module(\"mymod\", x=42)\nr = m.x") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::IntVal(n)) => assert_eq(n, 42L)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: module type_name is module" {
+  match exec_b("r = type(module(\"m\"))") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "module")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}

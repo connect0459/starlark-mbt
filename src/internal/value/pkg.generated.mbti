@@ -85,6 +85,13 @@ pub fn StarlarkList::freeze(Self) -> Unit
 pub fn StarlarkList::is_frozen(Self) -> Bool
 pub fn StarlarkList::new(Array[Value]) -> Self
 
+pub(all) struct StarlarkModule {
+  name : String
+  attrs : Map[String, Value]
+}
+pub fn StarlarkModule::get(Self, String) -> Value?
+pub fn StarlarkModule::new(String, Map[String, Value]) -> Self
+
 pub(all) struct StarlarkRange {
   start : Int64
   stop : Int64
@@ -136,6 +143,7 @@ pub(all) enum Value {
   FuncVal(StarlarkFunction)
   BuiltinFuncVal(StarlarkBuiltinFunc)
   BoundMethodVal(StarlarkBoundMethod)
+  ModuleVal(StarlarkModule)
 }
 pub impl Eq for Value
 

@@ -137,6 +137,25 @@ pub(all) struct StarlarkBoundMethod {
 }
 
 ///|
+pub(all) struct StarlarkModule {
+  name : String
+  attrs : Map[String, Value]
+}
+
+///|
+pub fn StarlarkModule::new(
+  name : String,
+  attrs : Map[String, Value],
+) -> StarlarkModule {
+  { name, attrs }
+}
+
+///|
+pub fn StarlarkModule::get(self : StarlarkModule, key : String) -> Value? {
+  self.attrs.get(key)
+}
+
+///|
 pub(all) enum Value {
   NoneVal
   BoolVal(Bool)
@@ -152,6 +171,7 @@ pub(all) enum Value {
   FuncVal(StarlarkFunction)
   BuiltinFuncVal(StarlarkBuiltinFunc)
   BoundMethodVal(StarlarkBoundMethod)
+  ModuleVal(StarlarkModule)
 }
 
 ///|
@@ -171,6 +191,7 @@ pub fn type_name(v : Value) -> String {
     FuncVal(_) => "function"
     BuiltinFuncVal(_) => "builtin_function_or_method"
     BoundMethodVal(_) => "builtin_function_or_method"
+    ModuleVal(_) => "module"
   }
 }
 
@@ -191,6 +212,7 @@ pub fn truth(v : Value) -> Bool {
     FuncVal(_) => true
     BuiltinFuncVal(_) => true
     BoundMethodVal(_) => true
+    ModuleVal(_) => true
   }
 }
 
@@ -310,6 +332,7 @@ pub fn repr(v : Value) -> String {
     BuiltinFuncVal(f) => "<built-in function \{f.name}>"
     BoundMethodVal(m) =>
       "<built-in method \{m.method_name} of \{type_name(m.recv)} object>"
+    ModuleVal(m) => "<module \{m.name}>"
   }
 }
 

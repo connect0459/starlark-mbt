@@ -17,7 +17,11 @@ pub fn to_str(v : Value) -> String {
     TupleVal(t) => repr_tuple(t)
     DictVal(d) => repr_dict(d)
     SetVal(s) => repr_set(s)
-    RangeVal(_) | FuncVal(_) | BuiltinFuncVal(_) | BoundMethodVal(_) => repr(v)
+    RangeVal(_)
+    | FuncVal(_)
+    | BuiltinFuncVal(_)
+    | BoundMethodVal(_)
+    | ModuleVal(_) => repr(v)
   }
 }
 
@@ -42,6 +46,8 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     // Functions use identity: two distinct objects are never equal
     (FuncVal(_), FuncVal(_)) => false
     (BuiltinFuncVal(x), BuiltinFuncVal(y)) => x.name == y.name
+    // Modules use identity equality
+    (ModuleVal(_), ModuleVal(_)) => false
     _ => false
   }
 }
@@ -138,6 +144,7 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     FuncVal(_) => Err("unhashable type: function")
     BuiltinFuncVal(_) => Err("unhashable type: builtin_function_or_method")
     BoundMethodVal(_) => Err("unhashable type: builtin_function_or_method")
+    ModuleVal(_) => Err("unhashable type: module")
   }
 }
 
@@ -271,6 +278,7 @@ pub fn freeze_value(v : Value) -> Unit {
       for item in t {
         freeze_value(item)
       }
+    ModuleVal(_) => ()
     _ => ()
   }
 }

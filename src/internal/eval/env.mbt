@@ -48,6 +48,7 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
     "print", "len", "str", "repr", "type", "range", "list", "tuple", "dict", "bool",
     "int", "float", "abs", "min", "max", "set", "enumerate", "zip", "sorted", "reversed",
     "hasattr", "getattr", "fail", "any", "all", "hash", "dir", "chr", "ord", "bytes",
+    "module",
   ]
   for name in builtin_names {
     base.bind(name, @value.Value::BuiltinFuncVal({ name, }))

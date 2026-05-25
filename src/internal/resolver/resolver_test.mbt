@@ -340,3 +340,15 @@ test "resolve: function def adds its name to globals" {
   assert_eq(result.globals.length(), 1)
   assert_eq(result.globals[0].name, "add")
 }
+
+///|
+test "resolve: accepts call to predeclared 'module' function" {
+  let f = parse_or_fail("m = module(\"mymod\", x=1)")
+  let result = resolve(
+    f,
+    with_predeclared(["module"]),
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.errors.is_empty())
+}

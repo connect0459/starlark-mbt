@@ -224,3 +224,21 @@ test "Value: repr for Bytes with non-printable bytes" {
   let bytes = Bytes::make(1, b'\xff')
   assert_eq(repr(Value::BytesVal(bytes)), "b\"\\xff\"")
 }
+
+///|
+test "StarlarkModule: type_name is module" {
+  let m = StarlarkModule::new("assert", {})
+  assert_eq(type_name(Value::ModuleVal(m)), "module")
+}
+
+///|
+test "StarlarkModule: truth is always true" {
+  let m = StarlarkModule::new("assert", {})
+  assert_true(truth(Value::ModuleVal(m)))
+}
+
+///|
+test "StarlarkModule: repr shows module name" {
+  let m = StarlarkModule::new("assert", {})
+  assert_eq(repr(Value::ModuleVal(m)), "<module assert>")
+}
