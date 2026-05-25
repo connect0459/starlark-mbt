@@ -1,19 +1,31 @@
+// Helper to construct a Starlark-typed hashtable in tests
+
+///|
+fn new_dict() -> Hashtable[@value.Value, @value.Value] {
+  Hashtable::new(
+    @value.starlark_hash,
+    @value.starlark_equals,
+    @value.Value::NoneVal,
+    @value.Value::NoneVal,
+  )
+}
+
 ///|
 test "Hashtable: empty table has length 0" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   assert_eq(ht.length(), 0)
 }
 
 ///|
 test "Hashtable: lookup on empty table returns None" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let result = ht.lookup(@value.Value::StrVal(@value.StarlarkString::new("x")))
   assert_true(result == Ok(None))
 }
 
 ///|
 test "Hashtable: insert and lookup a string key" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let key = @value.Value::StrVal(@value.StarlarkString::new("hello"))
   let val = @value.Value::IntVal(42L)
   assert_true(ht.insert(key, val) is Ok(_))
@@ -23,7 +35,7 @@ test "Hashtable: insert and lookup a string key" {
 
 ///|
 test "Hashtable: insert duplicate key updates value" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let key = @value.Value::IntVal(1L)
   assert_true(ht.insert(key, @value.Value::IntVal(10L)) is Ok(_))
   assert_true(ht.insert(key, @value.Value::IntVal(20L)) is Ok(_))
@@ -33,7 +45,7 @@ test "Hashtable: insert duplicate key updates value" {
 
 ///|
 test "Hashtable: delete existing key returns true" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let key = @value.Value::IntVal(5L)
   ht.insert(key, @value.Value::NoneVal) |> ignore
   assert_true(ht.delete(key) == Ok(true))
@@ -43,14 +55,14 @@ test "Hashtable: delete existing key returns true" {
 
 ///|
 test "Hashtable: delete missing key returns false" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let result = ht.delete(@value.Value::IntVal(99L))
   assert_true(result == Ok(false))
 }
 
 ///|
 test "Hashtable: multiple keys coexist" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   for i in 0..<10 {
     let key = @value.Value::IntVal(i.to_int64())
     ht.insert(key, @value.Value::IntVal((i * 2).to_int64())) |> ignore
@@ -65,7 +77,7 @@ test "Hashtable: multiple keys coexist" {
 
 ///|
 test "Hashtable: insertion order preserved during iteration" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let keys = [
     @value.Value::StrVal(@value.StarlarkString::new("a")),
     @value.Value::StrVal(@value.StarlarkString::new("b")),
@@ -84,7 +96,7 @@ test "Hashtable: insertion order preserved during iteration" {
 
 ///|
 test "Hashtable: insertion order maintained after delete" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let k0 = @value.Value::IntVal(0L)
   let k1 = @value.Value::IntVal(1L)
   let k2 = @value.Value::IntVal(2L)
@@ -101,7 +113,7 @@ test "Hashtable: insertion order maintained after delete" {
 
 ///|
 test "Hashtable: None key is hashable" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   assert_true(
     ht.insert(@value.Value::NoneVal, @value.Value::IntVal(1L)) is Ok(_),
   )
@@ -112,7 +124,7 @@ test "Hashtable: None key is hashable" {
 
 ///|
 test "Hashtable: Bool keys are hashable" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   ht.insert(@value.Value::BoolVal(true), @value.Value::IntVal(1L)) |> ignore
   ht.insert(@value.Value::BoolVal(false), @value.Value::IntVal(0L)) |> ignore
   assert_eq(ht.length(), 2)
@@ -127,7 +139,7 @@ test "Hashtable: Bool keys are hashable" {
 
 ///|
 test "Hashtable: Tuple key is hashable" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let key = @value.Value::TupleVal([
     @value.Value::IntVal(1L),
     @value.Value::IntVal(2L),
@@ -144,7 +156,7 @@ test "Hashtable: Tuple key is hashable" {
 
 ///|
 test "Hashtable: List key is unhashable" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let key = @value.Value::ListVal(@value.StarlarkList::new([]))
   let result = ht.insert(key, @value.Value::NoneVal)
   assert_true(result is Err(_))
@@ -152,7 +164,7 @@ test "Hashtable: List key is unhashable" {
 
 ///|
 test "Hashtable: freeze prevents insert" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   ht.freeze()
   let result = ht.insert(@value.Value::IntVal(1L), @value.Value::NoneVal)
   assert_true(result is Err(_))
@@ -160,7 +172,7 @@ test "Hashtable: freeze prevents insert" {
 
 ///|
 test "Hashtable: freeze prevents delete" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   ht.insert(@value.Value::IntVal(1L), @value.Value::NoneVal) |> ignore
   ht.freeze()
   let result = ht.delete(@value.Value::IntVal(1L))
@@ -169,8 +181,7 @@ test "Hashtable: freeze prevents delete" {
 
 ///|
 test "Hashtable: handles many entries (stress test for grow)" {
-  let ht = Hashtable::new()
-  // Insert enough to trigger at least one grow (more than initial capacity)
+  let ht = new_dict()
   for i in 0..<100 {
     ht.insert(
       @value.Value::IntVal(i.to_int64()),
@@ -188,7 +199,7 @@ test "Hashtable: handles many entries (stress test for grow)" {
 
 ///|
 test "Hashtable: contains returns true for existing key" {
-  let ht = Hashtable::new()
+  let ht = new_dict()
   let key = @value.Value::IntVal(7L)
   ht.insert(key, @value.Value::NoneVal) |> ignore
   assert_true(ht.contains(key) == Ok(true))

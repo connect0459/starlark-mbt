@@ -1,9 +1,9 @@
-// Insertion-ordered hash table for Starlark Dict and Set values.
-// Keys are any Starlark hashable value.
+// Generic insertion-ordered hash table for Starlark Dict and Set values.
+// Keys and values are generic types K and V.
+// Hash and equality are provided at construction time as function parameters.
 //
-// Design: open-addressing via a slots array (power-of-2 size) with separate
-// chaining per slot (slot_next links). Insertion order is tracked via a
-// doubly-linked list (order_next / order_prev) over the entries array.
+// Design: separate chaining via slot_next links in the entries array.
+// Insertion order is tracked via a doubly-linked list (ord_next / ord_prev).
 // Deleted entries are recycled through a free list (free_head).
 
 ///|
@@ -13,32 +13,40 @@ let empty_idx : Int = -1
 let hash_zero_sentinel : UInt = 1U
 
 ///|
-struct HEntry {
+struct HEntry[K, V] {
   mut hash : UInt // 0 = free (unused or deleted)
-  mut key : @value.Value
-  mut value : @value.Value
+  mut key : K
+  mut value : V
   mut slot_next : Int // next entry in same hash chain, empty_idx = end
   mut ord_next : Int // next in insertion order, empty_idx = end
   mut ord_prev : Int // prev in insertion order, empty_idx = head
 }
 
 ///|
-pub(all) struct Hashtable {
-  mut slots : Array[Int] // slot index -> first entry idx, empty_idx = empty
-  mut entries : Array[HEntry]
-  mut free_head : Int // head of free-entry linked list, empty_idx = none
-  mut head : Int // first live entry in insertion order
-  mut tail : Int // last live entry in insertion order
+pub(all) struct Hashtable[K, V] {
+  mut slots : Array[Int]
+  mut entries : Array[HEntry[K, V]]
+  mut free_head : Int
+  mut head : Int
+  mut tail : Int
   mut live_count : Int
   mut itercount : Int
   mut frozen : Bool
+  hash_fn : (K) -> Result[UInt, String]
+  eq_fn : (K, K) -> Bool
+  zero_key : K
+  zero_val : V
 }
 
 ///|
-pub fn Hashtable::new() -> Hashtable {
-  let initial_slots = 8
+pub fn[K, V] Hashtable::new(
+  hash_fn : (K) -> Result[UInt, String],
+  eq_fn : (K, K) -> Bool,
+  zero_key : K,
+  zero_val : V,
+) -> Hashtable[K, V] {
   {
-    slots: Array::make(initial_slots, empty_idx),
+    slots: Array::make(8, empty_idx),
     entries: [],
     free_head: empty_idx,
     head: empty_idx,
@@ -46,21 +54,25 @@ pub fn Hashtable::new() -> Hashtable {
     live_count: 0,
     itercount: 0,
     frozen: false,
+    hash_fn,
+    eq_fn,
+    zero_key,
+    zero_val,
   }
 }
 
 ///|
-pub fn Hashtable::length(self : Hashtable) -> Int {
+pub fn[K, V] Hashtable::length(self : Hashtable[K, V]) -> Int {
   self.live_count
 }
 
 ///|
-pub fn Hashtable::is_frozen(self : Hashtable) -> Bool {
+pub fn[K, V] Hashtable::is_frozen(self : Hashtable[K, V]) -> Bool {
   self.frozen
 }
 
 ///|
-pub fn Hashtable::freeze(self : Hashtable) -> Unit {
+pub fn[K, V] Hashtable::freeze(self : Hashtable[K, V]) -> Unit {
   self.frozen = true
 }
 
@@ -79,7 +91,7 @@ fn slot_of(h : UInt, cap : Int) -> Int {
 }
 
 ///|
-fn Hashtable::alloc_entry(self : Hashtable) -> Int {
+fn[K, V] Hashtable::alloc_entry(self : Hashtable[K, V]) -> Int {
   if self.free_head != empty_idx {
     let idx = self.free_head
     self.free_head = self.entries[idx].slot_next
@@ -88,8 +100,8 @@ fn Hashtable::alloc_entry(self : Hashtable) -> Int {
     let idx = self.entries.length()
     self.entries.push(HEntry::{
       hash: 0U,
-      key: @value.Value::NoneVal,
-      value: @value.Value::NoneVal,
+      key: self.zero_key,
+      value: self.zero_val,
       slot_next: empty_idx,
       ord_next: empty_idx,
       ord_prev: empty_idx,
@@ -99,13 +111,11 @@ fn Hashtable::alloc_entry(self : Hashtable) -> Int {
 }
 
 ///|
-fn Hashtable::maybe_grow(self : Hashtable) -> Unit {
+fn[K, V] Hashtable::maybe_grow(self : Hashtable[K, V]) -> Unit {
   let cap = self.slots.length()
-  // Grow when load factor exceeds 2/3
   if self.live_count * 3 >= cap * 2 {
     let new_cap = cap * 2
     let new_slots = Array::make(new_cap, empty_idx)
-    // Re-chain all live entries into new slots
     let mut i = self.head
     while i != empty_idx {
       let s = slot_of(self.entries[i].hash, new_cap)
@@ -118,36 +128,29 @@ fn Hashtable::maybe_grow(self : Hashtable) -> Unit {
 }
 
 ///|
-pub fn Hashtable::insert(
-  self : Hashtable,
-  key : @value.Value,
-  value : @value.Value,
+pub fn[K, V] Hashtable::insert(
+  self : Hashtable[K, V],
+  key : K,
+  value : V,
 ) -> Result[Unit, String] {
   if self.frozen {
     return Err("cannot insert into frozen hash table")
   }
-  let h = match @value.starlark_hash(key) {
+  let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)
     Ok(h) => normalize_hash(h)
   }
-
-  // Check for existing key and update in place
   let s = slot_of(h, self.slots.length())
   let mut idx = self.slots[s]
   while idx != empty_idx {
-    if self.entries[idx].hash == h &&
-      @value.starlark_equals(self.entries[idx].key, key) {
+    if self.entries[idx].hash == h && (self.eq_fn)(self.entries[idx].key, key) {
       self.entries[idx].value = value
       return Ok(())
     }
     idx = self.entries[idx].slot_next
   }
-
-  // Grow if needed, then recompute slot
   self.maybe_grow()
   let s2 = slot_of(h, self.slots.length())
-
-  // Allocate and initialize new entry
   let new_idx = self.alloc_entry()
   self.entries[new_idx].hash = h
   self.entries[new_idx].key = key
@@ -156,8 +159,6 @@ pub fn Hashtable::insert(
   self.entries[new_idx].ord_next = empty_idx
   self.entries[new_idx].ord_prev = self.tail
   self.slots[s2] = new_idx
-
-  // Append to insertion-order list
   if self.tail != empty_idx {
     self.entries[self.tail].ord_next = new_idx
   } else {
@@ -169,19 +170,18 @@ pub fn Hashtable::insert(
 }
 
 ///|
-pub fn Hashtable::lookup(
-  self : Hashtable,
-  key : @value.Value,
-) -> Result[@value.Value?, String] {
-  let h = match @value.starlark_hash(key) {
+pub fn[K, V] Hashtable::lookup(
+  self : Hashtable[K, V],
+  key : K,
+) -> Result[V?, String] {
+  let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)
     Ok(h) => normalize_hash(h)
   }
   let s = slot_of(h, self.slots.length())
   let mut idx = self.slots[s]
   while idx != empty_idx {
-    if self.entries[idx].hash == h &&
-      @value.starlark_equals(self.entries[idx].key, key) {
+    if self.entries[idx].hash == h && (self.eq_fn)(self.entries[idx].key, key) {
       return Ok(Some(self.entries[idx].value))
     }
     idx = self.entries[idx].slot_next
@@ -190,9 +190,9 @@ pub fn Hashtable::lookup(
 }
 
 ///|
-pub fn Hashtable::contains(
-  self : Hashtable,
-  key : @value.Value,
+pub fn[K, V] Hashtable::contains(
+  self : Hashtable[K, V],
+  key : K,
 ) -> Result[Bool, String] {
   match self.lookup(key) {
     Err(e) => Err(e)
@@ -202,34 +202,28 @@ pub fn Hashtable::contains(
 }
 
 ///|
-pub fn Hashtable::delete(
-  self : Hashtable,
-  key : @value.Value,
+pub fn[K, V] Hashtable::delete(
+  self : Hashtable[K, V],
+  key : K,
 ) -> Result[Bool, String] {
   if self.frozen {
     return Err("cannot delete from frozen hash table")
   }
-  let h = match @value.starlark_hash(key) {
+  let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)
     Ok(h) => normalize_hash(h)
   }
   let s = slot_of(h, self.slots.length())
-
-  // Find entry in hash chain and track predecessor
   let mut prev_chain = empty_idx
   let mut idx = self.slots[s]
   while idx != empty_idx {
-    if self.entries[idx].hash == h &&
-      @value.starlark_equals(self.entries[idx].key, key) {
-      // Remove from slot chain
+    if self.entries[idx].hash == h && (self.eq_fn)(self.entries[idx].key, key) {
       let next_chain = self.entries[idx].slot_next
       if prev_chain == empty_idx {
         self.slots[s] = next_chain
       } else {
         self.entries[prev_chain].slot_next = next_chain
       }
-
-      // Remove from insertion-order list
       let op = self.entries[idx].ord_prev
       let on = self.entries[idx].ord_next
       if op != empty_idx {
@@ -242,8 +236,6 @@ pub fn Hashtable::delete(
       } else {
         self.tail = op
       }
-
-      // Recycle entry into free list
       self.entries[idx].hash = 0U
       self.entries[idx].slot_next = self.free_head
       self.free_head = idx
@@ -257,9 +249,9 @@ pub fn Hashtable::delete(
 }
 
 ///|
-pub fn Hashtable::each_key(
-  self : Hashtable,
-  f : (@value.Value) -> Unit,
+pub fn[K, V] Hashtable::each_key(
+  self : Hashtable[K, V],
+  f : (K) -> Unit,
 ) -> Unit {
   let mut idx = self.head
   while idx != empty_idx {
@@ -269,9 +261,9 @@ pub fn Hashtable::each_key(
 }
 
 ///|
-pub fn Hashtable::each(
-  self : Hashtable,
-  f : (@value.Value, @value.Value) -> Unit,
+pub fn[K, V] Hashtable::each(
+  self : Hashtable[K, V],
+  f : (K, V) -> Unit,
 ) -> Unit {
   let mut idx = self.head
   while idx != empty_idx {
