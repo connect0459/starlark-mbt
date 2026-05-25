@@ -1,5 +1,5 @@
 // import {
-//   "connect0459/starlark" @lib,
+//   "connect0459/starlark/starlark" @starlark,
 // }
 
 options(

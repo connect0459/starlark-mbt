@@ -22,3 +22,7 @@ license = "Apache-2.0"
 keywords = [ ]
 
 description = ""
+
+options(
+  source: "src",
+)
