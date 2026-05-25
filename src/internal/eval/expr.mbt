@@ -1603,6 +1603,366 @@ fn call_str_method(
       let result = str_format(s.raw, pos_args)
       @value.Value::StrVal(@value.StarlarkString::new(result))
     }
+    "capitalize" => {
+      let chars = s.raw.to_array()
+      if chars.is_empty() {
+        @value.Value::StrVal(s)
+      } else {
+        let buf = StringBuilder::new()
+        buf.write_char(char_to_upper(chars[0]))
+        for i in 1..<chars.length() {
+          buf.write_char(char_to_lower(chars[i]))
+        }
+        @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+      }
+    }
+    "index" => {
+      if pos_args.length() < 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "index() takes at least one argument"),
+        )
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(sub) => {
+          let result = find_substr(s.raw, sub.raw)
+          if result < 0 {
+            raise EvalErr(make_eval_error(ctx, "substring not found"))
+          }
+          @value.Value::IntVal(result.to_int64())
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "index() argument must be a string"),
+          )
+      }
+    }
+    "rfind" => {
+      if pos_args.length() < 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "rfind() takes at least one argument"),
+        )
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(sub) => {
+          let result = rfind_substr(s.raw, sub.raw)
+          @value.Value::IntVal(result.to_int64())
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "rfind() argument must be a string"),
+          )
+      }
+    }
+    "rindex" => {
+      if pos_args.length() < 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "rindex() takes at least one argument"),
+        )
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(sub) => {
+          let result = rfind_substr(s.raw, sub.raw)
+          if result < 0 {
+            raise EvalErr(make_eval_error(ctx, "substring not found"))
+          }
+          @value.Value::IntVal(result.to_int64())
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "rindex() argument must be a string"),
+          )
+      }
+    }
+    "isalpha" => {
+      if s.raw.length() == 0 {
+        return @value.Value::BoolVal(false)
+      }
+      let mut result = true
+      for c in s.raw.to_array() {
+        let n = c.to_int()
+        if !((n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
+          (n >= 'a'.to_int() && n <= 'z'.to_int())) {
+          result = false
+          break
+        }
+      }
+      @value.Value::BoolVal(result)
+    }
+    "isdigit" => {
+      if s.raw.length() == 0 {
+        return @value.Value::BoolVal(false)
+      }
+      let mut result = true
+      for c in s.raw.to_array() {
+        let n = c.to_int()
+        if n < '0'.to_int() || n > '9'.to_int() {
+          result = false
+          break
+        }
+      }
+      @value.Value::BoolVal(result)
+    }
+    "isalnum" => {
+      if s.raw.length() == 0 {
+        return @value.Value::BoolVal(false)
+      }
+      let mut result = true
+      for c in s.raw.to_array() {
+        let n = c.to_int()
+        if !((n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
+          (n >= 'a'.to_int() && n <= 'z'.to_int()) ||
+          (n >= '0'.to_int() && n <= '9'.to_int())) {
+          result = false
+          break
+        }
+      }
+      @value.Value::BoolVal(result)
+    }
+    "islower" => {
+      let chars = s.raw.to_array()
+      let mut has_cased = false
+      let mut result = true
+      for c in chars {
+        let n = c.to_int()
+        if n >= 'A'.to_int() && n <= 'Z'.to_int() {
+          result = false
+          break
+        } else if n >= 'a'.to_int() && n <= 'z'.to_int() {
+          has_cased = true
+        }
+      }
+      @value.Value::BoolVal(result && has_cased)
+    }
+    "isupper" => {
+      let chars = s.raw.to_array()
+      let mut has_cased = false
+      let mut result = true
+      for c in chars {
+        let n = c.to_int()
+        if n >= 'a'.to_int() && n <= 'z'.to_int() {
+          result = false
+          break
+        } else if n >= 'A'.to_int() && n <= 'Z'.to_int() {
+          has_cased = true
+        }
+      }
+      @value.Value::BoolVal(result && has_cased)
+    }
+    "isspace" => {
+      if s.raw.length() == 0 {
+        return @value.Value::BoolVal(false)
+      }
+      let mut result = true
+      for c in s.raw.to_array() {
+        let n = c.to_int()
+        if n != ' '.to_int() &&
+          n != '\t'.to_int() &&
+          n != '\n'.to_int() &&
+          n != '\r'.to_int() &&
+          n != 0x0C &&
+          n != 0x0B {
+          result = false
+          break
+        }
+      }
+      @value.Value::BoolVal(result)
+    }
+    "title" => {
+      let chars = s.raw.to_array()
+      let buf = StringBuilder::new()
+      let mut prev_cased = false
+      for c in chars {
+        let n = c.to_int()
+        if n >= 'a'.to_int() && n <= 'z'.to_int() {
+          if !prev_cased {
+            buf.write_char(char_to_upper(c))
+          } else {
+            buf.write_char(c)
+          }
+          prev_cased = true
+        } else if n >= 'A'.to_int() && n <= 'Z'.to_int() {
+          if prev_cased {
+            buf.write_char(char_to_lower(c))
+          } else {
+            buf.write_char(c)
+          }
+          prev_cased = true
+        } else {
+          buf.write_char(c)
+          prev_cased = false
+        }
+      }
+      @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+    }
+    "partition" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "partition() takes exactly one argument"),
+        )
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(sep) => {
+          let idx = find_substr(s.raw, sep.raw)
+          if idx < 0 {
+            @value.Value::TupleVal([
+              @value.Value::StrVal(s),
+              @value.Value::StrVal(@value.StarlarkString::new("")),
+              @value.Value::StrVal(@value.StarlarkString::new("")),
+            ])
+          } else {
+            let before = s.raw[0:idx].to_owned()
+            let after = s.raw[idx + sep.raw.length():].to_owned()
+            @value.Value::TupleVal([
+              @value.Value::StrVal(@value.StarlarkString::new(before)),
+              @value.Value::StrVal(@value.StarlarkString::new(sep.raw)),
+              @value.Value::StrVal(@value.StarlarkString::new(after)),
+            ])
+          }
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "partition() argument must be a string"),
+          )
+      }
+    }
+    "rpartition" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "rpartition() takes exactly one argument"),
+        )
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(sep) => {
+          let idx = rfind_substr(s.raw, sep.raw)
+          if idx < 0 {
+            @value.Value::TupleVal([
+              @value.Value::StrVal(@value.StarlarkString::new("")),
+              @value.Value::StrVal(@value.StarlarkString::new("")),
+              @value.Value::StrVal(s),
+            ])
+          } else {
+            let before = s.raw[0:idx].to_owned()
+            let after = s.raw[idx + sep.raw.length():].to_owned()
+            @value.Value::TupleVal([
+              @value.Value::StrVal(@value.StarlarkString::new(before)),
+              @value.Value::StrVal(@value.StarlarkString::new(sep.raw)),
+              @value.Value::StrVal(@value.StarlarkString::new(after)),
+            ])
+          }
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "rpartition() argument must be a string"),
+          )
+      }
+    }
+    "removeprefix" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "removeprefix() takes exactly one argument"),
+        )
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(prefix) =>
+          if s.raw.has_prefix(prefix.raw) {
+            let rest = s.raw[prefix.raw.length():].to_owned()
+            @value.Value::StrVal(@value.StarlarkString::new(rest))
+          } else {
+            @value.Value::StrVal(s)
+          }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "removeprefix() argument must be a string"),
+          )
+      }
+    }
+    "removesuffix" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "removesuffix() takes exactly one argument"),
+        )
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(suffix) =>
+          if s.raw.has_suffix(suffix.raw) {
+            let rest = s.raw[0:s.raw.length() - suffix.raw.length()].to_owned()
+            @value.Value::StrVal(@value.StarlarkString::new(rest))
+          } else {
+            @value.Value::StrVal(s)
+          }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "removesuffix() argument must be a string"),
+          )
+      }
+    }
+    "splitlines" => {
+      let parts : Array[@value.Value] = []
+      let raw = s.raw
+      let buf = StringBuilder::new()
+      for c in raw.to_array() {
+        let n = c.to_int()
+        if n == '\n'.to_int() || n == '\r'.to_int() {
+          parts.push(
+            @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+          )
+          buf.reset()
+        } else {
+          buf.write_char(c)
+        }
+      }
+      if buf.to_string().length() > 0 {
+        parts.push(
+          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+        )
+      }
+      @value.Value::ListVal(@value.StarlarkList::new(parts))
+    }
+    "elems" => {
+      let parts : Array[@value.Value] = []
+      for b in s.bytes {
+        let buf = StringBuilder::new()
+        buf.write_char(b.to_int().unsafe_to_char())
+        parts.push(
+          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+        )
+      }
+      @value.Value::ListVal(@value.StarlarkList::new(parts))
+    }
+    "elem_ords" => {
+      let ords : Array[@value.Value] = []
+      for b in s.bytes {
+        ords.push(@value.Value::IntVal(b.to_int().to_int64()))
+      }
+      @value.Value::ListVal(@value.StarlarkList::new(ords))
+    }
+    "istitle" => {
+      let chars = s.raw.to_array()
+      if chars.is_empty() {
+        return @value.Value::BoolVal(false)
+      }
+      let mut prev_cased = false
+      let mut result = true
+      for c in chars {
+        let n = c.to_int()
+        if n >= 'A'.to_int() && n <= 'Z'.to_int() {
+          if prev_cased {
+            result = false
+            break
+          }
+          prev_cased = true
+        } else if n >= 'a'.to_int() && n <= 'z'.to_int() {
+          if !prev_cased {
+            result = false
+            break
+          }
+          prev_cased = true
+        } else {
+          prev_cased = false
+        }
+      }
+      @value.Value::BoolVal(result)
+    }
     _ =>
       raise EvalErr(
         make_eval_error(ctx, "string has no method '\{method_name}'"),
@@ -1862,6 +2222,53 @@ fn find_substr(s : String, sub : String) -> Int {
     if match_ {
       return i
     }
+  }
+  -1
+}
+
+///|
+fn char_to_upper(c : Char) -> Char {
+  let n = c.to_int()
+  if n >= 'a'.to_int() && n <= 'z'.to_int() {
+    (n - 32).unsafe_to_char()
+  } else {
+    c
+  }
+}
+
+///|
+fn char_to_lower(c : Char) -> Char {
+  let n = c.to_int()
+  if n >= 'A'.to_int() && n <= 'Z'.to_int() {
+    (n + 32).unsafe_to_char()
+  } else {
+    c
+  }
+}
+
+///|
+fn rfind_substr(s : String, sub : String) -> Int {
+  if sub.length() == 0 {
+    return s.length()
+  }
+  let slen = s.length()
+  let sublen = sub.length()
+  if sublen > slen {
+    return -1
+  }
+  let mut i = slen - sublen
+  while i >= 0 {
+    let mut match_ = true
+    for j in 0..<sublen {
+      if s[i + j] != sub[j] {
+        match_ = false
+        break
+      }
+    }
+    if match_ {
+      return i
+    }
+    i -= 1
   }
   -1
 }

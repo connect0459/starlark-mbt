@@ -852,6 +852,208 @@ test "exec_file: string.count returns number of non-overlapping occurrences" {
   }
 }
 
+///|
+test "exec_file: string.capitalize uppercases first character and lowercases rest" {
+  match exec_b("s = \"hELLO\".capitalize()") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "Hello")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.index returns position when substring is found" {
+  match exec_b("i = \"hello world\".index(\"world\")") {
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::IntVal(6L)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.index raises error when substring is absent" {
+  assert_true(exec_b("\"hello\".index(\"xyz\")") is Err(_))
+}
+
+///|
+test "exec_file: string.rfind returns index of last occurrence" {
+  match exec_b("i = \"abcabc\".rfind(\"ab\")") {
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::IntVal(3L)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.rfind returns -1 when substring is absent" {
+  match exec_b("i = \"hello\".rfind(\"xyz\")") {
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::IntVal(-1L)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalpha returns true for alphabetic string" {
+  match exec_b("r = \"hello\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalpha returns false when string contains digit" {
+  match exec_b("r = \"hello1\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(false)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isdigit returns true for digit-only string" {
+  match exec_b("r = \"123\".isdigit()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalnum returns true for alphanumeric string" {
+  match exec_b("r = \"abc123\".isalnum()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.islower returns true when all cased chars are lowercase" {
+  match exec_b("r = \"hello\".islower()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isupper returns true when all cased chars are uppercase" {
+  match exec_b("r = \"HELLO\".isupper()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isspace returns true for whitespace-only string" {
+  match exec_b("r = \"   \".isspace()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.title converts to titlecase" {
+  match exec_b("s = \"hello world\".title()") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "Hello World")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.partition splits at first occurrence" {
+  match exec_b("r = \"hello world\".partition(\" \")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::TupleVal(t)) => {
+          assert_eq(t.length(), 3)
+          match t[0] {
+            @value.Value::StrVal(s) => assert_eq(s.raw, "hello")
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.removeprefix removes matching prefix" {
+  match exec_b("s = \"hello\".removeprefix(\"he\")") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "llo")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.removeprefix returns original when prefix absent" {
+  match exec_b("s = \"hello\".removeprefix(\"xyz\")") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.removesuffix removes matching suffix" {
+  match exec_b("s = \"hello\".removesuffix(\"lo\")") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hel")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.splitlines splits at newline characters" {
+  match exec_b("r = \"a\\nb\\nc\".splitlines()") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 3)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.elems iterates bytes as single-byte strings" {
+  match exec_b("r = \"abc\".elems()") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 3)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.elem_ords iterates bytes as integers" {
+  match exec_b("r = \"ABC\".elem_ords()") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          assert_true(l.items[0] == @value.Value::IntVal(65L))
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
 // --- Set methods ---
 
 ///|
