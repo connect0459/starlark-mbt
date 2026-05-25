@@ -1685,6 +1685,69 @@ fn call_str_method(
             )
         }
       }
+    "rsplit" => {
+      let sep = if pos_args.length() == 0 {
+        None
+      } else {
+        match pos_args[0] {
+          @value.Value::StrVal(sep) => Some(sep.raw)
+          _ =>
+            raise EvalErr(
+              make_eval_error(ctx, "rsplit() separator must be a string"),
+            )
+        }
+      }
+      let maxsplit = if pos_args.length() >= 2 {
+        match pos_args[1] {
+          @value.Value::IntVal(n) => n.to_int()
+          _ => -1
+        }
+      } else {
+        -1
+      }
+      match sep {
+        None => {
+          let parts : Array[@value.Value] = []
+          for sv in s.raw.split(" ") {
+            let p = "\{sv}"
+            if p != "" {
+              parts.push(@value.Value::StrVal(@value.StarlarkString::new(p)))
+            }
+          }
+          @value.Value::ListVal(@value.StarlarkList::new(parts))
+        }
+        Some(sep_str) => {
+          if sep_str.length() == 0 {
+            raise EvalErr(make_eval_error(ctx, "rsplit: empty separator"))
+          }
+          let all_parts : Array[String] = []
+          for sv in s.raw.split(sep_str) {
+            all_parts.push("\{sv}")
+          }
+          let result_strs : Array[String] = if maxsplit < 0 ||
+            all_parts.length() <= maxsplit + 1 {
+            all_parts
+          } else {
+            let excess = all_parts.length() - maxsplit
+            let buf = StringBuilder::new()
+            for i in 0..<excess {
+              if i > 0 {
+                buf.write_string(sep_str)
+              }
+              buf.write_string(all_parts[i])
+            }
+            let head = [buf.to_string()]
+            head.append(all_parts[excess:].to_owned())
+            head
+          }
+          let parts : Array[@value.Value] = []
+          for p in result_strs {
+            parts.push(@value.Value::StrVal(@value.StarlarkString::new(p)))
+          }
+          @value.Value::ListVal(@value.StarlarkList::new(parts))
+        }
+      }
+    }
     "join" => {
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "join() takes exactly one argument"))

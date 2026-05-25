@@ -1623,3 +1623,45 @@ test "exec_file: dir on int returns empty list" {
     Err(e) => fail(e.to_string())
   }
 }
+
+// --- string.rsplit ---
+
+///|
+test "exec_file: str.rsplit with sep splits from right" {
+  match exec_b("r = \"a,b,c\".rsplit(\",\")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          match l.items[0] {
+            @value.Value::StrVal(s) => assert_eq(s.raw, "a")
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.rsplit with maxsplit limits from right" {
+  match exec_b("r = \"a,b,c,d\".rsplit(\",\", 2)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          match l.items[0] {
+            @value.Value::StrVal(s) => assert_eq(s.raw, "a,b")
+            _ => assert_true(false)
+          }
+          match l.items[2] {
+            @value.Value::StrVal(s) => assert_eq(s.raw, "d")
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
