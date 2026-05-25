@@ -114,15 +114,15 @@ Write error formatting tests first; implementation is trivial but used everywher
 
 ---
 
-## Phase 0.75: Public API & Embedding Surface
+## Phase 0.75: Public API & Embedding Surface ✅
 
 Settle the public API shape before bulk implementation, so subsequent
 phases don't churn the `.mbti`.
 
-- [ ] `Thread` — print callback, load callback, call stack, recursion depth limit, max execution steps
-- [ ] `Module` — execution result; `globals` dict; frozen after `exec_file` returns
+- [x] `Thread` — print callback, load callback, call stack, recursion depth limit, max execution steps
+- [x] `Module` — execution result; `globals` dict; frozen after `exec_file` returns
 - [ ] `Universe` — predeclared bindings (built-ins) injected into modules
-- [ ] `Options` — feature flags. All default to **true** unless noted:
+- [x] `Options` — feature flags. All default to **true** unless noted:
       `allow_set`, `allow_recursion`, `allow_lambda`, `allow_while`,
       `allow_bytes`, `allow_float`, `allow_global_reassign`,
       `allow_top_level_control` (top-level `if` / `for` / `while`),
@@ -130,8 +130,8 @@ phases don't churn the `.mbti`.
 - [ ] `Predeclared` / `Universe` distinction — `Universe` is the built-in
       set (frozen, shared across threads); `Predeclared` is per-execution
       extra bindings injected before user globals
-- [ ] `exec_file(thread, filename, src, options) -> Module` — top-level entry point
-- [ ] `eval(thread, filename, expr, env) -> Value` — single-expression entry point
+- [x] `exec_file(thread, filename, src, options) -> Module` — stub (returns Err until Phase 5)
+- [x] `eval(thread, filename, expr, env) -> Value` — stub (returns Err until Phase 5)
 - [ ] Loader contract — `(Thread, module_path) -> Result[Module, EvalError]`
       (the loader receives the active `Thread` so it can make nested calls)
 - [ ] Wire up `src/starlark/` as a thin public façade: re-export `Thread`, `Module`,
@@ -173,10 +173,10 @@ Core Starlark value representation. All values share a common interface.
       Starlark value — `StarlarkDict` wraps `Hashtable[Value, Value]`
 - [x] `Set` — mutable hash-set; keys are any hashable value, insertion-ordered.
       `StarlarkSet` wraps `Hashtable[Value, Value]` (value=NoneVal)
-- [ ] `Function` — user-defined (Starlark source)
-- [ ] `BuiltinFunction` — host-provided callable
-- [ ] `BoundMethod` — method bound to a receiver (e.g., `"abc".upper`)
-- [ ] `Range` — lazy iterable returned by `range()`; not a List
+- [x] `Function` — user-defined (Starlark source); `StarlarkFunction { name, params, body, defaults, freevars }`
+- [x] `BuiltinFunction` — host-provided callable; `StarlarkBuiltinFunc { name }`
+- [x] `BoundMethod` — method bound to a receiver (e.g., `"abc".upper`); `StarlarkBoundMethod { recv, method_name }`
+- [x] `Range` — lazy iterable returned by `range()`; not a List; `StarlarkRange { start, stop, step }`
 
 ### Traits / protocols
 
@@ -209,10 +209,10 @@ Core Starlark value representation. All values share a common interface.
 
 ### Frozen value semantics
 
-- [ ] `freeze()` operation on mutable types (List, Dict, Set, Function closure cells)
-- [ ] Mutation after freeze raises `EvalError`
-- [ ] Freezing propagates transitively through contained values
-- [ ] Module dict frozen automatically when `exec_file` returns
+- [x] `freeze()` operation on mutable types (List, Dict, Set) — `freeze_value` propagates transitively
+- [ ] Mutation after freeze raises `EvalError` (enforced at eval time in Phase 5)
+- [x] Freezing propagates transitively through contained values (`freeze_value` in `traits.mbt`)
+- [ ] Module dict frozen automatically when `exec_file` returns (wired in Phase 5)
 - [ ] **Iterator freezing**: iterating a mutable container (List, Dict, Set) with a `for`
       loop **freezes** it for the duration of the loop. Any mutation during iteration
       raises an `EvalError` ("cannot insert into frozen hash table", etc.).
@@ -360,23 +360,23 @@ Reference: `starlark-go/syntax/parse_test.go`, `starlark-go/syntax/walk_test.go`
 
 ---
 
-## Phase 4: Name Resolution
+## Phase 4: Name Resolution ✅
 
 Resolve variable scopes before evaluation.
 
-- [ ] Collect all binding sites (def params, for targets, assign LHS, comprehension vars)
-- [ ] Classify each reference: `local`, `cell` (closure), `free`, `global`, `predeclared`, `universal`
-- [ ] Assignment inside a function → local binding (Python rule)
-- [ ] Forward references allowed at module scope; not inside a single block before assignment
-- [ ] Error on use-before-def
-- [ ] Validate function parameter order: positional → `*args` → keyword-only → `**kwargs`
-- [ ] No duplicate parameter names
-- [ ] **`load` must be at module scope**
-- [ ] **No reassignment of `load`-imported symbols** (also gated by `allow_global_reassign`)
-- [ ] **Recursion detection** — error if disallowed by `allow_recursion=false`
-- [ ] **No global mutation from functions** unless `allow_global_reassign=true`
-- [ ] **Top-level `if` / `for` / `while`** rejected unless `allow_top_level_control=true`
-- [ ] **`load` binding scope** — file-local by default; global if `load_binds_globally=true`
+- [x] Collect all binding sites (def params, for targets, assign LHS, comprehension vars)
+- [x] Classify each reference: `local`, `cell` (closure), `free`, `global`, `predeclared`, `universal`
+- [x] Assignment inside a function → local binding (Python rule)
+- [x] Forward references allowed at module scope; not inside a single block before assignment
+- [x] Error on use-before-def (undefined variable detection)
+- [x] Validate function parameter order: positional → `*args` → keyword-only → `**kwargs`
+- [x] No duplicate parameter names
+- [x] **`load` must be at module scope**
+- [ ] **No reassignment of `load`-imported symbols** (deferred to Phase 5)
+- [x] **Recursion detection** — error if disallowed by `allow_recursion=false`
+- [x] **No global mutation from functions** unless `allow_global_reassign=true`
+- [x] **Top-level `if` / `for` / `while`** rejected unless `allow_top_level_control=true`
+- [ ] **`load` binding scope** — file-local by default; global if `load_binds_globally=true` (deferred)
 
 ### TDD scope
 
