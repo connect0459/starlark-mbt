@@ -13,6 +13,10 @@ pub fn floor_div(Int64, Int64) -> Result[Int64, String]
 
 pub fn freeze_value(Value) -> Unit
 
+pub fn iterate(Value) -> Result[StarlarkIterator, String]
+
+pub fn length_of(Value) -> Result[Int, String]
+
 pub fn repr(Value) -> String
 
 pub fn starlark_equals(Value, Value) -> Bool
@@ -47,6 +51,9 @@ pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
 pub fn StarlarkDict::freeze(Self) -> Unit
 pub fn StarlarkDict::get(Self, Value) -> Result[Value?, String]
 pub fn StarlarkDict::is_frozen(Self) -> Bool
+pub fn StarlarkDict::iter_begin(Self) -> Unit
+pub fn StarlarkDict::iter_end(Self) -> Unit
+pub fn StarlarkDict::keys(Self) -> Array[Value]
 pub fn StarlarkDict::length(Self) -> Int
 pub fn StarlarkDict::new() -> Self
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
@@ -59,10 +66,19 @@ pub(all) struct StarlarkFunction {
   freevars : Array[Value]
 }
 
+pub struct StarlarkIterator {
+  next_fn : () -> Value?
+  done_fn : () -> Unit
+}
+pub fn StarlarkIterator::done(Self) -> Unit
+pub fn StarlarkIterator::next(Self) -> Value?
+
 pub(all) struct StarlarkList {
   mut items : Array[Value]
   mut frozen : Bool
+  mut itercount : Int
 }
+pub fn StarlarkList::check_mutable(Self, String) -> Result[Unit, String]
 pub fn StarlarkList::freeze(Self) -> Unit
 pub fn StarlarkList::is_frozen(Self) -> Bool
 pub fn StarlarkList::new(Array[Value]) -> Self
@@ -85,6 +101,8 @@ pub fn StarlarkSet::contains(Self, Value) -> Result[Bool, String]
 pub fn StarlarkSet::each(Self, (Value) -> Unit) -> Unit
 pub fn StarlarkSet::freeze(Self) -> Unit
 pub fn StarlarkSet::is_frozen(Self) -> Bool
+pub fn StarlarkSet::iter_begin(Self) -> Unit
+pub fn StarlarkSet::iter_end(Self) -> Unit
 pub fn StarlarkSet::length(Self) -> Int
 pub fn StarlarkSet::new() -> Self
 pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]

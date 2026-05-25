@@ -64,6 +64,23 @@ pub fn StarlarkDict::each(
 }
 
 ///|
+pub fn StarlarkDict::iter_begin(self : StarlarkDict) -> Unit {
+  self.ht.iter_begin()
+}
+
+///|
+pub fn StarlarkDict::iter_end(self : StarlarkDict) -> Unit {
+  self.ht.iter_end()
+}
+
+///|
+pub fn StarlarkDict::keys(self : StarlarkDict) -> Array[Value] {
+  let arr : Array[Value] = []
+  self.ht.each_key(fn(k) { arr.push(k) })
+  arr
+}
+
+///|
 pub(all) struct StarlarkSet {
   ht : @hashtable.Hashtable[Value, Value]
 }
@@ -122,4 +139,14 @@ pub fn StarlarkSet::remove(
 ///|
 pub fn StarlarkSet::each(self : StarlarkSet, f : (Value) -> Unit) -> Unit {
   self.ht.each_key(f)
+}
+
+///|
+pub fn StarlarkSet::iter_begin(self : StarlarkSet) -> Unit {
+  self.ht.iter_begin()
+}
+
+///|
+pub fn StarlarkSet::iter_end(self : StarlarkSet) -> Unit {
+  self.ht.iter_end()
 }

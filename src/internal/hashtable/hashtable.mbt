@@ -128,6 +128,20 @@ fn[K, V] Hashtable::maybe_grow(self : Hashtable[K, V]) -> Unit {
 }
 
 ///|
+pub fn[K, V] Hashtable::iter_begin(self : Hashtable[K, V]) -> Unit {
+  if !self.frozen {
+    self.itercount += 1
+  }
+}
+
+///|
+pub fn[K, V] Hashtable::iter_end(self : Hashtable[K, V]) -> Unit {
+  if !self.frozen && self.itercount > 0 {
+    self.itercount -= 1
+  }
+}
+
+///|
 pub fn[K, V] Hashtable::insert(
   self : Hashtable[K, V],
   key : K,
@@ -135,6 +149,9 @@ pub fn[K, V] Hashtable::insert(
 ) -> Result[Unit, String] {
   if self.frozen {
     return Err("cannot insert into frozen hash table")
+  }
+  if self.itercount > 0 {
+    return Err("cannot insert into hash table during iteration")
   }
   let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)
@@ -208,6 +225,9 @@ pub fn[K, V] Hashtable::delete(
 ) -> Result[Bool, String] {
   if self.frozen {
     return Err("cannot delete from frozen hash table")
+  }
+  if self.itercount > 0 {
+    return Err("cannot delete from hash table during iteration")
   }
   let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)

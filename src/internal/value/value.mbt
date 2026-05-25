@@ -38,11 +38,12 @@ pub fn StarlarkString::equals(
 pub(all) struct StarlarkList {
   mut items : Array[Value]
   mut frozen : Bool
+  mut itercount : Int
 }
 
 ///|
 pub fn StarlarkList::new(items : Array[Value]) -> StarlarkList {
-  { items, frozen: false }
+  { items, frozen: false, itercount: 0 }
 }
 
 ///|
@@ -53,6 +54,20 @@ pub fn StarlarkList::is_frozen(self : StarlarkList) -> Bool {
 ///|
 pub fn StarlarkList::freeze(self : StarlarkList) -> Unit {
   self.frozen = true
+}
+
+///|
+pub fn StarlarkList::check_mutable(
+  self : StarlarkList,
+  verb : String,
+) -> Result[Unit, String] {
+  if self.frozen {
+    Err("cannot \{verb} frozen list")
+  } else if self.itercount > 0 {
+    Err("cannot \{verb} list during iteration")
+  } else {
+    Ok(())
+  }
 }
 
 ///|

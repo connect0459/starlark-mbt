@@ -29,6 +29,8 @@ pub fn[K, V] Hashtable::each_key(Self[K, V], (K) -> Unit) -> Unit
 pub fn[K, V] Hashtable::freeze(Self[K, V]) -> Unit
 pub fn[K, V] Hashtable::insert(Self[K, V], K, V) -> Result[Unit, String]
 pub fn[K, V] Hashtable::is_frozen(Self[K, V]) -> Bool
+pub fn[K, V] Hashtable::iter_begin(Self[K, V]) -> Unit
+pub fn[K, V] Hashtable::iter_end(Self[K, V]) -> Unit
 pub fn[K, V] Hashtable::length(Self[K, V]) -> Int
 pub fn[K, V] Hashtable::lookup(Self[K, V], K) -> Result[V?, String]
 pub fn[K, V] Hashtable::new((K) -> Result[UInt, String], (K, K) -> Bool, K, V) -> Self[K, V]
