@@ -288,62 +288,64 @@ Reference: `starlark-go/syntax/scan_test.go`, `starlark-go/syntax/quote_test.go`
 
 ---
 
-## Phase 3: Parser / AST
+## Phase 3: Parser / AST ✅
 
 Build an AST from the token stream. Each node carries a `Position`.
 
 ### Expressions
 
-- [ ] `Literal` — None, bool, int, float, string, bytes
-- [ ] `Ident` — identifier reference
-- [ ] `UnaryExpr` — `-`, `+`, `~`, `not`
-- [ ] `BinaryExpr` — all binary operators incl. `in`, `not in`, `%` (string format)
+- [x] `Literal` — None, bool, int, float, string, bytes
+- [x] `Ident` — identifier reference
+- [x] `UnaryExpr` — `-`, `+`, `~`, `not`
+- [x] `BinaryExpr` — all binary operators incl. `in`, `not in`, `%` (string format)
 - [ ] `ChainedComparison` — `a < b < c` is a single AST node (not a nested `And`);
       the middle operand (`b`) is evaluated exactly once. Reference:
       `starlark-go/syntax/syntax.go` (`BinaryExpr` with chained ops list)
-- [ ] `IfExpr` — `x if cond else y`
-- [ ] `IndexExpr` — `a[i]`
-- [ ] `SliceExpr` — `a[start:end:step]`
-- [ ] `DotExpr` — `x.attr`
-- [ ] `CallExpr` — `f(args…)` with positional, keyword, `*args`, `**kwargs`
-- [ ] `ListExpr` — `[…]` (trailing comma allowed)
-- [ ] `TupleExpr` — `(a, b, …)`; single-element tuple `(x,)` distinguished from grouping `(x)`
-- [ ] `DictExpr` — `{k: v, …}` (trailing comma allowed)
-- [ ] `SetExpr` — `{x, …}` (gated by `allow_set`)
-- [ ] `Comprehension` — list/dict/set comp with multiple `for`-clauses and nested
+      **Deferred**: current impl uses nested left-assoc `EBinary`; evaluator
+      must de-duplicate `b` evaluation when it sees chained comparisons
+- [x] `IfExpr` — `x if cond else y`
+- [x] `IndexExpr` — `a[i]`
+- [x] `SliceExpr` — `a[start:end:step]`
+- [x] `DotExpr` — `x.attr`
+- [x] `CallExpr` — `f(args…)` with positional, keyword, `*args`, `**kwargs`
+- [x] `ListExpr` — `[…]` (trailing comma allowed)
+- [x] `TupleExpr` — `(a, b, …)`; single-element tuple `(x,)` distinguished from grouping `(x)`
+- [x] `DictExpr` — `{k: v, …}` (trailing comma allowed)
+- [x] `SetExpr` — `{x, …}` (gated by `allow_set`)
+- [x] `Comprehension` — list/dict/set comp with multiple `for`-clauses and nested
       `if`-guards: `[x+y for x in xs for y in ys if p(x,y)]`. Each `for`-clause
       introduces a new scope; inner variables shadow outer ones.
-- [ ] `LambdaExpr` — `lambda params: expr` (body restricted to single Test; gated by `allow_lambda`)
+- [x] `LambdaExpr` — `lambda params: expr` (body restricted to single Test; gated by `allow_lambda`)
 
 ### Statements
 
-- [ ] `AssignStmt` — `=`, `+=`, `-=`, … augmented assigns; tuple unpacking LHS
-- [ ] `ExprStmt` — bare expression statement
-- [ ] `IfStmt` — `if / elif / else`
-- [ ] `ForStmt` — `for x in iterable:`
-- [ ] `WhileStmt` — `while cond:` (gated by `allow_while`)
-- [ ] `ReturnStmt` — `return [expr]`
-- [ ] `BreakStmt` / `ContinueStmt` / `PassStmt`
-- [ ] `DefStmt` — `def name(params): body` with default args, `*args`, `**kwargs`; trailing comma in params
-- [ ] `LoadStmt` — `load("path", …)` with optional aliasing; **only at module scope**
+- [x] `AssignStmt` — `=`, `+=`, `-=`, … augmented assigns; tuple unpacking LHS
+- [x] `ExprStmt` — bare expression statement
+- [x] `IfStmt` — `if / elif / else`
+- [x] `ForStmt` — `for x in iterable:`
+- [x] `WhileStmt` — `while cond:` (gated by `allow_while`)
+- [x] `ReturnStmt` — `return [expr]`
+- [x] `BreakStmt` / `ContinueStmt` / `PassStmt`
+- [x] `DefStmt` — `def name(params): body` with default args, `*args`, `**kwargs`; trailing comma in params
+- [x] `LoadStmt` — `load("path", …)` with optional aliasing; **only at module scope**
 
 ### Unsupported Python constructs (parser must reject)
 
 The parser must emit a `SyntaxError` for these Python features absent from Starlark:
 
-- [ ] `global` / `nonlocal` statements
-- [ ] `del` statement
-- [ ] `import` statement (only `load` is valid)
-- [ ] `raise` statement
-- [ ] `try` / `except` / `finally` / `else` blocks
-- [ ] `class` definitions
-- [ ] `with` / `as` statements
-- [ ] `async` / `await`
+- [x] `global` / `nonlocal` statements
+- [x] `del` statement
+- [x] `import` statement (only `load` is valid)
+- [x] `raise` statement
+- [x] `try` / `except` / `finally` / `else` blocks
+- [x] `class` definitions
+- [x] `with` / `as` statements
+- [x] `async` / `await`
 - [ ] Walrus operator `:=`
 - [ ] `*rest` in LHS tuple unpacking (`a, *b, c = ...`) — Starlark does not support this
 - [ ] `is` / `is not` operators
 - [ ] Type annotations in function parameters (`def f(x: int)`) and assignments (`x: int = 1`)
-- [ ] `yield` / `yield from`
+- [x] `yield` / `yield from`
 - [ ] `print` as a statement (it is a built-in function, not a keyword)
 
 ### AST walker
