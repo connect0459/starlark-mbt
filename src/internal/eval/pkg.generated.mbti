@@ -37,12 +37,14 @@ pub fn Options::default() -> Self
 pub(all) struct Thread {
   name : String
   print_fn : (String) -> Unit
+  load_fn : ((String) -> Result[Map[String, @value.Value], String])?
   mut call_stack : Array[@errors.CallFrame]
   max_recursion_depth : Int
   max_steps : Int?
   mut steps : Int
 }
 pub fn Thread::new(String) -> Self
+pub fn Thread::with_loader(String, (String) -> Result[Map[String, @value.Value], String]) -> Self
 pub fn Thread::with_print(String, (String) -> Unit) -> Self
 
 // Type aliases

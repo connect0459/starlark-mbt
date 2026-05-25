@@ -227,9 +227,76 @@ test "exec_file: list subscript assignment updates element in place" {
   }
 }
 
-// --- load statement error ---
+// --- load statement ---
 
 ///|
-test "exec_file: load statement raises unsupported error" {
+test "exec_file: load statement raises error when no loader is set" {
   assert_true(exec_s("load(\"module\", \"sym\")") is Err(_))
+}
+
+///|
+test "exec_file: load statement binds symbol from loader when loader is set" {
+  let exported : Map[String, @value.Value] = {}
+  exported["answer"] = @value.Value::IntVal(42L)
+  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+    _path,
+  ) {
+    Ok(exported)
+  }
+  let t = Thread::with_loader("test", loader)
+  let result = exec_file(
+    t,
+    "<test>",
+    "load(\"mylib\", \"answer\")",
+    Options::default(),
+  )
+  match result {
+    Ok(m) => {
+      let key = @value.Value::StrVal(@value.StarlarkString::new("answer"))
+      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(42L))))
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: load statement supports aliased bindings" {
+  let exported : Map[String, @value.Value] = {}
+  exported["foo"] = @value.Value::IntVal(1L)
+  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+    _path,
+  ) {
+    Ok(exported)
+  }
+  let t = Thread::with_loader("test", loader)
+  let result = exec_file(
+    t,
+    "<test>",
+    "load(\"mylib\", bar=\"foo\")",
+    Options::default(),
+  )
+  match result {
+    Ok(m) => {
+      let key = @value.Value::StrVal(@value.StarlarkString::new("bar"))
+      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(1L))))
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: load statement raises error when symbol not found in module" {
+  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+    _path,
+  ) {
+    Ok({})
+  }
+  let t = Thread::with_loader("test", loader)
+  let result = exec_file(
+    t,
+    "<test>",
+    "load(\"mylib\", \"missing\")",
+    Options::default(),
+  )
+  assert_true(result is Err(_))
 }

@@ -186,12 +186,36 @@ fn assign_to(
 ///|
 fn exec_load(
   ctx : EvalContext,
-  _env : EvalEnv,
-  _path : String,
-  _bindings : Array[(String, String)],
+  env : EvalEnv,
+  path : String,
+  bindings : Array[(String, String)],
   pos : @errors.Position,
 ) -> Signal raise EvalErr {
-  raise EvalErr(
-    make_eval_error(ctx, "\{pos.to_string()}: load is not supported"),
-  )
+  match ctx.thread.load_fn {
+    None =>
+      raise EvalErr(
+        make_eval_error(ctx, "\{pos.to_string()}: load is not supported"),
+      )
+    Some(loader) => {
+      let exports = match loader(path) {
+        Ok(m) => m
+        Err(msg) =>
+          raise EvalErr(make_eval_error(ctx, "\{pos.to_string()}: \{msg}"))
+      }
+      for pair in bindings {
+        let (local_name, export_name) = pair
+        match exports.get(export_name) {
+          Some(v) => env.bind(local_name, v)
+          None =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "\{pos.to_string()}: module \"\{path}\" has no symbol \"\{export_name}\"",
+              ),
+            )
+        }
+      }
+      SigNormal
+    }
+  }
 }

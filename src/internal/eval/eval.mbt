@@ -30,6 +30,7 @@ pub fn Options::default() -> Options {
 pub(all) struct Thread {
   name : String
   print_fn : (String) -> Unit
+  load_fn : ((String) -> Result[Map[String, @value.Value], String])?
   mut call_stack : Array[@errors.CallFrame]
   max_recursion_depth : Int
   max_steps : Int?
@@ -41,6 +42,7 @@ pub fn Thread::new(name : String) -> Thread {
   {
     name,
     print_fn: fn(msg) { println(msg) },
+    load_fn: None,
     call_stack: [],
     max_recursion_depth: 100,
     max_steps: None,
@@ -53,6 +55,23 @@ pub fn Thread::with_print(name : String, print_fn : (String) -> Unit) -> Thread 
   {
     name,
     print_fn,
+    load_fn: None,
+    call_stack: [],
+    max_recursion_depth: 100,
+    max_steps: None,
+    steps: 0,
+  }
+}
+
+///|
+pub fn Thread::with_loader(
+  name : String,
+  load_fn : (String) -> Result[Map[String, @value.Value], String],
+) -> Thread {
+  {
+    name,
+    print_fn: fn(msg) { println(msg) },
+    load_fn: Some(load_fn),
     call_stack: [],
     max_recursion_depth: 100,
     max_steps: None,
