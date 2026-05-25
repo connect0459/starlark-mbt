@@ -207,6 +207,26 @@ test "resolve: rejects top-level for when flag is off" {
   assert_true(has_error(result, "for"))
 }
 
+///|
+test "resolve: rejects top-level while when flag is off" {
+  let f = parse_or_fail("while True:\n  pass")
+  let opts = {
+    ..ResolveOptions::default(),
+    allow_top_level_control: false,
+    allow_recursion: true,
+  }
+  let result = resolve(f, no_predeclared, only_universal, opts)
+  assert_true(has_error(result, "while"))
+}
+
+///|
+test "resolve: accepts top-level while when flag is on" {
+  let f = parse_or_fail("while True:\n  pass")
+  let opts = { ..ResolveOptions::default(), allow_top_level_control: true }
+  let result = resolve(f, no_predeclared, only_universal, opts)
+  assert_true(result.errors.is_empty())
+}
+
 // --- Function parameters ---
 
 ///|

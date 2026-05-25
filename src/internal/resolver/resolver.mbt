@@ -373,7 +373,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       self.loops = old_loops
     }
     @syntax.Stmt::SWhile(cond, body, pos) => {
-      if self.is_at_module_scope() {
+      if self.is_at_module_scope() && !self.opts.allow_top_level_control {
         self.errorf(pos, "while loops are not allowed at module level")
       }
       self.walk_expr(cond)
