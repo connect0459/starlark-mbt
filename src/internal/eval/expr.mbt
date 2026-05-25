@@ -1130,7 +1130,8 @@ fn call_method(
     @value.Value::ListVal(l) => call_list_method(ctx, l, method_name, pos_args)
     @value.Value::DictVal(d) =>
       call_dict_method(ctx, d, method_name, pos_args, kw_args)
-    @value.Value::StrVal(s) => call_str_method(ctx, s, method_name, pos_args)
+    @value.Value::StrVal(s) =>
+      call_str_method(ctx, s, method_name, pos_args, kw_args)
     @value.Value::SetVal(s) => call_set_method(ctx, s, method_name, pos_args)
     @value.Value::BytesVal(b) =>
       call_bytes_method(ctx, b, method_name, pos_args)
@@ -1442,6 +1443,7 @@ fn call_str_method(
   s : @value.StarlarkString,
   method_name : String,
   pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
   match method_name {
     "upper" =>
@@ -1603,10 +1605,7 @@ fn call_str_method(
       }
       @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
     }
-    "format" => {
-      let result = str_format(s.raw, pos_args)
-      @value.Value::StrVal(@value.StarlarkString::new(result))
-    }
+    "format" => str_format(ctx, s.raw, pos_args, kw_args)
     "capitalize" => {
       let chars = s.raw.to_array()
       if chars.is_empty() {
@@ -2386,24 +2385,133 @@ fn count_substr(s : String, sub : String) -> Int {
 }
 
 ///|
-fn str_format(template : String, args : Array[@value.Value]) -> String {
+fn str_format(
+  ctx : EvalContext,
+  template : String,
+  args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+) -> @value.Value raise EvalErr {
   let buf = StringBuilder::new()
-  let mut idx = 0
-  let mut arg_idx = 0
-  while idx < template.length() {
-    let c = template[idx]
-    if c == '{' && idx + 1 < template.length() && template[idx + 1] == '}' {
-      if arg_idx < args.length() {
-        buf.write_string(@value.to_str(args[arg_idx]))
-        arg_idx += 1
+  let tlen = template.length()
+  let mut i = 0
+  let mut auto_idx = 0
+  let mut auto_mode = false
+  let mut manual_mode = false
+  while i < tlen {
+    let c = template[i]
+    if c == '{' {
+      if i + 1 < tlen && template[i + 1] == '{' {
+        buf.write_char('{')
+        i += 2
+      } else {
+        let start = i + 1
+        let mut j = start
+        while j < tlen && template[j] != '}' {
+          j += 1
+        }
+        if j >= tlen {
+          raise EvalErr(make_eval_error(ctx, "format: unmatched '{' in format"))
+        }
+        let field = template[start:j].to_owned()
+        i = j + 1
+        let (name, conv) = if find_substr(field, "!") >= 0 {
+          let bang = find_substr(field, "!")
+          (field[0:bang].to_owned(), field[bang + 1:].to_owned())
+        } else {
+          (field, "s")
+        }
+        if find_substr(name, ":") >= 0 {
+          raise EvalErr(
+            make_eval_error(ctx, "format spec features not supported"),
+          )
+        }
+        let arg = if name == "" {
+          if manual_mode {
+            raise EvalErr(
+              make_eval_error(
+                ctx, "format: cannot switch from manual field specification to automatic field numbering",
+              ),
+            )
+          }
+          auto_mode = true
+          if auto_idx >= args.length() {
+            raise EvalErr(
+              make_eval_error(ctx, "format: tuple index out of range"),
+            )
+          }
+          let v = args[auto_idx]
+          auto_idx += 1
+          v
+        } else {
+          let mut is_digit = true
+          for k in 0..<name.length() {
+            if name[k] < '0' || name[k] > '9' {
+              is_digit = false
+              break
+            }
+          }
+          if is_digit && name.length() > 0 {
+            if auto_mode {
+              raise EvalErr(
+                make_eval_error(
+                  ctx, "format: cannot switch from automatic field numbering to manual field specification",
+                ),
+              )
+            }
+            manual_mode = true
+            let n = match parse_int_str(name, 10) {
+              Ok(n) => n.to_int()
+              Err(_) =>
+                raise EvalErr(
+                  make_eval_error(ctx, "format: invalid field index '\{name}'"),
+                )
+            }
+            if n >= args.length() {
+              raise EvalErr(
+                make_eval_error(ctx, "format: tuple index out of range"),
+              )
+            }
+            args[n]
+          } else {
+            let mut found : @value.Value? = None
+            for kv in kw_args {
+              let (k, v) = kv
+              if k == name {
+                found = Some(v)
+                break
+              }
+            }
+            match found {
+              None =>
+                raise EvalErr(
+                  make_eval_error(ctx, "format: keyword \{name} not found"),
+                )
+              Some(v) => v
+            }
+          }
+        }
+        match conv {
+          "s" => buf.write_string(@value.to_str(arg))
+          "r" => buf.write_string(@value.repr(arg))
+          other =>
+            raise EvalErr(
+              make_eval_error(ctx, "format: unknown conversion '\{other}'"),
+            )
+        }
       }
-      idx += 2
+    } else if c == '}' {
+      if i + 1 < tlen && template[i + 1] == '}' {
+        buf.write_char('}')
+        i += 2
+      } else {
+        raise EvalErr(make_eval_error(ctx, "format: single '}' in format"))
+      }
     } else {
       buf.write_char(Int::unsafe_to_char(c.to_int()))
-      idx += 1
+      i += 1
     }
   }
-  buf.to_string()
+  @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
 }
 
 ///|

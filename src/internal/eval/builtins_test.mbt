@@ -1440,3 +1440,63 @@ test "exec_file: bytes.elems on empty bytes returns empty list" {
     Err(e) => fail(e.to_string())
   }
 }
+
+// --- str.format() extended ---
+
+///|
+test "exec_file: str.format supports indexed positional {0}" {
+  match exec_b("r = \"{0} and {1}\".format(\"a\", \"b\")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "a and b")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.format supports keyword {name}" {
+  match exec_b("r = \"hello {name}\".format(name=\"world\")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello world")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.format supports !r conversion" {
+  match exec_b("r = \"{!r}\".format(\"hi\")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "\"hi\"")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.format supports escaped braces" {
+  match exec_b("r = \"{{ {0} }}\".format(\"x\")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "{ x }")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.format raises error on missing keyword" {
+  assert_true(exec_b("\"{missing}\".format()") is Err(_))
+}
+
+///|
+test "exec_file: str.format raises error when mixing auto and manual indexing" {
+  assert_true(exec_b("\"{} {0}\".format(\"a\", \"b\")") is Err(_))
+}
