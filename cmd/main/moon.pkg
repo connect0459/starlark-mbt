@@ -1,0 +1,7 @@
+// import {
+//   "connect0459/starlark" @lib,
+// }
+
+options(
+  "is-main": true,
+)
