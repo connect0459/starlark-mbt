@@ -2,11 +2,19 @@
 package "connect0459/starlark/internal/value"
 
 // Values
+pub fn compare_values(Value, Value) -> Result[Int, String]
+
 pub fn floor_div(Int64, Int64) -> Result[Int64, String]
 
 pub fn repr(Value) -> String
 
+pub fn starlark_equals(Value, Value) -> Bool
+
+pub fn starlark_hash(Value) -> Result[UInt, String]
+
 pub fn starlark_mod(Int64, Int64) -> Result[Int64, String]
+
+pub fn to_str(Value) -> String
 
 pub fn truth(Value) -> Bool
 
