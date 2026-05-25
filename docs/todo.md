@@ -79,8 +79,9 @@ Sub-packages may be added or split when any file exceeds ~600 LOC.
       begins (confirm no broken imports or missing package declarations)
 - **Decision**: MoonBit `Map[K,V]` is a sorted tree map (NOT insertion-ordered);
   `src/internal/hashtable/` is required (see package layout note above)
-- [ ] Design the `Hashable` trait / key-hash protocol for hashtable, Dict, and Set;
+- [x] Design the `Hashable` trait / key-hash protocol for hashtable, Dict, and Set;
       define hash functions for each primitive type (None, Bool, Int, Float, String, Bytes, Tuple)
+      **Implementation**: generic `Hashtable[K,V]` with hash/eq fn params; no `Hashable` trait needed
 - **Design decision**: `Position` column convention — use 1-based line AND 1-based column
       to match starlark-go (`Position{Line: 1, Col: 1}` for start of file). Document in
       `src/internal/errors/`.
@@ -162,7 +163,7 @@ Core Starlark value representation. All values share a common interface.
       Tests cover: `-7 // 2 == -4`, `-7 % 2 == 1`. BigInt upgrade deferred.
 - [x] `Float` — `FloatVal(Double)`; `format_float` handles inf/nan/decimal-point.
       **Key semantics**: Float and Int values that compare equal must produce the same
-      hash (`hash(1.0) == hash(1)`, `hash(0.0) == hash(0)`). (hash not yet implemented)
+      hash (`hash(1.0) == hash(1)`, `hash(0.0) == hash(0)`).
 - [x] `String` — `StarlarkString { raw: String, bytes: Bytes }` with UTF-8 byte backing.
       `byte_len()`, `byte_at(i)`, `equals()` implemented. MoonBit UTF-16 divergence resolved.
 - [x] `Bytes` — `BytesVal(Bytes)`; `repr` produces `b"..."` with `\xNN` escapes.
@@ -181,19 +182,16 @@ Core Starlark value representation. All values share a common interface.
 
 - [x] `repr` — implemented for primitives + List/Tuple (cycle detection deferred)
 - [x] `truth` — truthiness for `if`, `while`, `and`, `or` (all current variants)
-- [ ] `to_string` — `str()` output (unquoted string for Str, repr for others)
-- [ ] `equals` — structural equality (with cycle detection)
-- [ ] `hash` — for dict/set keys (None, Bool, Int, Float, String, Bytes, Tuple)
-  - Tuple is only hashable if all elements are hashable
-  - Unhashable use raises `EvalError`
-- [ ] `compare` — total ordering for `<`, `<=`, `>`, `>=`; **same-type only** (mixed types → TypeError)
+- [x] `to_str` — `str()` output (unquoted string for Str, repr for others); in `traits.mbt`
+- [x] `starlark_equals` — structural equality; cross-type Int==Float supported
+- [x] `starlark_hash` — FNV-1a for strings/bytes; starlark-go formula for Int/Float;
+      Python tuple hash algorithm; List → `Err("unhashable type: list")`
+- [x] `compare_values` — total ordering for `<`, `<=`, `>`, `>=`; same-type only
+      (NaN > +Inf per starlark-go; mixed types → `Err`)
+- [x] `type_name` — `type()` built-in support; canonical names implemented
 - [ ] `Comparable` trait — total ordering protocol needed by `sorted()`, `min()`, `max()`
 - [ ] `Attr` trait — attribute access protocol for `getattr()`, `hasattr()`, `dir()`
       (required by custom extension types; built-in types handle this internally)
-- [ ] `type_name` — `type()` built-in support; canonical names are:
-      `"NoneType"`, `"bool"`, `"int"`, `"float"`, `"string"`, `"bytes"`,
-      `"list"`, `"tuple"`, `"dict"`, `"set"`, `"function"`,
-      `"builtin_function_or_method"`
 
 ### Iterator / sequence / mapping protocols
 
