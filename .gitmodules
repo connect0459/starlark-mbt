@@ -1,0 +1,3 @@
+[submodule "testdata/bazelbuild-starlark"]
+	path = testdata/bazelbuild-starlark
+	url = https://github.com/bazelbuild/starlark
