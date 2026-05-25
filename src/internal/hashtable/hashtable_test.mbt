@@ -180,7 +180,7 @@ test "Hashtable: freeze prevents delete" {
 }
 
 ///|
-test "Hashtable: handles many entries (stress test for grow)" {
+test "Hashtable: maintains correctness when storing many entries" {
   let ht = new_dict()
   for i in 0..<100 {
     ht.insert(

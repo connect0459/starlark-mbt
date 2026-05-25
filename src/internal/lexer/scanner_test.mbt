@@ -512,7 +512,7 @@ test "scan: reserved keywords" {
 }
 
 ///|
-test "scan: starlark_hash-style indented block" {
+test "scan: program with function calls and indented block" {
   let src =
     #|print(1)
     #|cc_binary(name="foo")

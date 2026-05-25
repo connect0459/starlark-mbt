@@ -160,11 +160,11 @@ test "starlark_hash: Bool false hashes to 0, true hashes to 1" {
 }
 
 ///|
-test "starlark_hash: Int produces deterministic hash" {
-  // hash(Int(0)) = 12582917 * (0 + 3) = 37748751
-  assert_true(starlark_hash(Value::IntVal(0L)) == Ok(37748751U))
-  // hash(Int(1)) = 12582917 * (1 + 3) = 50331668
-  assert_true(starlark_hash(Value::IntVal(1L)) == Ok(50331668U))
+test "starlark_hash: Int hash follows starlark-go formula (multiplier * (n + 3))" {
+  let mul : UInt = 12582917U
+  assert_true(starlark_hash(Value::IntVal(0L)) == Ok(mul * (0U + 3U)))
+  assert_true(starlark_hash(Value::IntVal(1L)) == Ok(mul * (1U + 3U)))
+  assert_true(starlark_hash(Value::IntVal(-1L)) == Ok(mul * (0xFFFFFFFFU + 3U)))
 }
 
 ///|
@@ -179,13 +179,17 @@ test "starlark_hash: equal Int and Float produce same hash" {
 }
 
 ///|
-test "starlark_hash: Float NaN and Inf produce fixed hash" {
+test "starlark_hash: Float NaN and Inf all produce the same fixed hash" {
+  // 1618033 is the starlark-go spec constant for non-finite floats
+  let non_finite_hash : UInt = 1618033U
   assert_true(
-    starlark_hash(Value::FloatVal(@double.not_a_number)) == Ok(1618033U),
+    starlark_hash(Value::FloatVal(@double.not_a_number)) == Ok(non_finite_hash),
   )
-  assert_true(starlark_hash(Value::FloatVal(@double.infinity)) == Ok(1618033U))
   assert_true(
-    starlark_hash(Value::FloatVal(@double.neg_infinity)) == Ok(1618033U),
+    starlark_hash(Value::FloatVal(@double.infinity)) == Ok(non_finite_hash),
+  )
+  assert_true(
+    starlark_hash(Value::FloatVal(@double.neg_infinity)) == Ok(non_finite_hash),
   )
 }
 
@@ -199,9 +203,10 @@ test "starlark_hash: Bytes hash equals String hash for same bytes" {
 }
 
 ///|
-test "starlark_hash: empty Tuple has fixed hash" {
-  // Empty tuple: loop does not run, result stays at initial value 0x345678
-  assert_true(starlark_hash(Value::TupleVal([])) == Ok(0x345678U))
+test "starlark_hash: empty Tuple has the starlark-go initial accumulator value" {
+  // 0x345678 is the Python/starlark-go initial hash accumulator for tuples
+  let tuple_hash_init : UInt = 0x345678U
+  assert_true(starlark_hash(Value::TupleVal([])) == Ok(tuple_hash_init))
 }
 
 ///|
