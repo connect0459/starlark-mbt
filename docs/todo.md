@@ -463,7 +463,7 @@ Implement the standard Starlark built-in functions.
 | `bytes` | [x] | constructor: accepts bytes, string, or iterable of ints |
 | `chr` | [x] | |
 | `dict` | [x] | |
-| `dir` | [ ] | returns empty list (stub) |
+| `dir` | [x] | returns sorted method names per type |
 | `enumerate` | [x] | optional `start=` keyword arg (default 0) |
 | `fail` | [x] | |
 | `float` | [x] | |
