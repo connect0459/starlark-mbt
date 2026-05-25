@@ -1,0 +1,63 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "connect0459/starlark/internal/errors"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct CallFrame {
+  name : String
+  pos : Position
+}
+
+pub(all) struct CallStack {
+  frames : Array[CallFrame]
+}
+pub fn CallStack::new(Array[CallFrame]) -> Self
+pub fn CallStack::to_string(Self) -> String
+
+pub(all) struct EvalError {
+  msg : String
+  call_stack : CallStack
+  cause : String?
+}
+pub fn EvalError::backtrace(Self) -> String
+pub fn EvalError::to_string(Self) -> String
+
+pub(all) struct Halt {
+  reason : String
+}
+
+pub(all) struct Position {
+  filename : String
+  line : Int
+  col : Int
+}
+pub fn Position::is_before(Self, Self) -> Bool
+pub fn Position::is_valid(Self) -> Bool
+pub fn Position::new(String, Int, Int) -> Self
+pub fn Position::to_string(Self) -> String
+
+pub(all) struct ResolveError {
+  pos : Position
+  msg : String
+}
+pub fn ResolveError::to_string(Self) -> String
+
+pub(all) struct Span {
+  start : Position
+  end_ : Position
+}
+pub fn Span::to_string(Self) -> String
+
+pub(all) struct SyntaxError {
+  pos : Position
+  msg : String
+}
+pub fn SyntaxError::to_string(Self) -> String
+
+// Type aliases
+
+// Traits
+
