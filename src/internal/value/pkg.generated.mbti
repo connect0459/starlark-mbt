@@ -2,10 +2,45 @@
 package "connect0459/starlark/internal/value"
 
 // Values
+pub fn floor_div(Int64, Int64) -> Result[Int64, String]
+
+pub fn repr(Value) -> String
+
+pub fn starlark_mod(Int64, Int64) -> Result[Int64, String]
+
+pub fn truth(Value) -> Bool
+
+pub fn type_name(Value) -> String
 
 // Errors
 
 // Types and methods
+pub(all) struct StarlarkList {
+  mut items : Array[Value]
+  mut frozen : Bool
+}
+pub fn StarlarkList::new(Array[Value]) -> Self
+
+pub(all) struct StarlarkString {
+  raw : String
+  bytes : Bytes
+}
+pub fn StarlarkString::byte_at(Self, Int) -> Byte
+pub fn StarlarkString::byte_len(Self) -> Int
+pub fn StarlarkString::equals(Self, Self) -> Bool
+pub fn StarlarkString::from_bytes(Bytes) -> Self
+pub fn StarlarkString::new(String) -> Self
+
+pub(all) enum Value {
+  NoneVal
+  BoolVal(Bool)
+  IntVal(Int64)
+  FloatVal(Double)
+  StrVal(StarlarkString)
+  BytesVal(Bytes)
+  ListVal(StarlarkList)
+  TupleVal(Array[Value])
+}
 
 // Type aliases
 
