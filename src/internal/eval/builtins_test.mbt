@@ -1665,3 +1665,52 @@ test "exec_file: str.rsplit with maxsplit limits from right" {
     Err(e) => fail(e.to_string())
   }
 }
+
+// --- string.codepoints and codepoint_ords ---
+
+///|
+test "exec_file: str.codepoints returns list of single-char strings" {
+  match exec_b("r = list(\"abc\".codepoints())") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          match l.items[0] {
+            @value.Value::StrVal(s) => assert_eq(s.raw, "a")
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.codepoint_ords returns list of code point integers" {
+  match exec_b("r = list(\"ABC\".codepoint_ords())") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          assert_true(l.items[0] == @value.Value::IntVal(65L))
+          assert_true(l.items[1] == @value.Value::IntVal(66L))
+          assert_true(l.items[2] == @value.Value::IntVal(67L))
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.codepoints on empty string returns empty list" {
+  match exec_b("r = list(\"\".codepoints())") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}

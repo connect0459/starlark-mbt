@@ -2144,6 +2144,24 @@ fn call_str_method(
       }
       @value.Value::BoolVal(result)
     }
+    "codepoints" => {
+      let items : Array[@value.Value] = []
+      for c in s.raw {
+        let buf = StringBuilder::new()
+        buf.write_char(c)
+        items.push(
+          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+        )
+      }
+      @value.Value::ListVal(@value.StarlarkList::new(items))
+    }
+    "codepoint_ords" => {
+      let items : Array[@value.Value] = []
+      for c in s.raw {
+        items.push(@value.Value::IntVal(c.to_int().to_int64()))
+      }
+      @value.Value::ListVal(@value.StarlarkList::new(items))
+    }
     _ =>
       raise EvalErr(
         make_eval_error(ctx, "string has no method '\{method_name}'"),
