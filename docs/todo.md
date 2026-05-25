@@ -495,7 +495,7 @@ Implement the standard Starlark built-in functions.
       `partition`, `removeprefix`, `removesuffix`, `replace`, `rfind`, `rindex`,
       `rpartition`, `rstrip`, `split`, `splitlines`, `startswith`, `strip`,
       `title`, `upper`
-      — `codepoint_ords`, `codepoints`, `rsplit` not yet implemented
+      — all implemented including `codepoint_ords`, `codepoints`, `rsplit`
 - [x] `bytes`: `elems` (returns list of int byte values); `elem_ords` not in starlark-go bytes methods
 - [x] `list`: `append`, `clear`, `count`, `extend`, `index`, `insert`, `pop`, `remove`, `reverse`, `sort`
 - [x] `dict`: `clear`, `get`, `items`, `keys`, `pop`, `popitem`, `setdefault`, `update`, `values`
