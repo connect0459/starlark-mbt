@@ -1,11 +1,123 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/lexer"
 
+import {
+  "connect0459/starlark/internal/errors",
+}
+
 // Values
+pub fn keyword_token(String) -> Token?
 
 // Errors
 
 // Types and methods
+pub(all) struct ScannedToken {
+  tok : Token
+  pos : @errors.Position
+}
+
+pub(all) struct Scanner {
+  src : Bytes
+  filename : String
+  mut off : Int
+  mut line : Int
+  mut col : Int
+  mut depth : Int
+  mut indent_stack : Array[Int]
+  mut dents : Int
+  mut line_start : Bool
+}
+pub fn Scanner::new(String, String) -> Self
+pub fn Scanner::next_token(Self) -> Result[ScannedToken, @errors.SyntaxError]
+
+pub(all) enum Token {
+  Illegal
+  EOF
+  Newline
+  Indent
+  Outdent
+  Ident(String)
+  Int(Int64)
+  BigInt(String)
+  Float(Double)
+  Str(String)
+  Bytes(Bytes)
+  Plus
+  Minus
+  Star
+  Slash
+  SlashSlash
+  Percent
+  StarStar
+  Amp
+  Pipe
+  Circumflex
+  LtLt
+  GtGt
+  Tilde
+  Dot
+  Comma
+  Assign
+  Semi
+  Colon
+  LParen
+  RParen
+  LBrack
+  RBrack
+  LBrace
+  RBrace
+  Lt
+  Gt
+  Ge
+  Le
+  Eql
+  Neq
+  PlusAssign
+  MinusAssign
+  StarAssign
+  SlashAssign
+  SlashSlashAssign
+  PercentAssign
+  AmpAssign
+  PipeAssign
+  CircumflexAssign
+  LtLtAssign
+  GtGtAssign
+  And
+  Break
+  Continue
+  Def
+  Elif
+  Else
+  For
+  If
+  In
+  Lambda
+  Load
+  Not
+  NotIn
+  Or
+  Pass
+  Return
+  While
+  As
+  Async
+  Await
+  Class
+  Del
+  Except
+  Finally
+  From
+  Global
+  Import
+  Is
+  Nonlocal
+  Raise
+  Try
+  With
+  Yield
+} derive(Eq)
+pub fn Token::to_string(Self) -> String
 
 // Type aliases
 

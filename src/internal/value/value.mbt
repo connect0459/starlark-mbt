@@ -46,6 +46,82 @@ pub fn StarlarkList::new(items : Array[Value]) -> StarlarkList {
 }
 
 ///|
+pub fn StarlarkList::is_frozen(self : StarlarkList) -> Bool {
+  self.frozen
+}
+
+///|
+pub fn StarlarkList::freeze(self : StarlarkList) -> Unit {
+  self.frozen = true
+}
+
+///|
+pub(all) struct StarlarkRange {
+  start : Int64
+  stop : Int64
+  step : Int64
+}
+
+///|
+pub fn StarlarkRange::new(
+  start : Int64,
+  stop : Int64,
+  step : Int64,
+) -> StarlarkRange {
+  { start, stop, step }
+}
+
+///|
+pub fn StarlarkRange::length(self : StarlarkRange) -> Int {
+  if self.step > 0L {
+    if self.stop > self.start {
+      return ((self.stop - self.start - 1L) / self.step + 1L).to_int()
+    }
+  } else if self.step < 0L {
+    if self.start > self.stop {
+      return ((self.start - self.stop - 1L) / -self.step + 1L).to_int()
+    }
+  }
+  0
+}
+
+///|
+pub fn StarlarkRange::index_at(self : StarlarkRange, i : Int) -> Int64 {
+  self.start + self.step * i.to_int64()
+}
+
+///|
+pub fn StarlarkRange::contains(self : StarlarkRange, n : Int64) -> Bool {
+  if self.step > 0L {
+    n >= self.start && n < self.stop && (n - self.start) % self.step == 0L
+  } else if self.step < 0L {
+    n <= self.start && n > self.stop && (n - self.start) % self.step == 0L
+  } else {
+    false
+  }
+}
+
+///|
+pub(all) struct StarlarkFunction {
+  name : String
+  params : Array[@syntax.Param]
+  body : Array[@syntax.Stmt]
+  defaults : Array[Value?]
+  freevars : Array[Value]
+}
+
+///|
+pub(all) struct StarlarkBuiltinFunc {
+  name : String
+}
+
+///|
+pub(all) struct StarlarkBoundMethod {
+  recv : Value
+  method_name : String
+}
+
+///|
 pub(all) enum Value {
   NoneVal
   BoolVal(Bool)
@@ -57,6 +133,10 @@ pub(all) enum Value {
   TupleVal(Array[Value])
   DictVal(StarlarkDict)
   SetVal(StarlarkSet)
+  RangeVal(StarlarkRange)
+  FuncVal(StarlarkFunction)
+  BuiltinFuncVal(StarlarkBuiltinFunc)
+  BoundMethodVal(StarlarkBoundMethod)
 }
 
 ///|
@@ -72,6 +152,10 @@ pub fn type_name(v : Value) -> String {
     TupleVal(_) => "tuple"
     DictVal(_) => "dict"
     SetVal(_) => "set"
+    RangeVal(_) => "range"
+    FuncVal(_) => "function"
+    BuiltinFuncVal(_) => "builtin_function_or_method"
+    BoundMethodVal(_) => "builtin_function_or_method"
   }
 }
 
@@ -88,6 +172,10 @@ pub fn truth(v : Value) -> Bool {
     TupleVal(t) => t.is_empty() == false
     DictVal(d) => d.length() > 0
     SetVal(s) => s.length() > 0
+    RangeVal(r) => r.length() > 0
+    FuncVal(_) => true
+    BuiltinFuncVal(_) => true
+    BoundMethodVal(_) => true
   }
 }
 
@@ -202,6 +290,20 @@ pub fn repr(v : Value) -> String {
     TupleVal(t) => repr_tuple(t)
     DictVal(d) => repr_dict(d)
     SetVal(s) => repr_set(s)
+    RangeVal(r) => repr_range(r)
+    FuncVal(f) => "<function \{f.name}>"
+    BuiltinFuncVal(f) => "<built-in function \{f.name}>"
+    BoundMethodVal(m) =>
+      "<built-in method \{m.method_name} of \{type_name(m.recv)} object>"
+  }
+}
+
+///|
+fn repr_range(r : StarlarkRange) -> String {
+  if r.step == 1L {
+    "range(\{r.start}, \{r.stop})"
+  } else {
+    "range(\{r.start}, \{r.stop}, \{r.step})"
   }
 }
 

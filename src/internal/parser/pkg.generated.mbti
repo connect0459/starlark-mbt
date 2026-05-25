@@ -1,11 +1,22 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/parser"
 
+import {
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/syntax",
+}
+
 // Values
+pub fn parse_expr(String, String) -> Result[@syntax.Expr, @errors.SyntaxError]
+
+pub fn parse_file(String, String) -> Result[@syntax.File, @errors.SyntaxError]
 
 // Errors
+type ParseErr
 
 // Types and methods
+type Parser
+pub fn Parser::parse_test(Self) -> @syntax.Expr raise ParseErr
 
 // Type aliases
 

@@ -3,12 +3,15 @@ package "connect0459/starlark/internal/value"
 
 import {
   "connect0459/starlark/internal/hashtable",
+  "connect0459/starlark/internal/syntax",
 }
 
 // Values
 pub fn compare_values(Value, Value) -> Result[Int, String]
 
 pub fn floor_div(Int64, Int64) -> Result[Int64, String]
+
+pub fn freeze_value(Value) -> Unit
 
 pub fn repr(Value) -> String
 
@@ -27,6 +30,15 @@ pub fn type_name(Value) -> String
 // Errors
 
 // Types and methods
+pub(all) struct StarlarkBoundMethod {
+  recv : Value
+  method_name : String
+}
+
+pub(all) struct StarlarkBuiltinFunc {
+  name : String
+}
+
 pub(all) struct StarlarkDict {
   ht : @hashtable.Hashtable[Value, Value]
 }
@@ -39,11 +51,31 @@ pub fn StarlarkDict::length(Self) -> Int
 pub fn StarlarkDict::new() -> Self
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
 
+pub(all) struct StarlarkFunction {
+  name : String
+  params : Array[@syntax.Param]
+  body : Array[@syntax.Stmt]
+  defaults : Array[Value?]
+  freevars : Array[Value]
+}
+
 pub(all) struct StarlarkList {
   mut items : Array[Value]
   mut frozen : Bool
 }
+pub fn StarlarkList::freeze(Self) -> Unit
+pub fn StarlarkList::is_frozen(Self) -> Bool
 pub fn StarlarkList::new(Array[Value]) -> Self
+
+pub(all) struct StarlarkRange {
+  start : Int64
+  stop : Int64
+  step : Int64
+}
+pub fn StarlarkRange::contains(Self, Int64) -> Bool
+pub fn StarlarkRange::index_at(Self, Int) -> Int64
+pub fn StarlarkRange::length(Self) -> Int
+pub fn StarlarkRange::new(Int64, Int64, Int64) -> Self
 
 pub(all) struct StarlarkSet {
   ht : @hashtable.Hashtable[Value, Value]
@@ -78,6 +110,10 @@ pub(all) enum Value {
   TupleVal(Array[Value])
   DictVal(StarlarkDict)
   SetVal(StarlarkSet)
+  RangeVal(StarlarkRange)
+  FuncVal(StarlarkFunction)
+  BuiltinFuncVal(StarlarkBuiltinFunc)
+  BoundMethodVal(StarlarkBoundMethod)
 }
 pub impl Eq for Value
 

@@ -17,6 +17,7 @@ pub fn to_str(v : Value) -> String {
     TupleVal(t) => repr_tuple(t)
     DictVal(d) => repr_dict(d)
     SetVal(s) => repr_set(s)
+    RangeVal(_) | FuncVal(_) | BuiltinFuncVal(_) | BoundMethodVal(_) => repr(v)
   }
 }
 
@@ -35,6 +36,12 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     (FloatVal(f), IntVal(n)) => int_float_eq(n, f)
     (DictVal(x), DictVal(y)) => dict_equals(x, y)
     (SetVal(x), SetVal(y)) => set_equals(x, y)
+    // Range equality: same bounds and step
+    (RangeVal(x), RangeVal(y)) =>
+      x.start == y.start && x.stop == y.stop && x.step == y.step
+    // Functions use identity: two distinct objects are never equal
+    (FuncVal(_), FuncVal(_)) => false
+    (BuiltinFuncVal(x), BuiltinFuncVal(y)) => x.name == y.name
     _ => false
   }
 }
@@ -127,6 +134,10 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     ListVal(_) => Err("unhashable type: list")
     DictVal(_) => Err("unhashable type: dict")
     SetVal(_) => Err("unhashable type: set")
+    RangeVal(_) => Err("unhashable type: range")
+    FuncVal(_) => Err("unhashable type: function")
+    BuiltinFuncVal(_) => Err("unhashable type: builtin_function_or_method")
+    BoundMethodVal(_) => Err("unhashable type: builtin_function_or_method")
   }
 }
 
@@ -224,6 +235,43 @@ pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
     (IntVal(n), FloatVal(f)) => Ok(int_float_cmp(n, f))
     (FloatVal(f), IntVal(n)) => Ok(-int_float_cmp(n, f))
     _ => Err("\{type_name(a)} < \{type_name(b)} not supported")
+  }
+}
+
+///|
+pub fn freeze_value(v : Value) -> Unit {
+  match v {
+    ListVal(l) => {
+      if l.is_frozen() {
+        return
+      }
+      l.freeze()
+      for item in l.items {
+        freeze_value(item)
+      }
+    }
+    DictVal(d) => {
+      if d.is_frozen() {
+        return
+      }
+      d.freeze()
+      d.each(fn(k, val) {
+        freeze_value(k)
+        freeze_value(val)
+      })
+    }
+    SetVal(s) => {
+      if s.is_frozen() {
+        return
+      }
+      s.freeze()
+      s.each(fn(k) { freeze_value(k) })
+    }
+    TupleVal(t) =>
+      for item in t {
+        freeze_value(item)
+      }
+    _ => ()
   }
 }
 

@@ -1,11 +1,49 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/eval"
 
+import {
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/value",
+}
+
 // Values
+pub fn eval_expr(Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+
+pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
 // Errors
 
 // Types and methods
+pub(all) struct Module {
+  globals : @value.StarlarkDict
+  mut frozen : Bool
+}
+pub fn Module::freeze(Self) -> Unit
+pub fn Module::new() -> Self
+
+pub(all) struct Options {
+  allow_set : Bool
+  allow_recursion : Bool
+  allow_lambda : Bool
+  allow_while : Bool
+  allow_bytes : Bool
+  allow_float : Bool
+  allow_global_reassign : Bool
+  allow_top_level_control : Bool
+  load_binds_globally : Bool
+}
+pub fn Options::default() -> Self
+
+pub(all) struct Thread {
+  name : String
+  print_fn : (String) -> Unit
+  mut call_stack : Array[@errors.CallFrame]
+  max_recursion_depth : Int
+  max_steps : Int?
+  mut steps : Int
+}
+pub fn Thread::new(String) -> Self
+pub fn Thread::with_print(String, (String) -> Unit) -> Self
 
 // Type aliases
 

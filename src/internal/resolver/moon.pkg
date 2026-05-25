@@ -1,1 +1,10 @@
+import {
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/syntax",
+  "connect0459/starlark/internal/parser",
+} for "test"
 
+import {
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/syntax",
+}

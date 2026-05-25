@@ -1,11 +1,51 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/resolver"
 
+import {
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/syntax",
+}
+
 // Values
+pub fn resolve(@syntax.File, (String) -> Bool, (String) -> Bool, ResolveOptions) -> ResolvedFile
 
 // Errors
 
 // Types and methods
+pub(all) struct Binding {
+  name : String
+  pos : @errors.Position
+  scope : Scope
+}
+
+pub(all) struct ResolveOptions {
+  allow_set : Bool
+  allow_recursion : Bool
+  allow_lambda : Bool
+  allow_while : Bool
+  allow_bytes : Bool
+  allow_float : Bool
+  allow_global_reassign : Bool
+  allow_top_level_control : Bool
+  load_binds_globally : Bool
+}
+pub fn ResolveOptions::default() -> Self
+
+pub(all) struct ResolvedFile {
+  globals : Array[Binding]
+  locals : Array[Binding]
+  errors : Array[@errors.ResolveError]
+}
+
+pub(all) enum Scope {
+  Undefined
+  Local(Int)
+  Cell(Int)
+  Free(Int)
+  Global(Int)
+  Predeclared
+  Universal
+}
 
 // Type aliases
 
