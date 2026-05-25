@@ -2115,12 +2115,46 @@ fn call_str_method(
       }
     }
     "splitlines" => {
+      let keepends = if pos_args.length() > 0 {
+        match pos_args[0] {
+          @value.Value::BoolVal(b) => b
+          _ =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "splitlines() argument must be bool, got \{@value.type_name(pos_args[0])} (want bool)",
+              ),
+            )
+        }
+      } else {
+        false
+      }
       let parts : Array[@value.Value] = []
-      let raw = s.raw
+      let chars = s.raw.to_array()
+      let n = chars.length()
       let buf = StringBuilder::new()
-      for c in raw.to_array() {
-        let n = c.to_int()
-        if n == '\n'.to_int() || n == '\r'.to_int() {
+      let mut i = 0
+      while i < n {
+        let c = chars[i]
+        let cv = c.to_int()
+        if cv == '\r'.to_int() {
+          if keepends {
+            buf.write_char(c)
+          }
+          if i + 1 < n && chars[i + 1].to_int() == '\n'.to_int() {
+            i += 1
+            if keepends {
+              buf.write_char(chars[i])
+            }
+          }
+          parts.push(
+            @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+          )
+          buf.reset()
+        } else if cv == '\n'.to_int() {
+          if keepends {
+            buf.write_char(c)
+          }
           parts.push(
             @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
           )
@@ -2128,6 +2162,7 @@ fn call_str_method(
         } else {
           buf.write_char(c)
         }
+        i += 1
       }
       if buf.to_string().length() > 0 {
         parts.push(

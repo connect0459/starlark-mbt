@@ -1753,3 +1753,71 @@ test "exec_file: module type_name is module" {
     Err(e) => fail(e.to_string())
   }
 }
+
+///|
+test "exec_file: str.splitlines without keepends splits at newlines" {
+  match exec_b("r = \"a\\nb\\nc\".splitlines()") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          assert_true(
+            l.items[0] == @value.Value::StrVal(@value.StarlarkString::new("a")),
+          )
+          assert_true(
+            l.items[1] == @value.Value::StrVal(@value.StarlarkString::new("b")),
+          )
+          assert_true(
+            l.items[2] == @value.Value::StrVal(@value.StarlarkString::new("c")),
+          )
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.splitlines with keepends=True keeps line endings" {
+  match exec_b("r = \"a\\nb\\nc\".splitlines(True)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          assert_true(
+            l.items[0] ==
+            @value.Value::StrVal(@value.StarlarkString::new("a\n")),
+          )
+          assert_true(
+            l.items[1] ==
+            @value.Value::StrVal(@value.StarlarkString::new("b\n")),
+          )
+          assert_true(
+            l.items[2] == @value.Value::StrVal(@value.StarlarkString::new("c")),
+          )
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str.splitlines rejects non-bool keepends argument" {
+  match exec_b("r = \"a\\nb\".splitlines(1)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg.contains("want bool"))
+  }
+}
+
+///|
+test "exec_file: str.splitlines on empty string returns empty list" {
+  match exec_b("r = \"\".splitlines(True)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
