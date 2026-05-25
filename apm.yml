@@ -1,0 +1,10 @@
+name: urllib.mbt
+version: 0.1.0
+description: APM project for urllib.mbt
+author: connect0459
+dependencies:
+  apm:
+  - moonbitlang/skills#98efc4a13c05d8dd82070770edb1b95857552075
+  mcp: []
+includes: auto
+scripts: {}
