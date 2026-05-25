@@ -14,19 +14,18 @@ test "StarlarkString: multi-byte Unicode byte length" {
 ///|
 test "StarlarkString: ASCII byte access" {
   let s = StarlarkString::new("abc")
-  assert_eq(s.byte_at(0).to_int(), 97) // 'a' = 0x61
-  assert_eq(s.byte_at(1).to_int(), 98) // 'b'
-  assert_eq(s.byte_at(2).to_int(), 99) // 'c'
+  assert_eq(s.byte_at(0), b'a')
+  assert_eq(s.byte_at(1), b'b')
+  assert_eq(s.byte_at(2), b'c')
 }
 
 ///|
 test "StarlarkString: multi-byte byte access" {
-  // "aΩb" in UTF-8: [97, 0xCE, 0xA9, 98]
   let s = StarlarkString::new("aΩb")
-  assert_eq(s.byte_at(0).to_int(), 97)
-  assert_eq(s.byte_at(1).to_int(), 0xCE)
-  assert_eq(s.byte_at(2).to_int(), 0xA9)
-  assert_eq(s.byte_at(3).to_int(), 98)
+  assert_eq(s.byte_at(0), b'a')
+  assert_eq(s.byte_at(1), b'\xCE')
+  assert_eq(s.byte_at(2), b'\xA9')
+  assert_eq(s.byte_at(3), b'b')
 }
 
 ///|

@@ -244,7 +244,7 @@ test "eval_expr: string subscript returns single-byte string" {
   match eval_op("\"abc\"[0]") {
     Ok(@value.Value::StrVal(s)) => {
       assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0).to_int(), 97)
+      assert_eq(s.byte_at(0), b'a')
     }
     _ => assert_true(false)
   }
@@ -323,4 +323,38 @@ test "eval_expr: string slice with step skips bytes" {
 ///|
 test "eval_expr: slice step of zero raises error" {
   assert_true(eval_op("[1, 2, 3][::0]") is Err(_))
+}
+
+// --- Type error cases ---
+
+///|
+test "eval_expr: Bool does not participate in integer arithmetic" {
+  assert_true(eval_op("True + True") is Err(_))
+  assert_true(eval_op("True + 1") is Err(_))
+  assert_true(eval_op("False - 1") is Err(_))
+}
+
+///|
+test "eval_expr: adding incompatible types raises error" {
+  assert_true(eval_op("\"hello\" + 1") is Err(_))
+  assert_true(eval_op("1 + [1, 2]") is Err(_))
+}
+
+///|
+test "eval_expr: modulo by zero raises error" {
+  assert_true(eval_op("7 % 0") is Err(_))
+}
+
+// --- Negative operand semantics ---
+
+///|
+test "eval_expr: floor division of negative dividend rounds toward negative infinity" {
+  assert_true(eval_op("-7 // 2") is Ok(@value.Value::IntVal(-4L)))
+  assert_true(eval_op("7 // -2") is Ok(@value.Value::IntVal(-4L)))
+}
+
+///|
+test "eval_expr: modulo sign follows divisor not dividend" {
+  assert_true(eval_op("-7 % 2") is Ok(@value.Value::IntVal(1L)))
+  assert_true(eval_op("7 % -2") is Ok(@value.Value::IntVal(-1L)))
 }

@@ -160,7 +160,7 @@ test "starlark_hash: Bool false hashes to 0, true hashes to 1" {
 }
 
 ///|
-test "starlark_hash: Int hash follows starlark-go formula (multiplier * (n + 3))" {
+test "starlark_hash: Int hash values match starlark-go specification" {
   let mul : UInt = 12582917U
   assert_true(starlark_hash(Value::IntVal(0L)) == Ok(mul * (0U + 3U)))
   assert_true(starlark_hash(Value::IntVal(1L)) == Ok(mul * (1U + 3U)))

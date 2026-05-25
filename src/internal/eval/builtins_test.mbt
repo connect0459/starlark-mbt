@@ -157,6 +157,27 @@ test "exec_file: int parses hex string with explicit base keyword" {
 }
 
 ///|
+test "exec_file: int converts Bool to integer without TypeError" {
+  match exec_b("a = int(True)\nb = int(False)") {
+    Ok(m) => {
+      assert_true(g(m, "a") == Some(@value.Value::IntVal(1L)))
+      assert_true(g(m, "b") == Some(@value.Value::IntVal(0L)))
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: function call with too few arguments raises error" {
+  assert_true(exec_b("def f(a, b): return a + b\nf(1)") is Err(_))
+}
+
+///|
+test "exec_file: function call with too many arguments raises error" {
+  assert_true(exec_b("def f(a): return a\nf(1, 2)") is Err(_))
+}
+
+///|
 test "exec_file: float converts integer to float" {
   match exec_b("f = float(3)") {
     Ok(m) => assert_true(g(m, "f") == Some(@value.Value::FloatVal(3.0)))

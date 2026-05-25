@@ -47,7 +47,6 @@ test "iterate: tuple yields items in order" {
 
 ///|
 test "iterate: string yields one-byte strings per byte" {
-  // "abc" in UTF-8: bytes 97, 98, 99
   let it = must_iterate(Value::StrVal(StarlarkString::new("abc")))
   let v0 = it.next()
   let v1 = it.next()
@@ -57,21 +56,21 @@ test "iterate: string yields one-byte strings per byte" {
   match v0 {
     Some(Value::StrVal(s)) => {
       assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0).to_int(), 97)
+      assert_eq(s.byte_at(0), b'a')
     }
     _ => panic()
   }
   match v1 {
     Some(Value::StrVal(s)) => {
       assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0).to_int(), 98)
+      assert_eq(s.byte_at(0), b'b')
     }
     _ => panic()
   }
   match v2 {
     Some(Value::StrVal(s)) => {
       assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0).to_int(), 99)
+      assert_eq(s.byte_at(0), b'c')
     }
     _ => panic()
   }
@@ -79,7 +78,6 @@ test "iterate: string yields one-byte strings per byte" {
 
 ///|
 test "iterate: multibyte string yields individual bytes as 1-byte strings" {
-  // U+03A9 Ω is 2 bytes in UTF-8: 0xCE 0xA9
   let it = must_iterate(Value::StrVal(StarlarkString::new("Ω")))
   let v0 = it.next()
   let v1 = it.next()
@@ -88,14 +86,14 @@ test "iterate: multibyte string yields individual bytes as 1-byte strings" {
   match v0 {
     Some(Value::StrVal(s)) => {
       assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0).to_int(), 0xCE)
+      assert_eq(s.byte_at(0), b'\xCE')
     }
     _ => panic()
   }
   match v1 {
     Some(Value::StrVal(s)) => {
       assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0).to_int(), 0xA9)
+      assert_eq(s.byte_at(0), b'\xA9')
     }
     _ => panic()
   }

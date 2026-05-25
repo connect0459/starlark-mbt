@@ -145,6 +145,8 @@ test "eval_expr: integer multiplication produces correct product" {
 ///|
 test "eval_expr: floor division truncates toward negative infinity" {
   assert_true(eval_e("7 // 2") is Ok(@value.Value::IntVal(3L)))
+  assert_true(eval_e("-7 // 2") is Ok(@value.Value::IntVal(-4L)))
+  assert_true(eval_e("7 // -2") is Ok(@value.Value::IntVal(-4L)))
 }
 
 ///|
