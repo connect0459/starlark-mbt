@@ -446,11 +446,24 @@ fn call_builtin(
 ) -> @value.Value raise EvalErr {
   match name {
     "print" => {
+      let sep = {
+        let mut found = " "
+        for kv in kw_args {
+          match kv {
+            ("sep", @value.Value::StrVal(s)) => {
+              found = s.raw
+              break
+            }
+            _ => ()
+          }
+        }
+        found
+      }
       let buf = StringBuilder::new()
       let mut first = true
       for arg in pos_args {
         if !first {
-          buf.write_char(' ')
+          buf.write_string(sep)
         }
         first = false
         buf.write_string(@value.to_str(arg))
@@ -573,10 +586,10 @@ fn call_builtin(
     "dict" => builtin_dict(ctx, pos_args, kw_args)
     "set" => builtin_set(ctx, pos_args)
     "bytes" => builtin_bytes(ctx, pos_args)
-    "min" => builtin_minmax(ctx, pos_args, false)
-    "max" => builtin_minmax(ctx, pos_args, true)
+    "min" => builtin_minmax(ctx, pos_args, kw_args, false)
+    "max" => builtin_minmax(ctx, pos_args, kw_args, true)
     "enumerate" => builtin_enumerate(ctx, pos_args)
-    "sorted" => builtin_sorted(ctx, pos_args)
+    "sorted" => builtin_sorted(ctx, pos_args, kw_args)
     "reversed" => builtin_reversed(ctx, pos_args)
     "zip" => builtin_zip(ctx, pos_args)
     "any" => builtin_any_all(ctx, pos_args, true)
@@ -902,8 +915,22 @@ fn builtin_set(
 fn builtin_minmax(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
   want_max : Bool,
 ) -> @value.Value raise EvalErr {
+  let key_fn : @value.Value? = {
+    let mut found : @value.Value? = None
+    for kv in kw_args {
+      match kv {
+        ("key", f) => {
+          found = Some(f)
+          break
+        }
+        _ => ()
+      }
+    }
+    found
+  }
   let items : Array[@value.Value] = []
   if pos_args.length() == 0 {
     raise EvalErr(
@@ -929,11 +956,23 @@ fn builtin_minmax(
       items.push(v)
     }
   }
+  let key_of : (@value.Value) -> @value.Value raise EvalErr = fn(
+    v,
+  ) raise EvalErr {
+    match key_fn {
+      None => v
+      Some(f) =>
+        call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
+    }
+  }
   let mut result = items[0]
+  let mut result_key = key_of(result)
   for i in 1..<items.length() {
-    let c = check(ctx, @value.compare_values(items[i], result))
+    let item_key = key_of(items[i])
+    let c = check(ctx, @value.compare_values(item_key, result_key))
     if (want_max && c > 0) || (!want_max && c < 0) {
       result = items[i]
+      result_key = item_key
     }
   }
   result
@@ -979,11 +1018,38 @@ fn builtin_enumerate(
 fn builtin_sorted(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
   if pos_args.length() < 1 {
     raise EvalErr(
       make_eval_error(ctx, "sorted() requires at least one argument"),
     )
+  }
+  let key_fn : @value.Value? = {
+    let mut found : @value.Value? = None
+    for kv in kw_args {
+      match kv {
+        ("key", f) => {
+          found = Some(f)
+          break
+        }
+        _ => ()
+      }
+    }
+    found
+  }
+  let reverse = {
+    let mut found = false
+    for kv in kw_args {
+      match kv {
+        ("reverse", @value.Value::BoolVal(b)) => {
+          found = b
+          break
+        }
+        _ => ()
+      }
+    }
+    found
   }
   let items : Array[@value.Value] = []
   let it = check(ctx, @value.iterate(pos_args[0]))
@@ -996,19 +1062,33 @@ fn builtin_sorted(
       Some(v) => items.push(v)
     }
   }
+  let keys : Array[@value.Value] = match key_fn {
+    None => items
+    Some(f) =>
+      items.map(fn(v) raise EvalErr {
+        call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
+      })
+  }
+  let indices : Array[Int] = Array::make(items.length(), 0)
+  for i in 0..<items.length() {
+    indices[i] = i
+  }
   let mut sort_err : @errors.EvalError? = None
-  items.sort_by(fn(a, b) {
-    match @value.compare_values(a, b) {
+  indices.sort_by(fn(a, b) {
+    match @value.compare_values(keys[a], keys[b]) {
       Err(msg) => {
         sort_err = Some(make_eval_error(ctx, msg))
         0
       }
-      Ok(c) => c
+      Ok(c) => if reverse { -c } else { c }
     }
   })
   match sort_err {
     Some(e) => raise EvalErr(e)
-    None => @value.Value::ListVal(@value.StarlarkList::new(items))
+    None => {
+      let result : Array[@value.Value] = indices.map(fn(i) { items[i] })
+      @value.Value::ListVal(@value.StarlarkList::new(result))
+    }
   }
 }
 

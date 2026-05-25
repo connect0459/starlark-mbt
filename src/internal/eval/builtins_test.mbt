@@ -1500,3 +1500,85 @@ test "exec_file: str.format raises error on missing keyword" {
 test "exec_file: str.format raises error when mixing auto and manual indexing" {
   assert_true(exec_b("\"{} {0}\".format(\"a\", \"b\")") is Err(_))
 }
+
+// --- sorted with key= and reverse= ---
+
+///|
+test "exec_file: sorted with key= sorts by key function result" {
+  match exec_b("r = sorted([\"bb\", \"a\", \"ccc\"], key=len)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          match l.items[0] {
+            @value.Value::StrVal(s) => assert_eq(s.raw, "a")
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: sorted with reverse=True returns descending order" {
+  match exec_b("r = sorted([1, 3, 2], reverse=True)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          assert_true(l.items[0] == @value.Value::IntVal(3L))
+          assert_true(l.items[2] == @value.Value::IntVal(1L))
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+// --- min/max with key= ---
+
+///|
+test "exec_file: min with key= returns element with smallest key" {
+  match exec_b("r = min([\"bb\", \"a\", \"ccc\"], key=len)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "a")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: max with key= returns element with largest key" {
+  match exec_b("r = max([\"bb\", \"a\", \"ccc\"], key=len)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "ccc")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+// --- print with sep= and end= ---
+
+///|
+test "exec_file: print with sep= uses custom separator" {
+  let captured = Array::new()
+  let t = Thread::with_print("<test>", fn(s) { captured.push(s) })
+  ignore(
+    exec_file(t, "<test>", "print(1, 2, 3, sep=\"-\")", Options::default()),
+  )
+  assert_true(captured.length() > 0 && captured[0] == "1-2-3")
+}
+
+///|
+test "exec_file: print with sep= and no args outputs empty string" {
+  let captured = Array::new()
+  let t = Thread::with_print("<test>", fn(s) { captured.push(s) })
+  ignore(exec_file(t, "<test>", "print(sep=\",\")", Options::default()))
+  assert_true(captured.length() > 0 && captured[0] == "")
+}
