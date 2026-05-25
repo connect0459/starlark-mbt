@@ -1,0 +1,56 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g. v0.1.0)'
+        required: true
+
+run-name: Publish ${{ inputs.tag || github.ref_name }}
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Setup Moonbit
+        uses: hustcer/setup-moonbit@9199da0ab63ea0c0bab1dc15f03d76e17ed4f75f # v1.22
+        with:
+          version: latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update package registry
+        run: moon update
+
+      - name: Verify tag matches module version
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          version="$(awk -F'"' '/^version[[:space:]]*=/{ print $2; exit }' moon.mod)"
+          tag="${TAG#v}"
+          test "$tag" = "$version"
+
+      - name: Check
+        run: moon check --target native
+
+      - name: Test
+        run: moon test --target native
+
+      - name: Publish to mooncakes
+        run: |
+          echo "$SECRET" > ~/.moon/credentials.json
+          moon publish
+          rm ~/.moon/credentials.json
+        env:
+          SECRET: ${{ secrets.MOONCAKES_CREDENTIALS }}
