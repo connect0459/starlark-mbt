@@ -425,7 +425,7 @@ Execute resolved AST nodes with an environment (binding stack).
 - [x] `while` loop with `break` / `continue`
 - [x] `def` — create `Function` value, bind defaults
 - [x] `return` — unwind with return value
-- [x] `load` — raises unsupported error (no loader callback yet)
+- [x] `load` — executes via `Thread.load_fn`; raises error when no loader is set
 - [x] `pass`
 
 ### Control flow
@@ -511,21 +511,20 @@ Implement the standard Starlark built-in functions.
 
 ### `assert` helper module
 
-- [ ] Port `assert.star` from starlark-go testdata so that `.star` test files run unchanged
-- [ ] **Decision (finalised)**: embed `assert.star` as a `const` string inside
-      `src/internal/starlarktest/` and register it as a pre-loaded module before
-      running any `.star` test (option a). Do **not** write it to a temp file
-      (option b) — avoids filesystem dependency and works on all targets.
-- [ ] Create `src/internal/starlarktest/` package with:
-      - `const assert_star : String` — the full content of `assert.star`
-      - `run_star_file(src, loader) -> TestResult` — executes a `.star` source
-        string as a MoonBit test case; collects `fail()` errors
-      - **Interception**: the `Thread.load` callback must intercept the magic
-        path `"assert.star"` (or `"@starlarktest//:assert.star"`) and return
-        the pre-parsed `assert.star` Module without hitting the filesystem.
-        All other paths are forwarded to the caller-supplied loader.
-- [ ] `fail()` built-in must raise an `EvalError` with the provided message string;
-      used by `assert.star` assertions
+- [x] Create `src/internal/starlarktest/` package with:
+      - `run_star_string(src) -> Array[String]` — executes a Starlark source
+        string as a MoonBit test; collects assertion failure messages
+      - Assert module built directly in MoonBit (eq, ne, true, lt, contains,
+        fails, fail); injected as the `"assert.star"` load target
+      - **Architecture note**: assert module implemented in MoonBit (not via
+        exec of assert.star) to avoid the issue that StarlarkFunction.call_func
+        uses the caller's global_env, not the defining module's global_env.
+        Predeclared functions like `catch` would be invisible to `_fails` when
+        called from a different module context.
+- [x] `StarlarkBuiltinFunc.body` — optional callable closure with `BuiltinCallCtx`
+      that allows custom built-ins to call back into the evaluator (needed for
+      `assert.fails` to invoke Starlark callables and catch errors)
+- [x] `exec_file_with_predeclared` — inject extra predeclared bindings before exec
 
 ### TDD scope
 
