@@ -195,22 +195,19 @@ Core Starlark value representation. All values share a common interface.
 
 ### Iterator / sequence / mapping protocols
 
-- [ ] `Iterable` — types that support `for x in ...`
-- [ ] `Iterator` — stateful iterator (next / done); `Done()` **must** be called to release
-      iterator slot — it decrements `itercount` on the container and must be called even
-      if iteration was aborted mid-way (e.g., via `break`). Reference:
-      `starlark-go/starlark/value.go` `Iterator` interface.
-- [ ] `IterableMapping` — combined `Iterable + Mapping` for dict/set iteration over keys
-      (used by `for k in d` and `for k, v in d.items()`). Reference:
-      `starlark-go/starlark/value.go` line ~311.
-- [ ] `Sequence` — `Iterable` + length + indexing (`List`, `Tuple`, `String`, `Bytes`, `Range`)
-- [ ] `Mapping` — `Dict` key/value access protocol
-- [ ] `Indexable` — supports `a[i]` (Sequence + Mapping)
+- [x] `Iterable` — `iterate(Value) -> Result[StarlarkIterator, String]` in `iter.mbt`
+- [x] `Iterator` — `StarlarkIterator { next_fn, done_fn }` with `next()/done()` methods;
+      `done()` decrements `itercount` on List/Dict/Set; must be called even on early exit
+- [x] `IterableMapping` — dict/set iteration yields keys via `dict_key_iter`/`set_key_iter`
+- [x] `Sequence` — `length_of(Value) -> Result[Int, String]` covers List/Tuple/String/Bytes/Range
+- [ ] `Mapping` — `Dict` key/value access protocol (needed by Phase 5 subscript eval)
+- [ ] `Indexable` — supports `a[i]` (needed by Phase 5 subscript eval)
 
 ### Frozen value semantics
 
 - [x] `freeze()` operation on mutable types (List, Dict, Set) — `freeze_value` propagates transitively
-- [ ] Mutation after freeze raises `EvalError` (enforced at eval time in Phase 5)
+- [x] Mutation after freeze raises `EvalError` — `check_mutable(verb)` on StarlarkList;
+      Hashtable `insert`/`delete` check `itercount > 0` (enforced at eval time in Phase 5)
 - [x] Freezing propagates transitively through contained values (`freeze_value` in `traits.mbt`)
 - [ ] Module dict frozen automatically when `exec_file` returns (wired in Phase 5)
 - [ ] **Iterator freezing**: iterating a mutable container (List, Dict, Set) with a `for`
