@@ -1,5 +1,3 @@
-// Phase 0.75: Thread, Module, Options, and entry point stubs.
-
 ///|
 pub(all) struct Options {
   allow_set : Bool
@@ -81,28 +79,75 @@ pub fn Module::freeze(self : Module) -> Unit {
 
 ///|
 pub fn exec_file(
-  _thread : Thread,
-  _filename : String,
-  _src : String,
-  _opts : Options,
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
 ) -> Result[Module, @errors.EvalError] {
-  Err({
-    msg: "exec_file: not implemented",
-    call_stack: @errors.CallStack::new([]),
-    cause: None,
+  let file = match @parser.parse_file(filename, src) {
+    Ok(f) => f
+    Err(e) =>
+      return Err({
+        msg: e.to_string(),
+        call_stack: @errors.CallStack::new([]),
+        cause: None,
+      })
+  }
+  let ctx = EvalContext::new(thread, opts)
+  let resolve_opts = @resolver.ResolveOptions::default()
+  let builtin_names : Array[String] = [
+    "None", "True", "False", "print", "len", "str", "repr", "type", "range", "list",
+    "tuple", "dict", "bool", "int", "float", "abs", "min", "max", "set", "enumerate",
+    "zip", "sorted", "reversed", "hasattr", "getattr", "fail", "any", "all", "hash",
+    "dir",
+  ]
+  let resolved = @resolver.resolve(
+    file,
+    fn(name) { builtin_names.contains(name) },
+    fn(name) { name == "None" || name == "True" || name == "False" },
+    resolve_opts,
+  )
+  if !resolved.errors.is_empty() {
+    let msg = resolved.errors.map(fn(e) { e.to_string() }).join("; ")
+    return Err({ msg, call_stack: @errors.CallStack::new([]), cause: None })
+  }
+  ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
+    EvalErr(e) => return Err(e)
+  }
+  let m = Module::new()
+  ctx.global_env.locals.each(fn(name, v) {
+    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+    m.globals.set(key, v) |> ignore
   })
+  m.freeze()
+  Ok(m)
 }
 
 ///|
 pub fn eval_expr(
-  _thread : Thread,
-  _filename : String,
-  _src : String,
-  _env : @value.StarlarkDict,
+  thread : Thread,
+  filename : String,
+  src : String,
+  env : @value.StarlarkDict,
 ) -> Result[@value.Value, @errors.EvalError] {
-  Err({
-    msg: "eval_expr: not implemented",
-    call_stack: @errors.CallStack::new([]),
-    cause: None,
+  let expr = match @parser.parse_expr(filename, src) {
+    Ok(e) => e
+    Err(e) =>
+      return Err({
+        msg: e.to_string(),
+        call_stack: @errors.CallStack::new([]),
+        cause: None,
+      })
+  }
+  let opts = Options::default()
+  let ctx = EvalContext::new(thread, opts)
+  env.each(fn(k, v) {
+    match k {
+      @value.Value::StrVal(s) => ctx.global_env.bind(s.raw, v)
+      _ => ()
+    }
   })
+  Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
+    EvalErr(e) => Err(e)
+  }
 }

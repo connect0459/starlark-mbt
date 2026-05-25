@@ -66,18 +66,273 @@ test "Module: freeze also freezes the globals dict" {
   assert_true(m.globals.is_frozen())
 }
 
+// --- Test helpers ---
+
 ///|
-test "exec_file: returns error before evaluator is implemented" {
+fn eval_e(src : String) -> Result[@value.Value, @errors.EvalError] {
   let t = Thread::new("test")
-  let opts = Options::default()
-  let result = exec_file(t, "test.star", "x = 1", opts)
-  assert_true(result is Err(_))
+  let env = @value.StarlarkDict::new()
+  eval_expr(t, "<test>", src, env)
 }
 
 ///|
-test "eval_expr: returns error before evaluator is implemented" {
+fn exec_src(src : String) -> Result[Module, @errors.EvalError] {
   let t = Thread::new("test")
-  let env = @value.StarlarkDict::new()
-  let result = eval_expr(t, "test.star", "1 + 2", env)
-  assert_true(result is Err(_))
+  exec_file(t, "<test>", src, Options::default())
+}
+
+///|
+fn get_global(m : Module, name : String) -> @value.Value? {
+  let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+  match m.globals.get(key) {
+    Ok(Some(v)) => Some(v)
+    _ => None
+  }
+}
+
+// --- eval_expr: literal evaluation ---
+
+///|
+test "eval_expr: None literal evaluates to NoneVal" {
+  assert_true(eval_e("None") is Ok(@value.Value::NoneVal))
+}
+
+///|
+test "eval_expr: True literal evaluates to BoolVal(true)" {
+  assert_true(eval_e("True") is Ok(@value.Value::BoolVal(true)))
+}
+
+///|
+test "eval_expr: False literal evaluates to BoolVal(false)" {
+  assert_true(eval_e("False") is Ok(@value.Value::BoolVal(false)))
+}
+
+///|
+test "eval_expr: integer literal evaluates to IntVal" {
+  assert_true(eval_e("42") is Ok(@value.Value::IntVal(42L)))
+}
+
+///|
+test "eval_expr: float literal evaluates to FloatVal" {
+  assert_true(eval_e("3.14") is Ok(@value.Value::FloatVal(3.14)))
+}
+
+///|
+test "eval_expr: string literal evaluates to StrVal" {
+  match eval_e("\"hello\"") {
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello")
+    _ => assert_true(false)
+  }
+}
+
+// --- eval_expr: arithmetic ---
+
+///|
+test "eval_expr: integer addition produces correct sum" {
+  assert_true(eval_e("1 + 2") is Ok(@value.Value::IntVal(3L)))
+}
+
+///|
+test "eval_expr: integer subtraction produces correct difference" {
+  assert_true(eval_e("10 - 3") is Ok(@value.Value::IntVal(7L)))
+}
+
+///|
+test "eval_expr: integer multiplication produces correct product" {
+  assert_true(eval_e("4 * 5") is Ok(@value.Value::IntVal(20L)))
+}
+
+///|
+test "eval_expr: floor division truncates toward negative infinity" {
+  assert_true(eval_e("7 // 2") is Ok(@value.Value::IntVal(3L)))
+}
+
+///|
+test "eval_expr: modulo returns remainder consistent with floor division" {
+  assert_true(eval_e("7 % 3") is Ok(@value.Value::IntVal(1L)))
+}
+
+///|
+test "eval_expr: unary negation negates integer" {
+  assert_true(eval_e("-5") is Ok(@value.Value::IntVal(-5L)))
+}
+
+///|
+test "eval_expr: integer division by zero returns an error" {
+  assert_true(eval_e("1 // 0") is Err(_))
+}
+
+// --- eval_expr: boolean operators ---
+
+///|
+test "eval_expr: not True is False" {
+  assert_true(eval_e("not True") is Ok(@value.Value::BoolVal(false)))
+}
+
+///|
+test "eval_expr: not False is True" {
+  assert_true(eval_e("not False") is Ok(@value.Value::BoolVal(true)))
+}
+
+///|
+test "eval_expr: and returns first falsy operand" {
+  assert_true(eval_e("False and True") is Ok(@value.Value::BoolVal(false)))
+}
+
+///|
+test "eval_expr: and returns last operand when both truthy" {
+  assert_true(eval_e("True and 42") is Ok(@value.Value::IntVal(42L)))
+}
+
+///|
+test "eval_expr: or returns first truthy operand" {
+  assert_true(eval_e("True or False") is Ok(@value.Value::BoolVal(true)))
+}
+
+///|
+test "eval_expr: or returns last operand when all falsy" {
+  assert_true(eval_e("False or 0") is Ok(@value.Value::IntVal(0L)))
+}
+
+// --- eval_expr: comparisons ---
+
+///|
+test "eval_expr: equal integers are equal" {
+  assert_true(eval_e("1 == 1") is Ok(@value.Value::BoolVal(true)))
+}
+
+///|
+test "eval_expr: different integers are not equal" {
+  assert_true(eval_e("1 != 2") is Ok(@value.Value::BoolVal(true)))
+}
+
+///|
+test "eval_expr: less than holds between ordered integers" {
+  assert_true(eval_e("1 < 2") is Ok(@value.Value::BoolVal(true)))
+}
+
+///|
+test "eval_expr: greater than holds between ordered integers" {
+  assert_true(eval_e("3 > 2") is Ok(@value.Value::BoolVal(true)))
+}
+
+// --- eval_expr: conditional expression ---
+
+///|
+test "eval_expr: conditional returns true branch when condition is truthy" {
+  assert_true(eval_e("1 if True else 2") is Ok(@value.Value::IntVal(1L)))
+}
+
+///|
+test "eval_expr: conditional returns false branch when condition is falsy" {
+  assert_true(eval_e("1 if False else 2") is Ok(@value.Value::IntVal(2L)))
+}
+
+// --- eval_expr: collection literals ---
+
+///|
+test "eval_expr: empty list literal produces empty list" {
+  match eval_e("[]") {
+    Ok(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "eval_expr: list literal with elements has correct elements" {
+  match eval_e("[1, 2, 3]") {
+    Ok(@value.Value::ListVal(l)) => {
+      assert_eq(l.items.length(), 3)
+      assert_true(l.items[0] == @value.Value::IntVal(1L))
+      assert_true(l.items[2] == @value.Value::IntVal(3L))
+    }
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "eval_expr: tuple literal with elements has correct elements" {
+  match eval_e("(1, 2)") {
+    Ok(@value.Value::TupleVal(t)) => {
+      assert_eq(t.length(), 2)
+      assert_true(t[0] == @value.Value::IntVal(1L))
+    }
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "eval_expr: dict literal with entries has correct entries" {
+  match eval_e("{\"a\": 1}") {
+    Ok(@value.Value::DictVal(d)) => {
+      assert_eq(d.length(), 1)
+      let key = @value.Value::StrVal(@value.StarlarkString::new("a"))
+      assert_true(d.get(key) == Ok(Some(@value.Value::IntVal(1L))))
+    }
+    _ => assert_true(false)
+  }
+}
+
+// --- exec_file: statements ---
+
+///|
+test "exec_file: integer assignment binds value to global variable" {
+  match exec_src("x = 42") {
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::IntVal(42L)))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: expression evaluation produces correct global binding" {
+  match exec_src("x = 1 + 2") {
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::IntVal(3L)))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: if-true branch binds the consequent value" {
+  match exec_src("if True:\n  x = 1\nelse:\n  x = 2") {
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::IntVal(1L)))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: if-false branch binds the alternative value" {
+  match exec_src("if False:\n  x = 1\nelse:\n  x = 2") {
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::IntVal(2L)))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: for loop accumulates sum over range" {
+  match exec_src("x = 0\nfor i in [1, 2, 3]:\n  x = x + i") {
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::IntVal(6L)))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: function definition and call returns correct value" {
+  match exec_src("def f(x):\n  return x + 1\nresult = f(41)") {
+    Ok(m) =>
+      assert_true(get_global(m, "result") == Some(@value.Value::IntVal(42L)))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: function with no return returns None" {
+  match exec_src("def f():\n  pass\nresult = f()") {
+    Ok(m) => assert_true(get_global(m, "result") == Some(@value.Value::NoneVal))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: syntax error propagates as eval error" {
+  assert_true(exec_src("def (broken") is Err(_))
 }

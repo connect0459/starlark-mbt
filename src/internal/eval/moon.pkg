@@ -1,4 +1,8 @@
 import {
+  "moonbitlang/core/double",
   "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/value",
+  "connect0459/starlark/internal/syntax",
+  "connect0459/starlark/internal/parser",
+  "connect0459/starlark/internal/resolver",
 }
