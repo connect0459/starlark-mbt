@@ -460,7 +460,7 @@ Implement the standard Starlark built-in functions.
 | `all` | [x] | |
 | `any` | [x] | |
 | `bool` | [x] | |
-| `bytes` | [ ] | constructor not yet implemented |
+| `bytes` | [x] | constructor: accepts bytes, string, or iterable of ints |
 | `chr` | [x] | |
 | `dict` | [x] | |
 | `dir` | [ ] | returns empty list (stub) |
@@ -496,7 +496,7 @@ Implement the standard Starlark built-in functions.
       `rpartition`, `rstrip`, `split`, `splitlines`, `startswith`, `strip`,
       `title`, `upper`
       — `codepoint_ords`, `codepoints`, `rsplit` not yet implemented
-- [ ] `bytes`: `elems`, `elem_ords`
+- [x] `bytes`: `elems` (returns list of int byte values); `elem_ords` not in starlark-go bytes methods
 - [x] `list`: `append`, `clear`, `count`, `extend`, `index`, `insert`, `pop`, `remove`, `reverse`, `sort`
 - [x] `dict`: `clear`, `get`, `items`, `keys`, `pop`, `popitem`, `setdefault`, `update`, `values`
 - [x] `set`: `add`, `clear`, `difference`, `discard`, `intersection`, `issubset`,
