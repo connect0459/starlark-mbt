@@ -149,35 +149,25 @@ Core Starlark value representation. All values share a common interface.
 
 ### Types to implement
 
-- [ ] `Value` — top-level enum covering all built-in types
-- [ ] `NoneType` — singleton None
-- [ ] `Bool` — true / false
+- [x] `Value` — top-level enum covering all built-in types (primitives + List/Tuple stubs; Dict/Set/Function/Range pending)
+- [x] `NoneType` — singleton `NoneVal`
+- [x] `Bool` — `BoolVal(Bool)`; `truth`, `repr` implemented
       **Key semantics**: `Bool` is its own type and does NOT participate in int arithmetic.
       `True + True` raises a TypeError (unlike Python). `int(True) == 1` is valid via the
       `int()` built-in. `Bool` comparison operators (`<`, `<=`, etc.) treat False < True.
       `hash(True) == hash(1)` and `hash(False) == hash(0)` (equal values of compatible
       types must share the same hash).
-- [ ] `Int` — arbitrary-precision integer (start with `Int64`; plan upgrade via `moonbitlang/x` BigInt when overflow tests fail).
-      **Key semantics**: `//` truncates toward **negative infinity** (not zero),
-      `%` result has the same sign as the divisor — same as Python/Starlark.
-      **MoonBit divergence**: MoonBit's built-in `/` truncates toward **zero**
-      and `%` result has the sign of the **dividend** (C semantics). Starlark
-      floor-div and Starlark-`%` must be implemented manually — do NOT delegate
-      to MoonBit's `/` and `%` operators for negative operands. Write tests that
-      cover the negative-operand cases (e.g. `-7 // 2 == -4`, `-7 % 2 == 1`)
-      before implementing.
-- [ ] `Float` — IEEE-754 double. Must handle `float('+inf')`, `float('-inf')`,
-      `float('nan')` as special values; NaN comparisons follow IEEE-754 (NaN ≠ NaN).
+- [x] `Int` — `IntVal(Int64)`; `floor_div` and `starlark_mod` implemented with
+      correct negative-operand semantics (floor toward -inf, sign of divisor).
+      Tests cover: `-7 // 2 == -4`, `-7 % 2 == 1`. BigInt upgrade deferred.
+- [x] `Float` — `FloatVal(Double)`; `format_float` handles inf/nan/decimal-point.
       **Key semantics**: Float and Int values that compare equal must produce the same
-      hash (`hash(1.0) == hash(1)`, `hash(0.0) == hash(0)`).
-- [ ] `String` — immutable **byte** string (Starlark strings are byte-indexed).
-      MoonBit `String` is UTF-16 internally; string indexing/slicing must convert to a
-      `Bytes` buffer first. See Implementation notes below.
-- [ ] `Bytes` — immutable byte sequence. `Bytes` and `String` values are never equal even
-      if they contain the same bytes (`b"abc" != "abc"`). `str(b"abc")` produces
-      `b"abc"` (the repr). `Bytes` IS hashable: `hash(b"abc")` is valid.
-- [ ] `List` — mutable sequence
-- [ ] `Tuple` — immutable sequence
+      hash (`hash(1.0) == hash(1)`, `hash(0.0) == hash(0)`). (hash not yet implemented)
+- [x] `String` — `StarlarkString { raw: String, bytes: Bytes }` with UTF-8 byte backing.
+      `byte_len()`, `byte_at(i)`, `equals()` implemented. MoonBit UTF-16 divergence resolved.
+- [x] `Bytes` — `BytesVal(Bytes)`; `repr` produces `b"..."` with `\xNN` escapes.
+- [x] `List` — `StarlarkList { mut items, mut frozen }`; `truth`, `repr` implemented (stub)
+- [x] `Tuple` — `TupleVal(Array[Value])`; `repr` includes trailing comma for singleton
 - [ ] `Dict` — mutable mapping (insertion-ordered); keys are any hashable
       Starlark value (not just `String`) — use `src/internal/hashtable/`
 - [ ] `Set` — mutable hash-set (gated by `allow_set`); keys are any hashable value.
@@ -189,12 +179,13 @@ Core Starlark value representation. All values share a common interface.
 
 ### Traits / protocols
 
-- [ ] `to_string` / `repr` — debug and display output (with **cycle detection** for mutable containers)
+- [x] `repr` — implemented for primitives + List/Tuple (cycle detection deferred)
+- [x] `truth` — truthiness for `if`, `while`, `and`, `or` (all current variants)
+- [ ] `to_string` — `str()` output (unquoted string for Str, repr for others)
 - [ ] `equals` — structural equality (with cycle detection)
 - [ ] `hash` — for dict/set keys (None, Bool, Int, Float, String, Bytes, Tuple)
   - Tuple is only hashable if all elements are hashable
   - Unhashable use raises `EvalError`
-- [ ] `truth` — truthiness for `if`, `while`, `and`, `or`
 - [ ] `compare` — total ordering for `<`, `<=`, `>`, `>=`; **same-type only** (mixed types → TypeError)
 - [ ] `Comparable` trait — total ordering protocol needed by `sorted()`, `min()`, `max()`
 - [ ] `Attr` trait — attribute access protocol for `getattr()`, `hasattr()`, `dir()`
