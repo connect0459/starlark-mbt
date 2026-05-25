@@ -23,6 +23,10 @@ keywords = [ ]
 
 description = ""
 
+import {
+  "moonbitlang/x@0.4.43",
+}
+
 options(
   source: "src",
 )
