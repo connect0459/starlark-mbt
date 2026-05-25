@@ -169,10 +169,10 @@ Core Starlark value representation. All values share a common interface.
 - [x] `Bytes` — `BytesVal(Bytes)`; `repr` produces `b"..."` with `\xNN` escapes.
 - [x] `List` — `StarlarkList { mut items, mut frozen }`; `truth`, `repr` implemented (stub)
 - [x] `Tuple` — `TupleVal(Array[Value])`; `repr` includes trailing comma for singleton
-- [ ] `Dict` — mutable mapping (insertion-ordered); keys are any hashable
-      Starlark value (not just `String`) — use `src/internal/hashtable/`
-- [ ] `Set` — mutable hash-set (gated by `allow_set`); keys are any hashable value.
-      Sets maintain **insertion order** (same as Dict).
+- [x] `Dict` — mutable mapping (insertion-ordered); keys are any hashable
+      Starlark value — `StarlarkDict` wraps `Hashtable[Value, Value]`
+- [x] `Set` — mutable hash-set; keys are any hashable value, insertion-ordered.
+      `StarlarkSet` wraps `Hashtable[Value, Value]` (value=NoneVal)
 - [ ] `Function` — user-defined (Starlark source)
 - [ ] `BuiltinFunction` — host-provided callable
 - [ ] `BoundMethod` — method bound to a receiver (e.g., `"abc".upper`)
