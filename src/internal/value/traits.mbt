@@ -1,4 +1,9 @@
 ///|
+pub impl Eq for Value with fn equal(a, b) -> Bool {
+  starlark_equals(a, b)
+}
+
+///|
 pub fn to_str(v : Value) -> String {
   match v {
     NoneVal => "None"

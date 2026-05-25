@@ -49,6 +49,7 @@ pub(all) enum Value {
   ListVal(StarlarkList)
   TupleVal(Array[Value])
 }
+pub impl Eq for Value
 
 // Type aliases
 
