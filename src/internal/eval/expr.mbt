@@ -1646,6 +1646,196 @@ fn call_set_method(
         true => @value.Value::NoneVal
       }
     }
+    "clear" => {
+      check(ctx, s.clear())
+      @value.Value::NoneVal
+    }
+    "pop" =>
+      match check(ctx, s.pop_first()) {
+        None => raise EvalErr(make_eval_error(ctx, "set.pop(): set is empty"))
+        Some(v) => v
+      }
+    "union" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "union() takes exactly one argument"),
+        )
+      }
+      let result = @value.StarlarkSet::new()
+      s.each(fn(v) { ignore(result.add(v)) })
+      let it = check(ctx, @value.iterate(pos_args[0]))
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(v) => check(ctx, result.add(v))
+        }
+      }
+      @value.Value::SetVal(result)
+    }
+    "intersection" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "intersection() takes exactly one argument"),
+        )
+      }
+      let other_set = @value.StarlarkSet::new()
+      let it = check(ctx, @value.iterate(pos_args[0]))
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(v) => ignore(other_set.add(v))
+        }
+      }
+      let result = @value.StarlarkSet::new()
+      s.each(fn(v) {
+        match other_set.contains(v) {
+          Ok(true) => ignore(result.add(v))
+          _ => ()
+        }
+      })
+      @value.Value::SetVal(result)
+    }
+    "difference" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "difference() takes exactly one argument"),
+        )
+      }
+      let other_set = @value.StarlarkSet::new()
+      let it = check(ctx, @value.iterate(pos_args[0]))
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(v) => ignore(other_set.add(v))
+        }
+      }
+      let result = @value.StarlarkSet::new()
+      s.each(fn(v) {
+        match other_set.contains(v) {
+          Ok(false) => ignore(result.add(v))
+          _ => ()
+        }
+      })
+      @value.Value::SetVal(result)
+    }
+    "symmetric_difference" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(
+            ctx, "symmetric_difference() takes exactly one argument",
+          ),
+        )
+      }
+      let other_items : Array[@value.Value] = []
+      let it = check(ctx, @value.iterate(pos_args[0]))
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(v) => other_items.push(v)
+        }
+      }
+      let other_set = @value.StarlarkSet::new()
+      for v in other_items {
+        ignore(other_set.add(v))
+      }
+      let result = @value.StarlarkSet::new()
+      s.each(fn(v) {
+        match other_set.contains(v) {
+          Ok(false) => ignore(result.add(v))
+          _ => ()
+        }
+      })
+      for v in other_items {
+        match s.contains(v) {
+          Ok(false) => ignore(result.add(v))
+          _ => ()
+        }
+      }
+      @value.Value::SetVal(result)
+    }
+    "issubset" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "issubset() takes exactly one argument"),
+        )
+      }
+      let other_set = @value.StarlarkSet::new()
+      let it = check(ctx, @value.iterate(pos_args[0]))
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(v) => ignore(other_set.add(v))
+        }
+      }
+      let mut all_in = true
+      s.each(fn(v) {
+        match other_set.contains(v) {
+          Ok(true) => ()
+          _ => all_in = false
+        }
+      })
+      @value.Value::BoolVal(all_in)
+    }
+    "issuperset" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "issuperset() takes exactly one argument"),
+        )
+      }
+      let mut all_in = true
+      let it = check(ctx, @value.iterate(pos_args[0]))
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(v) =>
+            match s.contains(v) {
+              Ok(true) => ()
+              _ => {
+                it.done()
+                all_in = false
+                break
+              }
+            }
+        }
+      }
+      @value.Value::BoolVal(all_in)
+    }
+    "update" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(
+          make_eval_error(ctx, "update() takes exactly one argument"),
+        )
+      }
+      let it = check(ctx, @value.iterate(pos_args[0]))
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(v) => check(ctx, s.add(v))
+        }
+      }
+      @value.Value::NoneVal
+    }
     _ =>
       raise EvalErr(make_eval_error(ctx, "set has no method '\{method_name}'"))
   }

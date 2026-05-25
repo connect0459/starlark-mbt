@@ -883,6 +883,113 @@ test "exec_file: set.remove raises error when element is absent" {
   assert_true(exec_b("s = {1}\ns.remove(9)") is Err(_))
 }
 
+///|
+test "exec_file: set.clear removes all elements" {
+  match exec_b("s = {1, 2, 3}\ns.clear()\nn = len(s)") {
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::IntVal(0L)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.pop removes and returns an arbitrary element" {
+  match exec_b("s = {42}\nv = s.pop()") {
+    Ok(m) => {
+      assert_true(g(m, "v") == Some(@value.Value::IntVal(42L)))
+      match g(m, "s") {
+        Some(@value.Value::SetVal(s)) => assert_eq(s.length(), 0)
+        _ => assert_true(false)
+      }
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.pop raises error when set is empty" {
+  assert_true(exec_b("set().pop()") is Err(_))
+}
+
+///|
+test "exec_file: set.union returns new set with all elements from both sets" {
+  match exec_b("r = {1, 2}.union({2, 3})") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::SetVal(s)) => assert_eq(s.length(), 3)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.intersection returns elements common to both sets" {
+  match exec_b("r = {1, 2, 3}.intersection({2, 3, 4})") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::SetVal(s)) => assert_eq(s.length(), 2)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.difference returns elements in self but not in other" {
+  match exec_b("r = {1, 2, 3}.difference({2, 3})") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::SetVal(s)) => assert_eq(s.length(), 1)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.symmetric_difference returns elements in exactly one set" {
+  match exec_b("r = {1, 2, 3}.symmetric_difference({2, 3, 4})") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::SetVal(s)) => assert_eq(s.length(), 2)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.issubset returns true when all elements are in other" {
+  match exec_b("r = {1, 2}.issubset({1, 2, 3})") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.issubset returns false when self has element not in other" {
+  match exec_b("r = {1, 4}.issubset({1, 2, 3})") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(false)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.issuperset returns true when self contains all of other" {
+  match exec_b("r = {1, 2, 3}.issuperset({1, 2})") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::BoolVal(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: set.update adds all elements from other into self" {
+  match exec_b("s = {1, 2}\ns.update({2, 3, 4})\nn = len(s)") {
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::IntVal(4L)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
 // --- dict.clear and dict.popitem ---
 
 ///|
