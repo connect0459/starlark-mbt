@@ -473,15 +473,15 @@ Implement the standard Starlark built-in functions.
 | `int` | [x] | optional `base=` keyword arg (2-36; 0 = auto-detect) |
 | `len` | [x] | |
 | `list` | [x] | |
-| `max` | [x] | `key=` not yet supported |
-| `min` | [x] | `key=` not yet supported |
+| `max` | [x] | `key=` supported |
+| `min` | [x] | `key=` supported |
 | `ord` | [x] | |
-| `print` | [x] | `sep=` and `end=` not yet supported |
+| `print` | [x] | `sep=` supported; `end=` not in starlark-go spec |
 | `range` | [x] | |
 | `repr` | [x] | |
 | `reversed` | [x] | |
 | `set` | [x] | |
-| `sorted` | [x] | `key=`, `reverse=` not yet supported |
+| `sorted` | [x] | `key=`, `reverse=` supported |
 | `str` | [x] | |
 | `tuple` | [x] | |
 | `type` | [x] | |
