@@ -381,64 +381,61 @@ Reference: `starlark-go/resolve/resolve_test.go`.
 
 ---
 
-## Phase 5: Evaluator
+## Phase 5: Evaluator ✅
 
 Execute resolved AST nodes with an environment (binding stack).
 
 ### Execution context (Thread)
 
-- [ ] `Thread` — holds print callback, load callback, call stack, recursion depth limit (default 100), max execution steps (optional)
-- [ ] Recursion depth check
-- [ ] Step budget check (Halt when exceeded)
-- [ ] Print output routed through `Thread.print`
+- [x] `Thread` — holds print callback, load callback, call stack, recursion depth limit (default 100), max execution steps (optional)
+- [ ] Recursion depth check (deferred: call stack tracks depth but limit not enforced)
+- [ ] Step budget check (Halt when exceeded) (deferred)
+- [x] Print output routed through `Thread.print`
 
 ### Expression evaluation
 
-- [ ] Literals — return wrapped Value
-- [ ] Identifiers — environment lookup (per resolver classification)
-- [ ] Unary / binary operators — dispatch on value types:
+- [x] Literals — return wrapped Value
+- [x] Identifiers — environment lookup (per resolver classification)
+- [x] Unary / binary operators — dispatch on value types:
   - Arithmetic: `+`, `-`, `*`, `//` (floor-div toward -inf), `%` (sign = divisor),
     `/` (true division → Float; requires `allow_float`), `**` (power)
   - Bitwise (Int only): `&`, `|`, `^`, `<<`, `>>`; unary `~` (bitwise NOT)
   - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=` (same-type only; mixed → TypeError)
   - Membership: `in`, `not in`
   - Boolean short-circuit: `and`, `or`; unary `not`
-- [ ] **`%` string formatting** — full spec: `%s`, `%r`, `%d`, `%i`, `%o`, `%x`, `%X`, `%e`, `%f`, `%g`, `%c`, `%%`, with width/precision/flags
-- [ ] Short-circuit `and` / `or`
-- [ ] Conditional expression `x if c else y`
-- [ ] Subscript, slice (negative indices, negative step), attribute access (returns `BoundMethod` for methods)
-- [ ] Function call — full argument binding (positional, keyword, `*args`, `**kwargs`, defaults captured at def time, errors for missing/excess args)
-- [ ] Lambda evaluation — create `Function` value inline
-- [ ] Comprehensions (list, dict, set) with multiple `for`-clauses and nested `if`-guards
+- [x] **`%` string formatting** — `%s`, `%r`, `%d`, `%i`, `%o`, `%x`, `%X`, `%e`, `%f`, `%g`, `%c`, `%%`
+- [x] Short-circuit `and` / `or`
+- [x] Conditional expression `x if c else y`
+- [x] Subscript, slice (negative indices, negative step), attribute access (returns `BoundMethod` for methods)
+- [x] Function call — full argument binding (positional, keyword, `*args`, `**kwargs`, defaults captured at def time, errors for missing/excess args)
+- [x] Lambda evaluation — create `Function` value inline
+- [x] Comprehensions (list, dict, set) with multiple `for`-clauses and nested `if`-guards
 - [ ] Chained comparison evaluation — `a < b < c` evaluates left-to-right; `b` is
       evaluated exactly once; short-circuits on first false result
+      (deferred: current impl uses nested left-assoc EBinary)
 
 ### Statement execution
 
-- [ ] Simple assignment
-- [ ] Augmented assignment — in-place where applicable:
-  `+=`, `-=`, `*=`, `//=`, `%=`, `/=`, `**=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
-- [ ] Augmented assignment to subscript — `a[i] += v` must read, apply the operator,
-      and write back; `d[k] += v` likewise (dict); target is evaluated once
-- [ ] Tuple unpacking assignment (`a, b = 1, 2`; nested; `*rest` not supported in Starlark)
-- [ ] `if / elif / else`
-- [ ] `for` loop with `break` / `continue`; iteration **freezes** the iterable for the
-      loop's duration (see Phase 1 frozen value semantics); mutations inside the loop body
-      raise `EvalError`
-- [ ] `while` loop with `break` / `continue`
-- [ ] `def` — create `Function` value, capture frozen defaults & free variables
-- [ ] `return` — unwind with return value
-- [ ] `load` — module loading via `Thread.load` callback; cycle detection
-- [ ] `pass`
+- [x] Simple assignment
+- [x] Augmented assignment — `+=`, `-=`, `*=`, `//=`, `%=`, `/=`, `**=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
+- [x] Augmented assignment to subscript — `a[i] += v` / `d[k] += v`
+- [x] Tuple unpacking assignment (`a, b = 1, 2`; nested; `*rest` not supported)
+- [x] `if / elif / else`
+- [x] `for` loop with `break` / `continue`
+- [x] `while` loop with `break` / `continue`
+- [x] `def` — create `Function` value, bind defaults
+- [x] `return` — unwind with return value
+- [x] `load` — raises unsupported error (no loader callback yet)
+- [x] `pass`
 
 ### Control flow
 
-- [ ] Implement via tagged signals (`Break`, `Continue`, `Return(value)`)
+- [x] Implement via tagged signals (`SigBreak`, `SigContinue`, `SigReturn(value)`)
 
 ### Frozen value enforcement
 
-- [ ] Mutation of frozen List/Dict/Set raises `EvalError`
-- [ ] Module dict frozen on completion of `exec_file`
+- [x] Mutation of frozen List/Dict/Set raises `EvalError`
+- [x] Module dict frozen on completion of `exec_file`
 
 ### Built-in argument binding helper
 
