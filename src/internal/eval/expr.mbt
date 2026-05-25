@@ -587,6 +587,52 @@ fn call_builtin(
       @value.Value::IntVal(h.reinterpret_as_int().to_int64())
     }
     "dir" => @value.Value::ListVal(@value.StarlarkList::new([]))
+    "chr" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(make_eval_error(ctx, "chr() takes exactly one argument"))
+      }
+      match pos_args[0] {
+        @value.Value::IntVal(n) => {
+          if n < 0L || n > 0x10ffffL {
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "chr() argument not in range(0x110000): \{n}",
+              ),
+            )
+          }
+          let c = n.to_int().unsafe_to_char()
+          let buf = StringBuilder::new()
+          buf.write_char(c)
+          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "chr() argument must be an integer"),
+          )
+      }
+    }
+    "ord" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(make_eval_error(ctx, "ord() takes exactly one argument"))
+      }
+      match pos_args[0] {
+        @value.Value::StrVal(s) => {
+          let chars = s.raw.to_array()
+          if chars.length() != 1 {
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "ord() expected a character, but string of length \{chars.length()} found",
+              ),
+            )
+          }
+          @value.Value::IntVal(chars[0].to_int().to_int64())
+        }
+        _ =>
+          raise EvalErr(make_eval_error(ctx, "ord() argument must be a string"))
+      }
+    }
     "fail" => {
       let msg = if pos_args.length() > 0 {
         @value.to_str(pos_args[0])

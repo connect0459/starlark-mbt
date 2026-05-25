@@ -909,6 +909,55 @@ test "exec_file: dict.popitem raises error when dict is empty" {
   assert_true(exec_b("{}.popitem()") is Err(_))
 }
 
+// --- chr and ord ---
+
+///|
+test "exec_file: chr converts code point to single-character string" {
+  match exec_b("s = chr(65)") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "A")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: chr(0) returns null character" {
+  match exec_b("s = chr(0)") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::StrVal(s)) => assert_eq(s.byte_len(), 1)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: chr raises error for code point above valid Unicode range" {
+  assert_true(exec_b("chr(0x110000)") is Err(_))
+}
+
+///|
+test "exec_file: ord returns code point of single-character string" {
+  match exec_b("n = ord(\"A\")") {
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::IntVal(65L)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: ord raises error for empty string" {
+  assert_true(exec_b("ord(\"\")") is Err(_))
+}
+
+///|
+test "exec_file: ord raises error for string with more than one character" {
+  assert_true(exec_b("ord(\"ab\")") is Err(_))
+}
+
 // --- Lambda ---
 
 ///|
