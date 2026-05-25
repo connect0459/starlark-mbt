@@ -1368,3 +1368,75 @@ test "exec_file: recursion limit prevents infinite recursion" {
   )
   assert_true(result is Err(_))
 }
+
+// --- bytes constructor ---
+
+///|
+test "exec_file: bytes constructor accepts a bytes literal" {
+  match exec_b("r = bytes(b\"ABC\")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::BytesVal(b)) => assert_eq(b.length(), 3)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: bytes constructor accepts a list of ints" {
+  match exec_b("r = bytes([65, 66, 67])") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::BytesVal(b)) => {
+          assert_eq(b.length(), 3)
+          assert_eq(b[0], 65)
+          assert_eq(b[1], 66)
+          assert_eq(b[2], 67)
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: bytes constructor raises error on non-byte integer" {
+  assert_true(exec_b("bytes([300])") is Err(_))
+}
+
+///|
+test "exec_file: bytes constructor raises error on wrong type" {
+  assert_true(exec_b("bytes(1)") is Err(_))
+}
+
+// --- bytes.elems ---
+
+///|
+test "exec_file: bytes.elems returns list of integer byte values" {
+  match exec_b("r = list(b\"ABC\".elems())") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_eq(l.items.length(), 3)
+          assert_true(l.items[0] == @value.Value::IntVal(65L))
+          assert_true(l.items[1] == @value.Value::IntVal(66L))
+          assert_true(l.items[2] == @value.Value::IntVal(67L))
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: bytes.elems on empty bytes returns empty list" {
+  match exec_b("r = list(b\"\".elems())") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}

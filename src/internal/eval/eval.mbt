@@ -99,7 +99,7 @@ pub fn exec_file(
     "None", "True", "False", "print", "len", "str", "repr", "type", "range", "list",
     "tuple", "dict", "bool", "int", "float", "abs", "min", "max", "set", "enumerate",
     "zip", "sorted", "reversed", "hasattr", "getattr", "fail", "any", "all", "hash",
-    "dir", "chr", "ord",
+    "dir", "chr", "ord", "bytes",
   ]
   let resolved = @resolver.resolve(
     file,

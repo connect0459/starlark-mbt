@@ -215,7 +215,8 @@ fn eval_getattr(
     @value.Value::StrVal(_)
     | @value.Value::ListVal(_)
     | @value.Value::DictVal(_)
-    | @value.Value::SetVal(_) =>
+    | @value.Value::SetVal(_)
+    | @value.Value::BytesVal(_) =>
       @value.Value::BoundMethodVal({ recv: obj, method_name: attr })
     _ =>
       raise EvalErr(
@@ -571,6 +572,7 @@ fn call_builtin(
     "tuple" => builtin_tuple(ctx, pos_args)
     "dict" => builtin_dict(ctx, pos_args, kw_args)
     "set" => builtin_set(ctx, pos_args)
+    "bytes" => builtin_bytes(ctx, pos_args)
     "min" => builtin_minmax(ctx, pos_args, false)
     "max" => builtin_minmax(ctx, pos_args, true)
     "enumerate" => builtin_enumerate(ctx, pos_args)
@@ -1130,6 +1132,8 @@ fn call_method(
       call_dict_method(ctx, d, method_name, pos_args, kw_args)
     @value.Value::StrVal(s) => call_str_method(ctx, s, method_name, pos_args)
     @value.Value::SetVal(s) => call_set_method(ctx, s, method_name, pos_args)
+    @value.Value::BytesVal(b) =>
+      call_bytes_method(ctx, b, method_name, pos_args)
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -2198,6 +2202,87 @@ fn call_set_method(
     }
     _ =>
       raise EvalErr(make_eval_error(ctx, "set has no method '\{method_name}'"))
+  }
+}
+
+///|
+fn builtin_bytes(
+  ctx : EvalContext,
+  pos_args : Array[@value.Value],
+) -> @value.Value raise EvalErr {
+  if pos_args.length() != 1 {
+    raise EvalErr(make_eval_error(ctx, "bytes() takes exactly one argument"))
+  }
+  match pos_args[0] {
+    @value.Value::BytesVal(b) => @value.Value::BytesVal(b)
+    @value.Value::StrVal(s) => @value.Value::BytesVal(s.bytes)
+    other => {
+      let it = match @value.iterate(other) {
+        Err(_) =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "bytes: got \{@value.type_name(other)}, want string, bytes, or iterable of ints",
+            ),
+          )
+        Ok(it) => it
+      }
+      let buf : Array[Byte] = []
+      let mut idx = 0
+      while true {
+        match it.next() {
+          None => {
+            it.done()
+            break
+          }
+          Some(@value.Value::IntVal(n)) => {
+            if n < 0L || n > 255L {
+              it.done()
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "bytes: at index \{idx}, value \{n} is out of range for byte (0-255)",
+                ),
+              )
+            }
+            buf.push(n.to_int().to_byte())
+            idx += 1
+          }
+          Some(v) => {
+            it.done()
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "bytes: at index \{idx}, got \{@value.type_name(v)}, want int",
+              ),
+            )
+          }
+        }
+      }
+      @value.Value::BytesVal(Bytes::from_array(buf))
+    }
+  }
+}
+
+///|
+fn call_bytes_method(
+  ctx : EvalContext,
+  b : Bytes,
+  method_name : String,
+  _pos_args : Array[@value.Value],
+) -> @value.Value raise EvalErr {
+  match method_name {
+    "elems" => {
+      let items : Array[@value.Value] = []
+      for i in 0..<b.length() {
+        items.push(@value.Value::IntVal(b[i].to_int().to_int64()))
+      }
+      @value.Value::ListVal(@value.StarlarkList::new(items))
+    }
+    _ =>
+      raise EvalErr(
+        make_eval_error(ctx, "bytes has no method '\{method_name}'"),
+      )
   }
 }
 
