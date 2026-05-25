@@ -1,0 +1,1157 @@
+// Starlark lexical scanner.
+// Converts UTF-8 source text into a sequence of ScannedToken values.
+
+///|
+pub(all) struct ScannedToken {
+  tok : Token
+  pos : @errors.Position
+}
+
+///|
+pub(all) struct Scanner {
+  src : Bytes // UTF-8 source bytes
+  filename : String
+  mut off : Int // current byte offset
+  mut line : Int // current line (1-based)
+  mut col : Int // current column (1-based, byte-based)
+  mut depth : Int // nesting depth of (), [], {}
+  mut indent_stack : Array[Int] // stack of indentation levels
+  mut dents : Int // pending INDENT (>0) or OUTDENT (<0)
+  mut line_start : Bool // are we at start of a line?
+}
+
+///|
+pub fn Scanner::new(filename : String, source : String) -> Scanner {
+  {
+    src: @utf8.encode(source),
+    filename,
+    off: 0,
+    line: 1,
+    col: 1,
+    depth: 0,
+    indent_stack: [0],
+    dents: 0,
+    line_start: true,
+  }
+}
+
+///|
+fn Scanner::peek_byte(self : Scanner) -> Byte {
+  if self.off >= self.src.length() {
+    b'\x00'
+  } else {
+    self.src[self.off]
+  }
+}
+
+///|
+fn Scanner::peek_byte_ahead(self : Scanner, n : Int) -> Byte {
+  let i = self.off + n
+  if i >= self.src.length() {
+    b'\x00'
+  } else {
+    self.src[i]
+  }
+}
+
+// read_byte consumes and returns the next byte.
+// Normalizes \r and \r\n to \n. Returns 0 at EOF.
+
+///|
+fn Scanner::read_byte(self : Scanner) -> Byte {
+  if self.off >= self.src.length() {
+    return b'\x00'
+  }
+  let b = self.src[self.off]
+  self.off += 1
+  if b == b'\r' {
+    if self.off < self.src.length() && self.src[self.off] == b'\n' {
+      self.off += 1
+    }
+    self.line += 1
+    self.col = 1
+    return b'\n'
+  } else if b == b'\n' {
+    self.line += 1
+    self.col = 1
+    return b'\n'
+  } else {
+    self.col += 1
+    return b
+  }
+}
+
+///|
+fn Scanner::current_pos(self : Scanner) -> @errors.Position {
+  @errors.Position::new(self.filename, self.line, self.col)
+}
+
+///|
+fn Scanner::make_error(
+  _self : Scanner,
+  pos : @errors.Position,
+  msg : String,
+) -> @errors.SyntaxError {
+  { pos, msg }
+}
+
+// count_indent counts indentation at the start of a line (tab = 8 spaces).
+// Consumes leading spaces and tabs; stops at any other character.
+
+///|
+fn Scanner::count_indent(self : Scanner) -> Int {
+  let mut col = 0
+  while true {
+    let b = self.peek_byte()
+    if b == b' ' {
+      col += 1
+      self.read_byte() |> ignore
+    } else if b == b'\t' {
+      col += 8 - col % 8
+      self.read_byte() |> ignore
+    } else {
+      break
+    }
+  }
+  col
+}
+
+///|
+pub fn Scanner::next_token(
+  self : Scanner,
+) -> Result[ScannedToken, @errors.SyntaxError] {
+  while true {
+    let saved_line_start = self.line_start
+    let mut blank = false
+
+    // Process line start: measure indentation and compute INDENT/OUTDENT.
+    if self.line_start {
+      self.line_start = false
+      let indent_col = self.count_indent()
+      let cb = self.peek_byte().to_int()
+      if cb == '\n'.to_int() ||
+        cb == '#'.to_int() ||
+        cb == 0 ||
+        cb == '\r'.to_int() {
+        blank = true
+      }
+      if !blank && self.depth == 0 {
+        let cur = self.indent_stack[self.indent_stack.length() - 1]
+        if indent_col > cur {
+          self.dents += 1
+          self.indent_stack.push(indent_col)
+        } else if indent_col < cur {
+          while self.indent_stack.length() > 0 &&
+                indent_col < self.indent_stack[self.indent_stack.length() - 1] {
+            self.dents -= 1
+            self.indent_stack.pop() |> ignore
+          }
+          if self.indent_stack.length() == 0 ||
+            indent_col != self.indent_stack[self.indent_stack.length() - 1] {
+            let pos = self.current_pos()
+            return Err(
+              self.make_error(
+                pos, "unindent does not match any outer indentation level",
+              ),
+            )
+          }
+        }
+      }
+    }
+
+    // Return pending INDENT/OUTDENT tokens.
+    if self.dents != 0 {
+      let pos = self.current_pos()
+      if self.dents < 0 {
+        self.dents += 1
+        return Ok({ tok: Outdent, pos })
+      } else {
+        self.dents -= 1
+        return Ok({ tok: Indent, pos })
+      }
+    }
+
+    // Skip spaces (outside of line_start; count_indent already consumed them at line start).
+    while self.peek_byte() == b' ' || self.peek_byte() == b'\t' {
+      self.read_byte() |> ignore
+    }
+
+    // Skip comment (# to end of line).
+    if self.peek_byte() == b'#' {
+      while true {
+        let ch = self.peek_byte()
+        if ch == b'\n' || ch == b'\r' || ch == b'\x00' {
+          break
+        }
+        self.read_byte() |> ignore
+      }
+    }
+
+    // Newline.
+    if self.peek_byte() == b'\n' || self.peek_byte() == b'\r' {
+      self.line_start = true
+      if self.depth > 0 {
+        // Inside brackets: implicit line continuation; skip newline.
+        self.read_byte() |> ignore
+        continue
+      }
+      if blank {
+        // Blank line at top level: skip.
+        self.read_byte() |> ignore
+        continue
+      }
+      let pos = self.current_pos()
+      self.read_byte() |> ignore
+      return Ok({ tok: Newline, pos })
+    }
+
+    // EOF.
+    if self.peek_byte() == b'\x00' {
+      if self.indent_stack.length() > 1 {
+        if saved_line_start {
+          self.dents = 1 - self.indent_stack.length()
+          self.indent_stack = [0]
+          continue
+        } else {
+          // Emit synthetic NEWLINE before closing OUTDENTs.
+          self.line_start = true
+          let pos = self.current_pos()
+          return Ok({ tok: Newline, pos })
+        }
+      }
+      let pos = self.current_pos()
+      return Ok({ tok: EOF, pos })
+    }
+
+    // Explicit line continuation.
+    if self.peek_byte() == b'\\' {
+      let pos = self.current_pos()
+      self.read_byte() |> ignore
+      let nb = self.peek_byte()
+      if nb != b'\n' && nb != b'\r' {
+        return Err(self.make_error(pos, "stray backslash in program"))
+      }
+      self.read_byte() |> ignore
+      continue
+    }
+
+    // Real token starts here.
+    let start = self.current_pos()
+    let c = self.peek_byte()
+
+    // String literal starting with " or '
+    if c == b'"' || c == b'\'' {
+      return self.scan_string(start, false, false)
+    }
+
+    // Identifier, keyword, or string/bytes prefix (r"...", b"...", rb"...", br"...")
+    if is_ident_start_byte(c) {
+      if c == b'r' {
+        let n1 = self.peek_byte_ahead(1)
+        if n1 == b'"' || n1 == b'\'' {
+          self.read_byte() |> ignore // consume 'r'
+          return self.scan_string(start, false, true)
+        }
+        if n1 == b'b' {
+          let n2 = self.peek_byte_ahead(2)
+          if n2 == b'"' || n2 == b'\'' {
+            self.read_byte() |> ignore // 'r'
+            self.read_byte() |> ignore // 'b'
+            return self.scan_string(start, true, true)
+          }
+        }
+      }
+      if c == b'b' {
+        let n1 = self.peek_byte_ahead(1)
+        if n1 == b'"' || n1 == b'\'' {
+          self.read_byte() |> ignore // consume 'b'
+          return self.scan_string(start, true, false)
+        }
+        if n1 == b'r' {
+          let n2 = self.peek_byte_ahead(2)
+          if n2 == b'"' || n2 == b'\'' {
+            self.read_byte() |> ignore // 'b'
+            self.read_byte() |> ignore // 'r'
+            return self.scan_string(start, true, true)
+          }
+        }
+      }
+      let raw_bytes = self.collect_ident_bytes()
+      let name = @utf8.decode_lossy(raw_bytes[:])
+      match keyword_token(name) {
+        Some(kw) => return Ok({ tok: kw, pos: start })
+        None => return Ok({ tok: Ident(name), pos: start })
+      }
+    }
+
+    // Opening brackets.
+    if c == b'(' || c == b'[' || c == b'{' {
+      self.depth += 1
+      self.read_byte() |> ignore
+      let tok = if c == b'(' {
+        LParen
+      } else if c == b'[' {
+        LBrack
+      } else {
+        LBrace
+      }
+      return Ok({ tok, pos: start })
+    }
+
+    // Closing brackets.
+    if c == b')' || c == b']' || c == b'}' {
+      if self.depth > 0 {
+        self.depth -= 1
+      }
+      self.read_byte() |> ignore
+      let tok = if c == b')' {
+        RParen
+      } else if c == b']' {
+        RBrack
+      } else {
+        RBrace
+      }
+      return Ok({ tok, pos: start })
+    }
+
+    // Comma.
+    if c == b',' {
+      self.read_byte() |> ignore
+      return Ok({ tok: Comma, pos: start })
+    }
+
+    // Number or dot.
+    if is_digit_byte(c) || c == b'.' {
+      return self.scan_number(start)
+    }
+
+    // All other operators.
+    return self.scan_operator(start)
+  }
+  let pos = self.current_pos()
+  Err(self.make_error(pos, "internal scanner error"))
+}
+
+///|
+fn Scanner::collect_ident_bytes(self : Scanner) -> Bytes {
+  let buf : Array[Byte] = []
+  while true {
+    let b = self.peek_byte()
+    if is_ident_byte(b) {
+      buf.push(b)
+      self.read_byte() |> ignore
+    } else {
+      break
+    }
+  }
+  Bytes::from_array(buf)
+}
+
+///|
+fn Scanner::scan_operator(
+  self : Scanner,
+  start : @errors.Position,
+) -> Result[ScannedToken, @errors.SyntaxError] {
+  let c = self.read_byte()
+  let cn = c.to_int()
+  match cn {
+    0x2B => {
+      // + or +=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: PlusAssign, pos: start })
+      }
+      Ok({ tok: Plus, pos: start })
+    }
+    0x2D => {
+      // - or -=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: MinusAssign, pos: start })
+      }
+      Ok({ tok: Minus, pos: start })
+    }
+    0x2A => {
+      // * or *= or **
+      if self.peek_byte() == b'*' {
+        self.read_byte() |> ignore
+        return Ok({ tok: StarStar, pos: start })
+      }
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: StarAssign, pos: start })
+      }
+      Ok({ tok: Star, pos: start })
+    }
+    0x2F => {
+      // / or /= or // or //=
+      if self.peek_byte() == b'/' {
+        self.read_byte() |> ignore
+        if self.peek_byte() == b'=' {
+          self.read_byte() |> ignore
+          return Ok({ tok: SlashSlashAssign, pos: start })
+        }
+        return Ok({ tok: SlashSlash, pos: start })
+      }
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: SlashAssign, pos: start })
+      }
+      Ok({ tok: Slash, pos: start })
+    }
+    0x25 => {
+      // % or %=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: PercentAssign, pos: start })
+      }
+      Ok({ tok: Percent, pos: start })
+    }
+    0x26 => {
+      // & or &=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: AmpAssign, pos: start })
+      }
+      Ok({ tok: Amp, pos: start })
+    }
+    0x7C => {
+      // | or |=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: PipeAssign, pos: start })
+      }
+      Ok({ tok: Pipe, pos: start })
+    }
+    0x5E => {
+      // ^ or ^=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: CircumflexAssign, pos: start })
+      }
+      Ok({ tok: Circumflex, pos: start })
+    }
+    0x3C => {
+      // < or <= or << or <<=
+      if self.peek_byte() == b'<' {
+        self.read_byte() |> ignore
+        if self.peek_byte() == b'=' {
+          self.read_byte() |> ignore
+          return Ok({ tok: LtLtAssign, pos: start })
+        }
+        return Ok({ tok: LtLt, pos: start })
+      }
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: Le, pos: start })
+      }
+      Ok({ tok: Lt, pos: start })
+    }
+    0x3E => {
+      // > or >= or >> or >>=
+      if self.peek_byte() == b'>' {
+        self.read_byte() |> ignore
+        if self.peek_byte() == b'=' {
+          self.read_byte() |> ignore
+          return Ok({ tok: GtGtAssign, pos: start })
+        }
+        return Ok({ tok: GtGt, pos: start })
+      }
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: Ge, pos: start })
+      }
+      Ok({ tok: Gt, pos: start })
+    }
+    0x3D => {
+      // = or ==
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: Eql, pos: start })
+      }
+      Ok({ tok: Assign, pos: start })
+    }
+    0x21 => {
+      // ! or !=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Ok({ tok: Neq, pos: start })
+      }
+      Err(self.make_error(start, "unexpected input character '!'"))
+    }
+    0x7E => Ok({ tok: Tilde, pos: start }) // ~
+    0x3B => Ok({ tok: Semi, pos: start }) // ;
+    0x3A => Ok({ tok: Colon, pos: start }) // :
+    _ => Err(self.make_error(start, "unexpected input character"))
+  }
+}
+
+///|
+fn Scanner::scan_number(
+  self : Scanner,
+  start : @errors.Position,
+) -> Result[ScannedToken, @errors.SyntaxError] {
+  let mut fraction = false
+  let mut exponent = false
+  let raw : Array[Byte] = []
+  let c = self.peek_byte()
+
+  if c == b'.' {
+    // Dot: float if followed by digit, otherwise DOT token.
+    self.read_byte() |> ignore
+    if !is_digit_byte(self.peek_byte()) {
+      return Ok({ tok: Dot, pos: start })
+    }
+    raw.push(b'.')
+    fraction = true
+    while is_digit_byte(self.peek_byte()) {
+      raw.push(self.peek_byte())
+      self.read_byte() |> ignore
+    }
+    if self.peek_byte() == b'e' || self.peek_byte() == b'E' {
+      exponent = true
+    }
+  } else if c == b'0' {
+    raw.push(b'0')
+    self.read_byte() |> ignore
+    let n = self.peek_byte()
+    if n == b'x' || n == b'X' {
+      // Hexadecimal: 0x[0-9A-Fa-f]+
+      self.read_byte() |> ignore
+      if !is_xdigit_byte(self.peek_byte()) {
+        return Err(self.make_error(start, "invalid hex literal"))
+      }
+      let digits : Array[Byte] = []
+      while is_xdigit_byte(self.peek_byte()) {
+        digits.push(self.peek_byte())
+        self.read_byte() |> ignore
+      }
+      let s = @utf8.decode_lossy(Bytes::from_array(digits)[:])
+      match parse_int_hex(s) {
+        Err(e) => return Err(self.make_error(start, e))
+        Ok(v) => return Ok({ tok: Int(v), pos: start })
+      }
+    } else if n == b'o' || n == b'O' {
+      // Octal: 0o[0-7]+
+      self.read_byte() |> ignore
+      if !is_odigit_byte(self.peek_byte()) {
+        return Err(self.make_error(self.current_pos(), "invalid octal literal"))
+      }
+      let digits : Array[Byte] = []
+      while is_odigit_byte(self.peek_byte()) {
+        digits.push(self.peek_byte())
+        self.read_byte() |> ignore
+      }
+      let s = @utf8.decode_lossy(Bytes::from_array(digits)[:])
+      match parse_int_base(s, 8) {
+        Err(e) => return Err(self.make_error(start, e))
+        Ok(v) => return Ok({ tok: Int(v), pos: start })
+      }
+    } else if n == b'b' || n == b'B' {
+      // Binary: 0b[01]+
+      self.read_byte() |> ignore
+      if !is_bdigit_byte(self.peek_byte()) {
+        return Err(
+          self.make_error(self.current_pos(), "invalid binary literal"),
+        )
+      }
+      let digits : Array[Byte] = []
+      while is_bdigit_byte(self.peek_byte()) {
+        digits.push(self.peek_byte())
+        self.read_byte() |> ignore
+      }
+      let s = @utf8.decode_lossy(Bytes::from_array(digits)[:])
+      match parse_int_base(s, 2) {
+        Err(e) => return Err(self.make_error(start, e))
+        Ok(v) => return Ok({ tok: Int(v), pos: start })
+      }
+    } else if n == b'.' {
+      fraction = true
+    } else if n == b'e' || n == b'E' {
+      exponent = true
+    } else {
+      // Digit(s) after 0: could be obsolete octal or just 0
+      let mut all_zeros = true
+      let mut is_octal_digits = true
+      let extra : Array[Byte] = []
+      while is_digit_byte(self.peek_byte()) {
+        let d = self.peek_byte()
+        if d != b'0' {
+          all_zeros = false
+        }
+        if d > b'7' {
+          is_octal_digits = false
+        }
+        extra.push(d)
+        self.read_byte() |> ignore
+      }
+      if self.peek_byte() == b'.' {
+        for b in extra {
+          raw.push(b)
+        }
+        fraction = true
+      } else if self.peek_byte() == b'e' || self.peek_byte() == b'E' {
+        for b in extra {
+          raw.push(b)
+        }
+        exponent = true
+      } else if !all_zeros && is_octal_digits && extra.length() > 0 {
+        let digits = @utf8.decode_lossy(Bytes::from_array(extra)[:])
+        return Err(
+          self.make_error(
+            start,
+            "obsolete form of octal literal; use 0o\{digits}",
+          ),
+        )
+      } else if !all_zeros && extra.length() > 0 {
+        return Err(self.make_error(start, "invalid int literal"))
+      } else {
+        // Just 0 (or 00...0 which equals 0)
+        return Ok({ tok: Int(0L), pos: start })
+      }
+    }
+  } else {
+    // Decimal integer
+    while is_digit_byte(self.peek_byte()) {
+      raw.push(self.peek_byte())
+      self.read_byte() |> ignore
+    }
+    if self.peek_byte() == b'.' {
+      fraction = true
+    } else if self.peek_byte() == b'e' || self.peek_byte() == b'E' {
+      exponent = true
+    }
+  }
+
+  // Collect fractional digits.
+  if fraction {
+    if self.peek_byte() == b'.' {
+      raw.push(b'.')
+      self.read_byte() |> ignore
+    }
+    while is_digit_byte(self.peek_byte()) {
+      raw.push(self.peek_byte())
+      self.read_byte() |> ignore
+    }
+    if self.peek_byte() == b'e' || self.peek_byte() == b'E' {
+      exponent = true
+    }
+  }
+
+  // Collect exponent.
+  if exponent {
+    raw.push(self.peek_byte()) // 'e' or 'E'
+    self.read_byte() |> ignore
+    if self.peek_byte() == b'+' || self.peek_byte() == b'-' {
+      raw.push(self.peek_byte())
+      self.read_byte() |> ignore
+    }
+    if !is_digit_byte(self.peek_byte()) {
+      return Err(self.make_error(start, "invalid float literal"))
+    }
+    while is_digit_byte(self.peek_byte()) {
+      raw.push(self.peek_byte())
+      self.read_byte() |> ignore
+    }
+  }
+
+  let raw_str = @utf8.decode_lossy(Bytes::from_array(raw)[:])
+  if fraction || exponent {
+    match parse_float_str(raw_str) {
+      Err(e) => Err(self.make_error(start, e))
+      Ok(f) => Ok({ tok: Float(f), pos: start })
+    }
+  } else {
+    match parse_int_decimal(raw_str) {
+      Err(_) => Ok({ tok: BigInt(raw_str), pos: start })
+      Ok(n) => Ok({ tok: Int(n), pos: start })
+    }
+  }
+}
+
+///|
+fn Scanner::scan_string(
+  self : Scanner,
+  start : @errors.Position,
+  is_bytes : Bool,
+  is_raw : Bool,
+) -> Result[ScannedToken, @errors.SyntaxError] {
+  let quote = self.peek_byte()
+  let triple = self.peek_byte_ahead(1) == quote &&
+    self.peek_byte_ahead(2) == quote
+  self.read_byte() |> ignore // first quote
+  if triple {
+    self.read_byte() |> ignore // second quote
+    self.read_byte() |> ignore // third quote
+  }
+  let buf : Array[Byte] = []
+  if triple {
+    match self.scan_string_triple(start, quote, is_bytes, is_raw, buf) {
+      Err(e) => return Err(e)
+      Ok(_) => ()
+    }
+  } else {
+    match self.scan_string_single(start, quote, is_bytes, is_raw, buf) {
+      Err(e) => return Err(e)
+      Ok(_) => ()
+    }
+  }
+  let content = Bytes::from_array(buf)
+  if is_bytes {
+    Ok({ tok: Bytes(content), pos: start })
+  } else {
+    Ok({ tok: Str(@utf8.decode_lossy(content[:])), pos: start })
+  }
+}
+
+///|
+fn Scanner::scan_string_single(
+  self : Scanner,
+  start : @errors.Position,
+  quote : Byte,
+  is_bytes : Bool,
+  is_raw : Bool,
+  buf : Array[Byte],
+) -> Result[Unit, @errors.SyntaxError] {
+  while true {
+    if self.peek_byte() == b'\x00' {
+      return Err(self.make_error(start, "unexpected EOF in string"))
+    }
+    let ch = self.read_byte()
+    if ch == quote {
+      break
+    }
+    if ch == b'\n' || ch == b'\r' {
+      return Err(self.make_error(start, "unexpected newline in string"))
+    }
+    if ch == b'\\' {
+      if is_raw {
+        // Raw: backslash is kept literally; next char too (except \<newline>)
+        buf.push(b'\\')
+        if self.peek_byte() == b'\x00' {
+          return Err(self.make_error(start, "unexpected EOF in string"))
+        }
+        let next = self.read_byte()
+        if next == b'\r' {
+          buf.push(b'\n')
+        } else {
+          buf.push(next)
+        }
+      } else {
+        if self.peek_byte() == b'\x00' {
+          return Err(self.make_error(start, "unexpected EOF in string"))
+        }
+        let next = self.read_byte()
+        match self.decode_escape(start, next, is_bytes, buf) {
+          Err(e) => return Err(e)
+          Ok(_) => ()
+        }
+      }
+    } else {
+      buf.push(ch)
+    }
+  }
+  Ok(())
+}
+
+///|
+fn Scanner::scan_string_triple(
+  self : Scanner,
+  start : @errors.Position,
+  quote : Byte,
+  is_bytes : Bool,
+  is_raw : Bool,
+  buf : Array[Byte],
+) -> Result[Unit, @errors.SyntaxError] {
+  let mut quote_count = 0
+  while true {
+    if self.peek_byte() == b'\x00' {
+      return Err(self.make_error(start, "unexpected EOF in string"))
+    }
+    let ch = self.read_byte()
+    if ch == quote {
+      quote_count += 1
+      buf.push(ch)
+      if quote_count == 3 {
+        // Remove the 3 closing quotes from content.
+        buf.pop() |> ignore
+        buf.pop() |> ignore
+        buf.pop() |> ignore
+        break
+      }
+    } else {
+      quote_count = 0
+      if ch == b'\\' {
+        if is_raw {
+          buf.push(b'\\')
+          if self.peek_byte() == b'\x00' {
+            return Err(self.make_error(start, "unexpected EOF in string"))
+          }
+          let next = self.read_byte()
+          if next == b'\r' {
+            buf.push(b'\n')
+          } else {
+            buf.push(next)
+          }
+        } else {
+          if self.peek_byte() == b'\x00' {
+            return Err(self.make_error(start, "unexpected EOF in string"))
+          }
+          let next = self.read_byte()
+          match self.decode_escape(start, next, is_bytes, buf) {
+            Err(e) => return Err(e)
+            Ok(_) => ()
+          }
+        }
+      } else if ch == b'\r' {
+        // normalize CR to LF
+        buf.push(b'\n')
+        // skip following \n
+        if self.peek_byte() == b'\n' {
+          self.read_byte() |> ignore
+        }
+      } else {
+        buf.push(ch)
+      }
+    }
+  }
+  Ok(())
+}
+
+///|
+fn Scanner::decode_escape(
+  self : Scanner,
+  str_start : @errors.Position,
+  c : Byte,
+  is_bytes : Bool,
+  buf : Array[Byte],
+) -> Result[Unit, @errors.SyntaxError] {
+  let n = c.to_int()
+  match n {
+    0x61 => buf.push(b'\x07') // \a
+    0x62 => buf.push(b'\x08') // \b
+    0x66 => buf.push(b'\x0C') // \f
+    0x6E => buf.push(b'\n') // \n
+    0x72 => buf.push(b'\r') // \r
+    0x74 => buf.push(b'\t') // \t
+    0x76 => buf.push(b'\x0B') // \v
+    0x5C => buf.push(b'\\') // \\
+    0x27 => buf.push(b'\'') // \'
+    0x22 => buf.push(b'"') // \"
+    0x0A => () // \<LF> → line continuation: skip
+    0x0D =>
+      // \<CR> → skip; also skip following \n
+      if self.peek_byte() == b'\n' {
+        self.read_byte() |> ignore
+      }
+    0x30 | 0x31 | 0x32 | 0x33 | 0x34 | 0x35 | 0x36 | 0x37 => {
+      // Octal: \NNN (up to 3 digits)
+      let mut val = n - 0x30
+      for _ in 0..<2 {
+        if is_odigit_byte(self.peek_byte()) {
+          val = val * 8 + (self.peek_byte().to_int() - 0x30)
+          self.read_byte() |> ignore
+        } else {
+          break
+        }
+      }
+      if val >= 256 {
+        return Err(self.make_error(str_start, "invalid octal escape sequence"))
+      }
+      if !is_bytes && val > 127 {
+        return Err(
+          self.make_error(
+            str_start, "non-ASCII octal escape (use \\uXXXX for Unicode)",
+          ),
+        )
+      }
+      buf.push(val.to_byte())
+    }
+    0x78 => {
+      // Hex: \xNN (exactly 2 digits)
+      let h1 = self.peek_byte()
+      if !is_xdigit_byte(h1) {
+        return Err(self.make_error(str_start, "truncated escape sequence \\x"))
+      }
+      self.read_byte() |> ignore
+      let h2 = self.peek_byte()
+      if !is_xdigit_byte(h2) {
+        return Err(self.make_error(str_start, "truncated escape sequence \\x"))
+      }
+      self.read_byte() |> ignore
+      let val = xdigit_to_int(h1) * 16 + xdigit_to_int(h2)
+      if !is_bytes && val > 127 {
+        return Err(self.make_error(str_start, "non-ASCII hex escape"))
+      }
+      buf.push(val.to_byte())
+    }
+    0x75 => {
+      // Unicode: \uNNNN (string only)
+      if is_bytes {
+        return Err(
+          self.make_error(str_start, "invalid escape \\u in bytes literal"),
+        )
+      }
+      match self.read_n_hex(str_start, 4) {
+        Err(e) => return Err(e)
+        Ok(cp) => append_utf8_codepoint(cp, buf)
+      }
+    }
+    0x55 => {
+      // Unicode: \UNNNNNNNN (string only)
+      if is_bytes {
+        return Err(
+          self.make_error(str_start, "invalid escape \\U in bytes literal"),
+        )
+      }
+      match self.read_n_hex(str_start, 8) {
+        Err(e) => return Err(e)
+        Ok(cp) => {
+          let max_cp = 1114111 // 0x10FFFF
+          let surr_lo = 55296 // 0xD800
+          let surr_hi = 57344 // 0xE000
+          if cp > max_cp {
+            return Err(self.make_error(str_start, "code point out of range"))
+          }
+          if cp >= surr_lo && cp < surr_hi {
+            return Err(
+              self.make_error(str_start, "invalid Unicode surrogate code point"),
+            )
+          }
+          append_utf8_codepoint(cp, buf)
+        }
+      }
+    }
+    _ =>
+      return Err(
+        self.make_error(
+          str_start,
+          "invalid escape sequence \\\{n.unsafe_to_char()}",
+        ),
+      )
+  }
+  Ok(())
+}
+
+///|
+fn Scanner::read_n_hex(
+  self : Scanner,
+  pos : @errors.Position,
+  n : Int,
+) -> Result[Int, @errors.SyntaxError] {
+  let mut result = 0
+  for _ in 0..<n {
+    let b = self.peek_byte()
+    if !is_xdigit_byte(b) {
+      return Err(self.make_error(pos, "truncated Unicode escape sequence"))
+    }
+    result = result * 16 + xdigit_to_int(b)
+    self.read_byte() |> ignore
+  }
+  Ok(result)
+}
+
+// --- Byte classification ---
+
+///|
+fn is_digit_byte(b : Byte) -> Bool {
+  b >= b'0' && b <= b'9'
+}
+
+///|
+fn is_odigit_byte(b : Byte) -> Bool {
+  b >= b'0' && b <= b'7'
+}
+
+///|
+fn is_xdigit_byte(b : Byte) -> Bool {
+  (b >= b'0' && b <= b'9') ||
+  (b >= b'a' && b <= b'f') ||
+  (b >= b'A' && b <= b'F')
+}
+
+///|
+fn is_bdigit_byte(b : Byte) -> Bool {
+  b == b'0' || b == b'1'
+}
+
+///|
+fn is_ident_start_byte(b : Byte) -> Bool {
+  (b >= b'a' && b <= b'z') ||
+  (b >= b'A' && b <= b'Z') ||
+  b == b'_' ||
+  b.to_int() >= 0x80
+}
+
+///|
+fn is_ident_byte(b : Byte) -> Bool {
+  is_digit_byte(b) || is_ident_start_byte(b)
+}
+
+///|
+fn xdigit_to_int(b : Byte) -> Int {
+  let n = b.to_int()
+  if n >= 0x30 && n <= 0x39 {
+    n - 0x30
+  } else if n >= 0x61 && n <= 0x66 {
+    n - 0x61 + 10
+  } else {
+    n - 0x41 + 10
+  }
+}
+
+// --- UTF-8 encoder for Unicode codepoints ---
+
+///|
+fn append_utf8_codepoint(cp : Int, buf : Array[Byte]) -> Unit {
+  if cp < 0x80 {
+    buf.push(cp.to_byte())
+  } else if cp < 0x800 {
+    buf.push((0xC0 | (cp >> 6)).to_byte())
+    buf.push((0x80 | (cp & 0x3F)).to_byte())
+  } else if cp < 0x10000 {
+    buf.push((0xE0 | (cp >> 12)).to_byte())
+    buf.push((0x80 | ((cp >> 6) & 0x3F)).to_byte())
+    buf.push((0x80 | (cp & 0x3F)).to_byte())
+  } else {
+    buf.push((0xF0 | (cp >> 18)).to_byte())
+    buf.push((0x80 | ((cp >> 12) & 0x3F)).to_byte())
+    buf.push((0x80 | ((cp >> 6) & 0x3F)).to_byte())
+    buf.push((0x80 | (cp & 0x3F)).to_byte())
+  }
+}
+
+// --- Integer and float parsers ---
+
+///|
+fn parse_int_decimal(s : String) -> Result[Int64, String] {
+  if s.length() == 0 {
+    return Err("empty integer")
+  }
+  let bytes = @utf8.encode(s)
+  let mut result = 0L
+  let max_safe = 922337203685477580L // Int64::max / 10
+  for i in 0..<bytes.length() {
+    let b = bytes[i]
+    if b < b'0' || b > b'9' {
+      return Err("invalid digit in decimal literal")
+    }
+    let d = (b.to_int() - 0x30).to_int64()
+    if result > max_safe || (result == max_safe && d > 7L) {
+      return Err("integer overflow")
+    }
+    result = result * 10L + d
+  }
+  Ok(result)
+}
+
+///|
+fn parse_int_hex(s : String) -> Result[Int64, String] {
+  if s.length() == 0 {
+    return Err("empty hex literal")
+  }
+  let bytes = @utf8.encode(s)
+  let mut result = 0L
+  for i in 0..<bytes.length() {
+    let b = bytes[i]
+    if !is_xdigit_byte(b) {
+      return Err("invalid hex digit")
+    }
+    let d = xdigit_to_int(b).to_int64()
+    // Check overflow: Int64 max = 9223372036854775807
+    // To avoid overflow on *16, check if result > 9223372036854775807/16
+    let max_safe_hex = 576460752303423487L // 0x7FFFFFFFFFFFFFFF / 16
+    if result > max_safe_hex {
+      return Err("integer overflow")
+    }
+    result = result * 16L + d
+    if result < 0L {
+      return Err("integer overflow")
+    }
+  }
+  Ok(result)
+}
+
+///|
+fn parse_int_base(s : String, base : Int) -> Result[Int64, String] {
+  if s.length() == 0 {
+    return Err("empty literal")
+  }
+  let bytes = @utf8.encode(s)
+  let mut result = 0L
+  let base64 = base.to_int64()
+  let max_before = 9223372036854775807L / base64
+  for i in 0..<bytes.length() {
+    let b = bytes[i]
+    let d = (b.to_int() - 0x30).to_int64()
+    if d < 0L || d >= base64 {
+      return Err("invalid digit for base \{base}")
+    }
+    if result > max_before {
+      return Err("integer overflow")
+    }
+    result = result * base64 + d
+    if result < 0L {
+      return Err("integer overflow")
+    }
+  }
+  Ok(result)
+}
+
+// parse_float_str converts a decimal float string to Double.
+
+///|
+fn parse_float_str(s : String) -> Result[Double, String] {
+  if s.length() == 0 {
+    return Err("empty float string")
+  }
+  let bytes = @utf8.encode(s)
+  let n = bytes.length()
+  let mut i = 0
+
+  // Integer part
+  let mut int_val = 0.0
+  while i < n && is_digit_byte(bytes[i]) {
+    int_val = int_val * 10.0 + (bytes[i].to_int() - 0x30).to_double()
+    i += 1
+  }
+
+  // Fractional part
+  let mut frac = 0.0
+  let mut frac_div = 1.0
+  if i < n && bytes[i] == b'.' {
+    i += 1
+    while i < n && is_digit_byte(bytes[i]) {
+      frac = frac * 10.0 + (bytes[i].to_int() - 0x30).to_double()
+      frac_div *= 10.0
+      i += 1
+    }
+  }
+  let mantissa = int_val + frac / frac_div
+
+  // Exponent part
+  let mut result = mantissa
+  if i < n && (bytes[i] == b'e' || bytes[i] == b'E') {
+    i += 1
+    let mut exp_neg = false
+    if i < n && bytes[i] == b'-' {
+      exp_neg = true
+      i += 1
+    } else if i < n && bytes[i] == b'+' {
+      i += 1
+    }
+    let mut exp = 0
+    while i < n && is_digit_byte(bytes[i]) {
+      exp = exp * 10 + (bytes[i].to_int() - 0x30)
+      i += 1
+    }
+    let mut mult = 1.0
+    let mut e = exp
+    while e > 0 {
+      mult *= 10.0
+      e -= 1
+    }
+    result = if exp_neg { mantissa / mult } else { mantissa * mult }
+  }
+  Ok(result)
+}
