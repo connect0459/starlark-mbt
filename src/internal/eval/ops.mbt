@@ -382,6 +382,7 @@ fn eval_mod(
       }
       @value.Value::FloatVal(a % b.to_double())
     }
+    (@value.Value::StrVal(s), _) => check(ctx, percent_format(s.raw, rv))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -390,6 +391,245 @@ fn eval_mod(
         ),
       )
   }
+}
+
+///|
+fn percent_format(
+  fmt : String,
+  args : @value.Value,
+) -> Result[@value.Value, String] {
+  let arg_list : Array[@value.Value] = match args {
+    @value.Value::TupleVal(t) => t
+    v => [v]
+  }
+  let buf = StringBuilder::new()
+  let chars = fmt.to_array()
+  let n = chars.length()
+  let mut i = 0
+  let mut arg_idx = 0
+  while i < n {
+    let c = chars[i]
+    if c != '%' {
+      buf.write_char(c)
+      i += 1
+      continue
+    }
+    i += 1
+    if i >= n {
+      return Err("incomplete format specifier")
+    }
+    let spec = chars[i]
+    i += 1
+    if spec == '%' {
+      buf.write_char('%')
+      continue
+    }
+    if arg_idx >= arg_list.length() {
+      return Err("not enough arguments for format string")
+    }
+    let arg = arg_list[arg_idx]
+    arg_idx += 1
+    match spec {
+      's' => buf.write_string(@value.to_str(arg))
+      'r' => buf.write_string(@value.repr(arg))
+      'd' | 'i' =>
+        match arg {
+          @value.Value::IntVal(n2) => buf.write_string(n2.to_string())
+          @value.Value::FloatVal(f) =>
+            buf.write_string(f.to_int64().to_string())
+          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+        }
+      'o' =>
+        match arg {
+          @value.Value::IntVal(n2) =>
+            if n2 < 0L {
+              buf.write_char('-')
+              buf.write_string(int64_to_octal(n2.abs()))
+            } else {
+              buf.write_string(int64_to_octal(n2))
+            }
+          @value.Value::FloatVal(f) => {
+            let n2 = f.to_int64()
+            if n2 < 0L {
+              buf.write_char('-')
+              buf.write_string(int64_to_octal(n2.abs()))
+            } else {
+              buf.write_string(int64_to_octal(n2))
+            }
+          }
+          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+        }
+      'x' =>
+        match arg {
+          @value.Value::IntVal(n2) =>
+            if n2 < 0L {
+              buf.write_char('-')
+              buf.write_string(int64_to_hex(n2.abs(), false))
+            } else {
+              buf.write_string(int64_to_hex(n2, false))
+            }
+          @value.Value::FloatVal(f) => {
+            let n2 = f.to_int64()
+            if n2 < 0L {
+              buf.write_char('-')
+              buf.write_string(int64_to_hex(n2.abs(), false))
+            } else {
+              buf.write_string(int64_to_hex(n2, false))
+            }
+          }
+          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+        }
+      'X' =>
+        match arg {
+          @value.Value::IntVal(n2) =>
+            if n2 < 0L {
+              buf.write_char('-')
+              buf.write_string(int64_to_hex(n2.abs(), true))
+            } else {
+              buf.write_string(int64_to_hex(n2, true))
+            }
+          @value.Value::FloatVal(f) => {
+            let n2 = f.to_int64()
+            if n2 < 0L {
+              buf.write_char('-')
+              buf.write_string(int64_to_hex(n2.abs(), true))
+            } else {
+              buf.write_string(int64_to_hex(n2, true))
+            }
+          }
+          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+        }
+      'e' | 'E' | 'f' | 'g' | 'G' => {
+        let f = match arg {
+          @value.Value::FloatVal(f) => f
+          @value.Value::IntVal(n2) => n2.to_double()
+          _ => return Err("cannot convert \{@value.type_name(arg)} to float")
+        }
+        let s2 = match spec {
+          'e' => format_float_e(f, false)
+          'E' => format_float_e(f, true)
+          'f' => format_float_f(f)
+          'g' | 'G' => {
+            let s3 = format_float_g(f)
+            if spec == 'G' {
+              s3.to_upper()
+            } else {
+              s3
+            }
+          }
+          _ => ""
+        }
+        buf.write_string(s2)
+      }
+      'c' =>
+        match arg {
+          @value.Value::IntVal(n2) => {
+            let cp = n2.to_int()
+            if cp < 0 || cp > 0x10FFFF {
+              return Err("%c requires int in range [0, 0x10FFFF]")
+            }
+            buf.write_char(cp.unsafe_to_char())
+          }
+          @value.Value::StrVal(s2) =>
+            if s2.raw.length() == 1 {
+              buf.write_string(s2.raw)
+            } else {
+              return Err("%c requires a single character string")
+            }
+          _ => return Err("%c requires int or single-char string")
+        }
+      _ => return Err("unknown format specifier '%\{spec}'")
+    }
+  }
+  if arg_idx < arg_list.length() {
+    return Err("too many arguments for format string")
+  }
+  Ok(@value.Value::StrVal(@value.StarlarkString::new(buf.to_string())))
+}
+
+///|
+fn int64_to_octal(n : Int64) -> String {
+  if n == 0L {
+    return "0"
+  }
+  let buf = StringBuilder::new()
+  let mut v = n
+  let digits : Array[Int] = []
+  while v > 0L {
+    digits.push((v % 8L).to_int())
+    v = v / 8L
+  }
+  let mut j = digits.length() - 1
+  while j >= 0 {
+    buf.write_char(('0'.to_int() + digits[j]).unsafe_to_char())
+    j -= 1
+  }
+  buf.to_string()
+}
+
+///|
+fn int64_to_hex(n : Int64, upper : Bool) -> String {
+  if n == 0L {
+    return "0"
+  }
+  let buf = StringBuilder::new()
+  let mut v = n
+  let digits : Array[Int] = []
+  while v > 0L {
+    digits.push((v % 16L).to_int())
+    v = v / 16L
+  }
+  let base_char = if upper { 'A'.to_int() } else { 'a'.to_int() }
+  let mut j = digits.length() - 1
+  while j >= 0 {
+    let d = digits[j]
+    if d < 10 {
+      buf.write_char(('0'.to_int() + d).unsafe_to_char())
+    } else {
+      buf.write_char((base_char + d - 10).unsafe_to_char())
+    }
+    j -= 1
+  }
+  buf.to_string()
+}
+
+///|
+fn format_float_e(f : Double, upper : Bool) -> String {
+  if f.is_nan() {
+    return "nan"
+  }
+  if f.is_inf() {
+    return if f > 0.0 { "inf" } else { "-inf" }
+  }
+  let s = f.to_string()
+  ignore(upper)
+  s
+}
+
+///|
+fn format_float_f(f : Double) -> String {
+  if f.is_nan() {
+    return "nan"
+  }
+  if f.is_inf() {
+    return if f > 0.0 { "inf" } else { "-inf" }
+  }
+  f.to_string()
+}
+
+///|
+fn format_float_g(f : Double) -> String {
+  if f.is_nan() {
+    return "nan"
+  }
+  if f.is_inf() {
+    return if f > 0.0 { "inf" } else { "-inf" }
+  }
+  f.to_string()
 }
 
 ///|
@@ -492,7 +732,10 @@ fn eval_shift(
   match (lv, rv) {
     (@value.Value::IntVal(a), @value.Value::IntVal(b)) => {
       if b < 0L {
-        raise EvalErr(make_eval_error(ctx, "shift count is negative"))
+        raise EvalErr(make_eval_error(ctx, "negative shift count"))
+      }
+      if b > 63L {
+        raise EvalErr(make_eval_error(ctx, "shift count too large"))
       }
       let shift = b.to_int()
       let r = match dir {

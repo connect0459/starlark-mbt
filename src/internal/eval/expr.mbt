@@ -536,38 +536,61 @@ fn call_builtin(
       } else {
         raise EvalErr(make_eval_error(ctx, "bool() takes at most one argument"))
       }
-    "int" =>
-      if pos_args.length() == 0 {
-        @value.Value::IntVal(0L)
-      } else if pos_args.length() == 1 {
-        match pos_args[0] {
-          @value.Value::IntVal(n) => @value.Value::IntVal(n)
-          @value.Value::FloatVal(f) => @value.Value::IntVal(f.to_int64())
-          @value.Value::BoolVal(b) =>
-            @value.Value::IntVal(if b { 1L } else { 0L })
-          @value.Value::StrVal(s) => {
-            let base = if kw_args.length() > 0 {
-              match kw_args[0] {
-                ("base", @value.Value::IntVal(b)) => b.to_int()
-                _ => 10
+    "int" => {
+      let base_from_kw = {
+        let mut found : Int? = None
+        for kv in kw_args {
+          if kv.0 == "base" {
+            match kv.1 {
+              @value.Value::IntVal(b) => {
+                found = Some(b.to_int())
+                break
               }
-            } else {
-              10
+              _ => ()
             }
-            let n = check(ctx, parse_int_str(s.raw, base))
-            @value.Value::IntVal(n)
           }
-          v =>
-            raise EvalErr(
-              make_eval_error(
-                ctx,
-                "int() argument must be a number or string, not '\{@value.type_name(v)}'",
-              ),
-            )
+        }
+        found
+      }
+      let base_from_pos = if pos_args.length() >= 2 {
+        match pos_args[1] {
+          @value.Value::IntVal(b) => Some(b.to_int())
+          _ => None
         }
       } else {
-        raise EvalErr(make_eval_error(ctx, "int() takes at most one argument"))
+        None
       }
+      let explicit_base = match base_from_kw {
+        Some(b) => Some(b)
+        None => base_from_pos
+      }
+      if pos_args.length() == 0 {
+        raise EvalErr(make_eval_error(ctx, "int() missing argument"))
+      }
+      match (pos_args[0], explicit_base) {
+        (@value.Value::StrVal(s), base_opt) => {
+          let base = match base_opt {
+            Some(b) => b
+            None => 10
+          }
+          let n = check(ctx, parse_int_str(s.raw, base))
+          @value.Value::IntVal(n)
+        }
+        (_, Some(_)) =>
+          raise EvalErr(make_eval_error(ctx, "non-string with explicit base"))
+        (@value.Value::IntVal(n), None) => @value.Value::IntVal(n)
+        (@value.Value::FloatVal(f), None) => @value.Value::IntVal(f.to_int64())
+        (@value.Value::BoolVal(b), None) =>
+          @value.Value::IntVal(if b { 1L } else { 0L })
+        (v, None) =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "int() argument must be a number or string, not '\{@value.type_name(v)}'",
+            ),
+          )
+      }
+    }
     "float" =>
       if pos_args.length() == 0 {
         @value.Value::FloatVal(0.0)
@@ -2137,7 +2160,7 @@ fn call_str_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "splitlines() argument must be bool, got \{@value.type_name(pos_args[0])} (want bool)",
+                "splitlines: got \{@value.type_name(pos_args[0])}, want bool",
               ),
             )
         }
@@ -2801,12 +2824,12 @@ fn str_format(
 fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
   let s = s.trim().to_owned()
   if s.length() == 0 {
-    return Err("invalid literal for int(): empty string")
+    return Err("invalid literal with base \{base}: \{s}")
   }
   let negative = s[0] == '-'
   let start = if negative || s[0] == '+' { 1 } else { 0 }
   if start >= s.length() {
-    return Err("invalid literal for int(): '\{s}'")
+    return Err("invalid literal with base \{base}: \{s}")
   }
   let actual_base = if base == 0 {
     if s[start] == '0' && start + 1 < s.length() {
@@ -2814,7 +2837,12 @@ fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
         'x' | 'X' => 16
         'o' | 'O' => 8
         'b' | 'B' => 2
-        _ => 10
+        _ => {
+          if s[start + 1] >= '1' && s[start + 1] <= '9' {
+            return Err("invalid literal with base 0: \{s}")
+          }
+          10
+        }
       }
     } else {
       10
@@ -2822,16 +2850,14 @@ fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
   } else {
     base
   }
-  let digit_start = if actual_base != 10 &&
-    s[start] == '0' &&
-    start + 1 < s.length() {
+  let report_base = if base == 0 { actual_base } else { base }
+  let digit_start = if s[start] == '0' && start + 1 < s.length() {
     let prefix = s[start + 1]
-    if prefix == 'x' ||
-      prefix == 'X' ||
-      prefix == 'o' ||
-      prefix == 'O' ||
-      prefix == 'b' ||
-      prefix == 'B' {
+    if (prefix == 'x' || prefix == 'X') && actual_base == 16 {
+      start + 2
+    } else if (prefix == 'o' || prefix == 'O') && actual_base == 8 {
+      start + 2
+    } else if (prefix == 'b' || prefix == 'B') && actual_base == 2 {
       start + 2
     } else {
       start
@@ -2840,7 +2866,7 @@ fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
     start
   }
   if digit_start >= s.length() {
-    return Err("invalid literal for int(): '\{s}'")
+    return Err("invalid literal with base \{report_base}: \{s}")
   }
   let mut result = 0L
   for i in digit_start..<s.length() {
@@ -2852,10 +2878,10 @@ fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
     } else if c >= 'A'.to_int() && c <= 'Z'.to_int() {
       c - 'A'.to_int() + 10
     } else {
-      return Err("invalid literal for int(): '\{s}'")
+      return Err("invalid literal with base \{report_base}: \{s}")
     }
     if digit >= actual_base {
-      return Err("invalid literal for int(): '\{s}'")
+      return Err("invalid literal with base \{report_base}: \{s}")
     }
     result = result * actual_base.to_int64() + digit.to_int64()
   }
