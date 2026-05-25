@@ -1582,3 +1582,44 @@ test "exec_file: print with sep= and no args outputs empty string" {
   ignore(exec_file(t, "<test>", "print(sep=\",\")", Options::default()))
   assert_true(captured.length() > 0 && captured[0] == "")
 }
+
+// --- dir() ---
+
+///|
+test "exec_file: dir on string returns sorted method names" {
+  match exec_b("r = dir(\"hello\")") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => {
+          assert_true(l.items.length() > 0)
+          assert_true(l.items[0] is @value.Value::StrVal(_))
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: dir on list returns sorted method names" {
+  match exec_b("r = dir([])") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => assert_true(l.items.length() > 0)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: dir on int returns empty list" {
+  match exec_b("r = dir(42)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}

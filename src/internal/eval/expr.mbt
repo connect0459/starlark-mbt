@@ -601,7 +601,42 @@ fn call_builtin(
       let h = check(ctx, @value.starlark_hash(pos_args[0]))
       @value.Value::IntVal(h.reinterpret_as_int().to_int64())
     }
-    "dir" => @value.Value::ListVal(@value.StarlarkList::new([]))
+    "dir" => {
+      if pos_args.length() != 1 {
+        raise EvalErr(make_eval_error(ctx, "dir() takes exactly one argument"))
+      }
+      let names : Array[String] = match pos_args[0] {
+        @value.Value::StrVal(_) =>
+          [
+            "capitalize", "count", "elem_ords", "elems", "endswith", "find", "format",
+            "index", "isalnum", "isalpha", "isdigit", "islower", "isspace", "istitle",
+            "isupper", "join", "lower", "lstrip", "partition", "removeprefix", "removesuffix",
+            "replace", "rfind", "rindex", "rpartition", "rstrip", "split", "splitlines",
+            "startswith", "strip", "title", "upper",
+          ]
+        @value.Value::ListVal(_) =>
+          [
+            "append", "clear", "count", "extend", "index", "insert", "pop", "remove",
+            "reverse", "sort",
+          ]
+        @value.Value::DictVal(_) =>
+          [
+            "clear", "get", "items", "keys", "pop", "popitem", "setdefault", "update",
+            "values",
+          ]
+        @value.Value::SetVal(_) =>
+          [
+            "add", "clear", "difference", "discard", "intersection", "issubset",
+            "issuperset", "pop", "remove", "symmetric_difference", "union", "update",
+          ]
+        @value.Value::BytesVal(_) => ["elems"]
+        _ => []
+      }
+      let items = names.map(fn(n) {
+        @value.Value::StrVal(@value.StarlarkString::new(n))
+      })
+      @value.Value::ListVal(@value.StarlarkList::new(items))
+    }
     "chr" => {
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "chr() takes exactly one argument"))
