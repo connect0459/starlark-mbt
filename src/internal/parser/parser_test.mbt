@@ -1,0 +1,664 @@
+// Parser tests — TDD Red phase.
+// Reference: starlark-go/syntax/parse_test.go
+
+///|
+fn parse_e(src : String) -> @syntax.Expr {
+  match @parser.parse_expr("test.star", src) {
+    Ok(e) => e
+    Err(e) => abort("parse error: \{e.to_string()}")
+  }
+}
+
+///|
+fn parse_f(src : String) -> @syntax.File {
+  match @parser.parse_file("test.star", src) {
+    Ok(f) => f
+    Err(e) => abort("parse error: \{e.to_string()}")
+  }
+}
+
+// --- Literal expressions ---
+
+///|
+test "integer literal is parsed as LitInt" {
+  match parse_e("42") {
+    ELiteral(LitInt(42L), _) => ()
+    _ => fail("expected LitInt(42)")
+  }
+}
+
+///|
+test "zero integer literal" {
+  match parse_e("0") {
+    ELiteral(LitInt(0L), _) => ()
+    _ => fail("expected LitInt(0)")
+  }
+}
+
+///|
+test "hex integer literal" {
+  match parse_e("0xFF") {
+    ELiteral(LitInt(255L), _) => ()
+    _ => fail("expected LitInt(255)")
+  }
+}
+
+///|
+test "float literal is parsed as LitFloat" {
+  match parse_e("1.5") {
+    ELiteral(LitFloat(f), _) => assert_eq(f, 1.5)
+    _ => fail("expected LitFloat(1.5)")
+  }
+}
+
+///|
+test "string literal is parsed as LitString" {
+  match parse_e("\"hello\"") {
+    ELiteral(LitString("hello"), _) => ()
+    _ => fail("expected LitString(\"hello\")")
+  }
+}
+
+///|
+test "None literal is parsed as LitNone" {
+  match parse_e("None") {
+    ELiteral(LitNone, _) => ()
+    _ => fail("expected LitNone")
+  }
+}
+
+///|
+test "True literal is parsed as LitBool(true)" {
+  match parse_e("True") {
+    ELiteral(LitBool(true), _) => ()
+    _ => fail("expected LitBool(true)")
+  }
+}
+
+///|
+test "False literal is parsed as LitBool(false)" {
+  match parse_e("False") {
+    ELiteral(LitBool(false), _) => ()
+    _ => fail("expected LitBool(false)")
+  }
+}
+
+///|
+test "identifier is parsed as EIdent" {
+  match parse_e("xyz") {
+    EIdent("xyz", _) => ()
+    _ => fail("expected EIdent(\"xyz\")")
+  }
+}
+
+// --- Unary expressions ---
+
+///|
+test "unary minus on integer" {
+  match parse_e("-1") {
+    EUnary(OpMinus, ELiteral(LitInt(1L), _), _) => ()
+    _ => fail("expected EUnary(OpMinus, LitInt(1))")
+  }
+}
+
+///|
+test "unary not on identifier" {
+  match parse_e("not x") {
+    EUnary(OpNot, EIdent("x", _), _) => ()
+    _ => fail("expected EUnary(OpNot, EIdent(x))")
+  }
+}
+
+///|
+test "unary bitwise not" {
+  match parse_e("~x") {
+    EUnary(OpBitNot, EIdent("x", _), _) => ()
+    _ => fail("expected EUnary(OpBitNot, EIdent(x))")
+  }
+}
+
+// --- Binary expressions ---
+
+///|
+test "binary addition" {
+  match parse_e("1 + 2") {
+    EBinary(ELiteral(LitInt(1L), _), OpAdd, ELiteral(LitInt(2L), _), _) => ()
+    _ => fail("expected 1 + 2")
+  }
+}
+
+///|
+test "multiplication has higher precedence than addition" {
+  match parse_e("1 + 2 * 3") {
+    EBinary(
+      ELiteral(LitInt(1L), _),
+      OpAdd,
+      EBinary(ELiteral(LitInt(2L), _), OpMul, ELiteral(LitInt(3L), _), _),
+      _
+    ) => ()
+    _ => fail("expected 1 + (2 * 3)")
+  }
+}
+
+///|
+test "floor division" {
+  match parse_e("7 // 2") {
+    EBinary(_, OpFloorDiv, _, _) => ()
+    _ => fail("expected floor division")
+  }
+}
+
+///|
+test "power operator" {
+  match parse_e("2 ** 10") {
+    EBinary(ELiteral(LitInt(2L), _), OpPow, ELiteral(LitInt(10L), _), _) => ()
+    _ => fail("expected 2 ** 10")
+  }
+}
+
+///|
+test "equality comparison" {
+  match parse_e("x == y") {
+    EBinary(EIdent("x", _), OpEq, EIdent("y", _), _) => ()
+    _ => fail("expected x == y")
+  }
+}
+
+///|
+test "in operator" {
+  match parse_e("x in lst") {
+    EBinary(EIdent("x", _), OpIn, EIdent("lst", _), _) => ()
+    _ => fail("expected x in lst")
+  }
+}
+
+///|
+test "not in operator" {
+  match parse_e("x not in lst") {
+    EBinary(EIdent("x", _), OpNotIn, EIdent("lst", _), _) => ()
+    _ => fail("expected x not in lst")
+  }
+}
+
+///|
+test "boolean and" {
+  match parse_e("a and b") {
+    EBinary(EIdent("a", _), OpAnd, EIdent("b", _), _) => ()
+    _ => fail("expected a and b")
+  }
+}
+
+///|
+test "boolean or" {
+  match parse_e("a or b") {
+    EBinary(EIdent("a", _), OpOr, EIdent("b", _), _) => ()
+    _ => fail("expected a or b")
+  }
+}
+
+// --- Conditional expression ---
+
+///|
+test "conditional expression x if c else y" {
+  match parse_e("1 if True else 0") {
+    ECond(
+      ELiteral(LitInt(1L), _),
+      ELiteral(LitBool(true), _),
+      ELiteral(LitInt(0L), _),
+      _
+    ) => ()
+    _ => fail("expected conditional expression")
+  }
+}
+
+// --- Collection literals ---
+
+///|
+test "empty list literal" {
+  match parse_e("[]") {
+    EList(items, _) => assert_eq(items.length(), 0)
+    _ => fail("expected empty list")
+  }
+}
+
+///|
+test "list with elements" {
+  match parse_e("[1, 2, 3]") {
+    EList(items, _) => assert_eq(items.length(), 3)
+    _ => fail("expected list with 3 elements")
+  }
+}
+
+///|
+test "empty tuple from parentheses" {
+  match parse_e("()") {
+    ETuple(items, _) => assert_eq(items.length(), 0)
+    _ => fail("expected empty tuple")
+  }
+}
+
+///|
+test "single element tuple requires trailing comma" {
+  match parse_e("(1,)") {
+    ETuple(items, _) => assert_eq(items.length(), 1)
+    _ => fail("expected singleton tuple")
+  }
+}
+
+///|
+test "multi-element tuple with parens" {
+  match parse_e("(1, 2)") {
+    ETuple(items, _) => assert_eq(items.length(), 2)
+    _ => fail("expected 2-element tuple")
+  }
+}
+
+///|
+test "empty dict literal" {
+  match parse_e("{}") {
+    EDict(pairs, _) => assert_eq(pairs.length(), 0)
+    _ => fail("expected empty dict")
+  }
+}
+
+///|
+test "dict with entries" {
+  match parse_e("{\"a\": 1, \"b\": 2}") {
+    EDict(pairs, _) => assert_eq(pairs.length(), 2)
+    _ => fail("expected dict with 2 entries")
+  }
+}
+
+///|
+test "set literal" {
+  match parse_e("{1, 2, 3}") {
+    ESet(items, _) => assert_eq(items.length(), 3)
+    _ => fail("expected set with 3 elements")
+  }
+}
+
+// --- Call, dot, index, slice ---
+
+///|
+test "function call with no args" {
+  match parse_e("f()") {
+    ECall(EIdent("f", _), args, _) => assert_eq(args.length(), 0)
+    _ => fail("expected f()")
+  }
+}
+
+///|
+test "function call with positional args" {
+  match parse_e("f(1, 2)") {
+    ECall(EIdent("f", _), args, _) => assert_eq(args.length(), 2)
+    _ => fail("expected f(1, 2)")
+  }
+}
+
+///|
+test "function call with keyword arg" {
+  match parse_e("f(x=1)") {
+    ECall(EIdent("f", _), args, _) => {
+      assert_eq(args.length(), 1)
+      match args[0] {
+        ArgKw("x", ELiteral(LitInt(1L), _), _) => ()
+        _ => fail("expected keyword arg x=1")
+      }
+    }
+    _ => fail("expected f(x=1)")
+  }
+}
+
+///|
+test "attribute access" {
+  match parse_e("obj.attr") {
+    EDot(EIdent("obj", _), "attr", _) => ()
+    _ => fail("expected obj.attr")
+  }
+}
+
+///|
+test "index access" {
+  match parse_e("lst[0]") {
+    EIndex(EIdent("lst", _), ELiteral(LitInt(0L), _), _) => ()
+    _ => fail("expected lst[0]")
+  }
+}
+
+///|
+test "slice with start and end" {
+  match parse_e("lst[1:3]") {
+    ESlice(
+      EIdent("lst", _),
+      Some(ELiteral(LitInt(1L), _)),
+      Some(ELiteral(LitInt(3L), _)),
+      None,
+      _
+    ) => ()
+    _ => fail("expected lst[1:3]")
+  }
+}
+
+///|
+test "full slice with step" {
+  match parse_e("lst[::2]") {
+    ESlice(EIdent("lst", _), None, None, Some(ELiteral(LitInt(2L), _)), _) => ()
+    _ => fail("expected lst[::2]")
+  }
+}
+
+// --- Lambda ---
+
+///|
+test "lambda with no params" {
+  match parse_e("lambda: 42") {
+    ELambda(params, ELiteral(LitInt(42L), _), _) =>
+      assert_eq(params.length(), 0)
+    _ => fail("expected lambda: 42")
+  }
+}
+
+///|
+test "lambda with one param" {
+  match parse_e("lambda x: x") {
+    ELambda(params, EIdent("x", _), _) => {
+      assert_eq(params.length(), 1)
+      match params[0] {
+        ParamIdent("x", _) => ()
+        _ => fail("expected param x")
+      }
+    }
+    _ => fail("expected lambda x: x")
+  }
+}
+
+// --- List comprehension ---
+
+///|
+test "list comprehension" {
+  match parse_e("[x for x in lst]") {
+    EListComp(EIdent("x", _), clauses, _) => {
+      assert_eq(clauses.length(), 1)
+      match clauses[0] {
+        ClauseFor(EIdent("x", _), EIdent("lst", _), _) => ()
+        _ => fail("expected for x in lst clause")
+      }
+    }
+    _ => fail("expected list comprehension")
+  }
+}
+
+///|
+test "list comprehension with if filter" {
+  match parse_e("[x for x in lst if x > 0]") {
+    EListComp(EIdent("x", _), clauses, _) => assert_eq(clauses.length(), 2)
+    _ => fail("expected list comprehension with filter")
+  }
+}
+
+// --- Simple statements ---
+
+///|
+test "empty file has no stmts" {
+  let f = parse_f("")
+  assert_eq(f.stmts.length(), 0)
+}
+
+///|
+test "pass statement" {
+  let f = parse_f("pass\n")
+  assert_eq(f.stmts.length(), 1)
+  match f.stmts[0] {
+    SPass(_) => ()
+    _ => fail("expected SPass")
+  }
+}
+
+///|
+test "break statement" {
+  let f = parse_f("break\n")
+  match f.stmts[0] {
+    SBreak(_) => ()
+    _ => fail("expected SBreak")
+  }
+}
+
+///|
+test "continue statement" {
+  let f = parse_f("continue\n")
+  match f.stmts[0] {
+    SContinue(_) => ()
+    _ => fail("expected SContinue")
+  }
+}
+
+///|
+test "return with value" {
+  let f = parse_f("return 42\n")
+  match f.stmts[0] {
+    SReturn(Some(ELiteral(LitInt(42L), _)), _) => ()
+    _ => fail("expected SReturn(42)")
+  }
+}
+
+///|
+test "return without value" {
+  let f = parse_f("return\n")
+  match f.stmts[0] {
+    SReturn(None, _) => ()
+    _ => fail("expected SReturn(None)")
+  }
+}
+
+///|
+test "simple assignment" {
+  let f = parse_f("x = 1\n")
+  match f.stmts[0] {
+    SAssign(EIdent("x", _), ELiteral(LitInt(1L), _), _) => ()
+    _ => fail("expected x = 1")
+  }
+}
+
+///|
+test "augmented assignment plus-equals" {
+  let f = parse_f("x += 1\n")
+  match f.stmts[0] {
+    SAugAssign(EIdent("x", _), AugAdd, ELiteral(LitInt(1L), _), _) => ()
+    _ => fail("expected x += 1")
+  }
+}
+
+///|
+test "expression statement" {
+  let f = parse_f("f()\n")
+  match f.stmts[0] {
+    SExpr(ECall(EIdent("f", _), _, _)) => ()
+    _ => fail("expected SExpr(f())")
+  }
+}
+
+// --- Compound statements ---
+
+///|
+test "if statement with single-line body" {
+  let f = parse_f("if x:\n  pass\n")
+  match f.stmts[0] {
+    SIf(EIdent("x", _), body, else_body, _) => {
+      assert_eq(body.length(), 1)
+      assert_eq(else_body.length(), 0)
+    }
+    _ => fail("expected if statement")
+  }
+}
+
+///|
+test "if else statement" {
+  let f = parse_f("if x:\n  pass\nelse:\n  pass\n")
+  match f.stmts[0] {
+    SIf(_, true_body, false_body, _) => {
+      assert_eq(true_body.length(), 1)
+      assert_eq(false_body.length(), 1)
+    }
+    _ => fail("expected if-else")
+  }
+}
+
+///|
+test "for loop" {
+  let f = parse_f("for x in lst:\n  pass\n")
+  match f.stmts[0] {
+    SFor(EIdent("x", _), EIdent("lst", _), body, _) =>
+      assert_eq(body.length(), 1)
+    _ => fail("expected for loop")
+  }
+}
+
+///|
+test "while loop" {
+  let f = parse_f("while True:\n  pass\n")
+  match f.stmts[0] {
+    SWhile(ELiteral(LitBool(true), _), body, _) => assert_eq(body.length(), 1)
+    _ => fail("expected while loop")
+  }
+}
+
+///|
+test "function definition with no params" {
+  let f = parse_f("def f():\n  pass\n")
+  match f.stmts[0] {
+    SDef("f", params, body, _) => {
+      assert_eq(params.length(), 0)
+      assert_eq(body.length(), 1)
+    }
+    _ => fail("expected def f()")
+  }
+}
+
+///|
+test "function definition with param and default" {
+  let f = parse_f("def f(x, y=1):\n  pass\n")
+  match f.stmts[0] {
+    SDef("f", params, _, _) => {
+      assert_eq(params.length(), 2)
+      match params[0] {
+        ParamIdent("x", _) => ()
+        _ => fail("expected param x")
+      }
+      match params[1] {
+        ParamDefault("y", ELiteral(LitInt(1L), _), _) => ()
+        _ => fail("expected param y=1")
+      }
+    }
+    _ => fail("expected def with params")
+  }
+}
+
+///|
+test "function definition with star args" {
+  let f = parse_f("def f(*args):\n  pass\n")
+  match f.stmts[0] {
+    SDef("f", params, _, _) => {
+      assert_eq(params.length(), 1)
+      match params[0] {
+        ParamStarIdent("args", _) => ()
+        _ => fail("expected *args param")
+      }
+    }
+    _ => fail("expected def f(*args)")
+  }
+}
+
+///|
+test "function definition with kwargs" {
+  let f = parse_f("def f(**kwargs):\n  pass\n")
+  match f.stmts[0] {
+    SDef("f", params, _, _) =>
+      match params[0] {
+        ParamKwIdent("kwargs", _) => ()
+        _ => fail("expected **kwargs param")
+      }
+    _ => fail("expected def f(**kwargs)")
+  }
+}
+
+///|
+test "load statement with single binding" {
+  let f = parse_f("load(\"mod.star\", \"sym\")\n")
+  match f.stmts[0] {
+    SLoad("mod.star", bindings, _) => {
+      assert_eq(bindings.length(), 1)
+      let (bind_name, original) = bindings[0]
+      assert_eq(bind_name, "sym")
+      assert_eq(original, "sym")
+    }
+    _ => fail("expected load statement")
+  }
+}
+
+///|
+test "load statement with aliased binding" {
+  let f = parse_f("load(\"mod.star\", alias=\"sym\")\n")
+  match f.stmts[0] {
+    SLoad("mod.star", bindings, _) => {
+      let (bind_name, original) = bindings[0]
+      assert_eq(bind_name, "alias")
+      assert_eq(original, "sym")
+    }
+    _ => fail("expected aliased load")
+  }
+}
+
+// --- Position tracking ---
+
+///|
+test "integer literal has position line 1 col 1" {
+  match parse_e("42") {
+    ELiteral(_, pos) => {
+      assert_eq(pos.line, 1)
+      assert_eq(pos.col, 1)
+    }
+    _ => fail("expected literal")
+  }
+}
+
+// --- Error cases: Python constructs not allowed in Starlark ---
+
+///|
+test "import statement is rejected" {
+  match @parser.parse_file("test.star", "import os\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for import statement")
+  }
+}
+
+///|
+test "global statement is rejected" {
+  match @parser.parse_file("test.star", "global x\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for global statement")
+  }
+}
+
+///|
+test "raise statement is rejected" {
+  match @parser.parse_file("test.star", "raise Exception()\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for raise statement")
+  }
+}
+
+///|
+test "class definition is rejected" {
+  match @parser.parse_file("test.star", "class Foo:\n  pass\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for class definition")
+  }
+}
+
+///|
+test "del statement is rejected" {
+  match @parser.parse_file("test.star", "del x\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for del statement")
+  }
+}

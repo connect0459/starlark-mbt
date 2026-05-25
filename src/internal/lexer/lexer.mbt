@@ -95,7 +95,7 @@ pub(all) enum Token {
   Try
   With
   Yield
-}
+} derive(Eq)
 
 ///|
 pub fn Token::to_string(self : Token) -> String {
