@@ -504,10 +504,10 @@ Implement the standard Starlark built-in functions.
 
 ### `str.format()` (complex)
 
-- [ ] Positional `{}`, indexed `{0}`, named `{name}` references
-- [ ] Conversion flags `!s`, `!r`
-- [ ] Format specs (width, alignment, fill, type) — subset supported by starlark-go
-- [ ] Escaped `{{` / `}}`
+- [x] Positional `{}`, indexed `{0}`, named `{name}` references
+- [x] Conversion flags `!s`, `!r`
+- [ ] Format specs (width, alignment, fill, type) — raises error with message (not supported by starlark-go either)
+- [x] Escaped `{{` / `}}`
 
 ### `assert` helper module
 
