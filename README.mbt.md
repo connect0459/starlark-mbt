@@ -1,1 +1,1 @@
-# starlark.mbt
+# starlark-mbt
