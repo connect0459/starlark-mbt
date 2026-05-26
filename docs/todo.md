@@ -338,9 +338,9 @@ The parser must emit a `SyntaxError` for these Python features absent from Starl
 - [x] `with` / `as` statements
 - [x] `async` / `await`
 - [ ] Walrus operator `:=`
-- [ ] `*rest` in LHS tuple unpacking (`a, *b, c = ...`) — Starlark does not support this
-- [ ] `is` / `is not` operators
-- [ ] Type annotations in function parameters (`def f(x: int)`) and assignments (`x: int = 1`)
+- [x] `*rest` in LHS tuple unpacking (`a, *b, c = ...`) — Starlark does not support this
+- [x] `is` / `is not` operators
+- [x] Type annotations in function parameters (`def f(x: int)`) and assignments (`x: int = 1`)
 - [x] `yield` / `yield from`
 - [ ] `print` as a statement (it is a built-in function, not a keyword)
 
@@ -387,7 +387,7 @@ Execute resolved AST nodes with an environment (binding stack).
 ### Execution context (Thread)
 
 - [x] `Thread` — holds print callback, load callback, call stack, recursion depth limit (default 100), max execution steps (optional)
-- [ ] Recursion depth check (deferred: call stack tracks depth but limit not enforced)
+- [x] Recursion depth check — `max_recursion_depth` enforced in `call_func`
 - [ ] Step budget check (Halt when exceeded) (deferred)
 - [x] Print output routed through `Thread.print`
 
@@ -588,6 +588,8 @@ End-to-end tests that execute `.star` scripts and assert output.
         load errors excluded (not implemented).
   - [x] `function_param.star` — no assertions (only function definitions used
         by Go unit tests); no port needed.
+  - [x] `module.star` — type/str/dir/hash/assign/missing-field; "did you mean"
+        suggestion excluded (not implemented)
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
