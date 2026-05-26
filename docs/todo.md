@@ -389,7 +389,7 @@ Execute resolved AST nodes with an environment (binding stack).
 
 - [x] `Thread` — holds print callback, load callback, call stack, recursion depth limit (default 100), max execution steps (optional)
 - [x] Recursion depth check — `max_recursion_depth` enforced in `call_func`
-- [ ] Step budget check (Halt when exceeded) (deferred)
+- [x] Step budget check (Halt when exceeded) — raises EvalError("step budget exceeded")
 - [x] Print output routed through `Thread.print`
 
 ### Expression evaluation
