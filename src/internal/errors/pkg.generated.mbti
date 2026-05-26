@@ -23,6 +23,7 @@ pub(all) struct EvalError {
   cause : String?
 }
 pub fn EvalError::backtrace(Self) -> String
+pub fn EvalError::simple(String) -> Self
 pub fn EvalError::to_string(Self) -> String
 
 pub(all) struct Halt {

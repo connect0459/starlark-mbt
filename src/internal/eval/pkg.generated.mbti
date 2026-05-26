@@ -11,7 +11,7 @@ pub fn eval_expr(Thread, String, String, @value.StarlarkDict) -> Result[@value.V
 
 pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
-pub fn exec_file_with_predeclared(Thread, String, String, Options, Map[String, @value.Value]) -> Result[Module, @errors.EvalError]
+pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) -> Result[Module, @errors.EvalError]
 
 // Errors
 
@@ -21,6 +21,7 @@ pub(all) struct Module {
   mut frozen : Bool
 }
 pub fn Module::freeze(Self) -> Unit
+pub fn Module::from_map(Map[String, @value.Value]) -> Self
 pub fn Module::new() -> Self
 
 pub(all) struct Options {
@@ -36,19 +37,35 @@ pub(all) struct Options {
 }
 pub fn Options::default() -> Self
 
+pub(all) struct Predeclared {
+  bindings : Map[String, @value.Value]
+}
+pub fn Predeclared::from_map(Map[String, @value.Value]) -> Self
+pub fn Predeclared::get(Self, String) -> @value.Value?
+pub fn Predeclared::new() -> Self
+pub fn Predeclared::set(Self, String, @value.Value) -> Unit
+
 pub(all) struct Thread {
   name : String
   print_fn : (String) -> Unit
-  load_fn : ((String) -> Result[Map[String, @value.Value], String])?
+  load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   mut call_stack : Array[@errors.CallFrame]
   max_recursion_depth : Int
   max_steps : Int?
   mut steps : Int
 }
 pub fn Thread::new(String) -> Self
-pub fn Thread::with_loader(String, (String) -> Result[Map[String, @value.Value], String]) -> Self
+pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self
 pub fn Thread::with_print(String, (String) -> Unit) -> Self
 pub fn Thread::with_step_budget(String, Int) -> Self
+
+pub(all) struct Universe {
+  bindings : Map[String, @value.Value]
+}
+pub fn Universe::empty() -> Self
+pub fn Universe::get(Self, String) -> @value.Value?
+pub fn Universe::has(Self, String) -> Bool
+pub fn Universe::standard() -> Self
 
 // Type aliases
 

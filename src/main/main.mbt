@@ -15,11 +15,14 @@ fn resolve_load(base_dir : String, load_path : String) -> String {
 ///|
 fn make_loader(
   base_dir : String,
-) -> (String) -> Result[Map[String, @value.Value], String] {
-  fn(load_path) {
+) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
+  fn(_thread, load_path) {
     let resolved = resolve_load(base_dir, load_path)
     let load_src = @fs.read_file_to_string(resolved) catch {
-      @fs.IOError(msg) => return Err("cannot load \"\{load_path}\": \{msg}")
+      @fs.IOError(msg) =>
+        return Err(
+          @errors.EvalError::simple("cannot load \"\{load_path}\": \{msg}"),
+        )
     }
     let inner_dir = dir_of(resolved)
     let load_thread = @eval.Thread::with_loader(
@@ -28,17 +31,9 @@ fn make_loader(
     )
     match
       @eval.exec_file(load_thread, resolved, load_src, @eval.Options::default()) {
-      Ok(m) => {
-        let exports : Map[String, @value.Value] = {}
-        m.globals.each(fn(k, v) {
-          match k {
-            @value.Value::StrVal(s) => exports[s.raw] = v
-            _ => ()
-          }
-        })
-        Ok(exports)
-      }
-      Err(e) => Err("cannot load \"\{load_path}\": \{e.msg}")
+      Ok(m) => Ok(m)
+      Err(e) =>
+        Err(@errors.EvalError::simple("cannot load \"\{load_path}\": \{e.msg}"))
     }
   }
 }

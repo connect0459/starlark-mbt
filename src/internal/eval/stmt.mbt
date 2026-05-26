@@ -297,19 +297,20 @@ fn exec_load(
         make_eval_error(ctx, "\{pos.to_string()}: load is not supported"),
       )
     Some(loader) => {
-      let exports = match loader(path) {
+      let loaded = match loader(ctx.thread, path) {
         Ok(m) => m
-        Err(msg) =>
-          raise EvalErr(make_eval_error(ctx, "\{pos.to_string()}: \{msg}"))
+        Err(e) =>
+          raise EvalErr(make_eval_error(ctx, "\{pos.to_string()}: \{e.msg}"))
       }
       for pair in bindings {
         let (local_name, export_name) = pair
-        match exports.get(export_name) {
-          Some(v) => {
+        let key = @value.Value::StrVal(@value.StarlarkString::new(export_name))
+        match loaded.globals.get(key) {
+          Ok(Some(v)) => {
             env.bind(local_name, v)
             ctx.load_bound_names.push(local_name)
           }
-          None =>
+          _ =>
             raise EvalErr(
               make_eval_error(
                 ctx,

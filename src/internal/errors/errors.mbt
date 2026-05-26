@@ -107,6 +107,11 @@ pub(all) struct EvalError {
 }
 
 ///|
+pub fn EvalError::simple(msg : String) -> EvalError {
+  { msg, call_stack: CallStack::new([]), cause: None }
+}
+
+///|
 pub fn EvalError::to_string(self : EvalError) -> String {
   self.msg
 }

@@ -400,20 +400,21 @@ fn exec_chunk_raw(
 ) -> Result[Array[String], (String, Array[String])] {
   let assert_errors : Array[String] = []
   let assert_module = build_assert_module(assert_errors)
-  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+  let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
+    _thread,
     path,
   ) {
     if path == "assert.star" {
       let exports : Map[String, @value.Value] = {}
       exports["assert"] = assert_module
       exports["freeze"] = make_freeze_fn()
-      Ok(exports)
+      Ok(@eval.Module::from_map(exports))
     } else if path == "json.star" {
       let exports : Map[String, @value.Value] = {}
       exports["json"] = @json.json_module()
-      Ok(exports)
+      Ok(@eval.Module::from_map(exports))
     } else {
-      Err("no loader for \"\{path}\"")
+      Err(@errors.EvalError::simple("no loader for \"\{path}\""))
     }
   }
   let thread = @eval.Thread::with_loader("test", loader)
@@ -478,20 +479,21 @@ pub fn run_chunked_string(src : String) -> Array[String] {
 pub fn run_star_string(src : String) -> Array[String] {
   let errors : Array[String] = []
   let assert_module = build_assert_module(errors)
-  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+  let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
+    _thread,
     path,
   ) {
     if path == "assert.star" {
       let exports : Map[String, @value.Value] = {}
       exports["assert"] = assert_module
       exports["freeze"] = make_freeze_fn()
-      Ok(exports)
+      Ok(@eval.Module::from_map(exports))
     } else if path == "json.star" {
       let exports : Map[String, @value.Value] = {}
       exports["json"] = @json.json_module()
-      Ok(exports)
+      Ok(@eval.Module::from_map(exports))
     } else {
-      Err("no loader for \"\{path}\"")
+      Err(@errors.EvalError::simple("no loader for \"\{path}\""))
     }
   }
   let thread = @eval.Thread::with_loader("test", loader)

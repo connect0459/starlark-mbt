@@ -12,7 +12,7 @@ pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@v
 
 pub fn exec_file(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]
 
-pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, Map[String, @value.Value]) -> Result[@eval.Module, @errors.EvalError]
+pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]
 
 pub fn module_get(@eval.Module, String) -> @value.Value?
 
@@ -29,6 +29,8 @@ pub using @eval {type Options}
 
 pub using @errors {type Position}
 
+pub using @eval {type Predeclared}
+
 pub using @errors {type ResolveError}
 
 pub using @value {type StarlarkDict}
@@ -36,6 +38,8 @@ pub using @value {type StarlarkDict}
 pub using @errors {type SyntaxError}
 
 pub using @eval {type Thread}
+
+pub using @eval {type Universe}
 
 pub using @value {type Value}
 

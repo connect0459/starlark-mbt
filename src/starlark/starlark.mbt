@@ -8,6 +8,12 @@ pub type Module = @eval.Module
 pub type Options = @eval.Options
 
 ///|
+pub type Universe = @eval.Universe
+
+///|
+pub type Predeclared = @eval.Predeclared
+
+///|
 pub type Value = @value.Value
 
 ///|
@@ -41,7 +47,7 @@ pub fn exec_file_with_predeclared(
   filename : String,
   src : String,
   opts : Options,
-  predeclared : Map[String, Value],
+  predeclared : Predeclared,
 ) -> Result[Module, EvalError] {
   @eval.exec_file_with_predeclared(thread, filename, src, opts, predeclared)
 }

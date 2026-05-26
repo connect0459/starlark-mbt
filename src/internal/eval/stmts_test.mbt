@@ -238,10 +238,11 @@ test "exec_file: load statement raises error when no loader is set" {
 test "exec_file: load statement makes symbol usable within the file" {
   let exported : Map[String, @value.Value] = {}
   exported["answer"] = @value.Value::IntVal(42L)
-  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+  let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
+    _thread,
     _path,
   ) {
-    Ok(exported)
+    Ok(Module::from_map(exported))
   }
   let t = Thread::with_loader("test", loader)
   let result = exec_file(
@@ -263,10 +264,11 @@ test "exec_file: load statement makes symbol usable within the file" {
 test "exec_file: load statement supports aliased bindings" {
   let exported : Map[String, @value.Value] = {}
   exported["foo"] = @value.Value::IntVal(1L)
-  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+  let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
+    _thread,
     _path,
   ) {
-    Ok(exported)
+    Ok(Module::from_map(exported))
   }
   let t = Thread::with_loader("test", loader)
   let result = exec_file(
@@ -286,10 +288,11 @@ test "exec_file: load statement supports aliased bindings" {
 
 ///|
 test "exec_file: load statement raises error when symbol not found in module" {
-  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+  let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
+    _thread,
     _path,
   ) {
-    Ok({})
+    Ok(Module::from_map({}))
   }
   let t = Thread::with_loader("test", loader)
   let result = exec_file(

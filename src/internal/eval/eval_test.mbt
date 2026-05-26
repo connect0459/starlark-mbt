@@ -396,11 +396,11 @@ fn make_opts_load_binds(v : Bool) -> Options {
 ///|
 fn make_loader(
   entries : Map[String, Map[String, @value.Value]],
-) -> (String) -> Result[Map[String, @value.Value], String] {
-  fn(path) {
+) -> (Thread, String) -> Result[Module, @errors.EvalError] {
+  fn(_thread, path) {
     match entries.get(path) {
-      Some(m) => Ok(m)
-      None => Err("no such module: \{path}")
+      Some(m) => Ok(Module::from_map(m))
+      None => Err(@errors.EvalError::simple("no such module: \{path}"))
     }
   }
 }

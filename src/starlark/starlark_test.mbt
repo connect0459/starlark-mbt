@@ -83,9 +83,9 @@ test "eval_expr evaluates an expression in an empty environment" {
 ///|
 test "exec_file_with_predeclared injects host bindings" {
   let t = @starlark.Thread::new("test")
-  let predeclared : Map[String, @starlark.Value] = {
+  let predeclared = @starlark.Predeclared::from_map({
     "ANSWER": @starlark.Value::IntVal(42L),
-  }
+  })
   match
     @starlark.exec_file_with_predeclared(
       t,

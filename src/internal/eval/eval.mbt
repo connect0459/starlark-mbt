@@ -27,10 +27,71 @@ pub fn Options::default() -> Options {
 }
 
 ///|
+pub(all) struct Universe {
+  bindings : Map[String, @value.Value]
+}
+
+///|
+pub fn Universe::empty() -> Universe {
+  { bindings: {} }
+}
+
+///|
+pub fn Universe::standard() -> Universe {
+  let m : Map[String, @value.Value] = {}
+  m["None"] = @value.Value::NoneVal
+  m["True"] = @value.Value::BoolVal(true)
+  m["False"] = @value.Value::BoolVal(false)
+  for name in builtin_names {
+    m[name] = @value.Value::BuiltinFuncVal({ name, body: None })
+  }
+  { bindings: m }
+}
+
+///|
+pub fn Universe::get(self : Universe, name : String) -> @value.Value? {
+  self.bindings.get(name)
+}
+
+///|
+pub fn Universe::has(self : Universe, name : String) -> Bool {
+  self.bindings.contains(name)
+}
+
+///|
+pub(all) struct Predeclared {
+  bindings : Map[String, @value.Value]
+}
+
+///|
+pub fn Predeclared::new() -> Predeclared {
+  { bindings: {} }
+}
+
+///|
+pub fn Predeclared::from_map(m : Map[String, @value.Value]) -> Predeclared {
+  { bindings: m }
+}
+
+///|
+pub fn Predeclared::set(
+  self : Predeclared,
+  name : String,
+  v : @value.Value,
+) -> Unit {
+  self.bindings[name] = v
+}
+
+///|
+pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
+  self.bindings.get(name)
+}
+
+///|
 pub(all) struct Thread {
   name : String
   print_fn : (String) -> Unit
-  load_fn : ((String) -> Result[Map[String, @value.Value], String])?
+  load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   mut call_stack : Array[@errors.CallFrame]
   max_recursion_depth : Int
   max_steps : Int?
@@ -66,7 +127,7 @@ pub fn Thread::with_print(name : String, print_fn : (String) -> Unit) -> Thread 
 ///|
 pub fn Thread::with_loader(
   name : String,
-  load_fn : (String) -> Result[Map[String, @value.Value], String],
+  load_fn : (Thread, String) -> Result[Module, @errors.EvalError],
 ) -> Thread {
   {
     name,
@@ -101,6 +162,17 @@ pub(all) struct Module {
 ///|
 pub fn Module::new() -> Module {
   { globals: @value.StarlarkDict::new(), frozen: false }
+}
+
+///|
+pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
+  let mod = Module::new()
+  m.each(fn(name, v) {
+    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+    mod.globals.set(key, v) |> ignore
+  })
+  mod.freeze()
+  mod
 }
 
 ///|
@@ -170,7 +242,7 @@ pub fn exec_file_with_predeclared(
   filename : String,
   src : String,
   opts : Options,
-  predeclared : Map[String, @value.Value],
+  predeclared : Predeclared,
 ) -> Result[Module, @errors.EvalError] {
   let file = match @parser.parse_file(filename, src) {
     Ok(f) => f
@@ -182,8 +254,8 @@ pub fn exec_file_with_predeclared(
       })
   }
   let ctx = EvalContext::new(thread, opts)
-  predeclared.each(fn(name, v) { ctx.global_env.bind(name, v) })
-  let extra_names : Array[String] = predeclared.keys().collect()
+  predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
+  let extra_names : Array[String] = predeclared.bindings.keys().collect()
   let resolve_opts = @resolver.ResolveOptions::default()
   let resolved = @resolver.resolve(
     file,
