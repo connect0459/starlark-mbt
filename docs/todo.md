@@ -198,8 +198,8 @@ Core Starlark value representation. All values share a common interface.
       `done()` decrements `itercount` on List/Dict/Set; must be called even on early exit
 - [x] `IterableMapping` — dict/set iteration yields keys via `dict_key_iter`/`set_key_iter`
 - [x] `Sequence` — `length_of(Value) -> Result[Int, String]` covers List/Tuple/String/Bytes/Range
-- [ ] `Mapping` — `Dict` key/value access protocol (needed by Phase 5 subscript eval)
-- [ ] `Indexable` — supports `a[i]` (needed by Phase 5 subscript eval)
+- [x] `Mapping` — `Dict` key/value access protocol (embedder extension trait in `protocols.mbt`)
+- [x] `Indexable` — supports `a[i]` (embedder extension trait in `protocols.mbt`)
 
 ### Frozen value semantics
 
@@ -256,9 +256,9 @@ Tokenise Starlark source into a flat token stream.
     are **not valid** inside bytes literals and must raise a `SyntaxError`.
   - Triple-quoted string termination rules
 - [x] Keywords: `and`, `break`, `continue`, `def`, `elif`, `else`, `for`, `if`, `in`, `lambda`, `load`, `not`, `or`, `pass`, `return`, `while`
-- [ ] Keyword literals: `None`, `True`, `False` — scanned as keywords and produce
-      `Literal` tokens (not `Ident`), matching starlark-go scanner behavior
-      **Deferred to Phase 3**: Parser needs these; scanner currently emits `Ident`.
+- [x] Keyword literals: `None`, `True`, `False` — scanned as `NoneKw`/`TrueKw`/`FalseKw`
+      tokens (not `Ident`), matching starlark-go scanner behavior; parser matches
+      them directly in parse_primary; rejected in identifier positions (e.g. param names)
 - [x] Note: old-style octal (`0755`) is **NOT** supported; only `0o755` is valid (error emitted)
 - [x] Identifiers (including leading `_`)
 - [x] Operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `~`, `&`, `|`, `^`, `<<`, `>>`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `=`, `+=`, `-=`, `*=`, `/=`, `//=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
@@ -545,7 +545,7 @@ End-to-end tests that execute `.star` scripts and assert output.
       (TestStringMethod: covered by existing traits_test.mbt/value_test.mbt;
        TestListAppend: StarlarkList push+index tests added;
        TestParamDefault: whitebox test for StarlarkFunction.defaults in value_api_wbtest.mbt)
-- [ ] Port `.star` test files from `starlark-go/starlark/testdata/`
+- [x] Port `.star` test files from `starlark-go/starlark/testdata/`
       Priority order: `int.star`, `bool.star`, `string.star`, `list.star`,
       `dict.star`, `tuple.star`, `function.star`, `control.star`, `assign.star`,
       `builtins.star`, `float.star`, `bytes.star`, `set.star`, `while.star`,
@@ -605,7 +605,9 @@ End-to-end tests that execute `.star` scripts and assert output.
 - [x] Snapshot tests for error message formats
       (9 tests in `error_format_test.mbt`: syntax/resolve/type/div-zero/index-OOB
        errors, full backtrace, no-frame backtrace, wrong-arg-count, recursion limit)
-- [ ] Benchmark suite (starlark-go `bench_test.go` equivalent)
+- [x] Benchmark suite — `bench_test.mbt` in `src/internal/starlarktest/` using
+      `moonbitlang/core/bench` `(it : @bench.T)` API; covers range, calling,
+      arithmetic, dict/set, strings, list comprehensions, Fibonacci pipeline
 
 ---
 
