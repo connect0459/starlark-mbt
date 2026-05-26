@@ -74,7 +74,7 @@ Sub-packages may be added or split when any file exceeds ~600 LOC.
       `eval`, `builtins`, `format`, `unpack`. Each directory needs:
       - a `moon.pkg` file (empty or with import stubs)
       - a minimal placeholder `.mbt` file so `moon check` recognises the package
-- [ ] Update `src/starlark/moon.pkg` to import each internal package as needed
+- [x] Update `src/starlark/moon.pkg` to import each internal package as needed
 - [x] Verify `moon check` passes on the empty skeleton before Phase 0.5 coding
       begins (confirm no broken imports or missing package declarations)
 - **Decision**: MoonBit `Map[K,V]` is a sorted tree map (NOT insertion-ordered);
@@ -134,7 +134,7 @@ phases don't churn the `.mbti`.
 - [x] `eval(thread, filename, expr, env) -> Value` — stub (returns Err until Phase 5)
 - [ ] Loader contract — `(Thread, module_path) -> Result[Module, EvalError]`
       (the loader receives the active `Thread` so it can make nested calls)
-- [ ] Wire up `src/starlark/` as a thin public façade: re-export `Thread`, `Module`,
+- [x] Wire up `src/starlark/` as a thin public façade: re-export `Thread`, `Module`,
       `Value`, `Options`, `exec_file`, `eval`, and error types from `src/internal/*`;
       verify `.mbti` contains only the intended public surface
 
