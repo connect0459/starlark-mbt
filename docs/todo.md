@@ -369,7 +369,7 @@ Resolve variable scopes before evaluation.
 - [x] Validate function parameter order: positional → `*args` → keyword-only → `**kwargs`
 - [x] No duplicate parameter names
 - [x] **`load` must be at module scope**
-- [ ] **No reassignment of `load`-imported symbols** (deferred to Phase 5)
+- [x] **No reassignment of `load`-imported symbols** — always errors regardless of `allow_global_reassign`; load rebinding itself respects the flag
 - [x] **Recursion detection** — error if disallowed by `allow_recursion=false`
 - [x] **No global mutation from functions** unless `allow_global_reassign=true`
 - [x] **Top-level `if` / `for` / `while`** rejected unless `allow_top_level_control=true`
