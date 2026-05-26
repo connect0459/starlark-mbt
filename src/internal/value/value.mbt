@@ -184,6 +184,37 @@ pub(all) enum Value {
 }
 
 ///|
+pub fn Value::of_string(s : String) -> Value {
+  StrVal(StarlarkString::new(s))
+}
+
+///|
+pub fn Value::new_list(items : Array[Value]) -> Value {
+  ListVal(StarlarkList::new(items))
+}
+
+///|
+pub fn Value::new_dict() -> Value {
+  DictVal(StarlarkDict::new())
+}
+
+///|
+pub fn Value::new_set() -> Value {
+  SetVal(StarlarkSet::new())
+}
+
+///|
+pub fn Value::new_builtin(
+  name : String,
+  body : (BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
+    Value,
+    String,
+  ],
+) -> Value {
+  BuiltinFuncVal({ name, body: Some(body) })
+}
+
+///|
 pub fn type_name(v : Value) -> String {
   match v {
     NoneVal => "NoneType"

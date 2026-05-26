@@ -275,3 +275,50 @@ test "StarlarkList: push multiple items maintains insertion order" {
   assert_true(l.items[1] is Value::IntVal(2L))
   assert_true(l.items[2] is Value::IntVal(3L))
 }
+
+///|
+test "Value::of_string wraps a string without manual StarlarkString::new" {
+  match Value::of_string("hello") {
+    StrVal(s) => assert_eq(s.raw, "hello")
+    _ => fail("expected StrVal")
+  }
+}
+
+///|
+test "Value::new_list wraps an array as a mutable list" {
+  let v = Value::new_list([Value::IntVal(1L), Value::IntVal(2L)])
+  match v {
+    ListVal(l) => assert_eq(l.items.length(), 2)
+    _ => fail("expected ListVal")
+  }
+}
+
+///|
+test "Value::new_dict creates an empty dict" {
+  match Value::new_dict() {
+    DictVal(d) => assert_eq(d.length(), 0)
+    _ => fail("expected DictVal")
+  }
+}
+
+///|
+test "Value::new_set creates an empty set" {
+  match Value::new_set() {
+    SetVal(s) => assert_eq(s.length(), 0)
+    _ => fail("expected SetVal")
+  }
+}
+
+///|
+test "Value::new_builtin wraps a named host function" {
+  let f = Value::new_builtin("double", fn(_ctx, args, _kw) {
+    match args[0] {
+      Value::IntVal(n) => Ok(Value::IntVal(n * 2L))
+      _ => Err("expected int")
+    }
+  })
+  match f {
+    Value::BuiltinFuncVal(b) => assert_eq(b.name, "double")
+    _ => fail("expected BuiltinFuncVal")
+  }
+}

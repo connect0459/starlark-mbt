@@ -150,6 +150,11 @@ pub(all) enum Value {
   BoundMethodVal(StarlarkBoundMethod)
   ModuleVal(StarlarkModule)
 }
+pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
+pub fn Value::new_dict() -> Self
+pub fn Value::new_list(Array[Self]) -> Self
+pub fn Value::new_set() -> Self
+pub fn Value::of_string(String) -> Self
 pub impl Eq for Value
 
 // Type aliases
