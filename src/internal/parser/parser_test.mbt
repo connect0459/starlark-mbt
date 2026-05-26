@@ -824,3 +824,45 @@ test "walk: visits all clauses in comprehension" {
   })
   assert_eq(kinds.join(","), "for,if")
 }
+
+// --- Keyword literals: None, True, False must not be identifiers ---
+
+///|
+test "parser: None cannot be a function parameter name" {
+  let result = @parser.parse_file("test.star", "def f(None): pass\n")
+  assert_true(result is Err(_))
+}
+
+///|
+test "parser: True cannot be a function parameter name" {
+  let result = @parser.parse_file("test.star", "def f(True): pass\n")
+  assert_true(result is Err(_))
+}
+
+///|
+test "parser: False cannot be a function parameter name" {
+  let result = @parser.parse_file("test.star", "def f(False): pass\n")
+  assert_true(result is Err(_))
+}
+
+///|
+test "parser: None with default cannot be a function parameter name" {
+  let result = @parser.parse_file("test.star", "def f(None=0): pass\n")
+  assert_true(result is Err(_))
+}
+
+///|
+test "parser: None True False still parse as literal expressions" {
+  match parse_e("None") {
+    ELiteral(LitNone, _) => ()
+    _ => fail("expected LitNone")
+  }
+  match parse_e("True") {
+    ELiteral(LitBool(true), _) => ()
+    _ => fail("expected LitBool(true)")
+  }
+  match parse_e("False") {
+    ELiteral(LitBool(false), _) => ()
+    _ => fail("expected LitBool(false)")
+  }
+}

@@ -684,3 +684,27 @@ test "unquote: error on invalid escape" {
     Err(_) => ()
   }
 }
+
+// --- Keyword literal token tests ---
+
+///|
+test "scan: None is a keyword token" {
+  assert_eq(scan("None"), "None EOF")
+}
+
+///|
+test "scan: True is a keyword token" {
+  assert_eq(scan("True"), "True EOF")
+}
+
+///|
+test "scan: False is a keyword token" {
+  assert_eq(scan("False"), "False EOF")
+}
+
+///|
+test "scan: None True False in expression context" {
+  assert_eq(scan("x = None"), "x = None EOF")
+  assert_eq(scan("if True:"), "if True : EOF")
+  assert_eq(scan("not False"), "not False EOF")
+}

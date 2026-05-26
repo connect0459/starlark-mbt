@@ -1298,14 +1298,21 @@ fn Parser::parse_atom(self : Parser) -> @syntax.Expr raise ParseErr {
       self.advance()
       @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBytes(b), p)
     }
+    @lexer.Token::NoneKw => {
+      self.advance()
+      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitNone, p)
+    }
+    @lexer.Token::TrueKw => {
+      self.advance()
+      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(true), p)
+    }
+    @lexer.Token::FalseKw => {
+      self.advance()
+      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(false), p)
+    }
     @lexer.Token::Ident(name) => {
       self.advance()
-      match name {
-        "None" => @syntax.Expr::ELiteral(@syntax.LiteralVal::LitNone, p)
-        "True" => @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(true), p)
-        "False" => @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(false), p)
-        _ => @syntax.Expr::EIdent(name, p)
-      }
+      @syntax.Expr::EIdent(name, p)
     }
     @lexer.Token::LParen => self.parse_paren_expr(p)
     @lexer.Token::LBrack => self.parse_list_or_comp(p)
