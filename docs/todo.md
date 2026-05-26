@@ -295,11 +295,10 @@ Build an AST from the token stream. Each node carries a `Position`.
 - [x] `Ident` — identifier reference
 - [x] `UnaryExpr` — `-`, `+`, `~`, `not`
 - [x] `BinaryExpr` — all binary operators incl. `in`, `not in`, `%` (string format)
-- [ ] `ChainedComparison` — `a < b < c` is a single AST node (not a nested `And`);
-      the middle operand (`b`) is evaluated exactly once. Reference:
-      `starlark-go/syntax/syntax.go` (`BinaryExpr` with chained ops list)
-      **Deferred**: current impl uses nested left-assoc `EBinary`; evaluator
-      must de-duplicate `b` evaluation when it sees chained comparisons
+- [x] `ChainedComparison` — Starlark spec: comparisons are **non-associative**;
+      `a < b < c` raises `SyntaxError: "< does not associate with <"`.
+      Parser now rejects chained comparisons in both `parse_comparison` and
+      `finish_comparison_from`.
 - [x] `IfExpr` — `x if cond else y`
 - [x] `IndexExpr` — `a[i]`
 - [x] `SliceExpr` — `a[start:end:step]`
@@ -410,9 +409,8 @@ Execute resolved AST nodes with an environment (binding stack).
 - [x] Function call — full argument binding (positional, keyword, `*args`, `**kwargs`, defaults captured at def time, errors for missing/excess args)
 - [x] Lambda evaluation — create `Function` value inline
 - [x] Comprehensions (list, dict, set) with multiple `for`-clauses and nested `if`-guards
-- [ ] Chained comparison evaluation — `a < b < c` evaluates left-to-right; `b` is
-      evaluated exactly once; short-circuits on first false result
-      (deferred: current impl uses nested left-assoc EBinary)
+- [x] Chained comparison — non-associative per spec; parser now rejects `a < b < c`
+      with SyntaxError (no evaluator change needed)
 
 ### Statement execution
 
