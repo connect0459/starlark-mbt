@@ -551,9 +551,12 @@ fn call_builtin(
       if pos_args.length() == 0 {
         @value.Value::StrVal(@value.StarlarkString::new(""))
       } else if pos_args.length() == 1 {
-        @value.Value::StrVal(
-          @value.StarlarkString::new(@value.to_str(pos_args[0])),
-        )
+        match pos_args[0] {
+          @value.Value::BytesVal(b) =>
+            @value.Value::StrVal(@value.StarlarkString::from_bytes(b))
+          v =>
+            @value.Value::StrVal(@value.StarlarkString::new(@value.to_str(v)))
+        }
       } else {
         raise EvalErr(make_eval_error(ctx, "str() takes at most one argument"))
       }
@@ -710,7 +713,7 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "hash() takes exactly one argument"))
       }
       let h = check(ctx, @value.starlark_hash(pos_args[0]))
-      @value.Value::IntVal(h.reinterpret_as_int().to_int64())
+      @value.Value::IntVal(h.to_int64())
     }
     "dir" => {
       if pos_args.length() != 1 {
@@ -786,6 +789,17 @@ fn call_builtin(
             )
           }
           @value.Value::IntVal(chars[0].to_int().to_int64())
+        }
+        @value.Value::BytesVal(b) => {
+          if b.length() != 1 {
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "ord: bytes has length \{b.length()}, want 1",
+              ),
+            )
+          }
+          @value.Value::IntVal(b[0].to_int().to_int64())
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "ord() argument must be a string"))
@@ -3077,7 +3091,7 @@ fn builtin_bytes(
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "bytes: at index \{idx}, value \{n} is out of range for byte (0-255)",
+                  "at index \{idx}, \{n} out of range (want value in unsigned 8-bit range)",
                 ),
               )
             }
@@ -3089,7 +3103,7 @@ fn builtin_bytes(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "bytes: at index \{idx}, got \{@value.type_name(v)}, want int",
+                "at index \{idx}, got \{@value.type_name(v)}, want int",
               ),
             )
           }

@@ -242,6 +242,10 @@ fn eval_mul(
       @value.Value::TupleVal(check(ctx, repeat_tuple(t, n)))
     (@value.Value::IntVal(n), @value.Value::TupleVal(t)) =>
       @value.Value::TupleVal(check(ctx, repeat_tuple(t, n)))
+    (@value.Value::BytesVal(b), @value.Value::IntVal(n)) =>
+      @value.Value::BytesVal(check(ctx, repeat_bytes(b, n)))
+    (@value.Value::IntVal(n), @value.Value::BytesVal(b)) =>
+      @value.Value::BytesVal(check(ctx, repeat_bytes(b, n)))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -329,6 +333,28 @@ fn repeat_tuple(
     }
   }
   Ok(items)
+}
+
+///|
+fn repeat_bytes(b : Bytes, n : Int64) -> Result[Bytes, String] {
+  if n <= 0L {
+    return Ok(Bytes::from_array([]))
+  }
+  if n > max_int32 {
+    return Err("repeat count \{n} too large")
+  }
+  let count = n.to_int()
+  let byte_len = b.length()
+  if byte_len > 0 && count > max_alloc / byte_len {
+    return Err("excessive repeat (\{byte_len} * \{count} elements)")
+  }
+  let items : Array[Byte] = []
+  for _ in 0..<count {
+    for i in 0..<byte_len {
+      items.push(b[i])
+    }
+  }
+  Ok(Bytes::from_array(items))
 }
 
 ///|
@@ -1001,6 +1027,57 @@ fn in_op(
             ),
           )
       }
+    @value.Value::BytesVal(haystack_b) =>
+      match needle {
+        @value.Value::BytesVal(needle_b) => {
+          let hlen = haystack_b.length()
+          let nlen = needle_b.length()
+          if nlen == 0 {
+            return @value.Value::BoolVal(true)
+          }
+          if nlen > hlen {
+            return @value.Value::BoolVal(false)
+          }
+          let mut found = false
+          for i in 0..<=(hlen - nlen) {
+            let mut match_ = true
+            for j in 0..<nlen {
+              if haystack_b[i + j] != needle_b[j] {
+                match_ = false
+                break
+              }
+            }
+            if match_ {
+              found = true
+              break
+            }
+          }
+          @value.Value::BoolVal(found)
+        }
+        @value.Value::IntVal(n) => {
+          if n < 0L || n > 255L {
+            raise EvalErr(
+              make_eval_error(ctx, "int in bytes: \{n} out of range"),
+            )
+          }
+          let b = n.to_int().to_byte()
+          let mut found = false
+          for i in 0..<haystack_b.length() {
+            if haystack_b[i] == b {
+              found = true
+              break
+            }
+          }
+          @value.Value::BoolVal(found)
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "'in <bytes>' requires bytes or int as left operand, not \{@value.type_name(needle)}",
+            ),
+          )
+      }
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -1051,7 +1128,7 @@ fn eval_index(
       match idx {
         @value.Value::IntVal(i) => {
           let j = check(ctx, adjust_index(i, b.length()))
-          @value.Value::IntVal(b[j].to_int().to_int64())
+          @value.Value::BytesVal(Bytes::from_array([b[j]]))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "bytes indices must be integers"))
@@ -1198,6 +1275,25 @@ fn eval_slice(
       @value.Value::RangeVal(
         @value.StarlarkRange::new(new_start, new_stop, new_step),
       )
+    }
+    @value.Value::BytesVal(b) => {
+      let len = b.length()
+      let (start, stop) = normalize_slice(lo_opt, hi_opt, len, step)
+      let bytes_arr : Array[Byte] = []
+      if step > 0 {
+        let mut i = start
+        while i < stop {
+          bytes_arr.push(b[i])
+          i += step
+        }
+      } else {
+        let mut i = start
+        while i > stop {
+          bytes_arr.push(b[i])
+          i += step
+        }
+      }
+      @value.Value::BytesVal(Bytes::from_array(bytes_arr))
     }
     _ =>
       raise EvalErr(
