@@ -161,6 +161,8 @@ let string_star_src : String =
   #|assert.fails(lambda: "{}}".format(1), "single '}' in format")
   #|assert.fails(lambda: "}}{".format(1), "unmatched '{' in format")
   #|assert.fails(lambda: "}{{".format(1), "single '}' in format")
+  #|assert.fails(lambda: "{:>10}".format(1), "format spec features not supported")
+  #|assert.fails(lambda: "{0:d}".format(1), "format spec features not supported")
   #|
   #|# str.split, str.rsplit
   #|assert.eq("a.b.c.d".split("."), ["a", "b", "c", "d"])
