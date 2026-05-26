@@ -304,6 +304,10 @@ pub fn run_star_string(src : String) -> Array[String] {
       exports["assert"] = assert_module
       exports["freeze"] = make_freeze_fn()
       Ok(exports)
+    } else if path == "json.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["json"] = @json.json_module()
+      Ok(exports)
     } else {
       Err("no loader for \"\{path}\"")
     }
