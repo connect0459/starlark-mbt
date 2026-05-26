@@ -154,6 +154,11 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
 }
 
 ///|
+pub fn Thread::execution_steps(self : Thread) -> Int {
+  self.steps
+}
+
+///|
 pub(all) struct Module {
   globals : @value.StarlarkDict
   mut frozen : Bool

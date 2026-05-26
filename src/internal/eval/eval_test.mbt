@@ -43,6 +43,19 @@ test "Thread::with_step_budget sets max_steps" {
 }
 
 ///|
+test "Thread::execution_steps returns zero on a fresh thread" {
+  let t = Thread::new("main")
+  assert_eq(t.execution_steps(), 0)
+}
+
+///|
+test "Thread::execution_steps increments during script evaluation" {
+  let t = Thread::with_step_budget("test", 1000)
+  let _ = exec_file(t, "<test>", "x = 1\ny = 2\nz = x + y", Options::default())
+  assert_true(t.execution_steps() > 0)
+}
+
+///|
 test "Thread::with_step_budget halts computation that exceeds limit" {
   let t = Thread::with_step_budget("test", 5)
   match

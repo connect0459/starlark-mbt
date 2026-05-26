@@ -54,6 +54,7 @@ pub(all) struct Thread {
   max_steps : Int?
   mut steps : Int
 }
+pub fn Thread::execution_steps(Self) -> Int
 pub fn Thread::new(String) -> Self
 pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self
 pub fn Thread::with_print(String, (String) -> Unit) -> Self
