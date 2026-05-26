@@ -71,6 +71,39 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
 }
 
 ///|
+test "Thread::cancel halts execution with the given reason" {
+  let t = Thread::new("test")
+  t.cancel("timeout")
+  match exec_file(t, "<test>", "x = 1\ny = 2", Options::default()) {
+    Err(e) =>
+      assert_true(e.msg.contains("cancelled") && e.msg.contains("timeout"))
+    Ok(_) => fail("expected cancellation error")
+  }
+}
+
+///|
+test "Thread::cancel preserves the first reason when called multiple times" {
+  let t = Thread::new("test")
+  t.cancel("first")
+  t.cancel("second")
+  match exec_file(t, "<test>", "x = 1", Options::default()) {
+    Err(e) => assert_true(e.msg.contains("first") && !e.msg.contains("second"))
+    Ok(_) => fail("expected cancellation error")
+  }
+}
+
+///|
+test "Thread::uncancel allows execution to proceed after cancellation" {
+  let t = Thread::new("test")
+  t.cancel("timeout")
+  t.uncancel()
+  match exec_file(t, "<test>", "x = 42", Options::default()) {
+    Ok(_) => ()
+    Err(e) => fail("expected success after uncancel, got: \{e.msg}")
+  }
+}
+
+///|
 test "Thread without step budget completes a long computation" {
   let t = Thread::new("test")
   match

@@ -92,6 +92,13 @@ fn make_eval_error(ctx : EvalContext, msg : String) -> @errors.EvalError {
 
 ///|
 fn check_steps(ctx : EvalContext) -> Unit raise EvalErr {
+  match ctx.thread.cancel_reason {
+    Some(reason) =>
+      raise EvalErr(
+        make_eval_error(ctx, "Starlark computation cancelled: \{reason}"),
+      )
+    None => ()
+  }
   match ctx.thread.max_steps {
     None => ()
     Some(max) => {

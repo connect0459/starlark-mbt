@@ -96,6 +96,7 @@ pub struct Thread {
   max_recursion_depth : Int
   max_steps : Int?
   priv mut steps : Int
+  priv mut cancel_reason : String?
 }
 
 ///|
@@ -108,6 +109,7 @@ pub fn Thread::new(name : String) -> Thread {
     max_recursion_depth: 100,
     max_steps: None,
     steps: 0,
+    cancel_reason: None,
   }
 }
 
@@ -121,6 +123,7 @@ pub fn Thread::with_print(name : String, print_fn : (String) -> Unit) -> Thread 
     max_recursion_depth: 100,
     max_steps: None,
     steps: 0,
+    cancel_reason: None,
   }
 }
 
@@ -137,6 +140,7 @@ pub fn Thread::with_loader(
     max_recursion_depth: 100,
     max_steps: None,
     steps: 0,
+    cancel_reason: None,
   }
 }
 
@@ -150,7 +154,20 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
     max_recursion_depth: 100,
     max_steps: Some(max_steps),
     steps: 0,
+    cancel_reason: None,
   }
+}
+
+///|
+pub fn Thread::cancel(self : Thread, reason : String) -> Unit {
+  if self.cancel_reason is None {
+    self.cancel_reason = Some(reason)
+  }
+}
+
+///|
+pub fn Thread::uncancel(self : Thread) -> Unit {
+  self.cancel_reason = None
 }
 
 ///|

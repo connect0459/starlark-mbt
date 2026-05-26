@@ -53,8 +53,10 @@ pub struct Thread {
 }
 pub fn Thread::call_frames(Self) -> Array[@errors.CallFrame]
 pub fn Thread::call_stack_depth(Self) -> Int
+pub fn Thread::cancel(Self, String) -> Unit
 pub fn Thread::execution_steps(Self) -> Int
 pub fn Thread::new(String) -> Self
+pub fn Thread::uncancel(Self) -> Unit
 pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self
 pub fn Thread::with_print(String, (String) -> Unit) -> Self
 pub fn Thread::with_step_budget(String, Int) -> Self
