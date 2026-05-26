@@ -253,6 +253,11 @@ pub fn starlark_mod(a : Int64, b : Int64) -> Result[Int64, String] {
 }
 
 ///|
+fn is_neg_zero(f : Double) -> Bool {
+  f == 0.0 && f.reinterpret_as_int64() < 0L
+}
+
+///|
 fn format_float(f : Double) -> String {
   if f.is_nan() {
     return "nan"
@@ -262,6 +267,9 @@ fn format_float(f : Double) -> String {
   }
   if f == @double.neg_infinity {
     return "-inf"
+  }
+  if is_neg_zero(f) {
+    return "-0.0"
   }
   let s = f.to_string()
   if s.contains(".") || s.contains("e") || s.contains("E") {

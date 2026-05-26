@@ -73,9 +73,9 @@ test "starlark_equals: Float equal when same finite value" {
 }
 
 ///|
-test "starlark_equals: Float NaN is not equal to itself" {
+test "starlark_equals: Float NaN equals NaN (starlark-go semantics)" {
   let nan = @double.not_a_number
-  assert_false(starlark_equals(Value::FloatVal(nan), Value::FloatVal(nan)))
+  assert_true(starlark_equals(Value::FloatVal(nan), Value::FloatVal(nan)))
 }
 
 ///|

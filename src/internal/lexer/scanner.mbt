@@ -1145,12 +1145,7 @@ fn parse_float_str(s : String) -> Result[Double, String] {
       exp = exp * 10 + (bytes[i].to_int() - 0x30)
       i += 1
     }
-    let mut mult = 1.0
-    let mut e = exp
-    while e > 0 {
-      mult *= 10.0
-      e -= 1
-    }
+    let mult = @math.pow(10.0, exp.to_double())
     result = if exp_neg { mantissa / mult } else { mantissa * mult }
   }
   Ok(result)

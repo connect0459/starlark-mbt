@@ -31,7 +31,7 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     (NoneVal, NoneVal) => true
     (BoolVal(x), BoolVal(y)) => x == y
     (IntVal(x), IntVal(y)) => x == y
-    (FloatVal(x), FloatVal(y)) => x == y
+    (FloatVal(x), FloatVal(y)) => if x.is_nan() { y.is_nan() } else { x == y }
     (StrVal(x), StrVal(y)) => x.equals(y)
     (BytesVal(x), BytesVal(y)) => x.equal(y)
     (ListVal(x), ListVal(y)) => slice_equals(x.items[:], y.items[:])

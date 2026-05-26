@@ -625,7 +625,18 @@ fn call_builtin(
         (_, Some(_)) =>
           raise EvalErr(make_eval_error(ctx, "non-string with explicit base"))
         (@value.Value::IntVal(n), None) => @value.Value::IntVal(n)
-        (@value.Value::FloatVal(f), None) => @value.Value::IntVal(f.to_int64())
+        (@value.Value::FloatVal(f), None) =>
+          if f.is_nan() {
+            raise EvalErr(
+              make_eval_error(ctx, "cannot convert float NaN to integer"),
+            )
+          } else if f.is_inf() {
+            raise EvalErr(
+              make_eval_error(ctx, "cannot convert float infinity to integer"),
+            )
+          } else {
+            @value.Value::IntVal(f.to_int64())
+          }
         (@value.Value::BoolVal(b), None) =>
           @value.Value::IntVal(if b { 1L } else { 0L })
         (v, None) =>
