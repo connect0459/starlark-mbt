@@ -632,6 +632,29 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 
 ## Phase 8: Release Preparation
 
+### Public API hardening (from pre-release audit)
+
+- [ ] **[HIGH]** Restrict `Thread` mutable field visibility — `mut steps` and `mut call_stack`
+      are currently `pub(all)`, allowing callers to corrupt interpreter state
+      (`thread.steps = 0`, `thread.call_stack = []`). Expose read-only accessors instead.
+      Reference: `starlark-go/starlark/eval.go` `Thread.CallStackDepth()` / `ExecutionSteps()`.
+- [ ] **[MED]** Implement `Thread.cancel()` / `Thread.uncancel()` — graceful execution halt
+      for timeout and quota enforcement. Without this, embedders cannot safely bound execution
+      time. Reference: `starlark-go/starlark/eval.go` `Thread.Cancel`.
+- [ ] **[LOW]** Add `Thread.execution_steps() -> Int` read-only accessor
+      (currently only the mutable `steps` field is accessible once the above is restricted).
+- [ ] **[LOW]** Restrict `Hashtable[K,V]` internal fields — `mut slots`, `mut entries`,
+      `free_head`, `head`, `tail`, and function fields (`hash_fn`, `eq_fn`, etc.) are
+      `pub(all)` in `src/internal/hashtable/`. Not re-exported through the public façade,
+      but still reachable within `src/internal/*`. Scope-limit to what other internal
+      packages actually need.
+- [ ] **[LOW]** Value convenience constructors — embedders currently construct values by
+      matching on `Value` enum variants directly; helper factories (`new_builtin`,
+      `new_list`, `new_dict`, `new_set`) would improve ergonomics.
+      Reference: `starlark-go/starlark/value.go` `NewBuiltin`, `NewList`, `NewDict`, `NewSet`.
+
+### General release tasks
+
 - [ ] Finalise public API; review `.mbti` diff
 - [x] CLI implementation in `src/main/` — run `.star` files
 - [ ] Optional REPL — interactive `read → eval → print` loop (in `src/internal/repl/`)
@@ -649,6 +672,10 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - Bytecode compilation / interpreter (currently AST-walking only)
 - Profiling and debugging hooks (`starlark-go/starlark/profile.go`)
 - Big-integer `Int` (upgrade from `Int64` once overflow demands it)
+- Thread-local storage `Thread.set_local()` / `Thread.local()` for embedder context
+  (request IDs, profiling state, etc.) — reference: `starlark-go` `Thread.SetLocal`
+- Custom Unpacker protocol for user-defined `Value` types — reference:
+  `starlark-go/starlark/unpack.go` `Unpacker` interface
 
 ---
 
