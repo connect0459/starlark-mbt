@@ -601,18 +601,22 @@ End-to-end tests that execute `.star` scripts and assert output.
 
 ---
 
-## Phase 7.5: `json` Extension Library
+## Phase 7.5: `json` Extension Library ✅
 
 Port `starlarkjson` so embedders can read/write JSON from Starlark.
 Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 **out of scope** for the initial release — see "Future work" below.
 
-- [ ] `json.encode(value) -> string` — round-trip primitive values, list, dict
-- [ ] `json.decode(string) -> value` — produce Starlark values
-- [ ] `json.indent(string, prefix=, indent=)` — pretty-print JSON
-- [ ] Error reporting with source `Position`
-- [ ] Live as a separate package: `src/starlark/json/` (importable, not auto-injected)
-- [ ] Reference: `starlark-go/lib/json/json.go`
+- [x] `json.encode(value) -> string` — None/bool/int/float/str/list/tuple/dict/range;
+      cycle detection via `physical_equal`; dict keys sorted; non-ASCII via `\uXXXX`
+- [x] `json.encode_indent(value, prefix=, indent=)` — combines encode + indent
+- [x] `json.decode(string, default=) -> value` — recursive-descent parser; surrogate-pair
+      decode; `default` fallback on invalid input; numbers as Int64 or Float64
+- [x] `json.indent(string, prefix=, indent=)` — pretty-print JSON; empty containers inline
+- [x] Error reporting via descriptive string messages (starlark-go json also uses string errors,
+      not Position-based; source Position not applicable for this extension)
+- [x] Lives as a separate package: `src/starlark/json/` (importable, not auto-injected)
+- [x] Reference: `starlark-go/lib/json/json.go`
 
 ---
 
