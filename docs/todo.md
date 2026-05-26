@@ -85,9 +85,6 @@ Sub-packages may be added or split when any file exceeds ~600 LOC.
 - **Design decision**: `Position` column convention — use 1-based line AND 1-based column
       to match starlark-go (`Position{Line: 1, Col: 1}` for start of file). Document in
       `src/internal/errors/`.
-- **CI**: `.github/workflows/ci.yml` already runs `moon check` + `moon test` on
-  `js`, `wasm`, `wasm-gc`, `native`; expand to add `moon coverage analyze` in
-  Phase 7 (the WPT step must be removed first — see Fix task above).
 
 ---
 
@@ -609,8 +606,6 @@ End-to-end tests that execute `.star` scripts and assert output.
       (9 tests in `error_format_test.mbt`: syntax/resolve/type/div-zero/index-OOB
        errors, full backtrace, no-frame backtrace, wrong-arg-count, recursion limit)
 - [ ] Benchmark suite (starlark-go `bench_test.go` equivalent)
-- [ ] CI: Expand `.github/workflows/ci.yml` — `moon check && moon test && moon coverage analyze`
-      on every push and PR; target `wasm-gc` + `native`
 
 ---
 
