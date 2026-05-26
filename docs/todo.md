@@ -557,6 +557,9 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases and
         f7 (hasfields) excluded; f4 (local-var-before-assignment via +=) excluded
         (runtime does not yet distinguish unbound locals from globals)
+  - [x] `tuple.star` — all assertions pass; tuple multiplication with overflow checks
+  - [x] `dict.star` — all assertions pass including dict union (|, |=); hasfields-
+        based tests excluded
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
