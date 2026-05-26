@@ -210,7 +210,7 @@ Core Starlark value representation. All values share a common interface.
 - [x] Mutation after freeze raises `EvalError` — `check_mutable(verb)` on StarlarkList;
       Hashtable `insert`/`delete` check `itercount > 0` (enforced at eval time in Phase 5)
 - [x] Freezing propagates transitively through contained values (`freeze_value` in `traits.mbt`)
-- [ ] Module dict frozen automatically when `exec_file` returns (wired in Phase 5)
+- [x] Module dict frozen automatically when `exec_file` returns (wired in Phase 5)
 - [x] **Iterator freezing**: iterating a mutable container (List, Dict, Set) with a `for`
       loop **freezes** it for the duration of the loop. Any mutation during iteration
       raises an `EvalError` ("cannot insert into frozen hash table", etc.).
