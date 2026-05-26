@@ -576,6 +576,20 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `bytes.star` — all assertions pass; type(hello.elems())=="bytes.elems"
         and str(hello.elems()) tests excluded (elems() returns list, not
         bytes.elems iterator type)
+  - [x] `assign.star` — all assertions pass; option:globalreassign and
+        option:loadbindsglobally dialect-specific chunks excluded; hasfields()
+        tests excluded; shadowing built-ins with forward reference excluded
+        (resolver does not mark earlier references as local). Also fixed: float
+        floor-mod semantics (ops.mbt) and augmented assignment to subscript
+        evaluated LHS only once (stmt.mbt).
+  - [x] `float.star` — all assertions pass; BigInt cases excluded. Fixes made:
+        NaN equality (starlark-go semantics), -0.0 display, float literal
+        parsing precision via @math.pow, int(NaN/Inf) errors, float floor-mod.
+  - [x] `misc.star` — all assertions pass; cyclic data structure tests excluded
+        (cycle detection not implemented); "did you mean" typo suggestion in
+        load errors excluded (not implemented).
+  - [x] `function_param.star` — no assertions (only function definitions used
+        by Go unit tests); no port needed.
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
