@@ -623,7 +623,7 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 ## Phase 8: Release Preparation
 
 - [ ] Finalise public API; review `.mbti` diff
-- [ ] CLI implementation in `src/main/` — run `.star` files
+- [x] CLI implementation in `src/main/` — run `.star` files
 - [ ] Optional REPL — interactive `read → eval → print` loop (in `src/internal/repl/`)
 - [ ] Usage examples as doc tests in `README.mbt.md`
 - [ ] Mooncakes publish prep
