@@ -758,3 +758,69 @@ test "starred target in tuple unpacking LHS is rejected" {
     fail("expected starred target rejection, got: \{msg}")
   }
 }
+
+///|
+test "walrus operator := is rejected" {
+  let msg = parse_f_err("x := 5\n")
+  if !msg.contains("walrus operator") && !msg.contains(":=") {
+    fail("expected walrus rejection, got: \{msg}")
+  }
+}
+
+// --- AST walker ---
+
+///|
+test "walk: visits all idents in assignment" {
+  let file = parse_f("x = 1\n")
+  let idents : Array[String] = []
+  @syntax.walk_file(file, fn(node) {
+    match node {
+      Some(@syntax.Node::NExpr(@syntax.Expr::EIdent(name, _))) =>
+        idents.push(name)
+      _ => ()
+    }
+    true
+  })
+  if !idents.contains("x") {
+    fail("expected ident 'x', got: [\{idents.join(", ")}]")
+  }
+}
+
+///|
+test "walk: visitor returning false skips children" {
+  let file = parse_f("def f(x):\n  y = x + 1\n")
+  let visited : Array[String] = []
+  @syntax.walk_file(file, fn(node) {
+    match node {
+      Some(@syntax.Node::NStmt(@syntax.Stmt::SDef(name, _, _, _))) => {
+        visited.push("def:\{name}")
+        false
+      }
+      Some(@syntax.Node::NExpr(@syntax.Expr::EIdent(name, _))) => {
+        visited.push("ident:\{name}")
+        true
+      }
+      _ => true
+    }
+  })
+  if visited.contains("ident:x") || visited.contains("ident:y") {
+    fail("expected no traversal inside def body, got: [\{visited.join(", ")}]")
+  }
+}
+
+///|
+test "walk: visits all clauses in comprehension" {
+  let expr = parse_e("[x for x in xs if x > 0]")
+  let kinds : Array[String] = []
+  @syntax.walk_expr(expr, fn(node) {
+    match node {
+      Some(@syntax.Node::NCompClause(@syntax.CompClause::ClauseFor(_, _, _))) =>
+        kinds.push("for")
+      Some(@syntax.Node::NCompClause(@syntax.CompClause::ClauseIf(_, _))) =>
+        kinds.push("if")
+      _ => ()
+    }
+    true
+  })
+  assert_eq(kinds.join(","), "for,if")
+}

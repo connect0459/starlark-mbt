@@ -10,6 +10,12 @@ pub fn expr_pos(Expr) -> @errors.Position
 
 pub fn stmt_pos(Stmt) -> @errors.Position
 
+pub fn walk_expr(Expr, (Node?) -> Bool) -> Unit
+
+pub fn walk_file(File, (Node?) -> Bool) -> Unit
+
+pub fn walk_stmt(Stmt, (Node?) -> Bool) -> Unit
+
 // Errors
 
 // Types and methods
@@ -97,6 +103,15 @@ pub(all) enum LiteralVal {
   LitFloat(Double)
   LitString(String)
   LitBytes(Bytes)
+}
+
+pub(all) enum Node {
+  NFile(File)
+  NStmt(Stmt)
+  NExpr(Expr)
+  NParam(Param)
+  NArg(Arg)
+  NCompClause(CompClause)
 }
 
 pub(all) enum Param {
