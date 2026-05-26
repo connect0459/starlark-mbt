@@ -708,3 +708,53 @@ test "parenthesized comparisons are allowed" {
     Err(e) => fail("unexpected error: \{e.msg}")
   }
 }
+
+///|
+fn parse_f_err(src : String) -> String {
+  match @parser.parse_file("test.star", src) {
+    Err(e) => e.msg
+    Ok(_) => ""
+  }
+}
+
+// --- Python constructs not supported in Starlark ---
+
+///|
+test "is operator is rejected" {
+  let msg = parse_e_err("x is y")
+  if !msg.contains("'is' operator is not allowed") {
+    fail("expected 'is' rejection, got: \{msg}")
+  }
+}
+
+///|
+test "is not operator is rejected" {
+  let msg = parse_e_err("x is not y")
+  if !msg.contains("'is' operator is not allowed") {
+    fail("expected 'is not' rejection, got: \{msg}")
+  }
+}
+
+///|
+test "type annotation in function parameter is rejected" {
+  let msg = parse_f_err("def f(x: int): pass\n")
+  if !msg.contains("type annotations are not allowed") {
+    fail("expected annotation rejection, got: \{msg}")
+  }
+}
+
+///|
+test "annotated assignment is rejected" {
+  let msg = parse_f_err("x: int = 1\n")
+  if !msg.contains("type annotations are not allowed") {
+    fail("expected annotation rejection, got: \{msg}")
+  }
+}
+
+///|
+test "starred target in tuple unpacking LHS is rejected" {
+  let msg = parse_f_err("a, *b = [1, 2]\n")
+  if !msg.contains("'*' is not allowed as assignment target") {
+    fail("expected starred target rejection, got: \{msg}")
+  }
+}
