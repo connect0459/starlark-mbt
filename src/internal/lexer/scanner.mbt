@@ -481,7 +481,18 @@ fn Scanner::scan_operator(
     }
     0x7E => Ok({ tok: Tilde, pos: start }) // ~
     0x3B => Ok({ tok: Semi, pos: start }) // ;
-    0x3A => Ok({ tok: Colon, pos: start }) // :
+    0x3A => {
+      // : or :=
+      if self.peek_byte() == b'=' {
+        self.read_byte() |> ignore
+        return Err(
+          self.make_error(
+            start, "walrus operator (:=) is not allowed in Starlark",
+          ),
+        )
+      }
+      Ok({ tok: Colon, pos: start })
+    }
     _ => Err(self.make_error(start, "unexpected input character"))
   }
 }
