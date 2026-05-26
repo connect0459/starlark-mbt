@@ -189,9 +189,10 @@ Core Starlark value representation. All values share a common interface.
 - [x] `compare_values` — total ordering for `<`, `<=`, `>`, `>=`; same-type only
       (NaN > +Inf per starlark-go; mixed types → `Err`)
 - [x] `type_name` — `type()` built-in support; canonical names implemented
-- [ ] `Comparable` trait — total ordering protocol needed by `sorted()`, `min()`, `max()`
-- [ ] `Attr` trait — attribute access protocol for `getattr()`, `hasattr()`, `dir()`
-      (required by custom extension types; built-in types handle this internally)
+- [x] `Comparable` trait — total ordering protocol needed by `sorted()`, `min()`, `max()`
+      (`StarlarkComparable` stub added in `src/internal/value/protocols.mbt`)
+- [x] `Attr` trait — attribute access protocol for `getattr()`, `hasattr()`, `dir()`
+      (`HasAttrs`, `HasSetField` stubs added in `src/internal/value/protocols.mbt`)
 
 ### Iterator / sequence / mapping protocols
 
@@ -210,7 +211,7 @@ Core Starlark value representation. All values share a common interface.
       Hashtable `insert`/`delete` check `itercount > 0` (enforced at eval time in Phase 5)
 - [x] Freezing propagates transitively through contained values (`freeze_value` in `traits.mbt`)
 - [ ] Module dict frozen automatically when `exec_file` returns (wired in Phase 5)
-- [ ] **Iterator freezing**: iterating a mutable container (List, Dict, Set) with a `for`
+- [x] **Iterator freezing**: iterating a mutable container (List, Dict, Set) with a `for`
       loop **freezes** it for the duration of the loop. Any mutation during iteration
       raises an `EvalError` ("cannot insert into frozen hash table", etc.).
 
@@ -437,10 +438,11 @@ Execute resolved AST nodes with an environment (binding stack).
 
 ### Built-in argument binding helper
 
-- [ ] `unpack_args(name, positional, keyword, spec) -> Result` — extract
+- [x] `unpack_args(name, positional, keyword, spec) -> Result` — extract
       typed arguments for built-in implementations with explicit names,
       required/optional markers, and type checks
-- [ ] Reference: `starlark-go/starlark/unpack.go`
+      (`unpack_args`, `unpack_positional` implemented in `src/internal/unpack/`)
+- [x] Reference: `starlark-go/starlark/unpack.go`
 
 ### TDD scope
 
@@ -540,7 +542,8 @@ End-to-end tests that execute `.star` scripts and assert output.
       `pattern_matches` handles `.*` wildcards and `$` end-anchor.
       Error-comment chunks from `assign.star`, `dict.star`, `builtins.star`,
       `misc.star` added to respective `*_test.mbt` files.
-- [ ] Port key cases from `starlark-go/starlark/eval_test.go`
+- [x] Port key cases from `starlark-go/starlark/eval_test.go`
+      (TestParameterPassing: positional, keyword, *args/**kwargs, keyword-only, required keyword-only)
 - [ ] Port key cases from `starlark-go/starlark/value_test.go`
 - [ ] Port `.star` test files from `starlark-go/starlark/testdata/`
       Priority order: `int.star`, `bool.star`, `string.star`, `list.star`,
