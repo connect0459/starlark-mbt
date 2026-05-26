@@ -235,7 +235,7 @@ test "exec_file: load statement raises error when no loader is set" {
 }
 
 ///|
-test "exec_file: load statement binds symbol from loader when loader is set" {
+test "exec_file: load statement makes symbol usable within the file" {
   let exported : Map[String, @value.Value] = {}
   exported["answer"] = @value.Value::IntVal(42L)
   let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
@@ -247,13 +247,13 @@ test "exec_file: load statement binds symbol from loader when loader is set" {
   let result = exec_file(
     t,
     "<test>",
-    "load(\"mylib\", \"answer\")",
+    "load(\"mylib\", \"answer\")\nx = answer + 1",
     Options::default(),
   )
   match result {
     Ok(m) => {
-      let key = @value.Value::StrVal(@value.StarlarkString::new("answer"))
-      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(42L))))
+      let key = @value.Value::StrVal(@value.StarlarkString::new("x"))
+      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(43L))))
     }
     Err(e) => fail(e.to_string())
   }
@@ -272,13 +272,13 @@ test "exec_file: load statement supports aliased bindings" {
   let result = exec_file(
     t,
     "<test>",
-    "load(\"mylib\", bar=\"foo\")",
+    "load(\"mylib\", bar=\"foo\")\ny = bar + 1",
     Options::default(),
   )
   match result {
     Ok(m) => {
-      let key = @value.Value::StrVal(@value.StarlarkString::new("bar"))
-      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(1L))))
+      let key = @value.Value::StrVal(@value.StarlarkString::new("y"))
+      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(2L))))
     }
     Err(e) => fail(e.to_string())
   }

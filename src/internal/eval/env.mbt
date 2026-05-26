@@ -10,6 +10,7 @@ priv struct EvalContext {
   thread : Thread
   opts : Options
   global_env : EvalEnv
+  load_bound_names : Array[String]
 }
 
 ///|
@@ -77,7 +78,7 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
     base.bind(name, @value.Value::BuiltinFuncVal({ name, body: None }))
   }
   let global_env = EvalEnv::for_module(base)
-  { thread, opts, global_env }
+  { thread, opts, global_env, load_bound_names: [] }
 }
 
 ///|

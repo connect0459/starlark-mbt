@@ -375,3 +375,118 @@ test "exec_file: function with no return returns None" {
 test "exec_file: syntax error propagates as eval error" {
   assert_true(exec_src("def (broken") is Err(_))
 }
+
+// --- load_binds_globally ---
+
+///|
+fn make_opts_load_binds(v : Bool) -> Options {
+  {
+    allow_set: true,
+    allow_recursion: true,
+    allow_lambda: true,
+    allow_while: true,
+    allow_bytes: true,
+    allow_float: true,
+    allow_global_reassign: true,
+    allow_top_level_control: true,
+    load_binds_globally: v,
+  }
+}
+
+///|
+fn make_loader(
+  entries : Map[String, Map[String, @value.Value]],
+) -> (String) -> Result[Map[String, @value.Value], String] {
+  fn(path) {
+    match entries.get(path) {
+      Some(m) => Ok(m)
+      None => Err("no such module: \{path}")
+    }
+  }
+}
+
+///|
+test "load_binds_globally=false: loaded names excluded from module globals" {
+  let mods : Map[String, Map[String, @value.Value]] = {
+    "a.star": { "x": @value.Value::IntVal(42L) },
+  }
+  let t = Thread::with_loader("test", make_loader(mods))
+  match
+    exec_file(
+      t,
+      "<test>",
+      "load(\"a.star\", \"x\")",
+      make_opts_load_binds(false),
+    ) {
+    Ok(m) => assert_true(get_global(m, "x") is None)
+    Err(e) => {
+      println(e.msg)
+      assert_true(false)
+    }
+  }
+}
+
+///|
+test "load_binds_globally=true: loaded names included in module globals" {
+  let mods : Map[String, Map[String, @value.Value]] = {
+    "a.star": { "x": @value.Value::IntVal(42L) },
+  }
+  let t = Thread::with_loader("test", make_loader(mods))
+  match
+    exec_file(
+      t,
+      "<test>",
+      "load(\"a.star\", \"x\")",
+      make_opts_load_binds(true),
+    ) {
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::IntVal(42L)))
+    Err(e) => {
+      println(e.msg)
+      assert_true(false)
+    }
+  }
+}
+
+///|
+test "load_binds_globally=false: loaded name is usable within the same file" {
+  let mods : Map[String, Map[String, @value.Value]] = {
+    "a.star": { "x": @value.Value::IntVal(42L) },
+  }
+  let t = Thread::with_loader("test", make_loader(mods))
+  let src =
+    #|load("a.star", "x")
+    #|y = x + 1
+  match exec_file(t, "<test>", src, make_opts_load_binds(false)) {
+    Ok(m) => {
+      assert_true(get_global(m, "x") is None)
+      assert_true(get_global(m, "y") == Some(@value.Value::IntVal(43L)))
+    }
+    Err(e) => {
+      println(e.msg)
+      assert_true(false)
+    }
+  }
+}
+
+///|
+test "load_binds_globally=false: loaded name is accessible from a function body" {
+  let mods : Map[String, Map[String, @value.Value]] = {
+    "a.star": { "x": @value.Value::IntVal(42L) },
+  }
+  let t = Thread::with_loader("test", make_loader(mods))
+  let src =
+    #|load("a.star", "x")
+    #|def f():
+    #|  return x
+    #|result = f()
+  match exec_file(t, "<test>", src, make_opts_load_binds(false)) {
+    Ok(m) => {
+      assert_true(get_global(m, "x") is None)
+      assert_true(get_global(m, "result") == Some(@value.Value::IntVal(42L)))
+    }
+    Err(e) => {
+      println(e.msg)
+      assert_true(false)
+    }
+  }
+}

@@ -155,8 +155,10 @@ pub fn exec_file(
   }
   let m = Module::new()
   ctx.global_env.locals.each(fn(name, v) {
-    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
-    m.globals.set(key, v) |> ignore
+    if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
+      let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+      m.globals.set(key, v) |> ignore
+    }
   })
   m.freeze()
   Ok(m)
@@ -198,8 +200,10 @@ pub fn exec_file_with_predeclared(
   }
   let m = Module::new()
   ctx.global_env.locals.each(fn(name, v) {
-    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
-    m.globals.set(key, v) |> ignore
+    if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
+      let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+      m.globals.set(key, v) |> ignore
+    }
   })
   m.freeze()
   Ok(m)

@@ -305,7 +305,10 @@ fn exec_load(
       for pair in bindings {
         let (local_name, export_name) = pair
         match exports.get(export_name) {
-          Some(v) => env.bind(local_name, v)
+          Some(v) => {
+            env.bind(local_name, v)
+            ctx.load_bound_names.push(local_name)
+          }
           None =>
             raise EvalErr(
               make_eval_error(
