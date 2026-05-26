@@ -567,6 +567,8 @@ End-to-end tests that execute `.star` scripts and assert output.
         **kwargs checks, CALL_VAR_KW, eval order, recursive closures, forward refs,
         trailing commas; recursion detection (fib/Y-combinator), hasfields(),
         and unbound-cell detection excluded (not yet implemented)
+  - [x] `while.star` — basic accumulation, break, continue all pass
+  - [x] `recursion.star` — fibonacci (fib(5)=8) and depth-limit enforcement pass
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
