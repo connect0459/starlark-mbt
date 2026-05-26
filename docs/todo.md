@@ -340,7 +340,7 @@ The parser must emit a `SyntaxError` for these Python features absent from Starl
 - [x] `is` / `is not` operators
 - [x] Type annotations in function parameters (`def f(x: int)`) and assignments (`x: int = 1`)
 - [x] `yield` / `yield from`
-- [ ] `print` as a statement (it is a built-in function, not a keyword)
+- [x] `print` as a statement (it is a built-in function, not a keyword)
 
 ### AST walker
 
@@ -503,7 +503,7 @@ Implement the standard Starlark built-in functions.
 
 - [x] Positional `{}`, indexed `{0}`, named `{name}` references
 - [x] Conversion flags `!s`, `!r`
-- [ ] Format specs (width, alignment, fill, type) — raises error with message (not supported by starlark-go either)
+- [x] Format specs (width, alignment, fill, type) — raises error with message (not supported by starlark-go either)
 - [x] Escaped `{{` / `}}`
 
 ### `assert` helper module
