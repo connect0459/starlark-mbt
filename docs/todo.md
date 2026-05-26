@@ -554,6 +554,9 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `int.star` — bigint cases excluded; shift/int()/% formatting fixed to pass
   - [x] `bool.star` — all assertions pass
   - [x] `string.star` — all assertions pass; unicode byte-index and iterable-string cases excluded
+  - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases and
+        f7 (hasfields) excluded; f4 (local-var-before-assignment via +=) excluded
+        (runtime does not yet distinguish unbound locals from globals)
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
