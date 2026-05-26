@@ -33,8 +33,33 @@ fn exec_stmt(
     @syntax.Stmt::SAugAssign(lhs, aug_op, rhs, pos) => {
       let lv = eval_expr_node(ctx, env, lhs)
       let rv = eval_expr_node(ctx, env, rhs)
-      let bin_op = aug_to_bin_op(aug_op)
-      let new_val = eval_binary(ctx, lv, bin_op, rv, pos)
+      let new_val = match (lv, aug_op) {
+        (@value.Value::ListVal(l), @syntax.AugOp::AugAdd) =>
+          match @value.iterate(rv) {
+            Ok(iter) => {
+              match l.check_mutable("apply += to") {
+                Err(msg) => {
+                  iter.done()
+                  raise EvalErr(make_eval_error(ctx, msg))
+                }
+                Ok(_) => ()
+              }
+              while true {
+                match iter.next() {
+                  None => break
+                  Some(item) => l.items.push(item)
+                }
+              }
+              iter.done()
+              lv
+            }
+            Err(_) => eval_binary(ctx, lv, @syntax.BinaryOp::OpAdd, rv, pos)
+          }
+        _ => {
+          let bin_op = aug_to_bin_op(aug_op)
+          eval_binary(ctx, lv, bin_op, rv, pos)
+        }
+      }
       assign_to(ctx, env, lhs, new_val, pos)
       Signal::SigNormal
     }

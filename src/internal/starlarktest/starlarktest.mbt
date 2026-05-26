@@ -179,6 +179,20 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
 }
 
 ///|
+fn make_freeze_fn() -> @value.Value {
+  @value.Value::BuiltinFuncVal({
+    name: "freeze",
+    body: Some(fn(_call_ctx, pos_args, _kw_args) {
+      if pos_args.length() != 1 {
+        return Err("freeze: got \{pos_args.length()} arguments, want 1")
+      }
+      @value.freeze_value(pos_args[0])
+      Ok(@value.Value::NoneVal)
+    }),
+  })
+}
+
+///|
 fn build_assert_module(errors : Array[String]) -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["fail"] = make_error_fn(errors)
@@ -201,6 +215,7 @@ pub fn run_star_string(src : String) -> Array[String] {
     if path == "assert.star" {
       let exports : Map[String, @value.Value] = {}
       exports["assert"] = assert_module
+      exports["freeze"] = make_freeze_fn()
       Ok(exports)
     } else {
       Err("no loader for \"\{path}\"")

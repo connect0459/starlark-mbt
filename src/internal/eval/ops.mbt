@@ -917,7 +917,7 @@ fn set_index(
 ) -> Unit raise EvalErr {
   match obj {
     @value.Value::ListVal(l) => {
-      check(ctx, l.check_mutable("assign to"))
+      check(ctx, l.check_mutable("assign to element of"))
       match idx {
         @value.Value::IntVal(i) => {
           let j = check(ctx, adjust_index(i, l.items.length()))

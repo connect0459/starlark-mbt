@@ -1411,7 +1411,7 @@ fn call_list_method(
         }
       }
       if found < 0 {
-        raise EvalErr(make_eval_error(ctx, "list.remove(x): x not in list"))
+        raise EvalErr(make_eval_error(ctx, "remove: element not found"))
       }
       ignore(l.items.remove(found))
       @value.Value::NoneVal
@@ -1457,12 +1457,57 @@ fn call_list_method(
         )
       }
       let item = pos_args[0]
-      for i in 0..<l.items.length() {
+      let n = l.items.length()
+      let start = if pos_args.length() >= 2 {
+        match pos_args[1] {
+          @value.Value::IntVal(i) => {
+            let s = i.to_int()
+            let j = if s < 0 { s + n } else { s }
+            if j < 0 {
+              0
+            } else if j > n {
+              n
+            } else {
+              j
+            }
+          }
+          @value.Value::NoneVal => 0
+          _ =>
+            raise EvalErr(
+              make_eval_error(ctx, "list.index: start must be an integer"),
+            )
+        }
+      } else {
+        0
+      }
+      let end = if pos_args.length() >= 3 {
+        match pos_args[2] {
+          @value.Value::IntVal(i) => {
+            let e = i.to_int()
+            let j = if e < 0 { e + n } else { e }
+            if j < 0 {
+              0
+            } else if j > n {
+              n
+            } else {
+              j
+            }
+          }
+          @value.Value::NoneVal => n
+          _ =>
+            raise EvalErr(
+              make_eval_error(ctx, "list.index: end must be an integer"),
+            )
+        }
+      } else {
+        n
+      }
+      for i in start..<end {
         if @value.starlark_equals(l.items[i], item) {
           return @value.Value::IntVal(i.to_int64())
         }
       }
-      raise EvalErr(make_eval_error(ctx, "list.index(x): x not in list"))
+      raise EvalErr(make_eval_error(ctx, "value not in list"))
     }
     "count" => {
       if pos_args.length() != 1 {
