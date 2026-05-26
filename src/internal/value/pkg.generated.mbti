@@ -164,6 +164,17 @@ pub trait HasSetField {
   fn set_field(Self, String, Value) -> Result[Unit, String]
 }
 
+pub trait Indexable {
+  fn indexable_get(Self, Int) -> Result[Value, String]
+  fn indexable_len(Self) -> Int
+}
+
+pub trait Mapping {
+  fn mapping_get(Self, Value) -> Result[Value?, String]
+  fn mapping_keys(Self) -> Result[Array[Value], String]
+  fn mapping_len(Self) -> Int
+}
+
 pub trait StarlarkComparable {
   fn compare_same_type(Self, Value) -> Result[Int, String]
 }
