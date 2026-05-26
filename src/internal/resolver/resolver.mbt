@@ -93,6 +93,8 @@ priv struct Resolver {
   mut in_func : Int
   // Name of the innermost function (for recursion detection)
   mut current_fn_name : String
+  // Names imported via load statements (always immutable)
+  load_names : Map[String, @errors.Position]
 }
 
 ///|
@@ -116,6 +118,7 @@ fn Resolver::new(
     loops: 0,
     in_func: 0,
     current_fn_name: "",
+    load_names: {},
   }
 }
 
@@ -158,8 +161,13 @@ fn Resolver::bind_global(
   pos : @errors.Position,
 ) -> Unit {
   if self.globals.contains(name) {
-    let prev = self.globals[name]
-    if !self.opts.allow_global_reassign {
+    if self.load_names.contains(name) {
+      self.errorf(
+        pos,
+        "cannot reassign name '\{name}' imported from a load statement",
+      )
+    } else if !self.opts.allow_global_reassign {
+      let prev = self.globals[name]
       self.errorf(
         pos,
         "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
@@ -171,6 +179,29 @@ fn Resolver::bind_global(
     self.globals[name] = b
     self.module_globals.push(b)
   }
+}
+
+// Bind a name introduced by a load statement.
+// Unlike regular assignments, a load may rebind an existing load-imported name
+// when allow_global_reassign is enabled.
+
+///|
+fn Resolver::bind_load(
+  self : Resolver,
+  name : String,
+  pos : @errors.Position,
+) -> Unit {
+  if self.globals.contains(name) {
+    if !self.opts.allow_global_reassign {
+      self.errorf(pos, "cannot reassign global \{name}")
+    }
+  } else {
+    let idx = self.module_globals.length()
+    let b : Binding = { name, pos, scope: Global(idx) }
+    self.globals[name] = b
+    self.module_globals.push(b)
+  }
+  self.load_names[name] = pos
 }
 
 // Bind a name in the current local block.
@@ -423,7 +454,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       } else {
         for pair in names {
           let (local_name, _original) = pair
-          self.bind_global(local_name, pos)
+          self.bind_load(local_name, pos)
         }
       }
   }

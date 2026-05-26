@@ -294,6 +294,58 @@ test "resolve: accepts load at module scope" {
   assert_true(result.errors.is_empty())
 }
 
+///|
+test "resolve: rejects reassignment of load-imported name" {
+  let f = parse_or_fail("load('m', 'x')\nx = 1")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "cannot reassign name 'x' imported from a load statement"),
+  )
+}
+
+///|
+test "resolve: rejects load-imported reassignment even when allow_global_reassign is on" {
+  let f = parse_or_fail("load('m', 'x')\nx = 1")
+  let opts = { ..ResolveOptions::default(), allow_global_reassign: true }
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(
+    has_error(result, "cannot reassign name 'x' imported from a load statement"),
+  )
+}
+
+///|
+test "resolve: augmented assignment to load-imported name is also rejected" {
+  let f = parse_or_fail("load('m', 'x')\nx += 1")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "cannot reassign name 'x' imported from a load statement"),
+  )
+}
+
+///|
+test "resolve: load with alias rejects reassignment of alias" {
+  let f = parse_or_fail("load('m', y='x')\ny = 1")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "cannot reassign name 'y' imported from a load statement"),
+  )
+}
+
 // --- Recursion ---
 
 ///|
