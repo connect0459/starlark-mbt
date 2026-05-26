@@ -274,10 +274,10 @@ Tokenise Starlark source into a flat token stream.
 
 ### String literal quoting helper
 
-- [ ] `unquote(literal) -> (String, is_bytes)` — decode source-level escapes
-- [ ] `quote(string, double_quote) -> String` — produce a Starlark-safe literal
+- [x] `unquote(literal) -> (String, is_bytes)` — decode source-level escapes
+- [x] `quote(string, is_bytes) -> String` — produce a Starlark-safe literal
       with appropriate escapes (used by `repr`, error messages)
-- [ ] Reference: `starlark-go/syntax/quote.go`
+- [x] Reference: `starlark-go/syntax/quote.go`
 
 ### TDD scope
 
@@ -337,7 +337,7 @@ The parser must emit a `SyntaxError` for these Python features absent from Starl
 - [x] `class` definitions
 - [x] `with` / `as` statements
 - [x] `async` / `await`
-- [ ] Walrus operator `:=`
+- [x] Walrus operator `:=`
 - [x] `*rest` in LHS tuple unpacking (`a, *b, c = ...`) — Starlark does not support this
 - [x] `is` / `is not` operators
 - [x] Type annotations in function parameters (`def f(x: int)`) and assignments (`x: int = 1`)
@@ -346,9 +346,9 @@ The parser must emit a `SyntaxError` for these Python features absent from Starl
 
 ### AST walker
 
-- [ ] `walk(node, visit)` — depth-first traversal visiting every child node;
+- [x] `walk(node, visit)` — depth-first traversal visiting every child node;
       used by the resolver and any future linter / tooling
-- [ ] Reference: `starlark-go/syntax/walk.go`
+- [x] Reference: `starlark-go/syntax/walk.go`
 
 ### TDD scope
 
