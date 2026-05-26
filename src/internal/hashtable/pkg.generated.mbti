@@ -6,21 +6,8 @@ package "connect0459/starlark/internal/hashtable"
 // Errors
 
 // Types and methods
-type HEntry[K, V]
-
-pub(all) struct Hashtable[K, V] {
-  mut slots : Array[Int]
-  mut entries : Array[HEntry[K, V]]
-  mut free_head : Int
-  mut head : Int
-  mut tail : Int
-  mut live_count : Int
-  mut itercount : Int
-  mut frozen : Bool
-  hash_fn : (K) -> Result[UInt, String]
-  eq_fn : (K, K) -> Bool
-  zero_key : K
-  zero_val : V
+pub struct Hashtable[K, V] {
+  // private fields
 }
 pub fn[K, V] Hashtable::clear(Self[K, V]) -> Result[Unit, String]
 pub fn[K, V] Hashtable::contains(Self[K, V], K) -> Result[Bool, String]

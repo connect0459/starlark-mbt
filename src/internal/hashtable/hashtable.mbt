@@ -13,29 +13,29 @@ let empty_idx : Int = -1
 let hash_zero_sentinel : UInt = 1U
 
 ///|
-struct HEntry[K, V] {
-  mut hash : UInt // 0 = free (unused or deleted)
+priv struct HEntry[K, V] {
+  mut hash : UInt
   mut key : K
   mut value : V
-  mut slot_next : Int // next entry in same hash chain, empty_idx = end
-  mut ord_next : Int // next in insertion order, empty_idx = end
-  mut ord_prev : Int // prev in insertion order, empty_idx = head
+  mut slot_next : Int
+  mut ord_next : Int
+  mut ord_prev : Int
 }
 
 ///|
-pub(all) struct Hashtable[K, V] {
-  mut slots : Array[Int]
-  mut entries : Array[HEntry[K, V]]
-  mut free_head : Int
-  mut head : Int
-  mut tail : Int
-  mut live_count : Int
-  mut itercount : Int
-  mut frozen : Bool
-  hash_fn : (K) -> Result[UInt, String]
-  eq_fn : (K, K) -> Bool
-  zero_key : K
-  zero_val : V
+pub struct Hashtable[K, V] {
+  priv mut slots : Array[Int]
+  priv mut entries : Array[HEntry[K, V]]
+  priv mut free_head : Int
+  priv mut head : Int
+  priv mut tail : Int
+  priv mut live_count : Int
+  priv mut itercount : Int
+  priv mut frozen : Bool
+  priv hash_fn : (K) -> Result[UInt, String]
+  priv eq_fn : (K, K) -> Bool
+  priv zero_key : K
+  priv zero_val : V
 }
 
 ///|
