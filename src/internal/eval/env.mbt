@@ -90,6 +90,19 @@ fn make_eval_error(ctx : EvalContext, msg : String) -> @errors.EvalError {
 }
 
 ///|
+fn check_steps(ctx : EvalContext) -> Unit raise EvalErr {
+  match ctx.thread.max_steps {
+    None => ()
+    Some(max) => {
+      ctx.thread.steps += 1
+      if ctx.thread.steps > max {
+        raise EvalErr(make_eval_error(ctx, "step budget exceeded"))
+      }
+    }
+  }
+}
+
+///|
 fn[T] check(ctx : EvalContext, r : Result[T, String]) -> T raise EvalErr {
   match r {
     Ok(v) => v

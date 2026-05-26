@@ -5,6 +5,21 @@ test "Thread can be created with a name" {
 }
 
 ///|
+test "Thread::with_step_budget halts computation that exceeds limit" {
+  let t = @starlark.Thread::with_step_budget("test", 5)
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "i = 0\nwhile i < 1000000:\n  i = i + 1",
+      @starlark.Options::default(),
+    ) {
+    Err(e) => assert_true(e.msg.contains("step budget"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
 test "Options::default enables all feature flags" {
   let opts = @starlark.Options::default()
   assert_eq(opts.allow_set, true)

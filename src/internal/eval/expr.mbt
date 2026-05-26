@@ -22,6 +22,7 @@ fn eval_expr_node(
   env : EvalEnv,
   expr : @syntax.Expr,
 ) -> @value.Value raise EvalErr {
+  check_steps(ctx)
   match expr {
     @syntax.Expr::ELiteral(lit, _) => eval_literal(ctx, lit)
     @syntax.Expr::EIdent(name, pos) =>

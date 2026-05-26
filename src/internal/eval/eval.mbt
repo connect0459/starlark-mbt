@@ -80,6 +80,19 @@ pub fn Thread::with_loader(
 }
 
 ///|
+pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
+  {
+    name,
+    print_fn: fn(msg) { println(msg) },
+    load_fn: None,
+    call_stack: [],
+    max_recursion_depth: 100,
+    max_steps: Some(max_steps),
+    steps: 0,
+  }
+}
+
+///|
 pub(all) struct Module {
   globals : @value.StarlarkDict
   mut frozen : Bool

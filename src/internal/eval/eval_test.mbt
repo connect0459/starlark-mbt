@@ -37,6 +37,43 @@ test "Thread: default has no step budget" {
 }
 
 ///|
+test "Thread::with_step_budget sets max_steps" {
+  let t = Thread::with_step_budget("test", 50)
+  assert_true(t.max_steps == Some(50))
+}
+
+///|
+test "Thread::with_step_budget halts computation that exceeds limit" {
+  let t = Thread::with_step_budget("test", 5)
+  match
+    exec_file(
+      t,
+      "<test>",
+      "i = 0\nwhile i < 1000000:\n  i = i + 1",
+      Options::default(),
+    ) {
+    Err(e) => assert_true(e.msg.contains("step budget"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
+test "Thread without step budget completes a long computation" {
+  let t = Thread::new("test")
+  match
+    exec_file(
+      t,
+      "<test>",
+      "x = 0\nfor i in range(100):\n  x = x + i",
+      Options::default(),
+    ) {
+    Ok(m) =>
+      assert_true(get_global(m, "x") == Some(@value.Value::IntVal(4950L)))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
 test "Thread: with_print accepts a custom print callback" {
   let msgs : Array[String] = []
   let t = Thread::with_print("test", fn(msg) { msgs.push(msg) })

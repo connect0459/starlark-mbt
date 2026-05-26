@@ -48,6 +48,7 @@ pub(all) struct Thread {
 pub fn Thread::new(String) -> Self
 pub fn Thread::with_loader(String, (String) -> Result[Map[String, @value.Value], String]) -> Self
 pub fn Thread::with_print(String, (String) -> Unit) -> Self
+pub fn Thread::with_step_budget(String, Int) -> Self
 
 // Type aliases
 
