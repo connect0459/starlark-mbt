@@ -573,6 +573,9 @@ End-to-end tests that execute `.star` scripts and assert output.
         (|, &, ^, -), comparison, iteration, all set methods
   - [x] `builtins.star` — all assertions pass; hasfields() tests excluded
         (application-defined type not available in harness)
+  - [x] `bytes.star` — all assertions pass; type(hello.elems())=="bytes.elems"
+        and str(hello.elems()) tests excluded (elems() returns list, not
+        bytes.elems iterator type)
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
