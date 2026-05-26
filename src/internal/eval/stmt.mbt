@@ -31,55 +31,22 @@ fn exec_stmt(
       Signal::SigNormal
     }
     @syntax.Stmt::SAugAssign(lhs, aug_op, rhs, pos) => {
-      let lv = eval_expr_node(ctx, env, lhs)
-      let rv = eval_expr_node(ctx, env, rhs)
-      let new_val = match (lv, aug_op) {
-        (@value.Value::ListVal(l), @syntax.AugOp::AugAdd) =>
-          match @value.iterate(rv) {
-            Ok(iter) => {
-              match l.check_mutable("apply += to") {
-                Err(msg) => {
-                  iter.done()
-                  raise EvalErr(make_eval_error(ctx, msg))
-                }
-                Ok(_) => ()
-              }
-              while true {
-                match iter.next() {
-                  None => break
-                  Some(item) => l.items.push(item)
-                }
-              }
-              iter.done()
-              lv
-            }
-            Err(_) => eval_binary(ctx, lv, @syntax.BinaryOp::OpAdd, rv, pos)
-          }
-        (@value.Value::DictVal(ld), @syntax.AugOp::AugBitOr) =>
-          match rv {
-            @value.Value::DictVal(rd) => {
-              let pairs : Array[(@value.Value, @value.Value)] = []
-              rd.each(fn(k, v) { pairs.push((k, v)) })
-              for pair in pairs {
-                let (k, v) = pair
-                check(ctx, ld.set(k, v))
-              }
-              lv
-            }
-            _ =>
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "unknown binary op: dict | \{@value.type_name(rv)}",
-                ),
-              )
-          }
+      match lhs {
+        @syntax.Expr::EIndex(obj_expr, idx_expr, idx_pos) => {
+          let obj = eval_expr_node(ctx, env, obj_expr)
+          let idx = eval_expr_node(ctx, env, idx_expr)
+          let lv = eval_index(ctx, obj, idx, idx_pos)
+          let rv = eval_expr_node(ctx, env, rhs)
+          let new_val = eval_aug_val(ctx, lv, aug_op, rv, pos)
+          set_index(ctx, obj, idx, new_val, idx_pos)
+        }
         _ => {
-          let bin_op = aug_to_bin_op(aug_op)
-          eval_binary(ctx, lv, bin_op, rv, pos)
+          let lv = eval_expr_node(ctx, env, lhs)
+          let rv = eval_expr_node(ctx, env, rhs)
+          let new_val = eval_aug_val(ctx, lv, aug_op, rv, pos)
+          assign_to(ctx, env, lhs, new_val, pos)
         }
       }
-      assign_to(ctx, env, lhs, new_val, pos)
       Signal::SigNormal
     }
     @syntax.Stmt::SIf(cond, then_body, else_body, _) => {
@@ -241,6 +208,62 @@ fn assign_to(
       raise EvalErr(
         make_eval_error(ctx, "\{pos.to_string()}: invalid assignment target"),
       )
+  }
+}
+
+///|
+fn eval_aug_val(
+  ctx : EvalContext,
+  lv : @value.Value,
+  aug_op : @syntax.AugOp,
+  rv : @value.Value,
+  pos : @errors.Position,
+) -> @value.Value raise EvalErr {
+  match (lv, aug_op) {
+    (@value.Value::ListVal(l), @syntax.AugOp::AugAdd) =>
+      match @value.iterate(rv) {
+        Ok(iter) => {
+          match l.check_mutable("apply += to") {
+            Err(msg) => {
+              iter.done()
+              raise EvalErr(make_eval_error(ctx, msg))
+            }
+            Ok(_) => ()
+          }
+          while true {
+            match iter.next() {
+              None => break
+              Some(item) => l.items.push(item)
+            }
+          }
+          iter.done()
+          lv
+        }
+        Err(_) => eval_binary(ctx, lv, @syntax.BinaryOp::OpAdd, rv, pos)
+      }
+    (@value.Value::DictVal(ld), @syntax.AugOp::AugBitOr) =>
+      match rv {
+        @value.Value::DictVal(rd) => {
+          let pairs : Array[(@value.Value, @value.Value)] = []
+          rd.each(fn(k, v) { pairs.push((k, v)) })
+          for pair in pairs {
+            let (k, v) = pair
+            check(ctx, ld.set(k, v))
+          }
+          lv
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "unknown binary op: dict | \{@value.type_name(rv)}",
+            ),
+          )
+      }
+    _ => {
+      let bin_op = aug_to_bin_op(aug_op)
+      eval_binary(ctx, lv, bin_op, rv, pos)
+    }
   }
 }
 
