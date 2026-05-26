@@ -227,10 +227,7 @@ fn eval_getattr(
         Some(v) => v
         None =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "module '\{m.name}' has no attribute '\{attr}'",
-            ),
+            make_eval_error(ctx, "module has no .\{attr} field or method"),
           )
       }
     _ =>
@@ -752,6 +749,18 @@ fn call_builtin(
             "issuperset", "pop", "remove", "symmetric_difference", "union", "update",
           ]
         @value.Value::BytesVal(_) => ["elems"]
+        @value.Value::ModuleVal(m) => {
+          let keys : Array[String] = m.attrs.keys().collect()
+          keys.sort_by(fn(a, b) {
+            let av = @value.Value::StrVal(@value.StarlarkString::new(a))
+            let bv = @value.Value::StrVal(@value.StarlarkString::new(b))
+            match @value.compare_values(av, bv) {
+              Ok(c) => c
+              Err(_) => 0
+            }
+          })
+          keys
+        }
         _ => []
       }
       let items = names.map(fn(n) {

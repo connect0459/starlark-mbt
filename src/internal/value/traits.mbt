@@ -142,7 +142,7 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     FuncVal(_) => Err("unhashable type: function")
     BuiltinFuncVal(_) => Err("unhashable type: builtin_function_or_method")
     BoundMethodVal(_) => Err("unhashable type: builtin_function_or_method")
-    ModuleVal(_) => Err("unhashable type: module")
+    ModuleVal(_) => Err("unhashable: module")
   }
 }
 

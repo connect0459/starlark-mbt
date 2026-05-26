@@ -204,6 +204,22 @@ fn assign_to(
       let idx = eval_expr_node(ctx, env, idx_expr)
       set_index(ctx, obj, idx, value, idx_pos)
     }
+    @syntax.Expr::EDot(obj_expr, attr, _) => {
+      let obj = eval_expr_node(ctx, env, obj_expr)
+      match obj {
+        @value.Value::ModuleVal(_) =>
+          raise EvalErr(
+            make_eval_error(ctx, "can't assign to .\{attr} field of module"),
+          )
+        _ =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "can't assign to .\{attr} field of \{@value.type_name(obj)} value",
+            ),
+          )
+      }
+    }
     _ =>
       raise EvalErr(
         make_eval_error(ctx, "\{pos.to_string()}: invalid assignment target"),

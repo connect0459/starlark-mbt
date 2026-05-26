@@ -240,5 +240,5 @@ test "StarlarkModule: truth is always true" {
 ///|
 test "StarlarkModule: repr shows module name" {
   let m = StarlarkModule::new("assert", {})
-  assert_eq(repr(Value::ModuleVal(m)), "<module assert>")
+  assert_eq(repr(Value::ModuleVal(m)), "<module \"assert\">")
 }

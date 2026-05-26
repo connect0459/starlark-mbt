@@ -365,5 +365,5 @@ test "starlark_hash: module is unhashable" {
 ///|
 test "to_str: module returns repr" {
   let m = StarlarkModule::new("assert", {})
-  assert_eq(to_str(Value::ModuleVal(m)), "<module assert>")
+  assert_eq(to_str(Value::ModuleVal(m)), "<module \"assert\">")
 }

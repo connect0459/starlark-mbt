@@ -480,7 +480,7 @@ pub fn repr(v : Value) -> String {
     BuiltinFuncVal(f) => "<built-in function \{f.name}>"
     BoundMethodVal(m) =>
       "<built-in method \{m.method_name} of \{type_name(m.recv)} value>"
-    ModuleVal(m) => "<module \{m.name}>"
+    ModuleVal(m) => "<module \"\{m.name}\">"
   }
 }
 
