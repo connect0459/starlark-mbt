@@ -544,7 +544,10 @@ End-to-end tests that execute `.star` scripts and assert output.
       `misc.star` added to respective `*_test.mbt` files.
 - [x] Port key cases from `starlark-go/starlark/eval_test.go`
       (TestParameterPassing: positional, keyword, *args/**kwargs, keyword-only, required keyword-only)
-- [ ] Port key cases from `starlark-go/starlark/value_test.go`
+- [x] Port key cases from `starlark-go/starlark/value_test.go`
+      (TestStringMethod: covered by existing traits_test.mbt/value_test.mbt;
+       TestListAppend: StarlarkList push+index tests added;
+       TestParamDefault: whitebox test for StarlarkFunction.defaults in value_api_wbtest.mbt)
 - [ ] Port `.star` test files from `starlark-go/starlark/testdata/`
       Priority order: `int.star`, `bool.star`, `string.star`, `list.star`,
       `dict.star`, `tuple.star`, `function.star`, `control.star`, `assign.star`,
@@ -594,7 +597,10 @@ End-to-end tests that execute `.star` scripts and assert output.
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
-- [ ] Cover all bitflow subset contract scenarios
+- [x] Cover all bitflow subset contract scenarios
+      (9 tests in bitflow_subset_test.mbt: variables-in-args, conditionals,
+       for-loops, func-with-defaults, list-comprehensions, dict-ops, strings,
+       end-to-end workflow simulation, load+freeze pattern)
 - [ ] Snapshot tests for error message formats
 - [ ] Benchmark suite (starlark-go `bench_test.go` equivalent)
 - [ ] CI: Expand `.github/workflows/ci.yml` — `moon check && moon test && moon coverage analyze`
