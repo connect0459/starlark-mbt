@@ -454,19 +454,27 @@ fn eval_mod(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::FloatVal(a % b)
+      let r = a % b
+      let r = if r != 0.0 && (r < 0.0) != (b < 0.0) { r + b } else { r }
+      @value.Value::FloatVal(r)
     }
     (@value.Value::IntVal(a), @value.Value::FloatVal(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::FloatVal(a.to_double() % b)
+      let af = a.to_double()
+      let r = af % b
+      let r = if r != 0.0 && (r < 0.0) != (b < 0.0) { r + b } else { r }
+      @value.Value::FloatVal(r)
     }
     (@value.Value::FloatVal(a), @value.Value::IntVal(b)) => {
       if b == 0L {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::FloatVal(a % b.to_double())
+      let bf = b.to_double()
+      let r = a % bf
+      let r = if r != 0.0 && (r < 0.0) != (bf < 0.0) { r + bf } else { r }
+      @value.Value::FloatVal(r)
     }
     (@value.Value::StrVal(s), _) => check(ctx, percent_format(s.raw, rv))
     _ =>
