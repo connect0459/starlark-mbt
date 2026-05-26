@@ -560,6 +560,13 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `tuple.star` — all assertions pass; tuple multiplication with overflow checks
   - [x] `dict.star` — all assertions pass including dict union (|, |=); hasfields-
         based tests excluded
+  - [x] `control.star` — if/elif/else, for loops with break/continue, return
+        semantics, scoping; fibonacci infinite iterable excluded
+  - [x] `function.star` — closures, lexical scope, stateful closures, freeze,
+        mutable defaults, lambda parsing, missing/duplicate param errors, dynamic
+        **kwargs checks, CALL_VAR_KW, eval order, recursive closures, forward refs,
+        trailing commas; recursion detection (fib/Y-combinator), hasfields(),
+        and unbound-cell detection excluded (not yet implemented)
 - [ ] **`assert.star` embedding**: use the `const` string approach decided in
       Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
       pre-loaded module before running each `.star` test file.
