@@ -45,15 +45,14 @@ pub fn Predeclared::get(Self, String) -> @value.Value?
 pub fn Predeclared::new() -> Self
 pub fn Predeclared::set(Self, String, @value.Value) -> Unit
 
-pub(all) struct Thread {
+pub struct Thread {
   name : String
-  print_fn : (String) -> Unit
-  load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
-  mut call_stack : Array[@errors.CallFrame]
   max_recursion_depth : Int
   max_steps : Int?
-  mut steps : Int
+  // private fields
 }
+pub fn Thread::call_frames(Self) -> Array[@errors.CallFrame]
+pub fn Thread::call_stack_depth(Self) -> Int
 pub fn Thread::execution_steps(Self) -> Int
 pub fn Thread::new(String) -> Self
 pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self

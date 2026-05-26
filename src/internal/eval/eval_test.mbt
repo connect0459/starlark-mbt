@@ -21,7 +21,7 @@ test "Options: load_binds_globally defaults to false for spec compliance" {
 test "Thread: default construction sets name and empty call stack" {
   let t = Thread::new("main")
   assert_eq(t.name, "main")
-  assert_eq(t.call_stack.length(), 0)
+  assert_eq(t.call_stack_depth(), 0)
 }
 
 ///|
@@ -87,12 +87,16 @@ test "Thread without step budget completes a long computation" {
 }
 
 ///|
-test "Thread: with_print accepts a custom print callback" {
+test "Thread: with_print routes output to the custom callback" {
   let msgs : Array[String] = []
   let t = Thread::with_print("test", fn(msg) { msgs.push(msg) })
-  (t.print_fn)("hello")
-  assert_eq(msgs.length(), 1)
-  assert_eq(msgs[0], "hello")
+  match exec_file(t, "<test>", "print(\"hello\")", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], "hello")
+    }
+    Err(e) => fail(e.msg)
+  }
 }
 
 ///|

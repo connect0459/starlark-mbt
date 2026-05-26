@@ -88,14 +88,14 @@ pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
 }
 
 ///|
-pub(all) struct Thread {
+pub struct Thread {
   name : String
-  print_fn : (String) -> Unit
-  load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
-  mut call_stack : Array[@errors.CallFrame]
+  priv print_fn : (String) -> Unit
+  priv load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
+  priv call_stack : Array[@errors.CallFrame]
   max_recursion_depth : Int
   max_steps : Int?
-  mut steps : Int
+  priv mut steps : Int
 }
 
 ///|
@@ -151,6 +151,16 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
     max_steps: Some(max_steps),
     steps: 0,
   }
+}
+
+///|
+pub fn Thread::call_stack_depth(self : Thread) -> Int {
+  self.call_stack.length()
+}
+
+///|
+pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
+  self.call_stack.copy()
 }
 
 ///|
