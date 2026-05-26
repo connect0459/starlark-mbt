@@ -648,7 +648,33 @@ fn Parser::parse_not_test(self : Parser) -> @syntax.Expr raise ParseErr {
 fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
   let p = self.pos
   let mut e = self.parse_bitor_expr()
+  let mut prev_op_str : String? = None
   while true {
+    let cur_str : String? = match self.tok {
+      @lexer.Token::Lt => Some("<")
+      @lexer.Token::Le => Some("<=")
+      @lexer.Token::Gt => Some(">")
+      @lexer.Token::Ge => Some(">=")
+      @lexer.Token::Eql => Some("==")
+      @lexer.Token::Neq => Some("!=")
+      @lexer.Token::In => if self.no_in { None } else { Some("in") }
+      @lexer.Token::NotIn => if self.no_in { None } else { Some("not in") }
+      @lexer.Token::Not => if self.no_in { None } else { Some("not in") }
+      _ => None
+    }
+    let cur_str = match cur_str {
+      None => break
+      Some(s) => s
+    }
+    match prev_op_str {
+      Some(prev) =>
+        raise ParseErr(
+          self.syntax_error(
+            "\{prev} does not associate with \{cur_str} (use parens)",
+          ),
+        )
+      None => ()
+    }
     let op : @syntax.BinaryOp = match self.tok {
       @lexer.Token::Lt => @syntax.BinaryOp::OpLt
       @lexer.Token::Le => @syntax.BinaryOp::OpLe
@@ -656,22 +682,9 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
       @lexer.Token::Ge => @syntax.BinaryOp::OpGe
       @lexer.Token::Eql => @syntax.BinaryOp::OpEq
       @lexer.Token::Neq => @syntax.BinaryOp::OpNe
-      @lexer.Token::In =>
-        if self.no_in {
-          break
-        } else {
-          @syntax.BinaryOp::OpIn
-        }
-      @lexer.Token::NotIn =>
-        if self.no_in {
-          break
-        } else {
-          @syntax.BinaryOp::OpNotIn
-        }
+      @lexer.Token::In => @syntax.BinaryOp::OpIn
+      @lexer.Token::NotIn => @syntax.BinaryOp::OpNotIn
       @lexer.Token::Not => {
-        if self.no_in {
-          break
-        }
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
@@ -682,6 +695,7 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
       }
       _ => break
     }
+    prev_op_str = Some(cur_str)
     self.advance()
     let r = self.parse_bitor_expr()
     e = @syntax.Expr::EBinary(e, op, r, p)
@@ -1135,7 +1149,33 @@ fn Parser::finish_comparison_from(
   p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
+  let mut prev_op_str : String? = None
   while true {
+    let cur_str : String? = match self.tok {
+      @lexer.Token::Lt => Some("<")
+      @lexer.Token::Le => Some("<=")
+      @lexer.Token::Gt => Some(">")
+      @lexer.Token::Ge => Some(">=")
+      @lexer.Token::Eql => Some("==")
+      @lexer.Token::Neq => Some("!=")
+      @lexer.Token::In => if self.no_in { None } else { Some("in") }
+      @lexer.Token::NotIn => if self.no_in { None } else { Some("not in") }
+      @lexer.Token::Not => if self.no_in { None } else { Some("not in") }
+      _ => None
+    }
+    let cur_str = match cur_str {
+      None => break
+      Some(s) => s
+    }
+    match prev_op_str {
+      Some(prev) =>
+        raise ParseErr(
+          self.syntax_error(
+            "\{prev} does not associate with \{cur_str} (use parens)",
+          ),
+        )
+      None => ()
+    }
     let op : @syntax.BinaryOp = match self.tok {
       @lexer.Token::Lt => @syntax.BinaryOp::OpLt
       @lexer.Token::Le => @syntax.BinaryOp::OpLe
@@ -1143,22 +1183,9 @@ fn Parser::finish_comparison_from(
       @lexer.Token::Ge => @syntax.BinaryOp::OpGe
       @lexer.Token::Eql => @syntax.BinaryOp::OpEq
       @lexer.Token::Neq => @syntax.BinaryOp::OpNe
-      @lexer.Token::In =>
-        if self.no_in {
-          break
-        } else {
-          @syntax.BinaryOp::OpIn
-        }
-      @lexer.Token::NotIn =>
-        if self.no_in {
-          break
-        } else {
-          @syntax.BinaryOp::OpNotIn
-        }
+      @lexer.Token::In => @syntax.BinaryOp::OpIn
+      @lexer.Token::NotIn => @syntax.BinaryOp::OpNotIn
       @lexer.Token::Not => {
-        if self.no_in {
-          break
-        }
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
@@ -1169,6 +1196,7 @@ fn Parser::finish_comparison_from(
       }
       _ => break
     }
+    prev_op_str = Some(cur_str)
     self.advance()
     let r = self.parse_bitor_expr()
     e = @syntax.Expr::EBinary(e, op, r, p)

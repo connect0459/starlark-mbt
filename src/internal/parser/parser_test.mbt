@@ -662,3 +662,49 @@ test "del statement is rejected" {
     Ok(_) => fail("expected error for del statement")
   }
 }
+
+// --- Non-associative comparison operators ---
+
+///|
+fn parse_e_err(src : String) -> String {
+  match @parser.parse_expr("test.star", src) {
+    Err(e) => e.msg
+    Ok(_) => ""
+  }
+}
+
+///|
+test "chained == == is rejected as non-associative" {
+  let msg = parse_e_err("0 == 1 == 2")
+  if !msg.contains("== does not associate with ==") {
+    fail("expected non-associative error, got: \{msg}")
+  }
+}
+
+///|
+test "chained <= < is rejected as non-associative" {
+  let msg = parse_e_err("0 <= i < n")
+  if !msg.contains("<= does not associate with <") {
+    fail("expected non-associative error, got: \{msg}")
+  }
+}
+
+///|
+test "chained in not-in is rejected as non-associative" {
+  let msg = parse_e_err("a in b not in c")
+  if !msg.contains("in does not associate with not in") {
+    fail("expected non-associative error, got: \{msg}")
+  }
+}
+
+///|
+test "parenthesized comparisons are allowed" {
+  match @parser.parse_expr("test.star", "(0 == 1) == 2") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg}")
+  }
+  match @parser.parse_expr("test.star", "0 == (1 == 2)") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg}")
+  }
+}
