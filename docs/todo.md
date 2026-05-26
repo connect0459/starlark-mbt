@@ -594,9 +594,13 @@ End-to-end tests that execute `.star` scripts and assert output.
         by Go unit tests); no port needed.
   - [x] `module.star` — type/str/dir/hash/assign/missing-field; "did you mean"
         suggestion excluded (not implemented)
-- [ ] **`assert.star` embedding**: use the `const` string approach decided in
-      Phase 6 (`src/internal/starlarktest/`). Register `assert.star` as a
-      pre-loaded module before running each `.star` test file.
+- [x] **`assert.star` embedding**: implemented as MoonBit-native builtins
+      (`build_assert_module()` in `src/internal/starlarktest/starlarktest.mbt`);
+      injected via the loader for `"assert.star"` in both `run_star_string` and
+      `run_chunked_string`. The original `const`-string-exec approach was
+      abandoned (see Phase 6 architecture note) because StarlarkFunction
+      uses the caller's global_env, making predeclared helpers invisible
+      inside loaded modules.
 - [x] Cover all bitflow subset contract scenarios
       (9 tests in bitflow_subset_test.mbt: variables-in-args, conditionals,
        for-loops, func-with-defaults, list-comprehensions, dict-ops, strings,
