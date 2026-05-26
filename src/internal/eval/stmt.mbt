@@ -55,6 +55,25 @@ fn exec_stmt(
             }
             Err(_) => eval_binary(ctx, lv, @syntax.BinaryOp::OpAdd, rv, pos)
           }
+        (@value.Value::DictVal(ld), @syntax.AugOp::AugBitOr) =>
+          match rv {
+            @value.Value::DictVal(rd) => {
+              let pairs : Array[(@value.Value, @value.Value)] = []
+              rd.each(fn(k, v) { pairs.push((k, v)) })
+              for pair in pairs {
+                let (k, v) = pair
+                check(ctx, ld.set(k, v))
+              }
+              lv
+            }
+            _ =>
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "unknown binary op: dict | \{@value.type_name(rv)}",
+                ),
+              )
+          }
         _ => {
           let bin_op = aug_to_bin_op(aug_op)
           eval_binary(ctx, lv, bin_op, rv, pos)
@@ -168,27 +187,43 @@ fn assign_to(
   match target {
     @syntax.Expr::EIdent(name, _) => env.bind(name, value)
     @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) => {
-      let items = match value {
+      let items : Array[@value.Value] = match value {
         @value.Value::TupleVal(t) => t
         @value.Value::ListVal(l) => l.items
-        _ =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "\{pos.to_string()}: cannot unpack non-sequence",
-            ),
-          )
-      }
-      if items.length() != elems.length() {
-        let few_or_many = if items.length() < elems.length() {
-          "few"
-        } else {
-          "many"
+        _ => {
+          let it = match @value.iterate(value) {
+            Ok(it) => it
+            Err(_) =>
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "\{pos.to_string()}: got \{@value.type_name(value)} in sequence assignment",
+                ),
+              )
+          }
+          let collected : Array[@value.Value] = []
+          while true {
+            match it.next() {
+              None => break
+              Some(item) => collected.push(item)
+            }
+          }
+          it.done()
+          collected
         }
+      }
+      if items.length() < elems.length() {
         raise EvalErr(
           make_eval_error(
             ctx,
-            "\{pos.to_string()}: too \{few_or_many} values to unpack (expected \{elems.length()}, got \{items.length()})",
+            "\{pos.to_string()}: too few values to unpack (expected \{elems.length()}, got \{items.length()})",
+          ),
+        )
+      } else if items.length() > elems.length() {
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "\{pos.to_string()}: too many values to unpack (expected \{elems.length()}, got \{items.length()})",
           ),
         )
       }

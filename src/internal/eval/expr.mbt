@@ -86,7 +86,13 @@ fn eval_expr_node(
         let (k_expr, v_expr) = pair
         let k = eval_expr_node(ctx, env, k_expr)
         let v = eval_expr_node(ctx, env, v_expr)
-        check(ctx, d.set(k, v))
+        match check(ctx, d.get(k)) {
+          Some(_) =>
+            raise EvalErr(
+              make_eval_error(ctx, "duplicate key: \{@value.repr(k)}"),
+            )
+          None => check(ctx, d.set(k, v))
+        }
       }
       @value.Value::DictVal(d)
     }
@@ -942,7 +948,7 @@ fn builtin_dict(
     match pos_args[0] {
       @value.Value::DictVal(src) => src.each(fn(k, v) { ignore(d.set(k, v)) })
       v => {
-        let it = check(ctx, @value.iterate(v))
+        let it = require_seq(ctx, v)
         while true {
           match it.next() {
             None => {
@@ -988,8 +994,15 @@ fn builtin_dict(
       make_eval_error(ctx, "dict() takes at most one positional argument"),
     )
   }
+  let kw_seen : Array[String] = []
   for kw_pair in kw_args {
     let (kw_name, kw_val) = kw_pair
+    if kw_seen.contains(kw_name) {
+      raise EvalErr(
+        make_eval_error(ctx, "dict: duplicate keyword arg: \"\{kw_name}\""),
+      )
+    }
+    kw_seen.push(kw_name)
     let key = @value.Value::StrVal(@value.StarlarkString::new(kw_name))
     ignore(d.set(key, kw_val))
   }
@@ -1609,7 +1622,7 @@ fn call_dict_method(
           if pos_args.length() >= 2 {
             pos_args[1]
           } else {
-            raise EvalErr(make_eval_error(ctx, "dict.pop(): key not found"))
+            raise EvalErr(make_eval_error(ctx, "pop: missing key"))
           }
         Some(v) => {
           ignore(check(ctx, d.delete(key)))
@@ -1619,19 +1632,54 @@ fn call_dict_method(
     }
     "update" => {
       if pos_args.length() > 0 {
-        match pos_args[0] {
-          @value.Value::DictVal(src) =>
-            src.each(fn(k, v) { ignore(d.set(k, v)) })
-          _ =>
-            raise EvalErr(
-              make_eval_error(ctx, "dict.update() argument must be a dict"),
-            )
+        let src_val = pos_args[0]
+        match src_val {
+          @value.Value::DictVal(src) => {
+            let pairs : Array[(@value.Value, @value.Value)] = []
+            src.each(fn(k, v) { pairs.push((k, v)) })
+            for pair in pairs {
+              let (k, v) = pair
+              check(ctx, d.set(k, v))
+            }
+          }
+          _ => {
+            let iter = require_seq(ctx, src_val)
+            while true {
+              match iter.next() {
+                None => break
+                Some(item) =>
+                  match item {
+                    @value.Value::TupleVal(pair)
+                    | @value.Value::ListVal({ items: pair, .. }) =>
+                      if pair.length() == 2 {
+                        check(ctx, d.set(pair[0], pair[1]))
+                      } else {
+                        iter.done()
+                        raise EvalErr(
+                          make_eval_error(
+                            ctx, "dict.update: items must be 2-element sequences",
+                          ),
+                        )
+                      }
+                    _ => {
+                      iter.done()
+                      raise EvalErr(
+                        make_eval_error(
+                          ctx, "dict.update: items must be 2-element sequences",
+                        ),
+                      )
+                    }
+                  }
+              }
+            }
+            iter.done()
+          }
         }
       }
       for kw_pair in kw_args {
         let (kw_name, kw_val) = kw_pair
         let key = @value.Value::StrVal(@value.StarlarkString::new(kw_name))
-        ignore(d.set(key, kw_val))
+        check(ctx, d.set(key, kw_val))
       }
       @value.Value::NoneVal
     }
@@ -1641,10 +1689,7 @@ fn call_dict_method(
     }
     "popitem" =>
       match check(ctx, d.popitem()) {
-        None =>
-          raise EvalErr(
-            make_eval_error(ctx, "dict.popitem(): dictionary is empty"),
-          )
+        None => raise EvalErr(make_eval_error(ctx, "empty dict"))
         Some((k, v)) => @value.Value::TupleVal([k, v])
       }
     "setdefault" => {

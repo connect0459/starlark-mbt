@@ -859,6 +859,18 @@ fn Parser::parse_subscript_tail(
       let slice = self.parse_slice_from_colon(obj, Some(idx), p)
       self.expect(@lexer.Token::RBrack)
       slice
+    } else if self.tok == @lexer.Token::Comma {
+      let elems : Array[@syntax.Expr] = [idx]
+      while self.tok == @lexer.Token::Comma {
+        self.advance()
+        if self.tok == @lexer.Token::RBrack {
+          break
+        }
+        elems.push(self.parse_test())
+      }
+      self.expect(@lexer.Token::RBrack)
+      let tuple_key = @syntax.Expr::ETuple(elems, p)
+      @syntax.Expr::EIndex(obj, tuple_key, p)
     } else {
       self.expect(@lexer.Token::RBrack)
       @syntax.Expr::EIndex(obj, idx, p)

@@ -209,7 +209,7 @@ fn eval_mul(
   ctx : EvalContext,
   lv : @value.Value,
   rv : @value.Value,
-  pos : @errors.Position,
+  _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
     (@value.Value::IntVal(a), @value.Value::IntVal(b)) =>
@@ -221,13 +221,17 @@ fn eval_mul(
     (@value.Value::FloatVal(a), @value.Value::IntVal(b)) =>
       @value.Value::FloatVal(a * b.to_double())
     (@value.Value::StrVal(s), @value.Value::IntVal(n)) =>
-      @value.Value::StrVal(repeat_string(s, n, ctx, pos))
+      @value.Value::StrVal(check(ctx, repeat_string(s, n)))
     (@value.Value::IntVal(n), @value.Value::StrVal(s)) =>
-      @value.Value::StrVal(repeat_string(s, n, ctx, pos))
+      @value.Value::StrVal(check(ctx, repeat_string(s, n)))
     (@value.Value::ListVal(l), @value.Value::IntVal(n)) =>
-      @value.Value::ListVal(repeat_list(l, n))
+      @value.Value::ListVal(check(ctx, repeat_list(l, n)))
     (@value.Value::IntVal(n), @value.Value::ListVal(l)) =>
-      @value.Value::ListVal(repeat_list(l, n))
+      @value.Value::ListVal(check(ctx, repeat_list(l, n)))
+    (@value.Value::TupleVal(t), @value.Value::IntVal(n)) =>
+      @value.Value::TupleVal(check(ctx, repeat_tuple(t, n)))
+    (@value.Value::IntVal(n), @value.Value::TupleVal(t)) =>
+      @value.Value::TupleVal(check(ctx, repeat_tuple(t, n)))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -239,36 +243,82 @@ fn eval_mul(
 }
 
 ///|
+let max_int32 : Int64 = 2147483647L
+
+///|
+let max_alloc : Int = 1073741824
+
+///|
 fn repeat_string(
   s : @value.StarlarkString,
   n : Int64,
-  _ctx : EvalContext,
-  _pos : @errors.Position,
-) -> @value.StarlarkString {
+) -> Result[@value.StarlarkString, String] {
   if n <= 0L {
-    return @value.StarlarkString::new("")
+    return Ok(@value.StarlarkString::new(""))
+  }
+  if n > max_int32 {
+    return Err("repeat count \{n} too large")
   }
   let count = n.to_int()
+  let byte_len = s.byte_len()
+  if byte_len > 0 && count > max_alloc / byte_len {
+    return Err("excessive repeat (\{byte_len} * \{count} elements)")
+  }
   let buf = StringBuilder::new()
   for _ in 0..<count {
     buf.write_string(s.raw)
   }
-  @value.StarlarkString::new(buf.to_string())
+  Ok(@value.StarlarkString::new(buf.to_string()))
 }
 
 ///|
-fn repeat_list(l : @value.StarlarkList, n : Int64) -> @value.StarlarkList {
+fn repeat_list(
+  l : @value.StarlarkList,
+  n : Int64,
+) -> Result[@value.StarlarkList, String] {
   if n <= 0L {
-    return @value.StarlarkList::new([])
+    return Ok(@value.StarlarkList::new([]))
+  }
+  if n > max_int32 {
+    return Err("repeat count \{n} too large")
   }
   let count = n.to_int()
+  let elem_len = l.items.length()
+  if elem_len > 0 && count > max_alloc / elem_len {
+    return Err("excessive repeat (\{elem_len} * \{count} elements)")
+  }
   let items : Array[@value.Value] = []
   for _ in 0..<count {
     for v in l.items {
       items.push(v)
     }
   }
-  @value.StarlarkList::new(items)
+  Ok(@value.StarlarkList::new(items))
+}
+
+///|
+fn repeat_tuple(
+  t : Array[@value.Value],
+  n : Int64,
+) -> Result[Array[@value.Value], String] {
+  if n <= 0L {
+    return Ok([])
+  }
+  if n > max_int32 {
+    return Err("repeat count \{n} too large")
+  }
+  let count = n.to_int()
+  let elem_len = t.length()
+  if elem_len > 0 && count > max_alloc / elem_len {
+    return Err("excessive repeat (\{elem_len} * \{count} elements)")
+  }
+  let items : Array[@value.Value] = []
+  for _ in 0..<count {
+    for v in t {
+      items.push(v)
+    }
+  }
+  Ok(items)
 }
 
 ///|
@@ -711,6 +761,19 @@ fn eval_bitwise(
       }
       @value.Value::IntVal(r)
     }
+    (@value.Value::DictVal(ld), @value.Value::DictVal(rd)) if op == "lor" => {
+      let result = @value.StarlarkDict::new()
+      ld.each(fn(k, v) { ignore(result.set(k, v)) })
+      rd.each(fn(k, v) { ignore(result.set(k, v)) })
+      @value.Value::DictVal(result)
+    }
+    (@value.Value::DictVal(_), _) if op == "lor" =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "unknown binary op: dict | \{@value.type_name(rv)}",
+        ),
+      )
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -884,7 +947,7 @@ fn eval_index(
       match check(ctx, d.get(idx)) {
         None =>
           raise EvalErr(
-            make_eval_error(ctx, "key not found: \{@value.repr(idx)}"),
+            make_eval_error(ctx, "key \{@value.repr(idx)} not in dict"),
           )
         Some(v) => v
       }
