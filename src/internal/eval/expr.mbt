@@ -380,6 +380,21 @@ fn call_func(
 }
 
 ///|
+fn count_max_positional(params : Array[@syntax.Param]) -> Int {
+  let mut n = 0
+  for p in params {
+    match p {
+      @syntax.Param::ParamIdent(_, _) | @syntax.Param::ParamDefault(_, _, _) =>
+        n += 1
+      @syntax.Param::ParamStarBare(_) | @syntax.Param::ParamStarIdent(_, _) =>
+        break
+      _ => ()
+    }
+  }
+  n
+}
+
+///|
 fn bind_args(
   ctx : EvalContext,
   f : @value.StarlarkFunction,
@@ -393,7 +408,10 @@ fn bind_args(
     let (kw_name, kw_val) = kw_pair
     if kw_map.contains(kw_name) {
       raise EvalErr(
-        make_eval_error(ctx, "multiple values for parameter \"\{kw_name}\""),
+        make_eval_error(
+          ctx,
+          "function \{f.name} got multiple values for parameter \"\{kw_name}\"",
+        ),
       )
     }
     kw_map[kw_name] = kw_val
@@ -402,14 +420,19 @@ fn bind_args(
   let defaults = f.defaults
   let mut pos_idx = 0
   let mut param_idx = 0
+  let mut passed_star = false
   let mut had_kwargs_param = false
+  let missing_required : Array[String] = []
   while param_idx < params.length() {
     match params[param_idx] {
       @syntax.Param::ParamIdent(name, _) =>
-        if pos_idx < pos_args.length() {
+        if pos_idx < pos_args.length() && !passed_star {
           if kw_map.contains(name) {
             raise EvalErr(
-              make_eval_error(ctx, "multiple values for parameter \"\{name}\""),
+              make_eval_error(
+                ctx,
+                "function \{f.name} got multiple values for parameter \"\{name}\"",
+              ),
             )
           }
           func_env.bind(name, pos_args[pos_idx])
@@ -424,18 +447,17 @@ fn bind_args(
           func_env.bind(name, dv)
           param_idx += 1
         } else {
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "\{f.name}() missing required argument: '\{name}'",
-            ),
-          )
+          missing_required.push(name)
+          param_idx += 1
         }
       @syntax.Param::ParamDefault(name, _, _) =>
-        if pos_idx < pos_args.length() {
+        if pos_idx < pos_args.length() && !passed_star {
           if kw_map.contains(name) {
             raise EvalErr(
-              make_eval_error(ctx, "multiple values for parameter \"\{name}\""),
+              make_eval_error(
+                ctx,
+                "function \{f.name} got multiple values for parameter \"\{name}\"",
+              ),
             )
           }
           func_env.bind(name, pos_args[pos_idx])
@@ -448,19 +470,14 @@ fn bind_args(
         } else if param_idx < defaults.length() {
           match defaults[param_idx] {
             Some(dv) => func_env.bind(name, dv)
-            None =>
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "\{f.name}() missing required argument: '\{name}'",
-                ),
-              )
+            None => missing_required.push(name)
           }
           param_idx += 1
         } else {
           param_idx += 1
         }
       @syntax.Param::ParamStarIdent(name, _) => {
+        passed_star = true
         let rest : Array[@value.Value] = []
         while pos_idx < pos_args.length() {
           rest.push(pos_args[pos_idx])
@@ -469,7 +486,19 @@ fn bind_args(
         func_env.bind(name, @value.Value::TupleVal(rest))
         param_idx += 1
       }
-      @syntax.Param::ParamStarBare(_) => param_idx += 1
+      @syntax.Param::ParamStarBare(_) => {
+        passed_star = true
+        let max_pos = count_max_positional(params)
+        if pos_idx < pos_args.length() {
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "function \{f.name} accepts at most \{max_pos} positional arguments (\{pos_args.length()} given)",
+            ),
+          )
+        }
+        param_idx += 1
+      }
       @syntax.Param::ParamKwIdent(name, _) => {
         had_kwargs_param = true
         let kw_dict = @value.StarlarkDict::new()
@@ -477,16 +506,18 @@ fn bind_args(
           let key = @value.Value::StrVal(@value.StarlarkString::new(kw_name))
           ignore(kw_dict.set(key, kw_val))
         })
+        kw_map.clear()
         func_env.bind(name, @value.Value::DictVal(kw_dict))
         param_idx += 1
       }
     }
   }
-  if pos_idx < pos_args.length() {
+  if pos_idx < pos_args.length() && !passed_star {
+    let max_pos = count_max_positional(params)
     raise EvalErr(
       make_eval_error(
         ctx,
-        "\{f.name}() takes \{params.length()} positional arguments but \{pos_args.length()} were given",
+        "function \{f.name} accepts \{max_pos} positional arguments (\{pos_args.length()} given)",
       ),
     )
   }
@@ -496,7 +527,18 @@ fn bind_args(
     raise EvalErr(
       make_eval_error(
         ctx,
-        "\{f.name}() got an unexpected keyword argument '\{first_key}'",
+        "function \{f.name} got an unexpected keyword argument \"\{first_key}\"",
+      ),
+    )
+  }
+  if !missing_required.is_empty() {
+    let n = missing_required.length()
+    let names = missing_required.join(", ")
+    let arg_word = if n == 1 { "argument" } else { "arguments" }
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "function \{f.name} missing \{n} \{arg_word} (\{names})",
       ),
     )
   }

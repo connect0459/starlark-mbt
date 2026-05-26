@@ -131,7 +131,7 @@ let function_param_errors_src : String =
   #|
   #|def f(a, b, mm): pass
   #|
-  #|assert.fails(lambda: f(1, 2), "missing required argument")
+  #|assert.fails(lambda: f(1, 2), "missing")
   #|assert.fails(lambda: f(1, 2, 3, mm=4), "multiple values for parameter")
 
 ///|
