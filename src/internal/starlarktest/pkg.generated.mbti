@@ -2,6 +2,8 @@
 package "connect0459/starlark/internal/starlarktest"
 
 // Values
+pub fn run_chunked_string(String) -> Array[String]
+
 pub fn run_star_string(String) -> Array[String]
 
 // Errors

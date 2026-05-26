@@ -212,9 +212,20 @@ fn pattern_unescape(pat : StringView) -> String {
 
 ///|
 fn pattern_matches(pattern : String, text : String) -> Bool {
-  let parts : Array[StringView] = pattern.split(".*").collect()
+  let anchor_end = pattern.has_suffix("$")
+  let pat = if anchor_end {
+    pattern[0:pattern.length() - 1].to_owned()
+  } else {
+    pattern
+  }
+  let parts : Array[StringView] = pat.split(".*").collect()
   if parts.length() == 1 {
-    text.contains(pattern_unescape(parts[0]))
+    let s = pattern_unescape(parts[0])
+    if anchor_end {
+      text.has_suffix(s)
+    } else {
+      text.contains(s)
+    }
   } else {
     let mut pos = 0
     for i in 0..<parts.length() {
@@ -227,7 +238,11 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
         Some(idx) => pos = pos + idx + part.length()
       }
     }
-    true
+    if anchor_end {
+      pos == text.length()
+    } else {
+      true
+    }
   }
 }
 
@@ -290,6 +305,173 @@ fn build_assert_module(errors : Array[String]) -> @value.Value {
   attrs["contains"] = make_contains_fn(errors)
   attrs["fails"] = make_fails_fn(errors)
   @value.Value::ModuleVal(@value.StarlarkModule::new("assert", attrs))
+}
+
+///|
+fn trim_start(s : String) -> String {
+  let chars = s.iter().to_array()
+  let mut i = 0
+  while i < chars.length() {
+    let c = chars[i]
+    if c == ' ' || c == '\t' || c == '\r' || c == '\n' {
+      i += 1
+    } else {
+      break
+    }
+  }
+  s[i:].to_owned()
+}
+
+///|
+fn unquote_double(s : String) -> String {
+  let buf = StringBuilder::new()
+  let chars = s.iter().to_array()
+  let mut i = 0
+  while i < chars.length() {
+    if chars[i] == '\\' && i + 1 < chars.length() {
+      match chars[i + 1] {
+        '"' => buf.write_char('"')
+        '\\' => buf.write_char('\\')
+        'n' => buf.write_char('\n')
+        't' => buf.write_char('\t')
+        'r' => buf.write_char('\r')
+        c => {
+          buf.write_char('\\')
+          buf.write_char(c)
+        }
+      }
+      i += 2
+    } else {
+      buf.write_char(chars[i])
+      i += 1
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn parse_hash_pattern(line : String) -> String? {
+  match line.find("###") {
+    None => None
+    Some(hash_pos) => {
+      let after = trim_start(line[hash_pos + 3:].to_owned())
+      if after.length() >= 2 && after.iter().to_array()[0] == '"' {
+        let inner = after[1:].to_owned()
+        match inner.find("\"") {
+          None => None
+          Some(end_pos) => Some(unquote_double(inner[0:end_pos].to_owned()))
+        }
+      } else if after.length() >= 2 && after.iter().to_array()[0] == '`' {
+        let inner = after[1:].to_owned()
+        match inner.find("`") {
+          None => None
+          Some(end_pos) => Some(inner[0:end_pos].to_owned())
+        }
+      } else {
+        None
+      }
+    }
+  }
+}
+
+///|
+fn split_chunks(src : String) -> Array[String] {
+  let sep = "\n---\n"
+  let result : Array[String] = []
+  let mut rest = src
+  while true {
+    match rest.find(sep) {
+      None => {
+        result.push(rest)
+        break
+      }
+      Some(idx) => {
+        result.push(rest[0:idx].to_owned())
+        rest = rest[idx + sep.length():].to_owned()
+      }
+    }
+  }
+  result
+}
+
+///|
+fn exec_chunk_raw(
+  src : String,
+) -> Result[Array[String], (String, Array[String])] {
+  let assert_errors : Array[String] = []
+  let assert_module = build_assert_module(assert_errors)
+  let loader : (String) -> Result[Map[String, @value.Value], String] = fn(
+    path,
+  ) {
+    if path == "assert.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["assert"] = assert_module
+      exports["freeze"] = make_freeze_fn()
+      Ok(exports)
+    } else if path == "json.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["json"] = @json.json_module()
+      Ok(exports)
+    } else {
+      Err("no loader for \"\{path}\"")
+    }
+  }
+  let thread = @eval.Thread::with_loader("test", loader)
+  match @eval.exec_file(thread, "<test>", src, @eval.Options::default()) {
+    Ok(_) => Ok(assert_errors)
+    Err(e) => Err((e.msg, assert_errors))
+  }
+}
+
+///|
+pub fn run_chunked_string(src : String) -> Array[String] {
+  let failures : Array[String] = []
+  let chunks = split_chunks(src)
+  for chunk in chunks {
+    let want_patterns : Array[String] = []
+    for line in chunk.split("\n") {
+      match parse_hash_pattern(line.to_owned()) {
+        None => ()
+        Some(p) => want_patterns.push(p)
+      }
+    }
+    if want_patterns.is_empty() {
+      match exec_chunk_raw(chunk) {
+        Ok(assert_errs) =>
+          for e in assert_errs {
+            failures.push(e)
+          }
+        Err((msg, assert_errs)) => {
+          failures.push("unexpected error: \{msg}")
+          for e in assert_errs {
+            failures.push(e)
+          }
+        }
+      }
+    } else {
+      match exec_chunk_raw(chunk) {
+        Ok(_) =>
+          for p in want_patterns {
+            failures.push(
+              "expected error matching \"\{p}\" but none was raised",
+            )
+          }
+        Err((msg, assert_errs)) => {
+          let matched = want_patterns
+            .iter()
+            .any(fn(p) { pattern_matches(p, msg) })
+          if !matched {
+            let pat = want_patterns[0]
+            failures.push("error \"\{msg}\" did not match pattern \"\{pat}\"")
+          }
+          for e in assert_errs {
+            failures.push(e)
+          }
+        }
+      }
+    }
+  }
+  failures
 }
 
 ///|
