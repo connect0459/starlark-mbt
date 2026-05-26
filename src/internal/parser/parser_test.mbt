@@ -663,6 +663,14 @@ test "del statement is rejected" {
   }
 }
 
+///|
+test "print-as-statement syntax is rejected" {
+  match @parser.parse_file("test.star", "print \"hello\"\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected syntax error for print-as-statement")
+  }
+}
+
 // --- Non-associative comparison operators ---
 
 ///|
