@@ -605,7 +605,9 @@ End-to-end tests that execute `.star` scripts and assert output.
       (9 tests in bitflow_subset_test.mbt: variables-in-args, conditionals,
        for-loops, func-with-defaults, list-comprehensions, dict-ops, strings,
        end-to-end workflow simulation, load+freeze pattern)
-- [ ] Snapshot tests for error message formats
+- [x] Snapshot tests for error message formats
+      (9 tests in `error_format_test.mbt`: syntax/resolve/type/div-zero/index-OOB
+       errors, full backtrace, no-frame backtrace, wrong-arg-count, recursion limit)
 - [ ] Benchmark suite (starlark-go `bench_test.go` equivalent)
 - [ ] CI: Expand `.github/workflows/ci.yml` — `moon check && moon test && moon coverage analyze`
       on every push and PR; target `wasm-gc` + `native`
