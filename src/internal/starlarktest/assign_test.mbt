@@ -421,3 +421,69 @@ test "assign.star: forward reference to load binding is OK" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let assign_tuple_errors_chunked : String =
+  #|(a, b, c) = 1 ### "got int in sequence assignment"
+  #|---
+  #|(a, b) = () ### "too few values to unpack"
+  #|---
+  #|(a, b) = (1,) ### "too few values to unpack"
+  #|---
+  #|(a, b, c) = (1, 2) ### "too few values to unpack"
+  #|---
+  #|(a, b) = (1, 2, 3) ### "too many values to unpack"
+  #|---
+  #|() = 1 ### "got int in sequence assignment"
+  #|---
+  #|() = (1,) ### "too many values to unpack"
+  #|---
+  #|() = (1, 2) ### "too many values to unpack"
+
+///|
+test "assign.star: tuple sequence assignment errors (chunked)" {
+  let failures = run_chunked_string(assign_tuple_errors_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
+
+///|
+let assign_list_errors_chunked : String =
+  #|[a, b, c] = 1 ### "got int in sequence assignment"
+  #|---
+  #|[a, b] = [] ### "too few values to unpack"
+  #|---
+  #|[a, b] = [1] ### "too few values to unpack"
+  #|---
+  #|[a, b, c] = [1, 2] ### "too few values to unpack"
+  #|---
+  #|[a, b] = [1, 2, 3] ### "too many values to unpack"
+  #|---
+  #|[] = 1 ### "got int in sequence assignment"
+  #|---
+  #|[] = [1] ### "too many values to unpack"
+  #|---
+  #|[] = [1, 2] ### "too many values to unpack"
+
+///|
+test "assign.star: list sequence assignment errors (chunked)" {
+  let failures = run_chunked_string(assign_list_errors_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
+
+///|
+let assign_before_assign_errors_chunked : String =
+  #|z += 3 ### "undefined: z"
+  #|---
+  #|(a) += 5 ### "undefined: a"
+
+///|
+test "assign.star: module-scope variable-before-assignment errors (chunked)" {
+  let failures = run_chunked_string(assign_before_assign_errors_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}

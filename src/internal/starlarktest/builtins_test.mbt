@@ -181,3 +181,21 @@ test "builtins.star: all assertions pass" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let builtins_fail_chunked : String =
+  #|fail() ### `fail: $`
+  #|---
+  #|fail(1) ### `fail: 1`
+  #|---
+  #|fail(1, 2, 3) ### `fail: 1 2 3`
+  #|---
+  #|fail(1, 2, 3, sep="/") ### `fail: 1/2/3`
+
+///|
+test "builtins.star: fail() error messages (chunked)" {
+  let failures = run_chunked_string(builtins_fail_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}

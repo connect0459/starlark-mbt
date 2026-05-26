@@ -290,3 +290,34 @@ test "dict.star: dict union (|) and in-place union (|=) assertions pass" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let dict_error_positions_chunked : String =
+  #|_ = {
+  #|    "one": 1,
+  #|    ["two"]: 2, ### "unhashable type: list"
+  #|    "three": 3,
+  #|}
+  #|---
+  #|_ = {
+  #|    "one": 1,
+  #|    "one": 1, ### `duplicate key: "one"`
+  #|    "three": 3,
+  #|}
+  #|---
+  #|_ = {
+  #|    k: v ### "unhashable type: list"
+  #|    for k, v in [
+  #|        ("one", 1),
+  #|        (["two"], 2),
+  #|        ("three", 3),
+  #|    ]
+  #|}
+
+///|
+test "dict.star: unhashable key and duplicate key error positions (chunked)" {
+  let failures = run_chunked_string(dict_error_positions_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}

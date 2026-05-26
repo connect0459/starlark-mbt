@@ -105,3 +105,19 @@ test "misc.star: plus folding with strings, lists, tuples" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let misc_error_positions_chunked : String =
+  #|_ = {}.get(1, default=2) ### "get: unexpected keyword arguments"
+  #|---
+  #|load('assert.star', 'assert', 'matches') ### "matches not found in module"
+  #|---
+  #|load('assert.star', 'len') ### "len not found in module"
+
+///|
+test "misc.star: error position regression and load errors (chunked)" {
+  let failures = run_chunked_string(misc_error_positions_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
