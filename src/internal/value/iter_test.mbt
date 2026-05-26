@@ -46,56 +46,18 @@ test "iterate: tuple yields items in order" {
 }
 
 ///|
-test "iterate: string yields one-byte strings per byte" {
-  let it = must_iterate(Value::StrVal(StarlarkString::new("abc")))
-  let v0 = it.next()
-  let v1 = it.next()
-  let v2 = it.next()
-  assert_true(it.next() == None)
-  it.done()
-  match v0 {
-    Some(Value::StrVal(s)) => {
-      assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0), b'a')
-    }
-    _ => panic()
-  }
-  match v1 {
-    Some(Value::StrVal(s)) => {
-      assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0), b'b')
-    }
-    _ => panic()
-  }
-  match v2 {
-    Some(Value::StrVal(s)) => {
-      assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0), b'c')
-    }
-    _ => panic()
+test "iterate: string is not iterable" {
+  match iterate(Value::StrVal(StarlarkString::new("abc"))) {
+    Err(msg) => assert_true(msg.contains("not iterable"))
+    Ok(_) => panic()
   }
 }
 
 ///|
-test "iterate: multibyte string yields individual bytes as 1-byte strings" {
-  let it = must_iterate(Value::StrVal(StarlarkString::new("Ω")))
-  let v0 = it.next()
-  let v1 = it.next()
-  assert_true(it.next() == None)
-  it.done()
-  match v0 {
-    Some(Value::StrVal(s)) => {
-      assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0), b'\xCE')
-    }
-    _ => panic()
-  }
-  match v1 {
-    Some(Value::StrVal(s)) => {
-      assert_eq(s.byte_len(), 1)
-      assert_eq(s.byte_at(0), b'\xA9')
-    }
-    _ => panic()
+test "iterate: string with multibyte is not iterable" {
+  match iterate(Value::StrVal(StarlarkString::new("Ω"))) {
+    Err(msg) => assert_true(msg.contains("not iterable"))
+    Ok(_) => panic()
   }
 }
 

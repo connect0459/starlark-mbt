@@ -28,7 +28,6 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
   match v {
     ListVal(l) => Ok(list_iter(l))
     TupleVal(t) => Ok(tuple_iter(t))
-    StrVal(s) => Ok(string_elem_iter(s))
     BytesVal(b) => Ok(bytes_elem_iter(b))
     DictVal(d) => Ok(dict_key_iter(d))
     SetVal(s) => Ok(set_key_iter(s))
@@ -80,24 +79,6 @@ fn tuple_iter(t : Array[Value]) -> StarlarkIterator {
         let v = t[cur.pos]
         cur.pos += 1
         Some(v)
-      } else {
-        None
-      }
-    },
-    done_fn: fn() { () },
-  }
-}
-
-///|
-fn string_elem_iter(s : StarlarkString) -> StarlarkIterator {
-  let cur = IterCursor::{ pos: 0 }
-  let bytes = s.bytes
-  {
-    next_fn: fn() -> Value? {
-      if cur.pos < bytes.length() {
-        let one = Bytes::from_array([bytes[cur.pos]])
-        cur.pos += 1
-        Some(StrVal(StarlarkString::from_bytes(one)))
       } else {
         None
       }

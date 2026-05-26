@@ -73,3 +73,17 @@ fn[T] check(ctx : EvalContext, r : Result[T, String]) -> T raise EvalErr {
     Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
   }
 }
+
+///|
+fn require_seq(
+  ctx : EvalContext,
+  v : @value.Value,
+) -> @value.StarlarkIterator raise EvalErr {
+  match @value.iterate(v) {
+    Ok(it) => it
+    Err(_) =>
+      raise EvalErr(
+        make_eval_error(ctx, "got \{@value.type_name(v)}, want iterable"),
+      )
+  }
+}

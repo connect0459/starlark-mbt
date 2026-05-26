@@ -530,7 +530,7 @@ fn percent_format(
           @value.Value::IntVal(n2) => {
             let cp = n2.to_int()
             if cp < 0 || cp > 0x10FFFF {
-              return Err("%c requires int in range [0, 0x10FFFF]")
+              return Err("%c requires a valid Unicode code point")
             }
             buf.write_char(cp.unsafe_to_char())
           }
@@ -538,9 +538,9 @@ fn percent_format(
             if s2.raw.length() == 1 {
               buf.write_string(s2.raw)
             } else {
-              return Err("%c requires a single character string")
+              return Err("%c requires a single-character string")
             }
-          _ => return Err("%c requires int or single-char string")
+          _ => return Err("%c requires a single-character string")
         }
       _ => return Err("unknown format specifier '%\{spec}'")
     }
@@ -829,7 +829,7 @@ fn in_op(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "argument of type '\{@value.type_name(haystack)}' is not iterable",
+          "unknown binary op: \{@value.type_name(needle)} in \{@value.type_name(haystack)}",
         ),
       )
   }

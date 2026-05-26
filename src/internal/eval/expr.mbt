@@ -105,38 +105,35 @@ fn eval_expr_node(
     }
     @syntax.Expr::ESlice(e, lo_expr, hi_expr, step_expr, _pos) => {
       let obj = eval_expr_node(ctx, env, e)
-      let lo = match lo_expr {
-        None => None
-        Some(ex) =>
-          match eval_expr_node(ctx, env, ex) {
-            @value.Value::IntVal(n) => Some(n.to_int())
-            _ =>
-              raise EvalErr(
-                make_eval_error(ctx, "slice indices must be integers"),
-              )
-          }
+      let lo_val = match lo_expr {
+        None => @value.Value::NoneVal
+        Some(ex) => eval_expr_node(ctx, env, ex)
       }
-      let hi = match hi_expr {
-        None => None
-        Some(ex) =>
-          match eval_expr_node(ctx, env, ex) {
-            @value.Value::IntVal(n) => Some(n.to_int())
-            _ =>
-              raise EvalErr(
-                make_eval_error(ctx, "slice indices must be integers"),
-              )
-          }
+      let hi_val = match hi_expr {
+        None => @value.Value::NoneVal
+        Some(ex) => eval_expr_node(ctx, env, ex)
       }
-      let step = match step_expr {
-        None => None
-        Some(ex) =>
-          match eval_expr_node(ctx, env, ex) {
-            @value.Value::IntVal(n) => Some(n.to_int())
-            _ =>
-              raise EvalErr(
-                make_eval_error(ctx, "slice step must be an integer"),
-              )
-          }
+      let step_val = match step_expr {
+        None => @value.Value::NoneVal
+        Some(ex) => eval_expr_node(ctx, env, ex)
+      }
+      let step = match step_val {
+        @value.Value::NoneVal => None
+        @value.Value::IntVal(n) => Some(n.to_int())
+        _ =>
+          raise EvalErr(make_eval_error(ctx, "slice step must be an integer"))
+      }
+      let lo = match lo_val {
+        @value.Value::NoneVal => None
+        @value.Value::IntVal(n) => Some(n.to_int())
+        _ =>
+          raise EvalErr(make_eval_error(ctx, "slice indices must be integers"))
+      }
+      let hi = match hi_val {
+        @value.Value::NoneVal => None
+        @value.Value::IntVal(n) => Some(n.to_int())
+        _ =>
+          raise EvalErr(make_eval_error(ctx, "slice indices must be integers"))
       }
       eval_slice(ctx, obj, lo, hi, step)
     }
@@ -267,6 +264,9 @@ fn eval_args(
         kw_args.push((name, eval_expr_node(ctx, env, e)))
       @syntax.Arg::ArgStarArgs(e) => {
         let v = eval_expr_node(ctx, env, e)
+        if v is @value.Value::StrVal(_) {
+          raise EvalErr(make_eval_error(ctx, "must be iterable, not string"))
+        }
         let it = check(ctx, @value.iterate(v))
         while true {
           match it.next() {
@@ -891,7 +891,7 @@ fn builtin_list(
     }
     v => {
       let items : Array[@value.Value] = []
-      let it = check(ctx, @value.iterate(v))
+      let it = require_seq(ctx, v)
       while true {
         match it.next() {
           None => {
@@ -918,7 +918,7 @@ fn builtin_tuple(
     raise EvalErr(make_eval_error(ctx, "tuple() takes at most one argument"))
   }
   let items : Array[@value.Value] = []
-  let it = check(ctx, @value.iterate(pos_args[0]))
+  let it = require_seq(ctx, pos_args[0])
   while true {
     match it.next() {
       None => {
@@ -1107,7 +1107,7 @@ fn builtin_enumerate(
     0L
   }
   let result : Array[@value.Value] = []
-  let it = check(ctx, @value.iterate(pos_args[0]))
+  let it = require_seq(ctx, pos_args[0])
   let mut idx = start
   while true {
     match it.next() {
@@ -1162,7 +1162,7 @@ fn builtin_sorted(
     found
   }
   let items : Array[@value.Value] = []
-  let it = check(ctx, @value.iterate(pos_args[0]))
+  let it = require_seq(ctx, pos_args[0])
   while true {
     match it.next() {
       None => {
@@ -1211,7 +1211,7 @@ fn builtin_reversed(
     raise EvalErr(make_eval_error(ctx, "reversed() takes exactly one argument"))
   }
   let items : Array[@value.Value] = []
-  let it = check(ctx, @value.iterate(pos_args[0]))
+  let it = require_seq(ctx, pos_args[0])
   while true {
     match it.next() {
       None => {
@@ -1282,7 +1282,7 @@ fn builtin_any_all(
   if pos_args.length() != 1 {
     raise EvalErr(make_eval_error(ctx, "any/all() takes exactly one argument"))
   }
-  let it = check(ctx, @value.iterate(pos_args[0]))
+  let it = require_seq(ctx, pos_args[0])
   let mut result = !any_mode
   while true {
     match it.next() {
@@ -1360,7 +1360,7 @@ fn call_list_method(
         )
       }
       check(ctx, l.check_mutable("extend"))
-      let it = check(ctx, @value.iterate(pos_args[0]))
+      let it = require_seq(ctx, pos_args[0])
       while true {
         match it.next() {
           None => {
@@ -1641,44 +1641,187 @@ fn call_str_method(
     "lower" =>
       @value.Value::StrVal(@value.StarlarkString::new(s.raw.to_lower()))
     "strip" => {
-      let trimmed = s.raw.trim()
-      @value.Value::StrVal(@value.StarlarkString::new("\{trimmed}"))
+      let chars_opt = if pos_args.length() > 0 {
+        match pos_args[0] {
+          @value.Value::StrVal(c) if c.raw.length() > 0 => Some(c.raw)
+          _ => None
+        }
+      } else {
+        None
+      }
+      let result = match chars_opt {
+        None => strip_whitespace(s.raw, true, true)
+        Some(chars) => strip_chars(s.raw, chars, true, true)
+      }
+      @value.Value::StrVal(@value.StarlarkString::new(result))
     }
     "lstrip" => {
-      let trimmed = s.raw.trim_start()
-      @value.Value::StrVal(@value.StarlarkString::new("\{trimmed}"))
+      let chars_opt = if pos_args.length() > 0 {
+        match pos_args[0] {
+          @value.Value::StrVal(c) if c.raw.length() > 0 => Some(c.raw)
+          _ => None
+        }
+      } else {
+        None
+      }
+      let result = match chars_opt {
+        None => strip_whitespace(s.raw, true, false)
+        Some(chars) => strip_chars(s.raw, chars, true, false)
+      }
+      @value.Value::StrVal(@value.StarlarkString::new(result))
     }
     "rstrip" => {
-      let trimmed = s.raw.trim_end()
-      @value.Value::StrVal(@value.StarlarkString::new("\{trimmed}"))
+      let chars_opt = if pos_args.length() > 0 {
+        match pos_args[0] {
+          @value.Value::StrVal(c) if c.raw.length() > 0 => Some(c.raw)
+          _ => None
+        }
+      } else {
+        None
+      }
+      let result = match chars_opt {
+        None => strip_whitespace(s.raw, false, true)
+        Some(chars) => strip_chars(s.raw, chars, false, true)
+      }
+      @value.Value::StrVal(@value.StarlarkString::new(result))
     }
     "startswith" => {
-      if pos_args.length() != 1 {
+      if pos_args.length() == 0 {
         raise EvalErr(
-          make_eval_error(ctx, "startswith() takes exactly one argument"),
+          make_eval_error(ctx, "startswith() takes at least one argument"),
         )
       }
+      let start_idx = if pos_args.length() >= 2 {
+        match pos_args[1] {
+          @value.Value::IntVal(n) => n.to_int()
+          @value.Value::NoneVal => 0
+          _ => 0
+        }
+      } else {
+        0
+      }
+      let end_idx = if pos_args.length() >= 3 {
+        match pos_args[2] {
+          @value.Value::IntVal(n) => n.to_int()
+          @value.Value::NoneVal => s.raw.length()
+          _ => s.raw.length()
+        }
+      } else {
+        s.raw.length()
+      }
+      let slen = s.raw.length()
+      let i = if start_idx < 0 {
+        (slen + start_idx).max(0)
+      } else {
+        start_idx.min(slen)
+      }
+      let j = if end_idx < 0 {
+        (slen + end_idx).max(0)
+      } else {
+        end_idx.min(slen)
+      }
+      let sub = if i <= j { s.raw[i:j].to_owned() } else { "" }
+      let check_prefix = fn(prefix : String) -> Bool { sub.has_prefix(prefix) }
       match pos_args[0] {
         @value.Value::StrVal(prefix) =>
-          @value.Value::BoolVal(s.raw.has_prefix(prefix.raw))
-        _ =>
+          @value.Value::BoolVal(check_prefix(prefix.raw))
+        @value.Value::TupleVal(t) => {
+          let mut found = false
+          for item in t {
+            match item {
+              @value.Value::StrVal(p) =>
+                if check_prefix(p.raw) {
+                  found = true
+                  break
+                }
+              v =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "got \{@value.type_name(v)}, for element 0",
+                  ),
+                )
+            }
+          }
+          @value.Value::BoolVal(found)
+        }
+        @value.Value::ListVal(_) =>
           raise EvalErr(
-            make_eval_error(ctx, "startswith() argument must be a string"),
+            make_eval_error(ctx, "got list, want string or tuple of string"),
+          )
+        v =>
+          raise EvalErr(
+            make_eval_error(ctx, "got \{@value.type_name(v)}, want string"),
           )
       }
     }
     "endswith" => {
-      if pos_args.length() != 1 {
+      if pos_args.length() == 0 {
         raise EvalErr(
-          make_eval_error(ctx, "endswith() takes exactly one argument"),
+          make_eval_error(ctx, "endswith() takes at least one argument"),
         )
       }
+      let start_idx = if pos_args.length() >= 2 {
+        match pos_args[1] {
+          @value.Value::IntVal(n) => n.to_int()
+          @value.Value::NoneVal => 0
+          _ => 0
+        }
+      } else {
+        0
+      }
+      let end_idx = if pos_args.length() >= 3 {
+        match pos_args[2] {
+          @value.Value::IntVal(n) => n.to_int()
+          @value.Value::NoneVal => s.raw.length()
+          _ => s.raw.length()
+        }
+      } else {
+        s.raw.length()
+      }
+      let slen = s.raw.length()
+      let i = if start_idx < 0 {
+        (slen + start_idx).max(0)
+      } else {
+        start_idx.min(slen)
+      }
+      let j = if end_idx < 0 {
+        (slen + end_idx).max(0)
+      } else {
+        end_idx.min(slen)
+      }
+      let sub = if i <= j { s.raw[i:j].to_owned() } else { "" }
+      let check_suffix = fn(suffix : String) -> Bool { sub.has_suffix(suffix) }
       match pos_args[0] {
         @value.Value::StrVal(suffix) =>
-          @value.Value::BoolVal(s.raw.has_suffix(suffix.raw))
-        _ =>
+          @value.Value::BoolVal(check_suffix(suffix.raw))
+        @value.Value::TupleVal(t) => {
+          let mut found = false
+          for item in t {
+            match item {
+              @value.Value::StrVal(p) =>
+                if check_suffix(p.raw) {
+                  found = true
+                  break
+                }
+              v =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "got \{@value.type_name(v)}, for element 0",
+                  ),
+                )
+            }
+          }
+          @value.Value::BoolVal(found)
+        }
+        @value.Value::ListVal(_) =>
           raise EvalErr(
-            make_eval_error(ctx, "endswith() argument must be a string"),
+            make_eval_error(ctx, "got list, want string or tuple of string"),
+          )
+        v =>
+          raise EvalErr(
+            make_eval_error(ctx, "got \{@value.type_name(v)}, want string"),
           )
       }
     }
@@ -1690,8 +1833,42 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::StrVal(sub) => {
-          let result = find_substr(s.raw, sub.raw)
-          @value.Value::IntVal(result.to_int64())
+          let slen = s.raw.length()
+          let start = if pos_args.length() >= 2 {
+            match pos_args[1] {
+              @value.Value::IntVal(n) => {
+                let n2 = n.to_int()
+                if n2 < 0 {
+                  (slen + n2).max(0)
+                } else {
+                  n2.min(slen)
+                }
+              }
+              _ => 0
+            }
+          } else {
+            0
+          }
+          let end = if pos_args.length() >= 3 {
+            match pos_args[2] {
+              @value.Value::IntVal(n) => {
+                let n2 = n.to_int()
+                if n2 < 0 {
+                  (slen + n2).max(0)
+                } else {
+                  n2.min(slen)
+                }
+              }
+              _ => slen
+            }
+          } else {
+            slen
+          }
+          let slice = if start < end { s.raw[start:end].to_owned() } else { "" }
+          let result = find_substr(slice, sub.raw)
+          @value.Value::IntVal(
+            (if result >= 0 { result + start } else { -1 }).to_int64(),
+          )
         }
         _ =>
           raise EvalErr(
@@ -1707,8 +1884,39 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::StrVal(sub) => {
-          let count = count_substr(s.raw, sub.raw)
-          @value.Value::IntVal(count.to_int64())
+          let slen = s.raw.length()
+          let start = if pos_args.length() >= 2 {
+            match pos_args[1] {
+              @value.Value::IntVal(n) => {
+                let n2 = n.to_int()
+                if n2 < 0 {
+                  (slen + n2).max(0)
+                } else {
+                  n2.min(slen)
+                }
+              }
+              _ => 0
+            }
+          } else {
+            0
+          }
+          let end = if pos_args.length() >= 3 {
+            match pos_args[2] {
+              @value.Value::IntVal(n) => {
+                let n2 = n.to_int()
+                if n2 < 0 {
+                  (slen + n2).max(0)
+                } else {
+                  n2.min(slen)
+                }
+              }
+              _ => slen
+            }
+          } else {
+            slen
+          }
+          let slice = if start < end { s.raw[start:end].to_owned() } else { "" }
+          @value.Value::IntVal(count_substr(slice, sub.raw).to_int64())
         }
         _ =>
           raise EvalErr(
@@ -1724,7 +1932,19 @@ fn call_str_method(
       }
       match (pos_args[0], pos_args[1]) {
         (@value.Value::StrVal(old), @value.Value::StrVal(new_s)) => {
-          let result = s.raw.replace_all(old=old.raw, new=new_s.raw)
+          let max_count = if pos_args.length() >= 3 {
+            match pos_args[2] {
+              @value.Value::IntVal(n) => n.to_int()
+              _ => -1
+            }
+          } else {
+            -1
+          }
+          let result = if max_count < 0 {
+            s.raw.replace_all(old=old.raw, new=new_s.raw)
+          } else {
+            str_replace_count(s.raw, old.raw, new_s.raw, max_count)
+          }
           @value.Value::StrVal(@value.StarlarkString::new(result))
         }
         _ =>
@@ -1733,42 +1953,84 @@ fn call_str_method(
           )
       }
     }
-    "split" =>
-      if pos_args.length() == 0 {
-        let parts : Array[@value.Value] = []
-        for sv in s.raw.split(" ") {
-          let p = "\{sv}"
-          if p != "" {
-            parts.push(@value.Value::StrVal(@value.StarlarkString::new(p)))
-          }
-        }
-        @value.Value::ListVal(@value.StarlarkList::new(parts))
-      } else {
-        match pos_args[0] {
-          @value.Value::StrVal(sep) => {
-            let parts : Array[@value.Value] = []
-            for sv in s.raw.split(sep.raw) {
-              parts.push(
-                @value.Value::StrVal(@value.StarlarkString::new("\{sv}")),
-              )
-            }
-            @value.Value::ListVal(@value.StarlarkList::new(parts))
-          }
-          _ =>
-            raise EvalErr(
-              make_eval_error(ctx, "split() argument must be a string"),
-            )
-        }
-      }
-    "rsplit" => {
-      let sep = if pos_args.length() == 0 {
+    "split" => {
+      let sep_opt = if pos_args.length() == 0 {
         None
       } else {
         match pos_args[0] {
-          @value.Value::StrVal(sep) => Some(sep.raw)
+          @value.Value::NoneVal => None
+          @value.Value::StrVal(sep) => {
+            if sep.raw.length() == 0 {
+              raise EvalErr(make_eval_error(ctx, "split: empty separator"))
+            }
+            Some(sep.raw)
+          }
           _ =>
             raise EvalErr(
-              make_eval_error(ctx, "rsplit() separator must be a string"),
+              make_eval_error(ctx, "split() separator must be a string or None"),
+            )
+        }
+      }
+      let kw_sep : String? = {
+        let mut found : String? = None
+        for kv in kw_args {
+          if kv.0 == "sep" {
+            match kv.1 {
+              @value.Value::NoneVal => ()
+              @value.Value::StrVal(sep) => found = Some(sep.raw)
+              _ => ()
+            }
+            break
+          }
+        }
+        found
+      }
+      let sep = match sep_opt {
+        Some(s2) => Some(s2)
+        None => kw_sep
+      }
+      let maxsplit = if pos_args.length() >= 2 {
+        match pos_args[1] {
+          @value.Value::IntVal(n) => n.to_int()
+          _ => -1
+        }
+      } else {
+        let mut found = -1
+        for kv in kw_args {
+          if kv.0 == "maxsplit" {
+            match kv.1 {
+              @value.Value::IntVal(n) => {
+                found = n.to_int()
+                break
+              }
+              _ => ()
+            }
+          }
+        }
+        found
+      }
+      match sep {
+        None => to_value_list(split_whitespace(s.raw, maxsplit))
+        Some(sep_str) => to_value_list(split_by_sep(s.raw, sep_str, maxsplit))
+      }
+    }
+    "rsplit" => {
+      let sep_opt = if pos_args.length() == 0 {
+        None
+      } else {
+        match pos_args[0] {
+          @value.Value::NoneVal => None
+          @value.Value::StrVal(sep) => {
+            if sep.raw.length() == 0 {
+              raise EvalErr(make_eval_error(ctx, "rsplit: empty separator"))
+            }
+            Some(sep.raw)
+          }
+          _ =>
+            raise EvalErr(
+              make_eval_error(
+                ctx, "rsplit() separator must be a string or None",
+              ),
             )
         }
       }
@@ -1780,47 +2042,9 @@ fn call_str_method(
       } else {
         -1
       }
-      match sep {
-        None => {
-          let parts : Array[@value.Value] = []
-          for sv in s.raw.split(" ") {
-            let p = "\{sv}"
-            if p != "" {
-              parts.push(@value.Value::StrVal(@value.StarlarkString::new(p)))
-            }
-          }
-          @value.Value::ListVal(@value.StarlarkList::new(parts))
-        }
-        Some(sep_str) => {
-          if sep_str.length() == 0 {
-            raise EvalErr(make_eval_error(ctx, "rsplit: empty separator"))
-          }
-          let all_parts : Array[String] = []
-          for sv in s.raw.split(sep_str) {
-            all_parts.push("\{sv}")
-          }
-          let result_strs : Array[String] = if maxsplit < 0 ||
-            all_parts.length() <= maxsplit + 1 {
-            all_parts
-          } else {
-            let excess = all_parts.length() - maxsplit
-            let buf = StringBuilder::new()
-            for i in 0..<excess {
-              if i > 0 {
-                buf.write_string(sep_str)
-              }
-              buf.write_string(all_parts[i])
-            }
-            let head = [buf.to_string()]
-            head.append(all_parts[excess:].to_owned())
-            head
-          }
-          let parts : Array[@value.Value] = []
-          for p in result_strs {
-            parts.push(@value.Value::StrVal(@value.StarlarkString::new(p)))
-          }
-          @value.Value::ListVal(@value.StarlarkList::new(parts))
-        }
+      match sep_opt {
+        None => to_value_list(rsplit_whitespace(s.raw, maxsplit))
+        Some(sep_str) => to_value_list(rsplit_by_sep(s.raw, sep_str, maxsplit))
       }
     }
     "join" => {
@@ -1828,7 +2052,7 @@ fn call_str_method(
         raise EvalErr(make_eval_error(ctx, "join() takes exactly one argument"))
       }
       let parts : Array[String] = []
-      let it = check(ctx, @value.iterate(pos_args[0]))
+      let it = require_seq(ctx, pos_args[0])
       while true {
         match it.next() {
           None => {
@@ -1841,7 +2065,7 @@ fn call_str_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "join() requires string elements, got '\{@value.type_name(v)}'",
+                "join: in list, want string, got \{@value.type_name(v)}",
               ),
             )
           }
@@ -1900,8 +2124,42 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::StrVal(sub) => {
-          let result = rfind_substr(s.raw, sub.raw)
-          @value.Value::IntVal(result.to_int64())
+          let slen = s.raw.length()
+          let start = if pos_args.length() >= 2 {
+            match pos_args[1] {
+              @value.Value::IntVal(n) => {
+                let n2 = n.to_int()
+                if n2 < 0 {
+                  (slen + n2).max(0)
+                } else {
+                  n2.min(slen)
+                }
+              }
+              _ => 0
+            }
+          } else {
+            0
+          }
+          let end = if pos_args.length() >= 3 {
+            match pos_args[2] {
+              @value.Value::IntVal(n) => {
+                let n2 = n.to_int()
+                if n2 < 0 {
+                  (slen + n2).max(0)
+                } else {
+                  n2.min(slen)
+                }
+              }
+              _ => slen
+            }
+          } else {
+            slen
+          }
+          let slice = if start < end { s.raw[start:end].to_owned() } else { "" }
+          let result = rfind_substr(slice, sub.raw)
+          @value.Value::IntVal(
+            (if result >= 0 { result + start } else { -1 }).to_int64(),
+          )
         }
         _ =>
           raise EvalErr(
@@ -2058,6 +2316,9 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::StrVal(sep) => {
+          if sep.raw.length() == 0 {
+            raise EvalErr(make_eval_error(ctx, "partition: empty separator"))
+          }
           let idx = find_substr(s.raw, sep.raw)
           if idx < 0 {
             @value.Value::TupleVal([
@@ -2089,6 +2350,9 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::StrVal(sep) => {
+          if sep.raw.length() == 0 {
+            raise EvalErr(make_eval_error(ctx, "rpartition: empty separator"))
+          }
           let idx = rfind_substr(s.raw, sep.raw)
           if idx < 0 {
             @value.Value::TupleVal([
@@ -2229,30 +2493,30 @@ fn call_str_method(
     }
     "istitle" => {
       let chars = s.raw.to_array()
-      if chars.is_empty() {
-        return @value.Value::BoolVal(false)
-      }
+      let mut cased = false
       let mut prev_cased = false
-      let mut result = true
+      let mut valid = true
       for c in chars {
         let n = c.to_int()
         if n >= 'A'.to_int() && n <= 'Z'.to_int() {
           if prev_cased {
-            result = false
+            valid = false
             break
           }
           prev_cased = true
+          cased = true
         } else if n >= 'a'.to_int() && n <= 'z'.to_int() {
           if !prev_cased {
-            result = false
+            valid = false
             break
           }
           prev_cased = true
+          cased = true
         } else {
           prev_cased = false
         }
       }
-      @value.Value::BoolVal(result)
+      @value.Value::BoolVal(valid && cased)
     }
     "codepoints" => {
       let items : Array[@value.Value] = []
@@ -2691,6 +2955,303 @@ fn count_substr(s : String, sub : String) -> Int {
 }
 
 ///|
+fn is_whitespace(c : Char) -> Bool {
+  let n = c.to_int()
+  n == ' '.to_int() ||
+  n == '\t'.to_int() ||
+  n == '\n'.to_int() ||
+  n == '\r'.to_int() ||
+  n == 0x0B ||
+  n == 0x0C
+}
+
+///|
+fn to_value_list(parts : Array[String]) -> @value.Value {
+  let items : Array[@value.Value] = []
+  for p in parts {
+    items.push(@value.Value::StrVal(@value.StarlarkString::new(p)))
+  }
+  @value.Value::ListVal(@value.StarlarkList::new(items))
+}
+
+///|
+fn split_whitespace(s : String, maxsplit : Int) -> Array[String] {
+  let chars = s.to_array()
+  let n = chars.length()
+  let result : Array[String] = []
+  let mut start = -1
+  for i in 0..<n {
+    let c = chars[i]
+    if is_whitespace(c) {
+      if start >= 0 {
+        if maxsplit >= 0 && result.length() == maxsplit {
+          break
+        }
+        let buf = StringBuilder::new()
+        for k in start..<i {
+          buf.write_char(chars[k])
+        }
+        result.push(buf.to_string())
+        start = -1
+      }
+    } else if start == -1 {
+      start = i
+    }
+  }
+  if start >= 0 {
+    let buf = StringBuilder::new()
+    for k in start..<n {
+      buf.write_char(chars[k])
+    }
+    result.push(buf.to_string())
+  }
+  result
+}
+
+///|
+fn rsplit_whitespace(s : String, maxsplit : Int) -> Array[String] {
+  let chars = s.to_array()
+  let n = chars.length()
+  let result : Array[String] = []
+  let mut end_pos = -1
+  let mut i = n - 1
+  while i >= 0 {
+    let c = chars[i]
+    if is_whitespace(c) {
+      if end_pos >= 0 {
+        if maxsplit >= 0 && result.length() == maxsplit {
+          break
+        }
+        let buf = StringBuilder::new()
+        for k in (i + 1)..<end_pos {
+          buf.write_char(chars[k])
+        }
+        result.push(buf.to_string())
+        end_pos = -1
+      }
+    } else if end_pos == -1 {
+      end_pos = i + 1
+    }
+    i -= 1
+  }
+  if end_pos >= 0 {
+    let buf = StringBuilder::new()
+    for k in 0..<end_pos {
+      buf.write_char(chars[k])
+    }
+    result.push(buf.to_string())
+  }
+  result.rev()
+}
+
+///|
+fn find_substr_from(s : String, sub : String, from : Int) -> Int {
+  if sub.length() == 0 {
+    return from
+  }
+  let slen = s.length()
+  let sublen = sub.length()
+  if from + sublen > slen {
+    return -1
+  }
+  for i in from..<=(slen - sublen) {
+    let mut match_ = true
+    for j in 0..<sublen {
+      if s[i + j] != sub[j] {
+        match_ = false
+        break
+      }
+    }
+    if match_ {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+fn rfind_substr_before(s : String, sub : String, before : Int) -> Int {
+  if sub.length() == 0 {
+    return before
+  }
+  let sublen = sub.length()
+  let end = (before - sublen).min(s.length() - sublen)
+  if end < 0 {
+    return -1
+  }
+  let mut i = end
+  while i >= 0 {
+    let mut match_ = true
+    for j in 0..<sublen {
+      if s[i + j] != sub[j] {
+        match_ = false
+        break
+      }
+    }
+    if match_ {
+      return i
+    }
+    i -= 1
+  }
+  -1
+}
+
+///|
+fn split_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
+  let seplen = sep.length()
+  let slen = s.length()
+  let parts : Array[String] = []
+  let mut start = 0
+  let mut splits = 0
+  while start <= slen {
+    if maxsplit >= 0 && splits >= maxsplit {
+      parts.push(s[start:].to_owned())
+      break
+    }
+    let idx = find_substr_from(s, sep, start)
+    if idx < 0 {
+      parts.push(s[start:].to_owned())
+      break
+    }
+    parts.push(s[start:idx].to_owned())
+    start = idx + seplen
+    splits += 1
+  }
+  parts
+}
+
+///|
+fn rsplit_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
+  if maxsplit < 0 {
+    return split_by_sep(s, sep, -1)
+  }
+  let seplen = sep.length()
+  let slen = s.length()
+  let parts : Array[String] = []
+  let mut end = slen
+  let mut splits = 0
+  while end >= 0 {
+    if splits >= maxsplit {
+      parts.push(s[0:end].to_owned())
+      break
+    }
+    let idx = rfind_substr_before(s, sep, end)
+    if idx < 0 {
+      parts.push(s[0:end].to_owned())
+      break
+    }
+    parts.push(s[idx + seplen:end].to_owned())
+    end = idx
+    splits += 1
+  }
+  parts.rev()
+}
+
+///|
+fn strip_whitespace(s : String, from_left : Bool, from_right : Bool) -> String {
+  let chars = s.to_array()
+  let n = chars.length()
+  let mut start = 0
+  let mut end = n
+  if from_left {
+    while start < end && is_whitespace(chars[start]) {
+      start += 1
+    }
+  }
+  if from_right {
+    while end > start && is_whitespace(chars[end - 1]) {
+      end -= 1
+    }
+  }
+  let buf = StringBuilder::new()
+  for i in start..<end {
+    buf.write_char(chars[i])
+  }
+  buf.to_string()
+}
+
+///|
+fn strip_chars(
+  s : String,
+  chars : String,
+  from_left : Bool,
+  from_right : Bool,
+) -> String {
+  let char_set = chars.to_array()
+  let s_chars = s.to_array()
+  let n = s_chars.length()
+  let mut start = 0
+  let mut end = n
+  if from_left {
+    while start < end {
+      let c = s_chars[start]
+      if char_set.contains(c) {
+        start += 1
+      } else {
+        break
+      }
+    }
+  }
+  if from_right {
+    while end > start {
+      let c = s_chars[end - 1]
+      if char_set.contains(c) {
+        end -= 1
+      } else {
+        break
+      }
+    }
+  }
+  let buf = StringBuilder::new()
+  for i in start..<end {
+    buf.write_char(s_chars[i])
+  }
+  buf.to_string()
+}
+
+///|
+fn str_replace_count(
+  s : String,
+  old : String,
+  new_s : String,
+  count : Int,
+) -> String {
+  if old.length() == 0 {
+    let buf = StringBuilder::new()
+    let chars = s.to_array()
+    let mut replacements = 0
+    for i in 0..<chars.length() {
+      if replacements < count {
+        buf.write_string(new_s)
+        replacements += 1
+      }
+      buf.write_char(chars[i])
+    }
+    if replacements < count {
+      buf.write_string(new_s)
+    }
+    return buf.to_string()
+  }
+  let buf = StringBuilder::new()
+  let slen = s.length()
+  let oldlen = old.length()
+  let mut start = 0
+  let mut replacements = 0
+  while start <= slen && replacements < count {
+    let idx = find_substr_from(s, old, start)
+    if idx < 0 {
+      break
+    }
+    buf.write_string(s[start:idx].to_owned())
+    buf.write_string(new_s)
+    start = idx + oldlen
+    replacements += 1
+  }
+  buf.write_string(s[start:].to_owned())
+  buf.to_string()
+}
+
+///|
 fn str_format(
   ctx : EvalContext,
   template : String,
@@ -2713,10 +3274,15 @@ fn str_format(
         let start = i + 1
         let mut j = start
         while j < tlen && template[j] != '}' {
+          if template[j] == '{' {
+            raise EvalErr(
+              make_eval_error(ctx, "nested replacement fields not supported"),
+            )
+          }
           j += 1
         }
         if j >= tlen {
-          raise EvalErr(make_eval_error(ctx, "format: unmatched '{' in format"))
+          raise EvalErr(make_eval_error(ctx, "unmatched '{' in format"))
         }
         let field = template[start:j].to_owned()
         i = j + 1
@@ -2725,6 +3291,20 @@ fn str_format(
           (field[0:bang].to_owned(), field[bang + 1:].to_owned())
         } else {
           (field, "s")
+        }
+        if find_substr(name, ".") >= 0 {
+          raise EvalErr(
+            make_eval_error(
+              ctx, "syntax x.y is not supported in format strings",
+            ),
+          )
+        }
+        if find_substr(name, "[") >= 0 {
+          raise EvalErr(
+            make_eval_error(
+              ctx, "syntax a[i] is not supported in format strings",
+            ),
+          )
         }
         if find_substr(name, ":") >= 0 {
           raise EvalErr(
