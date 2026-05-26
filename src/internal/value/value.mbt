@@ -122,7 +122,7 @@ pub(all) struct StarlarkFunction {
   params : Array[@syntax.Param]
   body : Array[@syntax.Stmt]
   defaults : Array[Value?]
-  freevars : Array[Value]
+  captured_scope : Array[Map[String, Value]]
 }
 
 ///|
@@ -340,7 +340,7 @@ pub fn repr(v : Value) -> String {
     FuncVal(f) => "<function \{f.name}>"
     BuiltinFuncVal(f) => "<built-in function \{f.name}>"
     BoundMethodVal(m) =>
-      "<built-in method \{m.method_name} of \{type_name(m.recv)} object>"
+      "<built-in method \{m.method_name} of \{type_name(m.recv)} value>"
     ModuleVal(m) => "<module \{m.name}>"
   }
 }

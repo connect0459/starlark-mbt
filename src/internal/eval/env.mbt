@@ -2,6 +2,7 @@
 priv struct EvalEnv {
   locals : Map[String, @value.Value]
   parent : EvalEnv?
+  is_module_scope : Bool
 }
 
 ///|
@@ -13,12 +14,17 @@ priv struct EvalContext {
 
 ///|
 fn EvalEnv::new() -> EvalEnv {
-  { locals: {}, parent: None }
+  { locals: {}, parent: None, is_module_scope: true }
+}
+
+///|
+fn EvalEnv::for_module(parent : EvalEnv) -> EvalEnv {
+  { locals: {}, parent: Some(parent), is_module_scope: true }
 }
 
 ///|
 fn EvalEnv::with_parent(parent : EvalEnv) -> EvalEnv {
-  { locals: {}, parent: Some(parent) }
+  { locals: {}, parent: Some(parent), is_module_scope: false }
 }
 
 ///|
@@ -39,6 +45,23 @@ fn EvalEnv::bind(self : EvalEnv, name : String, v : @value.Value) -> Unit {
 }
 
 ///|
+fn EvalEnv::collect_local_scopes(
+  self : EvalEnv,
+) -> Array[Map[String, @value.Value]] {
+  let scopes : Array[Map[String, @value.Value]] = []
+  let mut current = self
+  while !current.is_module_scope {
+    scopes.push(current.locals)
+    match current.parent {
+      None => break
+      Some(p) => current = p
+    }
+  }
+  scopes.rev_in_place()
+  scopes
+}
+
+///|
 fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
   let base = EvalEnv::new()
   base.bind("None", @value.Value::NoneVal)
@@ -53,7 +76,7 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
   for name in builtin_names {
     base.bind(name, @value.Value::BuiltinFuncVal({ name, body: None }))
   }
-  let global_env = EvalEnv::with_parent(base)
+  let global_env = EvalEnv::for_module(base)
   { thread, opts, global_env }
 }
 

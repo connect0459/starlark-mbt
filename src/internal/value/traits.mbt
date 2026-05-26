@@ -247,6 +247,11 @@ pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
 
 ///|
 pub fn freeze_value(v : Value) -> Unit {
+  freeze_value_inner(v, [])
+}
+
+///|
+fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
   match v {
     ListVal(l) => {
       if l.is_frozen() {
@@ -254,7 +259,7 @@ pub fn freeze_value(v : Value) -> Unit {
       }
       l.freeze()
       for item in l.items {
-        freeze_value(item)
+        freeze_value_inner(item, seen_funcs)
       }
     }
     DictVal(d) => {
@@ -263,8 +268,8 @@ pub fn freeze_value(v : Value) -> Unit {
       }
       d.freeze()
       d.each(fn(k, val) {
-        freeze_value(k)
-        freeze_value(val)
+        freeze_value_inner(k, seen_funcs)
+        freeze_value_inner(val, seen_funcs)
       })
     }
     SetVal(s) => {
@@ -272,12 +277,27 @@ pub fn freeze_value(v : Value) -> Unit {
         return
       }
       s.freeze()
-      s.each(fn(k) { freeze_value(k) })
+      s.each(fn(k) { freeze_value_inner(k, seen_funcs) })
     }
     TupleVal(t) =>
       for item in t {
-        freeze_value(item)
+        freeze_value_inner(item, seen_funcs)
       }
+    FuncVal(f) => {
+      if seen_funcs.contains(f.name) {
+        return
+      }
+      seen_funcs.push(f.name)
+      for default_opt in f.defaults {
+        match default_opt {
+          Some(dv) => freeze_value_inner(dv, seen_funcs)
+          None => ()
+        }
+      }
+      for scope_map in f.captured_scope {
+        scope_map.each(fn(_, val) { freeze_value_inner(val, seen_funcs) })
+      }
+    }
     ModuleVal(_) => ()
     _ => ()
   }

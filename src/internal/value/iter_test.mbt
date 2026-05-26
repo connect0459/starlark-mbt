@@ -146,7 +146,7 @@ test "iterate: non-iterable function returns error" {
     params: [],
     body: [],
     defaults: [],
-    freevars: [],
+    captured_scope: [],
   })
   assert_true(iterate(f) is Err(_))
 }
@@ -290,7 +290,7 @@ test "length_of: non-sized type returns error" {
         params: [],
         body: [],
         defaults: [],
-        freevars: [],
+        captured_scope: [],
       }),
     )
     is Err(_),

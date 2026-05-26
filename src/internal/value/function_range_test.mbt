@@ -122,7 +122,7 @@ test "Value: type_name for user-defined function is function" {
     params: [],
     body: [],
     defaults: [],
-    freevars: [],
+    captured_scope: [],
   }
   assert_eq(type_name(Value::FuncVal(f)), "function")
 }
@@ -134,7 +134,7 @@ test "Value: repr for function shows name in angle brackets" {
     params: [],
     body: [],
     defaults: [],
-    freevars: [],
+    captured_scope: [],
   }
   assert_eq(repr(Value::FuncVal(f)), "<function my_func>")
 }
@@ -146,7 +146,7 @@ test "Value: truth for function is always true" {
     params: [],
     body: [],
     defaults: [],
-    freevars: [],
+    captured_scope: [],
   }
   assert_true(truth(Value::FuncVal(f)))
 }
@@ -186,7 +186,7 @@ test "Value: repr for bound method shows receiver type and method name" {
   let m = StarlarkBoundMethod::{ recv, method_name: "upper" }
   assert_eq(
     repr(Value::BoundMethodVal(m)),
-    "<built-in method upper of string object>",
+    "<built-in method upper of string value>",
   )
 }
 

@@ -390,6 +390,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       self.current_fn_name = name
       self.in_func = self.in_func + 1
       self.walk_params(params, pos)
+      self.pre_collect_stmts(body)
       self.walk_stmts(body)
       self.resolve_function_uses(self.env, name)
       let fn_block = self.env
@@ -495,6 +496,51 @@ fn Resolver::walk_params(
         }
       }
     }
+  }
+}
+
+// Pre-collect all binding names in function body before resolving uses.
+// This ensures forward references (e.g., x referenced in an inner def before
+// x = ... appears in the enclosing function) are visible during resolution.
+
+///|
+fn Resolver::pre_collect_stmts(
+  self : Resolver,
+  stmts : Array[@syntax.Stmt],
+) -> Unit {
+  for stmt in stmts {
+    self.pre_collect_stmt(stmt)
+  }
+}
+
+///|
+fn Resolver::pre_collect_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
+  match stmt {
+    @syntax.Stmt::SAssign(lhs, _, _) => self.pre_collect_lhs(lhs)
+    @syntax.Stmt::SAugAssign(_, _, _, _) => ()
+    @syntax.Stmt::SIf(_, then_body, else_body, _) => {
+      self.pre_collect_stmts(then_body)
+      self.pre_collect_stmts(else_body)
+    }
+    @syntax.Stmt::SFor(target, _, body, _) => {
+      self.pre_collect_lhs(target)
+      self.pre_collect_stmts(body)
+    }
+    @syntax.Stmt::SWhile(_, body, _) => self.pre_collect_stmts(body)
+    @syntax.Stmt::SDef(name, _, _, pos) => self.bind_local(name, pos)
+    _ => ()
+  }
+}
+
+///|
+fn Resolver::pre_collect_lhs(self : Resolver, lhs : @syntax.Expr) -> Unit {
+  match lhs {
+    @syntax.Expr::EIdent(name, pos) => self.bind_local(name, pos)
+    @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) =>
+      for elem in elems {
+        self.pre_collect_lhs(elem)
+      }
+    _ => ()
   }
 }
 

@@ -186,8 +186,9 @@ fn make_freeze_fn() -> @value.Value {
       if pos_args.length() != 1 {
         return Err("freeze: got \{pos_args.length()} arguments, want 1")
       }
-      @value.freeze_value(pos_args[0])
-      Ok(@value.Value::NoneVal)
+      let v = pos_args[0]
+      @value.freeze_value(v)
+      Ok(v)
     }),
   })
 }

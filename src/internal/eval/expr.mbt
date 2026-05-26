@@ -152,12 +152,13 @@ fn eval_expr_node(
     @syntax.Expr::ELambda(params, body_expr, pos) => {
       let defaults = eval_defaults(ctx, env, params)
       let body_stmt = @syntax.Stmt::SReturn(Some(body_expr), pos)
+      let captured_scope = env.collect_local_scopes()
       let func = @value.StarlarkFunction::{
         name: "<lambda>",
         params,
         body: [body_stmt],
         defaults,
-        freevars: [],
+        captured_scope,
       }
       @value.Value::FuncVal(func)
     }
@@ -356,7 +357,16 @@ fn call_func(
   let frame : @errors.CallFrame = { name: f.name, pos }
   ctx.thread.call_stack.push(frame)
   try {
-    let func_env = EvalEnv::with_parent(ctx.global_env)
+    let mut parent = ctx.global_env
+    for scope_map in f.captured_scope {
+      let scope_env : EvalEnv = {
+        locals: scope_map,
+        parent: Some(parent),
+        is_module_scope: false,
+      }
+      parent = scope_env
+    }
+    let func_env = EvalEnv::with_parent(parent)
     bind_args(ctx, f, pos_args, kw_args, func_env, pos)
     let sig = exec_stmts(ctx, func_env, f.body)
     ignore(ctx.thread.call_stack.pop())
@@ -384,16 +394,27 @@ fn bind_args(
   let kw_map : Map[String, @value.Value] = {}
   for kw_pair in kw_args {
     let (kw_name, kw_val) = kw_pair
+    if kw_map.contains(kw_name) {
+      raise EvalErr(
+        make_eval_error(ctx, "multiple values for parameter \"\{kw_name}\""),
+      )
+    }
     kw_map[kw_name] = kw_val
   }
   let params = f.params
   let defaults = f.defaults
   let mut pos_idx = 0
   let mut param_idx = 0
+  let mut had_kwargs_param = false
   while param_idx < params.length() {
     match params[param_idx] {
       @syntax.Param::ParamIdent(name, _) =>
         if pos_idx < pos_args.length() {
+          if kw_map.contains(name) {
+            raise EvalErr(
+              make_eval_error(ctx, "multiple values for parameter \"\{name}\""),
+            )
+          }
           func_env.bind(name, pos_args[pos_idx])
           pos_idx += 1
           param_idx += 1
@@ -415,6 +436,11 @@ fn bind_args(
         }
       @syntax.Param::ParamDefault(name, _, _) =>
         if pos_idx < pos_args.length() {
+          if kw_map.contains(name) {
+            raise EvalErr(
+              make_eval_error(ctx, "multiple values for parameter \"\{name}\""),
+            )
+          }
           func_env.bind(name, pos_args[pos_idx])
           pos_idx += 1
           param_idx += 1
@@ -448,6 +474,7 @@ fn bind_args(
       }
       @syntax.Param::ParamStarBare(_) => param_idx += 1
       @syntax.Param::ParamKwIdent(name, _) => {
+        had_kwargs_param = true
         let kw_dict = @value.StarlarkDict::new()
         kw_map.each(fn(kw_name, kw_val) {
           let key = @value.Value::StrVal(@value.StarlarkString::new(kw_name))
@@ -463,6 +490,16 @@ fn bind_args(
       make_eval_error(
         ctx,
         "\{f.name}() takes \{params.length()} positional arguments but \{pos_args.length()} were given",
+      ),
+    )
+  }
+  if !had_kwargs_param && kw_map.length() > 0 {
+    let mut first_key = ""
+    kw_map.each(fn(k, _) { if first_key == "" { first_key = k } })
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "\{f.name}() got an unexpected keyword argument '\{first_key}'",
       ),
     )
   }
