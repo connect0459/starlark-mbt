@@ -643,6 +643,25 @@ fn call_builtin(
           @value.Value::IntVal(n) => @value.Value::FloatVal(n.to_double())
           @value.Value::BoolVal(b) =>
             @value.Value::FloatVal(if b { 1.0 } else { 0.0 })
+          @value.Value::StrVal(s) => {
+            let raw = s.raw.trim()
+            let f = match raw.to_lower() {
+              "inf" | "+inf" | "infinity" | "+infinity" => @double.infinity
+              "-inf" | "-infinity" => @double.neg_infinity
+              "nan" | "+nan" | "-nan" => @double.not_a_number
+              _ =>
+                @string.parse_double(raw) catch {
+                  _ =>
+                    raise EvalErr(
+                      make_eval_error(
+                        ctx,
+                        "float() could not convert string to float: \"\{s.raw}\"",
+                      ),
+                    )
+                }
+            }
+            @value.Value::FloatVal(f)
+          }
           v =>
             raise EvalErr(
               make_eval_error(
@@ -667,7 +686,7 @@ fn call_builtin(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "abs() requires a numeric argument, not '\{@value.type_name(v)}'",
+              "abs: got \{@value.type_name(v)}, want int or float",
             ),
           )
       }
@@ -707,10 +726,7 @@ fn call_builtin(
             "startswith", "strip", "title", "upper",
           ]
         @value.Value::ListVal(_) =>
-          [
-            "append", "clear", "count", "extend", "index", "insert", "pop", "remove",
-            "reverse", "sort",
-          ]
+          ["append", "clear", "extend", "index", "insert", "pop", "remove"]
         @value.Value::DictVal(_) =>
           [
             "clear", "get", "items", "keys", "pop", "popitem", "setdefault", "update",
@@ -776,8 +792,21 @@ fn call_builtin(
       }
     }
     "fail" => {
+      let sep = {
+        let mut s = " "
+        for kv in kw_args {
+          match kv {
+            ("sep", @value.Value::StrVal(sv)) => {
+              s = sv.raw
+              break
+            }
+            _ => ()
+          }
+        }
+        s
+      }
       let msg = if pos_args.length() > 0 {
-        @value.to_str(pos_args[0])
+        pos_args.map(@value.to_str).join(sep)
       } else {
         "fail() called"
       }
@@ -1056,9 +1085,24 @@ fn builtin_set(
     return @value.Value::SetVal(s)
   }
   if pos_args.length() != 1 {
-    raise EvalErr(make_eval_error(ctx, "set() takes at most one argument"))
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "set: got \{pos_args.length()} arguments, want at most 1",
+      ),
+    )
   }
-  let it = check(ctx, @value.iterate(pos_args[0]))
+  let iterable = pos_args[0]
+  let it = match @value.iterate(iterable) {
+    Err(_) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "set: got \{@value.type_name(iterable)}, want iterable",
+        ),
+      )
+    Ok(it) => it
+  }
   while true {
     match it.next() {
       None => {
@@ -1092,13 +1136,23 @@ fn builtin_minmax(
     found
   }
   let items : Array[@value.Value] = []
+  let fn_name = if want_max { "max" } else { "min" }
   if pos_args.length() == 0 {
     raise EvalErr(
-      make_eval_error(ctx, "min/max() expected at least one argument"),
+      make_eval_error(
+        ctx,
+        "\{fn_name} requires at least one positional argument",
+      ),
     )
   }
   if pos_args.length() == 1 {
-    let it = check(ctx, @value.iterate(pos_args[0]))
+    let it = match @value.iterate(pos_args[0]) {
+      Ok(it) => it
+      Err(_) =>
+        raise EvalErr(
+          make_eval_error(ctx, "\{fn_name}() argument is not iterable"),
+        )
+    }
     while true {
       match it.next() {
         None => {
@@ -1109,7 +1163,9 @@ fn builtin_minmax(
       }
     }
     if items.is_empty() {
-      raise EvalErr(make_eval_error(ctx, "min/max() arg is an empty sequence"))
+      raise EvalErr(
+        make_eval_error(ctx, "\{fn_name}() arg is an empty sequence"),
+      )
     }
   } else {
     for v in pos_args {
@@ -1212,7 +1268,16 @@ fn builtin_sorted(
     found
   }
   let items : Array[@value.Value] = []
-  let it = require_seq(ctx, pos_args[0])
+  let it = match @value.iterate(pos_args[0]) {
+    Ok(it) => it
+    Err(_) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "sorted: for parameter iterable: got \{@value.type_name(pos_args[0])}, want iterable",
+        ),
+      )
+  }
   while true {
     match it.next() {
       None => {
@@ -1224,6 +1289,12 @@ fn builtin_sorted(
   }
   let keys : Array[@value.Value] = match key_fn {
     None => items
+    Some(@value.Value::NoneVal) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx, "sorted: for parameter key: got NoneType, want callable",
+        ),
+      )
     Some(f) =>
       items.map(fn(v) raise EvalErr {
         call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
@@ -1288,13 +1359,18 @@ fn builtin_zip(
     return @value.Value::ListVal(@value.StarlarkList::new([]))
   }
   let iterators : Array[@value.StarlarkIterator] = []
-  for arg in pos_args {
+  for i, arg in pos_args {
     match @value.iterate(arg) {
-      Err(msg) => {
+      Err(_) => {
         for it in iterators {
           it.done()
         }
-        raise EvalErr(make_eval_error(ctx, msg))
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "zip: argument #\{i + 1} is not iterable: \{@value.type_name(arg)}",
+          ),
+        )
       }
       Ok(it) => iterators.push(it)
     }
@@ -1372,7 +1448,8 @@ fn call_method(
       call_dict_method(ctx, d, method_name, pos_args, kw_args)
     @value.Value::StrVal(s) =>
       call_str_method(ctx, s, method_name, pos_args, kw_args)
-    @value.Value::SetVal(s) => call_set_method(ctx, s, method_name, pos_args)
+    @value.Value::SetVal(s) =>
+      call_set_method(ctx, s, method_name, pos_args, kw_args)
     @value.Value::BytesVal(b) =>
       call_bytes_method(ctx, b, method_name, pos_args)
     _ =>
@@ -2671,67 +2748,114 @@ fn call_str_method(
 }
 
 ///|
+fn set_iterate_into(
+  ctx : EvalContext,
+  arg : @value.Value,
+  arg_idx : Int,
+  method_nm : String,
+  result : @value.StarlarkSet,
+) -> Unit raise EvalErr {
+  let it = match @value.iterate(arg) {
+    Err(_) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "\{method_nm}: argument #\{arg_idx} is not iterable: \{@value.type_name(arg)}",
+        ),
+      )
+    Ok(it) => it
+  }
+  while true {
+    match it.next() {
+      None => {
+        it.done()
+        break
+      }
+      Some(v) =>
+        match result.add(v) {
+          Err(e) => raise EvalErr(make_eval_error(ctx, "\{method_nm}: \{e}"))
+          Ok(_) => ()
+        }
+    }
+  }
+}
+
+///|
 fn call_set_method(
   ctx : EvalContext,
   s : @value.StarlarkSet,
   method_name : String,
   pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
   match method_name {
     "add" => {
       if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "add() takes exactly one argument"))
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "add: got \{pos_args.length()} arguments, want 1",
+          ),
+        )
       }
-      check(ctx, s.add(pos_args[0]))
+      match s.add(pos_args[0]) {
+        Err(e) => raise EvalErr(make_eval_error(ctx, "add: \{e}"))
+        Ok(_) => ()
+      }
       @value.Value::NoneVal
     }
     "discard" => {
       if pos_args.length() != 1 {
         raise EvalErr(
-          make_eval_error(ctx, "discard() takes exactly one argument"),
+          make_eval_error(
+            ctx,
+            "discard: got \{pos_args.length()} arguments, want 1",
+          ),
         )
       }
-      ignore(check(ctx, s.remove(pos_args[0])))
+      match s.remove(pos_args[0]) {
+        Err(e) => raise EvalErr(make_eval_error(ctx, "discard: \{e}"))
+        Ok(_) => ()
+      }
       @value.Value::NoneVal
     }
     "remove" => {
       if pos_args.length() != 1 {
         raise EvalErr(
-          make_eval_error(ctx, "remove() takes exactly one argument"),
+          make_eval_error(
+            ctx,
+            "remove: got \{pos_args.length()} arguments, want 1",
+          ),
         )
       }
-      match check(ctx, s.remove(pos_args[0])) {
-        false =>
-          raise EvalErr(make_eval_error(ctx, "set.remove(x): x not in set"))
-        true => @value.Value::NoneVal
+      match s.remove(pos_args[0]) {
+        Err(e) => raise EvalErr(make_eval_error(ctx, "remove: \{e}"))
+        Ok(false) => raise EvalErr(make_eval_error(ctx, "remove: missing key"))
+        Ok(true) => ()
       }
+      @value.Value::NoneVal
     }
     "clear" => {
-      check(ctx, s.clear())
+      if s.length() == 0 {
+        return @value.Value::NoneVal
+      }
+      match s.clear() {
+        Err(e) => raise EvalErr(make_eval_error(ctx, "clear: \{e}"))
+        Ok(_) => ()
+      }
       @value.Value::NoneVal
     }
     "pop" =>
-      match check(ctx, s.pop_first()) {
-        None => raise EvalErr(make_eval_error(ctx, "set.pop(): set is empty"))
-        Some(v) => v
+      match s.pop_first() {
+        Err(e) => raise EvalErr(make_eval_error(ctx, "pop: \{e}"))
+        Ok(None) => raise EvalErr(make_eval_error(ctx, "pop: empty set"))
+        Ok(Some(v)) => v
       }
     "union" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "union() takes exactly one argument"),
-        )
-      }
       let result = @value.StarlarkSet::new()
       s.each(fn(v) { ignore(result.add(v)) })
-      let it = check(ctx, @value.iterate(pos_args[0]))
-      while true {
-        match it.next() {
-          None => {
-            it.done()
-            break
-          }
-          Some(v) => check(ctx, result.add(v))
-        }
+      for i in 0..<pos_args.length() {
+        set_iterate_into(ctx, pos_args[i], i + 1, "union", result)
       }
       @value.Value::SetVal(result)
     }
@@ -2879,19 +3003,35 @@ fn call_set_method(
       @value.Value::BoolVal(all_in)
     }
     "update" => {
-      if pos_args.length() != 1 {
+      if kw_args.length() > 0 {
         raise EvalErr(
-          make_eval_error(ctx, "update() takes exactly one argument"),
+          make_eval_error(ctx, "update: does not accept keyword arguments"),
         )
       }
-      let it = check(ctx, @value.iterate(pos_args[0]))
-      while true {
-        match it.next() {
-          None => {
-            it.done()
-            break
+      for i in 0..<pos_args.length() {
+        let arg = pos_args[i]
+        let it = match @value.iterate(arg) {
+          Err(_) =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "update: argument #\{i + 1} is not iterable: \{@value.type_name(arg)}",
+              ),
+            )
+          Ok(it) => it
+        }
+        while true {
+          match it.next() {
+            None => {
+              it.done()
+              break
+            }
+            Some(v) =>
+              match s.add(v) {
+                Err(e) => raise EvalErr(make_eval_error(ctx, "update: \{e}"))
+                Ok(_) => ()
+              }
           }
-          Some(v) => check(ctx, s.add(v))
         }
       }
       @value.Value::NoneVal

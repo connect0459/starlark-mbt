@@ -17,7 +17,7 @@ let dict_star_src : String =
   #|assert.true(not {})
   #|
   #|# dict + dict is not supported
-  #|assert.fails(lambda: {"a": 1} + {"b": 2}, "unsupported")
+  #|assert.fails(lambda: {"a": 1} + {"b": 2}, "unknown binary op")
   #|
   #|# dict comprehension
   #|assert.eq({x: x*x for x in range(3)}, {0: 0, 1: 1, 2: 4})

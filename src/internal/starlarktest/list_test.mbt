@@ -48,8 +48,8 @@ let list_star_src : String =
   #|
   #|# list + list
   #|assert.eq([1, 2, 3] + [3, 4, 5], [1, 2, 3, 3, 4, 5])
-  #|assert.fails(lambda: [1, 2] + (3, 4), "unsupported")
-  #|assert.fails(lambda: (1, 2) + [3, 4], "unsupported")
+  #|assert.fails(lambda: [1, 2] + (3, 4), "unknown binary op")
+  #|assert.fails(lambda: (1, 2) + [3, 4], "unknown binary op")
   #|
   #|# list * int,  int * list
   #|assert.eq(abc * 0, [])
@@ -138,7 +138,7 @@ let list_star_src : String =
   #|    x = []
   #|    x += 1
   #|
-  #|assert.fails(f5, "unsupported")
+  #|assert.fails(f5, "unknown binary op")
   #|
   #|# frozen list += iterable
   #|def f6():

@@ -172,7 +172,7 @@ fn eval_add(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unsupported operand types for +: '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} + \{@value.type_name(rv)}",
         ),
       )
   }
@@ -194,11 +194,21 @@ fn eval_arith_sub(
       @value.Value::FloatVal(a.to_double() - b)
     (@value.Value::FloatVal(a), @value.Value::IntVal(b)) =>
       @value.Value::FloatVal(a - b.to_double())
+    (@value.Value::SetVal(ls), @value.Value::SetVal(rs)) => {
+      let result = @value.StarlarkSet::new()
+      ls.each(fn(v) {
+        match rs.contains(v) {
+          Ok(false) => ignore(result.add(v))
+          _ => ()
+        }
+      })
+      @value.Value::SetVal(result)
+    }
     _ =>
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unsupported operand types for -: '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} - \{@value.type_name(rv)}",
         ),
       )
   }
@@ -751,6 +761,11 @@ fn eval_bitwise(
   _pos : @errors.Position,
   op : String,
 ) -> @value.Value raise EvalErr {
+  let op_char = match op {
+    "land" => "&"
+    "lor" => "|"
+    _ => "^"
+  }
   match (lv, rv) {
     (@value.Value::IntVal(a), @value.Value::IntVal(b)) => {
       let r = match op {
@@ -774,11 +789,56 @@ fn eval_bitwise(
           "unknown binary op: dict | \{@value.type_name(rv)}",
         ),
       )
+    (@value.Value::SetVal(ls), @value.Value::SetVal(rs)) => {
+      let result = @value.StarlarkSet::new()
+      match op {
+        "lor" => {
+          ls.each(fn(v) { ignore(result.add(v)) })
+          rs.each(fn(v) { ignore(result.add(v)) })
+        }
+        "land" =>
+          ls.each(fn(v) {
+            match rs.contains(v) {
+              Ok(true) => ignore(result.add(v))
+              _ => ()
+            }
+          })
+        _ => {
+          ls.each(fn(v) {
+            match rs.contains(v) {
+              Ok(false) => ignore(result.add(v))
+              _ => ()
+            }
+          })
+          rs.each(fn(v) {
+            match ls.contains(v) {
+              Ok(false) => ignore(result.add(v))
+              _ => ()
+            }
+          })
+        }
+      }
+      @value.Value::SetVal(result)
+    }
+    (@value.Value::SetVal(_), _) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "unknown binary op: set \{op_char} \{@value.type_name(rv)}",
+        ),
+      )
+    (_, @value.Value::SetVal(_)) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "unknown binary op: \{@value.type_name(lv)} \{op_char} set",
+        ),
+      )
     _ =>
       raise EvalErr(
         make_eval_error(
           ctx,
-          "bitwise op requires integers, got '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} \{op_char} \{@value.type_name(rv)}",
         ),
       )
   }
@@ -818,6 +878,20 @@ fn eval_shift(
 }
 
 ///|
+fn set_is_subset(s1 : @value.StarlarkSet, s2 : @value.StarlarkSet) -> Bool {
+  let mut all_in = true
+  s1.each(fn(v) {
+    if all_in {
+      match s2.contains(v) {
+        Ok(true) => ()
+        _ => all_in = false
+      }
+    }
+  })
+  all_in
+}
+
+///|
 fn eval_cmp(
   ctx : EvalContext,
   lv : @value.Value,
@@ -827,19 +901,41 @@ fn eval_cmp(
   strict : Bool,
   _unused : Bool,
 ) -> @value.Value raise EvalErr {
-  let c = check(ctx, @value.compare_values(lv, rv))
-  let result = if strict {
-    if strict_sign > 0 {
-      c > 0
-    } else {
-      c < 0
+  match (lv, rv) {
+    (@value.Value::SetVal(ls), @value.Value::SetVal(rs)) => {
+      let result = if strict_sign > 0 {
+        let is_sup = set_is_subset(rs, ls)
+        if strict {
+          is_sup && ls.length() > rs.length()
+        } else {
+          is_sup
+        }
+      } else {
+        let is_sub = set_is_subset(ls, rs)
+        if strict {
+          is_sub && ls.length() < rs.length()
+        } else {
+          is_sub
+        }
+      }
+      @value.Value::BoolVal(result)
     }
-  } else if strict_sign > 0 {
-    c >= 0
-  } else {
-    c <= 0
+    _ => {
+      let c = check(ctx, @value.compare_values(lv, rv))
+      let result = if strict {
+        if strict_sign > 0 {
+          c > 0
+        } else {
+          c < 0
+        }
+      } else if strict_sign > 0 {
+        c >= 0
+      } else {
+        c <= 0
+      }
+      @value.Value::BoolVal(result)
+    }
   }
-  @value.Value::BoolVal(result)
 }
 
 ///|
@@ -867,9 +963,9 @@ fn in_op(
       @value.Value::BoolVal(false)
     }
     @value.Value::DictVal(d) =>
-      match check(ctx, d.get(needle)) {
-        None => @value.Value::BoolVal(false)
-        Some(_) => @value.Value::BoolVal(true)
+      match d.get(needle) {
+        Ok(Some(_)) => @value.Value::BoolVal(true)
+        _ => @value.Value::BoolVal(false)
       }
     @value.Value::SetVal(s) =>
       @value.Value::BoolVal(check(ctx, s.contains(needle)))
@@ -886,7 +982,24 @@ fn in_op(
     @value.Value::RangeVal(r) =>
       match needle {
         @value.Value::IntVal(n) => @value.Value::BoolVal(r.contains(n))
-        _ => @value.Value::BoolVal(false)
+        @value.Value::FloatVal(f) =>
+          if f.is_nan() || f.is_inf() {
+            @value.Value::BoolVal(false)
+          } else {
+            let n = f.to_int64()
+            if n.to_double() != f {
+              @value.Value::BoolVal(false)
+            } else {
+              @value.Value::BoolVal(r.contains(n))
+            }
+          }
+        _ =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "'in <range>' requires integer as left operand, not \{@value.type_name(needle)}",
+            ),
+          )
       }
     _ =>
       raise EvalErr(
@@ -964,7 +1077,7 @@ fn eval_index(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "'\{@value.type_name(obj)}' object is not subscriptable",
+          "unhandled index operation: \{@value.type_name(obj)}",
         ),
       )
   }
@@ -1074,6 +1187,16 @@ fn eval_slice(
       }
       @value.Value::StrVal(
         @value.StarlarkString::from_bytes(Bytes::from_array(bytes_arr)),
+      )
+    }
+    @value.Value::RangeVal(r) => {
+      let len = r.length()
+      let (start, end_idx) = normalize_slice(lo_opt, hi_opt, len, step)
+      let new_start = r.start + r.step * start.to_int64()
+      let new_stop = r.start + r.step * end_idx.to_int64()
+      let new_step = r.step * step.to_int64()
+      @value.Value::RangeVal(
+        @value.StarlarkRange::new(new_start, new_stop, new_step),
       )
     }
     _ =>

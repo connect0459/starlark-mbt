@@ -192,15 +192,15 @@ test "StarlarkSet: type_name is set" {
 }
 
 ///|
-test "StarlarkSet: repr empty is set()" {
-  assert_eq(repr(Value::SetVal(StarlarkSet::new())), "set()")
+test "StarlarkSet: repr empty is set([])" {
+  assert_eq(repr(Value::SetVal(StarlarkSet::new())), "set([])")
 }
 
 ///|
-test "StarlarkSet: repr nonempty uses brace notation" {
+test "StarlarkSet: repr nonempty uses set([...]) notation" {
   let s = StarlarkSet::new()
   s.add(Value::IntVal(1L)) |> ignore
-  assert_eq(repr(Value::SetVal(s)), "{1}")
+  assert_eq(repr(Value::SetVal(s)), "set([1])")
 }
 
 ///|

@@ -70,7 +70,7 @@ pub(all) struct StarlarkFunction {
   params : Array[@syntax.Param]
   body : Array[@syntax.Stmt]
   defaults : Array[Value?]
-  freevars : Array[Value]
+  captured_scope : Array[Map[String, Value]]
 }
 
 pub struct StarlarkIterator {

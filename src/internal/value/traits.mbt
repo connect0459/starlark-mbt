@@ -40,9 +40,7 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     (FloatVal(f), IntVal(n)) => int_float_eq(n, f)
     (DictVal(x), DictVal(y)) => dict_equals(x, y)
     (SetVal(x), SetVal(y)) => set_equals(x, y)
-    // Range equality: same bounds and step
-    (RangeVal(x), RangeVal(y)) =>
-      x.start == y.start && x.stop == y.stop && x.step == y.step
+    (RangeVal(x), RangeVal(y)) => range_equals(x, y)
     // Functions use identity: two distinct objects are never equal
     (FuncVal(_), FuncVal(_)) => false
     (BuiltinFuncVal(x), BuiltinFuncVal(y)) => x.name == y.name
@@ -140,7 +138,7 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     ListVal(_) => Err("unhashable type: list")
     DictVal(_) => Err("unhashable type: dict")
     SetVal(_) => Err("unhashable type: set")
-    RangeVal(_) => Err("unhashable type: range")
+    RangeVal(_) => Err("unhashable: range")
     FuncVal(_) => Err("unhashable type: function")
     BuiltinFuncVal(_) => Err("unhashable type: builtin_function_or_method")
     BoundMethodVal(_) => Err("unhashable type: builtin_function_or_method")
@@ -241,7 +239,7 @@ pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
     (ListVal(x), ListVal(y)) => slice_cmp(x.items[:], y.items[:])
     (IntVal(n), FloatVal(f)) => Ok(int_float_cmp(n, f))
     (FloatVal(f), IntVal(n)) => Ok(-int_float_cmp(n, f))
-    _ => Err("\{type_name(a)} < \{type_name(b)} not supported")
+    _ => Err("\{type_name(a)} < \{type_name(b)} not implemented")
   }
 }
 
@@ -301,6 +299,22 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
     ModuleVal(_) => ()
     _ => ()
   }
+}
+
+///|
+fn range_equals(x : StarlarkRange, y : StarlarkRange) -> Bool {
+  let xl = x.length()
+  let yl = y.length()
+  if xl != yl {
+    return false
+  }
+  if xl == 0 {
+    return true
+  }
+  if x.start != y.start {
+    return false
+  }
+  xl == 1 || x.step == y.step
 }
 
 ///|

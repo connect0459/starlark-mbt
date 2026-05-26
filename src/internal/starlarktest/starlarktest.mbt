@@ -13,6 +13,44 @@ fn make_error_fn(errors : Array[String]) -> @value.Value {
 }
 
 ///|
+fn floateq(xf : Double, yf : Double) -> Bool {
+  if xf == yf {
+    true
+  } else if xf.is_nan() {
+    yf.is_nan()
+  } else if yf.is_nan() {
+    false
+  } else {
+    let x = xf.reinterpret_as_int64()
+    let y = yf.reinterpret_as_int64()
+    x == y + 1L || y == x + 1L
+  }
+}
+
+///|
+fn assert_float_eq(x : @value.Value, y : @value.Value) -> Bool {
+  let xf : Double? = match x {
+    @value.Value::FloatVal(f) => Some(f)
+    @value.Value::IntVal(n) => Some(n.to_double())
+    _ => None
+  }
+  let yf : Double? = match y {
+    @value.Value::FloatVal(f) => Some(f)
+    @value.Value::IntVal(n) => Some(n.to_double())
+    _ => None
+  }
+  match (xf, yf) {
+    (Some(xf), Some(yf)) =>
+      if x is @value.Value::FloatVal(_) || y is @value.Value::FloatVal(_) {
+        floateq(xf, yf)
+      } else {
+        @value.starlark_equals(x, y)
+      }
+    _ => @value.starlark_equals(x, y)
+  }
+}
+
+///|
 fn make_eq_fn(errors : Array[String]) -> @value.Value {
   @value.Value::BuiltinFuncVal({
     name: "assert.eq",
@@ -22,7 +60,7 @@ fn make_eq_fn(errors : Array[String]) -> @value.Value {
       }
       let x = pos_args[0]
       let y = pos_args[1]
-      if !@value.starlark_equals(x, y) {
+      if !assert_float_eq(x, y) {
         errors.push("\{@value.repr(x)} != \{@value.repr(y)}")
       }
       Ok(@value.Value::NoneVal)
@@ -130,6 +168,16 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
             Ok(Some(_)) => true
             _ => false
           }
+        @value.Value::SetVal(s) =>
+          match s.contains(item) {
+            Ok(found) => found
+            Err(_) => false
+          }
+        @value.Value::RangeVal(r) =>
+          match item {
+            @value.Value::IntVal(n) => r.contains(n)
+            _ => false
+          }
         _ =>
           return Err(
             "argument of type '\{@value.type_name(container)}' is not iterable",
@@ -143,6 +191,44 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
       Ok(@value.Value::NoneVal)
     }),
   })
+}
+
+///|
+fn pattern_unescape(pat : StringView) -> String {
+  let buf = StringBuilder::new()
+  let chars = pat.to_array()
+  let mut i = 0
+  while i < chars.length() {
+    if chars[i] == '\\' && i + 1 < chars.length() {
+      buf.write_char(chars[i + 1])
+      i += 2
+    } else {
+      buf.write_char(chars[i])
+      i += 1
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn pattern_matches(pattern : String, text : String) -> Bool {
+  let parts : Array[StringView] = pattern.split(".*").collect()
+  if parts.length() == 1 {
+    text.contains(pattern_unescape(parts[0]))
+  } else {
+    let mut pos = 0
+    for i in 0..<parts.length() {
+      let part = pattern_unescape(parts[i])
+      if part.is_empty() {
+        continue
+      }
+      match text[pos:].find(part) {
+        None => return false
+        Some(idx) => pos = pos + idx + part.length()
+      }
+    }
+    true
+  }
 }
 
 ///|
@@ -169,7 +255,7 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
             "evaluation succeeded unexpectedly (want error matching \"\{pattern}\")",
           )
         Err(msg) =>
-          if !msg.contains(pattern) {
+          if !pattern_matches(pattern, msg) {
             errors.push("pattern \"\{pattern}\" did not match error \"\{msg}\"")
           }
       }

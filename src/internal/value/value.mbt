@@ -348,7 +348,11 @@ pub fn repr(v : Value) -> String {
 ///|
 fn repr_range(r : StarlarkRange) -> String {
   if r.step == 1L {
-    "range(\{r.start}, \{r.stop})"
+    if r.start == 0L {
+      "range(\{r.stop})"
+    } else {
+      "range(\{r.start}, \{r.stop})"
+    }
   } else {
     "range(\{r.start}, \{r.stop}, \{r.step})"
   }
@@ -377,11 +381,8 @@ fn repr_dict(d : StarlarkDict) -> String {
 
 ///|
 fn repr_set(s : StarlarkSet) -> String {
-  if s.length() == 0 {
-    return "set()"
-  }
   let buf = StringBuilder::new()
-  buf.write_char('{')
+  buf.write_string("set([")
   let mut first = true
   s.each(fn(k) {
     if first == false {
@@ -390,7 +391,7 @@ fn repr_set(s : StarlarkSet) -> String {
     first = false
     buf.write_string(repr(k))
   })
-  buf.write_char('}')
+  buf.write_string("])")
   buf.to_string()
 }
 

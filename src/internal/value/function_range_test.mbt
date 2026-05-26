@@ -86,7 +86,7 @@ test "Value: type_name for Range is range" {
 ///|
 test "Value: repr for range(10) shows compact form" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_eq(repr(Value::RangeVal(r)), "range(0, 10)")
+  assert_eq(repr(Value::RangeVal(r)), "range(10)")
 }
 
 ///|
