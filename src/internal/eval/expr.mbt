@@ -839,12 +839,12 @@ fn call_builtin(
         }
         s
       }
-      let msg = if pos_args.length() > 0 {
+      let body = if pos_args.length() > 0 {
         pos_args.map(@value.to_str).join(sep)
       } else {
-        "fail() called"
+        ""
       }
-      raise EvalErr(make_eval_error(ctx, msg))
+      raise EvalErr(make_eval_error(ctx, "fail: \{body}"))
     }
     "hasattr" => {
       if pos_args.length() != 2 {
@@ -1729,6 +1729,9 @@ fn call_dict_method(
 ) -> @value.Value raise EvalErr {
   match method_name {
     "get" => {
+      if !kw_args.is_empty() {
+        raise EvalErr(make_eval_error(ctx, "get: unexpected keyword arguments"))
+      }
       if pos_args.length() < 1 {
         raise EvalErr(
           make_eval_error(ctx, "dict.get() requires at least one argument"),

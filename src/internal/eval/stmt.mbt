@@ -310,7 +310,7 @@ fn exec_load(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "\{pos.to_string()}: module \"\{path}\" has no symbol \"\{export_name}\"",
+                "\{pos.to_string()}: load: name \{export_name} not found in module \{path}",
               ),
             )
         }
