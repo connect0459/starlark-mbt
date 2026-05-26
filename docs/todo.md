@@ -118,18 +118,18 @@ phases don't churn the `.mbti`.
 
 - [x] `Thread` — print callback, load callback, call stack, recursion depth limit, max execution steps
 - [x] `Module` — execution result; `globals` dict; frozen after `exec_file` returns
-- [ ] `Universe` — predeclared bindings (built-ins) injected into modules
+- [x] `Universe` — predeclared bindings (built-ins) injected into modules
 - [x] `Options` — feature flags. All default to **true** unless noted:
       `allow_set`, `allow_recursion`, `allow_lambda`, `allow_while`,
       `allow_bytes`, `allow_float`, `allow_global_reassign`,
       `allow_top_level_control` (top-level `if` / `for` / `while`),
       `load_binds_globally` (deprecated starlark-go flag; kept for parity)
-- [ ] `Predeclared` / `Universe` distinction — `Universe` is the built-in
+- [x] `Predeclared` / `Universe` distinction — `Universe` is the built-in
       set (frozen, shared across threads); `Predeclared` is per-execution
       extra bindings injected before user globals
 - [x] `exec_file(thread, filename, src, options) -> Module` — stub (returns Err until Phase 5)
 - [x] `eval(thread, filename, expr, env) -> Value` — stub (returns Err until Phase 5)
-- [ ] Loader contract — `(Thread, module_path) -> Result[Module, EvalError]`
+- [x] Loader contract — `(Thread, module_path) -> Result[Module, EvalError]`
       (the loader receives the active `Thread` so it can make nested calls)
 - [x] Wire up `src/starlark/` as a thin public façade: re-export `Thread`, `Module`,
       `Value`, `Options`, `exec_file`, `eval`, and error types from `src/internal/*`;
