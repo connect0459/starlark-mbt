@@ -19,9 +19,9 @@ repository = ""
 
 license = "Apache-2.0"
 
-keywords = [ ]
+keywords = [ "starlark", "interpreter", "scripting", "language" ]
 
-description = ""
+description = "A MoonBit implementation of the Starlark scripting language interpreter"
 
 import {
   "moonbitlang/x@0.4.43",
