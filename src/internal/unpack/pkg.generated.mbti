@@ -1,7 +1,14 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/unpack"
 
+import {
+  "connect0459/starlark/internal/value",
+}
+
 // Values
+pub fn unpack_args(String, Array[@value.Value], Array[(String, @value.Value)], Array[String]) -> Result[Array[@value.Value?], String]
+
+pub fn unpack_positional(String, Array[@value.Value], Array[(String, @value.Value)], Int, Int) -> Result[Array[@value.Value?], String]
 
 // Errors
 

@@ -155,4 +155,16 @@ pub impl Eq for Value
 // Type aliases
 
 // Traits
+pub trait HasAttrs {
+  fn get_attr(Self, String) -> Result[Value?, String]
+  fn attr_names(Self) -> Array[String]
+}
+
+pub trait HasSetField {
+  fn set_field(Self, String, Value) -> Result[Unit, String]
+}
+
+pub trait StarlarkComparable {
+  fn compare_same_type(Self, Value) -> Result[Int, String]
+}
 
