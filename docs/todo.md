@@ -534,14 +534,12 @@ Reference: `starlark-go/starlark/library.go`, `starlark-go/starlark/testdata/*.s
 
 End-to-end tests that execute `.star` scripts and assert output.
 
-- [ ] Implement `starlarktest` equivalent — infrastructure to load and run `.star`
-      files with chunked error-comment checking.
-      **Error comment format**: a line ending with `### Error: <substring>` marks that
-      the next statement/expression is expected to raise an `EvalError` (or
-      `SyntaxError`) whose message contains `<substring>`. The harness must collect
-      all such expected errors and assert they are produced. Lines without this
-      suffix are normal statements that must not raise.
-      Reference: `starlark-go/starlarktest/starlarktest.go`.
+- [x] Implement `starlarktest` equivalent — `run_chunked_string` in
+      `src/internal/starlarktest/`. Supports `### "pattern"` and
+      `` ### `pattern` `` error-comment format with `---` chunk separation;
+      `pattern_matches` handles `.*` wildcards and `$` end-anchor.
+      Error-comment chunks from `assign.star`, `dict.star`, `builtins.star`,
+      `misc.star` added to respective `*_test.mbt` files.
 - [ ] Port key cases from `starlark-go/starlark/eval_test.go`
 - [ ] Port key cases from `starlark-go/starlark/value_test.go`
 - [ ] Port `.star` test files from `starlark-go/starlark/testdata/`
