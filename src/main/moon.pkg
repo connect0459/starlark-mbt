@@ -1,6 +1,10 @@
-// import {
-//   "connect0459/starlark/starlark" @starlark,
-// }
+import {
+  "moonbitlang/x/sys",
+  "moonbitlang/x/fs",
+  "moonbitlang/x/path",
+  "connect0459/starlark/internal/eval",
+  "connect0459/starlark/internal/value",
+}
 
 options(
   "is-main": true,
