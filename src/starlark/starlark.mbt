@@ -1,3 +1,66 @@
-// Main package file for your library code.
-// Put public APIs and shared helpers here.
-// Keep blocks small and focused for easy refactors.
+///|
+pub type Thread = @eval.Thread
+
+///|
+pub type Module = @eval.Module
+
+///|
+pub type Options = @eval.Options
+
+///|
+pub type Value = @value.Value
+
+///|
+pub type StarlarkDict = @value.StarlarkDict
+
+///|
+pub type EvalError = @errors.EvalError
+
+///|
+pub type SyntaxError = @errors.SyntaxError
+
+///|
+pub type ResolveError = @errors.ResolveError
+
+///|
+pub type Position = @errors.Position
+
+///|
+pub fn exec_file(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+) -> Result[Module, EvalError] {
+  @eval.exec_file(thread, filename, src, opts)
+}
+
+///|
+pub fn exec_file_with_predeclared(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+  predeclared : Map[String, Value],
+) -> Result[Module, EvalError] {
+  @eval.exec_file_with_predeclared(thread, filename, src, opts, predeclared)
+}
+
+///|
+pub fn eval_expr(
+  thread : Thread,
+  filename : String,
+  src : String,
+  env : StarlarkDict,
+) -> Result[Value, EvalError] {
+  @eval.eval_expr(thread, filename, src, env)
+}
+
+///|
+pub fn module_get(m : Module, name : String) -> Value? {
+  let key = Value::StrVal(@value.StarlarkString::new(name))
+  match m.globals.get(key) {
+    Ok(Some(v)) => Some(v)
+    _ => None
+  }
+}

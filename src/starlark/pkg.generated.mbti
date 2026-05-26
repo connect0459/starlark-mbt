@@ -1,13 +1,43 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/starlark"
 
+import {
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/eval",
+  "connect0459/starlark/internal/value",
+}
+
 // Values
+pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+
+pub fn exec_file(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]
+
+pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, Map[String, @value.Value]) -> Result[@eval.Module, @errors.EvalError]
+
+pub fn module_get(@eval.Module, String) -> @value.Value?
 
 // Errors
 
 // Types and methods
 
 // Type aliases
+pub using @errors {type EvalError}
+
+pub using @eval {type Module}
+
+pub using @eval {type Options}
+
+pub using @errors {type Position}
+
+pub using @errors {type ResolveError}
+
+pub using @value {type StarlarkDict}
+
+pub using @errors {type SyntaxError}
+
+pub using @eval {type Thread}
+
+pub using @value {type Value}
 
 // Traits
 
