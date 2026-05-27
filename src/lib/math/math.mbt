@@ -103,7 +103,7 @@ fn make_log_fn() -> @value.Value {
           match to_float("math.log", pos_args[1]) {
             Err(e) => Err(e)
             Ok(base) =>
-              if base == 0.0 {
+              if base == 1.0 {
                 Err("math.log: division by zero")
               } else {
                 Ok(@value.Value::Float(@std_math.ln(x) / @std_math.ln(base)))
@@ -115,12 +115,55 @@ fn make_log_fn() -> @value.Value {
 }
 
 ///|
+fn float_to_int(name : String, f : Double) -> Result[@value.Value, String] {
+  if f.is_inf() {
+    Err("\{name}: cannot convert float infinity to integer")
+  } else if f.is_nan() {
+    Err("\{name}: cannot convert float NaN to integer")
+  } else {
+    Ok(@value.Value::Int(f.to_int64()))
+  }
+}
+
+///|
+fn make_ceil() -> @value.Value {
+  @value.Value::new_builtin("math.ceil", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 || kw_args.length() != 0 {
+      return Err(
+        "math.ceil: got \{pos_args.length()} positional arguments, want 1",
+      )
+    }
+    match pos_args[0] {
+      @value.Value::Int(_) as v => Ok(v)
+      @value.Value::Float(f) => float_to_int("math.ceil", @std_math.ceil(f))
+      v => Err("math.ceil: got \{@value.type_name(v)}, want float or int")
+    }
+  })
+}
+
+///|
+fn make_floor() -> @value.Value {
+  @value.Value::new_builtin("math.floor", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 || kw_args.length() != 0 {
+      return Err(
+        "math.floor: got \{pos_args.length()} positional arguments, want 1",
+      )
+    }
+    match pos_args[0] {
+      @value.Value::Int(_) as v => Ok(v)
+      @value.Value::Float(f) => float_to_int("math.floor", @std_math.floor(f))
+      v => Err("math.floor: got \{@value.type_name(v)}, want float or int")
+    }
+  })
+}
+
+///|
 pub fn math_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["e"] = @value.Value::Float(2.718281828459045)
   attrs["pi"] = @value.Value::Float(@std_math.PI)
-  attrs["ceil"] = make_unary("math.ceil", @std_math.ceil)
-  attrs["floor"] = make_unary("math.floor", @std_math.floor)
+  attrs["ceil"] = make_ceil()
+  attrs["floor"] = make_floor()
   attrs["round"] = make_unary("math.round", @std_math.round)
   attrs["fabs"] = make_unary("math.fabs", float_abs)
   attrs["exp"] = make_unary("math.exp", @std_math.exp)

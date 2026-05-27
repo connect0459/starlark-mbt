@@ -85,6 +85,35 @@ fn expect_float(
 }
 
 ///|
+fn expect_int(
+  r : Result[@value.Value, String],
+  expected : Int64,
+) -> Unit raise Error {
+  match r {
+    Ok(@value.Value::Int(i)) =>
+      if i != expected {
+        fail("expected \{expected}, got \{i}")
+      }
+    Ok(v) => fail("expected Int, got \{@value.type_name(v)}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+fn expect_err(
+  r : Result[@value.Value, String],
+  substring : String,
+) -> Unit raise Error {
+  match r {
+    Err(msg) =>
+      if !msg.contains(substring) {
+        fail("expected error containing '\{substring}', got '\{msg}'")
+      }
+    Ok(v) => fail("expected Err, got Ok(\{@value.repr(v)})")
+  }
+}
+
+///|
 test "math_module: constants e and pi" {
   let m = math_module()
   match m {
@@ -104,12 +133,77 @@ test "math_module: constants e and pi" {
 }
 
 ///|
-test "math_module: ceil and floor" {
+test "math_module: ceil on float returns int" {
   let m = math_module()
-  expect_float(call1(m, "ceil", fv(1.2)), 2.0)
-  expect_float(call1(m, "ceil", fv(-1.2)), -1.0)
-  expect_float(call1(m, "floor", fv(1.9)), 1.0)
-  expect_float(call1(m, "floor", fv(-1.9)), -2.0)
+  expect_int(call1(m, "ceil", fv(1.2)), 2L)
+  expect_int(call1(m, "ceil", fv(-1.2)), -1L)
+  expect_int(call1(m, "ceil", fv(0.0)), 0L)
+}
+
+///|
+test "math_module: ceil on int returns int passthrough" {
+  let m = math_module()
+  expect_int(call1(m, "ceil", iv(5L)), 5L)
+  expect_int(call1(m, "ceil", iv(-3L)), -3L)
+}
+
+///|
+test "math_module: ceil on infinity raises error" {
+  let m = math_module()
+  expect_err(
+    call1(m, "ceil", fv(1.0 / 0.0)),
+    "cannot convert float infinity to integer",
+  )
+  expect_err(
+    call1(m, "ceil", fv(-1.0 / 0.0)),
+    "cannot convert float infinity to integer",
+  )
+}
+
+///|
+test "math_module: ceil on NaN raises error" {
+  let m = math_module()
+  expect_err(
+    call1(m, "ceil", fv(0.0 / 0.0)),
+    "cannot convert float NaN to integer",
+  )
+}
+
+///|
+test "math_module: floor on float returns int" {
+  let m = math_module()
+  expect_int(call1(m, "floor", fv(1.9)), 1L)
+  expect_int(call1(m, "floor", fv(-1.9)), -2L)
+  expect_int(call1(m, "floor", fv(0.0)), 0L)
+}
+
+///|
+test "math_module: floor on int returns int passthrough" {
+  let m = math_module()
+  expect_int(call1(m, "floor", iv(7L)), 7L)
+  expect_int(call1(m, "floor", iv(-2L)), -2L)
+}
+
+///|
+test "math_module: floor on infinity raises error" {
+  let m = math_module()
+  expect_err(
+    call1(m, "floor", fv(1.0 / 0.0)),
+    "cannot convert float infinity to integer",
+  )
+  expect_err(
+    call1(m, "floor", fv(-1.0 / 0.0)),
+    "cannot convert float infinity to integer",
+  )
+}
+
+///|
+test "math_module: floor on NaN raises error" {
+  let m = math_module()
+  expect_err(
+    call1(m, "floor", fv(0.0 / 0.0)),
+    "cannot convert float NaN to integer",
+  )
 }
 
 ///|
@@ -152,6 +246,23 @@ test "math_module: sin and cos" {
 test "math_module: log natural" {
   let m = math_module()
   expect_float(call1(m, "log", fv(2.718281828459045)), 1.0)
+}
+
+///|
+test "math_module: log base=1 raises division by zero" {
+  let m = math_module()
+  expect_err(call2(m, "log", fv(2.0), fv(1.0)), "division by zero")
+}
+
+///|
+test "math_module: log base=0 computes without error" {
+  let m = math_module()
+  // ln(x)/ln(0) = ln(x)/(-inf) = 0.0
+  match call2(m, "log", fv(2.0), fv(0.0)) {
+    Ok(@value.Value::Float(_)) => ()
+    Ok(v) => fail("expected Float, got \{@value.type_name(v)}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
 }
 
 ///|
