@@ -652,6 +652,25 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       matching on `Value` enum variants directly; helper factories (`new_builtin`,
       `new_list`, `new_dict`, `new_set`) would improve ergonomics.
       Reference: `starlark-go/starlark/value.go` `NewBuiltin`, `NewList`, `NewDict`, `NewSet`.
+- [x] **[MED]** Second-pass API audit — hide `StarlarkDict.ht`, `StarlarkSet.ht`,
+      `StarlarkModule.attrs`, `Module.globals/frozen`, `Universe.bindings`,
+      `Predeclared.bindings`, `CallStack.frames`; add string-keyed `Module::get()`,
+      `Module::globals_count()`, `Module::is_frozen()`, `StarlarkModule::attr_names()`
+      accessors. Named constants for hash-algorithm magic numbers (traits.mbt),
+      initial hashtable capacity, and Starlark tab width.
+
+### Deferred API hardening (requires large eval refactoring)
+
+- [ ] **[LOW]** Restrict `StarlarkList` mutable fields — `items`, `frozen`, `itercount`
+      are `pub(all)`, allowing external code to bypass freeze and mutation checks.
+      Requires adding index/slice/length methods to StarlarkList and updating all
+      direct field accesses in `src/internal/eval/ops.mbt` and tests (~50 sites).
+- [ ] **[LOW]** Restrict `StarlarkFunction` fields — `params`, `body`, `defaults`,
+      `captured_scope` are `pub(all)`, exposing AST internals through the value API.
+      Requires providing accessor methods and updating all direct accesses in eval.
+- [ ] **[LOW]** `EvalError` fields `call_stack` and `cause` — currently `pub(all)`;
+      `call_stack` is exposed as a named field in starlark-go but could be hidden behind
+      `backtrace()` only. Low priority since users legitimately inspect `msg` and `call_stack`.
 
 ### General release tasks
 
