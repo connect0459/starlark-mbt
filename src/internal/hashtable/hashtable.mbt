@@ -93,7 +93,7 @@ pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
   if self.itercount > 0 {
     return Err("cannot clear hash table during iteration")
   }
-  self.slots = Array::make(8, empty_idx)
+  self.slots = Array::make(initial_capacity, empty_idx)
   self.entries = []
   self.free_head = empty_idx
   self.head = empty_idx
