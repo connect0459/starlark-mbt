@@ -614,9 +614,9 @@ fn percent_format(
         let s2 = match spec {
           'e' => format_float_e(f, false)
           'E' => format_float_e(f, true)
-          'f' => format_float_f(f)
+          'f' => format_float_fg(f)
           'g' | 'G' => {
-            let s3 = format_float_g(f)
+            let s3 = format_float_fg(f)
             if spec == 'G' && !f.is_nan() && !f.is_inf() {
               s3.to_upper()
             } else {
@@ -700,50 +700,39 @@ fn int64_to_hex(n : Int64, upper : Bool) -> String {
 }
 
 ///|
-fn format_float_e(f : Double, upper : Bool) -> String {
+fn format_special_float(f : Double) -> String? {
   if f.is_nan() {
-    return "nan"
-  }
-  if f == @double.infinity {
-    return "+inf"
-  }
-  if f == @double.neg_infinity {
-    return "-inf"
-  }
-  let s = f.to_string()
-  if upper {
-    s.to_upper()
+    Some("nan")
+  } else if f == @double.infinity {
+    Some("+inf")
+  } else if f == @double.neg_infinity {
+    Some("-inf")
   } else {
-    s
+    None
   }
 }
 
 ///|
-fn format_float_f(f : Double) -> String {
-  if f.is_nan() {
-    return "nan"
+fn format_float_e(f : Double, upper : Bool) -> String {
+  match format_special_float(f) {
+    Some(s) => s
+    None => {
+      let s = f.to_string()
+      if upper {
+        s.to_upper()
+      } else {
+        s
+      }
+    }
   }
-  if f == @double.infinity {
-    return "+inf"
-  }
-  if f == @double.neg_infinity {
-    return "-inf"
-  }
-  f.to_string()
 }
 
 ///|
-fn format_float_g(f : Double) -> String {
-  if f.is_nan() {
-    return "nan"
+fn format_float_fg(f : Double) -> String {
+  match format_special_float(f) {
+    Some(s) => s
+    None => f.to_string()
   }
-  if f == @double.infinity {
-    return "+inf"
-  }
-  if f == @double.neg_infinity {
-    return "-inf"
-  }
-  f.to_string()
 }
 
 ///|
