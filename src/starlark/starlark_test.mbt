@@ -22,14 +22,14 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
 ///|
 test "Options::default enables all feature flags" {
   let opts = @starlark.Options::default()
-  assert_eq(opts.allow_set, true)
-  assert_eq(opts.allow_recursion, true)
-  assert_eq(opts.allow_lambda, true)
-  assert_eq(opts.allow_while, true)
-  assert_eq(opts.allow_bytes, true)
-  assert_eq(opts.allow_float, true)
-  assert_eq(opts.allow_global_reassign, true)
-  assert_eq(opts.allow_top_level_control, true)
+  assert_eq(opts.allow_set(), true)
+  assert_eq(opts.allow_recursion(), true)
+  assert_eq(opts.allow_lambda(), true)
+  assert_eq(opts.allow_while(), true)
+  assert_eq(opts.allow_bytes(), true)
+  assert_eq(opts.allow_float(), true)
+  assert_eq(opts.allow_global_reassign(), true)
+  assert_eq(opts.allow_top_level_control(), true)
 }
 
 ///|

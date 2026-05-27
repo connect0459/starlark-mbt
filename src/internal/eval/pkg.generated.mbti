@@ -26,18 +26,20 @@ pub fn Module::globals_count(Self) -> Int
 pub fn Module::is_frozen(Self) -> Bool
 pub fn Module::new() -> Self
 
-pub(all) struct Options {
-  allow_set : Bool
-  allow_recursion : Bool
-  allow_lambda : Bool
-  allow_while : Bool
-  allow_bytes : Bool
-  allow_float : Bool
-  allow_global_reassign : Bool
-  allow_top_level_control : Bool
-  load_binds_globally : Bool
+pub struct Options {
+  // private fields
 }
+pub fn Options::allow_bytes(Self) -> Bool
+pub fn Options::allow_float(Self) -> Bool
+pub fn Options::allow_global_reassign(Self) -> Bool
+pub fn Options::allow_lambda(Self) -> Bool
+pub fn Options::allow_recursion(Self) -> Bool
+pub fn Options::allow_set(Self) -> Bool
+pub fn Options::allow_top_level_control(Self) -> Bool
+pub fn Options::allow_while(Self) -> Bool
 pub fn Options::default() -> Self
+pub fn Options::load_binds_globally(Self) -> Bool
+pub fn Options::with_load_binds_globally(Self, Bool) -> Self
 
 pub struct Predeclared {
   // private fields

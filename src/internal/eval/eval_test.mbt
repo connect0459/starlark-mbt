@@ -1,20 +1,20 @@
 ///|
 test "Options: all extension flags are enabled by default" {
   let opts = Options::default()
-  assert_eq(opts.allow_set, true)
-  assert_eq(opts.allow_recursion, true)
-  assert_eq(opts.allow_lambda, true)
-  assert_eq(opts.allow_while, true)
-  assert_eq(opts.allow_bytes, true)
-  assert_eq(opts.allow_float, true)
-  assert_eq(opts.allow_global_reassign, true)
-  assert_eq(opts.allow_top_level_control, true)
+  assert_eq(opts.allow_set(), true)
+  assert_eq(opts.allow_recursion(), true)
+  assert_eq(opts.allow_lambda(), true)
+  assert_eq(opts.allow_while(), true)
+  assert_eq(opts.allow_bytes(), true)
+  assert_eq(opts.allow_float(), true)
+  assert_eq(opts.allow_global_reassign(), true)
+  assert_eq(opts.allow_top_level_control(), true)
 }
 
 ///|
 test "Options: load_binds_globally defaults to false for spec compliance" {
   let opts = Options::default()
-  assert_eq(opts.load_binds_globally, false)
+  assert_eq(opts.load_binds_globally(), false)
 }
 
 ///|
@@ -427,17 +427,7 @@ test "exec_file: syntax error propagates as eval error" {
 
 ///|
 fn make_opts_load_binds(v : Bool) -> Options {
-  {
-    allow_set: true,
-    allow_recursion: true,
-    allow_lambda: true,
-    allow_while: true,
-    allow_bytes: true,
-    allow_float: true,
-    allow_global_reassign: true,
-    allow_top_level_control: true,
-    load_binds_globally: v,
-  }
+  Options::default().with_load_binds_globally(v)
 }
 
 ///|

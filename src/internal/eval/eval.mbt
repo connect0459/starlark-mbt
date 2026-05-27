@@ -2,16 +2,16 @@
 let default_max_recursion_depth : Int = 100
 
 ///|
-pub(all) struct Options {
-  allow_set : Bool
-  allow_recursion : Bool
-  allow_lambda : Bool
-  allow_while : Bool
-  allow_bytes : Bool
-  allow_float : Bool
-  allow_global_reassign : Bool
-  allow_top_level_control : Bool
-  load_binds_globally : Bool
+pub struct Options {
+  priv allow_set : Bool
+  priv allow_recursion : Bool
+  priv allow_lambda : Bool
+  priv allow_while : Bool
+  priv allow_bytes : Bool
+  priv allow_float : Bool
+  priv allow_global_reassign : Bool
+  priv allow_top_level_control : Bool
+  priv load_binds_globally : Bool
 }
 
 ///|
@@ -27,6 +27,56 @@ pub fn Options::default() -> Options {
     allow_top_level_control: true,
     load_binds_globally: false,
   }
+}
+
+///|
+pub fn Options::allow_set(self : Options) -> Bool {
+  self.allow_set
+}
+
+///|
+pub fn Options::allow_recursion(self : Options) -> Bool {
+  self.allow_recursion
+}
+
+///|
+pub fn Options::allow_lambda(self : Options) -> Bool {
+  self.allow_lambda
+}
+
+///|
+pub fn Options::allow_while(self : Options) -> Bool {
+  self.allow_while
+}
+
+///|
+pub fn Options::allow_bytes(self : Options) -> Bool {
+  self.allow_bytes
+}
+
+///|
+pub fn Options::allow_float(self : Options) -> Bool {
+  self.allow_float
+}
+
+///|
+pub fn Options::allow_global_reassign(self : Options) -> Bool {
+  self.allow_global_reassign
+}
+
+///|
+pub fn Options::allow_top_level_control(self : Options) -> Bool {
+  self.allow_top_level_control
+}
+
+///|
+pub fn Options::load_binds_globally(self : Options) -> Bool {
+  self.load_binds_globally
+}
+
+///|
+pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
+  { ..self, load_binds_globally: v }
 }
 
 ///|
