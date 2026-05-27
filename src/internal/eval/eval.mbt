@@ -80,6 +80,11 @@ pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
 }
 
 ///|
+pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
+  { ..self, allow_global_reassign: v }
+}
+
+///|
 pub struct Universe {
   priv bindings : Map[String, @value.Value]
 }
@@ -345,6 +350,8 @@ pub fn exec_file(
   }
   let ctx = EvalContext::new(thread, opts)
   let resolve_opts = @resolver.ResolveOptions::default()
+    .with_allow_global_reassign(opts.allow_global_reassign)
+    .with_load_binds_globally(opts.load_binds_globally)
   let resolved = @resolver.resolve(
     file,
     is_builtin,
@@ -385,6 +392,8 @@ pub fn exec_file_with_predeclared(
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
   let extra_names : Array[String] = predeclared.bindings.keys().collect()
   let resolve_opts = @resolver.ResolveOptions::default()
+    .with_allow_global_reassign(opts.allow_global_reassign)
+    .with_load_binds_globally(opts.load_binds_globally)
   let resolved = @resolver.resolve(
     file,
     fn(name) { is_builtin(name) || extra_names.contains(name) },

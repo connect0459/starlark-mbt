@@ -1,6 +1,6 @@
 // Integration tests derived from assign.star.
 // Omitted: hasfields() tests (application-defined type).
-// Omitted: option:globalreassign and option:loadbindsglobally dialect-specific chunks.
+// Omitted: error chunks for globalreassign/loadbindsglobally (need unbound cell detection).
 
 ///|
 let assign_tuple_success_src : String =
@@ -483,6 +483,37 @@ let assign_before_assign_errors_chunked : String =
 ///|
 test "assign.star: module-scope variable-before-assignment errors (chunked)" {
   let failures = run_chunked_string(assign_before_assign_errors_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
+
+///|
+let assign_dialect_chunked : String =
+  #|# option:globalreassign
+  #|load("assert.star", "assert")
+  #|a = 5
+  #|(a) += 3
+  #|assert.eq(a, 8)
+  #|---
+  #|# option:globalreassign
+  #|load("assert.star", "assert")
+  #|assert = 1
+  #|load("assert.star", "assert")
+  #|---
+  #|# option:globalreassign option:loadbindsglobally
+  #|load("assert.star", "assert")
+  #|assert = 1
+  #|load("assert.star", "assert")
+  #|---
+  #|# option:loadbindsglobally
+  #|def f(): assert.eq(1, 1)
+  #|load("assert.star", "assert")
+  #|f()
+
+///|
+test "assign.star: dialect option chunks (globalreassign / loadbindsglobally)" {
+  let failures = run_chunked_string(assign_dialect_chunked)
   if failures.length() != 0 {
     fail(failures.join("\n"))
   }

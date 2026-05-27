@@ -1,7 +1,6 @@
 // Integration tests derived from control.star.
 // Tests Starlark control flow: if/elif/else, for loops with break/continue,
 // return semantics, and variable scoping.
-// Omitted: fibonacci infinite iterable (requires external predeclared value).
 
 ///|
 let control_star_src : String =
@@ -61,6 +60,26 @@ let control_star_src : String =
 ///|
 test "control.star: all assertions pass" {
   let errs = run_star_string(control_star_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let control_fibonacci_src : String =
+  #|load("assert.star", "assert")
+  #|def fib(n):
+  #|  seq = []
+  #|  for x in fibonacci:
+  #|    if len(seq) == n:
+  #|      break
+  #|    seq.append(x)
+  #|  return seq
+  #|assert.eq(fib(10), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34])
+
+///|
+test "control.star: fibonacci infinite iterable via predeclared" {
+  let errs = run_star_string(control_fibonacci_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

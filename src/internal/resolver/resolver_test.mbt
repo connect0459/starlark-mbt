@@ -293,23 +293,9 @@ test "resolve: accepts load at module scope" {
 }
 
 ///|
-test "resolve: rejects reassignment of load-imported name" {
+test "resolve: rejects reassignment of load-imported name when global_reassign is off" {
   let f = parse_or_fail("load('m', 'x')\nx = 1")
-  let result = resolve(
-    f,
-    no_predeclared,
-    no_universal,
-    ResolveOptions::default(),
-  )
-  assert_true(
-    has_error(result, "cannot reassign name 'x' imported from a load statement"),
-  )
-}
-
-///|
-test "resolve: rejects load-imported reassignment even when allow_global_reassign is on" {
-  let f = parse_or_fail("load('m', 'x')\nx = 1")
-  let opts = ResolveOptions::default().with_allow_global_reassign(true)
+  let opts = ResolveOptions::default().with_allow_global_reassign(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
   assert_true(
     has_error(result, "cannot reassign name 'x' imported from a load statement"),
@@ -317,28 +303,28 @@ test "resolve: rejects load-imported reassignment even when allow_global_reassig
 }
 
 ///|
-test "resolve: augmented assignment to load-imported name is also rejected" {
+test "resolve: allows load-imported reassignment when allow_global_reassign is on" {
+  let f = parse_or_fail("load('m', 'x')\nx = 1")
+  let opts = ResolveOptions::default().with_allow_global_reassign(true)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(result.is_valid())
+}
+
+///|
+test "resolve: augmented assignment to load-imported name rejected when global_reassign is off" {
   let f = parse_or_fail("load('m', 'x')\nx += 1")
-  let result = resolve(
-    f,
-    no_predeclared,
-    no_universal,
-    ResolveOptions::default(),
-  )
+  let opts = ResolveOptions::default().with_allow_global_reassign(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
   assert_true(
     has_error(result, "cannot reassign name 'x' imported from a load statement"),
   )
 }
 
 ///|
-test "resolve: load with alias rejects reassignment of alias" {
+test "resolve: load with alias rejects reassignment of alias when global_reassign is off" {
   let f = parse_or_fail("load('m', y='x')\ny = 1")
-  let result = resolve(
-    f,
-    no_predeclared,
-    no_universal,
-    ResolveOptions::default(),
-  )
+  let opts = ResolveOptions::default().with_allow_global_reassign(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
   assert_true(
     has_error(result, "cannot reassign name 'y' imported from a load statement"),
   )

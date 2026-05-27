@@ -261,6 +261,20 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
 }
 
 ///|
+fn make_fibonacci_list() -> @value.Value {
+  let fibs : Array[@value.Value] = []
+  let mut a = 0L
+  let mut b = 1L
+  for _ in 0..<100 {
+    fibs.push(@value.Value::Int(a))
+    let c = a + b
+    a = b
+    b = c
+  }
+  @value.Value::List(@value.StarlarkList::new(fibs))
+}
+
+///|
 fn make_freeze_fn() -> @value.Value {
   @value.Value::new_builtin("freeze", fn(_call_ctx, pos_args, _kw_args) {
     if pos_args.length() != 1 {
@@ -373,9 +387,40 @@ fn split_chunks(src : String) -> Array[String] {
 }
 
 ///|
+fn parse_chunk_options(src : String) -> @eval.Options {
+  let mut opts = @eval.Options::default()
+  for line in src.split("\n") {
+    let trimmed = line.trim()
+    if trimmed.has_prefix("# option:") {
+      let rest = trimmed[9:]
+      for flag in rest.split(" ") {
+        match flag.trim() {
+          "globalreassign" => opts = opts.with_global_reassign(true)
+          "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
+          _ => ()
+        }
+      }
+    } else if trimmed.has_prefix("#option:") {
+      let rest = trimmed[8:]
+      for flag in rest.split(" ") {
+        match flag.trim() {
+          "globalreassign" => opts = opts.with_global_reassign(true)
+          "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
+          _ => ()
+        }
+      }
+    } else if trimmed.length() > 0 && !trimmed.has_prefix("#") {
+      break
+    }
+  }
+  opts
+}
+
+///|
 fn exec_chunk_raw(
   src : String,
 ) -> Result[Array[String], (String, Array[String])] {
+  let opts = parse_chunk_options(src)
   let assert_errors : Array[String] = []
   let assert_module = build_assert_module(assert_errors)
   let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
@@ -400,7 +445,7 @@ fn exec_chunk_raw(
     }
   }
   let thread = @eval.Thread::with_loader("test", loader)
-  match @eval.exec_file(thread, "<test>", src, @eval.Options::default()) {
+  match @eval.exec_file(thread, "<test>", src, opts) {
     Ok(_) => Ok(assert_errors)
     Err(e) => Err((e.msg(), assert_errors))
   }
@@ -483,7 +528,17 @@ pub fn run_star_string(src : String) -> Array[String] {
     }
   }
   let thread = @eval.Thread::with_loader("test", loader)
-  match @eval.exec_file(thread, "<test>", src, @eval.Options::default()) {
+  let predeclared = @eval.Predeclared::from_map({
+    "fibonacci": make_fibonacci_list(),
+  })
+  match
+    @eval.exec_file_with_predeclared(
+      thread,
+      "<test>",
+      src,
+      @eval.Options::default(),
+      predeclared,
+    ) {
     Ok(_) => ()
     Err(e) => errors.push(e.msg())
   }

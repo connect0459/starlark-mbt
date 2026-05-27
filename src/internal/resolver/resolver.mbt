@@ -273,17 +273,19 @@ fn Resolver::bind_global(
   pos : @errors.Position,
 ) -> Unit {
   if self.globals.contains(name) {
-    if self.load_names.contains(name) {
-      self.errorf(
-        pos,
-        "cannot reassign name '\{name}' imported from a load statement",
-      )
-    } else if !self.opts.allow_global_reassign {
-      let prev = self.globals[name]
-      self.errorf(
-        pos,
-        "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
-      )
+    if !self.opts.allow_global_reassign {
+      if self.load_names.contains(name) {
+        self.errorf(
+          pos,
+          "cannot reassign name '\{name}' imported from a load statement",
+        )
+      } else {
+        let prev = self.globals[name]
+        self.errorf(
+          pos,
+          "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
+        )
+      }
     }
   } else {
     let idx = self.module_globals.length()
@@ -481,7 +483,12 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       if self.is_at_module_scope() && !self.opts.allow_global_reassign {
         match lhs {
           @syntax.Expr::EIdent(name, _) =>
-            if self.globals.contains(name) {
+            if self.load_names.contains(name) {
+              self.errorf(
+                pos,
+                "cannot reassign name '\{name}' imported from a load statement",
+              )
+            } else if self.globals.contains(name) {
               let prev = self.globals[name]
               self.errorf(
                 pos,
