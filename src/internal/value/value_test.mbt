@@ -318,7 +318,7 @@ test "Value::new_builtin wraps a named host function" {
     }
   })
   match f {
-    Value::BuiltinFuncVal(b) => assert_eq(b.name, "double")
+    Value::BuiltinFuncVal(b) => assert_eq(b.name(), "double")
     _ => fail("expected BuiltinFuncVal")
   }
 }

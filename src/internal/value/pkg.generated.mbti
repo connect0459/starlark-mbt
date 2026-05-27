@@ -47,11 +47,11 @@ pub fn StarlarkBoundMethod::new(Value, String) -> Self
 pub fn StarlarkBoundMethod::recv(Self) -> Value
 
 pub struct StarlarkBuiltinFunc {
-  name : String
   // private fields
 }
 pub fn StarlarkBuiltinFunc::call_body(Self, BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[Value, String]?
 pub fn StarlarkBuiltinFunc::dispatch(String) -> Self
+pub fn StarlarkBuiltinFunc::name(Self) -> String
 
 pub struct StarlarkDict {
   // private fields
@@ -71,12 +71,12 @@ pub fn StarlarkDict::popitem(Self) -> Result[(Value, Value)?, String]
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
 
 pub struct StarlarkFunction {
-  name : String
   // private fields
 }
 pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
 pub fn StarlarkFunction::captured_scope(Self) -> Array[Map[String, Value]]
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
+pub fn StarlarkFunction::name(Self) -> String
 pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], Array[Value?], Array[Map[String, Value]]) -> Self
 pub fn StarlarkFunction::params(Self) -> Array[@syntax.Param]
 
@@ -110,11 +110,11 @@ pub fn StarlarkList::set(Self, Int, Value) -> Result[Unit, String]
 pub fn StarlarkList::sort_by(Self, (Value, Value) -> Int) -> Result[Unit, String]
 
 pub struct StarlarkModule {
-  name : String
   // private fields
 }
 pub fn StarlarkModule::attr_names(Self) -> Array[String]
 pub fn StarlarkModule::get(Self, String) -> Value?
+pub fn StarlarkModule::name(Self) -> String
 pub fn StarlarkModule::new(String, Map[String, Value]) -> Self
 
 pub struct StarlarkRange {

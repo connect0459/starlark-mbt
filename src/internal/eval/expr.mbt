@@ -320,7 +320,7 @@ fn call_value(
       match f.call_body(call_ctx, pos_args, kw_args) {
         Some(Ok(v)) => v
         Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
-        None => call_builtin(ctx, f.name, pos_args, kw_args, pos)
+        None => call_builtin(ctx, f.name(), pos_args, kw_args, pos)
       }
     }
     @value.Value::BoundMethodVal(m) =>
@@ -346,7 +346,7 @@ fn call_func(
   if ctx.thread.call_stack.length() >= ctx.thread.max_recursion_depth {
     raise EvalErr(make_eval_error(ctx, "maximum recursion depth exceeded"))
   }
-  let frame : @errors.CallFrame = @errors.CallFrame::new(f.name, pos)
+  let frame : @errors.CallFrame = @errors.CallFrame::new(f.name(), pos)
   ctx.thread.call_stack.push(frame)
   try {
     let mut parent = ctx.global_env
@@ -405,7 +405,7 @@ fn bind_args(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "function \{f.name} got multiple values for parameter \"\{kw_name}\"",
+          "function \{f.name()} got multiple values for parameter \"\{kw_name}\"",
         ),
       )
     }
@@ -426,7 +426,7 @@ fn bind_args(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "function \{f.name} got multiple values for parameter \"\{name}\"",
+                "function \{f.name()} got multiple values for parameter \"\{name}\"",
               ),
             )
           }
@@ -451,7 +451,7 @@ fn bind_args(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "function \{f.name} got multiple values for parameter \"\{name}\"",
+                "function \{f.name()} got multiple values for parameter \"\{name}\"",
               ),
             )
           }
@@ -488,7 +488,7 @@ fn bind_args(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "function \{f.name} accepts at most \{max_pos} positional arguments (\{pos_args.length()} given)",
+              "function \{f.name()} accepts at most \{max_pos} positional arguments (\{pos_args.length()} given)",
             ),
           )
         }
@@ -512,7 +512,7 @@ fn bind_args(
     raise EvalErr(
       make_eval_error(
         ctx,
-        "function \{f.name} accepts \{max_pos} positional arguments (\{pos_args.length()} given)",
+        "function \{f.name()} accepts \{max_pos} positional arguments (\{pos_args.length()} given)",
       ),
     )
   }
@@ -522,7 +522,7 @@ fn bind_args(
     raise EvalErr(
       make_eval_error(
         ctx,
-        "function \{f.name} got an unexpected keyword argument \"\{first_key}\"",
+        "function \{f.name()} got an unexpected keyword argument \"\{first_key}\"",
       ),
     )
   }
@@ -533,7 +533,7 @@ fn bind_args(
     raise EvalErr(
       make_eval_error(
         ctx,
-        "function \{f.name} missing \{n} \{arg_word} (\{names})",
+        "function \{f.name()} missing \{n} \{arg_word} (\{names})",
       ),
     )
   }

@@ -280,7 +280,7 @@ pub fn StarlarkRange::contains(self : StarlarkRange, n : Int64) -> Bool {
 
 ///|
 pub struct StarlarkFunction {
-  name : String
+  priv name : String
   priv params : Array[@syntax.Param]
   priv body : Array[@syntax.Stmt]
   priv defaults : Array[Value?]
@@ -296,6 +296,11 @@ pub fn StarlarkFunction::new(
   captured_scope : Array[Map[String, Value]],
 ) -> StarlarkFunction {
   { name, params, body, defaults, captured_scope }
+}
+
+///|
+pub fn StarlarkFunction::name(self : StarlarkFunction) -> String {
+  self.name
 }
 
 ///|
@@ -349,7 +354,7 @@ pub fn BuiltinCallCtx::invoke(
 
 ///|
 pub struct StarlarkBuiltinFunc {
-  name : String
+  priv name : String
   priv body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
     Value,
     String,
@@ -359,6 +364,11 @@ pub struct StarlarkBuiltinFunc {
 ///|
 pub fn StarlarkBuiltinFunc::dispatch(name : String) -> StarlarkBuiltinFunc {
   { name, body: None }
+}
+
+///|
+pub fn StarlarkBuiltinFunc::name(self : StarlarkBuiltinFunc) -> String {
+  self.name
 }
 
 ///|
@@ -400,7 +410,7 @@ pub fn StarlarkBoundMethod::method_name(self : StarlarkBoundMethod) -> String {
 
 ///|
 pub struct StarlarkModule {
-  name : String
+  priv name : String
   priv attrs : Map[String, Value]
 }
 
@@ -410,6 +420,11 @@ pub fn StarlarkModule::new(
   attrs : Map[String, Value],
 ) -> StarlarkModule {
   { name, attrs }
+}
+
+///|
+pub fn StarlarkModule::name(self : StarlarkModule) -> String {
+  self.name
 }
 
 ///|
