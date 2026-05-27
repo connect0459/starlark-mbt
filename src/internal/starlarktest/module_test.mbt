@@ -1,6 +1,5 @@
 // Integration tests for Module value type.
-// Ported from starlark-go/starlark/testdata/module.star with patterns
-// adapted for substring matching (regex anchors and wildcards stripped).
+// Patterns adapted for substring matching (regex anchors and wildcards stripped).
 
 ///|
 let module_type_src : String =

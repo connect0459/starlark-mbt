@@ -1,4 +1,4 @@
-// Integration tests derived from starlark-go tuple.star.
+// Integration tests derived from tuple.star.
 // Regex patterns simplified to plain substrings.
 
 ///|

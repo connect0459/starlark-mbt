@@ -1,8 +1,6 @@
 // Argument unpacking helpers for Starlark built-in function implementations.
 // Provides unpack_args and unpack_positional to reduce boilerplate in
 // built-ins that need to validate and extract positional + keyword arguments.
-//
-// Reference: starlark-go/starlark/unpack.go
 
 ///|
 priv struct ParamInfo {

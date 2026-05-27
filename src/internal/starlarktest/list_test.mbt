@@ -1,7 +1,7 @@
-// Integration tests derived from starlark-go list.star.
+// Integration tests derived from list.star.
 // Error patterns simplified to substrings; regex-style patterns are not supported.
-// f7 (hasfields) is omitted: hasfields() is a starlark-go test-only type.
-// Error message differences from starlark-go are noted inline.
+// f7 (hasfields) is omitted: hasfields() is a test-only type not in the standard built-ins.
+// Error message differences are noted inline.
 
 ///|
 let list_star_src : String =

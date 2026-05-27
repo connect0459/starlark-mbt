@@ -1,4 +1,4 @@
-// Integration tests derived from json.star (starlark-go test suite).
+// Integration tests derived from json.star.
 // Omitted: BigInt cases (project uses Int64, no arbitrary-precision integers).
 // Omitted: struct()/HasAttrs cases (not implemented in this subset).
 

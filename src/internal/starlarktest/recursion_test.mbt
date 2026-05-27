@@ -1,4 +1,4 @@
-// Integration tests derived from starlark-go recursion.star.
+// Integration tests derived from recursion.star.
 // Tests recursion: fibonacci and recursion depth limit enforcement.
 
 ///|

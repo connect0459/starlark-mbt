@@ -1,5 +1,4 @@
 // Parser tests — TDD Red phase.
-// Reference: starlark-go/syntax/parse_test.go
 
 ///|
 fn parse_e(src : String) -> @syntax.Expr {

@@ -1,4 +1,4 @@
-// Integration tests derived from starlark-go function.star.
+// Integration tests derived from function.star.
 // Tests Starlark function semantics: lexical scope, closures, defaults, parameter binding.
 // Omitted: hasfields(), recursion detection (fib/Y-combinator), BoundMethod identity in sets,
 // local-variable-before-assignment (unbound cell detection not implemented).

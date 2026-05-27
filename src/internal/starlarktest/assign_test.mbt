@@ -1,4 +1,4 @@
-// Integration tests derived from assign.star (starlark-go test suite).
+// Integration tests derived from assign.star.
 // Omitted: hasfields() tests (application-defined type).
 // Omitted: option:globalreassign and option:loadbindsglobally dialect-specific chunks.
 
@@ -267,7 +267,7 @@ test "assign.star: order of evaluation in assignments" {
 }
 
 ///|
-// Note: starlark-go reports "global/local variable X referenced before assignment";
+// Note: the Starlark spec reports "global/local variable X referenced before assignment";
 // our impl reports "undefined: X" for uninitialized lookups.
 let assign_before_assignment_src : String =
   #|load("assert.star", "assert")
@@ -320,7 +320,7 @@ test "assign.star: free variables captured by reference" {
 }
 
 ///|
-// Note: starlark-go resolver marks ALL uses of a name as local once it's assigned
+// Note: the Starlark spec resolver marks ALL uses of a name as local once it's assigned
 // in the same scope, even uses before the assignment textually. Our resolver does
 // not implement this; built-in names accessed before a later shadowing assignment
 // resolve to the built-in rather than raising an error. We only test the basic

@@ -1,4 +1,4 @@
-// Integration tests derived from starlark-go while.star.
+// Integration tests derived from while.star.
 // Tests while loop semantics: basic accumulation, break, and continue.
 
 ///|

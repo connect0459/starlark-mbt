@@ -1,4 +1,4 @@
-// Integration tests derived from misc.star (starlark-go test suite).
+// Integration tests derived from misc.star.
 // Omitted: cyclic data structure tests (cycle detection not implemented).
 // Omitted: "did you mean" typo suggestion in load errors (not implemented).
 

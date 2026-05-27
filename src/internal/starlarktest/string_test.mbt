@@ -1,4 +1,4 @@
-// Integration tests derived from starlark-go string.star.
+// Integration tests derived from string.star.
 // Regex patterns in assert.fails are simplified to plain substrings.
 // Unicode-specific byte-index tests and codepoints type-check tests are excluded.
 

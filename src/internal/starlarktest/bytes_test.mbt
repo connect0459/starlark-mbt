@@ -1,4 +1,4 @@
-// Integration tests derived from bytes.star (starlark-go test suite).
+// Integration tests derived from bytes.star.
 
 ///|
 let bytes_star_src : String =

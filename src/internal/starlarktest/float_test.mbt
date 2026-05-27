@@ -1,4 +1,4 @@
-// Integration tests derived from float.star (starlark-go test suite).
+// Integration tests derived from float.star.
 
 ///|
 let float_type_truth_src : String =

@@ -1,5 +1,4 @@
 // Compliance tests for Starlark function calling conventions.
-// Ported from starlark-go eval_test.go TestParameterPassing.
 // Covers systematic verification of positional, keyword, *args, **kwargs,
 // keyword-only params, and all their error cases.
 

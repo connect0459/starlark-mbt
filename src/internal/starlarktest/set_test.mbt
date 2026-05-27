@@ -1,4 +1,4 @@
-// Integration tests derived from set.star (starlark-go test suite).
+// Integration tests derived from set.star.
 
 ///|
 let set_star_src : String =

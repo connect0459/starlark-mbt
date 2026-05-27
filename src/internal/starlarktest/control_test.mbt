@@ -1,4 +1,4 @@
-// Integration tests derived from starlark-go control.star.
+// Integration tests derived from control.star.
 // Tests Starlark control flow: if/elif/else, for loops with break/continue,
 // return semantics, and variable scoping.
 // Omitted: fibonacci infinite iterable (requires external predeclared value).

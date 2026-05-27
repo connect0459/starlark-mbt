@@ -73,7 +73,7 @@ test "starlark_equals: Float equal when same finite value" {
 }
 
 ///|
-test "starlark_equals: Float NaN equals NaN (starlark-go semantics)" {
+test "starlark_equals: Float NaN is equal to itself" {
   let nan = @double.not_a_number
   assert_true(starlark_equals(Value::FloatVal(nan), Value::FloatVal(nan)))
 }
@@ -160,7 +160,7 @@ test "starlark_hash: Bool false hashes to 0, true hashes to 1" {
 }
 
 ///|
-test "starlark_hash: Int hash values match starlark-go specification" {
+test "starlark_hash: Int hash values ensure equal Int and Float produce the same hash" {
   let mul : UInt = 12582917U
   assert_true(starlark_hash(Value::IntVal(0L)) == Ok(mul * (0U + 3U)))
   assert_true(starlark_hash(Value::IntVal(1L)) == Ok(mul * (1U + 3U)))
@@ -180,7 +180,7 @@ test "starlark_hash: equal Int and Float produce same hash" {
 
 ///|
 test "starlark_hash: Float NaN and Inf all produce the same fixed hash" {
-  // 1618033 is the starlark-go spec constant for non-finite floats
+  // 1618033 is the spec constant for non-finite floats
   let non_finite_hash : UInt = 1618033U
   assert_true(
     starlark_hash(Value::FloatVal(@double.not_a_number)) == Ok(non_finite_hash),
@@ -203,8 +203,8 @@ test "starlark_hash: Bytes hash equals String hash for same bytes" {
 }
 
 ///|
-test "starlark_hash: empty Tuple has the starlark-go initial accumulator value" {
-  // 0x345678 is the Python/starlark-go initial hash accumulator for tuples
+test "starlark_hash: empty Tuple has the spec-defined initial hash value" {
+  // 0x345678 is the Starlark initial hash accumulator for tuples
   let tuple_hash_init : UInt = 0x345678U
   assert_true(starlark_hash(Value::TupleVal([])) == Ok(tuple_hash_init))
 }
@@ -270,7 +270,7 @@ test "compare_values: Float standard ordering" {
 test "compare_values: Float NaN is greater than positive infinity" {
   let nan = @double.not_a_number
   let inf = @double.infinity
-  // NaN > +Inf (starlark-go semantics)
+  // NaN > +Inf per Starlark spec
   assert_true(
     compare_values(Value::FloatVal(nan), Value::FloatVal(inf)) == Ok(1),
   )

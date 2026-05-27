@@ -1,5 +1,4 @@
 // Whitebox tests for value-level API semantics.
-// Port of starlark-go value_test.go TestParamDefault.
 // Verifies that StarlarkFunction.defaults is populated correctly for
 // each of the eight canonical parameter-list shapes.
 

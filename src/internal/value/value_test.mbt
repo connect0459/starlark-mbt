@@ -243,8 +243,6 @@ test "StarlarkModule: repr shows module name" {
   assert_eq(repr(Value::ModuleVal(m)), "<module \"assert\">")
 }
 
-// --- Port of starlark-go value_test.go TestListAppend ---
-
 ///|
 test "StarlarkList: new list is empty and mutable" {
   let l = StarlarkList::new([])

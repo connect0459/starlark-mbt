@@ -1,5 +1,4 @@
 // Scanner tests — TDD: these tests define the contract before implementation.
-// Reference: starlark-go/syntax/scan_test.go
 
 // scan tokenises src and returns a space-joined string of token representations.
 // On scan error the error position and message are returned instead.
@@ -29,8 +28,6 @@ fn scan(src : String) -> String {
   }
   buf.to_string()
 }
-
-// tok_to_test_string formats a token the same way starlark-go scan_test.go does.
 
 ///|
 fn tok_to_test_string(tok : Token) -> String {

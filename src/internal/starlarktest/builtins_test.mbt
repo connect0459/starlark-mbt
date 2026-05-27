@@ -1,4 +1,4 @@
-// Integration tests derived from builtins.star (starlark-go test suite).
+// Integration tests derived from builtins.star.
 // Excluded: hasfields() tests (application-defined type) and chunked --- sections.
 
 ///|

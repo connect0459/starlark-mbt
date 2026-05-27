@@ -1,4 +1,4 @@
-// Integration tests derived from starlark-go dict.star.
+// Integration tests derived from dict.star.
 // dict | dict union operator and dict |= in-place union are included.
 // Chunked error-annotation tests ("### error") are inlined as assert.fails.
 // hasfields-based tests are omitted.

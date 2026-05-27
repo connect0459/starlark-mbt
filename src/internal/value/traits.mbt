@@ -77,17 +77,17 @@ let fnv_offset_basis : UInt = 2166136261U
 ///|
 let fnv_prime : UInt = 16777619U
 
-// starlark-go integer hash multiplier: 12582917 * (lo + 3)
+// Starlark integer hash multiplier: 12582917 * (lo + 3)
 
 ///|
 let int_hash_mult : UInt = 12582917U
 
-// starlark-go sentinel hash for NaN/Inf floats (golden ratio × 10^6)
+// Sentinel hash for NaN/Inf floats (golden ratio × 10^6)
 
 ///|
 let float_special_hash : UInt = 1618033U
 
-// Python/starlark-go tuple hash algorithm constants
+// Starlark tuple hash algorithm constants
 
 ///|
 let tuple_hash_init : UInt = 0x345678U

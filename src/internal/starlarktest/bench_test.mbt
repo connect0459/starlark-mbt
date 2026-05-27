@@ -1,5 +1,4 @@
 // Benchmark suite for the Starlark evaluator.
-// Reference: starlark-go/starlark/testdata/benchmark.star
 
 ///|
 fn exec(src : String) -> Unit {
