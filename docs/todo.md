@@ -658,6 +658,9 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       `Module::globals_count()`, `Module::is_frozen()`, `StarlarkModule::attr_names()`
       accessors. Named constants for hash-algorithm magic numbers (traits.mbt),
       initial hashtable capacity, and Starlark tab width.
+- [x] **[LOW]** Third-pass magic-number audit — `Hashtable::clear()` was using literal `8`
+      instead of `initial_capacity`; Thread constructors used literal `100` for
+      `max_recursion_depth` instead of `default_max_recursion_depth`.
 
 ### Deferred API hardening (requires large eval refactoring)
 
