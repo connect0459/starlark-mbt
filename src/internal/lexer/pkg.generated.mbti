@@ -8,10 +8,6 @@ import {
 // Values
 pub fn keyword_token(String) -> Token?
 
-pub fn quote(String, Bool) -> String
-
-pub fn unquote(String) -> Result[(String, Bool), String]
-
 // Errors
 
 // Types and methods
