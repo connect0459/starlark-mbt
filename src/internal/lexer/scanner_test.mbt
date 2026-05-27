@@ -20,9 +20,9 @@ fn scan(src : String) -> String {
     } else {
       buf.write_char(' ')
     }
-    let s = tok_to_test_string(st.tok)
+    let s = tok_to_test_string(st.token())
     buf.write_string(s)
-    match st.tok {
+    match st.token() {
       EOF => break
       _ => ()
     }
@@ -552,7 +552,7 @@ test "scan: bytes literal with escape" {
 fn sc_tok(src : String) -> Token {
   let sc = Scanner::new("test.star", src)
   match sc.next_token() {
-    Ok(st) => st.tok
+    Ok(st) => st.token()
     Err(e) => abort(e.to_string())
   }
 }
@@ -563,16 +563,16 @@ fn sc_tok(src : String) -> Token {
 test "scan: position of first token" {
   let sc = Scanner::new("foo.star", "abc")
   let st = sc.next_token().unwrap()
-  assert_eq(st.pos.line(), 1)
-  assert_eq(st.pos.col(), 1)
+  assert_eq(st.pos().line(), 1)
+  assert_eq(st.pos().col(), 1)
 }
 
 ///|
 test "scan: position after leading whitespace" {
   let sc = Scanner::new("foo.star", "  abc")
   let st = sc.next_token().unwrap()
-  assert_eq(st.pos.line(), 1)
-  assert_eq(st.pos.col(), 3)
+  assert_eq(st.pos().line(), 1)
+  assert_eq(st.pos().col(), 3)
 }
 
 // --- Quote / Unquote ---

@@ -15,21 +15,14 @@ pub fn unquote(String) -> Result[(String, Bool), String]
 // Errors
 
 // Types and methods
-pub(all) struct ScannedToken {
-  tok : Token
-  pos : @errors.Position
+pub struct ScannedToken {
+  // private fields
 }
+pub fn ScannedToken::pos(Self) -> @errors.Position
+pub fn ScannedToken::token(Self) -> Token
 
-pub(all) struct Scanner {
-  src : Bytes
-  filename : String
-  mut off : Int
-  mut line : Int
-  mut col : Int
-  mut depth : Int
-  mut indent_stack : Array[Int]
-  mut dents : Int
-  mut line_start : Bool
+pub struct Scanner {
+  // private fields
 }
 pub fn Scanner::new(String, String) -> Self
 pub fn Scanner::next_token(Self) -> Result[ScannedToken, @errors.SyntaxError]

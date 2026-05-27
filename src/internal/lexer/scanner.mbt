@@ -5,22 +5,32 @@
 let tab_width : Int = 8
 
 ///|
-pub(all) struct ScannedToken {
-  tok : Token
-  pos : @errors.Position
+pub struct ScannedToken {
+  priv tok : Token
+  priv pos : @errors.Position
 }
 
 ///|
-pub(all) struct Scanner {
-  src : Bytes // UTF-8 source bytes
-  filename : String
-  mut off : Int // current byte offset
-  mut line : Int // current line (1-based)
-  mut col : Int // current column (1-based, byte-based)
-  mut depth : Int // nesting depth of (), [], {}
-  mut indent_stack : Array[Int] // stack of indentation levels
-  mut dents : Int // pending INDENT (>0) or OUTDENT (<0)
-  mut line_start : Bool // are we at start of a line?
+pub fn ScannedToken::token(self : ScannedToken) -> Token {
+  self.tok
+}
+
+///|
+pub fn ScannedToken::pos(self : ScannedToken) -> @errors.Position {
+  self.pos
+}
+
+///|
+pub struct Scanner {
+  priv src : Bytes
+  priv filename : String
+  priv mut off : Int
+  priv mut line : Int
+  priv mut col : Int
+  priv mut depth : Int
+  priv mut indent_stack : Array[Int]
+  priv mut dents : Int
+  priv mut line_start : Bool
 }
 
 ///|

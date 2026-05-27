@@ -32,8 +32,8 @@ fn Parser::advance(self : Parser) -> Unit raise ParseErr {
   match self.scanner.next_token() {
     Err(e) => raise ParseErr(e)
     Ok(st) => {
-      self.tok = st.tok
-      self.pos = st.pos
+      self.tok = st.token()
+      self.pos = st.pos()
     }
   }
 }
