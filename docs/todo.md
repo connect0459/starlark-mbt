@@ -721,7 +721,7 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [ ] Finalise public API; review `.mbti` diff
 - [x] CLI implementation in `src/cmd/` — run `.star` files; `src/main/` renamed to `src/cmd/`
 - [x] Optional REPL — interactive `read → eval → print` loop (public `src/repl/` library)
-- [ ] Usage examples as doc tests in `README.mbt.md`
+- [x] Usage examples as doc tests in `README.mbt.md`; detailed API reference in `docs/api.md`
 - [ ] Mooncakes publish prep
 
 ---
