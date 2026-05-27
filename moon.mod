@@ -1,27 +1,16 @@
-// Learn more about moon.mod configuration:
-// https://docs.moonbitlang.com/en/latest/toolchain/moon/module.html
-//
-// To add a dependency, run this command in your terminal:
-//   moon add moonbitlang/x
-//
-// Or manually declare it in `import`, for example:
-// import {
-//   "moonbitlang/x@0.4.6",
-// }
-
 name = "connect0459/starlark"
 
 version = "0.1.0"
 
 readme = "README.mbt.md"
 
-repository = ""
+repository = "https://github.com/connect0459/starlark-mbt"
 
 license = "Apache-2.0"
 
-keywords = [ "starlark", "interpreter", "scripting", "language" ]
+keywords = [ "starlark", "interpreter" ]
 
-description = "A MoonBit implementation of the Starlark scripting language interpreter"
+description = "A MoonBit implementation of the Starlark interpreter"
 
 import {
   "moonbitlang/x@0.4.43",
