@@ -686,20 +686,20 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 
 ### Deferred API hardening (requires large eval refactoring)
 
-- [ ] **[LOW]** Restrict `StarlarkList` mutable fields — `items`, `frozen`, `itercount`
+- [x] **[LOW]** Restrict `StarlarkList` mutable fields — `items`, `frozen`, `itercount`
       are `pub(all)`, allowing external code to bypass freeze and mutation checks.
       Requires adding index/slice/length methods to StarlarkList and updating all
       direct field accesses in `src/internal/eval/ops.mbt` and tests (~50 sites).
-- [ ] **[LOW]** Restrict `StarlarkFunction` fields — `params`, `body`, `defaults`,
+- [x] **[LOW]** Restrict `StarlarkFunction` fields — `params`, `body`, `defaults`,
       `captured_scope` are `pub(all)`, exposing AST internals through the value API.
       Requires providing accessor methods and updating all direct accesses in eval.
-- [ ] **[LOW]** `EvalError` fields `call_stack` and `cause` — currently `pub(all)`;
+- [x] **[LOW]** `EvalError` fields `call_stack` and `cause` — currently `pub(all)`;
       `call_stack` is exposed as a named field in starlark-go but could be hidden behind
       `backtrace()` only. Low priority since users legitimately inspect `msg` and `call_stack`.
-- [ ] **[LOW]** `BuiltinCallCtx` is `pub(all)`, making the `call` field publicly
+- [x] **[LOW]** `BuiltinCallCtx` is `pub(all)`, making the `call` field publicly
       writable. Embedders receive this type in their builtin callback; they do not need
       to construct it externally. Reducing to `pub` (not `pub(all)`) closes the gap.
-- [ ] **[LOW]** Remove `src/internal/builtins/builtins.mbt` placeholder — the file
+- [x] **[LOW]** Remove `src/internal/builtins/builtins.mbt` placeholder — the file
       contains only a comment; builtins were implemented in `eval/expr.mbt` instead.
       No package currently imports `src/internal/builtins/`; the directory is dead code.
 
