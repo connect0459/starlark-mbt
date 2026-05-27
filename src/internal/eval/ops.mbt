@@ -101,10 +101,10 @@ fn eval_binary(
       @value.Value::BoolVal(@value.starlark_equals(lv, rv))
     @syntax.BinaryOp::OpNe =>
       @value.Value::BoolVal(!@value.starlark_equals(lv, rv))
-    @syntax.BinaryOp::OpLt => eval_cmp(ctx, lv, rv, pos, -1, true, false)
-    @syntax.BinaryOp::OpLe => eval_cmp(ctx, lv, rv, pos, -1, false, false)
-    @syntax.BinaryOp::OpGt => eval_cmp(ctx, lv, rv, pos, 1, true, false)
-    @syntax.BinaryOp::OpGe => eval_cmp(ctx, lv, rv, pos, 1, false, false)
+    @syntax.BinaryOp::OpLt => eval_cmp(ctx, lv, rv, pos, -1, true)
+    @syntax.BinaryOp::OpLe => eval_cmp(ctx, lv, rv, pos, -1, false)
+    @syntax.BinaryOp::OpGt => eval_cmp(ctx, lv, rv, pos, 1, true)
+    @syntax.BinaryOp::OpGe => eval_cmp(ctx, lv, rv, pos, 1, false)
     @syntax.BinaryOp::OpIn => in_op(ctx, lv, rv, pos)
     @syntax.BinaryOp::OpNotIn => {
       let r = in_op(ctx, lv, rv, pos)
@@ -261,6 +261,12 @@ let max_int32 : Int64 = 2147483647L
 
 ///|
 let max_alloc : Int = 1073741824
+
+///|
+let max_int64_shift : Int64 = 63L
+
+///|
+let max_byte_val : Int64 = 255L
 
 ///|
 fn repeat_string(
@@ -776,7 +782,7 @@ fn float_pow(base : Double, exp : Double) -> Double {
     return base
   }
   let n = exp.to_int64()
-  if n.to_double() == exp && n >= -63L && n <= 63L {
+  if n.to_double() == exp && n >= -max_int64_shift && n <= max_int64_shift {
     if n >= 0L {
       let mut r = 1.0
       let mut b = base
@@ -903,7 +909,7 @@ fn eval_shift(
       if b < 0L {
         raise EvalErr(make_eval_error(ctx, "negative shift count"))
       }
-      if b > 63L {
+      if b > max_int64_shift {
         raise EvalErr(make_eval_error(ctx, "shift count too large"))
       }
       let shift = b.to_int()
@@ -945,7 +951,6 @@ fn eval_cmp(
   _pos : @errors.Position,
   strict_sign : Int,
   strict : Bool,
-  _unused : Bool,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
     (@value.Value::SetVal(ls), @value.Value::SetVal(rs)) => {
@@ -1075,7 +1080,7 @@ fn in_op(
           @value.Value::BoolVal(found)
         }
         @value.Value::IntVal(n) => {
-          if n < 0L || n > 255L {
+          if n < 0L || n > max_byte_val {
             raise EvalErr(
               make_eval_error(ctx, "int in bytes: \{n} out of range"),
             )
