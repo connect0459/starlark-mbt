@@ -81,8 +81,7 @@ pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], 
 pub fn StarlarkFunction::params(Self) -> Array[@syntax.Param]
 
 pub struct StarlarkIterator {
-  next_fn : () -> Value?
-  done_fn : () -> Unit
+  // private fields
 }
 pub fn StarlarkIterator::done(Self) -> Unit
 pub fn StarlarkIterator::next(Self) -> Value?

@@ -9,8 +9,8 @@ priv struct IterCursor {
 
 ///|
 pub struct StarlarkIterator {
-  next_fn : () -> Value?
-  done_fn : () -> Unit
+  priv next_fn : () -> Value?
+  priv done_fn : () -> Unit
 }
 
 ///|
