@@ -693,7 +693,8 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       `eval` (`Options` all nine flags + `with_load_binds_globally`; `Thread.name`,
       `Thread.max_recursion_depth`, `Thread.max_steps`).
       `value` (`StarlarkFunction.name`, `StarlarkBuiltinFunc.name`,
-      `StarlarkModule.name`, `StarlarkIterator.next_fn/done_fn`).
+      `StarlarkModule.name`, `StarlarkIterator.next_fn/done_fn`,
+      `StarlarkString.raw`).
 
 ### Deferred API hardening (requires large eval refactoring)
 
