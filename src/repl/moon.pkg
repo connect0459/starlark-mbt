@@ -1,0 +1,16 @@
+import {
+  "connect0459/starlark/internal/eval",
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/value",
+  "connect0459/starlark/internal/parser",
+  "connect0459/starlark/internal/syntax",
+  "moonbitlang/x/fs",
+}
+
+options(
+  "native-stub": [ "repl_native.c" ],
+  targets: {
+    "repl_native.mbt": [ "native", "llvm" ],
+    "repl_stub.mbt": [ "wasm", "wasm-gc", "js" ],
+  },
+)

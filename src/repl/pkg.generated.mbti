@@ -1,0 +1,34 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "connect0459/starlark/repl"
+
+import {
+  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/eval",
+  "connect0459/starlark/internal/value",
+}
+
+// Values
+pub fn eval_input(@eval.Thread, @value.StarlarkDict, String) -> ReplOutput
+
+pub fn format_error(@errors.EvalError) -> String
+
+pub fn is_terminal() -> Bool
+
+pub fn make_load(String) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError]
+
+pub fn run(@eval.Thread, @value.StarlarkDict) -> Unit
+
+// Errors
+
+// Types and methods
+pub enum ReplOutput {
+  Value(String)
+  Empty
+  EvalError(String)
+}
+pub impl Show for ReplOutput
+
+// Type aliases
+
+// Traits
+
