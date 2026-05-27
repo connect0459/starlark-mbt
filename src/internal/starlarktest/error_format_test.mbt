@@ -203,3 +203,82 @@ test "error format: recursion depth exceeded" {
     Ok(_) => abort("expected error")
   }
 }
+
+///|
+test "Thread.cancel: pre-cancel prevents execution and returns cancellation error" {
+  let thread = @eval.Thread::new("test")
+  thread.cancel("nope")
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    "x = 1",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      assert_true(e.msg.contains("Starlark computation cancelled: nope"))
+    Ok(_) => abort("expected cancellation error")
+  }
+}
+
+///|
+test "Thread.cancel: cancellation is sticky across multiple execs" {
+  let thread = @eval.Thread::new("test")
+  thread.cancel("stop")
+  let _ = @eval.exec_file(thread, "a.star", "x = 1", @eval.Options::default())
+  let result = @eval.exec_file(
+    thread,
+    "b.star",
+    "y = 2",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      assert_true(e.msg.contains("Starlark computation cancelled: stop"))
+    Ok(_) => abort("expected sticky cancellation on second exec")
+  }
+}
+
+///|
+test "Thread.uncancel: allows execution after cancellation is cleared" {
+  let thread = @eval.Thread::new("test")
+  thread.cancel("stop")
+  thread.uncancel()
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    "x = 1",
+    @eval.Options::default(),
+  )
+  assert_true(result is Ok(_))
+}
+
+///|
+test "Thread.execution_steps: returns nonzero after evaluating expressions" {
+  let thread = @eval.Thread::new("test")
+  let _ = @eval.exec_file(
+    thread,
+    "test.star",
+    "x = 1 + 2 + 3",
+    @eval.Options::default(),
+  )
+  assert_true(thread.execution_steps() > 0)
+}
+
+///|
+test "Thread.with_step_budget: halts when budget is exceeded" {
+  let thread = @eval.Thread::with_step_budget("test", 10)
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    "x = 0\nfor i in range(1000):\n  x = i",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      assert_true(
+        e.msg.contains("step budget exceeded") || e.msg.contains("cancelled"),
+      )
+    Ok(_) => abort("expected step budget error")
+  }
+}

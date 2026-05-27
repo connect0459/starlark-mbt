@@ -97,14 +97,13 @@ fn check_steps(ctx : EvalContext) -> Unit raise EvalErr {
       )
     None => ()
   }
+  ctx.thread.steps += 1
   match ctx.thread.max_steps {
     None => ()
-    Some(max) => {
-      ctx.thread.steps += 1
+    Some(max) =>
       if ctx.thread.steps > max {
         raise EvalErr(make_eval_error(ctx, "step budget exceeded"))
       }
-    }
   }
 }
 
