@@ -20,26 +20,26 @@ test "Options: load_binds_globally defaults to false for spec compliance" {
 ///|
 test "Thread: default construction sets name and empty call stack" {
   let t = Thread::new("main")
-  assert_eq(t.name, "main")
+  assert_eq(t.name(), "main")
   assert_eq(t.call_stack_depth(), 0)
 }
 
 ///|
 test "Thread: default max_recursion_depth is 100" {
   let t = Thread::new("main")
-  assert_eq(t.max_recursion_depth, 100)
+  assert_eq(t.max_recursion_depth(), 100)
 }
 
 ///|
 test "Thread: default has no step budget" {
   let t = Thread::new("main")
-  assert_true(t.max_steps is None)
+  assert_true(t.max_steps() is None)
 }
 
 ///|
 test "Thread::with_step_budget sets max_steps" {
   let t = Thread::with_step_budget("test", 50)
-  assert_true(t.max_steps == Some(50))
+  assert_true(t.max_steps() == Some(50))
 }
 
 ///|

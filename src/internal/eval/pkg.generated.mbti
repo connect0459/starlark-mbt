@@ -50,15 +50,15 @@ pub fn Predeclared::new() -> Self
 pub fn Predeclared::set(Self, String, @value.Value) -> Unit
 
 pub struct Thread {
-  name : String
-  max_recursion_depth : Int
-  max_steps : Int?
   // private fields
 }
 pub fn Thread::call_frames(Self) -> Array[@errors.CallFrame]
 pub fn Thread::call_stack_depth(Self) -> Int
 pub fn Thread::cancel(Self, String) -> Unit
 pub fn Thread::execution_steps(Self) -> Int
+pub fn Thread::max_recursion_depth(Self) -> Int
+pub fn Thread::max_steps(Self) -> Int?
+pub fn Thread::name(Self) -> String
 pub fn Thread::new(String) -> Self
 pub fn Thread::uncancel(Self) -> Unit
 pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self

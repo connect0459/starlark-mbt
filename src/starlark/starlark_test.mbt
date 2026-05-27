@@ -1,7 +1,7 @@
 ///|
 test "Thread can be created with a name" {
   let t = @starlark.Thread::new("main")
-  assert_eq(t.name, "main")
+  assert_eq(t.name(), "main")
 }
 
 ///|

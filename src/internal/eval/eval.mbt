@@ -144,12 +144,12 @@ pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
 
 ///|
 pub struct Thread {
-  name : String
+  priv name : String
   priv print_fn : (String) -> Unit
   priv load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   priv call_stack : Array[@errors.CallFrame]
-  max_recursion_depth : Int
-  max_steps : Int?
+  priv max_recursion_depth : Int
+  priv max_steps : Int?
   priv mut steps : Int
   priv mut cancel_reason : String?
 }
@@ -238,6 +238,21 @@ pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
 ///|
 pub fn Thread::execution_steps(self : Thread) -> Int {
   self.steps
+}
+
+///|
+pub fn Thread::name(self : Thread) -> String {
+  self.name
+}
+
+///|
+pub fn Thread::max_recursion_depth(self : Thread) -> Int {
+  self.max_recursion_depth
+}
+
+///|
+pub fn Thread::max_steps(self : Thread) -> Int? {
+  self.max_steps
 }
 
 ///|
