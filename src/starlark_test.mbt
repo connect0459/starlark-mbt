@@ -126,3 +126,170 @@ test "module_get returns None for undefined globals" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+test "Thread::call_stack returns empty snapshot before execution" {
+  let t = @starlark.Thread::new("test")
+  let cs = t.call_stack()
+  assert_eq(cs.length(), 0)
+}
+
+///|
+test "Thread::call_stack_depth returns 0 before execution" {
+  let t = @starlark.Thread::new("test")
+  assert_eq(t.call_stack_depth(), 0)
+}
+
+///|
+test "Thread::call_stack snapshot is independent after pop" {
+  let t = @starlark.Thread::new("test")
+  let cs = t.call_stack()
+  assert_eq(cs.length(), 0)
+  assert_true(cs.at(0) is None)
+  assert_true(cs.pop() is None)
+}
+
+///|
+test "equal returns Ok(true) for equal values" {
+  let a = @starlark.Value::Int(42L)
+  let b = @starlark.Value::Int(42L)
+  assert_true(@starlark.equal(a, b) is Ok(true))
+}
+
+///|
+test "equal returns Ok(false) for unequal values" {
+  let a = @starlark.Value::Int(1L)
+  let b = @starlark.Value::Int(2L)
+  assert_true(@starlark.equal(a, b) is Ok(false))
+}
+
+///|
+test "equal returns Ok(true) for Int equal to Float" {
+  let a = @starlark.Value::Int(1L)
+  let b = @starlark.Value::Float(1.0)
+  assert_true(@starlark.equal(a, b) is Ok(true))
+}
+
+///|
+test "number_to_int returns Some for Int" {
+  let v = @starlark.Value::Int(7L)
+  assert_true(@starlark.number_to_int(v) is Some(7L))
+}
+
+///|
+test "number_to_int truncates Float to Int" {
+  let v = @starlark.Value::Float(3.9)
+  assert_true(@starlark.number_to_int(v) is Some(3L))
+}
+
+///|
+test "number_to_int returns None for non-number" {
+  let v = @starlark.Value::String(@starlark.StarlarkString::new("hi"))
+  assert_true(@starlark.number_to_int(v) is None)
+}
+
+///|
+test "as_float extracts Double from Float" {
+  let v = @starlark.Value::Float(2.5)
+  let (f, ok) = @starlark.as_float(v)
+  assert_true(ok)
+  assert_true(f == 2.5)
+}
+
+///|
+test "as_float converts Int to Double" {
+  let v = @starlark.Value::Int(3L)
+  let (f, ok) = @starlark.as_float(v)
+  assert_true(ok)
+  assert_true(f == 3.0)
+}
+
+///|
+test "as_float returns (0.0, false) for non-number" {
+  let v = @starlark.Value::None
+  let (f, ok) = @starlark.as_float(v)
+  assert_false(ok)
+  assert_true(f == 0.0)
+}
+
+///|
+test "as_string extracts raw string from String value" {
+  let v = @starlark.Value::String(@starlark.StarlarkString::new("hello"))
+  let (s, ok) = @starlark.as_string(v)
+  assert_true(ok)
+  assert_eq(s, "hello")
+}
+
+///|
+test "as_string returns empty string and false for non-string" {
+  let v = @starlark.Value::Int(1L)
+  let (s, ok) = @starlark.as_string(v)
+  assert_false(ok)
+  assert_eq(s, "")
+}
+
+///|
+test "len_of returns sequence length for List" {
+  let v = @starlark.Value::List(
+    @starlark.StarlarkList::new([
+      @starlark.Value::Int(1L),
+      @starlark.Value::Int(2L),
+    ]),
+  )
+  assert_eq(@starlark.len_of(v), 2)
+}
+
+///|
+test "len_of returns -1 for non-sequence" {
+  let v = @starlark.Value::Int(5L)
+  assert_eq(@starlark.len_of(v), -1)
+}
+
+///|
+test "iterate returns an iterator for a list" {
+  let lst = @starlark.Value::List(
+    @starlark.StarlarkList::new([@starlark.Value::Int(10L)]),
+  )
+  match @starlark.iterate(lst) {
+    Ok(it) => {
+      assert_true(it.next() is Some(@starlark.Value::Int(10L)))
+      it.done()
+    }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "iterate returns Err for non-iterable" {
+  let v = @starlark.Value::Int(1L)
+  assert_true(@starlark.iterate(v) is Err(_))
+}
+
+///|
+test "call invokes a Starlark function from the host" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def add(a, b): return a + b",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "add") {
+        Some(fn_val) =>
+          match
+            @starlark.call(
+              t,
+              fn_val,
+              [@starlark.Value::Int(3L), @starlark.Value::Int(4L)],
+              [],
+            ) {
+            Ok(v) => assert_true(v is @starlark.Value::Int(7L))
+            Err(_) => assert_true(false)
+          }
+        None => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}

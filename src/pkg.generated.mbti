@@ -8,13 +8,27 @@ import {
 }
 
 // Values
+pub fn as_float(@value.Value) -> (Double, Bool)
+
+pub fn as_string(@value.Value) -> (String, Bool)
+
+pub fn call(@eval.Thread, @value.Value, Array[@value.Value], Array[(String, @value.Value)]) -> Result[@value.Value, @errors.EvalError]
+
+pub fn equal(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
+
 pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 
 pub fn exec_file(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]
 
 pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]
 
+pub fn iterate(@value.Value) -> Result[@value.StarlarkIterator, @errors.EvalError]
+
+pub fn len_of(@value.Value) -> Int
+
 pub fn module_get(@eval.Module, String) -> @value.Value?
+
+pub fn number_to_int(@value.Value) -> Int64?
 
 pub fn repr(@value.Value) -> String
 
@@ -31,6 +45,10 @@ pub fn type_name(@value.Value) -> String
 // Types and methods
 
 // Type aliases
+pub using @errors {type CallFrame}
+
+pub using @errors {type CallStack}
+
 pub using @errors {type EvalError}
 
 pub using @eval {type Module}
@@ -44,6 +62,12 @@ pub using @eval {type Predeclared}
 pub using @errors {type ResolveError}
 
 pub using @value {type StarlarkDict}
+
+pub using @value {type StarlarkIterator}
+
+pub using @value {type StarlarkList}
+
+pub using @value {type StarlarkString}
 
 pub using @errors {type SyntaxError}
 
