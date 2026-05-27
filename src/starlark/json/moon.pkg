@@ -2,4 +2,5 @@ import {
   "moonbitlang/core/double",
   "moonbitlang/core/string",
   "connect0459/starlark/internal/value",
+  "connect0459/starlark/internal/utf8util",
 }

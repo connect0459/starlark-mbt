@@ -1,64 +1,4 @@
 ///|
-fn hex_char(n : Int) -> Char {
-  if n < 10 {
-    ('0'.to_int() + n).unsafe_to_char()
-  } else {
-    ('a'.to_int() + n - 10).unsafe_to_char()
-  }
-}
-
-///|
-fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
-  buf.write_char(hex_char((n >> 12) & 0xF))
-  buf.write_char(hex_char((n >> 8) & 0xF))
-  buf.write_char(hex_char((n >> 4) & 0xF))
-  buf.write_char(hex_char(n & 0xF))
-}
-
-///|
-fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
-  let b0 = b[pos].to_int()
-  if b0 < 0x80 {
-    return (b0, 1)
-  }
-  let len = b.length()
-  if b0 >= 0xC2 && b0 <= 0xDF && pos + 1 < len {
-    let b1 = b[pos + 1].to_int()
-    if b1 >= 0x80 && b1 <= 0xBF {
-      return (((b0 & 0x1F) << 6) | (b1 & 0x3F), 2)
-    }
-  } else if b0 >= 0xE0 && b0 <= 0xEF && pos + 2 < len {
-    let b1 = b[pos + 1].to_int()
-    let b2 = b[pos + 2].to_int()
-    if b1 >= 0x80 && b1 <= 0xBF && b2 >= 0x80 && b2 <= 0xBF {
-      let r = ((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)
-      if r >= 0x0800 && !(r >= 0xD800 && r <= 0xDFFF) {
-        return (r, 3)
-      }
-    }
-  } else if b0 >= 0xF0 && b0 <= 0xF4 && pos + 3 < len {
-    let b1 = b[pos + 1].to_int()
-    let b2 = b[pos + 2].to_int()
-    let b3 = b[pos + 3].to_int()
-    if b1 >= 0x80 &&
-      b1 <= 0xBF &&
-      b2 >= 0x80 &&
-      b2 <= 0xBF &&
-      b3 >= 0x80 &&
-      b3 <= 0xBF {
-      let r = ((b0 & 0x07) << 18) |
-        ((b1 & 0x3F) << 12) |
-        ((b2 & 0x3F) << 6) |
-        (b3 & 0x3F)
-      if r >= 0x10000 && r <= 0x10FFFF {
-        return (r, 4)
-      }
-    }
-  }
-  (-1, 1)
-}
-
-///|
 fn json_quote_string(s : @value.StarlarkString) -> String {
   let buf = StringBuilder::new()
   buf.write_char('"')
@@ -76,8 +16,8 @@ fn json_quote_string(s : @value.StarlarkString) -> String {
         0x0D => buf.write_string("\\r")
         _ => {
           buf.write_string("\\u00")
-          buf.write_char(hex_char((b0 >> 4) & 0xF))
-          buf.write_char(hex_char(b0 & 0xF))
+          buf.write_char(@utf8util.hex_char((b0 >> 4) & 0xF))
+          buf.write_char(@utf8util.hex_char(b0 & 0xF))
         }
       }
       i += 1
@@ -91,21 +31,21 @@ fn json_quote_string(s : @value.StarlarkString) -> String {
       buf.write_char(b0.unsafe_to_char())
       i += 1
     } else {
-      let (r, width) = utf8_decode_rune(bytes, i)
+      let (r, width) = @utf8util.utf8_decode_rune(bytes, i)
       if r < 0 {
         buf.write_string("\\ufffd")
         i += 1
       } else if r < 0x10000 {
         buf.write_string("\\u")
-        write_hex4(buf, r)
+        @utf8util.write_hex4(buf, r)
         i += width
       } else {
         let hi = 0xD800 + (r - 0x10000) / 0x400
         let lo = 0xDC00 + (r - 0x10000) % 0x400
         buf.write_string("\\u")
-        write_hex4(buf, hi)
+        @utf8util.write_hex4(buf, hi)
         buf.write_string("\\u")
-        write_hex4(buf, lo)
+        @utf8util.write_hex4(buf, lo)
         i += width
       }
     }

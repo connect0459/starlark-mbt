@@ -354,111 +354,13 @@ fn format_float(f : Double) -> String {
 }
 
 ///|
-fn hex_char(n : Int) -> Char {
-  if n < 10 {
-    ('0'.to_int() + n).unsafe_to_char()
-  } else {
-    ('a'.to_int() + n - 10).unsafe_to_char()
-  }
-}
-
-///|
-fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
-  let b0 = b[pos].to_int()
-  if b0 < 0x80 {
-    return (b0, 1)
-  }
-  let len = b.length()
-  if b0 >= 0xC2 && b0 <= 0xDF && pos + 1 < len {
-    let b1 = b[pos + 1].to_int()
-    if b1 >= 0x80 && b1 <= 0xBF {
-      let r = ((b0 & 0x1F) << 6) | (b1 & 0x3F)
-      return (r, 2)
-    }
-  } else if b0 >= 0xE0 && b0 <= 0xEF && pos + 2 < len {
-    let b1 = b[pos + 1].to_int()
-    let b2 = b[pos + 2].to_int()
-    if b1 >= 0x80 && b1 <= 0xBF && b2 >= 0x80 && b2 <= 0xBF {
-      let r = ((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)
-      if r >= 0x0800 && !(r >= 0xD800 && r <= 0xDFFF) {
-        return (r, 3)
-      }
-    }
-  } else if b0 >= 0xF0 && b0 <= 0xF4 && pos + 3 < len {
-    let b1 = b[pos + 1].to_int()
-    let b2 = b[pos + 2].to_int()
-    let b3 = b[pos + 3].to_int()
-    if b1 >= 0x80 &&
-      b1 <= 0xBF &&
-      b2 >= 0x80 &&
-      b2 <= 0xBF &&
-      b3 >= 0x80 &&
-      b3 <= 0xBF {
-      let r = ((b0 & 0x07) << 18) |
-        ((b1 & 0x3F) << 12) |
-        ((b2 & 0x3F) << 6) |
-        (b3 & 0x3F)
-      if r >= 0x10000 && r <= 0x10FFFF {
-        return (r, 4)
-      }
-    }
-  }
-  (-1, 1)
-}
-
-///|
-fn is_unicode_printable(r : Int) -> Bool {
-  if r < 0x20 || r == 0x7F {
-    return false
-  }
-  if r < 0x80 {
-    return true
-  }
-  if r == 0xAD {
-    return false
-  }
-  if r >= 0x2028 && r <= 0x2029 {
-    return false
-  }
-  if r >= 0xFFF9 && r <= 0xFFFB {
-    return false
-  }
-  if r >= 0x200B && r <= 0x200F {
-    return false
-  }
-  if r >= 0x202A && r <= 0x202E {
-    return false
-  }
-  if r >= 0x2060 && r <= 0x2064 {
-    return false
-  }
-  if r >= 0x2066 && r <= 0x206F {
-    return false
-  }
-  if r == 0xFEFF {
-    return false
-  }
-  true
-}
-
-///|
 fn write_unicode_escape(r : Int, buf : StringBuilder) -> Unit {
   if r < 0x10000 {
     buf.write_string("\\u")
-    buf.write_char(hex_char((r >> 12) & 0xF))
-    buf.write_char(hex_char((r >> 8) & 0xF))
-    buf.write_char(hex_char((r >> 4) & 0xF))
-    buf.write_char(hex_char(r & 0xF))
+    @utf8util.write_hex4(buf, r)
   } else {
     buf.write_string("\\U")
-    buf.write_char(hex_char((r >> 28) & 0xF))
-    buf.write_char(hex_char((r >> 24) & 0xF))
-    buf.write_char(hex_char((r >> 20) & 0xF))
-    buf.write_char(hex_char((r >> 16) & 0xF))
-    buf.write_char(hex_char((r >> 12) & 0xF))
-    buf.write_char(hex_char((r >> 8) & 0xF))
-    buf.write_char(hex_char((r >> 4) & 0xF))
-    buf.write_char(hex_char(r & 0xF))
+    @utf8util.write_hex8(buf, r)
   }
 }
 
@@ -494,8 +396,8 @@ fn repr_bytes_inner(b : Bytes, buf : StringBuilder, quote_char : Char) -> Unit {
           buf.write_char(n.unsafe_to_char())
           i += 1
         } else if n >= 0x80 {
-          let (r, width) = utf8_decode_rune(b, i)
-          if r >= 0 && is_unicode_printable(r) {
+          let (r, width) = @utf8util.utf8_decode_rune(b, i)
+          if r >= 0 && @utf8util.is_unicode_printable(r) {
             buf.write_char(r.unsafe_to_char())
             i += width
           } else if r >= 0 {
@@ -503,14 +405,12 @@ fn repr_bytes_inner(b : Bytes, buf : StringBuilder, quote_char : Char) -> Unit {
             i += width
           } else {
             buf.write_string("\\x")
-            buf.write_char(hex_char((n >> 4) & 0xF))
-            buf.write_char(hex_char(n & 0xF))
+            @utf8util.write_hex2(buf, n)
             i += 1
           }
         } else {
           buf.write_string("\\x")
-          buf.write_char(hex_char((n >> 4) & 0xF))
-          buf.write_char(hex_char(n & 0xF))
+          @utf8util.write_hex2(buf, n)
           i += 1
         }
     }

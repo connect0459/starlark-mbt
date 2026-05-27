@@ -1,119 +1,6 @@
 ///|
-fn hex_digit(n : Int) -> Char {
-  if n < 10 {
-    ('0'.to_int() + n).unsafe_to_char()
-  } else {
-    ('a'.to_int() + n - 10).unsafe_to_char()
-  }
-}
-
-///|
-fn write_hex2(buf : StringBuilder, n : Int) -> Unit {
-  buf.write_char(hex_digit((n >> 4) & 0xF))
-  buf.write_char(hex_digit(n & 0xF))
-}
-
-///|
-fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
-  buf.write_char(hex_digit((n >> 12) & 0xF))
-  buf.write_char(hex_digit((n >> 8) & 0xF))
-  buf.write_char(hex_digit((n >> 4) & 0xF))
-  buf.write_char(hex_digit(n & 0xF))
-}
-
-///|
-fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
-  buf.write_char(hex_digit((n >> 28) & 0xF))
-  buf.write_char(hex_digit((n >> 24) & 0xF))
-  buf.write_char(hex_digit((n >> 20) & 0xF))
-  buf.write_char(hex_digit((n >> 16) & 0xF))
-  buf.write_char(hex_digit((n >> 12) & 0xF))
-  buf.write_char(hex_digit((n >> 8) & 0xF))
-  buf.write_char(hex_digit((n >> 4) & 0xF))
-  buf.write_char(hex_digit(n & 0xF))
-}
-
-///|
 fn is_printable_ascii(b : Int) -> Bool {
   b >= 0x20 && b < 0x7F
-}
-
-///|
-fn utf8_decode_rune_q(b : Bytes, pos : Int) -> (Int, Int) {
-  let b0 = b[pos].to_int()
-  if b0 < 0x80 {
-    return (b0, 1)
-  }
-  let len = b.length()
-  if b0 >= 0xC2 && b0 <= 0xDF && pos + 1 < len {
-    let b1 = b[pos + 1].to_int()
-    if b1 >= 0x80 && b1 <= 0xBF {
-      return (((b0 & 0x1F) << 6) | (b1 & 0x3F), 2)
-    }
-  } else if b0 >= 0xE0 && b0 <= 0xEF && pos + 2 < len {
-    let b1 = b[pos + 1].to_int()
-    let b2 = b[pos + 2].to_int()
-    if b1 >= 0x80 && b1 <= 0xBF && b2 >= 0x80 && b2 <= 0xBF {
-      let r = ((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)
-      if r >= 0x0800 && !(r >= 0xD800 && r <= 0xDFFF) {
-        return (r, 3)
-      }
-    }
-  } else if b0 >= 0xF0 && b0 <= 0xF4 && pos + 3 < len {
-    let b1 = b[pos + 1].to_int()
-    let b2 = b[pos + 2].to_int()
-    let b3 = b[pos + 3].to_int()
-    if b1 >= 0x80 &&
-      b1 <= 0xBF &&
-      b2 >= 0x80 &&
-      b2 <= 0xBF &&
-      b3 >= 0x80 &&
-      b3 <= 0xBF {
-      let r = ((b0 & 0x07) << 18) |
-        ((b1 & 0x3F) << 12) |
-        ((b2 & 0x3F) << 6) |
-        (b3 & 0x3F)
-      if r >= 0x10000 && r <= 0x10FFFF {
-        return (r, 4)
-      }
-    }
-  }
-  (-1, 1)
-}
-
-///|
-fn is_unicode_print(r : Int) -> Bool {
-  if r < 0x20 || r == 0x7F {
-    return false
-  }
-  if r < 0x80 {
-    return true
-  }
-  if r == 0xAD {
-    return false
-  }
-  if r >= 0x2028 && r <= 0x2029 {
-    return false
-  }
-  if r >= 0xFFF9 && r <= 0xFFFB {
-    return false
-  }
-  if r >= 0x200B && r <= 0x200F {
-    return false
-  }
-  if r >= 0x202A && r <= 0x202E {
-    return false
-  }
-  if r >= 0x2060 && r <= 0x2064 {
-    return false
-  }
-  if r >= 0x2066 && r <= 0x206F {
-    return false
-  }
-  if r == 0xFEFF {
-    return false
-  }
-  true
 }
 
 ///|
@@ -185,22 +72,22 @@ pub fn quote(s : String, is_bytes : Bool) -> String {
       }
       _ =>
         if b >= 0x80 {
-          let (r, width) = utf8_decode_rune_q(raw, i)
-          if r >= 0 && is_unicode_print(r) {
+          let (r, width) = @utf8util.utf8_decode_rune(raw, i)
+          if r >= 0 && @utf8util.is_unicode_printable(r) {
             write_rune_utf8(r, buf)
             i += width
           } else if r >= 0 {
             if r < 0x10000 {
               buf.write_string("\\u")
-              write_hex4(buf, r)
+              @utf8util.write_hex4(buf, r)
             } else {
               buf.write_string("\\U")
-              write_hex8(buf, r)
+              @utf8util.write_hex8(buf, r)
             }
             i += width
           } else {
             buf.write_string("\\x")
-            write_hex2(buf, b)
+            @utf8util.write_hex2(buf, b)
             i += 1
           }
         } else if is_printable_ascii(b) {
@@ -208,7 +95,7 @@ pub fn quote(s : String, is_bytes : Bool) -> String {
           i += 1
         } else {
           buf.write_string("\\x")
-          write_hex2(buf, b)
+          @utf8util.write_hex2(buf, b)
           i += 1
         }
     }

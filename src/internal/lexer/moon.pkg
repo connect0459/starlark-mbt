@@ -3,4 +3,5 @@ import {
   "moonbitlang/core/double",
   "moonbitlang/core/math",
   "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/utf8util",
 }

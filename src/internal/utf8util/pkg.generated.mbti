@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "connect0459/starlark/internal/utf8util"
+
+// Values
+pub fn hex_char(Int) -> Char
+
+pub fn is_unicode_printable(Int) -> Bool
+
+pub fn utf8_decode_rune(Bytes, Int) -> (Int, Int)
+
+pub fn write_hex2(StringBuilder, Int) -> Unit
+
+pub fn write_hex4(StringBuilder, Int) -> Unit
+
+pub fn write_hex8(StringBuilder, Int) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
