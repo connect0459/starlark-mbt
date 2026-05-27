@@ -447,6 +447,16 @@ fn eval_floor_div(
 }
 
 ///|
+fn float_floor_mod(a : Double, b : Double) -> Double {
+  let r = a % b
+  if r != 0.0 && (r < 0.0) != (b < 0.0) {
+    r + b
+  } else {
+    r
+  }
+}
+
+///|
 fn eval_mod(
   ctx : EvalContext,
   lv : @value.Value,
@@ -460,27 +470,19 @@ fn eval_mod(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      let r = a % b
-      let r = if r != 0.0 && (r < 0.0) != (b < 0.0) { r + b } else { r }
-      @value.Value::FloatVal(r)
+      @value.Value::FloatVal(float_floor_mod(a, b))
     }
     (@value.Value::IntVal(a), @value.Value::FloatVal(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      let af = a.to_double()
-      let r = af % b
-      let r = if r != 0.0 && (r < 0.0) != (b < 0.0) { r + b } else { r }
-      @value.Value::FloatVal(r)
+      @value.Value::FloatVal(float_floor_mod(a.to_double(), b))
     }
     (@value.Value::FloatVal(a), @value.Value::IntVal(b)) => {
       if b == 0L {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      let bf = b.to_double()
-      let r = a % bf
-      let r = if r != 0.0 && (r < 0.0) != (bf < 0.0) { r + bf } else { r }
-      @value.Value::FloatVal(r)
+      @value.Value::FloatVal(float_floor_mod(a, b.to_double()))
     }
     (@value.Value::StrVal(s), _) => check(ctx, percent_format(s.raw, rv))
     _ =>

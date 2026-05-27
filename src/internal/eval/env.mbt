@@ -68,14 +68,12 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
   base.bind("None", @value.Value::NoneVal)
   base.bind("True", @value.Value::BoolVal(true))
   base.bind("False", @value.Value::BoolVal(false))
-  let builtin_names = [
-    "print", "len", "str", "repr", "type", "range", "list", "tuple", "dict", "bool",
-    "int", "float", "abs", "min", "max", "set", "enumerate", "zip", "sorted", "reversed",
-    "hasattr", "getattr", "fail", "any", "all", "hash", "dir", "chr", "ord", "bytes",
-    "module",
-  ]
   for name in builtin_names {
-    base.bind(name, @value.Value::BuiltinFuncVal({ name, body: None }))
+    match name {
+      "None" | "True" | "False" => ()
+      name =>
+        base.bind(name, @value.Value::BuiltinFuncVal({ name, body: None }))
+    }
   }
   let global_env = EvalEnv::for_module(base)
   { thread, opts, global_env, load_bound_names: [] }
