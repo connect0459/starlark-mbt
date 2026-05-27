@@ -229,6 +229,11 @@ pub fn Thread::call_stack_depth(self : Thread) -> Int {
 }
 
 ///|
+pub fn Thread::call_stack(self : Thread) -> @errors.CallStack {
+  @errors.CallStack::new(self.call_stack.copy())
+}
+
+///|
 pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
   self.call_stack.copy()
 }
@@ -311,6 +316,20 @@ let builtin_names : Array[String] = [
 ///|
 fn is_builtin(name : String) -> Bool {
   builtin_names.contains(name)
+}
+
+///|
+pub fn call(
+  thread : Thread,
+  func : @value.Value,
+  args : Array[@value.Value],
+  kwargs : Array[(String, @value.Value)],
+) -> Result[@value.Value, @errors.EvalError] {
+  let ctx = EvalContext::new(thread, Options::default())
+  let pos = @errors.Position::new("<call>", 0, 0)
+  Ok(call_value(ctx, func, args, kwargs, pos)) catch {
+    EvalErr(e) => Err(e)
+  }
 }
 
 ///|

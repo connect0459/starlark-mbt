@@ -16,7 +16,10 @@ pub fn CallFrame::pos(Self) -> Position
 pub struct CallStack {
   // private fields
 }
+pub fn CallStack::at(Self, Int) -> CallFrame?
+pub fn CallStack::length(Self) -> Int
 pub fn CallStack::new(Array[CallFrame]) -> Self
+pub fn CallStack::pop(Self) -> CallFrame?
 pub fn CallStack::to_string(Self) -> String
 
 pub struct EvalError {

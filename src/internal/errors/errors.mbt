@@ -162,6 +162,29 @@ pub fn CallStack::new(frames : Array[CallFrame]) -> CallStack {
 }
 
 ///|
+pub fn CallStack::length(self : CallStack) -> Int {
+  self.frames.length()
+}
+
+///|
+pub fn CallStack::at(self : CallStack, i : Int) -> CallFrame? {
+  if i < 0 || i >= self.frames.length() {
+    None
+  } else {
+    Some(self.frames[i])
+  }
+}
+
+///|
+pub fn CallStack::pop(self : CallStack) -> CallFrame? {
+  if self.frames.is_empty() {
+    None
+  } else {
+    Some(self.frames.unsafe_pop())
+  }
+}
+
+///|
 pub fn CallStack::to_string(self : CallStack) -> String {
   if self.frames.is_empty() {
     return ""

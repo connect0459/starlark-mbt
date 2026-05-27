@@ -107,3 +107,54 @@ test "Halt: is distinct from EvalError" {
   let h = Halt::new("cancelled")
   assert_eq(h.reason(), "cancelled")
 }
+
+///|
+test "CallStack: length returns frame count" {
+  let f1 = CallFrame::new("a", Position::new("f.star", 1, 1))
+  let f2 = CallFrame::new("b", Position::new("f.star", 2, 1))
+  let stack = CallStack::new([f1, f2])
+  assert_eq(stack.length(), 2)
+}
+
+///|
+test "CallStack: length returns zero for empty stack" {
+  let stack = CallStack::new([])
+  assert_eq(stack.length(), 0)
+}
+
+///|
+test "CallStack: at returns frame at valid index" {
+  let f1 = CallFrame::new("outer", Position::new("f.star", 1, 1))
+  let f2 = CallFrame::new("inner", Position::new("f.star", 5, 3))
+  let stack = CallStack::new([f1, f2])
+  assert_true(stack.at(0) is Some(_))
+  assert_eq(stack.at(0).unwrap().name(), "outer")
+  assert_eq(stack.at(1).unwrap().name(), "inner")
+}
+
+///|
+test "CallStack: at returns None for out-of-bounds index" {
+  let stack = CallStack::new([])
+  assert_true(stack.at(0) is None)
+  let f = CallFrame::new("f", Position::new("f.star", 1, 1))
+  let stack2 = CallStack::new([f])
+  assert_true(stack2.at(1) is None)
+  assert_true(stack2.at(-1) is None)
+}
+
+///|
+test "CallStack: pop removes and returns last frame" {
+  let f1 = CallFrame::new("outer", Position::new("f.star", 1, 1))
+  let f2 = CallFrame::new("inner", Position::new("f.star", 5, 3))
+  let stack = CallStack::new([f1, f2])
+  let popped = stack.pop()
+  assert_true(popped is Some(_))
+  assert_eq(popped.unwrap().name(), "inner")
+  assert_eq(stack.length(), 1)
+}
+
+///|
+test "CallStack: pop on empty stack returns None" {
+  let stack = CallStack::new([])
+  assert_true(stack.pop() is None)
+}
