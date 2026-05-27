@@ -89,11 +89,7 @@ test "CallStack: empty stack produces empty string" {
 test "EvalError: format shows message and backtrace" {
   let frame = CallFrame::{ name: "f", pos: Position::new("s.star", 3, 1) }
   let stack = CallStack::new([frame])
-  let err = EvalError::{
-    msg: "division by zero",
-    call_stack: stack,
-    cause: None,
-  }
+  let err = EvalError::with_stack("division by zero", stack)
   let s = err.backtrace()
   assert_true(s.contains("Error: division by zero"))
   assert_true(s.contains("s.star:3:1: in f"))
@@ -102,7 +98,7 @@ test "EvalError: format shows message and backtrace" {
 ///|
 test "EvalError: to_string returns just the message" {
   let stack = CallStack::new([])
-  let err = EvalError::{ msg: "oops", call_stack: stack, cause: None }
+  let err = EvalError::with_stack("oops", stack)
   assert_eq(err.to_string(), "oops")
 }
 

@@ -84,7 +84,7 @@ fn make_eval_error(ctx : EvalContext, msg : String) -> @errors.EvalError {
   for frame in ctx.thread.call_stack {
     frames.push(frame)
   }
-  { msg, call_stack: @errors.CallStack::new(frames), cause: None }
+  @errors.EvalError::with_stack(msg, @errors.CallStack::new(frames))
 }
 
 ///|

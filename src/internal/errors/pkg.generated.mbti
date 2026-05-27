@@ -17,14 +17,14 @@ pub struct CallStack {
 pub fn CallStack::new(Array[CallFrame]) -> Self
 pub fn CallStack::to_string(Self) -> String
 
-pub(all) struct EvalError {
+pub struct EvalError {
   msg : String
-  call_stack : CallStack
-  cause : String?
+  // private fields
 }
 pub fn EvalError::backtrace(Self) -> String
 pub fn EvalError::simple(String) -> Self
 pub fn EvalError::to_string(Self) -> String
+pub fn EvalError::with_stack(String, CallStack) -> Self
 
 pub(all) struct Halt {
   reason : String

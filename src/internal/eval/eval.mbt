@@ -259,12 +259,7 @@ pub fn exec_file(
 ) -> Result[Module, @errors.EvalError] {
   let file = match @parser.parse_file(filename, src) {
     Ok(f) => f
-    Err(e) =>
-      return Err({
-        msg: e.to_string(),
-        call_stack: @errors.CallStack::new([]),
-        cause: None,
-      })
+    Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   let ctx = EvalContext::new(thread, opts)
   let resolve_opts = @resolver.ResolveOptions::default()
@@ -276,7 +271,7 @@ pub fn exec_file(
   )
   if !resolved.errors.is_empty() {
     let msg = resolved.errors.map(fn(e) { e.to_string() }).join("; ")
-    return Err({ msg, call_stack: @errors.CallStack::new([]), cause: None })
+    return Err(@errors.EvalError::simple(msg))
   }
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
     EvalErr(e) => return Err(e)
@@ -302,12 +297,7 @@ pub fn exec_file_with_predeclared(
 ) -> Result[Module, @errors.EvalError] {
   let file = match @parser.parse_file(filename, src) {
     Ok(f) => f
-    Err(e) =>
-      return Err({
-        msg: e.to_string(),
-        call_stack: @errors.CallStack::new([]),
-        cause: None,
-      })
+    Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   let ctx = EvalContext::new(thread, opts)
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
@@ -321,7 +311,7 @@ pub fn exec_file_with_predeclared(
   )
   if !resolved.errors.is_empty() {
     let msg = resolved.errors.map(fn(e) { e.to_string() }).join("; ")
-    return Err({ msg, call_stack: @errors.CallStack::new([]), cause: None })
+    return Err(@errors.EvalError::simple(msg))
   }
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
     EvalErr(e) => return Err(e)
@@ -346,12 +336,7 @@ pub fn eval_expr(
 ) -> Result[@value.Value, @errors.EvalError] {
   let expr = match @parser.parse_expr(filename, src) {
     Ok(e) => e
-    Err(e) =>
-      return Err({
-        msg: e.to_string(),
-        call_stack: @errors.CallStack::new([]),
-        cause: None,
-      })
+    Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   let opts = Options::default()
   let ctx = EvalContext::new(thread, opts)

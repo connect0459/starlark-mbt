@@ -100,15 +100,19 @@ pub fn CallStack::to_string(self : CallStack) -> String {
 }
 
 ///|
-pub(all) struct EvalError {
+pub struct EvalError {
   msg : String
-  call_stack : CallStack
-  cause : String?
+  priv call_stack : CallStack
 }
 
 ///|
 pub fn EvalError::simple(msg : String) -> EvalError {
-  { msg, call_stack: CallStack::new([]), cause: None }
+  { msg, call_stack: CallStack::new([]) }
+}
+
+///|
+pub fn EvalError::with_stack(msg : String, call_stack : CallStack) -> EvalError {
+  { msg, call_stack }
 }
 
 ///|
