@@ -661,6 +661,16 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [x] **[LOW]** Third-pass magic-number audit — `Hashtable::clear()` was using literal `8`
       instead of `initial_capacity`; Thread constructors used literal `100` for
       `max_recursion_depth` instead of `default_max_recursion_depth`.
+- [x] **[LOW]** Fourth-pass quality audit — fixed float format specifier bugs (`%E`
+      uppercase not applied; `%G` uppercased NaN/Inf; `%e`/`%f`/`%g`/`%G` returned
+      `"inf"` instead of `"+inf"` for positive infinity); removed YAGNI `_unused : Bool`
+      parameter from `eval_cmp` (4 call sites); extracted `float_floor_mod` helper to
+      eliminate 3-way DRY violation in `eval_mod`; deduplicated `builtin_names` array in
+      `EvalContext::new` (was shadowing module-level constant); fixed `check_steps` to
+      always increment step counter regardless of whether a budget is set (previously
+      `execution_steps()` always returned 0 on uncapped threads); added 5 tests covering
+      `Thread.cancel`, `Thread.uncancel`, `Thread.execution_steps`, and
+      `Thread.with_step_budget`.
 
 ### Deferred API hardening (requires large eval refactoring)
 
