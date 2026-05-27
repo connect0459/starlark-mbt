@@ -401,14 +401,14 @@ test "list comprehension with if filter" {
 ///|
 test "empty file has no stmts" {
   let f = parse_f("")
-  assert_eq(f.stmts.length(), 0)
+  assert_eq(f.stmts().length(), 0)
 }
 
 ///|
 test "pass statement" {
   let f = parse_f("pass\n")
-  assert_eq(f.stmts.length(), 1)
-  match f.stmts[0] {
+  assert_eq(f.stmts().length(), 1)
+  match f.stmts()[0] {
     SPass(_) => ()
     _ => fail("expected SPass")
   }
@@ -417,7 +417,7 @@ test "pass statement" {
 ///|
 test "break statement" {
   let f = parse_f("break\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SBreak(_) => ()
     _ => fail("expected SBreak")
   }
@@ -426,7 +426,7 @@ test "break statement" {
 ///|
 test "continue statement" {
   let f = parse_f("continue\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SContinue(_) => ()
     _ => fail("expected SContinue")
   }
@@ -435,7 +435,7 @@ test "continue statement" {
 ///|
 test "return with value" {
   let f = parse_f("return 42\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SReturn(Some(ELiteral(LitInt(42L), _)), _) => ()
     _ => fail("expected SReturn(42)")
   }
@@ -444,7 +444,7 @@ test "return with value" {
 ///|
 test "return without value" {
   let f = parse_f("return\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SReturn(None, _) => ()
     _ => fail("expected SReturn(None)")
   }
@@ -453,7 +453,7 @@ test "return without value" {
 ///|
 test "simple assignment" {
   let f = parse_f("x = 1\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SAssign(EIdent("x", _), ELiteral(LitInt(1L), _), _) => ()
     _ => fail("expected x = 1")
   }
@@ -462,7 +462,7 @@ test "simple assignment" {
 ///|
 test "augmented assignment plus-equals" {
   let f = parse_f("x += 1\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SAugAssign(EIdent("x", _), AugAdd, ELiteral(LitInt(1L), _), _) => ()
     _ => fail("expected x += 1")
   }
@@ -471,7 +471,7 @@ test "augmented assignment plus-equals" {
 ///|
 test "expression statement" {
   let f = parse_f("f()\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SExpr(ECall(EIdent("f", _), _, _)) => ()
     _ => fail("expected SExpr(f())")
   }
@@ -482,7 +482,7 @@ test "expression statement" {
 ///|
 test "if statement with single-line body" {
   let f = parse_f("if x:\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SIf(EIdent("x", _), body, else_body, _) => {
       assert_eq(body.length(), 1)
       assert_eq(else_body.length(), 0)
@@ -494,7 +494,7 @@ test "if statement with single-line body" {
 ///|
 test "if else statement" {
   let f = parse_f("if x:\n  pass\nelse:\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SIf(_, true_body, false_body, _) => {
       assert_eq(true_body.length(), 1)
       assert_eq(false_body.length(), 1)
@@ -506,7 +506,7 @@ test "if else statement" {
 ///|
 test "for loop" {
   let f = parse_f("for x in lst:\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SFor(EIdent("x", _), EIdent("lst", _), body, _) =>
       assert_eq(body.length(), 1)
     _ => fail("expected for loop")
@@ -516,7 +516,7 @@ test "for loop" {
 ///|
 test "while loop" {
   let f = parse_f("while True:\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SWhile(ELiteral(LitBool(true), _), body, _) => assert_eq(body.length(), 1)
     _ => fail("expected while loop")
   }
@@ -525,7 +525,7 @@ test "while loop" {
 ///|
 test "function definition with no params" {
   let f = parse_f("def f():\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SDef("f", params, body, _) => {
       assert_eq(params.length(), 0)
       assert_eq(body.length(), 1)
@@ -537,7 +537,7 @@ test "function definition with no params" {
 ///|
 test "function definition with param and default" {
   let f = parse_f("def f(x, y=1):\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SDef("f", params, _, _) => {
       assert_eq(params.length(), 2)
       match params[0] {
@@ -556,7 +556,7 @@ test "function definition with param and default" {
 ///|
 test "function definition with star args" {
   let f = parse_f("def f(*args):\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SDef("f", params, _, _) => {
       assert_eq(params.length(), 1)
       match params[0] {
@@ -571,7 +571,7 @@ test "function definition with star args" {
 ///|
 test "function definition with kwargs" {
   let f = parse_f("def f(**kwargs):\n  pass\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SDef("f", params, _, _) =>
       match params[0] {
         ParamKwIdent("kwargs", _) => ()
@@ -584,7 +584,7 @@ test "function definition with kwargs" {
 ///|
 test "load statement with single binding" {
   let f = parse_f("load(\"mod.star\", \"sym\")\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SLoad("mod.star", bindings, _) => {
       assert_eq(bindings.length(), 1)
       let (bind_name, original) = bindings[0]
@@ -598,7 +598,7 @@ test "load statement with single binding" {
 ///|
 test "load statement with aliased binding" {
   let f = parse_f("load(\"mod.star\", alias=\"sym\")\n")
-  match f.stmts[0] {
+  match f.stmts()[0] {
     SLoad("mod.star", bindings, _) => {
       let (bind_name, original) = bindings[0]
       assert_eq(bind_name, "alias")

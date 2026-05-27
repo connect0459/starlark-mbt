@@ -127,7 +127,7 @@ fn Parser::parse_file_inner(
     }
     self.consume_newlines()
   }
-  { path, stmts }
+  @syntax.File::new(path, stmts)
 }
 
 // ---- Statements ----

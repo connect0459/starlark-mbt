@@ -273,7 +273,7 @@ pub fn exec_file(
     let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
-  ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
+  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
     EvalErr(e) => return Err(e)
   }
   let m = Module::new()
@@ -313,7 +313,7 @@ pub fn exec_file_with_predeclared(
     let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
-  ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
+  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
     EvalErr(e) => return Err(e)
   }
   let m = Module::new()

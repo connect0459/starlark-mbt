@@ -804,7 +804,7 @@ pub fn resolve(
   opts : ResolveOptions,
 ) -> ResolvedFile {
   let r = Resolver::new(is_predeclared, is_universal, opts)
-  r.walk_stmts(file.stmts)
+  r.walk_stmts(file.stmts())
   r.resolve_deferred_uses()
   { globals: r.module_globals, locals: r.module_locals, errors: r.errors }
 }

@@ -90,10 +90,12 @@ pub(all) enum Expr {
   EDictComp(Expr, Expr, Array[CompClause], @errors.Position)
 }
 
-pub(all) struct File {
-  path : String
-  stmts : Array[Stmt]
+pub struct File {
+  // private fields
 }
+pub fn File::new(String, Array[Stmt]) -> Self
+pub fn File::path(Self) -> String
+pub fn File::stmts(Self) -> Array[Stmt]
 
 pub(all) enum LiteralVal {
   LitNone

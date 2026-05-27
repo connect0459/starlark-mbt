@@ -124,9 +124,24 @@ pub(all) enum Stmt {
 }
 
 ///|
-pub(all) struct File {
-  path : String
-  stmts : Array[Stmt]
+pub struct File {
+  priv path : String
+  priv stmts : Array[Stmt]
+}
+
+///|
+pub fn File::new(path : String, stmts : Array[Stmt]) -> File {
+  { path, stmts }
+}
+
+///|
+pub fn File::path(self : File) -> String {
+  self.path
+}
+
+///|
+pub fn File::stmts(self : File) -> Array[Stmt] {
+  self.stmts
 }
 
 ///|
