@@ -1,6 +1,6 @@
-name: urllib.mbt
+name: starlark-mbt
 version: 0.1.0
-description: APM project for urllib.mbt
+description: APM project for starlark-mbt
 author: connect0459
 dependencies:
   apm:
