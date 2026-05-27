@@ -402,15 +402,29 @@ let float_formatting_src : String =
   #|
   #|# %e - impl returns float.to_string() for numbers (not printf %e format)
   #|assert.eq("%e" % nan, "nan")
+  #|assert.eq("%e" % inf, "+inf")
   #|assert.eq("%e" % neginf, "-inf")
+  #|
+  #|# %E - uppercase exponent for finite numbers; special values stay lowercase
+  #|assert.eq("%E" % nan, "nan")
+  #|assert.eq("%E" % inf, "+inf")
+  #|assert.eq("%E" % neginf, "-inf")
+  #|assert.eq("%E" % 1.23e45, "1.23E+45")
   #|
   #|# %f - impl returns float.to_string() for numbers
   #|assert.eq("%f" % nan, "nan")
+  #|assert.eq("%f" % inf, "+inf")
   #|assert.eq("%f" % neginf, "-inf")
   #|
   #|# %g - impl returns float.to_string() for numbers
   #|assert.eq("%g" % nan, "nan")
+  #|assert.eq("%g" % inf, "+inf")
   #|assert.eq("%g" % neginf, "-inf")
+  #|
+  #|# %G - special values stay lowercase
+  #|assert.eq("%G" % nan, "nan")
+  #|assert.eq("%G" % inf, "+inf")
+  #|assert.eq("%G" % neginf, "-inf")
   #|
   #|# str uses format_float (correct Starlark float formatting)
   #|assert.eq(str(0.0), "0.0")

@@ -609,7 +609,7 @@ fn percent_format(
           'f' => format_float_f(f)
           'g' | 'G' => {
             let s3 = format_float_g(f)
-            if spec == 'G' {
+            if spec == 'G' && !f.is_nan() && !f.is_inf() {
               s3.to_upper()
             } else {
               s3
@@ -696,12 +696,18 @@ fn format_float_e(f : Double, upper : Bool) -> String {
   if f.is_nan() {
     return "nan"
   }
-  if f.is_inf() {
-    return if f > 0.0 { "inf" } else { "-inf" }
+  if f == @double.infinity {
+    return "+inf"
+  }
+  if f == @double.neg_infinity {
+    return "-inf"
   }
   let s = f.to_string()
-  ignore(upper)
-  s
+  if upper {
+    s.to_upper()
+  } else {
+    s
+  }
 }
 
 ///|
@@ -709,8 +715,11 @@ fn format_float_f(f : Double) -> String {
   if f.is_nan() {
     return "nan"
   }
-  if f.is_inf() {
-    return if f > 0.0 { "inf" } else { "-inf" }
+  if f == @double.infinity {
+    return "+inf"
+  }
+  if f == @double.neg_infinity {
+    return "-inf"
   }
   f.to_string()
 }
@@ -720,8 +729,11 @@ fn format_float_g(f : Double) -> String {
   if f.is_nan() {
     return "nan"
   }
-  if f.is_inf() {
-    return if f > 0.0 { "inf" } else { "-inf" }
+  if f == @double.infinity {
+    return "+inf"
+  }
+  if f == @double.neg_infinity {
+    return "-inf"
   }
   f.to_string()
 }
