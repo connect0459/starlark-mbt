@@ -626,7 +626,7 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [x] `json.indent(string, prefix=, indent=)` — pretty-print JSON; empty containers inline
 - [x] Error reporting via descriptive string messages (starlark-go json also uses string errors,
       not Position-based; source Position not applicable for this extension)
-- [x] Lives as a separate package: `src/starlark/json/` (importable, not auto-injected)
+- [x] Lives as a separate package: `src/lib/json/` (importable, not auto-injected; moved from `src/json/`)
 - [x] Reference: `starlark-go/lib/json/json.go`
 
 ---
@@ -728,7 +728,7 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 
 ## Future work (out of initial release scope)
 
-- `math` extension library (`starlark-go/lib/math`)
+- `math` extension library (`starlark-go/lib/math`) — implemented as `src/lib/math/`
 - `time` extension library (`starlark-go/lib/time`)
 - `proto` extension library (`starlark-go/lib/proto`)
 - `starlarkstruct` — Bazel-style structs and modules
