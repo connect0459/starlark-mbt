@@ -1,5 +1,4 @@
 // Integration tests derived from misc.star.
-// Omitted: cyclic data structure tests (cycle detection not implemented).
 
 ///|
 let misc_ordered_cmp_src : String =
@@ -128,6 +127,62 @@ let misc_load_did_you_mean_chunked : String =
 ///|
 test "misc.star: load error suggests spelling correction (did you mean)" {
   let failures = run_chunked_string(misc_load_did_you_mean_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
+
+///|
+let misc_cycle_str_src : String =
+  #|load("assert.star", "assert")
+  #|cyclic = [1, 2, 3]
+  #|cyclic[1] = cyclic
+  #|assert.eq(str(cyclic), "[1, [...], 3]")
+  #|cyclic3 = [1, [2, 3]]
+  #|cyclic3[1][0] = cyclic3
+  #|assert.eq(str(cyclic3), "[1, [[...], 3]]")
+  #|cyclic4 = {"x": 1}
+  #|cyclic4["x"] = cyclic4
+  #|assert.eq(str(cyclic4), "{\"x\": {...}}")
+  #|cyclic5 = [0, {"x": 1}]
+  #|cyclic5[1]["x"] = cyclic5
+  #|assert.eq(str(cyclic5), "[0, {\"x\": [...]}]")
+
+///|
+test "misc.star: cyclic data structures render with ellipsis in str/repr" {
+  let errs = run_star_string(misc_cycle_str_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let misc_cycle_eq_chunked : String =
+  #|load("assert.star", "assert")
+  #|cyclic = [1, 2, 3]
+  #|cyclic[1] = cyclic
+  #|assert.fails(lambda: cyclic < cyclic, "maximum recursion")
+  #|---
+  #|load("assert.star", "assert")
+  #|cyclic = [1, 2, 3]
+  #|cyclic[1] = cyclic
+  #|assert.fails(lambda: cyclic == cyclic, "maximum recursion")
+  #|---
+  #|load("assert.star", "assert")
+  #|cyclic = [1, 2, 3]
+  #|cyclic[1] = cyclic
+  #|cyclic2 = [1, 2, 3]
+  #|cyclic2[1] = cyclic2
+  #|assert.fails(lambda: cyclic2 == cyclic, "maximum recursion")
+  #|---
+  #|load("assert.star", "assert")
+  #|cyclic5 = [0, {"x": 1}]
+  #|cyclic5[1]["x"] = cyclic5
+  #|assert.fails(lambda: cyclic5 == cyclic5, "maximum recursion")
+
+///|
+test "misc.star: cyclic data structures raise maximum recursion on equality/comparison" {
+  let failures = run_chunked_string(misc_cycle_eq_chunked)
   if failures.length() != 0 {
     fail(failures.join("\n"))
   }

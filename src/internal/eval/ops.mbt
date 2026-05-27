@@ -97,9 +97,16 @@ fn eval_binary(
     @syntax.BinaryOp::OpBitXor => eval_bitwise(ctx, lv, rv, pos, "lxor")
     @syntax.BinaryOp::OpLShift => eval_shift(ctx, lv, rv, pos, "lshift")
     @syntax.BinaryOp::OpRShift => eval_shift(ctx, lv, rv, pos, "rshift")
-    @syntax.BinaryOp::OpEq => @value.Value::Bool(@value.starlark_equals(lv, rv))
+    @syntax.BinaryOp::OpEq =>
+      match @value.starlark_equals_depth(lv, rv, 10) {
+        Ok(b) => @value.Value::Bool(b)
+        Err(e) => raise EvalErr(make_eval_error(ctx, e))
+      }
     @syntax.BinaryOp::OpNe =>
-      @value.Value::Bool(!@value.starlark_equals(lv, rv))
+      match @value.starlark_equals_depth(lv, rv, 10) {
+        Ok(b) => @value.Value::Bool(!b)
+        Err(e) => raise EvalErr(make_eval_error(ctx, e))
+      }
     @syntax.BinaryOp::OpLt => eval_cmp(ctx, lv, rv, pos, -1, true)
     @syntax.BinaryOp::OpLe => eval_cmp(ctx, lv, rv, pos, -1, false)
     @syntax.BinaryOp::OpGt => eval_cmp(ctx, lv, rv, pos, 1, true)

@@ -13,10 +13,10 @@ pub fn to_str(v : Value) -> String {
     Float(f) => format_float(f)
     String(s) => s.raw
     Bytes(b) => repr_bytes_val(b)
-    List(l) => repr_list(l)
+    List(l) => repr_inner(List(l), [], [])
     Tuple(t) => repr_tuple(t)
-    Dict(d) => repr_dict(d)
-    Set(s) => repr_set(s)
+    Dict(d) => repr_inner(Dict(d), [], [])
+    Set(s) => repr_inner(Set(s), [], [])
     Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) => repr(v)
   }
 }
@@ -212,18 +212,6 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 }
 
 ///|
-fn slice_cmp(a : ArrayView[Value], b : ArrayView[Value]) -> Result[Int, String] {
-  let len = if a.length() < b.length() { a.length() } else { b.length() }
-  for i in 0..<len {
-    match compare_values(a[i], b[i]) {
-      Err(e) => return Err(e)
-      Ok(c) => if c != 0 { return Ok(c) }
-    }
-  }
-  Ok(int64_signum(a.length().to_int64(), b.length().to_int64()))
-}
-
-///|
 fn int_float_cmp(n : Int64, f : Double) -> Int {
   if f != f {
     // f is NaN; NaN > everything, so int < NaN
@@ -240,6 +228,18 @@ fn int_float_cmp(n : Int64, f : Double) -> Int {
 
 ///|
 pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
+  compare_values_depth(a, b, 10)
+}
+
+///|
+pub fn compare_values_depth(
+  a : Value,
+  b : Value,
+  depth : Int,
+) -> Result[Int, String] {
+  if depth < 1 {
+    return Err("comparison exceeded maximum recursion depth")
+  }
   match (a, b) {
     (Bool(x), Bool(y)) =>
       Ok(
@@ -253,12 +253,126 @@ pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
     (Float(x), Float(y)) => Ok(float_cmp(x, y))
     (String(x), String(y)) => Ok(bytes_lex_cmp(x.bytes, y.bytes))
     (Bytes(x), Bytes(y)) => Ok(bytes_lex_cmp(x, y))
-    (Tuple(x), Tuple(y)) => slice_cmp(x[:], y[:])
-    (List(x), List(y)) => slice_cmp(x.items[:], y.items[:])
+    (Tuple(x), Tuple(y)) => slice_cmp_depth(x[:], y[:], depth - 1)
+    (List(x), List(y)) => slice_cmp_depth(x.items[:], y.items[:], depth - 1)
     (Int(n), Float(f)) => Ok(int_float_cmp(n, f))
     (Float(f), Int(n)) => Ok(-int_float_cmp(n, f))
     _ => Err("\{type_name(a)} < \{type_name(b)} not implemented")
   }
+}
+
+///|
+pub fn starlark_equals_depth(
+  a : Value,
+  b : Value,
+  depth : Int,
+) -> Result[Bool, String] {
+  if depth < 1 {
+    return Err("comparison exceeded maximum recursion depth")
+  }
+  match (a, b) {
+    (None, None) => Ok(true)
+    (Bool(x), Bool(y)) => Ok(x == y)
+    (Int(x), Int(y)) => Ok(x == y)
+    (Float(x), Float(y)) => Ok(if x.is_nan() { y.is_nan() } else { x == y })
+    (String(x), String(y)) => Ok(x.equals(y))
+    (Bytes(x), Bytes(y)) => Ok(x.equal(y))
+    (List(x), List(y)) => slice_equals_depth(x.items[:], y.items[:], depth - 1)
+    (Tuple(x), Tuple(y)) => slice_equals_depth(x[:], y[:], depth - 1)
+    (Int(n), Float(f)) => Ok(int_float_eq(n, f))
+    (Float(f), Int(n)) => Ok(int_float_eq(n, f))
+    (Dict(x), Dict(y)) => dict_equals_depth(x, y, depth - 1)
+    (Set(x), Set(y)) => set_equals_depth(x, y, depth - 1)
+    (Range(x), Range(y)) => Ok(range_equals(x, y))
+    (Function(_), Function(_)) => Ok(false)
+    (Builtin(x), Builtin(y)) => Ok(x.name == y.name)
+    (BoundMethod(x), BoundMethod(y)) => Ok(x.id == y.id)
+    (Module(_), Module(_)) => Ok(false)
+    _ => Ok(false)
+  }
+}
+
+///|
+fn slice_equals_depth(
+  a : ArrayView[Value],
+  b : ArrayView[Value],
+  depth : Int,
+) -> Result[Bool, String] {
+  if a.length() != b.length() {
+    return Ok(false)
+  }
+  for i in 0..<a.length() {
+    match starlark_equals_depth(a[i], b[i], depth) {
+      Err(e) => return Err(e)
+      Ok(false) => return Ok(false)
+      Ok(true) => ()
+    }
+  }
+  Ok(true)
+}
+
+///|
+fn slice_cmp_depth(
+  a : ArrayView[Value],
+  b : ArrayView[Value],
+  depth : Int,
+) -> Result[Int, String] {
+  let len = if a.length() < b.length() { a.length() } else { b.length() }
+  for i in 0..<len {
+    match compare_values_depth(a[i], b[i], depth) {
+      Err(e) => return Err(e)
+      Ok(c) => if c != 0 { return Ok(c) }
+    }
+  }
+  Ok(int64_signum(a.length().to_int64(), b.length().to_int64()))
+}
+
+///|
+fn dict_equals_depth(
+  a : StarlarkDict,
+  b : StarlarkDict,
+  depth : Int,
+) -> Result[Bool, String] {
+  if a.length() != b.length() {
+    return Ok(false)
+  }
+  let mut result : Result[Bool, String] = Ok(true)
+  a.each(fn(k, v) {
+    if result is Ok(true) {
+      match b.get(k) {
+        Ok(Some(bv)) =>
+          match starlark_equals_depth(v, bv, depth) {
+            Err(e) => result = Err(e)
+            Ok(false) => result = Ok(false)
+            Ok(true) => ()
+          }
+        _ => result = Ok(false)
+      }
+    }
+  })
+  result
+}
+
+///|
+fn set_equals_depth(
+  a : StarlarkSet,
+  b : StarlarkSet,
+  _depth : Int,
+) -> Result[Bool, String] {
+  if a.length() != b.length() {
+    return Ok(false)
+  }
+  let mut result : Result[Bool, String] = Ok(true)
+  a.each(fn(k) {
+    if result is Ok(true) {
+      match b.contains(k) {
+        Ok(true) => ()
+        Ok(false) => result = Ok(false)
+        Err(e) => result = Err(e)
+      }
+    }
+  })
+  result
 }
 
 ///|

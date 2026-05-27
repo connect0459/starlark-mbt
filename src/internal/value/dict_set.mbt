@@ -16,6 +16,14 @@ pub fn StarlarkDict::new() -> StarlarkDict {
 }
 
 ///|
+pub fn StarlarkDict::is_same_storage(
+  self : StarlarkDict,
+  other : StarlarkDict,
+) -> Bool {
+  physical_equal(self.ht, other.ht)
+}
+
+///|
 pub fn StarlarkDict::length(self : StarlarkDict) -> Int {
   self.ht.length()
 }

@@ -678,6 +678,15 @@ fn repr_bytes_val(b : Bytes) -> String {
 
 ///|
 pub fn repr(v : Value) -> String {
+  repr_inner(v, [], [])
+}
+
+///|
+fn repr_inner(
+  v : Value,
+  seen_lists : Array[StarlarkList],
+  seen_dicts : Array[StarlarkDict],
+) -> String {
   match v {
     None => "None"
     Bool(true) => "True"
@@ -686,10 +695,10 @@ pub fn repr(v : Value) -> String {
     Float(f) => format_float(f)
     String(s) => repr_string_val(s)
     Bytes(b) => repr_bytes_val(b)
-    List(l) => repr_list(l)
-    Tuple(t) => repr_tuple(t)
-    Dict(d) => repr_dict(d)
-    Set(s) => repr_set(s)
+    List(l) => repr_list_inner(l, seen_lists, seen_dicts)
+    Tuple(t) => repr_tuple_inner(t, seen_lists, seen_dicts)
+    Dict(d) => repr_dict_inner(d, seen_lists, seen_dicts)
+    Set(s) => repr_set_inner(s, seen_lists, seen_dicts)
     Range(r) => repr_range(r)
     Function(f) => "<function \{f.name}>"
     Builtin(f) => "<built-in function \{f.name}>"
@@ -713,10 +722,18 @@ fn repr_range(r : StarlarkRange) -> String {
 }
 
 ///|
-fn repr_dict(d : StarlarkDict) -> String {
+fn repr_dict_inner(
+  d : StarlarkDict,
+  seen_lists : Array[StarlarkList],
+  seen_dicts : Array[StarlarkDict],
+) -> String {
+  if seen_dicts.iter().any(fn(sd) { d.is_same_storage(sd) }) {
+    return "{...}"
+  }
   if d.length() == 0 {
     return "{}"
   }
+  seen_dicts.push(d)
   let buf = StringBuilder::new()
   buf.write_char('{')
   let mut first = true
@@ -725,16 +742,21 @@ fn repr_dict(d : StarlarkDict) -> String {
       buf.write_string(", ")
     }
     first = false
-    buf.write_string(repr(k))
+    buf.write_string(repr_inner(k, seen_lists, seen_dicts))
     buf.write_string(": ")
-    buf.write_string(repr(v))
+    buf.write_string(repr_inner(v, seen_lists, seen_dicts))
   })
   buf.write_char('}')
+  let _ = seen_dicts.pop()
   buf.to_string()
 }
 
 ///|
-fn repr_set(s : StarlarkSet) -> String {
+fn repr_set_inner(
+  s : StarlarkSet,
+  seen_lists : Array[StarlarkList],
+  seen_dicts : Array[StarlarkDict],
+) -> String {
   let buf = StringBuilder::new()
   buf.write_string("set([")
   let mut first = true
@@ -743,35 +765,58 @@ fn repr_set(s : StarlarkSet) -> String {
       buf.write_string(", ")
     }
     first = false
-    buf.write_string(repr(k))
+    buf.write_string(repr_inner(k, seen_lists, seen_dicts))
   })
   buf.write_string("])")
   buf.to_string()
 }
 
 ///|
-fn repr_list(l : StarlarkList) -> String {
+fn repr_list_inner(
+  l : StarlarkList,
+  seen_lists : Array[StarlarkList],
+  seen_dicts : Array[StarlarkDict],
+) -> String {
+  if seen_lists.iter().any(fn(sl) { l.is_same_storage(sl) }) {
+    return "[...]"
+  }
+  seen_lists.push(l)
   let buf = StringBuilder::new()
   buf.write_char('[')
   for i in 0..<l.items.length() {
     if i > 0 {
       buf.write_string(", ")
     }
-    buf.write_string(repr(l.items[i]))
+    buf.write_string(repr_inner(l.items[i], seen_lists, seen_dicts))
   }
   buf.write_char(']')
+  let _ = seen_lists.pop()
   buf.to_string()
 }
 
 ///|
+fn repr_tuple_inner(
+  t : Array[Value],
+  seen_lists : Array[StarlarkList],
+  seen_dicts : Array[StarlarkDict],
+) -> String {
+  repr_tuple_with(t, fn(v) { repr_inner(v, seen_lists, seen_dicts) })
+}
+
+///|
 fn repr_tuple(t : Array[Value]) -> String {
+  repr_tuple_with(t, repr)
+}
+
+///|
+fn repr_tuple_with(t : Array[Value], f : (Value) -> String) -> String {
   let buf = StringBuilder::new()
   buf.write_char('(')
   for i in 0..<t.length() {
     if i > 0 {
       buf.write_string(", ")
     }
-    buf.write_string(repr(t[i]))
+    buf.write_string(f(t[i]))
   }
   if t.length() == 1 {
     buf.write_char(',')
