@@ -36,7 +36,7 @@ fn with_universal(names : Array[String]) -> (String) -> Bool {
 
 ///|
 fn has_error(result : ResolvedFile, substr : String) -> Bool {
-  result.errors.any(fn(e) { e.msg().contains(substr) })
+  result.errors().any(fn(e) { e.msg().contains(substr) })
 }
 
 // --- Basic resolution: valid programs ---
@@ -50,7 +50,7 @@ test "resolve: accepts empty file" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -62,7 +62,7 @@ test "resolve: accepts simple global assignment" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -74,7 +74,7 @@ test "resolve: accepts use of previously defined global" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -86,7 +86,7 @@ test "resolve: allows forward reference to global in function body" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -98,7 +98,7 @@ test "resolve: accepts use of predeclared name" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -110,7 +110,7 @@ test "resolve: accepts use of universal name" {
     with_universal(["len"]),
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -122,7 +122,7 @@ test "resolve: accepts local variable defined in function" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -134,7 +134,7 @@ test "resolve: local variable shadows global of same name" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 // --- Undefined variable detection ---
@@ -168,7 +168,7 @@ test "resolve: reports error for undefined variable in function" {
 ///|
 test "resolve: rejects global reassignment when flag is off" {
   let f = parse_or_fail("x = 1\nx = 2")
-  let opts = { ..ResolveOptions::default(), allow_global_reassign: false }
+  let opts = ResolveOptions::default().with_allow_global_reassign(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign global x"))
 }
@@ -176,9 +176,9 @@ test "resolve: rejects global reassignment when flag is off" {
 ///|
 test "resolve: allows global reassignment when flag is on" {
   let f = parse_or_fail("x = 1\nx = 2")
-  let opts = { ..ResolveOptions::default(), allow_global_reassign: true }
+  let opts = ResolveOptions::default().with_allow_global_reassign(true)
   let result = resolve(f, no_predeclared, no_universal, opts)
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 // --- Top-level control flow ---
@@ -186,7 +186,7 @@ test "resolve: allows global reassignment when flag is on" {
 ///|
 test "resolve: rejects top-level if when flag is off" {
   let f = parse_or_fail("if True:\n  x = 1")
-  let opts = { ..ResolveOptions::default(), allow_top_level_control: false }
+  let opts = ResolveOptions::default().with_allow_top_level_control(false)
   let result = resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "if"))
 }
@@ -194,15 +194,15 @@ test "resolve: rejects top-level if when flag is off" {
 ///|
 test "resolve: accepts top-level if when flag is on" {
   let f = parse_or_fail("if True:\n  x = 1")
-  let opts = { ..ResolveOptions::default(), allow_top_level_control: true }
+  let opts = ResolveOptions::default().with_allow_top_level_control(true)
   let result = resolve(f, no_predeclared, only_universal, opts)
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
 test "resolve: rejects top-level for when flag is off" {
   let f = parse_or_fail("for x in []:\n  pass")
-  let opts = { ..ResolveOptions::default(), allow_top_level_control: false }
+  let opts = ResolveOptions::default().with_allow_top_level_control(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "for"))
 }
@@ -210,11 +210,9 @@ test "resolve: rejects top-level for when flag is off" {
 ///|
 test "resolve: rejects top-level while when flag is off" {
   let f = parse_or_fail("while True:\n  pass")
-  let opts = {
-    ..ResolveOptions::default(),
-    allow_top_level_control: false,
-    allow_recursion: true,
-  }
+  let opts = ResolveOptions::default()
+    .with_allow_top_level_control(false)
+    .with_allow_recursion(true)
   let result = resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "while"))
 }
@@ -222,9 +220,9 @@ test "resolve: rejects top-level while when flag is off" {
 ///|
 test "resolve: accepts top-level while when flag is on" {
   let f = parse_or_fail("while True:\n  pass")
-  let opts = { ..ResolveOptions::default(), allow_top_level_control: true }
+  let opts = ResolveOptions::default().with_allow_top_level_control(true)
   let result = resolve(f, no_predeclared, only_universal, opts)
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 // --- Function parameters ---
@@ -253,7 +251,7 @@ test "resolve: rejects positional param after star" {
   // *args followed by non-kw parameter is a syntax error in some cases
   // In Starlark, positional params cannot follow *args — kw-only params come after *
   // This should be valid in Starlark (x is keyword-only)
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -265,7 +263,7 @@ test "resolve: rejects positional param after star-bare" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 // --- Load statement ---
@@ -291,7 +289,7 @@ test "resolve: accepts load at module scope" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
@@ -311,7 +309,7 @@ test "resolve: rejects reassignment of load-imported name" {
 ///|
 test "resolve: rejects load-imported reassignment even when allow_global_reassign is on" {
   let f = parse_or_fail("load('m', 'x')\nx = 1")
-  let opts = { ..ResolveOptions::default(), allow_global_reassign: true }
+  let opts = ResolveOptions::default().with_allow_global_reassign(true)
   let result = resolve(f, no_predeclared, no_universal, opts)
   assert_true(
     has_error(result, "cannot reassign name 'x' imported from a load statement"),
@@ -351,15 +349,15 @@ test "resolve: load with alias rejects reassignment of alias" {
 ///|
 test "resolve: accepts recursion when flag is on" {
   let f = parse_or_fail("def f(n):\n  return f(n - 1)")
-  let opts = { ..ResolveOptions::default(), allow_recursion: true }
+  let opts = ResolveOptions::default().with_allow_recursion(true)
   let result = resolve(f, no_predeclared, no_universal, opts)
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }
 
 ///|
 test "resolve: rejects direct recursion when flag is off" {
   let f = parse_or_fail("def f(n):\n  return f(n - 1)")
-  let opts = { ..ResolveOptions::default(), allow_recursion: false }
+  let opts = ResolveOptions::default().with_allow_recursion(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "recursion"))
 }
@@ -375,8 +373,8 @@ test "resolve: collects global variable names" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
-  assert_eq(result.globals.length(), 3)
+  assert_true(result.is_valid())
+  assert_eq(result.globals().length(), 3)
 }
 
 ///|
@@ -388,9 +386,9 @@ test "resolve: function def adds its name to globals" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
-  assert_eq(result.globals.length(), 1)
-  assert_eq(result.globals[0].name, "add")
+  assert_true(result.is_valid())
+  assert_eq(result.globals().length(), 1)
+  assert_eq(result.globals()[0].name(), "add")
 }
 
 ///|
@@ -402,5 +400,5 @@ test "resolve: accepts call to predeclared 'module' function" {
     no_universal,
     ResolveOptions::default(),
   )
-  assert_true(result.errors.is_empty())
+  assert_true(result.is_valid())
 }

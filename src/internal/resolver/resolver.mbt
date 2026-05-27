@@ -15,23 +15,38 @@ pub(all) enum Scope {
 }
 
 ///|
-pub(all) struct Binding {
-  name : String
-  pos : @errors.Position
-  scope : Scope
+pub struct Binding {
+  priv name : String
+  priv pos : @errors.Position
+  priv scope : Scope
 }
 
 ///|
-pub(all) struct ResolveOptions {
-  allow_set : Bool
-  allow_recursion : Bool
-  allow_lambda : Bool
-  allow_while : Bool
-  allow_bytes : Bool
-  allow_float : Bool
-  allow_global_reassign : Bool
-  allow_top_level_control : Bool
-  load_binds_globally : Bool
+pub fn Binding::name(self : Binding) -> String {
+  self.name
+}
+
+///|
+pub fn Binding::pos(self : Binding) -> @errors.Position {
+  self.pos
+}
+
+///|
+pub fn Binding::scope(self : Binding) -> Scope {
+  self.scope
+}
+
+///|
+pub struct ResolveOptions {
+  priv allow_set : Bool
+  priv allow_recursion : Bool
+  priv allow_lambda : Bool
+  priv allow_while : Bool
+  priv allow_bytes : Bool
+  priv allow_float : Bool
+  priv allow_global_reassign : Bool
+  priv allow_top_level_control : Bool
+  priv load_binds_globally : Bool
 }
 
 ///|
@@ -50,10 +65,99 @@ pub fn ResolveOptions::default() -> ResolveOptions {
 }
 
 ///|
-pub(all) struct ResolvedFile {
-  globals : Array[Binding]
-  locals : Array[Binding]
-  errors : Array[@errors.ResolveError]
+pub fn ResolveOptions::allow_set(self : ResolveOptions) -> Bool {
+  self.allow_set
+}
+
+///|
+pub fn ResolveOptions::allow_recursion(self : ResolveOptions) -> Bool {
+  self.allow_recursion
+}
+
+///|
+pub fn ResolveOptions::allow_lambda(self : ResolveOptions) -> Bool {
+  self.allow_lambda
+}
+
+///|
+pub fn ResolveOptions::allow_while(self : ResolveOptions) -> Bool {
+  self.allow_while
+}
+
+///|
+pub fn ResolveOptions::allow_bytes(self : ResolveOptions) -> Bool {
+  self.allow_bytes
+}
+
+///|
+pub fn ResolveOptions::allow_float(self : ResolveOptions) -> Bool {
+  self.allow_float
+}
+
+///|
+pub fn ResolveOptions::allow_global_reassign(self : ResolveOptions) -> Bool {
+  self.allow_global_reassign
+}
+
+///|
+pub fn ResolveOptions::allow_top_level_control(self : ResolveOptions) -> Bool {
+  self.allow_top_level_control
+}
+
+///|
+pub fn ResolveOptions::load_binds_globally(self : ResolveOptions) -> Bool {
+  self.load_binds_globally
+}
+
+///|
+pub fn ResolveOptions::with_allow_global_reassign(
+  self : ResolveOptions,
+  v : Bool,
+) -> ResolveOptions {
+  { ..self, allow_global_reassign: v }
+}
+
+///|
+pub fn ResolveOptions::with_allow_top_level_control(
+  self : ResolveOptions,
+  v : Bool,
+) -> ResolveOptions {
+  { ..self, allow_top_level_control: v }
+}
+
+///|
+pub fn ResolveOptions::with_allow_recursion(
+  self : ResolveOptions,
+  v : Bool,
+) -> ResolveOptions {
+  { ..self, allow_recursion: v }
+}
+
+///|
+pub struct ResolvedFile {
+  priv globals : Array[Binding]
+  priv locals : Array[Binding]
+  priv errors : Array[@errors.ResolveError]
+}
+
+///|
+pub fn ResolvedFile::is_valid(self : ResolvedFile) -> Bool {
+  self.errors.is_empty()
+}
+
+///|
+pub fn ResolvedFile::errors(self : ResolvedFile) -> Array[@errors.ResolveError] {
+  self.errors
+}
+
+///|
+pub fn ResolvedFile::globals(self : ResolvedFile) -> Array[Binding] {
+  self.globals
+}
+
+///|
+pub fn ResolvedFile::locals(self : ResolvedFile) -> Array[Binding] {
+  self.locals
 }
 
 // --- Internal types ---

@@ -12,30 +12,37 @@ pub fn resolve(@syntax.File, (String) -> Bool, (String) -> Bool, ResolveOptions)
 // Errors
 
 // Types and methods
-pub(all) struct Binding {
-  name : String
-  pos : @errors.Position
-  scope : Scope
+pub struct Binding {
+  // private fields
 }
+pub fn Binding::name(Self) -> String
+pub fn Binding::pos(Self) -> @errors.Position
+pub fn Binding::scope(Self) -> Scope
 
-pub(all) struct ResolveOptions {
-  allow_set : Bool
-  allow_recursion : Bool
-  allow_lambda : Bool
-  allow_while : Bool
-  allow_bytes : Bool
-  allow_float : Bool
-  allow_global_reassign : Bool
-  allow_top_level_control : Bool
-  load_binds_globally : Bool
+pub struct ResolveOptions {
+  // private fields
 }
+pub fn ResolveOptions::allow_bytes(Self) -> Bool
+pub fn ResolveOptions::allow_float(Self) -> Bool
+pub fn ResolveOptions::allow_global_reassign(Self) -> Bool
+pub fn ResolveOptions::allow_lambda(Self) -> Bool
+pub fn ResolveOptions::allow_recursion(Self) -> Bool
+pub fn ResolveOptions::allow_set(Self) -> Bool
+pub fn ResolveOptions::allow_top_level_control(Self) -> Bool
+pub fn ResolveOptions::allow_while(Self) -> Bool
 pub fn ResolveOptions::default() -> Self
+pub fn ResolveOptions::load_binds_globally(Self) -> Bool
+pub fn ResolveOptions::with_allow_global_reassign(Self, Bool) -> Self
+pub fn ResolveOptions::with_allow_recursion(Self, Bool) -> Self
+pub fn ResolveOptions::with_allow_top_level_control(Self, Bool) -> Self
 
-pub(all) struct ResolvedFile {
-  globals : Array[Binding]
-  locals : Array[Binding]
-  errors : Array[@errors.ResolveError]
+pub struct ResolvedFile {
+  // private fields
 }
+pub fn ResolvedFile::errors(Self) -> Array[@errors.ResolveError]
+pub fn ResolvedFile::globals(Self) -> Array[Binding]
+pub fn ResolvedFile::is_valid(Self) -> Bool
+pub fn ResolvedFile::locals(Self) -> Array[Binding]
 
 pub(all) enum Scope {
   Undefined

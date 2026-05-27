@@ -269,8 +269,8 @@ pub fn exec_file(
     fn(name) { name == "None" || name == "True" || name == "False" },
     resolve_opts,
   )
-  if !resolved.errors.is_empty() {
-    let msg = resolved.errors.map(fn(e) { e.to_string() }).join("; ")
+  if !resolved.is_valid() {
+    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
@@ -309,8 +309,8 @@ pub fn exec_file_with_predeclared(
     fn(name) { name == "None" || name == "True" || name == "False" },
     resolve_opts,
   )
-  if !resolved.errors.is_empty() {
-    let msg = resolved.errors.map(fn(e) { e.to_string() }).join("; ")
+  if !resolved.is_valid() {
+    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts)) catch {
