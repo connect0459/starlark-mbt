@@ -13,6 +13,15 @@ let empty_idx : Int = -1
 let hash_zero_sentinel : UInt = 1U
 
 ///|
+let initial_capacity : Int = 8
+
+///|
+let load_factor_num : Int = 2
+
+///|
+let load_factor_den : Int = 3
+
+///|
 priv struct HEntry[K, V] {
   mut hash : UInt
   mut key : K
@@ -46,7 +55,7 @@ pub fn[K, V] Hashtable::new(
   zero_val : V,
 ) -> Hashtable[K, V] {
   {
-    slots: Array::make(8, empty_idx),
+    slots: Array::make(initial_capacity, empty_idx),
     entries: [],
     free_head: empty_idx,
     head: empty_idx,
@@ -177,7 +186,7 @@ fn[K, V] Hashtable::alloc_entry(self : Hashtable[K, V]) -> Int {
 ///|
 fn[K, V] Hashtable::maybe_grow(self : Hashtable[K, V]) -> Unit {
   let cap = self.slots.length()
-  if self.live_count * 3 >= cap * 2 {
+  if self.live_count * load_factor_den >= cap * load_factor_num {
     let new_cap = cap * 2
     let new_slots = Array::make(new_cap, empty_idx)
     let mut i = self.head

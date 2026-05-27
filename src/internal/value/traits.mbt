@@ -79,6 +79,27 @@ let fnv_offset_basis : UInt = 2166136261U
 ///|
 let fnv_prime : UInt = 16777619U
 
+// starlark-go integer hash multiplier: 12582917 * (lo + 3)
+
+///|
+let int_hash_mult : UInt = 12582917U
+
+// starlark-go sentinel hash for NaN/Inf floats (golden ratio × 10^6)
+
+///|
+let float_special_hash : UInt = 1618033U
+
+// Python/starlark-go tuple hash algorithm constants
+
+///|
+let tuple_hash_init : UInt = 0x345678U
+
+///|
+let tuple_hash_prime : UInt = 1000003U
+
+///|
+let tuple_hash_step_base : UInt = 82520U
+
 ///|
 fn fnv1a(bytes : Bytes) -> UInt {
   let mut h = fnv_offset_basis
@@ -91,33 +112,29 @@ fn fnv1a(bytes : Bytes) -> UInt {
 
 ///|
 fn hash_int64(n : Int64) -> UInt {
-  // Matches starlark-go: 12582917 * uint32(lo+3)
-  // Take lower 32 bits of n (two's complement), add 3, multiply.
   let lo = n.to_int().reinterpret_as_uint()
-  12582917U * (lo + 3U)
+  int_hash_mult * (lo + 3U)
 }
 
 ///|
 fn hash_float(f : Double) -> UInt {
   if f.is_nan() || f.is_inf() {
-    return 1618033U
+    return float_special_hash
   }
-  // Finite: truncate toward zero to Int64, hash as Int
   hash_int64(f.to_int64())
 }
 
 ///|
 fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
-  // Python's tuple hash algorithm (same as starlark-go)
-  let mut x : UInt = 0x345678U
-  let mut mult : UInt = 1000003U
+  let mut x : UInt = tuple_hash_init
+  let mut mult : UInt = tuple_hash_prime
   let n = (t.length() + t.length()).reinterpret_as_uint()
   for elem in t {
     match starlark_hash(elem) {
       Err(e) => return Err(e)
       Ok(y) => {
         x = x ^ (y * mult)
-        mult = mult + 82520U + n
+        mult = mult + tuple_hash_step_base + n
       }
     }
   }

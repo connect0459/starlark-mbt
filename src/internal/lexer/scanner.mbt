@@ -2,6 +2,9 @@
 // Converts UTF-8 source text into a sequence of ScannedToken values.
 
 ///|
+let tab_width : Int = 8
+
+///|
 pub(all) struct ScannedToken {
   tok : Token
   pos : @errors.Position
@@ -107,7 +110,7 @@ fn Scanner::count_indent(self : Scanner) -> Int {
       col += 1
       self.read_byte() |> ignore
     } else if b == b'\t' {
-      col += 8 - col % 8
+      col += tab_width - col % tab_width
       self.read_byte() |> ignore
     } else {
       break
