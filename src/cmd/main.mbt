@@ -60,10 +60,23 @@ fn run_file(filepath : String) -> Int {
 }
 
 ///|
+fn run_repl() -> Unit {
+  let thread = @eval.Thread::with_loader("REPL", @repl.make_load("."))
+  let globals = @value.StarlarkDict::new()
+  if @repl.is_terminal() {
+    println("Welcome to Starlark (connect0459/starlark)")
+  }
+  @repl.run(thread, globals)
+  if @repl.is_terminal() {
+    println("")
+  }
+}
+
+///|
 fn main {
   let args = @sys.get_cli_args()
   if args.length() < 2 {
-    println("usage: starlark <file.star>")
+    run_repl()
     return
   }
   let filepath = args[1]

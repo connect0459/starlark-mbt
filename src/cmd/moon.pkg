@@ -4,6 +4,8 @@ import {
   "moonbitlang/x/path",
   "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/eval",
+  "connect0459/starlark/internal/value",
+  "connect0459/starlark/repl",
 }
 
 options(
