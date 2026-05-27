@@ -40,10 +40,10 @@ pub fn StarlarkString::to_bytes(self : StarlarkString) -> Bytes {
 }
 
 ///|
-pub(all) struct StarlarkList {
-  mut items : Array[Value]
-  mut frozen : Bool
-  mut itercount : Int
+pub struct StarlarkList {
+  priv mut items : Array[Value]
+  priv mut frozen : Bool
+  priv mut itercount : Int
 }
 
 ///|
@@ -72,6 +72,148 @@ pub fn StarlarkList::check_mutable(
     Err("cannot \{verb} list during iteration")
   } else {
     Ok(())
+  }
+}
+
+///|
+pub fn StarlarkList::length(self : StarlarkList) -> Int {
+  self.items.length()
+}
+
+///|
+pub fn StarlarkList::is_empty(self : StarlarkList) -> Bool {
+  self.items.is_empty()
+}
+
+///|
+pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value {
+  self.items[i]
+}
+
+///|
+pub fn StarlarkList::iter(self : StarlarkList) -> Iter[Value] {
+  self.items.iter()
+}
+
+///|
+pub fn StarlarkList::eachi(
+  self : StarlarkList,
+  f : (Int, Value) -> Unit,
+) -> Unit {
+  self.items.eachi(f)
+}
+
+///|
+pub fn StarlarkList::is_same_storage(
+  self : StarlarkList,
+  other : StarlarkList,
+) -> Bool {
+  physical_equal(self.items, other.items)
+}
+
+///|
+pub fn StarlarkList::push(
+  self : StarlarkList,
+  v : Value,
+) -> Result[Unit, String] {
+  match self.check_mutable("append to") {
+    Err(e) => Err(e)
+    Ok(_) => {
+      self.items.push(v)
+      Ok(())
+    }
+  }
+}
+
+///|
+pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
+  match self.check_mutable("pop from") {
+    Err(e) => Err(e)
+    Ok(_) => Ok(self.items.pop())
+  }
+}
+
+///|
+pub fn StarlarkList::pop_at(
+  self : StarlarkList,
+  i : Int,
+) -> Result[Value, String] {
+  match self.check_mutable("remove from") {
+    Err(e) => Err(e)
+    Ok(_) => Ok(self.items.remove(i))
+  }
+}
+
+///|
+pub fn StarlarkList::insert(
+  self : StarlarkList,
+  i : Int,
+  v : Value,
+) -> Result[Unit, String] {
+  match self.check_mutable("insert into") {
+    Err(e) => Err(e)
+    Ok(_) => {
+      self.items.insert(i, v)
+      Ok(())
+    }
+  }
+}
+
+///|
+pub fn StarlarkList::set(
+  self : StarlarkList,
+  i : Int,
+  v : Value,
+) -> Result[Unit, String] {
+  match self.check_mutable("assign to element of") {
+    Err(e) => Err(e)
+    Ok(_) => {
+      self.items[i] = v
+      Ok(())
+    }
+  }
+}
+
+///|
+pub fn StarlarkList::clear(self : StarlarkList) -> Result[Unit, String] {
+  match self.check_mutable("clear") {
+    Err(e) => Err(e)
+    Ok(_) => {
+      self.items.clear()
+      Ok(())
+    }
+  }
+}
+
+///|
+pub fn StarlarkList::sort_by(
+  self : StarlarkList,
+  cmp : (Value, Value) -> Int,
+) -> Result[Unit, String] {
+  match self.check_mutable("sort") {
+    Err(e) => Err(e)
+    Ok(_) => {
+      self.items.sort_by(cmp)
+      Ok(())
+    }
+  }
+}
+
+///|
+pub fn StarlarkList::reverse(self : StarlarkList) -> Result[Unit, String] {
+  match self.check_mutable("reverse") {
+    Err(e) => Err(e)
+    Ok(_) => {
+      let n = self.items.length()
+      let mut i = 0
+      while i < n / 2 {
+        let tmp = self.items[i]
+        self.items[i] = self.items[n - 1 - i]
+        self.items[n - 1 - i] = tmp
+        i += 1
+      }
+      Ok(())
+    }
   }
 }
 

@@ -140,10 +140,10 @@ fn eval_add(
       @value.Value::StrVal(@value.StarlarkString::new(a.raw + b.raw))
     (@value.Value::ListVal(a), @value.Value::ListVal(b)) => {
       let items : Array[@value.Value] = []
-      for v in a.items {
+      for v in a.iter() {
         items.push(v)
       }
-      for v in b.items {
+      for v in b.iter() {
         items.push(v)
       }
       @value.Value::ListVal(@value.StarlarkList::new(items))
@@ -303,13 +303,13 @@ fn repeat_list(
     return Err("repeat count \{n} too large")
   }
   let count = n.to_int()
-  let elem_len = l.items.length()
+  let elem_len = l.length()
   if elem_len > 0 && count > max_alloc / elem_len {
     return Err("excessive repeat (\{elem_len} * \{count} elements)")
   }
   let items : Array[@value.Value] = []
   for _ in 0..<count {
-    for v in l.items {
+    for v in l.iter() {
       items.push(v)
     }
   }
@@ -989,7 +989,7 @@ fn in_op(
 ) -> @value.Value raise EvalErr {
   match haystack {
     @value.Value::ListVal(l) => {
-      for item in l.items {
+      for item in l.iter() {
         if @value.starlark_equals(needle, item) {
           return @value.Value::BoolVal(true)
         }
@@ -1115,8 +1115,8 @@ fn eval_index(
     @value.Value::ListVal(l) =>
       match idx {
         @value.Value::IntVal(i) => {
-          let j = check(ctx, adjust_index(i, l.items.length()))
-          l.items[j]
+          let j = check(ctx, adjust_index(i, l.length()))
+          l.get(j)
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "list indices must be integers"))
@@ -1185,17 +1185,15 @@ fn set_index(
   _pos : @errors.Position,
 ) -> Unit raise EvalErr {
   match obj {
-    @value.Value::ListVal(l) => {
-      check(ctx, l.check_mutable("assign to element of"))
+    @value.Value::ListVal(l) =>
       match idx {
         @value.Value::IntVal(i) => {
-          let j = check(ctx, adjust_index(i, l.items.length()))
-          l.items[j] = val
+          let j = check(ctx, adjust_index(i, l.length()))
+          check(ctx, l.set(j, val))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "list indices must be integers"))
       }
-    }
     @value.Value::DictVal(d) => check(ctx, d.set(idx, val))
     _ =>
       raise EvalErr(
@@ -1224,19 +1222,19 @@ fn eval_slice(
   }
   match obj {
     @value.Value::ListVal(l) => {
-      let len = l.items.length()
+      let len = l.length()
       let (start, stop) = normalize_slice(lo_opt, hi_opt, len, step)
       let items : Array[@value.Value] = []
       if step > 0 {
         let mut i = start
         while i < stop {
-          items.push(l.items[i])
+          items.push(l.get(i))
           i += step
         }
       } else {
         let mut i = start
         while i > stop {
-          items.push(l.items[i])
+          items.push(l.get(i))
           i += step
         }
       }

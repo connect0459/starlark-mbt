@@ -140,7 +140,7 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
     let item = pos_args[1]
     let found = match container {
       @value.Value::ListVal(l) =>
-        l.items.iter().any(fn(v) { @value.starlark_equals(v, item) })
+        l.iter().any(fn(v) { @value.starlark_equals(v, item) })
       @value.Value::TupleVal(t) =>
         t.iter().any(fn(v) { @value.starlark_equals(v, item) })
       @value.Value::StrVal(s) =>

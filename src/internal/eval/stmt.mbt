@@ -153,7 +153,13 @@ fn assign_to(
     @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) => {
       let items : Array[@value.Value] = match value {
         @value.Value::TupleVal(t) => t
-        @value.Value::ListVal(l) => l.items
+        @value.Value::ListVal(l) => {
+          let arr : Array[@value.Value] = []
+          for v in l.iter() {
+            arr.push(v)
+          }
+          arr
+        }
         _ => {
           let it = match @value.iterate(value) {
             Ok(it) => it
@@ -245,7 +251,7 @@ fn eval_aug_val(
           while true {
             match iter.next() {
               None => break
-              Some(item) => l.items.push(item)
+              Some(item) => l.push(item) |> ignore
             }
           }
           iter.done()

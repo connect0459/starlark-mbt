@@ -45,7 +45,7 @@ test "eval_expr: string repeated zero times yields empty string" {
 ///|
 test "eval_expr: list concatenation merges both lists" {
   match eval_op("[1, 2] + [3, 4]") {
-    Ok(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 4)
+    Ok(@value.Value::ListVal(l)) => assert_eq(l.length(), 4)
     _ => assert_true(false)
   }
 }
@@ -53,7 +53,7 @@ test "eval_expr: list concatenation merges both lists" {
 ///|
 test "eval_expr: list repeated by integer count" {
   match eval_op("[1, 2] * 3") {
-    Ok(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 6)
+    Ok(@value.Value::ListVal(l)) => assert_eq(l.length(), 6)
     _ => assert_true(false)
   }
 }
@@ -276,9 +276,9 @@ test "eval_expr: list subscript out of range raises error" {
 test "eval_expr: list slice with positive bounds" {
   match eval_op("[1, 2, 3, 4, 5][1:4]") {
     Ok(@value.Value::ListVal(l)) => {
-      assert_eq(l.items.length(), 3)
-      assert_true(l.items[0] == @value.Value::IntVal(2L))
-      assert_true(l.items[2] == @value.Value::IntVal(4L))
+      assert_eq(l.length(), 3)
+      assert_true(l.get(0) == @value.Value::IntVal(2L))
+      assert_true(l.get(2) == @value.Value::IntVal(4L))
     }
     _ => assert_true(false)
   }
@@ -287,7 +287,7 @@ test "eval_expr: list slice with positive bounds" {
 ///|
 test "eval_expr: list slice with omitted bounds returns full copy" {
   match eval_op("[1, 2, 3][:]") {
-    Ok(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 3)
+    Ok(@value.Value::ListVal(l)) => assert_eq(l.length(), 3)
     _ => assert_true(false)
   }
 }
@@ -296,9 +296,9 @@ test "eval_expr: list slice with omitted bounds returns full copy" {
 test "eval_expr: list slice with negative step reverses list" {
   match eval_op("[1, 2, 3, 4, 5][::-1]") {
     Ok(@value.Value::ListVal(l)) => {
-      assert_eq(l.items.length(), 5)
-      assert_true(l.items[0] == @value.Value::IntVal(5L))
-      assert_true(l.items[4] == @value.Value::IntVal(1L))
+      assert_eq(l.length(), 5)
+      assert_true(l.get(0) == @value.Value::IntVal(5L))
+      assert_true(l.get(4) == @value.Value::IntVal(1L))
     }
     _ => assert_true(false)
   }

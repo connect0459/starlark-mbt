@@ -1027,7 +1027,7 @@ fn builtin_list(
   match pos_args[0] {
     @value.Value::ListVal(l) => {
       let items : Array[@value.Value] = []
-      for v in l.items {
+      for v in l.iter() {
         items.push(v)
       }
       @value.Value::ListVal(@value.StarlarkList::new(items))
@@ -1104,7 +1104,7 @@ fn builtin_dict(
               check(ctx, d.set(pair[0], pair[1]))
             }
             Some(@value.Value::ListVal(pair)) => {
-              if pair.items.length() != 2 {
+              if pair.length() != 2 {
                 it.done()
                 raise EvalErr(
                   make_eval_error(
@@ -1112,7 +1112,7 @@ fn builtin_dict(
                   ),
                 )
               }
-              check(ctx, d.set(pair.items[0], pair.items[1]))
+              check(ctx, d.set(pair.get(0), pair.get(1)))
             }
             _ => {
               it.done()
@@ -1547,8 +1547,7 @@ fn call_list_method(
           make_eval_error(ctx, "append() takes exactly one argument"),
         )
       }
-      check(ctx, l.check_mutable("append to"))
-      l.items.push(pos_args[0])
+      check(ctx, l.push(pos_args[0]))
       @value.Value::NoneVal
     }
     "extend" => {
@@ -1565,26 +1564,25 @@ fn call_list_method(
             it.done()
             break
           }
-          Some(v) => l.items.push(v)
+          Some(v) => l.push(v) |> ignore
         }
       }
       @value.Value::NoneVal
     }
     "pop" => {
-      check(ctx, l.check_mutable("pop from"))
-      if l.items.is_empty() {
+      if l.is_empty() {
         raise EvalErr(make_eval_error(ctx, "pop from empty list"))
       }
       if pos_args.length() == 0 {
-        match l.items.pop() {
+        match check(ctx, l.pop()) {
           None => raise EvalErr(make_eval_error(ctx, "pop from empty list"))
           Some(v) => v
         }
       } else {
         match pos_args[0] {
           @value.Value::IntVal(i) => {
-            let j = check(ctx, adjust_index(i, l.items.length()))
-            l.items.remove(j)
+            let j = check(ctx, adjust_index(i, l.length()))
+            check(ctx, l.pop_at(j))
           }
           _ =>
             raise EvalErr(
@@ -1599,11 +1597,10 @@ fn call_list_method(
           make_eval_error(ctx, "remove() takes exactly one argument"),
         )
       }
-      check(ctx, l.check_mutable("remove from"))
       let item = pos_args[0]
       let mut found = -1
-      for i in 0..<l.items.length() {
-        if @value.starlark_equals(l.items[i], item) {
+      for i in 0..<l.length() {
+        if @value.starlark_equals(l.get(i), item) {
           found = i
           break
         }
@@ -1611,7 +1608,7 @@ fn call_list_method(
       if found < 0 {
         raise EvalErr(make_eval_error(ctx, "remove: element not found"))
       }
-      ignore(l.items.remove(found))
+      check(ctx, l.pop_at(found)) |> ignore
       @value.Value::NoneVal
     }
     "insert" => {
@@ -1620,10 +1617,9 @@ fn call_list_method(
           make_eval_error(ctx, "insert() takes exactly 2 arguments"),
         )
       }
-      check(ctx, l.check_mutable("insert into"))
       match pos_args[0] {
         @value.Value::IntVal(i) => {
-          let len = l.items.length()
+          let len = l.length()
           let j = {
             let jj = if i < 0L { i + len.to_int64() } else { i }
             if jj < 0L {
@@ -1634,7 +1630,7 @@ fn call_list_method(
               jj.to_int()
             }
           }
-          l.items.insert(j, pos_args[1])
+          check(ctx, l.insert(j, pos_args[1])) |> ignore
           @value.Value::NoneVal
         }
         _ =>
@@ -1644,8 +1640,7 @@ fn call_list_method(
       }
     }
     "clear" => {
-      check(ctx, l.check_mutable("clear"))
-      l.items.clear()
+      check(ctx, l.clear()) |> ignore
       @value.Value::NoneVal
     }
     "index" => {
@@ -1655,7 +1650,7 @@ fn call_list_method(
         )
       }
       let item = pos_args[0]
-      let n = l.items.length()
+      let n = l.length()
       let start = if pos_args.length() >= 2 {
         match pos_args[1] {
           @value.Value::IntVal(i) => {
@@ -1701,7 +1696,7 @@ fn call_list_method(
         n
       }
       for i in start..<end {
-        if @value.starlark_equals(l.items[i], item) {
+        if @value.starlark_equals(l.get(i), item) {
           return @value.Value::IntVal(i.to_int64())
         }
       }
@@ -1715,7 +1710,7 @@ fn call_list_method(
       }
       let item = pos_args[0]
       let mut count = 0
-      for v in l.items {
+      for v in l.iter() {
         if @value.starlark_equals(v, item) {
           count += 1
         }
@@ -1723,32 +1718,27 @@ fn call_list_method(
       @value.Value::IntVal(count.to_int64())
     }
     "sort" => {
-      check(ctx, l.check_mutable("sort"))
       let mut sort_err : @errors.EvalError? = None
-      l.items.sort_by(fn(a, b) {
-        match @value.compare_values(a, b) {
-          Err(msg) => {
-            sort_err = Some(make_eval_error(ctx, msg))
-            0
+      check(
+        ctx,
+        l.sort_by(fn(a, b) {
+          match @value.compare_values(a, b) {
+            Err(msg) => {
+              sort_err = Some(make_eval_error(ctx, msg))
+              0
+            }
+            Ok(c) => c
           }
-          Ok(c) => c
-        }
-      })
+        }),
+      )
+      |> ignore
       match sort_err {
         Some(e) => raise EvalErr(e)
         None => @value.Value::NoneVal
       }
     }
     "reverse" => {
-      check(ctx, l.check_mutable("reverse"))
-      let n = l.items.length()
-      let mut i = 0
-      while i < n / 2 {
-        let tmp = l.items[i]
-        l.items[i] = l.items[n - 1 - i]
-        l.items[n - 1 - i] = tmp
-        i += 1
-      }
+      check(ctx, l.reverse()) |> ignore
       @value.Value::NoneVal
     }
     _ =>
@@ -1837,10 +1827,20 @@ fn call_dict_method(
                 None => break
                 Some(item) =>
                   match item {
-                    @value.Value::TupleVal(pair)
-                    | @value.Value::ListVal({ items: pair, .. }) =>
+                    @value.Value::TupleVal(pair) =>
                       if pair.length() == 2 {
                         check(ctx, d.set(pair[0], pair[1]))
+                      } else {
+                        iter.done()
+                        raise EvalErr(
+                          make_eval_error(
+                            ctx, "dict.update: items must be 2-element sequences",
+                          ),
+                        )
+                      }
+                    @value.Value::ListVal(l2) =>
+                      if l2.length() == 2 {
+                        check(ctx, d.set(l2.get(0), l2.get(1)))
                       } else {
                         iter.done()
                         raise EvalErr(

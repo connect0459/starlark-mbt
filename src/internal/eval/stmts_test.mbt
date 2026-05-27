@@ -126,7 +126,7 @@ test "exec_file: augmented list extend adds elements" {
   match exec_s("lst = [1, 2]\nlst += [3, 4]") {
     Ok(m) =>
       match get_s(m, "lst") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 4)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 4)
         _ => assert_true(false)
       }
     Err(_) => assert_true(false)
@@ -216,7 +216,7 @@ test "exec_file: list subscript assignment updates element in place" {
     Ok(m) =>
       match get_s(m, "lst") {
         Some(@value.Value::ListVal(l)) =>
-          assert_true(l.items[1] == @value.Value::IntVal(99L))
+          assert_true(l.get(1) == @value.Value::IntVal(99L))
         _ => assert_true(false)
       }
     Err(_) => assert_true(false)

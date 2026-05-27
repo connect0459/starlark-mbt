@@ -318,7 +318,7 @@ test "eval_expr: conditional returns false branch when condition is falsy" {
 ///|
 test "eval_expr: empty list literal produces empty list" {
   match eval_e("[]") {
-    Ok(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+    Ok(@value.Value::ListVal(l)) => assert_eq(l.length(), 0)
     _ => assert_true(false)
   }
 }
@@ -327,9 +327,9 @@ test "eval_expr: empty list literal produces empty list" {
 test "eval_expr: list literal with elements has correct elements" {
   match eval_e("[1, 2, 3]") {
     Ok(@value.Value::ListVal(l)) => {
-      assert_eq(l.items.length(), 3)
-      assert_true(l.items[0] == @value.Value::IntVal(1L))
-      assert_true(l.items[2] == @value.Value::IntVal(3L))
+      assert_eq(l.length(), 3)
+      assert_true(l.get(0) == @value.Value::IntVal(1L))
+      assert_true(l.get(2) == @value.Value::IntVal(3L))
     }
     _ => assert_true(false)
   }

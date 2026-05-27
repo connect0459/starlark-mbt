@@ -145,43 +145,43 @@ test "iterate: non-iterable function returns error" {
   assert_true(iterate(f) is Err(_))
 }
 
-// --- itercount: mutation safety during iteration ---
+// --- mutation safety during iteration ---
 
 ///|
-test "iterate: list itercount is 0 before iteration" {
+test "iterate: list is mutable before iteration starts" {
   let l = StarlarkList::new([Value::IntVal(1L)])
-  assert_eq(l.itercount, 0)
+  assert_true(l.check_mutable("append to") is Ok(_))
 }
 
 ///|
-test "iterate: list itercount increments to 1 while iterator active" {
+test "iterate: list becomes immutable while iterator is active" {
   let l = StarlarkList::new([Value::IntVal(1L)])
   let it = must_iterate(Value::ListVal(l))
-  assert_eq(l.itercount, 1)
+  assert_true(l.check_mutable("append to") is Err(_))
   it.done()
-  assert_eq(l.itercount, 0)
+  assert_true(l.check_mutable("append to") is Ok(_))
 }
 
 ///|
-test "iterate: two concurrent list iterators raise itercount to 2" {
+test "iterate: list stays immutable until all concurrent iterators complete" {
   let l = StarlarkList::new([Value::IntVal(1L)])
   let it1 = must_iterate(Value::ListVal(l))
   let it2 = must_iterate(Value::ListVal(l))
-  assert_eq(l.itercount, 2)
+  assert_true(l.check_mutable("append to") is Err(_))
   it1.done()
-  assert_eq(l.itercount, 1)
+  assert_true(l.check_mutable("append to") is Err(_))
   it2.done()
-  assert_eq(l.itercount, 0)
+  assert_true(l.check_mutable("append to") is Ok(_))
 }
 
 ///|
-test "iterate: frozen list does not increment itercount" {
+test "iterate: frozen list remains immutable after iterator completes" {
   let l = StarlarkList::new([Value::IntVal(1L)])
   l.freeze()
   let it = must_iterate(Value::ListVal(l))
-  assert_eq(l.itercount, 0)
+  assert_true(l.check_mutable("append to") is Err(_))
   it.done()
-  assert_eq(l.itercount, 0)
+  assert_true(l.check_mutable("append to") is Err(_))
 }
 
 ///|

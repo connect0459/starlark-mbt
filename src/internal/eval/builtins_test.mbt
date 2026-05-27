@@ -19,9 +19,9 @@ test "exec_file: range(stop) produces correct sequence when iterated" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 5)
-          assert_true(l.items[0] == @value.Value::IntVal(0L))
-          assert_true(l.items[4] == @value.Value::IntVal(4L))
+          assert_eq(l.length(), 5)
+          assert_true(l.get(0) == @value.Value::IntVal(0L))
+          assert_true(l.get(4) == @value.Value::IntVal(4L))
         }
         _ => assert_true(false)
       }
@@ -35,8 +35,8 @@ test "exec_file: range(start, stop) begins at start" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          assert_true(l.items[0] == @value.Value::IntVal(2L))
+          assert_eq(l.length(), 3)
+          assert_true(l.get(0) == @value.Value::IntVal(2L))
         }
         _ => assert_true(false)
       }
@@ -229,9 +229,9 @@ test "exec_file: sorted returns a new list in ascending order" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 6)
-          assert_true(l.items[0] == @value.Value::IntVal(1L))
-          assert_true(l.items[5] == @value.Value::IntVal(9L))
+          assert_eq(l.length(), 6)
+          assert_true(l.get(0) == @value.Value::IntVal(1L))
+          assert_true(l.get(5) == @value.Value::IntVal(9L))
         }
         _ => assert_true(false)
       }
@@ -245,9 +245,9 @@ test "exec_file: reversed returns elements in reverse order" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          assert_true(l.items[0] == @value.Value::IntVal(3L))
-          assert_true(l.items[2] == @value.Value::IntVal(1L))
+          assert_eq(l.length(), 3)
+          assert_true(l.get(0) == @value.Value::IntVal(3L))
+          assert_true(l.get(2) == @value.Value::IntVal(1L))
         }
         _ => assert_true(false)
       }
@@ -263,8 +263,8 @@ test "exec_file: enumerate wraps each element with its index" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 2)
-          match l.items[0] {
+          assert_eq(l.length(), 2)
+          match l.get(0) {
             @value.Value::TupleVal(t) =>
               assert_true(t[0] == @value.Value::IntVal(0L))
             _ => assert_true(false)
@@ -282,8 +282,8 @@ test "exec_file: zip pairs elements from two sequences" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 2)
-          match l.items[0] {
+          assert_eq(l.length(), 2)
+          match l.get(0) {
             @value.Value::TupleVal(t) => {
               assert_true(t[0] == @value.Value::IntVal(1L))
               match t[1] {
@@ -305,7 +305,7 @@ test "exec_file: zip with no arguments produces empty list" {
   match exec_b("r = zip()") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 0)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -421,7 +421,7 @@ test "exec_file: list() with no argument produces empty list" {
   match exec_b("r = list()") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 0)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -433,7 +433,7 @@ test "exec_file: list converts tuple to list" {
   match exec_b("r = list((1, 2, 3))") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 3)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 3)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -552,7 +552,7 @@ test "exec_file: list.pop removes and returns last element" {
     Ok(m) => {
       assert_true(g(m, "v") == Some(@value.Value::IntVal(3L)))
       match g(m, "lst") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 2)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 2)
         _ => assert_true(false)
       }
     }
@@ -574,8 +574,8 @@ test "exec_file: list.sort orders elements in place" {
     Ok(m) =>
       match g(m, "lst") {
         Some(@value.Value::ListVal(l)) => {
-          assert_true(l.items[0] == @value.Value::IntVal(1L))
-          assert_true(l.items[3] == @value.Value::IntVal(4L))
+          assert_true(l.get(0) == @value.Value::IntVal(1L))
+          assert_true(l.get(3) == @value.Value::IntVal(4L))
         }
         _ => assert_true(false)
       }
@@ -589,8 +589,8 @@ test "exec_file: list.reverse reverses elements in place" {
     Ok(m) =>
       match g(m, "lst") {
         Some(@value.Value::ListVal(l)) => {
-          assert_true(l.items[0] == @value.Value::IntVal(3L))
-          assert_true(l.items[2] == @value.Value::IntVal(1L))
+          assert_true(l.get(0) == @value.Value::IntVal(3L))
+          assert_true(l.get(2) == @value.Value::IntVal(1L))
         }
         _ => assert_true(false)
       }
@@ -620,8 +620,8 @@ test "exec_file: list.insert places element at given index" {
     Ok(m) =>
       match g(m, "lst") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          assert_true(l.items[1] == @value.Value::IntVal(2L))
+          assert_eq(l.length(), 3)
+          assert_true(l.get(1) == @value.Value::IntVal(2L))
         }
         _ => assert_true(false)
       }
@@ -660,7 +660,7 @@ test "exec_file: dict.keys returns list of keys in insertion order" {
   match exec_b("ks = {\"a\": 1, \"b\": 2}.keys()") {
     Ok(m) =>
       match g(m, "ks") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 2)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 2)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -672,7 +672,7 @@ test "exec_file: dict.values returns list of values" {
   match exec_b("vs = {\"a\": 1, \"b\": 2}.values()") {
     Ok(m) =>
       match g(m, "vs") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 2)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 2)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -685,8 +685,8 @@ test "exec_file: dict.items returns list of key-value tuples" {
     Ok(m) =>
       match g(m, "it") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 1)
-          assert_true(l.items[0] is @value.Value::TupleVal(_))
+          assert_eq(l.length(), 1)
+          assert_true(l.get(0) is @value.Value::TupleVal(_))
         }
         _ => assert_true(false)
       }
@@ -821,7 +821,7 @@ test "exec_file: string.split divides string at separator" {
   match exec_b("parts = \"a,b,c\".split(\",\")") {
     Ok(m) =>
       match g(m, "parts") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 3)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 3)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1016,7 +1016,7 @@ test "exec_file: string.splitlines splits at newline characters" {
   match exec_b("r = \"a\\nb\\nc\".splitlines()") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 3)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 3)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1028,7 +1028,7 @@ test "exec_file: string.elems iterates bytes as single-byte strings" {
   match exec_b("r = \"abc\".elems()") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 3)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 3)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1041,8 +1041,8 @@ test "exec_file: string.elem_ords iterates bytes as integers" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          assert_true(l.items[0] == @value.Value::IntVal(65L))
+          assert_eq(l.length(), 3)
+          assert_true(l.get(0) == @value.Value::IntVal(65L))
         }
         _ => assert_true(false)
       }
@@ -1289,9 +1289,9 @@ test "exec_file: list comprehension transforms and filters elements" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 2)
-          assert_true(l.items[0] == @value.Value::IntVal(6L))
-          assert_true(l.items[1] == @value.Value::IntVal(8L))
+          assert_eq(l.length(), 2)
+          assert_true(l.get(0) == @value.Value::IntVal(6L))
+          assert_true(l.get(1) == @value.Value::IntVal(8L))
         }
         _ => assert_true(false)
       }
@@ -1414,10 +1414,10 @@ test "exec_file: bytes.elems returns list of integer byte values" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          assert_true(l.items[0] == @value.Value::IntVal(65L))
-          assert_true(l.items[1] == @value.Value::IntVal(66L))
-          assert_true(l.items[2] == @value.Value::IntVal(67L))
+          assert_eq(l.length(), 3)
+          assert_true(l.get(0) == @value.Value::IntVal(65L))
+          assert_true(l.get(1) == @value.Value::IntVal(66L))
+          assert_true(l.get(2) == @value.Value::IntVal(67L))
         }
         _ => assert_true(false)
       }
@@ -1430,7 +1430,7 @@ test "exec_file: bytes.elems on empty bytes returns empty list" {
   match exec_b("r = list(b\"\".elems())") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 0)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1505,8 +1505,8 @@ test "exec_file: sorted with key= sorts by key function result" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          match l.items[0] {
+          assert_eq(l.length(), 3)
+          match l.get(0) {
             @value.Value::StrVal(s) => assert_eq(s.raw, "a")
             _ => assert_true(false)
           }
@@ -1523,9 +1523,9 @@ test "exec_file: sorted with reverse=True returns descending order" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          assert_true(l.items[0] == @value.Value::IntVal(3L))
-          assert_true(l.items[2] == @value.Value::IntVal(1L))
+          assert_eq(l.length(), 3)
+          assert_true(l.get(0) == @value.Value::IntVal(3L))
+          assert_true(l.get(2) == @value.Value::IntVal(1L))
         }
         _ => assert_true(false)
       }
@@ -1587,8 +1587,8 @@ test "exec_file: dir on string returns sorted method names" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_true(l.items.length() > 0)
-          assert_true(l.items[0] is @value.Value::StrVal(_))
+          assert_true(l.length() > 0)
+          assert_true(l.get(0) is @value.Value::StrVal(_))
         }
         _ => assert_true(false)
       }
@@ -1601,7 +1601,7 @@ test "exec_file: dir on list returns sorted method names" {
   match exec_b("r = dir([])") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_true(l.items.length() > 0)
+        Some(@value.Value::ListVal(l)) => assert_true(l.length() > 0)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1613,7 +1613,7 @@ test "exec_file: dir on int returns empty list" {
   match exec_b("r = dir(42)") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 0)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1628,8 +1628,8 @@ test "exec_file: str.rsplit with sep splits from right" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          match l.items[0] {
+          assert_eq(l.length(), 3)
+          match l.get(0) {
             @value.Value::StrVal(s) => assert_eq(s.raw, "a")
             _ => assert_true(false)
           }
@@ -1646,12 +1646,12 @@ test "exec_file: str.rsplit with maxsplit limits from right" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          match l.items[0] {
+          assert_eq(l.length(), 3)
+          match l.get(0) {
             @value.Value::StrVal(s) => assert_eq(s.raw, "a,b")
             _ => assert_true(false)
           }
-          match l.items[2] {
+          match l.get(2) {
             @value.Value::StrVal(s) => assert_eq(s.raw, "d")
             _ => assert_true(false)
           }
@@ -1670,8 +1670,8 @@ test "exec_file: str.codepoints returns list of single-char strings" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          match l.items[0] {
+          assert_eq(l.length(), 3)
+          match l.get(0) {
             @value.Value::StrVal(s) => assert_eq(s.raw, "a")
             _ => assert_true(false)
           }
@@ -1688,10 +1688,10 @@ test "exec_file: str.codepoint_ords returns list of code point integers" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
-          assert_true(l.items[0] == @value.Value::IntVal(65L))
-          assert_true(l.items[1] == @value.Value::IntVal(66L))
-          assert_true(l.items[2] == @value.Value::IntVal(67L))
+          assert_eq(l.length(), 3)
+          assert_true(l.get(0) == @value.Value::IntVal(65L))
+          assert_true(l.get(1) == @value.Value::IntVal(66L))
+          assert_true(l.get(2) == @value.Value::IntVal(67L))
         }
         _ => assert_true(false)
       }
@@ -1704,7 +1704,7 @@ test "exec_file: str.codepoints on empty string returns empty list" {
   match exec_b("r = list(\"\".codepoints())") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 0)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1756,15 +1756,15 @@ test "exec_file: str.splitlines without keepends splits at newlines" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
+          assert_eq(l.length(), 3)
           assert_true(
-            l.items[0] == @value.Value::StrVal(@value.StarlarkString::new("a")),
+            l.get(0) == @value.Value::StrVal(@value.StarlarkString::new("a")),
           )
           assert_true(
-            l.items[1] == @value.Value::StrVal(@value.StarlarkString::new("b")),
+            l.get(1) == @value.Value::StrVal(@value.StarlarkString::new("b")),
           )
           assert_true(
-            l.items[2] == @value.Value::StrVal(@value.StarlarkString::new("c")),
+            l.get(2) == @value.Value::StrVal(@value.StarlarkString::new("c")),
           )
         }
         _ => assert_true(false)
@@ -1779,17 +1779,15 @@ test "exec_file: str.splitlines with keepends=True keeps line endings" {
     Ok(m) =>
       match g(m, "r") {
         Some(@value.Value::ListVal(l)) => {
-          assert_eq(l.items.length(), 3)
+          assert_eq(l.length(), 3)
           assert_true(
-            l.items[0] ==
-            @value.Value::StrVal(@value.StarlarkString::new("a\n")),
+            l.get(0) == @value.Value::StrVal(@value.StarlarkString::new("a\n")),
           )
           assert_true(
-            l.items[1] ==
-            @value.Value::StrVal(@value.StarlarkString::new("b\n")),
+            l.get(1) == @value.Value::StrVal(@value.StarlarkString::new("b\n")),
           )
           assert_true(
-            l.items[2] == @value.Value::StrVal(@value.StarlarkString::new("c")),
+            l.get(2) == @value.Value::StrVal(@value.StarlarkString::new("c")),
           )
         }
         _ => assert_true(false)
@@ -1811,7 +1809,7 @@ test "exec_file: str.splitlines on empty string returns empty list" {
   match exec_b("r = \"\".splitlines(True)") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.items.length(), 0)
+        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 0)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())

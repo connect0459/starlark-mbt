@@ -248,16 +248,16 @@ test "StarlarkModule: repr shows module name" {
 ///|
 test "StarlarkList: new list is empty and mutable" {
   let l = StarlarkList::new([])
-  assert_eq(l.items.length(), 0)
+  assert_eq(l.length(), 0)
   assert_false(l.is_frozen())
 }
 
 ///|
 test "StarlarkList: push appends item accessible by index" {
   let l = StarlarkList::new([])
-  l.items.push(Value::StrVal(StarlarkString::new("hello")))
-  assert_eq(l.items.length(), 1)
-  let elem = l.items[0]
+  l.push(Value::StrVal(StarlarkString::new("hello"))) |> ignore
+  assert_eq(l.length(), 1)
+  let elem = l.get(0)
   match elem {
     Value::StrVal(s) => assert_eq(s.raw, "hello")
     _ => fail("expected StrVal")
@@ -267,13 +267,13 @@ test "StarlarkList: push appends item accessible by index" {
 ///|
 test "StarlarkList: push multiple items maintains insertion order" {
   let l = StarlarkList::new([])
-  l.items.push(Value::IntVal(1L))
-  l.items.push(Value::IntVal(2L))
-  l.items.push(Value::IntVal(3L))
-  assert_eq(l.items.length(), 3)
-  assert_true(l.items[0] is Value::IntVal(1L))
-  assert_true(l.items[1] is Value::IntVal(2L))
-  assert_true(l.items[2] is Value::IntVal(3L))
+  l.push(Value::IntVal(1L)) |> ignore
+  l.push(Value::IntVal(2L)) |> ignore
+  l.push(Value::IntVal(3L)) |> ignore
+  assert_eq(l.length(), 3)
+  assert_true(l.get(0) is Value::IntVal(1L))
+  assert_true(l.get(1) is Value::IntVal(2L))
+  assert_true(l.get(2) is Value::IntVal(3L))
 }
 
 ///|
@@ -288,7 +288,7 @@ test "Value::of_string wraps a string without manual StarlarkString::new" {
 test "Value::new_list wraps an array as a mutable list" {
   let v = Value::new_list([Value::IntVal(1L), Value::IntVal(2L)])
   match v {
-    ListVal(l) => assert_eq(l.items.length(), 2)
+    ListVal(l) => assert_eq(l.length(), 2)
     _ => fail("expected ListVal")
   }
 }

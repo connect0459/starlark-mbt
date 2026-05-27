@@ -85,15 +85,27 @@ pub struct StarlarkIterator {
 pub fn StarlarkIterator::done(Self) -> Unit
 pub fn StarlarkIterator::next(Self) -> Value?
 
-pub(all) struct StarlarkList {
-  mut items : Array[Value]
-  mut frozen : Bool
-  mut itercount : Int
+pub struct StarlarkList {
+  // private fields
 }
 pub fn StarlarkList::check_mutable(Self, String) -> Result[Unit, String]
+pub fn StarlarkList::clear(Self) -> Result[Unit, String]
+pub fn StarlarkList::eachi(Self, (Int, Value) -> Unit) -> Unit
 pub fn StarlarkList::freeze(Self) -> Unit
+pub fn StarlarkList::get(Self, Int) -> Value
+pub fn StarlarkList::insert(Self, Int, Value) -> Result[Unit, String]
+pub fn StarlarkList::is_empty(Self) -> Bool
 pub fn StarlarkList::is_frozen(Self) -> Bool
+pub fn StarlarkList::is_same_storage(Self, Self) -> Bool
+pub fn StarlarkList::iter(Self) -> Iter[Value]
+pub fn StarlarkList::length(Self) -> Int
 pub fn StarlarkList::new(Array[Value]) -> Self
+pub fn StarlarkList::pop(Self) -> Result[Value?, String]
+pub fn StarlarkList::pop_at(Self, Int) -> Result[Value, String]
+pub fn StarlarkList::push(Self, Value) -> Result[Unit, String]
+pub fn StarlarkList::reverse(Self) -> Result[Unit, String]
+pub fn StarlarkList::set(Self, Int, Value) -> Result[Unit, String]
+pub fn StarlarkList::sort_by(Self, (Value, Value) -> Int) -> Result[Unit, String]
 
 pub struct StarlarkModule {
   name : String

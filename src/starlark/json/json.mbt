@@ -112,13 +112,11 @@ fn encode_inner(
       }
     @value.Value::StrVal(s) => Ok(json_quote_string(s))
     @value.Value::ListVal(l) => {
-      if state.list_path
-        .iter()
-        .any(fn(pl) { physical_equal(pl.items, l.items) }) {
+      if state.list_path.iter().any(fn(pl) { l.is_same_storage(pl) }) {
         return Err("cycle in JSON structure")
       }
       state.list_path.push(l)
-      let result = encode_sequence(l.items, "list", state)
+      let result = encode_sequence(l.iter(), "list", state)
       let _ = state.list_path.pop()
       result
     }
@@ -127,7 +125,7 @@ fn encode_inner(
         return Err("cycle in JSON structure")
       }
       state.tuple_path.push(t)
-      let result = encode_sequence(t, "tuple", state)
+      let result = encode_sequence(t.iter(), "tuple", state)
       let _ = state.tuple_path.pop()
       result
     }
@@ -146,12 +144,12 @@ fn encode_inner(
       for i in 0..<len {
         items[i] = @value.Value::IntVal(r.index_at(i))
       }
-      encode_sequence(items, "range", state)
+      encode_sequence(items.iter(), "range", state)
     }
     @value.Value::SetVal(s) => {
       let items : Array[@value.Value] = []
       s.each(fn(k) { items.push(k) })
-      encode_sequence(items, "set", state)
+      encode_sequence(items.iter(), "set", state)
     }
     _ => Err("cannot encode \{@value.type_name(v)} as JSON")
   }
@@ -159,14 +157,15 @@ fn encode_inner(
 
 ///|
 fn encode_sequence(
-  items : Array[@value.Value],
+  items : Iter[@value.Value],
   kind : String,
   state : EncodeState,
 ) -> Result[String, String] {
   let buf = StringBuilder::new()
   buf.write_char('[')
   let mut first = true
-  for i, elem in items {
+  let mut i = 0
+  for elem in items {
     if first {
       first = false
     } else {
@@ -176,6 +175,7 @@ fn encode_sequence(
       Ok(s) => buf.write_string(s)
       Err(e) => return Err("at \{kind} index \{i}: \{e}")
     }
+    i += 1
   }
   buf.write_char(']')
   Ok(buf.to_string())
