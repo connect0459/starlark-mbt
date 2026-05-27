@@ -678,6 +678,11 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       `StarlarkBuiltinFunc::dispatch()`; updated all call sites in `eval`, `json`,
       and test packages. Removed the empty `src/internal/format/` placeholder package
       (YAGNI: no exports, no dependents).
+- [x] **[LOW]** Sixth-pass DRY audit — extracted `hex_char`, `utf8_decode_rune`,
+      `is_unicode_printable`, and `write_hex2/4/8` from three separate packages
+      (`value`, `lexer/quote`, `starlark/json`) into a single `src/internal/utf8util/`
+      package (~270 lines removed). Functions had identical logic under different names
+      (`hex_digit`, `utf8_decode_rune_q`, `is_unicode_print`).
 
 ### Deferred API hardening (requires large eval refactoring)
 
@@ -691,6 +696,12 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [ ] **[LOW]** `EvalError` fields `call_stack` and `cause` — currently `pub(all)`;
       `call_stack` is exposed as a named field in starlark-go but could be hidden behind
       `backtrace()` only. Low priority since users legitimately inspect `msg` and `call_stack`.
+- [ ] **[LOW]** `BuiltinCallCtx` is `pub(all)`, making the `call` field publicly
+      writable. Embedders receive this type in their builtin callback; they do not need
+      to construct it externally. Reducing to `pub` (not `pub(all)`) closes the gap.
+- [ ] **[LOW]** Remove `src/internal/builtins/builtins.mbt` placeholder — the file
+      contains only a comment; builtins were implemented in `eval/expr.mbt` instead.
+      No package currently imports `src/internal/builtins/`; the directory is dead code.
 
 ### General release tasks
 
