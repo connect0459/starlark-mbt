@@ -729,6 +729,46 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 
 ---
 
+## Phase 9: Post-Release API Extensions
+
+Low-cost public API additions derived from gap analysis against starlark-go.
+
+### CallStack API (カテゴリ23)
+
+- [x] `CallStack.length()` — frame count
+- [x] `CallStack.at(i)` — index access (0 = outermost frame)
+- [x] `CallStack.pop()` — remove and return last frame
+- [x] `Thread.call_stack()` — snapshot of the current call stack as `CallStack`
+
+### Public utility functions (カテゴリ11)
+
+- [x] `equal(a, b) -> Result[Bool, EvalError]` — starlark-go `Equal` equivalent
+- [x] `number_to_int(v) -> Int64?` — convert Float/Int to Int64 (starlark-go `NumberToInt`)
+- [x] `as_float(v) -> (Double, Bool)` — extract float (starlark-go `AsFloat`)
+- [x] `as_string(v) -> (String, Bool)` — extract raw string (starlark-go `AsString`)
+- [x] `len_of(v) -> Int` — sequence length; -1 for non-sequences (starlark-go `Len`)
+- [x] `iterate(v) -> Result[StarlarkIterator, EvalError]` — public iterator access
+- [x] `call(thread, fn, args, kwargs) -> Result[Value, EvalError]` — host-side callable invocation
+
+### Additional type re-exports
+
+- [x] `CallStack`, `CallFrame` — re-exported in public façade
+- [x] `StarlarkIterator`, `StarlarkList`, `StarlarkString` — re-exported in public façade
+
+### Remaining low-cost items (not yet implemented)
+
+- [ ] **Cycle detection** — `repr`/`str` truncates circular references as `[...]`
+      (`misc_test`, `function_test`)
+- [ ] **Unbound cell detection** — referencing a local before assignment raises an error
+      (`list_test`, `function_test`)
+- [ ] **`BoundMethod` hash identity** — `{x.f, x.f}` produces a one-element set
+      (`function_test`)
+- [ ] **`option:globalreassign` / `option:loadbindsglobally` test chunks** — dialect flag tests
+      (`assign_test`)
+- [ ] **"did you mean" suggestion** — typo hint in `load` errors (`misc_test`, `module_test`)
+
+---
+
 ## Future work (out of initial release scope)
 
 - Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
