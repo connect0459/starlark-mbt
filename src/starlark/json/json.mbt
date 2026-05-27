@@ -192,7 +192,7 @@ fn encode_inner(
       result
     }
     @value.Value::DictVal(d) => {
-      if state.dict_path.iter().any(fn(pd) { physical_equal(pd.ht, d.ht) }) {
+      if state.dict_path.iter().any(fn(pd) { physical_equal(pd, d) }) {
         return Err("cycle in JSON structure")
       }
       state.dict_path.push(d)

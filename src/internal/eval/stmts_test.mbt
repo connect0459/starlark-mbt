@@ -8,11 +8,7 @@ fn exec_s(src : String) -> Result[Module, @errors.EvalError] {
 
 ///|
 fn get_s(m : Module, name : String) -> @value.Value? {
-  let key = @value.Value::StrVal(@value.StarlarkString::new(name))
-  match m.globals.get(key) {
-    Ok(Some(v)) => Some(v)
-    _ => None
-  }
+  m.get(name)
 }
 
 // --- while loop ---
@@ -252,10 +248,7 @@ test "exec_file: load statement makes symbol usable within the file" {
     Options::default(),
   )
   match result {
-    Ok(m) => {
-      let key = @value.Value::StrVal(@value.StarlarkString::new("x"))
-      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(43L))))
-    }
+    Ok(m) => assert_true(m.get("x") == Some(@value.Value::IntVal(43L)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -278,10 +271,7 @@ test "exec_file: load statement supports aliased bindings" {
     Options::default(),
   )
   match result {
-    Ok(m) => {
-      let key = @value.Value::StrVal(@value.StarlarkString::new("y"))
-      assert_true(m.globals.get(key) == Ok(Some(@value.Value::IntVal(2L))))
-    }
+    Ok(m) => assert_true(m.get("y") == Some(@value.Value::IntVal(2L)))
     Err(e) => fail(e.to_string())
   }
 }

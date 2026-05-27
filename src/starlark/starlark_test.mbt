@@ -112,7 +112,7 @@ test "module globals are frozen after exec_file" {
       "x = [1, 2, 3]",
       @starlark.Options::default(),
     ) {
-    Ok(m) => assert_true(m.frozen)
+    Ok(m) => assert_true(m.is_frozen())
     Err(_) => assert_true(false)
   }
 }

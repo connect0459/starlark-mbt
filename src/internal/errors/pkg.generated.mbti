@@ -11,8 +11,8 @@ pub(all) struct CallFrame {
   pos : Position
 }
 
-pub(all) struct CallStack {
-  frames : Array[CallFrame]
+pub struct CallStack {
+  // private fields
 }
 pub fn CallStack::new(Array[CallFrame]) -> Self
 pub fn CallStack::to_string(Self) -> String

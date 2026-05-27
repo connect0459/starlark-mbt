@@ -16,12 +16,14 @@ pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) 
 // Errors
 
 // Types and methods
-pub(all) struct Module {
-  globals : @value.StarlarkDict
-  mut frozen : Bool
+pub struct Module {
+  // private fields
 }
 pub fn Module::freeze(Self) -> Unit
 pub fn Module::from_map(Map[String, @value.Value]) -> Self
+pub fn Module::get(Self, String) -> @value.Value?
+pub fn Module::globals_count(Self) -> Int
+pub fn Module::is_frozen(Self) -> Bool
 pub fn Module::new() -> Self
 
 pub(all) struct Options {
@@ -37,8 +39,8 @@ pub(all) struct Options {
 }
 pub fn Options::default() -> Self
 
-pub(all) struct Predeclared {
-  bindings : Map[String, @value.Value]
+pub struct Predeclared {
+  // private fields
 }
 pub fn Predeclared::from_map(Map[String, @value.Value]) -> Self
 pub fn Predeclared::get(Self, String) -> @value.Value?
@@ -61,8 +63,8 @@ pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.Eval
 pub fn Thread::with_print(String, (String) -> Unit) -> Self
 pub fn Thread::with_step_budget(String, Int) -> Self
 
-pub(all) struct Universe {
-  bindings : Map[String, @value.Value]
+pub struct Universe {
+  // private fields
 }
 pub fn Universe::empty() -> Self
 pub fn Universe::get(Self, String) -> @value.Value?

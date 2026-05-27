@@ -64,9 +64,5 @@ pub fn eval_expr(
 
 ///|
 pub fn module_get(m : Module, name : String) -> Value? {
-  let key = Value::StrVal(@value.StarlarkString::new(name))
-  match m.globals.get(key) {
-    Ok(Some(v)) => Some(v)
-    _ => None
-  }
+  m.get(name)
 }

@@ -1,6 +1,6 @@
 ///|
-pub(all) struct StarlarkDict {
-  ht : @hashtable.Hashtable[Value, Value]
+pub struct StarlarkDict {
+  priv ht : @hashtable.Hashtable[Value, Value]
 }
 
 ///|
@@ -93,8 +93,8 @@ pub fn StarlarkDict::popitem(
 }
 
 ///|
-pub(all) struct StarlarkSet {
-  ht : @hashtable.Hashtable[Value, Value]
+pub struct StarlarkSet {
+  priv ht : @hashtable.Hashtable[Value, Value]
 }
 
 ///|

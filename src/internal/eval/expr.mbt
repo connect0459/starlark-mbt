@@ -793,7 +793,7 @@ fn call_builtin(
           ]
         @value.Value::BytesVal(_) => ["elems"]
         @value.Value::ModuleVal(m) => {
-          let keys : Array[String] = m.attrs.keys().collect()
+          let keys : Array[String] = m.attr_names()
           keys.sort_by(fn(a, b) {
             let av = @value.Value::StrVal(@value.StarlarkString::new(a))
             let bv = @value.Value::StrVal(@value.StarlarkString::new(b))

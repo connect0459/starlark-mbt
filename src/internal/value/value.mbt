@@ -146,9 +146,9 @@ pub(all) struct StarlarkBoundMethod {
 }
 
 ///|
-pub(all) struct StarlarkModule {
+pub struct StarlarkModule {
   name : String
-  attrs : Map[String, Value]
+  priv attrs : Map[String, Value]
 }
 
 ///|
@@ -162,6 +162,11 @@ pub fn StarlarkModule::new(
 ///|
 pub fn StarlarkModule::get(self : StarlarkModule, key : String) -> Value? {
   self.attrs.get(key)
+}
+
+///|
+pub fn StarlarkModule::attr_names(self : StarlarkModule) -> Array[String] {
+  self.attrs.keys().collect()
 }
 
 ///|

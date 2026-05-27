@@ -2,7 +2,6 @@
 package "connect0459/starlark/internal/value"
 
 import {
-  "connect0459/starlark/internal/hashtable",
   "connect0459/starlark/internal/syntax",
 }
 
@@ -48,8 +47,8 @@ pub(all) struct StarlarkBuiltinFunc {
   body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[Value, String])?
 }
 
-pub(all) struct StarlarkDict {
-  ht : @hashtable.Hashtable[Value, Value]
+pub struct StarlarkDict {
+  // private fields
 }
 pub fn StarlarkDict::clear(Self) -> Result[Unit, String]
 pub fn StarlarkDict::delete(Self, Value) -> Result[Bool, String]
@@ -90,10 +89,11 @@ pub fn StarlarkList::freeze(Self) -> Unit
 pub fn StarlarkList::is_frozen(Self) -> Bool
 pub fn StarlarkList::new(Array[Value]) -> Self
 
-pub(all) struct StarlarkModule {
+pub struct StarlarkModule {
   name : String
-  attrs : Map[String, Value]
+  // private fields
 }
+pub fn StarlarkModule::attr_names(Self) -> Array[String]
 pub fn StarlarkModule::get(Self, String) -> Value?
 pub fn StarlarkModule::new(String, Map[String, Value]) -> Self
 
@@ -107,8 +107,8 @@ pub fn StarlarkRange::index_at(Self, Int) -> Int64
 pub fn StarlarkRange::length(Self) -> Int
 pub fn StarlarkRange::new(Int64, Int64, Int64) -> Self
 
-pub(all) struct StarlarkSet {
-  ht : @hashtable.Hashtable[Value, Value]
+pub struct StarlarkSet {
+  // private fields
 }
 pub fn StarlarkSet::add(Self, Value) -> Result[Unit, String]
 pub fn StarlarkSet::clear(Self) -> Result[Unit, String]

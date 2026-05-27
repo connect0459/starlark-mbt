@@ -27,8 +27,8 @@ pub fn Options::default() -> Options {
 }
 
 ///|
-pub(all) struct Universe {
-  bindings : Map[String, @value.Value]
+pub struct Universe {
+  priv bindings : Map[String, @value.Value]
 }
 
 ///|
@@ -59,8 +59,8 @@ pub fn Universe::has(self : Universe, name : String) -> Bool {
 }
 
 ///|
-pub(all) struct Predeclared {
-  bindings : Map[String, @value.Value]
+pub struct Predeclared {
+  priv bindings : Map[String, @value.Value]
 }
 
 ///|
@@ -186,9 +186,9 @@ pub fn Thread::execution_steps(self : Thread) -> Int {
 }
 
 ///|
-pub(all) struct Module {
-  globals : @value.StarlarkDict
-  mut frozen : Bool
+pub struct Module {
+  priv globals : @value.StarlarkDict
+  priv mut frozen : Bool
 }
 
 ///|
@@ -211,6 +211,25 @@ pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
 pub fn Module::freeze(self : Module) -> Unit {
   self.frozen = true
   self.globals.freeze()
+}
+
+///|
+pub fn Module::is_frozen(self : Module) -> Bool {
+  self.frozen
+}
+
+///|
+pub fn Module::get(self : Module, name : String) -> @value.Value? {
+  let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+  match self.globals.get(key) {
+    Ok(Some(v)) => Some(v)
+    _ => None
+  }
+}
+
+///|
+pub fn Module::globals_count(self : Module) -> Int {
+  self.globals.length()
 }
 
 ///|

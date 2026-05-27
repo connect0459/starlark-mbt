@@ -77,8 +77,8 @@ pub(all) struct CallFrame {
 }
 
 ///|
-pub(all) struct CallStack {
-  frames : Array[CallFrame]
+pub struct CallStack {
+  priv frames : Array[CallFrame]
 }
 
 ///|

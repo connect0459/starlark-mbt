@@ -8,11 +8,7 @@ fn exec_b(src : String) -> Result[Module, @errors.EvalError] {
 
 ///|
 fn g(m : Module, name : String) -> @value.Value? {
-  let key = @value.Value::StrVal(@value.StarlarkString::new(name))
-  match m.globals.get(key) {
-    Ok(Some(v)) => Some(v)
-    _ => None
-  }
+  m.get(name)
 }
 
 // --- range ---

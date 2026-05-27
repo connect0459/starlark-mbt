@@ -4,13 +4,9 @@
 // each of the eight canonical parameter-list shapes.
 
 ///|
-fn get_func_defaults(
-  globals : @value.StarlarkDict,
-  name : String,
-) -> Array[@value.Value?] {
-  let key = @value.Value::StrVal(@value.StarlarkString::new(name))
-  match globals.get(key) {
-    Ok(Some(@value.Value::FuncVal(f))) => f.defaults
+fn get_func_defaults(m : @eval.Module, name : String) -> Array[@value.Value?] {
+  match m.get(name) {
+    Some(@value.Value::FuncVal(f)) => f.defaults
     _ => []
   }
 }
@@ -44,7 +40,7 @@ fn exec_param_module() -> @eval.Module raise {
 ///|
 test "param defaults: all_required has no defaults" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "all_required")
+  let d = get_func_defaults(m, "all_required")
   assert_eq(d.length(), 3)
   assert_true(d[0] is None)
   assert_true(d[1] is None)
@@ -54,7 +50,7 @@ test "param defaults: all_required has no defaults" {
 ///|
 test "param defaults: all_opt has a default for every param" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "all_opt")
+  let d = get_func_defaults(m, "all_opt")
   assert_eq(d.length(), 3)
   assert_true(d[0] is Some(@value.Value::StrVal(_)))
   assert_true(d[1] is Some(@value.Value::NoneVal))
@@ -72,7 +68,7 @@ test "param defaults: all_opt has a default for every param" {
 ///|
 test "param defaults: mix_required_opt has defaults only for optional params" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "mix_required_opt")
+  let d = get_func_defaults(m, "mix_required_opt")
   assert_eq(d.length(), 4)
   assert_true(d[0] is None)
   assert_true(d[1] is None)
@@ -91,7 +87,7 @@ test "param defaults: mix_required_opt has defaults only for optional params" {
 ///|
 test "param defaults: with_varargs has None for *args" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "with_varargs")
+  let d = get_func_defaults(m, "with_varargs")
   assert_eq(d.length(), 3)
   assert_true(d[0] is None)
   assert_true(d[1] is Some(@value.Value::StrVal(_)))
@@ -101,7 +97,7 @@ test "param defaults: with_varargs has None for *args" {
 ///|
 test "param defaults: with_varargs_kwonly has defaults at correct positions" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "with_varargs_kwonly")
+  let d = get_func_defaults(m, "with_varargs_kwonly")
   assert_eq(d.length(), 5)
   assert_true(d[0] is None)
   assert_true(d[1] is Some(@value.Value::StrVal(_)))
@@ -113,7 +109,7 @@ test "param defaults: with_varargs_kwonly has defaults at correct positions" {
 ///|
 test "param defaults: with_kwonly bare-star gets None in defaults" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "with_kwonly")
+  let d = get_func_defaults(m, "with_kwonly")
   assert_eq(d.length(), 5)
   assert_true(d[0] is None)
   assert_true(d[1] is Some(@value.Value::StrVal(_)))
@@ -125,7 +121,7 @@ test "param defaults: with_kwonly bare-star gets None in defaults" {
 ///|
 test "param defaults: with_kwargs has None for **kwargs" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "with_kwargs")
+  let d = get_func_defaults(m, "with_kwargs")
   assert_eq(d.length(), 4)
   assert_true(d[0] is None)
   assert_true(d[1] is Some(@value.Value::StrVal(_)))
@@ -136,7 +132,7 @@ test "param defaults: with_kwargs has None for **kwargs" {
 ///|
 test "param defaults: with_varargs_kwonly_kwargs full shape" {
   let m = exec_param_module()
-  let d = get_func_defaults(m.globals, "with_varargs_kwonly_kwargs")
+  let d = get_func_defaults(m, "with_varargs_kwonly_kwargs")
   assert_eq(d.length(), 7)
   assert_true(d[0] is None)
   assert_true(d[1] is Some(@value.Value::StrVal(_)))

@@ -135,22 +135,22 @@ test "Thread: with_print routes output to the custom callback" {
 ///|
 test "Module: starts with empty globals and is not frozen" {
   let m = Module::new()
-  assert_eq(m.globals.length(), 0)
-  assert_false(m.frozen)
+  assert_eq(m.globals_count(), 0)
+  assert_false(m.is_frozen())
 }
 
 ///|
 test "Module: freeze transitions module to frozen state" {
   let m = Module::new()
   m.freeze()
-  assert_true(m.frozen)
+  assert_true(m.is_frozen())
 }
 
 ///|
 test "Module: freeze also freezes the globals dict" {
   let m = Module::new()
   m.freeze()
-  assert_true(m.globals.is_frozen())
+  assert_true(m.is_frozen())
 }
 
 // --- Test helpers ---
@@ -170,11 +170,7 @@ fn exec_src(src : String) -> Result[Module, @errors.EvalError] {
 
 ///|
 fn get_global(m : Module, name : String) -> @value.Value? {
-  let key = @value.Value::StrVal(@value.StarlarkString::new(name))
-  match m.globals.get(key) {
-    Ok(Some(v)) => Some(v)
-    _ => None
-  }
+  m.get(name)
 }
 
 // --- eval_expr: literal evaluation ---
