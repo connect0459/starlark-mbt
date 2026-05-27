@@ -56,11 +56,11 @@ test "param defaults: all_opt has a default for every param" {
   assert_true(d[1] is Some(@value.Value::NoneVal))
   assert_true(d[2] is Some(@value.Value::StrVal(_)))
   match d[0] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "a")
+    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "a")
     _ => fail("expected StrVal(\"a\")")
   }
   match d[2] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "")
+    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "")
     _ => fail("expected StrVal(\"\")")
   }
 }
@@ -75,11 +75,11 @@ test "param defaults: mix_required_opt has defaults only for optional params" {
   assert_true(d[2] is Some(@value.Value::StrVal(_)))
   assert_true(d[3] is Some(@value.Value::StrVal(_)))
   match d[2] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "c")
+    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "c")
     _ => fail("expected StrVal(\"c\")")
   }
   match d[3] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "d")
+    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "d")
     _ => fail("expected StrVal(\"d\")")
   }
 }

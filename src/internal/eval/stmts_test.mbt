@@ -114,7 +114,7 @@ test "exec_file: augmented string concatenation extends string" {
   match exec_s("s = \"hello\"\ns += \" world\"") {
     Ok(m) =>
       match get_s(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello world")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello world")
         _ => assert_true(false)
       }
     Err(_) => assert_true(false)

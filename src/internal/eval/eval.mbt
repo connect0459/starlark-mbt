@@ -407,7 +407,7 @@ pub fn eval_expr(
   let ctx = EvalContext::new(thread, opts)
   env.each(fn(k, v) {
     match k {
-      @value.Value::StrVal(s) => ctx.global_env.bind(s.raw, v)
+      @value.Value::StrVal(s) => ctx.global_env.bind(s.raw(), v)
       _ => ()
     }
   })

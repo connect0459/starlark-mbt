@@ -145,7 +145,7 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
         t.iter().any(fn(v) { @value.starlark_equals(v, item) })
       @value.Value::StrVal(s) =>
         match item {
-          @value.Value::StrVal(n) => s.raw.contains(n.raw)
+          @value.Value::StrVal(n) => s.raw().contains(n.raw())
           _ => return Err("'in <string>' requires string as left operand")
         }
       @value.Value::DictVal(d) =>
@@ -238,7 +238,7 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
     }
     let f = pos_args[0]
     let pattern = match pos_args[1] {
-      @value.Value::StrVal(s) => s.raw
+      @value.Value::StrVal(s) => s.raw()
       _ => return Err("assert.fails: pattern must be a string")
     }
     match

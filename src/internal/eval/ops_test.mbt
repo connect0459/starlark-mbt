@@ -13,7 +13,7 @@ fn eval_op(src : String) -> Result[@value.Value, @errors.EvalError] {
 ///|
 test "eval_expr: string concatenation produces joined string" {
   match eval_op("\"hello\" + \" world\"") {
-    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello world")
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello world")
     _ => assert_true(false)
   }
 }
@@ -21,7 +21,7 @@ test "eval_expr: string concatenation produces joined string" {
 ///|
 test "eval_expr: string repeated by integer count" {
   match eval_op("\"ab\" * 3") {
-    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "ababab")
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw(), "ababab")
     _ => assert_true(false)
   }
 }
@@ -29,7 +29,7 @@ test "eval_expr: string repeated by integer count" {
 ///|
 test "eval_expr: integer times string is same as string times integer" {
   match eval_op("3 * \"ab\"") {
-    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "ababab")
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw(), "ababab")
     _ => assert_true(false)
   }
 }
@@ -37,7 +37,7 @@ test "eval_expr: integer times string is same as string times integer" {
 ///|
 test "eval_expr: string repeated zero times yields empty string" {
   match eval_op("\"ab\" * 0") {
-    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "")
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw(), "")
     _ => assert_true(false)
   }
 }
@@ -307,7 +307,7 @@ test "eval_expr: list slice with negative step reverses list" {
 ///|
 test "eval_expr: string slice extracts byte subsequence" {
   match eval_op("\"hello\"[1:4]") {
-    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "ell")
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw(), "ell")
     _ => assert_true(false)
   }
 }
@@ -315,7 +315,7 @@ test "eval_expr: string slice extracts byte subsequence" {
 ///|
 test "eval_expr: string slice with step skips bytes" {
   match eval_op("\"abcde\"[::2]") {
-    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "ace")
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw(), "ace")
     _ => assert_true(false)
   }
 }

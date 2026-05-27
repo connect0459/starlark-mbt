@@ -144,7 +144,6 @@ pub fn StarlarkSet::pop_first(Self) -> Result[Value?, String]
 pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]
 
 pub struct StarlarkString {
-  raw : String
   // private fields
 }
 pub fn StarlarkString::byte_at(Self, Int) -> Byte
@@ -152,6 +151,7 @@ pub fn StarlarkString::byte_len(Self) -> Int
 pub fn StarlarkString::equals(Self, Self) -> Bool
 pub fn StarlarkString::from_bytes(Bytes) -> Self
 pub fn StarlarkString::new(String) -> Self
+pub fn StarlarkString::raw(Self) -> String
 pub fn StarlarkString::to_bytes(Self) -> Bytes
 
 pub(all) enum Value {

@@ -204,7 +204,7 @@ test "eval_expr: float literal evaluates to FloatVal" {
 ///|
 test "eval_expr: string literal evaluates to StrVal" {
   match eval_e("\"hello\"") {
-    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello")
+    Ok(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello")
     _ => assert_true(false)
   }
 }

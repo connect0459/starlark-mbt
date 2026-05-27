@@ -79,7 +79,7 @@ test "exec_file: str converts integer to decimal string" {
   match exec_b("s = str(42)") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "42")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "42")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -91,7 +91,7 @@ test "exec_file: repr produces quoted string representation" {
   match exec_b("s = repr(\"hi\")") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "\"hi\"")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "\"hi\"")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -103,7 +103,7 @@ test "exec_file: type returns type name as string" {
   match exec_b("t = type(42)") {
     Ok(m) =>
       match g(m, "t") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "int")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "int")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -287,7 +287,7 @@ test "exec_file: zip pairs elements from two sequences" {
             @value.Value::TupleVal(t) => {
               assert_true(t[0] == @value.Value::IntVal(1L))
               match t[1] {
-                @value.Value::StrVal(s) => assert_eq(s.raw, "a")
+                @value.Value::StrVal(s) => assert_eq(s.raw(), "a")
                 _ => assert_true(false)
               }
             }
@@ -741,7 +741,7 @@ test "exec_file: string.upper converts all characters to uppercase" {
   match exec_b("s = \"hello\".upper()") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "HELLO")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "HELLO")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -753,7 +753,7 @@ test "exec_file: string.lower converts all characters to lowercase" {
   match exec_b("s = \"HELLO\".lower()") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -765,7 +765,7 @@ test "exec_file: string.strip removes leading and trailing whitespace" {
   match exec_b("s = \"  hello  \".strip()") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -809,7 +809,7 @@ test "exec_file: string.replace substitutes all occurrences" {
   match exec_b("s = \"aabbaa\".replace(\"aa\", \"x\")") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "xbbx")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "xbbx")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -833,7 +833,7 @@ test "exec_file: string.join concatenates parts with separator" {
   match exec_b("s = \", \".join([\"a\", \"b\", \"c\"])") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "a, b, c")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "a, b, c")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -853,7 +853,7 @@ test "exec_file: string.capitalize uppercases first character and lowercases res
   match exec_b("s = \"hELLO\".capitalize()") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "Hello")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "Hello")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -950,7 +950,7 @@ test "exec_file: string.title converts to titlecase" {
   match exec_b("s = \"hello world\".title()") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "Hello World")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "Hello World")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -965,7 +965,7 @@ test "exec_file: string.partition splits at first occurrence" {
         Some(@value.Value::TupleVal(t)) => {
           assert_eq(t.length(), 3)
           match t[0] {
-            @value.Value::StrVal(s) => assert_eq(s.raw, "hello")
+            @value.Value::StrVal(s) => assert_eq(s.raw(), "hello")
             _ => assert_true(false)
           }
         }
@@ -980,7 +980,7 @@ test "exec_file: string.removeprefix removes matching prefix" {
   match exec_b("s = \"hello\".removeprefix(\"he\")") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "llo")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "llo")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -992,7 +992,7 @@ test "exec_file: string.removeprefix returns original when prefix absent" {
   match exec_b("s = \"hello\".removeprefix(\"xyz\")") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1004,7 +1004,7 @@ test "exec_file: string.removesuffix removes matching suffix" {
   match exec_b("s = \"hello\".removesuffix(\"lo\")") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hel")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hel")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1221,7 +1221,7 @@ test "exec_file: chr converts code point to single-character string" {
   match exec_b("s = chr(65)") {
     Ok(m) =>
       match g(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "A")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "A")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1444,7 +1444,7 @@ test "exec_file: str.format supports indexed positional {0}" {
   match exec_b("r = \"{0} and {1}\".format(\"a\", \"b\")") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "a and b")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "a and b")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1456,7 +1456,7 @@ test "exec_file: str.format supports keyword {name}" {
   match exec_b("r = \"hello {name}\".format(name=\"world\")") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "hello world")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello world")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1468,7 +1468,7 @@ test "exec_file: str.format supports !r conversion" {
   match exec_b("r = \"{!r}\".format(\"hi\")") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "\"hi\"")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "\"hi\"")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1480,7 +1480,7 @@ test "exec_file: str.format supports escaped braces" {
   match exec_b("r = \"{{ {0} }}\".format(\"x\")") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "{ x }")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "{ x }")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1507,7 +1507,7 @@ test "exec_file: sorted with key= sorts by key function result" {
         Some(@value.Value::ListVal(l)) => {
           assert_eq(l.length(), 3)
           match l.get(0) {
-            @value.Value::StrVal(s) => assert_eq(s.raw, "a")
+            @value.Value::StrVal(s) => assert_eq(s.raw(), "a")
             _ => assert_true(false)
           }
         }
@@ -1540,7 +1540,7 @@ test "exec_file: min with key= returns element with smallest key" {
   match exec_b("r = min([\"bb\", \"a\", \"ccc\"], key=len)") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "a")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "a")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1552,7 +1552,7 @@ test "exec_file: max with key= returns element with largest key" {
   match exec_b("r = max([\"bb\", \"a\", \"ccc\"], key=len)") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "ccc")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "ccc")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1630,7 +1630,7 @@ test "exec_file: str.rsplit with sep splits from right" {
         Some(@value.Value::ListVal(l)) => {
           assert_eq(l.length(), 3)
           match l.get(0) {
-            @value.Value::StrVal(s) => assert_eq(s.raw, "a")
+            @value.Value::StrVal(s) => assert_eq(s.raw(), "a")
             _ => assert_true(false)
           }
         }
@@ -1648,11 +1648,11 @@ test "exec_file: str.rsplit with maxsplit limits from right" {
         Some(@value.Value::ListVal(l)) => {
           assert_eq(l.length(), 3)
           match l.get(0) {
-            @value.Value::StrVal(s) => assert_eq(s.raw, "a,b")
+            @value.Value::StrVal(s) => assert_eq(s.raw(), "a,b")
             _ => assert_true(false)
           }
           match l.get(2) {
-            @value.Value::StrVal(s) => assert_eq(s.raw, "d")
+            @value.Value::StrVal(s) => assert_eq(s.raw(), "d")
             _ => assert_true(false)
           }
         }
@@ -1672,7 +1672,7 @@ test "exec_file: str.codepoints returns list of single-char strings" {
         Some(@value.Value::ListVal(l)) => {
           assert_eq(l.length(), 3)
           match l.get(0) {
-            @value.Value::StrVal(s) => assert_eq(s.raw, "a")
+            @value.Value::StrVal(s) => assert_eq(s.raw(), "a")
             _ => assert_true(false)
           }
         }
@@ -1743,7 +1743,7 @@ test "exec_file: module type_name is module" {
   match exec_b("r = type(module(\"m\"))") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw, "module")
+        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "module")
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())

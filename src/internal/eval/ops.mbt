@@ -137,7 +137,7 @@ fn eval_add(
     (@value.Value::FloatVal(a), @value.Value::IntVal(b)) =>
       @value.Value::FloatVal(a + b.to_double())
     (@value.Value::StrVal(a), @value.Value::StrVal(b)) =>
-      @value.Value::StrVal(@value.StarlarkString::new(a.raw + b.raw))
+      @value.Value::StrVal(@value.StarlarkString::new(a.raw() + b.raw()))
     (@value.Value::ListVal(a), @value.Value::ListVal(b)) => {
       let items : Array[@value.Value] = []
       for v in a.iter() {
@@ -286,7 +286,7 @@ fn repeat_string(
   }
   let buf = StringBuilder::new()
   for _ in 0..<count {
-    buf.write_string(s.raw)
+    buf.write_string(s.raw())
   }
   Ok(@value.StarlarkString::new(buf.to_string()))
 }
@@ -484,7 +484,7 @@ fn eval_mod(
       }
       @value.Value::FloatVal(float_floor_mod(a, b.to_double()))
     }
-    (@value.Value::StrVal(s), _) => check(ctx, percent_format(s.raw, rv))
+    (@value.Value::StrVal(s), _) => check(ctx, percent_format(s.raw(), rv))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -637,8 +637,8 @@ fn percent_format(
             buf.write_char(cp.unsafe_to_char())
           }
           @value.Value::StrVal(s2) =>
-            if s2.raw.length() == 1 {
-              buf.write_string(s2.raw)
+            if s2.raw().length() == 1 {
+              buf.write_string(s2.raw())
             } else {
               return Err("%c requires a single-character string")
             }
@@ -1013,7 +1013,8 @@ fn in_op(
       @value.Value::BoolVal(check(ctx, s.contains(needle)))
     @value.Value::StrVal(s) =>
       match needle {
-        @value.Value::StrVal(n) => @value.Value::BoolVal(s.raw.contains(n.raw))
+        @value.Value::StrVal(n) =>
+          @value.Value::BoolVal(s.raw().contains(n.raw()))
         _ =>
           raise EvalErr(
             make_eval_error(

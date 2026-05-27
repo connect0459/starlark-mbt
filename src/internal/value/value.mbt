@@ -1,6 +1,6 @@
 ///|
 pub struct StarlarkString {
-  raw : String
+  priv raw : String
   priv bytes : Bytes
 }
 
@@ -37,6 +37,11 @@ pub fn StarlarkString::equals(
 ///|
 pub fn StarlarkString::to_bytes(self : StarlarkString) -> Bytes {
   self.bytes
+}
+
+///|
+pub fn StarlarkString::raw(self : StarlarkString) -> String {
+  self.raw
 }
 
 ///|

@@ -259,7 +259,7 @@ test "StarlarkList: push appends item accessible by index" {
   assert_eq(l.length(), 1)
   let elem = l.get(0)
   match elem {
-    Value::StrVal(s) => assert_eq(s.raw, "hello")
+    Value::StrVal(s) => assert_eq(s.raw(), "hello")
     _ => fail("expected StrVal")
   }
 }
@@ -279,7 +279,7 @@ test "StarlarkList: push multiple items maintains insertion order" {
 ///|
 test "Value::of_string wraps a string without manual StarlarkString::new" {
   match Value::of_string("hello") {
-    StrVal(s) => assert_eq(s.raw, "hello")
+    StrVal(s) => assert_eq(s.raw(), "hello")
     _ => fail("expected StrVal")
   }
 }

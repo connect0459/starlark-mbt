@@ -193,7 +193,7 @@ fn encode_dict_val(
       return
     }
     match k {
-      @value.Value::StrVal(s) => pairs.push((s.raw, v))
+      @value.Value::StrVal(s) => pairs.push((s.raw(), v))
       _ => first_err = Some("dict has \{@value.type_name(k)} key, want string")
     }
   })
@@ -708,8 +708,8 @@ fn make_encode_indent_fn() -> @value.Value {
     for kw in kw_args {
       let (k, v) = kw
       match (k, v) {
-        ("prefix", @value.Value::StrVal(s)) => pfx = s.raw
-        ("indent", @value.Value::StrVal(s)) => ind = s.raw
+        ("prefix", @value.Value::StrVal(s)) => pfx = s.raw()
+        ("indent", @value.Value::StrVal(s)) => ind = s.raw()
         ("prefix" | "indent", _) =>
           return Err("json.encode_indent: prefix and indent must be strings")
         _ => return Err("json.encode_indent: unexpected keyword argument \{k}")
@@ -738,7 +738,7 @@ fn make_decode_fn() -> @value.Value {
       return Err("json.decode: missing required argument 'x'")
     }
     let x = match pos_args[0] {
-      @value.Value::StrVal(s) => s.raw
+      @value.Value::StrVal(s) => s.raw()
       _ => return Err("json.decode: x must be a string")
     }
     let default_val : @value.Value? = if pos_args.length() >= 2 {
@@ -765,7 +765,7 @@ fn make_indent_fn() -> @value.Value {
       return Err("json.indent: got \{pos_args.length()} arguments, want 1")
     }
     let s = match pos_args[0] {
-      @value.Value::StrVal(s) => s.raw
+      @value.Value::StrVal(s) => s.raw()
       _ => return Err("json.indent: argument must be a string")
     }
     let mut pfx = ""
@@ -773,8 +773,8 @@ fn make_indent_fn() -> @value.Value {
     for kw in kw_args {
       let (k, v) = kw
       match (k, v) {
-        ("prefix", @value.Value::StrVal(sv)) => pfx = sv.raw
-        ("indent", @value.Value::StrVal(sv)) => ind = sv.raw
+        ("prefix", @value.Value::StrVal(sv)) => pfx = sv.raw()
+        ("indent", @value.Value::StrVal(sv)) => ind = sv.raw()
         ("prefix" | "indent", _) =>
           return Err("json.indent: prefix and indent must be strings")
         _ => return Err("json.indent: unexpected keyword argument \{k}")
