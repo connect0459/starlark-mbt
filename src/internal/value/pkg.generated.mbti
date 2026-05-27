@@ -8,6 +8,8 @@ import {
 // Values
 pub fn compare_values(Value, Value) -> Result[Int, String]
 
+pub fn compare_values_depth(Value, Value, Int) -> Result[Int, String]
+
 pub fn floor_div(Int64, Int64) -> Result[Int64, String]
 
 pub fn freeze_value(Value) -> Unit
@@ -19,6 +21,8 @@ pub fn length_of(Value) -> Result[Int, String]
 pub fn repr(Value) -> String
 
 pub fn starlark_equals(Value, Value) -> Bool
+
+pub fn starlark_equals_depth(Value, Value, Int) -> Result[Bool, String]
 
 pub fn starlark_hash(Value) -> Result[UInt, String]
 
@@ -62,6 +66,7 @@ pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
 pub fn StarlarkDict::freeze(Self) -> Unit
 pub fn StarlarkDict::get(Self, Value) -> Result[Value?, String]
 pub fn StarlarkDict::is_frozen(Self) -> Bool
+pub fn StarlarkDict::is_same_storage(Self, Self) -> Bool
 pub fn StarlarkDict::iter_begin(Self) -> Unit
 pub fn StarlarkDict::iter_end(Self) -> Unit
 pub fn StarlarkDict::keys(Self) -> Array[Value]

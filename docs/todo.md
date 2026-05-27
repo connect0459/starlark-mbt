@@ -561,7 +561,7 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `dict.star` — all assertions pass including dict union (|, |=); hasfields-
         based tests excluded
   - [x] `control.star` — if/elif/else, for loops with break/continue, return
-        semantics, scoping; fibonacci infinite iterable excluded
+        semantics, scoping; fibonacci predeclared as 100-element list
   - [x] `function.star` — closures, lexical scope, stateful closures, freeze,
         mutable defaults, lambda parsing, missing/duplicate param errors, dynamic
         **kwargs checks, CALL_VAR_KW, eval order, recursive closures, forward refs,
@@ -576,18 +576,17 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `bytes.star` — all assertions pass; type(hello.elems())=="bytes.elems"
         and str(hello.elems()) tests excluded (elems() returns list, not
         bytes.elems iterator type)
-  - [x] `assign.star` — all assertions pass; option:globalreassign and
-        option:loadbindsglobally dialect-specific chunks excluded; hasfields()
-        tests excluded; shadowing built-ins with forward reference excluded
-        (resolver does not mark earlier references as local). Also fixed: float
-        floor-mod semantics (ops.mbt) and augmented assignment to subscript
-        evaluated LHS only once (stmt.mbt).
+  - [x] `assign.star` — all assertions pass; passing-case dialect chunks for
+        option:globalreassign and option:loadbindsglobally added; error chunks
+        requiring unbound-cell detection excluded; hasfields() tests excluded.
+        Also fixed: resolver now allows load-imported name reassignment when
+        allow_global_reassign=true (matching starlark-go semantics).
   - [x] `float.star` — all assertions pass; BigInt cases excluded. Fixes made:
         NaN equality (starlark-go semantics), -0.0 display, float literal
         parsing precision via @math.pow, int(NaN/Inf) errors, float floor-mod.
-  - [x] `misc.star` — all assertions pass; cyclic data structure tests excluded
-        (cycle detection not implemented); "did you mean" typo suggestion in
-        load errors excluded (not implemented).
+  - [x] `misc.star` — all assertions pass; cyclic data structure tests (repr
+        with ellipsis, "maximum recursion" on equality) now included; "did you
+        mean" typo suggestion in load errors now included.
   - [x] `function_param.star` — no assertions (only function definitions used
         by Go unit tests); no port needed.
   - [x] `module.star` — type/str/dir/hash/assign/missing-field; "did you mean"
@@ -757,15 +756,16 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 
 ### Remaining low-cost items (not yet implemented)
 
-- [ ] **Cycle detection** — `repr`/`str` truncates circular references as `[...]`
-      (`misc_test`, `function_test`)
+- [x] **Cycle detection** — `repr`/`str` truncates circular references as `[...]`;
+      `==` / `<` on cyclic structures raises "maximum recursion" (`misc_test`)
 - [ ] **Unbound cell detection** — referencing a local before assignment raises an error
       (`list_test`, `function_test`)
-- [ ] **`BoundMethod` hash identity** — `{x.f, x.f}` produces a one-element set
-      (`function_test`)
-- [ ] **`option:globalreassign` / `option:loadbindsglobally` test chunks** — dialect flag tests
-      (`assign_test`)
-- [ ] **"did you mean" suggestion** — typo hint in `load` errors (`misc_test`, `module_test`)
+- [x] **`BoundMethod` hash identity** — each method access creates a unique ID so
+      `{x.f, x.f}` produces a 10-element set (`function_test`)
+- [x] **`option:globalreassign` / `option:loadbindsglobally` test chunks** — dialect flag
+      parsing added to `run_chunked_string`; passing-case chunks added (`assign_test`)
+- [x] **"did you mean" suggestion** — Levenshtein-based typo hint in `load` errors
+      (`misc_test`)
 
 ---
 
