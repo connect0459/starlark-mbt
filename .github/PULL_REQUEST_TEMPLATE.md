@@ -5,7 +5,7 @@
 ## Related Links
 
 - Issues:
-  - <!-- <https://github.com/connect0459/urllib.mbt/issues/xxx> -->
+  - <!-- <https://github.com/<organization>/<repository>/issues/xxx> -->
 - specs/WPT tests:
   - <!-- URL or path -->
 
