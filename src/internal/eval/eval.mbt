@@ -46,7 +46,9 @@ pub fn Universe::standard() -> Universe {
   m["True"] = @value.Value::BoolVal(true)
   m["False"] = @value.Value::BoolVal(false)
   for name in builtin_names {
-    m[name] = @value.Value::BuiltinFuncVal({ name, body: None })
+    m[name] = @value.Value::BuiltinFuncVal(
+      @value.StarlarkBuiltinFunc::dispatch(name),
+    )
   }
   { bindings: m }
 }

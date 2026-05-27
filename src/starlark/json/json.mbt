@@ -62,7 +62,7 @@ fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
 fn json_quote_string(s : @value.StarlarkString) -> String {
   let buf = StringBuilder::new()
   buf.write_char('"')
-  let bytes = s.bytes
+  let bytes = s.to_bytes()
   let len = bytes.length()
   let mut i = 0
   while i < len {
@@ -745,117 +745,104 @@ pub fn indent_json(
 
 ///|
 fn make_encode_fn() -> @value.Value {
-  @value.Value::BuiltinFuncVal({
-    name: "json.encode",
-    body: Some(fn(_ctx, pos_args, kw_args) {
-      if pos_args.length() != 1 || kw_args.length() != 0 {
-        return Err("json.encode: got \{pos_args.length()} arguments, want 1")
-      }
-      encode_to_json(pos_args[0]).map(fn(s) {
-        @value.Value::StrVal(@value.StarlarkString::new(s))
-      })
-    }),
+  @value.Value::new_builtin("json.encode", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 || kw_args.length() != 0 {
+      return Err("json.encode: got \{pos_args.length()} arguments, want 1")
+    }
+    encode_to_json(pos_args[0]).map(fn(s) {
+      @value.Value::StrVal(@value.StarlarkString::new(s))
+    })
   })
 }
 
 ///|
 fn make_encode_indent_fn() -> @value.Value {
-  @value.Value::BuiltinFuncVal({
-    name: "json.encode_indent",
-    body: Some(fn(_ctx, pos_args, kw_args) {
-      if pos_args.length() != 1 {
-        return Err(
-          "json.encode_indent: got \{pos_args.length()} arguments, want 1",
-        )
+  @value.Value::new_builtin("json.encode_indent", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 {
+      return Err(
+        "json.encode_indent: got \{pos_args.length()} arguments, want 1",
+      )
+    }
+    let mut pfx = ""
+    let mut ind = "\t"
+    for kw in kw_args {
+      let (k, v) = kw
+      match (k, v) {
+        ("prefix", @value.Value::StrVal(s)) => pfx = s.raw
+        ("indent", @value.Value::StrVal(s)) => ind = s.raw
+        ("prefix" | "indent", _) =>
+          return Err("json.encode_indent: prefix and indent must be strings")
+        _ => return Err("json.encode_indent: unexpected keyword argument \{k}")
       }
-      let mut pfx = ""
-      let mut ind = "\t"
-      for kw in kw_args {
-        let (k, v) = kw
-        match (k, v) {
-          ("prefix", @value.Value::StrVal(s)) => pfx = s.raw
-          ("indent", @value.Value::StrVal(s)) => ind = s.raw
-          ("prefix" | "indent", _) =>
-            return Err("json.encode_indent: prefix and indent must be strings")
-          _ =>
-            return Err("json.encode_indent: unexpected keyword argument \{k}")
-        }
-      }
-      match encode_to_json(pos_args[0]) {
-        Err(e) => Err(e)
-        Ok(json_str) =>
-          indent_json(json_str, pfx, ind).map(fn(result) {
-            @value.Value::StrVal(@value.StarlarkString::new(result))
-          })
-      }
-    }),
+    }
+    match encode_to_json(pos_args[0]) {
+      Err(e) => Err(e)
+      Ok(json_str) =>
+        indent_json(json_str, pfx, ind).map(fn(result) {
+          @value.Value::StrVal(@value.StarlarkString::new(result))
+        })
+    }
   })
 }
 
 ///|
 fn make_decode_fn() -> @value.Value {
-  @value.Value::BuiltinFuncVal({
-    name: "json.decode",
-    body: Some(fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("json.decode", fn(_ctx, pos_args, kw_args) {
+    for kw in kw_args {
+      let (k, _) = kw
+      if k == "x" {
+        return Err("json.decode: unexpected keyword argument x")
+      }
+    }
+    if pos_args.length() < 1 {
+      return Err("json.decode: missing required argument 'x'")
+    }
+    let x = match pos_args[0] {
+      @value.Value::StrVal(s) => s.raw
+      _ => return Err("json.decode: x must be a string")
+    }
+    let default_val : @value.Value? = if pos_args.length() >= 2 {
+      Some(pos_args[1])
+    } else {
+      let mut found : @value.Value? = None
       for kw in kw_args {
-        let (k, _) = kw
-        if k == "x" {
-          return Err("json.decode: unexpected keyword argument x")
+        let (k, v) = kw
+        if k == "default" {
+          found = Some(v)
+          break
         }
       }
-      if pos_args.length() < 1 {
-        return Err("json.decode: missing required argument 'x'")
-      }
-      let x = match pos_args[0] {
-        @value.Value::StrVal(s) => s.raw
-        _ => return Err("json.decode: x must be a string")
-      }
-      let default_val : @value.Value? = if pos_args.length() >= 2 {
-        Some(pos_args[1])
-      } else {
-        let mut found : @value.Value? = None
-        for kw in kw_args {
-          let (k, v) = kw
-          if k == "default" {
-            found = Some(v)
-            break
-          }
-        }
-        found
-      }
-      decode_from_json(x, default_val)
-    }),
+      found
+    }
+    decode_from_json(x, default_val)
   })
 }
 
 ///|
 fn make_indent_fn() -> @value.Value {
-  @value.Value::BuiltinFuncVal({
-    name: "json.indent",
-    body: Some(fn(_ctx, pos_args, kw_args) {
-      if pos_args.length() != 1 {
-        return Err("json.indent: got \{pos_args.length()} arguments, want 1")
+  @value.Value::new_builtin("json.indent", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 {
+      return Err("json.indent: got \{pos_args.length()} arguments, want 1")
+    }
+    let s = match pos_args[0] {
+      @value.Value::StrVal(s) => s.raw
+      _ => return Err("json.indent: argument must be a string")
+    }
+    let mut pfx = ""
+    let mut ind = "\t"
+    for kw in kw_args {
+      let (k, v) = kw
+      match (k, v) {
+        ("prefix", @value.Value::StrVal(sv)) => pfx = sv.raw
+        ("indent", @value.Value::StrVal(sv)) => ind = sv.raw
+        ("prefix" | "indent", _) =>
+          return Err("json.indent: prefix and indent must be strings")
+        _ => return Err("json.indent: unexpected keyword argument \{k}")
       }
-      let s = match pos_args[0] {
-        @value.Value::StrVal(s) => s.raw
-        _ => return Err("json.indent: argument must be a string")
-      }
-      let mut pfx = ""
-      let mut ind = "\t"
-      for kw in kw_args {
-        let (k, v) = kw
-        match (k, v) {
-          ("prefix", @value.Value::StrVal(sv)) => pfx = sv.raw
-          ("indent", @value.Value::StrVal(sv)) => ind = sv.raw
-          ("prefix" | "indent", _) =>
-            return Err("json.indent: prefix and indent must be strings")
-          _ => return Err("json.indent: unexpected keyword argument \{k}")
-        }
-      }
-      indent_json(s, pfx, ind).map(fn(result) {
-        @value.Value::StrVal(@value.StarlarkString::new(result))
-      })
-    }),
+    }
+    indent_json(s, pfx, ind).map(fn(result) {
+      @value.Value::StrVal(@value.StarlarkString::new(result))
+    })
   })
 }
 

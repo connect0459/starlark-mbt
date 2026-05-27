@@ -69,7 +69,10 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
   base.bind("True", @value.Value::BoolVal(true))
   base.bind("False", @value.Value::BoolVal(false))
   for name in builtin_names {
-    base.bind(name, @value.Value::BuiltinFuncVal({ name, body: None }))
+    base.bind(
+      name,
+      @value.Value::BuiltinFuncVal(@value.StarlarkBuiltinFunc::dispatch(name)),
+    )
   }
   let global_env = EvalEnv::for_module(base)
   { thread, opts, global_env, load_bound_names: [] }

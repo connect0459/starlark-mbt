@@ -157,10 +157,9 @@ test "encode range" {
 
 ///|
 test "encode unrepresentable type returns error" {
-  let bf : @value.Value = @value.Value::BuiltinFuncVal({
-    name: "len",
-    body: None,
-  })
+  let bf : @value.Value = @value.Value::BuiltinFuncVal(
+    @value.StarlarkBuiltinFunc::dispatch("len"),
+  )
   check_encode_err(bf, "cannot encode builtin_function_or_method as JSON")
 }
 

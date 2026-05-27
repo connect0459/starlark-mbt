@@ -1,7 +1,7 @@
 ///|
-pub(all) struct StarlarkString {
+pub struct StarlarkString {
   raw : String
-  bytes : Bytes
+  priv bytes : Bytes
 }
 
 ///|
@@ -32,6 +32,11 @@ pub fn StarlarkString::equals(
   other : StarlarkString,
 ) -> Bool {
   self.bytes == other.bytes
+}
+
+///|
+pub fn StarlarkString::to_bytes(self : StarlarkString) -> Bytes {
+  self.bytes
 }
 
 ///|
@@ -71,10 +76,10 @@ pub fn StarlarkList::check_mutable(
 }
 
 ///|
-pub(all) struct StarlarkRange {
-  start : Int64
-  stop : Int64
-  step : Int64
+pub struct StarlarkRange {
+  priv start : Int64
+  priv stop : Int64
+  priv step : Int64
 }
 
 ///|
@@ -84,6 +89,21 @@ pub fn StarlarkRange::new(
   step : Int64,
 ) -> StarlarkRange {
   { start, stop, step }
+}
+
+///|
+pub fn StarlarkRange::start(self : StarlarkRange) -> Int64 {
+  self.start
+}
+
+///|
+pub fn StarlarkRange::stop(self : StarlarkRange) -> Int64 {
+  self.stop
+}
+
+///|
+pub fn StarlarkRange::step(self : StarlarkRange) -> Int64 {
+  self.step
 }
 
 ///|
@@ -131,12 +151,30 @@ pub(all) struct BuiltinCallCtx {
 }
 
 ///|
-pub(all) struct StarlarkBuiltinFunc {
+pub struct StarlarkBuiltinFunc {
   name : String
-  body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
+  priv body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
     Value,
     String,
   ])?
+}
+
+///|
+pub fn StarlarkBuiltinFunc::dispatch(name : String) -> StarlarkBuiltinFunc {
+  { name, body: None }
+}
+
+///|
+pub fn StarlarkBuiltinFunc::call_body(
+  self : StarlarkBuiltinFunc,
+  ctx : BuiltinCallCtx,
+  pos_args : Array[Value],
+  kw_args : Array[(String, Value)],
+) -> Result[Value, String]? {
+  match self.body {
+    None => None
+    Some(f) => Some(f(ctx, pos_args, kw_args))
+  }
 }
 
 ///|

@@ -1285,9 +1285,9 @@ fn eval_slice(
     @value.Value::RangeVal(r) => {
       let len = r.length()
       let (start, end_idx) = normalize_slice(lo_opt, hi_opt, len, step)
-      let new_start = r.start + r.step * start.to_int64()
-      let new_stop = r.start + r.step * end_idx.to_int64()
-      let new_step = r.step * step.to_int64()
+      let new_start = r.start() + r.step() * start.to_int64()
+      let new_stop = r.start() + r.step() * end_idx.to_int64()
+      let new_step = r.step() * step.to_int64()
       @value.Value::RangeVal(
         @value.StarlarkRange::new(new_start, new_stop, new_step),
       )

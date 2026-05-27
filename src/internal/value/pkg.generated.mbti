@@ -42,10 +42,12 @@ pub(all) struct StarlarkBoundMethod {
   method_name : String
 }
 
-pub(all) struct StarlarkBuiltinFunc {
+pub struct StarlarkBuiltinFunc {
   name : String
-  body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[Value, String])?
+  // private fields
 }
+pub fn StarlarkBuiltinFunc::call_body(Self, BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[Value, String]?
+pub fn StarlarkBuiltinFunc::dispatch(String) -> Self
 
 pub struct StarlarkDict {
   // private fields
@@ -97,15 +99,16 @@ pub fn StarlarkModule::attr_names(Self) -> Array[String]
 pub fn StarlarkModule::get(Self, String) -> Value?
 pub fn StarlarkModule::new(String, Map[String, Value]) -> Self
 
-pub(all) struct StarlarkRange {
-  start : Int64
-  stop : Int64
-  step : Int64
+pub struct StarlarkRange {
+  // private fields
 }
 pub fn StarlarkRange::contains(Self, Int64) -> Bool
 pub fn StarlarkRange::index_at(Self, Int) -> Int64
 pub fn StarlarkRange::length(Self) -> Int
 pub fn StarlarkRange::new(Int64, Int64, Int64) -> Self
+pub fn StarlarkRange::start(Self) -> Int64
+pub fn StarlarkRange::step(Self) -> Int64
+pub fn StarlarkRange::stop(Self) -> Int64
 
 pub struct StarlarkSet {
   // private fields
@@ -123,15 +126,16 @@ pub fn StarlarkSet::new() -> Self
 pub fn StarlarkSet::pop_first(Self) -> Result[Value?, String]
 pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]
 
-pub(all) struct StarlarkString {
+pub struct StarlarkString {
   raw : String
-  bytes : Bytes
+  // private fields
 }
 pub fn StarlarkString::byte_at(Self, Int) -> Byte
 pub fn StarlarkString::byte_len(Self) -> Int
 pub fn StarlarkString::equals(Self, Self) -> Bool
 pub fn StarlarkString::from_bytes(Bytes) -> Self
 pub fn StarlarkString::new(String) -> Self
+pub fn StarlarkString::to_bytes(Self) -> Bytes
 
 pub(all) enum Value {
   NoneVal

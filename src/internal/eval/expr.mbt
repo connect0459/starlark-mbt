@@ -311,23 +311,20 @@ fn call_value(
 ) -> @value.Value raise EvalErr {
   match func_val {
     @value.Value::FuncVal(f) => call_func(ctx, f, pos_args, kw_args, pos)
-    @value.Value::BuiltinFuncVal(f) =>
-      match f.body {
-        Some(body) => {
-          let call_ctx : @value.BuiltinCallCtx = {
-            call: fn(f2, args, kwargs) {
-              Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
-                EvalErr(e) => Err(e.msg)
-              }
-            },
+    @value.Value::BuiltinFuncVal(f) => {
+      let call_ctx : @value.BuiltinCallCtx = {
+        call: fn(f2, args, kwargs) {
+          Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
+            EvalErr(e) => Err(e.msg)
           }
-          match body(call_ctx, pos_args, kw_args) {
-            Ok(v) => v
-            Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
-          }
-        }
+        },
+      }
+      match f.call_body(call_ctx, pos_args, kw_args) {
+        Some(Ok(v)) => v
+        Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
         None => call_builtin(ctx, f.name, pos_args, kw_args, pos)
       }
+    }
     @value.Value::BoundMethodVal(m) =>
       call_method(ctx, m.recv, m.method_name, pos_args, kw_args, pos)
     _ =>
@@ -2758,7 +2755,7 @@ fn call_str_method(
     }
     "elems" => {
       let parts : Array[@value.Value] = []
-      for b in s.bytes {
+      for b in s.to_bytes() {
         let buf = StringBuilder::new()
         buf.write_char(b.to_int().unsafe_to_char())
         parts.push(
@@ -2769,7 +2766,7 @@ fn call_str_method(
     }
     "elem_ords" => {
       let ords : Array[@value.Value] = []
-      for b in s.bytes {
+      for b in s.to_bytes() {
         ords.push(@value.Value::IntVal(b.to_int().to_int64()))
       }
       @value.Value::ListVal(@value.StarlarkList::new(ords))
@@ -3130,7 +3127,7 @@ fn builtin_bytes(
   }
   match pos_args[0] {
     @value.Value::BytesVal(b) => @value.Value::BytesVal(b)
-    @value.Value::StrVal(s) => @value.Value::BytesVal(s.bytes)
+    @value.Value::StrVal(s) => @value.Value::BytesVal(s.to_bytes())
     other => {
       let it = match @value.iterate(other) {
         Err(_) =>
