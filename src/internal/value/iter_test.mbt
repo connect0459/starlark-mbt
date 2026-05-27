@@ -141,13 +141,7 @@ test "iterate: non-iterable None returns error" {
 
 ///|
 test "iterate: non-iterable function returns error" {
-  let f = Value::FuncVal(StarlarkFunction::{
-    name: "f",
-    params: [],
-    body: [],
-    defaults: [],
-    captured_scope: [],
-  })
+  let f = Value::FuncVal(StarlarkFunction::new("f", [], [], [], []))
   assert_true(iterate(f) is Err(_))
 }
 
@@ -284,15 +278,7 @@ test "length_of: non-sized type returns error" {
   assert_true(length_of(Value::IntVal(42L)) is Err(_))
   assert_true(length_of(Value::NoneVal) is Err(_))
   assert_true(
-    length_of(
-      Value::FuncVal(StarlarkFunction::{
-        name: "f",
-        params: [],
-        body: [],
-        defaults: [],
-        captured_scope: [],
-      }),
-    )
+    length_of(Value::FuncVal(StarlarkFunction::new("f", [], [], [], [])))
     is Err(_),
   )
 }

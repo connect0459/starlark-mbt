@@ -137,12 +137,47 @@ pub fn StarlarkRange::contains(self : StarlarkRange, n : Int64) -> Bool {
 }
 
 ///|
-pub(all) struct StarlarkFunction {
+pub struct StarlarkFunction {
   name : String
-  params : Array[@syntax.Param]
-  body : Array[@syntax.Stmt]
-  defaults : Array[Value?]
-  captured_scope : Array[Map[String, Value]]
+  priv params : Array[@syntax.Param]
+  priv body : Array[@syntax.Stmt]
+  priv defaults : Array[Value?]
+  priv captured_scope : Array[Map[String, Value]]
+}
+
+///|
+pub fn StarlarkFunction::new(
+  name : String,
+  params : Array[@syntax.Param],
+  body : Array[@syntax.Stmt],
+  defaults : Array[Value?],
+  captured_scope : Array[Map[String, Value]],
+) -> StarlarkFunction {
+  { name, params, body, defaults, captured_scope }
+}
+
+///|
+pub fn StarlarkFunction::params(
+  self : StarlarkFunction,
+) -> Array[@syntax.Param] {
+  self.params
+}
+
+///|
+pub fn StarlarkFunction::body(self : StarlarkFunction) -> Array[@syntax.Stmt] {
+  self.body
+}
+
+///|
+pub fn StarlarkFunction::defaults(self : StarlarkFunction) -> Array[Value?] {
+  self.defaults
+}
+
+///|
+pub fn StarlarkFunction::captured_scope(
+  self : StarlarkFunction,
+) -> Array[Map[String, Value]] {
+  self.captured_scope
 }
 
 ///|

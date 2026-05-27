@@ -153,13 +153,13 @@ fn eval_expr_node(
       let defaults = eval_defaults(ctx, env, params)
       let body_stmt = @syntax.Stmt::SReturn(Some(body_expr), pos)
       let captured_scope = env.collect_local_scopes()
-      let func = @value.StarlarkFunction::{
-        name: "<lambda>",
+      let func = @value.StarlarkFunction::new(
+        "<lambda>",
         params,
-        body: [body_stmt],
+        [body_stmt],
         defaults,
         captured_scope,
-      }
+      )
       @value.Value::FuncVal(func)
     }
     @syntax.Expr::EListComp(body_expr, clauses, _) => {
@@ -350,7 +350,7 @@ fn call_func(
   ctx.thread.call_stack.push(frame)
   try {
     let mut parent = ctx.global_env
-    for scope_map in f.captured_scope {
+    for scope_map in f.captured_scope() {
       let scope_env : EvalEnv = {
         locals: scope_map,
         parent: Some(parent),
@@ -360,7 +360,7 @@ fn call_func(
     }
     let func_env = EvalEnv::with_parent(parent)
     bind_args(ctx, f, pos_args, kw_args, func_env, pos)
-    let sig = exec_stmts(ctx, func_env, f.body)
+    let sig = exec_stmts(ctx, func_env, f.body())
     ignore(ctx.thread.call_stack.pop())
     match sig {
       Signal::SigReturn(v) => v
@@ -411,8 +411,8 @@ fn bind_args(
     }
     kw_map[kw_name] = kw_val
   }
-  let params = f.params
-  let defaults = f.defaults
+  let params = f.params()
+  let defaults = f.defaults()
   let mut pos_idx = 0
   let mut param_idx = 0
   let mut passed_star = false

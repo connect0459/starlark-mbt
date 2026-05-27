@@ -68,13 +68,15 @@ pub fn StarlarkDict::new() -> Self
 pub fn StarlarkDict::popitem(Self) -> Result[(Value, Value)?, String]
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
 
-pub(all) struct StarlarkFunction {
+pub struct StarlarkFunction {
   name : String
-  params : Array[@syntax.Param]
-  body : Array[@syntax.Stmt]
-  defaults : Array[Value?]
-  captured_scope : Array[Map[String, Value]]
+  // private fields
 }
+pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
+pub fn StarlarkFunction::captured_scope(Self) -> Array[Map[String, Value]]
+pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
+pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], Array[Value?], Array[Map[String, Value]]) -> Self
+pub fn StarlarkFunction::params(Self) -> Array[@syntax.Param]
 
 pub struct StarlarkIterator {
   next_fn : () -> Value?

@@ -119,13 +119,9 @@ fn exec_stmt(
     @syntax.Stmt::SDef(name, params, body, _) => {
       let defaults = eval_defaults(ctx, env, params)
       let captured_scope = env.collect_local_scopes()
-      let func = @value.StarlarkFunction::{
-        name,
-        params,
-        body,
-        defaults,
-        captured_scope,
-      }
+      let func = @value.StarlarkFunction::new(
+        name, params, body, defaults, captured_scope,
+      )
       env.bind(name, @value.Value::FuncVal(func))
       Signal::SigNormal
     }

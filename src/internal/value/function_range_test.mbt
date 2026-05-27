@@ -117,37 +117,19 @@ test "Value: truth for empty range is false" {
 
 ///|
 test "Value: type_name for user-defined function is function" {
-  let f = StarlarkFunction::{
-    name: "add",
-    params: [],
-    body: [],
-    defaults: [],
-    captured_scope: [],
-  }
+  let f = StarlarkFunction::new("add", [], [], [], [])
   assert_eq(type_name(Value::FuncVal(f)), "function")
 }
 
 ///|
 test "Value: repr for function shows name in angle brackets" {
-  let f = StarlarkFunction::{
-    name: "my_func",
-    params: [],
-    body: [],
-    defaults: [],
-    captured_scope: [],
-  }
+  let f = StarlarkFunction::new("my_func", [], [], [], [])
   assert_eq(repr(Value::FuncVal(f)), "<function my_func>")
 }
 
 ///|
 test "Value: truth for function is always true" {
-  let f = StarlarkFunction::{
-    name: "f",
-    params: [],
-    body: [],
-    defaults: [],
-    captured_scope: [],
-  }
+  let f = StarlarkFunction::new("f", [], [], [], [])
   assert_true(truth(Value::FuncVal(f)))
 }
 

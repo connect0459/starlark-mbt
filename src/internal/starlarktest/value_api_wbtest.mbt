@@ -6,7 +6,7 @@
 ///|
 fn get_func_defaults(m : @eval.Module, name : String) -> Array[@value.Value?] {
   match m.get(name) {
-    Some(@value.Value::FuncVal(f)) => f.defaults
+    Some(@value.Value::FuncVal(f)) => f.defaults()
     _ => []
   }
 }
