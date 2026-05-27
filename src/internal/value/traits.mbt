@@ -71,8 +71,6 @@ fn slice_equals(a : ArrayView[Value], b : ArrayView[Value]) -> Bool {
   true
 }
 
-// FNV-1a 32-bit constants
-
 ///|
 let fnv_offset_basis : UInt = 2166136261U
 

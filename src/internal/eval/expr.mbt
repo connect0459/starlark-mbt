@@ -37,7 +37,6 @@ fn eval_expr_node(
       let v = eval_expr_node(ctx, env, e)
       eval_unary(ctx, op, v, pos)
     }
-    // Short-circuit operators handled before general binary
     @syntax.Expr::EBinary(l, @syntax.BinaryOp::OpAnd, r, _) => {
       let lv = eval_expr_node(ctx, env, l)
       if !@value.truth(lv) {
