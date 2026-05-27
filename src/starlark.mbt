@@ -66,3 +66,28 @@ pub fn eval_expr(
 pub fn module_get(m : Module, name : String) -> Value? {
   m.get(name)
 }
+
+///|
+pub fn repr(v : Value) -> String {
+  @value.repr(v)
+}
+
+///|
+pub fn to_str(v : Value) -> String {
+  @value.to_str(v)
+}
+
+///|
+pub fn type_name(v : Value) -> String {
+  @value.type_name(v)
+}
+
+///|
+pub fn truth(v : Value) -> Bool {
+  @value.truth(v)
+}
+
+///|
+pub fn starlark_equals(a : Value, b : Value) -> Bool {
+  @value.starlark_equals(a, b)
+}

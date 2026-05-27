@@ -39,86 +39,86 @@ test "StarlarkString: equality compares bytes" {
 
 ///|
 test "Value: type_name for None" {
-  assert_eq(type_name(Value::NoneVal), "NoneType")
+  assert_eq(type_name(Value::None), "NoneType")
 }
 
 ///|
 test "Value: type_name for Bool" {
-  assert_eq(type_name(Value::BoolVal(true)), "bool")
-  assert_eq(type_name(Value::BoolVal(false)), "bool")
+  assert_eq(type_name(Value::Bool(true)), "bool")
+  assert_eq(type_name(Value::Bool(false)), "bool")
 }
 
 ///|
 test "Value: type_name for Int" {
-  assert_eq(type_name(Value::IntVal(42L)), "int")
+  assert_eq(type_name(Value::Int(42L)), "int")
 }
 
 ///|
 test "Value: type_name for Float" {
-  assert_eq(type_name(Value::FloatVal(1.0)), "float")
+  assert_eq(type_name(Value::Float(1.0)), "float")
 }
 
 ///|
 test "Value: type_name for String" {
-  assert_eq(type_name(Value::StrVal(StarlarkString::new("hello"))), "string")
+  assert_eq(type_name(Value::String(StarlarkString::new("hello"))), "string")
 }
 
 ///|
 test "Value: type_name for Bytes" {
-  assert_eq(type_name(Value::BytesVal(Bytes::new(0))), "bytes")
+  assert_eq(type_name(Value::Bytes(Bytes::new(0))), "bytes")
 }
 
 ///|
 test "Value: truth for None is always false" {
-  assert_false(truth(Value::NoneVal))
+  assert_false(truth(Value::None))
 }
 
 ///|
 test "Value: truth for Bool" {
-  assert_true(truth(Value::BoolVal(true)))
-  assert_false(truth(Value::BoolVal(false)))
+  assert_true(truth(Value::Bool(true)))
+  assert_false(truth(Value::Bool(false)))
 }
 
 ///|
 test "Value: truth for Int zero is false" {
-  assert_false(truth(Value::IntVal(0L)))
+  assert_false(truth(Value::Int(0L)))
 }
 
 ///|
 test "Value: truth for nonzero Int is true" {
-  assert_true(truth(Value::IntVal(1L)))
-  assert_true(truth(Value::IntVal(-1L)))
+  assert_true(truth(Value::Int(1L)))
+  assert_true(truth(Value::Int(-1L)))
 }
 
 ///|
 test "Value: truth for Float zero is false" {
-  assert_false(truth(Value::FloatVal(0.0)))
+  assert_false(truth(Value::Float(0.0)))
 }
 
 ///|
 test "Value: truth for nonzero Float is true" {
-  assert_true(truth(Value::FloatVal(1.0)))
-  assert_true(truth(Value::FloatVal(-1.0)))
+  assert_true(truth(Value::Float(1.0)))
+  assert_true(truth(Value::Float(-1.0)))
 }
 
 ///|
 test "Value: truth for empty String is false" {
-  assert_false(truth(Value::StrVal(StarlarkString::new(""))))
+  assert_false(truth(Value::String(StarlarkString::new(""))))
 }
 
 ///|
 test "Value: truth for nonempty String is true" {
-  assert_true(truth(Value::StrVal(StarlarkString::new("x"))))
+  assert_true(truth(Value::String(StarlarkString::new("x"))))
 }
 
 ///|
 test "Value: truth for empty Bytes is false" {
-  assert_false(truth(Value::BytesVal(Bytes::new(0))))
+  assert_false(truth(Value::Bytes(Bytes::new(0))))
 }
 
 ///|
 test "Value: truth for nonempty Bytes is true" {
-  assert_true(truth(Value::BytesVal(Bytes::make(1, b'\x00'))))
+  assert_true(truth(Value::Bytes(Bytes::make(1, b'\x00'))))
 }
 
 ///|
@@ -161,86 +161,86 @@ test "Int: starlark_mod by zero is error" {
 
 ///|
 test "Value: repr for None" {
-  assert_eq(repr(Value::NoneVal), "None")
+  assert_eq(repr(Value::None), "None")
 }
 
 ///|
 test "Value: repr for Bool" {
-  assert_eq(repr(Value::BoolVal(true)), "True")
-  assert_eq(repr(Value::BoolVal(false)), "False")
+  assert_eq(repr(Value::Bool(true)), "True")
+  assert_eq(repr(Value::Bool(false)), "False")
 }
 
 ///|
 test "Value: repr for Int" {
-  assert_eq(repr(Value::IntVal(42L)), "42")
-  assert_eq(repr(Value::IntVal(-1L)), "-1")
-  assert_eq(repr(Value::IntVal(0L)), "0")
+  assert_eq(repr(Value::Int(42L)), "42")
+  assert_eq(repr(Value::Int(-1L)), "-1")
+  assert_eq(repr(Value::Int(0L)), "0")
 }
 
 ///|
 test "Value: repr for Float with decimal point" {
-  assert_eq(repr(Value::FloatVal(1.0)), "1.0")
-  assert_eq(repr(Value::FloatVal(1.5)), "1.5")
-  assert_eq(repr(Value::FloatVal(0.0)), "0.0")
+  assert_eq(repr(Value::Float(1.0)), "1.0")
+  assert_eq(repr(Value::Float(1.5)), "1.5")
+  assert_eq(repr(Value::Float(0.0)), "0.0")
 }
 
 ///|
 test "Value: repr for Float special values" {
-  assert_eq(repr(Value::FloatVal(@double.not_a_number)), "nan")
-  assert_eq(repr(Value::FloatVal(@double.infinity)), "+inf")
-  assert_eq(repr(Value::FloatVal(@double.neg_infinity)), "-inf")
+  assert_eq(repr(Value::Float(@double.not_a_number)), "nan")
+  assert_eq(repr(Value::Float(@double.infinity)), "+inf")
+  assert_eq(repr(Value::Float(@double.neg_infinity)), "-inf")
 }
 
 ///|
 test "Value: repr for String with double quotes" {
-  assert_eq(repr(Value::StrVal(StarlarkString::new("hello"))), "\"hello\"")
-  assert_eq(repr(Value::StrVal(StarlarkString::new(""))), "\"\"")
+  assert_eq(repr(Value::String(StarlarkString::new("hello"))), "\"hello\"")
+  assert_eq(repr(Value::String(StarlarkString::new(""))), "\"\"")
 }
 
 ///|
 test "Value: repr for String with escape sequences" {
   assert_eq(
-    repr(Value::StrVal(StarlarkString::new("say \"hi\""))),
+    repr(Value::String(StarlarkString::new("say \"hi\""))),
     "\"say \\\"hi\\\"\"",
   )
-  assert_eq(repr(Value::StrVal(StarlarkString::new("a\nb"))), "\"a\\nb\"")
-  assert_eq(repr(Value::StrVal(StarlarkString::new("a\\b"))), "\"a\\\\b\"")
+  assert_eq(repr(Value::String(StarlarkString::new("a\nb"))), "\"a\\nb\"")
+  assert_eq(repr(Value::String(StarlarkString::new("a\\b"))), "\"a\\\\b\"")
 }
 
 ///|
 test "Value: repr for empty Bytes" {
-  assert_eq(repr(Value::BytesVal(Bytes::new(0))), "b\"\"")
+  assert_eq(repr(Value::Bytes(Bytes::new(0))), "b\"\"")
 }
 
 ///|
 test "Value: repr for Bytes with printable ASCII" {
   // b"abc" should be b"abc"
   let bytes = @utf8.encode("abc")
-  assert_eq(repr(Value::BytesVal(bytes)), "b\"abc\"")
+  assert_eq(repr(Value::Bytes(bytes)), "b\"abc\"")
 }
 
 ///|
 test "Value: repr for Bytes with non-printable bytes" {
   let bytes = Bytes::make(1, b'\xff')
-  assert_eq(repr(Value::BytesVal(bytes)), "b\"\\xff\"")
+  assert_eq(repr(Value::Bytes(bytes)), "b\"\\xff\"")
 }
 
 ///|
 test "StarlarkModule: type_name is module" {
   let m = StarlarkModule::new("assert", {})
-  assert_eq(type_name(Value::ModuleVal(m)), "module")
+  assert_eq(type_name(Value::Module(m)), "module")
 }
 
 ///|
 test "StarlarkModule: truth is always true" {
   let m = StarlarkModule::new("assert", {})
-  assert_true(truth(Value::ModuleVal(m)))
+  assert_true(truth(Value::Module(m)))
 }
 
 ///|
 test "StarlarkModule: repr shows module name" {
   let m = StarlarkModule::new("assert", {})
-  assert_eq(repr(Value::ModuleVal(m)), "<module \"assert\">")
+  assert_eq(repr(Value::Module(m)), "<module \"assert\">")
 }
 
 ///|
@@ -253,57 +253,57 @@ test "StarlarkList: new list is empty and mutable" {
 ///|
 test "StarlarkList: push appends item accessible by index" {
   let l = StarlarkList::new([])
-  l.push(Value::StrVal(StarlarkString::new("hello"))) |> ignore
+  l.push(Value::String(StarlarkString::new("hello"))) |> ignore
   assert_eq(l.length(), 1)
   let elem = l.get(0)
   match elem {
-    Value::StrVal(s) => assert_eq(s.raw(), "hello")
-    _ => fail("expected StrVal")
+    Value::String(s) => assert_eq(s.raw(), "hello")
+    _ => fail("expected String")
   }
 }
 
 ///|
 test "StarlarkList: push multiple items maintains insertion order" {
   let l = StarlarkList::new([])
-  l.push(Value::IntVal(1L)) |> ignore
-  l.push(Value::IntVal(2L)) |> ignore
-  l.push(Value::IntVal(3L)) |> ignore
+  l.push(Value::Int(1L)) |> ignore
+  l.push(Value::Int(2L)) |> ignore
+  l.push(Value::Int(3L)) |> ignore
   assert_eq(l.length(), 3)
-  assert_true(l.get(0) is Value::IntVal(1L))
-  assert_true(l.get(1) is Value::IntVal(2L))
-  assert_true(l.get(2) is Value::IntVal(3L))
+  assert_true(l.get(0) is Value::Int(1L))
+  assert_true(l.get(1) is Value::Int(2L))
+  assert_true(l.get(2) is Value::Int(3L))
 }
 
 ///|
 test "Value::of_string wraps a string without manual StarlarkString::new" {
   match Value::of_string("hello") {
-    StrVal(s) => assert_eq(s.raw(), "hello")
-    _ => fail("expected StrVal")
+    String(s) => assert_eq(s.raw(), "hello")
+    _ => fail("expected String")
   }
 }
 
 ///|
 test "Value::new_list wraps an array as a mutable list" {
-  let v = Value::new_list([Value::IntVal(1L), Value::IntVal(2L)])
+  let v = Value::new_list([Value::Int(1L), Value::Int(2L)])
   match v {
-    ListVal(l) => assert_eq(l.length(), 2)
-    _ => fail("expected ListVal")
+    List(l) => assert_eq(l.length(), 2)
+    _ => fail("expected List")
   }
 }
 
 ///|
 test "Value::new_dict creates an empty dict" {
   match Value::new_dict() {
-    DictVal(d) => assert_eq(d.length(), 0)
-    _ => fail("expected DictVal")
+    Dict(d) => assert_eq(d.length(), 0)
+    _ => fail("expected Dict")
   }
 }
 
 ///|
 test "Value::new_set creates an empty set" {
   match Value::new_set() {
-    SetVal(s) => assert_eq(s.length(), 0)
-    _ => fail("expected SetVal")
+    Set(s) => assert_eq(s.length(), 0)
+    _ => fail("expected Set")
   }
 }
 
@@ -311,12 +311,12 @@ test "Value::new_set creates an empty set" {
 test "Value::new_builtin wraps a named host function" {
   let f = Value::new_builtin("double", fn(_ctx, args, _kw) {
     match args[0] {
-      Value::IntVal(n) => Ok(Value::IntVal(n * 2L))
+      Value::Int(n) => Ok(Value::Int(n * 2L))
       _ => Err("expected int")
     }
   })
   match f {
-    Value::BuiltinFuncVal(b) => assert_eq(b.name(), "double")
-    _ => fail("expected BuiltinFuncVal")
+    Value::Builtin(b) => assert_eq(b.name(), "double")
+    _ => fail("expected Builtin")
   }
 }

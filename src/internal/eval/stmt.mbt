@@ -122,12 +122,12 @@ fn exec_stmt(
       let func = @value.StarlarkFunction::new(
         name, params, body, defaults, captured_scope,
       )
-      env.bind(name, @value.Value::FuncVal(func))
+      env.bind(name, @value.Value::Function(func))
       Signal::SigNormal
     }
     @syntax.Stmt::SReturn(expr_opt, _) =>
       match expr_opt {
-        None => Signal::SigReturn(@value.Value::NoneVal)
+        None => Signal::SigReturn(@value.Value::None)
         Some(e) => {
           let v = eval_expr_node(ctx, env, e)
           Signal::SigReturn(v)
@@ -152,8 +152,8 @@ fn assign_to(
     @syntax.Expr::EIdent(name, _) => env.bind(name, value)
     @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) => {
       let items : Array[@value.Value] = match value {
-        @value.Value::TupleVal(t) => t
-        @value.Value::ListVal(l) => {
+        @value.Value::Tuple(t) => t
+        @value.Value::List(l) => {
           let arr : Array[@value.Value] = []
           for v in l.iter() {
             arr.push(v)
@@ -209,7 +209,7 @@ fn assign_to(
     @syntax.Expr::EDot(obj_expr, attr, _) => {
       let obj = eval_expr_node(ctx, env, obj_expr)
       match obj {
-        @value.Value::ModuleVal(_) =>
+        @value.Value::Module(_) =>
           raise EvalErr(
             make_eval_error(ctx, "can't assign to .\{attr} field of module"),
           )
@@ -238,7 +238,7 @@ fn eval_aug_val(
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, aug_op) {
-    (@value.Value::ListVal(l), @syntax.AugOp::AugAdd) =>
+    (@value.Value::List(l), @syntax.AugOp::AugAdd) =>
       match @value.iterate(rv) {
         Ok(iter) => {
           match l.check_mutable("apply += to") {
@@ -259,9 +259,9 @@ fn eval_aug_val(
         }
         Err(_) => eval_binary(ctx, lv, @syntax.BinaryOp::OpAdd, rv, pos)
       }
-    (@value.Value::DictVal(ld), @syntax.AugOp::AugBitOr) =>
+    (@value.Value::Dict(ld), @syntax.AugOp::AugBitOr) =>
       match rv {
-        @value.Value::DictVal(rd) => {
+        @value.Value::Dict(rd) => {
           let pairs : Array[(@value.Value, @value.Value)] = []
           rd.each(fn(k, v) { pairs.push((k, v)) })
           for pair in pairs {
@@ -306,7 +306,7 @@ fn exec_load(
       }
       for pair in bindings {
         let (local_name, export_name) = pair
-        let key = @value.Value::StrVal(@value.StarlarkString::new(export_name))
+        let key = @value.Value::String(@value.StarlarkString::new(export_name))
         match loaded.globals.get(key) {
           Ok(Some(v)) => {
             env.bind(local_name, v)

@@ -444,41 +444,41 @@ pub fn StarlarkModule::attr_names(self : StarlarkModule) -> Array[String] {
 
 ///|
 pub(all) enum Value {
-  NoneVal
-  BoolVal(Bool)
-  IntVal(Int64)
-  FloatVal(Double)
-  StrVal(StarlarkString)
-  BytesVal(Bytes)
-  ListVal(StarlarkList)
-  TupleVal(Array[Value])
-  DictVal(StarlarkDict)
-  SetVal(StarlarkSet)
-  RangeVal(StarlarkRange)
-  FuncVal(StarlarkFunction)
-  BuiltinFuncVal(StarlarkBuiltinFunc)
-  BoundMethodVal(StarlarkBoundMethod)
-  ModuleVal(StarlarkModule)
+  None
+  Bool(Bool)
+  Int(Int64)
+  Float(Double)
+  String(StarlarkString)
+  Bytes(Bytes)
+  List(StarlarkList)
+  Tuple(Array[Value])
+  Dict(StarlarkDict)
+  Set(StarlarkSet)
+  Range(StarlarkRange)
+  Function(StarlarkFunction)
+  Builtin(StarlarkBuiltinFunc)
+  BoundMethod(StarlarkBoundMethod)
+  Module(StarlarkModule)
 }
 
 ///|
 pub fn Value::of_string(s : String) -> Value {
-  StrVal(StarlarkString::new(s))
+  String(StarlarkString::new(s))
 }
 
 ///|
 pub fn Value::new_list(items : Array[Value]) -> Value {
-  ListVal(StarlarkList::new(items))
+  List(StarlarkList::new(items))
 }
 
 ///|
 pub fn Value::new_dict() -> Value {
-  DictVal(StarlarkDict::new())
+  Dict(StarlarkDict::new())
 }
 
 ///|
 pub fn Value::new_set() -> Value {
-  SetVal(StarlarkSet::new())
+  Set(StarlarkSet::new())
 }
 
 ///|
@@ -489,48 +489,48 @@ pub fn Value::new_builtin(
     String,
   ],
 ) -> Value {
-  BuiltinFuncVal({ name, body: Some(body) })
+  Builtin({ name, body: Some(body) })
 }
 
 ///|
 pub fn type_name(v : Value) -> String {
   match v {
-    NoneVal => "NoneType"
-    BoolVal(_) => "bool"
-    IntVal(_) => "int"
-    FloatVal(_) => "float"
-    StrVal(_) => "string"
-    BytesVal(_) => "bytes"
-    ListVal(_) => "list"
-    TupleVal(_) => "tuple"
-    DictVal(_) => "dict"
-    SetVal(_) => "set"
-    RangeVal(_) => "range"
-    FuncVal(_) => "function"
-    BuiltinFuncVal(_) => "builtin_function_or_method"
-    BoundMethodVal(_) => "builtin_function_or_method"
-    ModuleVal(_) => "module"
+    None => "NoneType"
+    Bool(_) => "bool"
+    Int(_) => "int"
+    Float(_) => "float"
+    String(_) => "string"
+    Bytes(_) => "bytes"
+    List(_) => "list"
+    Tuple(_) => "tuple"
+    Dict(_) => "dict"
+    Set(_) => "set"
+    Range(_) => "range"
+    Function(_) => "function"
+    Builtin(_) => "builtin_function_or_method"
+    BoundMethod(_) => "builtin_function_or_method"
+    Module(_) => "module"
   }
 }
 
 ///|
 pub fn truth(v : Value) -> Bool {
   match v {
-    NoneVal => false
-    BoolVal(b) => b
-    IntVal(i) => i != 0L
-    FloatVal(f) => f != 0.0
-    StrVal(s) => s.byte_len() > 0
-    BytesVal(b) => b.length() > 0
-    ListVal(l) => l.items.is_empty() == false
-    TupleVal(t) => t.is_empty() == false
-    DictVal(d) => d.length() > 0
-    SetVal(s) => s.length() > 0
-    RangeVal(r) => r.length() > 0
-    FuncVal(_) => true
-    BuiltinFuncVal(_) => true
-    BoundMethodVal(_) => true
-    ModuleVal(_) => true
+    None => false
+    Bool(b) => b
+    Int(i) => i != 0L
+    Float(f) => f != 0.0
+    String(s) => s.byte_len() > 0
+    Bytes(b) => b.length() > 0
+    List(l) => l.items.is_empty() == false
+    Tuple(t) => t.is_empty() == false
+    Dict(d) => d.length() > 0
+    Set(s) => s.length() > 0
+    Range(r) => r.length() > 0
+    Function(_) => true
+    Builtin(_) => true
+    BoundMethod(_) => true
+    Module(_) => true
   }
 }
 
@@ -673,23 +673,23 @@ fn repr_bytes_val(b : Bytes) -> String {
 ///|
 pub fn repr(v : Value) -> String {
   match v {
-    NoneVal => "None"
-    BoolVal(true) => "True"
-    BoolVal(false) => "False"
-    IntVal(i) => i.to_string()
-    FloatVal(f) => format_float(f)
-    StrVal(s) => repr_string_val(s)
-    BytesVal(b) => repr_bytes_val(b)
-    ListVal(l) => repr_list(l)
-    TupleVal(t) => repr_tuple(t)
-    DictVal(d) => repr_dict(d)
-    SetVal(s) => repr_set(s)
-    RangeVal(r) => repr_range(r)
-    FuncVal(f) => "<function \{f.name}>"
-    BuiltinFuncVal(f) => "<built-in function \{f.name}>"
-    BoundMethodVal(m) =>
+    None => "None"
+    Bool(true) => "True"
+    Bool(false) => "False"
+    Int(i) => i.to_string()
+    Float(f) => format_float(f)
+    String(s) => repr_string_val(s)
+    Bytes(b) => repr_bytes_val(b)
+    List(l) => repr_list(l)
+    Tuple(t) => repr_tuple(t)
+    Dict(d) => repr_dict(d)
+    Set(s) => repr_set(s)
+    Range(r) => repr_range(r)
+    Function(f) => "<function \{f.name}>"
+    Builtin(f) => "<built-in function \{f.name}>"
+    BoundMethod(m) =>
       "<built-in method \{m.method_name} of \{type_name(m.recv)} value>"
-    ModuleVal(m) => "<module \"\{m.name}\">"
+    Module(m) => "<module \"\{m.name}\">"
   }
 }
 

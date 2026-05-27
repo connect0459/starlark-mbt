@@ -4,15 +4,15 @@ fn eval_literal(
   lit : @syntax.LiteralVal,
 ) -> @value.Value raise EvalErr {
   match lit {
-    @syntax.LiteralVal::LitNone => @value.Value::NoneVal
-    @syntax.LiteralVal::LitBool(b) => @value.Value::BoolVal(b)
-    @syntax.LiteralVal::LitInt(n) => @value.Value::IntVal(n)
+    @syntax.LiteralVal::LitNone => @value.Value::None
+    @syntax.LiteralVal::LitBool(b) => @value.Value::Bool(b)
+    @syntax.LiteralVal::LitInt(n) => @value.Value::Int(n)
     @syntax.LiteralVal::LitBigInt(s) =>
       raise EvalErr(make_eval_error(ctx, "integer too large: '\{s}'"))
-    @syntax.LiteralVal::LitFloat(f) => @value.Value::FloatVal(f)
+    @syntax.LiteralVal::LitFloat(f) => @value.Value::Float(f)
     @syntax.LiteralVal::LitString(s) =>
-      @value.Value::StrVal(@value.StarlarkString::new(s))
-    @syntax.LiteralVal::LitBytes(b) => @value.Value::BytesVal(b)
+      @value.Value::String(@value.StarlarkString::new(s))
+    @syntax.LiteralVal::LitBytes(b) => @value.Value::Bytes(b)
   }
 }
 
@@ -71,14 +71,14 @@ fn eval_expr_node(
       for e in elems {
         items.push(eval_expr_node(ctx, env, e))
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
     @syntax.Expr::ETuple(elems, _) => {
       let items : Array[@value.Value] = []
       for e in elems {
         items.push(eval_expr_node(ctx, env, e))
       }
-      @value.Value::TupleVal(items)
+      @value.Value::Tuple(items)
     }
     @syntax.Expr::EDict(pairs, _) => {
       let d = @value.StarlarkDict::new()
@@ -94,7 +94,7 @@ fn eval_expr_node(
           None => check(ctx, d.set(k, v))
         }
       }
-      @value.Value::DictVal(d)
+      @value.Value::Dict(d)
     }
     @syntax.Expr::ESet(elems, _) => {
       let s = @value.StarlarkSet::new()
@@ -102,7 +102,7 @@ fn eval_expr_node(
         let v = eval_expr_node(ctx, env, e)
         check(ctx, s.add(v))
       }
-      @value.Value::SetVal(s)
+      @value.Value::Set(s)
     }
     @syntax.Expr::EIndex(e, idx, pos) => {
       let obj = eval_expr_node(ctx, env, e)
@@ -112,32 +112,32 @@ fn eval_expr_node(
     @syntax.Expr::ESlice(e, lo_expr, hi_expr, step_expr, _pos) => {
       let obj = eval_expr_node(ctx, env, e)
       let lo_val = match lo_expr {
-        None => @value.Value::NoneVal
+        None => @value.Value::None
         Some(ex) => eval_expr_node(ctx, env, ex)
       }
       let hi_val = match hi_expr {
-        None => @value.Value::NoneVal
+        None => @value.Value::None
         Some(ex) => eval_expr_node(ctx, env, ex)
       }
       let step_val = match step_expr {
-        None => @value.Value::NoneVal
+        None => @value.Value::None
         Some(ex) => eval_expr_node(ctx, env, ex)
       }
       let step = match step_val {
-        @value.Value::NoneVal => None
-        @value.Value::IntVal(n) => Some(n.to_int())
+        @value.Value::None => None
+        @value.Value::Int(n) => Some(n.to_int())
         _ =>
           raise EvalErr(make_eval_error(ctx, "slice step must be an integer"))
       }
       let lo = match lo_val {
-        @value.Value::NoneVal => None
-        @value.Value::IntVal(n) => Some(n.to_int())
+        @value.Value::None => None
+        @value.Value::Int(n) => Some(n.to_int())
         _ =>
           raise EvalErr(make_eval_error(ctx, "slice indices must be integers"))
       }
       let hi = match hi_val {
-        @value.Value::NoneVal => None
-        @value.Value::IntVal(n) => Some(n.to_int())
+        @value.Value::None => None
+        @value.Value::Int(n) => Some(n.to_int())
         _ =>
           raise EvalErr(make_eval_error(ctx, "slice indices must be integers"))
       }
@@ -160,14 +160,14 @@ fn eval_expr_node(
         defaults,
         captured_scope,
       )
-      @value.Value::FuncVal(func)
+      @value.Value::Function(func)
     }
     @syntax.Expr::EListComp(body_expr, clauses, _) => {
       let result : Array[@value.Value] = []
       eval_comp_clauses(ctx, env, clauses, 0, fn(inner_env) raise EvalErr {
         result.push(eval_expr_node(ctx, inner_env, body_expr))
       })
-      @value.Value::ListVal(@value.StarlarkList::new(result))
+      @value.Value::List(@value.StarlarkList::new(result))
     }
     @syntax.Expr::ESetComp(body_expr, clauses, _) => {
       let s = @value.StarlarkSet::new()
@@ -175,7 +175,7 @@ fn eval_expr_node(
         let v = eval_expr_node(ctx, inner_env, body_expr)
         check(ctx, s.add(v))
       })
-      @value.Value::SetVal(s)
+      @value.Value::Set(s)
     }
     @syntax.Expr::EDictComp(key_expr, val_expr, clauses, _) => {
       let d = @value.StarlarkDict::new()
@@ -184,7 +184,7 @@ fn eval_expr_node(
         let v = eval_expr_node(ctx, inner_env, val_expr)
         check(ctx, d.set(k, v))
       })
-      @value.Value::DictVal(d)
+      @value.Value::Dict(d)
     }
   }
 }
@@ -216,13 +216,13 @@ fn eval_getattr(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match obj {
-    @value.Value::StrVal(_)
-    | @value.Value::ListVal(_)
-    | @value.Value::DictVal(_)
-    | @value.Value::SetVal(_)
-    | @value.Value::BytesVal(_) =>
-      @value.Value::BoundMethodVal(@value.StarlarkBoundMethod::new(obj, attr))
-    @value.Value::ModuleVal(m) =>
+    @value.Value::String(_)
+    | @value.Value::List(_)
+    | @value.Value::Dict(_)
+    | @value.Value::Set(_)
+    | @value.Value::Bytes(_) =>
+      @value.Value::BoundMethod(@value.StarlarkBoundMethod::new(obj, attr))
+    @value.Value::Module(m) =>
       match m.get(attr) {
         Some(v) => v
         None =>
@@ -268,7 +268,7 @@ fn eval_args(
         kw_args.push((name, eval_expr_node(ctx, env, e)))
       @syntax.Arg::ArgStarArgs(e) => {
         let v = eval_expr_node(ctx, env, e)
-        if v is @value.Value::StrVal(_) {
+        if v is @value.Value::String(_) {
           raise EvalErr(make_eval_error(ctx, "must be iterable, not string"))
         }
         let it = check(ctx, @value.iterate(v))
@@ -285,10 +285,10 @@ fn eval_args(
       @syntax.Arg::ArgKwArgs(e) => {
         let v = eval_expr_node(ctx, env, e)
         match v {
-          @value.Value::DictVal(d) =>
+          @value.Value::Dict(d) =>
             d.each(fn(k, val) {
               match k {
-                @value.Value::StrVal(s) => kw_args.push((s.raw(), val))
+                @value.Value::String(s) => kw_args.push((s.raw(), val))
                 _ => ()
               }
             })
@@ -310,8 +310,8 @@ fn call_value(
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match func_val {
-    @value.Value::FuncVal(f) => call_func(ctx, f, pos_args, kw_args, pos)
-    @value.Value::BuiltinFuncVal(f) => {
+    @value.Value::Function(f) => call_func(ctx, f, pos_args, kw_args, pos)
+    @value.Value::Builtin(f) => {
       let call_ctx = @value.BuiltinCallCtx::new(fn(f2, args, kwargs) {
         Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
           EvalErr(e) => Err(e.msg())
@@ -323,7 +323,7 @@ fn call_value(
         None => call_builtin(ctx, f.name(), pos_args, kw_args, pos)
       }
     }
-    @value.Value::BoundMethodVal(m) =>
+    @value.Value::BoundMethod(m) =>
       call_method(ctx, m.recv(), m.method_name(), pos_args, kw_args, pos)
     _ =>
       raise EvalErr(
@@ -364,7 +364,7 @@ fn call_func(
     ignore(ctx.thread.call_stack.pop())
     match sig {
       Signal::SigReturn(v) => v
-      _ => @value.Value::NoneVal
+      _ => @value.Value::None
     }
   } catch {
     EvalErr(e) => {
@@ -478,7 +478,7 @@ fn bind_args(
           rest.push(pos_args[pos_idx])
           pos_idx += 1
         }
-        func_env.bind(name, @value.Value::TupleVal(rest))
+        func_env.bind(name, @value.Value::Tuple(rest))
         param_idx += 1
       }
       @syntax.Param::ParamStarBare(_) => {
@@ -498,11 +498,11 @@ fn bind_args(
         had_kwargs_param = true
         let kw_dict = @value.StarlarkDict::new()
         kw_map.each(fn(kw_name, kw_val) {
-          let key = @value.Value::StrVal(@value.StarlarkString::new(kw_name))
+          let key = @value.Value::String(@value.StarlarkString::new(kw_name))
           ignore(kw_dict.set(key, kw_val))
         })
         kw_map.clear()
-        func_env.bind(name, @value.Value::DictVal(kw_dict))
+        func_env.bind(name, @value.Value::Dict(kw_dict))
         param_idx += 1
       }
     }
@@ -553,7 +553,7 @@ fn call_builtin(
         let mut found = " "
         for kv in kw_args {
           match kv {
-            ("sep", @value.Value::StrVal(s)) => {
+            ("sep", @value.Value::String(s)) => {
               found = s.raw()
               break
             }
@@ -572,24 +572,24 @@ fn call_builtin(
         buf.write_string(@value.to_str(arg))
       }
       (ctx.thread.print_fn)(buf.to_string())
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "len" => {
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "len() takes exactly one argument"))
       }
       let n = check(ctx, @value.length_of(pos_args[0]))
-      @value.Value::IntVal(n.to_int64())
+      @value.Value::Int(n.to_int64())
     }
     "str" =>
       if pos_args.length() == 0 {
-        @value.Value::StrVal(@value.StarlarkString::new(""))
+        @value.Value::String(@value.StarlarkString::new(""))
       } else if pos_args.length() == 1 {
         match pos_args[0] {
-          @value.Value::BytesVal(b) =>
-            @value.Value::StrVal(@value.StarlarkString::from_bytes(b))
+          @value.Value::Bytes(b) =>
+            @value.Value::String(@value.StarlarkString::from_bytes(b))
           v =>
-            @value.Value::StrVal(@value.StarlarkString::new(@value.to_str(v)))
+            @value.Value::String(@value.StarlarkString::new(@value.to_str(v)))
         }
       } else {
         raise EvalErr(make_eval_error(ctx, "str() takes at most one argument"))
@@ -598,21 +598,21 @@ fn call_builtin(
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "repr() takes exactly one argument"))
       }
-      @value.Value::StrVal(@value.StarlarkString::new(@value.repr(pos_args[0])))
+      @value.Value::String(@value.StarlarkString::new(@value.repr(pos_args[0])))
     }
     "type" => {
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "type() takes exactly one argument"))
       }
-      @value.Value::StrVal(
+      @value.Value::String(
         @value.StarlarkString::new(@value.type_name(pos_args[0])),
       )
     }
     "bool" =>
       if pos_args.length() == 0 {
-        @value.Value::BoolVal(false)
+        @value.Value::Bool(false)
       } else if pos_args.length() == 1 {
-        @value.Value::BoolVal(@value.truth(pos_args[0]))
+        @value.Value::Bool(@value.truth(pos_args[0]))
       } else {
         raise EvalErr(make_eval_error(ctx, "bool() takes at most one argument"))
       }
@@ -622,7 +622,7 @@ fn call_builtin(
         for kv in kw_args {
           if kv.0 == "base" {
             match kv.1 {
-              @value.Value::IntVal(b) => {
+              @value.Value::Int(b) => {
                 found = Some(b.to_int())
                 break
               }
@@ -634,7 +634,7 @@ fn call_builtin(
       }
       let base_from_pos = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::IntVal(b) => Some(b.to_int())
+          @value.Value::Int(b) => Some(b.to_int())
           _ => None
         }
       } else {
@@ -648,18 +648,18 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "int() missing argument"))
       }
       match (pos_args[0], explicit_base) {
-        (@value.Value::StrVal(s), base_opt) => {
+        (@value.Value::String(s), base_opt) => {
           let base = match base_opt {
             Some(b) => b
             None => 10
           }
           let n = check(ctx, parse_int_str(s.raw(), base))
-          @value.Value::IntVal(n)
+          @value.Value::Int(n)
         }
         (_, Some(_)) =>
           raise EvalErr(make_eval_error(ctx, "non-string with explicit base"))
-        (@value.Value::IntVal(n), None) => @value.Value::IntVal(n)
-        (@value.Value::FloatVal(f), None) =>
+        (@value.Value::Int(n), None) => @value.Value::Int(n)
+        (@value.Value::Float(f), None) =>
           if f.is_nan() {
             raise EvalErr(
               make_eval_error(ctx, "cannot convert float NaN to integer"),
@@ -669,10 +669,10 @@ fn call_builtin(
               make_eval_error(ctx, "cannot convert float infinity to integer"),
             )
           } else {
-            @value.Value::IntVal(f.to_int64())
+            @value.Value::Int(f.to_int64())
           }
-        (@value.Value::BoolVal(b), None) =>
-          @value.Value::IntVal(if b { 1L } else { 0L })
+        (@value.Value::Bool(b), None) =>
+          @value.Value::Int(if b { 1L } else { 0L })
         (v, None) =>
           raise EvalErr(
             make_eval_error(
@@ -684,14 +684,14 @@ fn call_builtin(
     }
     "float" =>
       if pos_args.length() == 0 {
-        @value.Value::FloatVal(0.0)
+        @value.Value::Float(0.0)
       } else if pos_args.length() == 1 {
         match pos_args[0] {
-          @value.Value::FloatVal(f) => @value.Value::FloatVal(f)
-          @value.Value::IntVal(n) => @value.Value::FloatVal(n.to_double())
-          @value.Value::BoolVal(b) =>
-            @value.Value::FloatVal(if b { 1.0 } else { 0.0 })
-          @value.Value::StrVal(s) => {
+          @value.Value::Float(f) => @value.Value::Float(f)
+          @value.Value::Int(n) => @value.Value::Float(n.to_double())
+          @value.Value::Bool(b) =>
+            @value.Value::Float(if b { 1.0 } else { 0.0 })
+          @value.Value::String(s) => {
             let raw = s.raw().trim()
             let f = match raw.to_lower() {
               "inf" | "+inf" | "infinity" | "+infinity" => @double.infinity
@@ -708,7 +708,7 @@ fn call_builtin(
                     )
                 }
             }
-            @value.Value::FloatVal(f)
+            @value.Value::Float(f)
           }
           v =>
             raise EvalErr(
@@ -728,8 +728,8 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "abs() takes exactly one argument"))
       }
       match pos_args[0] {
-        @value.Value::IntVal(n) => @value.Value::IntVal(n.abs())
-        @value.Value::FloatVal(f) => @value.Value::FloatVal(f.abs())
+        @value.Value::Int(n) => @value.Value::Int(n.abs())
+        @value.Value::Float(f) => @value.Value::Float(f.abs())
         v =>
           raise EvalErr(
             make_eval_error(
@@ -758,14 +758,14 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "hash() takes exactly one argument"))
       }
       let h = check(ctx, @value.starlark_hash(pos_args[0]))
-      @value.Value::IntVal(h.to_int64())
+      @value.Value::Int(h.to_int64())
     }
     "dir" => {
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "dir() takes exactly one argument"))
       }
       let names : Array[String] = match pos_args[0] {
-        @value.Value::StrVal(_) =>
+        @value.Value::String(_) =>
           [
             "capitalize", "count", "elem_ords", "elems", "endswith", "find", "format",
             "index", "isalnum", "isalpha", "isdigit", "islower", "isspace", "istitle",
@@ -773,24 +773,24 @@ fn call_builtin(
             "replace", "rfind", "rindex", "rpartition", "rstrip", "split", "splitlines",
             "startswith", "strip", "title", "upper",
           ]
-        @value.Value::ListVal(_) =>
+        @value.Value::List(_) =>
           ["append", "clear", "extend", "index", "insert", "pop", "remove"]
-        @value.Value::DictVal(_) =>
+        @value.Value::Dict(_) =>
           [
             "clear", "get", "items", "keys", "pop", "popitem", "setdefault", "update",
             "values",
           ]
-        @value.Value::SetVal(_) =>
+        @value.Value::Set(_) =>
           [
             "add", "clear", "difference", "discard", "intersection", "issubset",
             "issuperset", "pop", "remove", "symmetric_difference", "union", "update",
           ]
-        @value.Value::BytesVal(_) => ["elems"]
-        @value.Value::ModuleVal(m) => {
+        @value.Value::Bytes(_) => ["elems"]
+        @value.Value::Module(m) => {
           let keys : Array[String] = m.attr_names()
           keys.sort_by(fn(a, b) {
-            let av = @value.Value::StrVal(@value.StarlarkString::new(a))
-            let bv = @value.Value::StrVal(@value.StarlarkString::new(b))
+            let av = @value.Value::String(@value.StarlarkString::new(a))
+            let bv = @value.Value::String(@value.StarlarkString::new(b))
             match @value.compare_values(av, bv) {
               Ok(c) => c
               Err(_) => 0
@@ -801,16 +801,16 @@ fn call_builtin(
         _ => []
       }
       let items = names.map(fn(n) {
-        @value.Value::StrVal(@value.StarlarkString::new(n))
+        @value.Value::String(@value.StarlarkString::new(n))
       })
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
     "chr" => {
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "chr() takes exactly one argument"))
       }
       match pos_args[0] {
-        @value.Value::IntVal(n) => {
+        @value.Value::Int(n) => {
           if n < 0L || n > 0x10ffffL {
             raise EvalErr(
               make_eval_error(
@@ -822,7 +822,7 @@ fn call_builtin(
           let c = n.to_int().unsafe_to_char()
           let buf = StringBuilder::new()
           buf.write_char(c)
-          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+          @value.Value::String(@value.StarlarkString::new(buf.to_string()))
         }
         _ =>
           raise EvalErr(
@@ -835,7 +835,7 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "ord() takes exactly one argument"))
       }
       match pos_args[0] {
-        @value.Value::StrVal(s) => {
+        @value.Value::String(s) => {
           let chars = s.raw().to_array()
           if chars.length() != 1 {
             raise EvalErr(
@@ -845,9 +845,9 @@ fn call_builtin(
               ),
             )
           }
-          @value.Value::IntVal(chars[0].to_int().to_int64())
+          @value.Value::Int(chars[0].to_int().to_int64())
         }
-        @value.Value::BytesVal(b) => {
+        @value.Value::Bytes(b) => {
           if b.length() != 1 {
             raise EvalErr(
               make_eval_error(
@@ -856,7 +856,7 @@ fn call_builtin(
               ),
             )
           }
-          @value.Value::IntVal(b[0].to_int().to_int64())
+          @value.Value::Int(b[0].to_int().to_int64())
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "ord() argument must be a string"))
@@ -867,7 +867,7 @@ fn call_builtin(
         let mut s = " "
         for kv in kw_args {
           match kv {
-            ("sep", @value.Value::StrVal(sv)) => {
+            ("sep", @value.Value::String(sv)) => {
               s = sv.raw()
               break
             }
@@ -890,7 +890,7 @@ fn call_builtin(
         )
       }
       match pos_args[1] {
-        @value.Value::StrVal(s) => {
+        @value.Value::String(s) => {
           let dummy_pos = @errors.Position::new("<hasattr>", 0, 0)
           let found = try {
             ignore(eval_getattr(ctx, pos_args[0], s.raw(), dummy_pos))
@@ -898,7 +898,7 @@ fn call_builtin(
           } catch {
             EvalErr(_) => false
           }
-          @value.Value::BoolVal(found)
+          @value.Value::Bool(found)
         }
         _ =>
           raise EvalErr(
@@ -913,7 +913,7 @@ fn call_builtin(
         )
       }
       match pos_args[1] {
-        @value.Value::StrVal(s) => {
+        @value.Value::String(s) => {
           let dummy_pos = @errors.Position::new("<getattr>", 0, 0)
           eval_getattr(ctx, pos_args[0], s.raw(), dummy_pos) catch {
             EvalErr(_) =>
@@ -949,7 +949,7 @@ fn builtin_module(
 ) -> @value.Value raise EvalErr {
   let mod_name = if pos_args.length() > 0 {
     match pos_args[0] {
-      @value.Value::StrVal(s) => s.raw()
+      @value.Value::String(s) => s.raw()
       _ =>
         raise EvalErr(
           make_eval_error(ctx, "module() name argument must be a string"),
@@ -963,7 +963,7 @@ fn builtin_module(
     let (k, v) = pair
     attrs[k] = v
   }
-  @value.Value::ModuleVal(@value.StarlarkModule::new(mod_name, attrs))
+  @value.Value::Module(@value.StarlarkModule::new(mod_name, attrs))
 }
 
 ///|
@@ -974,8 +974,8 @@ fn builtin_range(
   match pos_args.length() {
     1 =>
       match pos_args[0] {
-        @value.Value::IntVal(stop) =>
-          @value.Value::RangeVal(@value.StarlarkRange::new(0L, stop, 1L))
+        @value.Value::Int(stop) =>
+          @value.Value::Range(@value.StarlarkRange::new(0L, stop, 1L))
         _ =>
           raise EvalErr(
             make_eval_error(ctx, "range() arguments must be integers"),
@@ -983,8 +983,8 @@ fn builtin_range(
       }
     2 =>
       match (pos_args[0], pos_args[1]) {
-        (@value.Value::IntVal(start), @value.Value::IntVal(stop)) =>
-          @value.Value::RangeVal(@value.StarlarkRange::new(start, stop, 1L))
+        (@value.Value::Int(start), @value.Value::Int(stop)) =>
+          @value.Value::Range(@value.StarlarkRange::new(start, stop, 1L))
         _ =>
           raise EvalErr(
             make_eval_error(ctx, "range() arguments must be integers"),
@@ -993,16 +993,16 @@ fn builtin_range(
     3 =>
       match (pos_args[0], pos_args[1], pos_args[2]) {
         (
-          @value.Value::IntVal(start),
-          @value.Value::IntVal(stop),
-          @value.Value::IntVal(step),
+          @value.Value::Int(start),
+          @value.Value::Int(stop),
+          @value.Value::Int(step),
         ) => {
           if step == 0L {
             raise EvalErr(
               make_eval_error(ctx, "range() step argument must not be zero"),
             )
           }
-          @value.Value::RangeVal(@value.StarlarkRange::new(start, stop, step))
+          @value.Value::Range(@value.StarlarkRange::new(start, stop, step))
         }
         _ =>
           raise EvalErr(
@@ -1019,18 +1019,18 @@ fn builtin_list(
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
   if pos_args.length() == 0 {
-    return @value.Value::ListVal(@value.StarlarkList::new([]))
+    return @value.Value::List(@value.StarlarkList::new([]))
   }
   if pos_args.length() != 1 {
     raise EvalErr(make_eval_error(ctx, "list() takes at most one argument"))
   }
   match pos_args[0] {
-    @value.Value::ListVal(l) => {
+    @value.Value::List(l) => {
       let items : Array[@value.Value] = []
       for v in l.iter() {
         items.push(v)
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
     v => {
       let items : Array[@value.Value] = []
@@ -1044,7 +1044,7 @@ fn builtin_list(
           Some(item) => items.push(item)
         }
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
   }
 }
@@ -1055,7 +1055,7 @@ fn builtin_tuple(
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
   if pos_args.length() == 0 {
-    return @value.Value::TupleVal([])
+    return @value.Value::Tuple([])
   }
   if pos_args.length() != 1 {
     raise EvalErr(make_eval_error(ctx, "tuple() takes at most one argument"))
@@ -1071,7 +1071,7 @@ fn builtin_tuple(
       Some(item) => items.push(item)
     }
   }
-  @value.Value::TupleVal(items)
+  @value.Value::Tuple(items)
 }
 
 ///|
@@ -1083,7 +1083,7 @@ fn builtin_dict(
   let d = @value.StarlarkDict::new()
   if pos_args.length() == 1 {
     match pos_args[0] {
-      @value.Value::DictVal(src) => src.each(fn(k, v) { ignore(d.set(k, v)) })
+      @value.Value::Dict(src) => src.each(fn(k, v) { ignore(d.set(k, v)) })
       v => {
         let it = require_seq(ctx, v)
         while true {
@@ -1092,7 +1092,7 @@ fn builtin_dict(
               it.done()
               break
             }
-            Some(@value.Value::TupleVal(pair)) => {
+            Some(@value.Value::Tuple(pair)) => {
               if pair.length() != 2 {
                 it.done()
                 raise EvalErr(
@@ -1103,7 +1103,7 @@ fn builtin_dict(
               }
               check(ctx, d.set(pair[0], pair[1]))
             }
-            Some(@value.Value::ListVal(pair)) => {
+            Some(@value.Value::List(pair)) => {
               if pair.length() != 2 {
                 it.done()
                 raise EvalErr(
@@ -1140,10 +1140,10 @@ fn builtin_dict(
       )
     }
     kw_seen.push(kw_name)
-    let key = @value.Value::StrVal(@value.StarlarkString::new(kw_name))
+    let key = @value.Value::String(@value.StarlarkString::new(kw_name))
     ignore(d.set(key, kw_val))
   }
-  @value.Value::DictVal(d)
+  @value.Value::Dict(d)
 }
 
 ///|
@@ -1153,7 +1153,7 @@ fn builtin_set(
 ) -> @value.Value raise EvalErr {
   let s = @value.StarlarkSet::new()
   if pos_args.length() == 0 {
-    return @value.Value::SetVal(s)
+    return @value.Value::Set(s)
   }
   if pos_args.length() != 1 {
     raise EvalErr(
@@ -1183,7 +1183,7 @@ fn builtin_set(
       Some(v) => check(ctx, s.add(v))
     }
   }
-  @value.Value::SetVal(s)
+  @value.Value::Set(s)
 }
 
 ///|
@@ -1277,7 +1277,7 @@ fn builtin_enumerate(
   }
   let start = if pos_args.length() >= 2 {
     match pos_args[1] {
-      @value.Value::IntVal(n) => n
+      @value.Value::Int(n) => n
       _ => 0L
     }
   } else {
@@ -1293,12 +1293,12 @@ fn builtin_enumerate(
         break
       }
       Some(v) => {
-        result.push(@value.Value::TupleVal([@value.Value::IntVal(idx), v]))
+        result.push(@value.Value::Tuple([@value.Value::Int(idx), v]))
         idx = idx + 1L
       }
     }
   }
-  @value.Value::ListVal(@value.StarlarkList::new(result))
+  @value.Value::List(@value.StarlarkList::new(result))
 }
 
 ///|
@@ -1329,7 +1329,7 @@ fn builtin_sorted(
     let mut found = false
     for kv in kw_args {
       match kv {
-        ("reverse", @value.Value::BoolVal(b)) => {
+        ("reverse", @value.Value::Bool(b)) => {
           found = b
           break
         }
@@ -1360,7 +1360,7 @@ fn builtin_sorted(
   }
   let keys : Array[@value.Value] = match key_fn {
     None => items
-    Some(@value.Value::NoneVal) =>
+    Some(@value.Value::None) =>
       raise EvalErr(
         make_eval_error(
           ctx, "sorted: for parameter key: got NoneType, want callable",
@@ -1389,7 +1389,7 @@ fn builtin_sorted(
     Some(e) => raise EvalErr(e)
     None => {
       let result : Array[@value.Value] = indices.map(fn(i) { items[i] })
-      @value.Value::ListVal(@value.StarlarkList::new(result))
+      @value.Value::List(@value.StarlarkList::new(result))
     }
   }
 }
@@ -1414,11 +1414,11 @@ fn builtin_reversed(
     }
   }
   let n = items.length()
-  let rev : Array[@value.Value] = Array::make(n, @value.Value::NoneVal)
+  let rev : Array[@value.Value] = Array::make(n, @value.Value::None)
   for i in 0..<n {
     rev[i] = items[n - 1 - i]
   }
-  @value.Value::ListVal(@value.StarlarkList::new(rev))
+  @value.Value::List(@value.StarlarkList::new(rev))
 }
 
 ///|
@@ -1427,7 +1427,7 @@ fn builtin_zip(
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
   if pos_args.length() == 0 {
-    return @value.Value::ListVal(@value.StarlarkList::new([]))
+    return @value.Value::List(@value.StarlarkList::new([]))
   }
   let iterators : Array[@value.StarlarkIterator] = []
   for i, arg in pos_args {
@@ -1465,9 +1465,9 @@ fn builtin_zip(
       }
       break
     }
-    result.push(@value.Value::TupleVal(tuple_items))
+    result.push(@value.Value::Tuple(tuple_items))
   }
-  @value.Value::ListVal(@value.StarlarkList::new(result))
+  @value.Value::List(@value.StarlarkList::new(result))
 }
 
 ///|
@@ -1501,7 +1501,7 @@ fn builtin_any_all(
       }
     }
   }
-  @value.Value::BoolVal(result)
+  @value.Value::Bool(result)
 }
 
 ///|
@@ -1514,15 +1514,14 @@ fn call_method(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match recv {
-    @value.Value::ListVal(l) => call_list_method(ctx, l, method_name, pos_args)
-    @value.Value::DictVal(d) =>
+    @value.Value::List(l) => call_list_method(ctx, l, method_name, pos_args)
+    @value.Value::Dict(d) =>
       call_dict_method(ctx, d, method_name, pos_args, kw_args)
-    @value.Value::StrVal(s) =>
+    @value.Value::String(s) =>
       call_str_method(ctx, s, method_name, pos_args, kw_args)
-    @value.Value::SetVal(s) =>
+    @value.Value::Set(s) =>
       call_set_method(ctx, s, method_name, pos_args, kw_args)
-    @value.Value::BytesVal(b) =>
-      call_bytes_method(ctx, b, method_name, pos_args)
+    @value.Value::Bytes(b) => call_bytes_method(ctx, b, method_name, pos_args)
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -1548,7 +1547,7 @@ fn call_list_method(
         )
       }
       check(ctx, l.push(pos_args[0]))
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "extend" => {
       if pos_args.length() != 1 {
@@ -1567,7 +1566,7 @@ fn call_list_method(
           Some(v) => l.push(v) |> ignore
         }
       }
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "pop" => {
       if l.is_empty() {
@@ -1580,7 +1579,7 @@ fn call_list_method(
         }
       } else {
         match pos_args[0] {
-          @value.Value::IntVal(i) => {
+          @value.Value::Int(i) => {
             let j = check(ctx, adjust_index(i, l.length()))
             check(ctx, l.pop_at(j))
           }
@@ -1609,7 +1608,7 @@ fn call_list_method(
         raise EvalErr(make_eval_error(ctx, "remove: element not found"))
       }
       check(ctx, l.pop_at(found)) |> ignore
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "insert" => {
       if pos_args.length() != 2 {
@@ -1618,7 +1617,7 @@ fn call_list_method(
         )
       }
       match pos_args[0] {
-        @value.Value::IntVal(i) => {
+        @value.Value::Int(i) => {
           let len = l.length()
           let j = {
             let jj = if i < 0L { i + len.to_int64() } else { i }
@@ -1631,7 +1630,7 @@ fn call_list_method(
             }
           }
           check(ctx, l.insert(j, pos_args[1])) |> ignore
-          @value.Value::NoneVal
+          @value.Value::None
         }
         _ =>
           raise EvalErr(
@@ -1641,7 +1640,7 @@ fn call_list_method(
     }
     "clear" => {
       check(ctx, l.clear()) |> ignore
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "index" => {
       if pos_args.length() < 1 {
@@ -1653,7 +1652,7 @@ fn call_list_method(
       let n = l.length()
       let start = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::IntVal(i) => {
+          @value.Value::Int(i) => {
             let s = i.to_int()
             let j = if s < 0 { s + n } else { s }
             if j < 0 {
@@ -1664,7 +1663,7 @@ fn call_list_method(
               j
             }
           }
-          @value.Value::NoneVal => 0
+          @value.Value::None => 0
           _ =>
             raise EvalErr(
               make_eval_error(ctx, "list.index: start must be an integer"),
@@ -1675,7 +1674,7 @@ fn call_list_method(
       }
       let end = if pos_args.length() >= 3 {
         match pos_args[2] {
-          @value.Value::IntVal(i) => {
+          @value.Value::Int(i) => {
             let e = i.to_int()
             let j = if e < 0 { e + n } else { e }
             if j < 0 {
@@ -1686,7 +1685,7 @@ fn call_list_method(
               j
             }
           }
-          @value.Value::NoneVal => n
+          @value.Value::None => n
           _ =>
             raise EvalErr(
               make_eval_error(ctx, "list.index: end must be an integer"),
@@ -1697,7 +1696,7 @@ fn call_list_method(
       }
       for i in start..<end {
         if @value.starlark_equals(l.get(i), item) {
-          return @value.Value::IntVal(i.to_int64())
+          return @value.Value::Int(i.to_int64())
         }
       }
       raise EvalErr(make_eval_error(ctx, "value not in list"))
@@ -1715,7 +1714,7 @@ fn call_list_method(
           count += 1
         }
       }
-      @value.Value::IntVal(count.to_int64())
+      @value.Value::Int(count.to_int64())
     }
     "sort" => {
       let mut sort_err : @errors.EvalError? = None
@@ -1734,12 +1733,12 @@ fn call_list_method(
       |> ignore
       match sort_err {
         Some(e) => raise EvalErr(e)
-        None => @value.Value::NoneVal
+        None => @value.Value::None
       }
     }
     "reverse" => {
       check(ctx, l.reverse()) |> ignore
-      @value.Value::NoneVal
+      @value.Value::None
     }
     _ =>
       raise EvalErr(make_eval_error(ctx, "list has no method '\{method_name}'"))
@@ -1767,7 +1766,7 @@ fn call_dict_method(
       let default_val = if pos_args.length() >= 2 {
         pos_args[1]
       } else {
-        @value.Value::NoneVal
+        @value.Value::None
       }
       match check(ctx, d.get(pos_args[0])) {
         None => default_val
@@ -1776,17 +1775,17 @@ fn call_dict_method(
     }
     "keys" => {
       let keys = d.keys()
-      @value.Value::ListVal(@value.StarlarkList::new(keys))
+      @value.Value::List(@value.StarlarkList::new(keys))
     }
     "values" => {
       let vals : Array[@value.Value] = []
       d.each(fn(_k, v) { vals.push(v) })
-      @value.Value::ListVal(@value.StarlarkList::new(vals))
+      @value.Value::List(@value.StarlarkList::new(vals))
     }
     "items" => {
       let items : Array[@value.Value] = []
-      d.each(fn(k, v) { items.push(@value.Value::TupleVal([k, v])) })
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      d.each(fn(k, v) { items.push(@value.Value::Tuple([k, v])) })
+      @value.Value::List(@value.StarlarkList::new(items))
     }
     "pop" => {
       if pos_args.length() < 1 {
@@ -1812,7 +1811,7 @@ fn call_dict_method(
       if pos_args.length() > 0 {
         let src_val = pos_args[0]
         match src_val {
-          @value.Value::DictVal(src) => {
+          @value.Value::Dict(src) => {
             let pairs : Array[(@value.Value, @value.Value)] = []
             src.each(fn(k, v) { pairs.push((k, v)) })
             for pair in pairs {
@@ -1827,7 +1826,7 @@ fn call_dict_method(
                 None => break
                 Some(item) =>
                   match item {
-                    @value.Value::TupleVal(pair) =>
+                    @value.Value::Tuple(pair) =>
                       if pair.length() == 2 {
                         check(ctx, d.set(pair[0], pair[1]))
                       } else {
@@ -1838,7 +1837,7 @@ fn call_dict_method(
                           ),
                         )
                       }
-                    @value.Value::ListVal(l2) =>
+                    @value.Value::List(l2) =>
                       if l2.length() == 2 {
                         check(ctx, d.set(l2.get(0), l2.get(1)))
                       } else {
@@ -1866,19 +1865,19 @@ fn call_dict_method(
       }
       for kw_pair in kw_args {
         let (kw_name, kw_val) = kw_pair
-        let key = @value.Value::StrVal(@value.StarlarkString::new(kw_name))
+        let key = @value.Value::String(@value.StarlarkString::new(kw_name))
         check(ctx, d.set(key, kw_val))
       }
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "clear" => {
       check(ctx, d.clear())
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "popitem" =>
       match check(ctx, d.popitem()) {
         None => raise EvalErr(make_eval_error(ctx, "empty dict"))
-        Some((k, v)) => @value.Value::TupleVal([k, v])
+        Some((k, v)) => @value.Value::Tuple([k, v])
       }
     "setdefault" => {
       if pos_args.length() < 1 {
@@ -1890,7 +1889,7 @@ fn call_dict_method(
       let default_val = if pos_args.length() >= 2 {
         pos_args[1]
       } else {
-        @value.Value::NoneVal
+        @value.Value::None
       }
       match check(ctx, d.get(key)) {
         Some(v) => v
@@ -1915,13 +1914,13 @@ fn call_str_method(
 ) -> @value.Value raise EvalErr {
   match method_name {
     "upper" =>
-      @value.Value::StrVal(@value.StarlarkString::new(s.raw().to_upper()))
+      @value.Value::String(@value.StarlarkString::new(s.raw().to_upper()))
     "lower" =>
-      @value.Value::StrVal(@value.StarlarkString::new(s.raw().to_lower()))
+      @value.Value::String(@value.StarlarkString::new(s.raw().to_lower()))
     "strip" => {
       let chars_opt = if pos_args.length() > 0 {
         match pos_args[0] {
-          @value.Value::StrVal(c) if c.raw().length() > 0 => Some(c.raw())
+          @value.Value::String(c) if c.raw().length() > 0 => Some(c.raw())
           _ => None
         }
       } else {
@@ -1931,12 +1930,12 @@ fn call_str_method(
         None => strip_whitespace(s.raw(), true, true)
         Some(chars) => strip_chars(s.raw(), chars, true, true)
       }
-      @value.Value::StrVal(@value.StarlarkString::new(result))
+      @value.Value::String(@value.StarlarkString::new(result))
     }
     "lstrip" => {
       let chars_opt = if pos_args.length() > 0 {
         match pos_args[0] {
-          @value.Value::StrVal(c) if c.raw().length() > 0 => Some(c.raw())
+          @value.Value::String(c) if c.raw().length() > 0 => Some(c.raw())
           _ => None
         }
       } else {
@@ -1946,12 +1945,12 @@ fn call_str_method(
         None => strip_whitespace(s.raw(), true, false)
         Some(chars) => strip_chars(s.raw(), chars, true, false)
       }
-      @value.Value::StrVal(@value.StarlarkString::new(result))
+      @value.Value::String(@value.StarlarkString::new(result))
     }
     "rstrip" => {
       let chars_opt = if pos_args.length() > 0 {
         match pos_args[0] {
-          @value.Value::StrVal(c) if c.raw().length() > 0 => Some(c.raw())
+          @value.Value::String(c) if c.raw().length() > 0 => Some(c.raw())
           _ => None
         }
       } else {
@@ -1961,7 +1960,7 @@ fn call_str_method(
         None => strip_whitespace(s.raw(), false, true)
         Some(chars) => strip_chars(s.raw(), chars, false, true)
       }
-      @value.Value::StrVal(@value.StarlarkString::new(result))
+      @value.Value::String(@value.StarlarkString::new(result))
     }
     "startswith" => {
       if pos_args.length() == 0 {
@@ -1971,8 +1970,8 @@ fn call_str_method(
       }
       let start_idx = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::IntVal(n) => n.to_int()
-          @value.Value::NoneVal => 0
+          @value.Value::Int(n) => n.to_int()
+          @value.Value::None => 0
           _ => 0
         }
       } else {
@@ -1980,8 +1979,8 @@ fn call_str_method(
       }
       let end_idx = if pos_args.length() >= 3 {
         match pos_args[2] {
-          @value.Value::IntVal(n) => n.to_int()
-          @value.Value::NoneVal => s.raw().length()
+          @value.Value::Int(n) => n.to_int()
+          @value.Value::None => s.raw().length()
           _ => s.raw().length()
         }
       } else {
@@ -2001,13 +2000,13 @@ fn call_str_method(
       let sub = if i <= j { s.raw()[i:j].to_owned() } else { "" }
       let check_prefix = fn(prefix : String) -> Bool { sub.has_prefix(prefix) }
       match pos_args[0] {
-        @value.Value::StrVal(prefix) =>
-          @value.Value::BoolVal(check_prefix(prefix.raw()))
-        @value.Value::TupleVal(t) => {
+        @value.Value::String(prefix) =>
+          @value.Value::Bool(check_prefix(prefix.raw()))
+        @value.Value::Tuple(t) => {
           let mut found = false
           for item in t {
             match item {
-              @value.Value::StrVal(p) =>
+              @value.Value::String(p) =>
                 if check_prefix(p.raw()) {
                   found = true
                   break
@@ -2021,9 +2020,9 @@ fn call_str_method(
                 )
             }
           }
-          @value.Value::BoolVal(found)
+          @value.Value::Bool(found)
         }
-        @value.Value::ListVal(_) =>
+        @value.Value::List(_) =>
           raise EvalErr(
             make_eval_error(ctx, "got list, want string or tuple of string"),
           )
@@ -2041,8 +2040,8 @@ fn call_str_method(
       }
       let start_idx = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::IntVal(n) => n.to_int()
-          @value.Value::NoneVal => 0
+          @value.Value::Int(n) => n.to_int()
+          @value.Value::None => 0
           _ => 0
         }
       } else {
@@ -2050,8 +2049,8 @@ fn call_str_method(
       }
       let end_idx = if pos_args.length() >= 3 {
         match pos_args[2] {
-          @value.Value::IntVal(n) => n.to_int()
-          @value.Value::NoneVal => s.raw().length()
+          @value.Value::Int(n) => n.to_int()
+          @value.Value::None => s.raw().length()
           _ => s.raw().length()
         }
       } else {
@@ -2071,13 +2070,13 @@ fn call_str_method(
       let sub = if i <= j { s.raw()[i:j].to_owned() } else { "" }
       let check_suffix = fn(suffix : String) -> Bool { sub.has_suffix(suffix) }
       match pos_args[0] {
-        @value.Value::StrVal(suffix) =>
-          @value.Value::BoolVal(check_suffix(suffix.raw()))
-        @value.Value::TupleVal(t) => {
+        @value.Value::String(suffix) =>
+          @value.Value::Bool(check_suffix(suffix.raw()))
+        @value.Value::Tuple(t) => {
           let mut found = false
           for item in t {
             match item {
-              @value.Value::StrVal(p) =>
+              @value.Value::String(p) =>
                 if check_suffix(p.raw()) {
                   found = true
                   break
@@ -2091,9 +2090,9 @@ fn call_str_method(
                 )
             }
           }
-          @value.Value::BoolVal(found)
+          @value.Value::Bool(found)
         }
-        @value.Value::ListVal(_) =>
+        @value.Value::List(_) =>
           raise EvalErr(
             make_eval_error(ctx, "got list, want string or tuple of string"),
           )
@@ -2110,11 +2109,11 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(sub) => {
+        @value.Value::String(sub) => {
           let slen = s.raw().length()
           let start = if pos_args.length() >= 2 {
             match pos_args[1] {
-              @value.Value::IntVal(n) => {
+              @value.Value::Int(n) => {
                 let n2 = n.to_int()
                 if n2 < 0 {
                   (slen + n2).max(0)
@@ -2129,7 +2128,7 @@ fn call_str_method(
           }
           let end = if pos_args.length() >= 3 {
             match pos_args[2] {
-              @value.Value::IntVal(n) => {
+              @value.Value::Int(n) => {
                 let n2 = n.to_int()
                 if n2 < 0 {
                   (slen + n2).max(0)
@@ -2148,7 +2147,7 @@ fn call_str_method(
             ""
           }
           let result = find_substr(slice, sub.raw())
-          @value.Value::IntVal(
+          @value.Value::Int(
             (if result >= 0 { result + start } else { -1 }).to_int64(),
           )
         }
@@ -2165,11 +2164,11 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(sub) => {
+        @value.Value::String(sub) => {
           let slen = s.raw().length()
           let start = if pos_args.length() >= 2 {
             match pos_args[1] {
-              @value.Value::IntVal(n) => {
+              @value.Value::Int(n) => {
                 let n2 = n.to_int()
                 if n2 < 0 {
                   (slen + n2).max(0)
@@ -2184,7 +2183,7 @@ fn call_str_method(
           }
           let end = if pos_args.length() >= 3 {
             match pos_args[2] {
-              @value.Value::IntVal(n) => {
+              @value.Value::Int(n) => {
                 let n2 = n.to_int()
                 if n2 < 0 {
                   (slen + n2).max(0)
@@ -2202,7 +2201,7 @@ fn call_str_method(
           } else {
             ""
           }
-          @value.Value::IntVal(count_substr(slice, sub.raw()).to_int64())
+          @value.Value::Int(count_substr(slice, sub.raw()).to_int64())
         }
         _ =>
           raise EvalErr(
@@ -2217,10 +2216,10 @@ fn call_str_method(
         )
       }
       match (pos_args[0], pos_args[1]) {
-        (@value.Value::StrVal(old), @value.Value::StrVal(new_s)) => {
+        (@value.Value::String(old), @value.Value::String(new_s)) => {
           let max_count = if pos_args.length() >= 3 {
             match pos_args[2] {
-              @value.Value::IntVal(n) => n.to_int()
+              @value.Value::Int(n) => n.to_int()
               _ => -1
             }
           } else {
@@ -2231,7 +2230,7 @@ fn call_str_method(
           } else {
             str_replace_count(s.raw(), old.raw(), new_s.raw(), max_count)
           }
-          @value.Value::StrVal(@value.StarlarkString::new(result))
+          @value.Value::String(@value.StarlarkString::new(result))
         }
         _ =>
           raise EvalErr(
@@ -2244,8 +2243,8 @@ fn call_str_method(
         None
       } else {
         match pos_args[0] {
-          @value.Value::NoneVal => None
-          @value.Value::StrVal(sep) => {
+          @value.Value::None => None
+          @value.Value::String(sep) => {
             if sep.raw().length() == 0 {
               raise EvalErr(make_eval_error(ctx, "split: empty separator"))
             }
@@ -2262,8 +2261,8 @@ fn call_str_method(
         for kv in kw_args {
           if kv.0 == "sep" {
             match kv.1 {
-              @value.Value::NoneVal => ()
-              @value.Value::StrVal(sep) => found = Some(sep.raw())
+              @value.Value::None => ()
+              @value.Value::String(sep) => found = Some(sep.raw())
               _ => ()
             }
             break
@@ -2277,7 +2276,7 @@ fn call_str_method(
       }
       let maxsplit = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::IntVal(n) => n.to_int()
+          @value.Value::Int(n) => n.to_int()
           _ => -1
         }
       } else {
@@ -2285,7 +2284,7 @@ fn call_str_method(
         for kv in kw_args {
           if kv.0 == "maxsplit" {
             match kv.1 {
-              @value.Value::IntVal(n) => {
+              @value.Value::Int(n) => {
                 found = n.to_int()
                 break
               }
@@ -2305,8 +2304,8 @@ fn call_str_method(
         None
       } else {
         match pos_args[0] {
-          @value.Value::NoneVal => None
-          @value.Value::StrVal(sep) => {
+          @value.Value::None => None
+          @value.Value::String(sep) => {
             if sep.raw().length() == 0 {
               raise EvalErr(make_eval_error(ctx, "rsplit: empty separator"))
             }
@@ -2322,7 +2321,7 @@ fn call_str_method(
       }
       let maxsplit = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::IntVal(n) => n.to_int()
+          @value.Value::Int(n) => n.to_int()
           _ => -1
         }
       } else {
@@ -2346,7 +2345,7 @@ fn call_str_method(
             it.done()
             break
           }
-          Some(@value.Value::StrVal(part)) => parts.push(part.raw())
+          Some(@value.Value::String(part)) => parts.push(part.raw())
           Some(v) => {
             it.done()
             raise EvalErr(
@@ -2367,20 +2366,20 @@ fn call_str_method(
         first = false
         buf.write_string(part)
       }
-      @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+      @value.Value::String(@value.StarlarkString::new(buf.to_string()))
     }
     "format" => str_format(ctx, s.raw(), pos_args, kw_args)
     "capitalize" => {
       let chars = s.raw().to_array()
       if chars.is_empty() {
-        @value.Value::StrVal(s)
+        @value.Value::String(s)
       } else {
         let buf = StringBuilder::new()
         buf.write_char(char_to_upper(chars[0]))
         for i in 1..<chars.length() {
           buf.write_char(char_to_lower(chars[i]))
         }
-        @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+        @value.Value::String(@value.StarlarkString::new(buf.to_string()))
       }
     }
     "index" => {
@@ -2390,12 +2389,12 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(sub) => {
+        @value.Value::String(sub) => {
           let result = find_substr(s.raw(), sub.raw())
           if result < 0 {
             raise EvalErr(make_eval_error(ctx, "substring not found"))
           }
-          @value.Value::IntVal(result.to_int64())
+          @value.Value::Int(result.to_int64())
         }
         _ =>
           raise EvalErr(
@@ -2410,11 +2409,11 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(sub) => {
+        @value.Value::String(sub) => {
           let slen = s.raw().length()
           let start = if pos_args.length() >= 2 {
             match pos_args[1] {
-              @value.Value::IntVal(n) => {
+              @value.Value::Int(n) => {
                 let n2 = n.to_int()
                 if n2 < 0 {
                   (slen + n2).max(0)
@@ -2429,7 +2428,7 @@ fn call_str_method(
           }
           let end = if pos_args.length() >= 3 {
             match pos_args[2] {
-              @value.Value::IntVal(n) => {
+              @value.Value::Int(n) => {
                 let n2 = n.to_int()
                 if n2 < 0 {
                   (slen + n2).max(0)
@@ -2448,7 +2447,7 @@ fn call_str_method(
             ""
           }
           let result = rfind_substr(slice, sub.raw())
-          @value.Value::IntVal(
+          @value.Value::Int(
             (if result >= 0 { result + start } else { -1 }).to_int64(),
           )
         }
@@ -2465,12 +2464,12 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(sub) => {
+        @value.Value::String(sub) => {
           let result = rfind_substr(s.raw(), sub.raw())
           if result < 0 {
             raise EvalErr(make_eval_error(ctx, "substring not found"))
           }
-          @value.Value::IntVal(result.to_int64())
+          @value.Value::Int(result.to_int64())
         }
         _ =>
           raise EvalErr(
@@ -2480,7 +2479,7 @@ fn call_str_method(
     }
     "isalpha" => {
       if s.raw().length() == 0 {
-        return @value.Value::BoolVal(false)
+        return @value.Value::Bool(false)
       }
       let mut result = true
       for c in s.raw().to_array() {
@@ -2491,11 +2490,11 @@ fn call_str_method(
           break
         }
       }
-      @value.Value::BoolVal(result)
+      @value.Value::Bool(result)
     }
     "isdigit" => {
       if s.raw().length() == 0 {
-        return @value.Value::BoolVal(false)
+        return @value.Value::Bool(false)
       }
       let mut result = true
       for c in s.raw().to_array() {
@@ -2505,11 +2504,11 @@ fn call_str_method(
           break
         }
       }
-      @value.Value::BoolVal(result)
+      @value.Value::Bool(result)
     }
     "isalnum" => {
       if s.raw().length() == 0 {
-        return @value.Value::BoolVal(false)
+        return @value.Value::Bool(false)
       }
       let mut result = true
       for c in s.raw().to_array() {
@@ -2521,7 +2520,7 @@ fn call_str_method(
           break
         }
       }
-      @value.Value::BoolVal(result)
+      @value.Value::Bool(result)
     }
     "islower" => {
       let chars = s.raw().to_array()
@@ -2536,7 +2535,7 @@ fn call_str_method(
           has_cased = true
         }
       }
-      @value.Value::BoolVal(result && has_cased)
+      @value.Value::Bool(result && has_cased)
     }
     "isupper" => {
       let chars = s.raw().to_array()
@@ -2551,11 +2550,11 @@ fn call_str_method(
           has_cased = true
         }
       }
-      @value.Value::BoolVal(result && has_cased)
+      @value.Value::Bool(result && has_cased)
     }
     "isspace" => {
       if s.raw().length() == 0 {
-        return @value.Value::BoolVal(false)
+        return @value.Value::Bool(false)
       }
       let mut result = true
       for c in s.raw().to_array() {
@@ -2570,7 +2569,7 @@ fn call_str_method(
           break
         }
       }
-      @value.Value::BoolVal(result)
+      @value.Value::Bool(result)
     }
     "title" => {
       let chars = s.raw().to_array()
@@ -2597,7 +2596,7 @@ fn call_str_method(
           prev_cased = false
         }
       }
-      @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+      @value.Value::String(@value.StarlarkString::new(buf.to_string()))
     }
     "partition" => {
       if pos_args.length() != 1 {
@@ -2606,24 +2605,24 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(sep) => {
+        @value.Value::String(sep) => {
           if sep.raw().length() == 0 {
             raise EvalErr(make_eval_error(ctx, "partition: empty separator"))
           }
           let idx = find_substr(s.raw(), sep.raw())
           if idx < 0 {
-            @value.Value::TupleVal([
-              @value.Value::StrVal(s),
-              @value.Value::StrVal(@value.StarlarkString::new("")),
-              @value.Value::StrVal(@value.StarlarkString::new("")),
+            @value.Value::Tuple([
+              @value.Value::String(s),
+              @value.Value::String(@value.StarlarkString::new("")),
+              @value.Value::String(@value.StarlarkString::new("")),
             ])
           } else {
             let before = s.raw()[0:idx].to_owned()
             let after = s.raw()[idx + sep.raw().length():].to_owned()
-            @value.Value::TupleVal([
-              @value.Value::StrVal(@value.StarlarkString::new(before)),
-              @value.Value::StrVal(@value.StarlarkString::new(sep.raw())),
-              @value.Value::StrVal(@value.StarlarkString::new(after)),
+            @value.Value::Tuple([
+              @value.Value::String(@value.StarlarkString::new(before)),
+              @value.Value::String(@value.StarlarkString::new(sep.raw())),
+              @value.Value::String(@value.StarlarkString::new(after)),
             ])
           }
         }
@@ -2640,24 +2639,24 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(sep) => {
+        @value.Value::String(sep) => {
           if sep.raw().length() == 0 {
             raise EvalErr(make_eval_error(ctx, "rpartition: empty separator"))
           }
           let idx = rfind_substr(s.raw(), sep.raw())
           if idx < 0 {
-            @value.Value::TupleVal([
-              @value.Value::StrVal(@value.StarlarkString::new("")),
-              @value.Value::StrVal(@value.StarlarkString::new("")),
-              @value.Value::StrVal(s),
+            @value.Value::Tuple([
+              @value.Value::String(@value.StarlarkString::new("")),
+              @value.Value::String(@value.StarlarkString::new("")),
+              @value.Value::String(s),
             ])
           } else {
             let before = s.raw()[0:idx].to_owned()
             let after = s.raw()[idx + sep.raw().length():].to_owned()
-            @value.Value::TupleVal([
-              @value.Value::StrVal(@value.StarlarkString::new(before)),
-              @value.Value::StrVal(@value.StarlarkString::new(sep.raw())),
-              @value.Value::StrVal(@value.StarlarkString::new(after)),
+            @value.Value::Tuple([
+              @value.Value::String(@value.StarlarkString::new(before)),
+              @value.Value::String(@value.StarlarkString::new(sep.raw())),
+              @value.Value::String(@value.StarlarkString::new(after)),
             ])
           }
         }
@@ -2674,12 +2673,12 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(prefix) =>
+        @value.Value::String(prefix) =>
           if s.raw().has_prefix(prefix.raw()) {
             let rest = s.raw()[prefix.raw().length():].to_owned()
-            @value.Value::StrVal(@value.StarlarkString::new(rest))
+            @value.Value::String(@value.StarlarkString::new(rest))
           } else {
-            @value.Value::StrVal(s)
+            @value.Value::String(s)
           }
         _ =>
           raise EvalErr(
@@ -2694,12 +2693,12 @@ fn call_str_method(
         )
       }
       match pos_args[0] {
-        @value.Value::StrVal(suffix) =>
+        @value.Value::String(suffix) =>
           if s.raw().has_suffix(suffix.raw()) {
             let rest = s.raw()[0:s.raw().length() - suffix.raw().length()].to_owned()
-            @value.Value::StrVal(@value.StarlarkString::new(rest))
+            @value.Value::String(@value.StarlarkString::new(rest))
           } else {
-            @value.Value::StrVal(s)
+            @value.Value::String(s)
           }
         _ =>
           raise EvalErr(
@@ -2710,7 +2709,7 @@ fn call_str_method(
     "splitlines" => {
       let keepends = if pos_args.length() > 0 {
         match pos_args[0] {
-          @value.Value::BoolVal(b) => b
+          @value.Value::Bool(b) => b
           _ =>
             raise EvalErr(
               make_eval_error(
@@ -2741,7 +2740,7 @@ fn call_str_method(
             }
           }
           parts.push(
-            @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+            @value.Value::String(@value.StarlarkString::new(buf.to_string())),
           )
           buf.reset()
         } else if cv == '\n'.to_int() {
@@ -2749,7 +2748,7 @@ fn call_str_method(
             buf.write_char(c)
           }
           parts.push(
-            @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+            @value.Value::String(@value.StarlarkString::new(buf.to_string())),
           )
           buf.reset()
         } else {
@@ -2759,10 +2758,10 @@ fn call_str_method(
       }
       if buf.to_string().length() > 0 {
         parts.push(
-          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+          @value.Value::String(@value.StarlarkString::new(buf.to_string())),
         )
       }
-      @value.Value::ListVal(@value.StarlarkList::new(parts))
+      @value.Value::List(@value.StarlarkList::new(parts))
     }
     "elems" => {
       let parts : Array[@value.Value] = []
@@ -2770,17 +2769,17 @@ fn call_str_method(
         let buf = StringBuilder::new()
         buf.write_char(b.to_int().unsafe_to_char())
         parts.push(
-          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+          @value.Value::String(@value.StarlarkString::new(buf.to_string())),
         )
       }
-      @value.Value::ListVal(@value.StarlarkList::new(parts))
+      @value.Value::List(@value.StarlarkList::new(parts))
     }
     "elem_ords" => {
       let ords : Array[@value.Value] = []
       for b in s.to_bytes() {
-        ords.push(@value.Value::IntVal(b.to_int().to_int64()))
+        ords.push(@value.Value::Int(b.to_int().to_int64()))
       }
-      @value.Value::ListVal(@value.StarlarkList::new(ords))
+      @value.Value::List(@value.StarlarkList::new(ords))
     }
     "istitle" => {
       let chars = s.raw().to_array()
@@ -2807,7 +2806,7 @@ fn call_str_method(
           prev_cased = false
         }
       }
-      @value.Value::BoolVal(valid && cased)
+      @value.Value::Bool(valid && cased)
     }
     "codepoints" => {
       let items : Array[@value.Value] = []
@@ -2815,17 +2814,17 @@ fn call_str_method(
         let buf = StringBuilder::new()
         buf.write_char(c)
         items.push(
-          @value.Value::StrVal(@value.StarlarkString::new(buf.to_string())),
+          @value.Value::String(@value.StarlarkString::new(buf.to_string())),
         )
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
     "codepoint_ords" => {
       let items : Array[@value.Value] = []
       for c in s.raw() {
-        items.push(@value.Value::IntVal(c.to_int().to_int64()))
+        items.push(@value.Value::Int(c.to_int().to_int64()))
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
     _ =>
       raise EvalErr(
@@ -2889,7 +2888,7 @@ fn call_set_method(
         Err(e) => raise EvalErr(make_eval_error(ctx, "add: \{e}"))
         Ok(_) => ()
       }
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "discard" => {
       if pos_args.length() != 1 {
@@ -2904,7 +2903,7 @@ fn call_set_method(
         Err(e) => raise EvalErr(make_eval_error(ctx, "discard: \{e}"))
         Ok(_) => ()
       }
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "remove" => {
       if pos_args.length() != 1 {
@@ -2920,17 +2919,17 @@ fn call_set_method(
         Ok(false) => raise EvalErr(make_eval_error(ctx, "remove: missing key"))
         Ok(true) => ()
       }
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "clear" => {
       if s.length() == 0 {
-        return @value.Value::NoneVal
+        return @value.Value::None
       }
       match s.clear() {
         Err(e) => raise EvalErr(make_eval_error(ctx, "clear: \{e}"))
         Ok(_) => ()
       }
-      @value.Value::NoneVal
+      @value.Value::None
     }
     "pop" =>
       match s.pop_first() {
@@ -2944,7 +2943,7 @@ fn call_set_method(
       for i in 0..<pos_args.length() {
         set_iterate_into(ctx, pos_args[i], i + 1, "union", result)
       }
-      @value.Value::SetVal(result)
+      @value.Value::Set(result)
     }
     "intersection" => {
       if pos_args.length() != 1 {
@@ -2970,7 +2969,7 @@ fn call_set_method(
           _ => ()
         }
       })
-      @value.Value::SetVal(result)
+      @value.Value::Set(result)
     }
     "difference" => {
       if pos_args.length() != 1 {
@@ -2996,7 +2995,7 @@ fn call_set_method(
           _ => ()
         }
       })
-      @value.Value::SetVal(result)
+      @value.Value::Set(result)
     }
     "symmetric_difference" => {
       if pos_args.length() != 1 {
@@ -3034,7 +3033,7 @@ fn call_set_method(
           _ => ()
         }
       }
-      @value.Value::SetVal(result)
+      @value.Value::Set(result)
     }
     "issubset" => {
       if pos_args.length() != 1 {
@@ -3060,7 +3059,7 @@ fn call_set_method(
           _ => all_in = false
         }
       })
-      @value.Value::BoolVal(all_in)
+      @value.Value::Bool(all_in)
     }
     "issuperset" => {
       if pos_args.length() != 1 {
@@ -3087,7 +3086,7 @@ fn call_set_method(
             }
         }
       }
-      @value.Value::BoolVal(all_in)
+      @value.Value::Bool(all_in)
     }
     "update" => {
       if kw_args.length() > 0 {
@@ -3121,7 +3120,7 @@ fn call_set_method(
           }
         }
       }
-      @value.Value::NoneVal
+      @value.Value::None
     }
     _ =>
       raise EvalErr(make_eval_error(ctx, "set has no method '\{method_name}'"))
@@ -3137,8 +3136,8 @@ fn builtin_bytes(
     raise EvalErr(make_eval_error(ctx, "bytes() takes exactly one argument"))
   }
   match pos_args[0] {
-    @value.Value::BytesVal(b) => @value.Value::BytesVal(b)
-    @value.Value::StrVal(s) => @value.Value::BytesVal(s.to_bytes())
+    @value.Value::Bytes(b) => @value.Value::Bytes(b)
+    @value.Value::String(s) => @value.Value::Bytes(s.to_bytes())
     other => {
       let it = match @value.iterate(other) {
         Err(_) =>
@@ -3158,7 +3157,7 @@ fn builtin_bytes(
             it.done()
             break
           }
-          Some(@value.Value::IntVal(n)) => {
+          Some(@value.Value::Int(n)) => {
             if n < 0L || n > 255L {
               it.done()
               raise EvalErr(
@@ -3182,7 +3181,7 @@ fn builtin_bytes(
           }
         }
       }
-      @value.Value::BytesVal(Bytes::from_array(buf))
+      @value.Value::Bytes(Bytes::from_array(buf))
     }
   }
 }
@@ -3198,9 +3197,9 @@ fn call_bytes_method(
     "elems" => {
       let items : Array[@value.Value] = []
       for i in 0..<b.length() {
-        items.push(@value.Value::IntVal(b[i].to_int().to_int64()))
+        items.push(@value.Value::Int(b[i].to_int().to_int64()))
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
     _ =>
       raise EvalErr(
@@ -3323,9 +3322,9 @@ fn is_whitespace(c : Char) -> Bool {
 fn to_value_list(parts : Array[String]) -> @value.Value {
   let items : Array[@value.Value] = []
   for p in parts {
-    items.push(@value.Value::StrVal(@value.StarlarkString::new(p)))
+    items.push(@value.Value::String(@value.StarlarkString::new(p)))
   }
-  @value.Value::ListVal(@value.StarlarkList::new(items))
+  @value.Value::List(@value.StarlarkList::new(items))
 }
 
 ///|
@@ -3751,7 +3750,7 @@ fn str_format(
       i += 1
     }
   }
-  @value.Value::StrVal(@value.StarlarkString::new(buf.to_string()))
+  @value.Value::String(@value.StarlarkString::new(buf.to_string()))
 }
 
 ///|

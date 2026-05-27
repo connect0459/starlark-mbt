@@ -31,10 +31,10 @@ pub fn eval_input(
         ignore(expr_node)
         match @eval.eval_expr(thread, "<repl>", input, globals) {
           Ok(v) =>
-            if v is @value.Value::NoneVal {
+            if v is @value.Value::None {
               Empty
             } else {
-              let key = @value.Value::StrVal(@value.StarlarkString::new("_"))
+              let key = @value.Value::String(@value.StarlarkString::new("_"))
               globals.set(key, v) |> ignore
               Value(@value.repr(v))
             }

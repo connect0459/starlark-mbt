@@ -51,7 +51,7 @@ pub fn unpack_args(
   for i in 0..<pos_args.length() {
     let arg = pos_args[i]
     let info = infos[i]
-    if info.skip_none && arg is @value.Value::NoneVal {
+    if info.skip_none && arg is @value.Value::None {
       continue
     }
     result[i] = Some(arg)
@@ -67,7 +67,7 @@ pub fn unpack_args(
             "\{fn_name}: got multiple values for keyword argument \{kw_name}",
           )
         }
-        if infos[i].skip_none && arg is @value.Value::NoneVal {
+        if infos[i].skip_none && arg is @value.Value::None {
           found = true
           break
         }

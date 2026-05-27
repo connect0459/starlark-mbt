@@ -9,8 +9,8 @@ pub fn StarlarkDict::new() -> StarlarkDict {
     ht: @hashtable.Hashtable::new(
       starlark_hash,
       starlark_equals,
-      Value::NoneVal,
-      Value::NoneVal,
+      Value::None,
+      Value::None,
     ),
   }
 }
@@ -103,8 +103,8 @@ pub fn StarlarkSet::new() -> StarlarkSet {
     ht: @hashtable.Hashtable::new(
       starlark_hash,
       starlark_equals,
-      Value::NoneVal,
-      Value::NoneVal,
+      Value::None,
+      Value::None,
     ),
   }
 }
@@ -129,7 +129,7 @@ pub fn StarlarkSet::add(
   self : StarlarkSet,
   key : Value,
 ) -> Result[Unit, String] {
-  self.ht.insert(key, Value::NoneVal)
+  self.ht.insert(key, Value::None)
 }
 
 ///|

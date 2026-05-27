@@ -39,7 +39,7 @@ test "exec_file runs a simple script and exposes globals" {
     @starlark.exec_file(t, "<test>", "x = 1 + 2", @starlark.Options::default()) {
     Ok(m) =>
       assert_true(
-        @starlark.module_get(m, "x") is Some(@starlark.Value::IntVal(3L)),
+        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(3L)),
       )
     Err(_) => assert_true(false)
   }
@@ -75,7 +75,7 @@ test "eval_expr evaluates an expression in an empty environment" {
   let t = @starlark.Thread::new("test")
   let env = @starlark.StarlarkDict::new()
   match @starlark.eval_expr(t, "<test>", "1 + 2", env) {
-    Ok(v) => assert_true(v is @starlark.Value::IntVal(3L))
+    Ok(v) => assert_true(v is @starlark.Value::Int(3L))
     Err(_) => assert_true(false)
   }
 }
@@ -84,7 +84,7 @@ test "eval_expr evaluates an expression in an empty environment" {
 test "exec_file_with_predeclared injects host bindings" {
   let t = @starlark.Thread::new("test")
   let predeclared = @starlark.Predeclared::from_map({
-    "ANSWER": @starlark.Value::IntVal(42L),
+    "ANSWER": @starlark.Value::Int(42L),
   })
   match
     @starlark.exec_file_with_predeclared(
@@ -96,7 +96,7 @@ test "exec_file_with_predeclared injects host bindings" {
     ) {
     Ok(m) =>
       assert_true(
-        @starlark.module_get(m, "x") is Some(@starlark.Value::IntVal(43L)),
+        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(43L)),
       )
     Err(_) => assert_true(false)
   }

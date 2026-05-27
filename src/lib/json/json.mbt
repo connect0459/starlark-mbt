@@ -101,17 +101,17 @@ fn encode_inner(
   state : EncodeState,
 ) -> Result[String, String] {
   match v {
-    @value.Value::NoneVal => Ok("null")
-    @value.Value::BoolVal(b) => Ok(if b { "true" } else { "false" })
-    @value.Value::IntVal(n) => Ok(n.to_string())
-    @value.Value::FloatVal(f) =>
+    @value.Value::None => Ok("null")
+    @value.Value::Bool(b) => Ok(if b { "true" } else { "false" })
+    @value.Value::Int(n) => Ok(n.to_string())
+    @value.Value::Float(f) =>
       if f.is_nan() || f.is_inf() {
         Err("cannot encode non-finite float \{format_nonfinite(f)}")
       } else {
         Ok(format_float_json(f))
       }
-    @value.Value::StrVal(s) => Ok(json_quote_string(s))
-    @value.Value::ListVal(l) => {
+    @value.Value::String(s) => Ok(json_quote_string(s))
+    @value.Value::List(l) => {
       if state.list_path.iter().any(fn(pl) { l.is_same_storage(pl) }) {
         return Err("cycle in JSON structure")
       }
@@ -120,7 +120,7 @@ fn encode_inner(
       let _ = state.list_path.pop()
       result
     }
-    @value.Value::TupleVal(t) => {
+    @value.Value::Tuple(t) => {
       if state.tuple_path.iter().any(fn(pt) { physical_equal(pt, t) }) {
         return Err("cycle in JSON structure")
       }
@@ -129,7 +129,7 @@ fn encode_inner(
       let _ = state.tuple_path.pop()
       result
     }
-    @value.Value::DictVal(d) => {
+    @value.Value::Dict(d) => {
       if state.dict_path.iter().any(fn(pd) { physical_equal(pd, d) }) {
         return Err("cycle in JSON structure")
       }
@@ -138,15 +138,15 @@ fn encode_inner(
       let _ = state.dict_path.pop()
       result
     }
-    @value.Value::RangeVal(r) => {
+    @value.Value::Range(r) => {
       let len = r.length()
-      let items : Array[@value.Value] = Array::make(len, @value.Value::NoneVal)
+      let items : Array[@value.Value] = Array::make(len, @value.Value::None)
       for i in 0..<len {
-        items[i] = @value.Value::IntVal(r.index_at(i))
+        items[i] = @value.Value::Int(r.index_at(i))
       }
       encode_sequence(items.iter(), "range", state)
     }
-    @value.Value::SetVal(s) => {
+    @value.Value::Set(s) => {
       let items : Array[@value.Value] = []
       s.each(fn(k) { items.push(k) })
       encode_sequence(items.iter(), "set", state)
@@ -193,7 +193,7 @@ fn encode_dict_val(
       return
     }
     match k {
-      @value.Value::StrVal(s) => pairs.push((s.raw(), v))
+      @value.Value::String(s) => pairs.push((s.raw(), v))
       _ => first_err = Some("dict has \{@value.type_name(k)} key, want string")
     }
   })
@@ -394,15 +394,15 @@ fn parse_json_value(
   if c == '"' {
     match parse_json_string(chars, i) {
       Ok((raw, next_i)) =>
-        Ok((@value.Value::StrVal(@value.StarlarkString::new(raw)), next_i))
+        Ok((@value.Value::String(@value.StarlarkString::new(raw)), next_i))
       Err(e) => Err(e)
     }
   } else if starts_with_at(chars, i, "null") {
-    Ok((@value.Value::NoneVal, i + 4))
+    Ok((@value.Value::None, i + 4))
   } else if starts_with_at(chars, i, "true") {
-    Ok((@value.Value::BoolVal(true), i + 4))
+    Ok((@value.Value::Bool(true), i + 4))
   } else if starts_with_at(chars, i, "false") {
-    Ok((@value.Value::BoolVal(false), i + 5))
+    Ok((@value.Value::Bool(false), i + 5))
   } else if c == '[' {
     parse_json_array(chars, i)
   } else if c == '{' {
@@ -424,7 +424,7 @@ fn parse_json_array(
   let elems : Array[@value.Value] = []
   let mut j = skip_ws(chars, i + 1)
   if j < len && chars[j] == ']' {
-    return Ok((@value.Value::ListVal(@value.StarlarkList::new(elems)), j + 1))
+    return Ok((@value.Value::List(@value.StarlarkList::new(elems)), j + 1))
   }
   while true {
     match parse_json_value(chars, j) {
@@ -438,7 +438,7 @@ fn parse_json_array(
         let c = chars[j]
         if c == ']' {
           return Ok(
-            (@value.Value::ListVal(@value.StarlarkList::new(elems)), j + 1),
+            (@value.Value::List(@value.StarlarkList::new(elems)), j + 1),
           )
         } else if c == ',' {
           j = skip_ws(chars, j + 1)
@@ -463,7 +463,7 @@ fn parse_json_object(
   let dict = @value.StarlarkDict::new()
   let mut j = skip_ws(chars, i + 1)
   if j < len && chars[j] == '}' {
-    return Ok((@value.Value::DictVal(dict), j + 1))
+    return Ok((@value.Value::Dict(dict), j + 1))
   }
   while true {
     j = skip_ws(chars, j)
@@ -487,7 +487,7 @@ fn parse_json_object(
         match parse_json_value(chars, j) {
           Err(e) => return Err(e)
           Ok((val, next_j2)) => {
-            let key = @value.Value::StrVal(@value.StarlarkString::new(key_raw))
+            let key = @value.Value::String(@value.StarlarkString::new(key_raw))
             let _ = dict.set(key, val)
             j = skip_ws(chars, next_j2)
             if j >= len {
@@ -495,7 +495,7 @@ fn parse_json_object(
             }
             let c = chars[j]
             if c == '}' {
-              return Ok((@value.Value::DictVal(dict), j + 1))
+              return Ok((@value.Value::Dict(dict), j + 1))
             } else if c == ',' {
               j = skip_ws(chars, j + 1)
               if j < len && chars[j] == '}' {
@@ -553,12 +553,12 @@ fn parse_json_number(
     let f = @string.parse_double(num_str) catch {
       _ => return Err("invalid number: \{num_str}")
     }
-    Ok((@value.Value::FloatVal(f), j))
+    Ok((@value.Value::Float(f), j))
   } else {
     let n = @string.parse_int64(num_str) catch {
       _ => return Err("invalid number: \{num_str}")
     }
-    Ok((@value.Value::IntVal(n), j))
+    Ok((@value.Value::Int(n), j))
   }
 }
 
@@ -690,7 +690,7 @@ fn make_encode_fn() -> @value.Value {
       return Err("json.encode: got \{pos_args.length()} arguments, want 1")
     }
     encode_to_json(pos_args[0]).map(fn(s) {
-      @value.Value::StrVal(@value.StarlarkString::new(s))
+      @value.Value::String(@value.StarlarkString::new(s))
     })
   })
 }
@@ -708,8 +708,8 @@ fn make_encode_indent_fn() -> @value.Value {
     for kw in kw_args {
       let (k, v) = kw
       match (k, v) {
-        ("prefix", @value.Value::StrVal(s)) => pfx = s.raw()
-        ("indent", @value.Value::StrVal(s)) => ind = s.raw()
+        ("prefix", @value.Value::String(s)) => pfx = s.raw()
+        ("indent", @value.Value::String(s)) => ind = s.raw()
         ("prefix" | "indent", _) =>
           return Err("json.encode_indent: prefix and indent must be strings")
         _ => return Err("json.encode_indent: unexpected keyword argument \{k}")
@@ -719,7 +719,7 @@ fn make_encode_indent_fn() -> @value.Value {
       Err(e) => Err(e)
       Ok(json_str) =>
         indent_json(json_str, pfx, ind).map(fn(result) {
-          @value.Value::StrVal(@value.StarlarkString::new(result))
+          @value.Value::String(@value.StarlarkString::new(result))
         })
     }
   })
@@ -738,7 +738,7 @@ fn make_decode_fn() -> @value.Value {
       return Err("json.decode: missing required argument 'x'")
     }
     let x = match pos_args[0] {
-      @value.Value::StrVal(s) => s.raw()
+      @value.Value::String(s) => s.raw()
       _ => return Err("json.decode: x must be a string")
     }
     let default_val : @value.Value? = if pos_args.length() >= 2 {
@@ -765,7 +765,7 @@ fn make_indent_fn() -> @value.Value {
       return Err("json.indent: got \{pos_args.length()} arguments, want 1")
     }
     let s = match pos_args[0] {
-      @value.Value::StrVal(s) => s.raw()
+      @value.Value::String(s) => s.raw()
       _ => return Err("json.indent: argument must be a string")
     }
     let mut pfx = ""
@@ -773,15 +773,15 @@ fn make_indent_fn() -> @value.Value {
     for kw in kw_args {
       let (k, v) = kw
       match (k, v) {
-        ("prefix", @value.Value::StrVal(sv)) => pfx = sv.raw()
-        ("indent", @value.Value::StrVal(sv)) => ind = sv.raw()
+        ("prefix", @value.Value::String(sv)) => pfx = sv.raw()
+        ("indent", @value.Value::String(sv)) => ind = sv.raw()
         ("prefix" | "indent", _) =>
           return Err("json.indent: prefix and indent must be strings")
         _ => return Err("json.indent: unexpected keyword argument \{k}")
       }
     }
     indent_json(s, pfx, ind).map(fn(result) {
-      @value.Value::StrVal(@value.StarlarkString::new(result))
+      @value.Value::String(@value.StarlarkString::new(result))
     })
   })
 }
@@ -793,5 +793,5 @@ pub fn json_module() -> @value.Value {
   attrs["encode_indent"] = make_encode_indent_fn()
   attrs["decode"] = make_decode_fn()
   attrs["indent"] = make_indent_fn()
-  @value.Value::ModuleVal(@value.StarlarkModule::new("json", attrs))
+  @value.Value::Module(@value.StarlarkModule::new("json", attrs))
 }

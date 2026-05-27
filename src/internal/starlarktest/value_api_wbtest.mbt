@@ -5,7 +5,7 @@
 ///|
 fn get_func_defaults(m : @eval.Module, name : String) -> Array[@value.Value?] {
   match m.get(name) {
-    Some(@value.Value::FuncVal(f)) => f.defaults()
+    Some(@value.Value::Function(f)) => f.defaults()
     _ => []
   }
 }
@@ -51,16 +51,16 @@ test "param defaults: all_opt has a default for every param" {
   let m = exec_param_module()
   let d = get_func_defaults(m, "all_opt")
   assert_eq(d.length(), 3)
-  assert_true(d[0] is Some(@value.Value::StrVal(_)))
-  assert_true(d[1] is Some(@value.Value::NoneVal))
-  assert_true(d[2] is Some(@value.Value::StrVal(_)))
+  assert_true(d[0] is Some(@value.Value::String(_)))
+  assert_true(d[1] is Some(@value.Value::None))
+  assert_true(d[2] is Some(@value.Value::String(_)))
   match d[0] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "a")
-    _ => fail("expected StrVal(\"a\")")
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "a")
+    _ => fail("expected String(\"a\")")
   }
   match d[2] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "")
-    _ => fail("expected StrVal(\"\")")
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "")
+    _ => fail("expected String(\"\")")
   }
 }
 
@@ -71,15 +71,15 @@ test "param defaults: mix_required_opt has defaults only for optional params" {
   assert_eq(d.length(), 4)
   assert_true(d[0] is None)
   assert_true(d[1] is None)
-  assert_true(d[2] is Some(@value.Value::StrVal(_)))
-  assert_true(d[3] is Some(@value.Value::StrVal(_)))
+  assert_true(d[2] is Some(@value.Value::String(_)))
+  assert_true(d[3] is Some(@value.Value::String(_)))
   match d[2] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "c")
-    _ => fail("expected StrVal(\"c\")")
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "c")
+    _ => fail("expected String(\"c\")")
   }
   match d[3] {
-    Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "d")
-    _ => fail("expected StrVal(\"d\")")
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "d")
+    _ => fail("expected String(\"d\")")
   }
 }
 
@@ -89,7 +89,7 @@ test "param defaults: with_varargs has None for *args" {
   let d = get_func_defaults(m, "with_varargs")
   assert_eq(d.length(), 3)
   assert_true(d[0] is None)
-  assert_true(d[1] is Some(@value.Value::StrVal(_)))
+  assert_true(d[1] is Some(@value.Value::String(_)))
   assert_true(d[2] is None)
 }
 
@@ -99,9 +99,9 @@ test "param defaults: with_varargs_kwonly has defaults at correct positions" {
   let d = get_func_defaults(m, "with_varargs_kwonly")
   assert_eq(d.length(), 5)
   assert_true(d[0] is None)
-  assert_true(d[1] is Some(@value.Value::StrVal(_)))
+  assert_true(d[1] is Some(@value.Value::String(_)))
   assert_true(d[2] is None)
-  assert_true(d[3] is Some(@value.Value::StrVal(_)))
+  assert_true(d[3] is Some(@value.Value::String(_)))
   assert_true(d[4] is None)
 }
 
@@ -111,9 +111,9 @@ test "param defaults: with_kwonly bare-star gets None in defaults" {
   let d = get_func_defaults(m, "with_kwonly")
   assert_eq(d.length(), 5)
   assert_true(d[0] is None)
-  assert_true(d[1] is Some(@value.Value::StrVal(_)))
+  assert_true(d[1] is Some(@value.Value::String(_)))
   assert_true(d[2] is None)
-  assert_true(d[3] is Some(@value.Value::StrVal(_)))
+  assert_true(d[3] is Some(@value.Value::String(_)))
   assert_true(d[4] is None)
 }
 
@@ -123,8 +123,8 @@ test "param defaults: with_kwargs has None for **kwargs" {
   let d = get_func_defaults(m, "with_kwargs")
   assert_eq(d.length(), 4)
   assert_true(d[0] is None)
-  assert_true(d[1] is Some(@value.Value::StrVal(_)))
-  assert_true(d[2] is Some(@value.Value::StrVal(_)))
+  assert_true(d[1] is Some(@value.Value::String(_)))
+  assert_true(d[2] is Some(@value.Value::String(_)))
   assert_true(d[3] is None)
 }
 
@@ -134,10 +134,10 @@ test "param defaults: with_varargs_kwonly_kwargs full shape" {
   let d = get_func_defaults(m, "with_varargs_kwonly_kwargs")
   assert_eq(d.length(), 7)
   assert_true(d[0] is None)
-  assert_true(d[1] is Some(@value.Value::StrVal(_)))
+  assert_true(d[1] is Some(@value.Value::String(_)))
   assert_true(d[2] is None)
-  assert_true(d[3] is Some(@value.Value::StrVal(_)))
+  assert_true(d[3] is Some(@value.Value::String(_)))
   assert_true(d[4] is None)
-  assert_true(d[5] is Some(@value.Value::StrVal(_)))
+  assert_true(d[5] is Some(@value.Value::String(_)))
   assert_true(d[6] is None)
 }

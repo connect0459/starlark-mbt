@@ -65,13 +65,13 @@ fn EvalEnv::collect_local_scopes(
 ///|
 fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
   let base = EvalEnv::new()
-  base.bind("None", @value.Value::NoneVal)
-  base.bind("True", @value.Value::BoolVal(true))
-  base.bind("False", @value.Value::BoolVal(false))
+  base.bind("None", @value.Value::None)
+  base.bind("True", @value.Value::Bool(true))
+  base.bind("False", @value.Value::Bool(false))
   for name in builtin_names {
     base.bind(
       name,
-      @value.Value::BuiltinFuncVal(@value.StarlarkBuiltinFunc::dispatch(name)),
+      @value.Value::Builtin(@value.StarlarkBuiltinFunc::dispatch(name)),
     )
   }
   let global_env = EvalEnv::for_module(base)

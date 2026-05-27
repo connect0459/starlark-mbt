@@ -718,7 +718,10 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 
 ### General release tasks
 
-- [ ] Finalise public API; review `.mbti` diff
+- [x] Finalise public API; review `.mbti` diff
+      — Removed `Val` suffix from all `Value` enum constructors (1535 sites)
+      — Added `repr`, `to_str`, `type_name`, `truth`, `starlark_equals` to public facade
+      — Updated `docs/api.md` and `README.mbt.md` to match new constructor names
 - [x] CLI implementation in `src/cmd/` — run `.star` files; `src/main/` renamed to `src/cmd/`
 - [x] Optional REPL — interactive `read → eval → print` loop (public `src/repl/` library)
 - [x] Usage examples as doc tests in `README.mbt.md`; detailed API reference in `docs/api.md`
@@ -728,7 +731,10 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 
 ## Future work (out of initial release scope)
 
-- `math` extension library (`starlark-go/lib/math`) — implemented as `src/lib/math/`
+- Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
+  `@syntax.Stmt` / `@syntax.Param` AST types. Requires moving call dispatch logic into
+  the `value` package or introducing a trait boundary to avoid circular imports.
+- `math` extension library — implemented as `src/lib/math/`
 - `time` extension library (`starlark-go/lib/time`)
 - `proto` extension library (`starlark-go/lib/proto`)
 - `starlarkstruct` — Bazel-style structs and modules

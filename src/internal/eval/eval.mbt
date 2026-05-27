@@ -92,13 +92,11 @@ pub fn Universe::empty() -> Universe {
 ///|
 pub fn Universe::standard() -> Universe {
   let m : Map[String, @value.Value] = {}
-  m["None"] = @value.Value::NoneVal
-  m["True"] = @value.Value::BoolVal(true)
-  m["False"] = @value.Value::BoolVal(false)
+  m["None"] = @value.Value::None
+  m["True"] = @value.Value::Bool(true)
+  m["False"] = @value.Value::Bool(false)
   for name in builtin_names {
-    m[name] = @value.Value::BuiltinFuncVal(
-      @value.StarlarkBuiltinFunc::dispatch(name),
-    )
+    m[name] = @value.Value::Builtin(@value.StarlarkBuiltinFunc::dispatch(name))
   }
   { bindings: m }
 }
@@ -270,7 +268,7 @@ pub fn Module::new() -> Module {
 pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
   let mod = Module::new()
   m.each(fn(name, v) {
-    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+    let key = @value.Value::String(@value.StarlarkString::new(name))
     mod.globals.set(key, v) |> ignore
   })
   mod.freeze()
@@ -290,7 +288,7 @@ pub fn Module::is_frozen(self : Module) -> Bool {
 
 ///|
 pub fn Module::get(self : Module, name : String) -> @value.Value? {
-  let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+  let key = @value.Value::String(@value.StarlarkString::new(name))
   match self.globals.get(key) {
     Ok(Some(v)) => Some(v)
     _ => None
@@ -344,7 +342,7 @@ pub fn exec_file(
   let m = Module::new()
   ctx.global_env.locals.each(fn(name, v) {
     if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
-      let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+      let key = @value.Value::String(@value.StarlarkString::new(name))
       m.globals.set(key, v) |> ignore
     }
   })
@@ -384,7 +382,7 @@ pub fn exec_file_with_predeclared(
   let m = Module::new()
   ctx.global_env.locals.each(fn(name, v) {
     if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
-      let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+      let key = @value.Value::String(@value.StarlarkString::new(name))
       m.globals.set(key, v) |> ignore
     }
   })
@@ -407,14 +405,14 @@ pub fn exec_repl_chunk(
   let ctx = EvalContext::new(thread, { ..opts, load_binds_globally: true })
   globals.each(fn(k, v) {
     match k {
-      @value.Value::StrVal(s) => ctx.global_env.bind(s.raw(), v)
+      @value.Value::String(s) => ctx.global_env.bind(s.raw(), v)
       _ => ()
     }
   })
   let extra_names : Array[String] = []
   globals.each(fn(k, _) {
     match k {
-      @value.Value::StrVal(s) => extra_names.push(s.raw())
+      @value.Value::String(s) => extra_names.push(s.raw())
       _ => ()
     }
   })
@@ -435,7 +433,7 @@ pub fn exec_repl_chunk(
     EvalErr(e) => return Err(e)
   }
   ctx.global_env.locals.each(fn(name, v) {
-    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+    let key = @value.Value::String(@value.StarlarkString::new(name))
     globals.set(key, v) |> ignore
   })
   Ok(())
@@ -456,7 +454,7 @@ pub fn eval_expr(
   let ctx = EvalContext::new(thread, opts)
   env.each(fn(k, v) {
     match k {
-      @value.Value::StrVal(s) => ctx.global_env.bind(s.raw(), v)
+      @value.Value::String(s) => ctx.global_env.bind(s.raw(), v)
       _ => ()
     }
   })

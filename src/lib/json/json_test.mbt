@@ -1,21 +1,21 @@
 ///|
 fn str_val(s : String) -> @value.Value {
-  @value.Value::StrVal(@value.StarlarkString::new(s))
+  @value.Value::String(@value.StarlarkString::new(s))
 }
 
 ///|
 fn int_val(n : Int64) -> @value.Value {
-  @value.Value::IntVal(n)
+  @value.Value::Int(n)
 }
 
 ///|
 fn float_val(f : Double) -> @value.Value {
-  @value.Value::FloatVal(f)
+  @value.Value::Float(f)
 }
 
 ///|
 fn list_val(items : Array[@value.Value]) -> @value.Value {
-  @value.Value::ListVal(@value.StarlarkList::new(items))
+  @value.Value::List(@value.StarlarkList::new(items))
 }
 
 ///|
@@ -72,13 +72,13 @@ fn assert_decode(
 
 ///|
 test "encode None as null" {
-  check_encode(@value.Value::NoneVal, "null")
+  check_encode(@value.Value::None, "null")
 }
 
 ///|
 test "encode true and false" {
-  check_encode(@value.Value::BoolVal(true), "true")
-  check_encode(@value.Value::BoolVal(false), "false")
+  check_encode(@value.Value::Bool(true), "true")
+  check_encode(@value.Value::Bool(false), "false")
 }
 
 ///|
@@ -129,7 +129,7 @@ test "encode list" {
 ///|
 test "encode tuple" {
   check_encode(
-    @value.Value::TupleVal([int_val(1L), int_val(2L), int_val(3L)]),
+    @value.Value::Tuple([int_val(1L), int_val(2L), int_val(3L)]),
     "[1,2,3]",
   )
 }
@@ -139,25 +139,25 @@ test "encode dict with sorted string keys" {
   let d = @value.StarlarkDict::new()
   let _ = d.set(str_val("y"), str_val("two"))
   let _ = d.set(str_val("x"), int_val(1L))
-  check_encode(@value.Value::DictVal(d), "{\"x\":1,\"y\":\"two\"}")
+  check_encode(@value.Value::Dict(d), "{\"x\":1,\"y\":\"two\"}")
 }
 
 ///|
 test "encode dict rejects non-string keys" {
   let d = @value.StarlarkDict::new()
   let _ = d.set(int_val(1L), str_val("two"))
-  check_encode_err(@value.Value::DictVal(d), "dict has int key, want string")
+  check_encode_err(@value.Value::Dict(d), "dict has int key, want string")
 }
 
 ///|
 test "encode range" {
   let r = @value.StarlarkRange::new(0L, 3L, 1L)
-  check_encode(@value.Value::RangeVal(r), "[0,1,2]")
+  check_encode(@value.Value::Range(r), "[0,1,2]")
 }
 
 ///|
 test "encode unrepresentable type returns error" {
-  let bf : @value.Value = @value.Value::BuiltinFuncVal(
+  let bf : @value.Value = @value.Value::Builtin(
     @value.StarlarkBuiltinFunc::dispatch("len"),
   )
   check_encode_err(bf, "cannot encode builtin_function_or_method as JSON")
@@ -165,13 +165,13 @@ test "encode unrepresentable type returns error" {
 
 ///|
 test "decode null" {
-  assert_decode("null", @value.Value::NoneVal, "null")
+  assert_decode("null", @value.Value::None, "null")
 }
 
 ///|
 test "decode booleans" {
-  assert_decode("true", @value.Value::BoolVal(true), "true")
-  assert_decode("false", @value.Value::BoolVal(false), "false")
+  assert_decode("true", @value.Value::Bool(true), "true")
+  assert_decode("false", @value.Value::Bool(false), "false")
 }
 
 ///|
@@ -192,11 +192,11 @@ test "decode negative zero float" {
     Err(e) => fail("decode -0.0 failed: \{e}")
     Ok(v) =>
       match v {
-        @value.Value::FloatVal(f) =>
+        @value.Value::Float(f) =>
           if !(f == -0.0 && 1.0 / f == @double.neg_infinity) {
             fail("expected -0.0, got \{f}")
           }
-        _ => fail("expected FloatVal, got \{@value.repr(v)}")
+        _ => fail("expected Float, got \{@value.repr(v)}")
       }
   }
 }
@@ -283,9 +283,9 @@ test "indent_json rejects invalid JSON" {
 ///|
 test "encode then decode round-trips values" {
   let values : Array[@value.Value] = [
-    @value.Value::NoneVal,
-    @value.Value::BoolVal(true),
-    @value.Value::BoolVal(false),
+    @value.Value::None,
+    @value.Value::Bool(true),
+    @value.Value::Bool(false),
     int_val(42L),
     int_val(-1L),
     float_val(1.5),

@@ -8,14 +8,12 @@ fn call1(
   arg : @value.Value,
 ) -> Result[@value.Value, String] raise Error {
   match m {
-    @value.Value::ModuleVal(mod) =>
+    @value.Value::Module(mod) =>
       match mod.get(attr) {
-        Some(@value.Value::BuiltinFuncVal(f)) =>
+        Some(@value.Value::Builtin(f)) =>
           match
             f.call_body(
-              @value.BuiltinCallCtx::new(fn(_, _, _) {
-                Ok(@value.Value::NoneVal)
-              }),
+              @value.BuiltinCallCtx::new(fn(_, _, _) { Ok(@value.Value::None) }),
               [arg],
               [],
             ) {
@@ -36,14 +34,12 @@ fn call2(
   b : @value.Value,
 ) -> Result[@value.Value, String] raise Error {
   match m {
-    @value.Value::ModuleVal(mod) =>
+    @value.Value::Module(mod) =>
       match mod.get(attr) {
-        Some(@value.Value::BuiltinFuncVal(f)) =>
+        Some(@value.Value::Builtin(f)) =>
           match
             f.call_body(
-              @value.BuiltinCallCtx::new(fn(_, _, _) {
-                Ok(@value.Value::NoneVal)
-              }),
+              @value.BuiltinCallCtx::new(fn(_, _, _) { Ok(@value.Value::None) }),
               [a, b],
               [],
             ) {
@@ -58,12 +54,12 @@ fn call2(
 
 ///|
 fn fv(x : Double) -> @value.Value {
-  @value.Value::FloatVal(x)
+  @value.Value::Float(x)
 }
 
 ///|
 fn iv(x : Int64) -> @value.Value {
-  @value.Value::IntVal(x)
+  @value.Value::Int(x)
 }
 
 ///|
@@ -79,11 +75,11 @@ fn expect_float(
   expected : Double,
 ) -> Unit raise Error {
   match r {
-    Ok(@value.Value::FloatVal(f)) =>
+    Ok(@value.Value::Float(f)) =>
       if !approx(f, expected) {
         fail("expected \{expected}, got \{f}")
       }
-    Ok(v) => fail("expected FloatVal, got \{@value.type_name(v)}")
+    Ok(v) => fail("expected Float, got \{@value.type_name(v)}")
     Err(e) => fail("expected Ok, got Err(\{e})")
   }
 }
@@ -92,18 +88,18 @@ fn expect_float(
 test "math_module: constants e and pi" {
   let m = math_module()
   match m {
-    @value.Value::ModuleVal(mod) => {
+    @value.Value::Module(mod) => {
       match mod.get("e") {
-        Some(@value.Value::FloatVal(f)) =>
+        Some(@value.Value::Float(f)) =>
           assert_true(approx(f, 2.718281828459045))
         _ => fail("e not found or wrong type")
       }
       match mod.get("pi") {
-        Some(@value.Value::FloatVal(f)) => assert_true(approx(f, pi))
+        Some(@value.Value::Float(f)) => assert_true(approx(f, pi))
         _ => fail("pi not found or wrong type")
       }
     }
-    _ => fail("expected ModuleVal")
+    _ => fail("expected Module")
   }
 }
 
@@ -176,7 +172,7 @@ test "math_module: gamma(1)==1, gamma(5)==24" {
 test "math_module: type error for non-numeric arg" {
   let m = math_module()
   match
-    call1(m, "sqrt", @value.Value::StrVal(@value.StarlarkString::new("x"))) {
+    call1(m, "sqrt", @value.Value::String(@value.StarlarkString::new("x"))) {
     Err(msg) => assert_true(msg.contains("want float or int"))
     Ok(_) => fail("expected error")
   }

@@ -80,37 +80,37 @@ test "StarlarkRange: does not contain value outside range" {
 ///|
 test "Value: type_name for Range is range" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_eq(type_name(Value::RangeVal(r)), "range")
+  assert_eq(type_name(Value::Range(r)), "range")
 }
 
 ///|
 test "Value: repr for range(10) shows compact form" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_eq(repr(Value::RangeVal(r)), "range(10)")
+  assert_eq(repr(Value::Range(r)), "range(10)")
 }
 
 ///|
 test "Value: repr for range(1, 10) shows start and stop" {
   let r = StarlarkRange::new(1L, 10L, 1L)
-  assert_eq(repr(Value::RangeVal(r)), "range(1, 10)")
+  assert_eq(repr(Value::Range(r)), "range(1, 10)")
 }
 
 ///|
 test "Value: repr for range(0, 10, 2) shows step when not 1" {
   let r = StarlarkRange::new(0L, 10L, 2L)
-  assert_eq(repr(Value::RangeVal(r)), "range(0, 10, 2)")
+  assert_eq(repr(Value::Range(r)), "range(0, 10, 2)")
 }
 
 ///|
 test "Value: truth for non-empty range is true" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_true(truth(Value::RangeVal(r)))
+  assert_true(truth(Value::Range(r)))
 }
 
 ///|
 test "Value: truth for empty range is false" {
   let r = StarlarkRange::new(5L, 3L, 1L)
-  assert_false(truth(Value::RangeVal(r)))
+  assert_false(truth(Value::Range(r)))
 }
 
 // --- StarlarkFunction ---
@@ -118,19 +118,19 @@ test "Value: truth for empty range is false" {
 ///|
 test "Value: type_name for user-defined function is function" {
   let f = StarlarkFunction::new("add", [], [], [], [])
-  assert_eq(type_name(Value::FuncVal(f)), "function")
+  assert_eq(type_name(Value::Function(f)), "function")
 }
 
 ///|
 test "Value: repr for function shows name in angle brackets" {
   let f = StarlarkFunction::new("my_func", [], [], [], [])
-  assert_eq(repr(Value::FuncVal(f)), "<function my_func>")
+  assert_eq(repr(Value::Function(f)), "<function my_func>")
 }
 
 ///|
 test "Value: truth for function is always true" {
   let f = StarlarkFunction::new("f", [], [], [], [])
-  assert_true(truth(Value::FuncVal(f)))
+  assert_true(truth(Value::Function(f)))
 }
 
 // --- StarlarkBuiltinFunc ---
@@ -138,45 +138,45 @@ test "Value: truth for function is always true" {
 ///|
 test "Value: type_name for builtin function is builtin_function_or_method" {
   let f = StarlarkBuiltinFunc::dispatch("len")
-  assert_eq(type_name(Value::BuiltinFuncVal(f)), "builtin_function_or_method")
+  assert_eq(type_name(Value::Builtin(f)), "builtin_function_or_method")
 }
 
 ///|
 test "Value: repr for builtin function shows name" {
   let f = StarlarkBuiltinFunc::dispatch("len")
-  assert_eq(repr(Value::BuiltinFuncVal(f)), "<built-in function len>")
+  assert_eq(repr(Value::Builtin(f)), "<built-in function len>")
 }
 
 ///|
 test "Value: truth for builtin function is always true" {
   let f = StarlarkBuiltinFunc::dispatch("len")
-  assert_true(truth(Value::BuiltinFuncVal(f)))
+  assert_true(truth(Value::Builtin(f)))
 }
 
 // --- StarlarkBoundMethod ---
 
 ///|
 test "Value: type_name for bound method is builtin_function_or_method" {
-  let recv = Value::StrVal(StarlarkString::new("hello"))
+  let recv = Value::String(StarlarkString::new("hello"))
   let m = StarlarkBoundMethod::new(recv, "upper")
-  assert_eq(type_name(Value::BoundMethodVal(m)), "builtin_function_or_method")
+  assert_eq(type_name(Value::BoundMethod(m)), "builtin_function_or_method")
 }
 
 ///|
 test "Value: repr for bound method shows receiver type and method name" {
-  let recv = Value::StrVal(StarlarkString::new("hello"))
+  let recv = Value::String(StarlarkString::new("hello"))
   let m = StarlarkBoundMethod::new(recv, "upper")
   assert_eq(
-    repr(Value::BoundMethodVal(m)),
+    repr(Value::BoundMethod(m)),
     "<built-in method upper of string value>",
   )
 }
 
 ///|
 test "Value: truth for bound method is always true" {
-  let recv = Value::NoneVal
+  let recv = Value::None
   let m = StarlarkBoundMethod::new(recv, "something")
-  assert_true(truth(Value::BoundMethodVal(m)))
+  assert_true(truth(Value::BoundMethod(m)))
 }
 
 // --- freeze semantics ---
@@ -196,9 +196,9 @@ test "StarlarkList: freeze marks list as frozen" {
 
 ///|
 test "freeze_value: freezes a list and its mutable nested values" {
-  let inner = StarlarkList::new([Value::IntVal(1L)])
-  let outer = StarlarkList::new([Value::ListVal(inner)])
-  freeze_value(Value::ListVal(outer))
+  let inner = StarlarkList::new([Value::Int(1L)])
+  let outer = StarlarkList::new([Value::List(inner)])
+  freeze_value(Value::List(outer))
   assert_true(outer.is_frozen())
   assert_true(inner.is_frozen())
 }
@@ -207,9 +207,8 @@ test "freeze_value: freezes a list and its mutable nested values" {
 test "freeze_value: freezes a dict and its mutable nested values" {
   let inner = StarlarkList::new([])
   let d = StarlarkDict::new()
-  d.set(Value::StrVal(StarlarkString::new("k")), Value::ListVal(inner))
-  |> ignore
-  freeze_value(Value::DictVal(d))
+  d.set(Value::String(StarlarkString::new("k")), Value::List(inner)) |> ignore
+  freeze_value(Value::Dict(d))
   assert_true(d.is_frozen())
   assert_true(inner.is_frozen())
 }
@@ -217,8 +216,8 @@ test "freeze_value: freezes a dict and its mutable nested values" {
 ///|
 test "freeze_value: freezes a set" {
   let s = StarlarkSet::new()
-  s.add(Value::IntVal(1L)) |> ignore
-  freeze_value(Value::SetVal(s))
+  s.add(Value::Int(1L)) |> ignore
+  freeze_value(Value::Set(s))
   assert_true(s.is_frozen())
 }
 
@@ -226,13 +225,13 @@ test "freeze_value: freezes a set" {
 test "freeze_value: is idempotent on already-frozen values" {
   let l = StarlarkList::new([])
   l.freeze()
-  freeze_value(Value::ListVal(l))
+  freeze_value(Value::List(l))
   assert_true(l.is_frozen())
 }
 
 ///|
 test "freeze_value: primitives are not mutable, freeze is no-op" {
-  freeze_value(Value::IntVal(42L))
-  freeze_value(Value::StrVal(StarlarkString::new("hello")))
-  freeze_value(Value::NoneVal)
+  freeze_value(Value::Int(42L))
+  freeze_value(Value::String(StarlarkString::new("hello")))
+  freeze_value(Value::None)
 }

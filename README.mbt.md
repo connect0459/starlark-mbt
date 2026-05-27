@@ -40,7 +40,7 @@ test {
   let src = "result = sum([i * i for i in range(5)])"
   match @starlark.exec_file(thread, "example.star", src, @starlark.Options::default()) {
     Ok(m) =>
-      assert_true(@starlark.module_get(m, "result") is Some(@starlark.Value::IntVal(30L)))
+      assert_true(@starlark.module_get(m, "result") is Some(@starlark.Value::Int(30L)))
     Err(e) => fail!(e.to_string())
   }
 }
@@ -68,7 +68,7 @@ test {
   let thread = @starlark.Thread::new("expr")
   let env = @starlark.StarlarkDict::new()
   match @starlark.eval_expr(thread, "<expr>", "2 ** 10", env) {
-    Ok(v) => assert_true(v is @starlark.Value::IntVal(1024L))
+    Ok(v) => assert_true(v is @starlark.Value::Int(1024L))
     Err(e) => fail!(e.to_string())
   }
 }
@@ -80,7 +80,7 @@ test {
 test {
   let thread = @starlark.Thread::new("main")
   let predeclared = @starlark.Predeclared::from_map({
-    "MAX": @starlark.Value::IntVal(100L),
+    "MAX": @starlark.Value::Int(100L),
   })
   match @starlark.exec_file_with_predeclared(
     thread, "conf.star",
@@ -89,7 +89,7 @@ test {
     predeclared,
   ) {
     Ok(m) =>
-      assert_true(@starlark.module_get(m, "ok") is Some(@starlark.Value::BoolVal(true)))
+      assert_true(@starlark.module_get(m, "ok") is Some(@starlark.Value::Bool(true)))
     Err(e) => fail!(e.to_string())
   }
 }
@@ -119,7 +119,7 @@ test {
     @starlark.Options::default(),
   ) {
     Ok(m) =>
-      assert_true(@starlark.module_get(m, "result") is Some(@starlark.Value::IntVal(42L)))
+      assert_true(@starlark.module_get(m, "result") is Some(@starlark.Value::Int(42L)))
     Err(e) => fail!(e.to_string())
   }
 }
@@ -154,7 +154,7 @@ test {
     thread, "data.star", src, @starlark.Options::default(), predeclared,
   ) {
     Ok(m) =>
-      assert_true(@starlark.module_get(m, "answer") is Some(@starlark.Value::IntVal(42L)))
+      assert_true(@starlark.module_get(m, "answer") is Some(@starlark.Value::Int(42L)))
     Err(e) => fail!(e.to_string())
   }
 }
@@ -172,7 +172,7 @@ test {
     thread, "calc.star", src, @starlark.Options::default(), predeclared,
   ) {
     Ok(m) =>
-      assert_true(@starlark.module_get(m, "r") is Some(@starlark.Value::IntVal(1414L)))
+      assert_true(@starlark.module_get(m, "r") is Some(@starlark.Value::Int(1414L)))
     Err(e) => fail!(e.to_string())
   }
 }

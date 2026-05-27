@@ -22,6 +22,11 @@ All `src/internal/*` packages are implementation details and are not importable 
 | `eval_expr` | `(Thread, String, String, StarlarkDict) -> Result[Value, EvalError]` | Evaluate a single Starlark expression |
 | `exec_file_with_predeclared` | `(Thread, String, String, Options, Predeclared) -> Result[Module, EvalError]` | Execute with extra host bindings visible to the script |
 | `module_get` | `(Module, String) -> Value?` | Look up a global by name in an executed module |
+| `repr` | `(Value) -> String` | Starlark `repr()` of a value (quoted strings, recursive containers) |
+| `to_str` | `(Value) -> String` | Starlark `str()` of a value (unquoted strings) |
+| `type_name` | `(Value) -> String` | Starlark `type()` string for a value |
+| `truth` | `(Value) -> Bool` | Starlark truthiness (`if` / `and` / `or` semantics) |
+| `starlark_equals` | `(Value, Value) -> Bool` | Structural equality (`==` semantics; `NaN == NaN`) |
 
 #### `exec_file`
 
@@ -58,7 +63,7 @@ lower than locals and globals).
 ```moonbit
 let thread = @starlark.Thread::new("main")
 let predeclared = @starlark.Predeclared::from_map({
-  "MY_FLAG": @starlark.Value::BoolVal(true),
+  "MY_FLAG": @starlark.Value::Bool(true),
 })
 let _ = @starlark.exec_file_with_predeclared(
   thread, "script.star",
@@ -223,21 +228,21 @@ All Starlark values share this enum type.
 
 ```moonbit
 pub enum Value {
-  NoneVal
-  BoolVal(Bool)
-  IntVal(Int64)
-  FloatVal(Double)
-  StringVal(StarlarkString)
-  BytesVal(Bytes)
-  ListVal(StarlarkList)
-  TupleVal(Array[Value])
-  DictVal(StarlarkDict)
-  SetVal(StarlarkSet)
-  FuncVal(StarlarkFunction)
-  BuiltinVal(StarlarkBuiltinFunc)
-  BoundVal(StarlarkBoundMethod)
-  RangeVal(StarlarkRange)
-  ModuleVal(StarlarkModule)
+  None
+  Bool(Bool)
+  Int(Int64)
+  Float(Double)
+  String(StarlarkString)
+  Bytes(Bytes)
+  List(StarlarkList)
+  Tuple(Array[Value])
+  Dict(StarlarkDict)
+  Set(StarlarkSet)
+  Range(StarlarkRange)
+  Function(StarlarkFunction)
+  Builtin(StarlarkBuiltinFunc)
+  BoundMethod(StarlarkBoundMethod)
+  Module(StarlarkModule)
 }
 ```
 
@@ -249,7 +254,7 @@ test {
   match @starlark.exec_file(thread, "s.star", "x = 'hello'", @starlark.Options::default()) {
     Ok(m) =>
       match @starlark.module_get(m, "x") {
-        Some(@starlark.Value::StringVal(s)) => assert_eq(s.raw(), "hello")
+        Some(@starlark.Value::String(s)) => assert_eq(s.raw(), "hello")
         _ => fail!("expected string")
       }
     Err(e) => fail!(e.to_string())
@@ -386,7 +391,7 @@ test {
   ) {
     Ok(m) =>
       match @starlark.module_get(m, "payload") {
-        Some(@starlark.Value::StringVal(s)) =>
+        Some(@starlark.Value::String(s)) =>
           assert_eq(s.raw(), "{\"key\": [1, 2, 3]}")
         _ => fail!("expected string")
       }
@@ -474,7 +479,7 @@ test {
   ) {
     Ok(m) =>
       match @starlark.module_get(m, "approx_pi") {
-        Some(@starlark.Value::FloatVal(f)) => assert_true(f > 3.14 && f < 3.15)
+        Some(@starlark.Value::Float(f)) => assert_true(f > 3.14 && f < 3.15)
         _ => fail!("expected float")
       }
     Err(e) => fail!(e.to_string())

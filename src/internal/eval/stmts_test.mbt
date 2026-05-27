@@ -16,7 +16,7 @@ fn get_s(m : Module, name : String) -> @value.Value? {
 ///|
 test "exec_file: while loop counts down until condition is false" {
   match exec_s("x = 3\nwhile x > 0:\n  x = x - 1") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(0L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(0L)))
     Err(_) => assert_true(false)
   }
 }
@@ -24,7 +24,7 @@ test "exec_file: while loop counts down until condition is false" {
 ///|
 test "exec_file: while loop body is skipped when condition is initially false" {
   match exec_s("x = 0\nwhile False:\n  x = 1") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(0L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(0L)))
     Err(_) => assert_true(false)
   }
 }
@@ -32,7 +32,7 @@ test "exec_file: while loop body is skipped when condition is initially false" {
 ///|
 test "exec_file: while loop with break exits before condition is false" {
   match exec_s("x = 0\nwhile True:\n  x = x + 1\n  if x == 3:\n    break") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(3L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(3L)))
     Err(_) => assert_true(false)
   }
 }
@@ -44,8 +44,8 @@ test "exec_file: while loop with continue skips rest of body for that iteration"
       "x = 0\ny = 0\nwhile x < 5:\n  x = x + 1\n  if x == 3:\n    continue\n  y = y + 1",
     ) {
     Ok(m) => {
-      assert_true(get_s(m, "x") == Some(@value.Value::IntVal(5L)))
-      assert_true(get_s(m, "y") == Some(@value.Value::IntVal(4L)))
+      assert_true(get_s(m, "x") == Some(@value.Value::Int(5L)))
+      assert_true(get_s(m, "y") == Some(@value.Value::Int(4L)))
     }
     Err(_) => assert_true(false)
   }
@@ -56,7 +56,7 @@ test "exec_file: while loop with continue skips rest of body for that iteration"
 ///|
 test "exec_file: augmented add updates binding in place" {
   match exec_s("x = 5\nx += 3") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(8L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(8L)))
     Err(_) => assert_true(false)
   }
 }
@@ -64,7 +64,7 @@ test "exec_file: augmented add updates binding in place" {
 ///|
 test "exec_file: augmented subtract updates binding in place" {
   match exec_s("x = 10\nx -= 4") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(6L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(6L)))
     Err(_) => assert_true(false)
   }
 }
@@ -72,7 +72,7 @@ test "exec_file: augmented subtract updates binding in place" {
 ///|
 test "exec_file: augmented multiply updates binding in place" {
   match exec_s("x = 3\nx *= 4") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(12L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(12L)))
     Err(_) => assert_true(false)
   }
 }
@@ -80,7 +80,7 @@ test "exec_file: augmented multiply updates binding in place" {
 ///|
 test "exec_file: augmented floor-divide updates binding in place" {
   match exec_s("x = 7\nx //= 2") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(3L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(3L)))
     Err(_) => assert_true(false)
   }
 }
@@ -88,7 +88,7 @@ test "exec_file: augmented floor-divide updates binding in place" {
 ///|
 test "exec_file: augmented modulo updates binding in place" {
   match exec_s("x = 7\nx %= 3") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(1L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(1L)))
     Err(_) => assert_true(false)
   }
 }
@@ -96,7 +96,7 @@ test "exec_file: augmented modulo updates binding in place" {
 ///|
 test "exec_file: augmented bitwise-or updates binding in place" {
   match exec_s("x = 0b1100\nx |= 0b0011") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(0b1111L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(0b1111L)))
     Err(_) => assert_true(false)
   }
 }
@@ -104,7 +104,7 @@ test "exec_file: augmented bitwise-or updates binding in place" {
 ///|
 test "exec_file: augmented left-shift updates binding in place" {
   match exec_s("x = 1\nx <<= 4") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(16L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(16L)))
     Err(_) => assert_true(false)
   }
 }
@@ -114,7 +114,7 @@ test "exec_file: augmented string concatenation extends string" {
   match exec_s("s = \"hello\"\ns += \" world\"") {
     Ok(m) =>
       match get_s(m, "s") {
-        Some(@value.Value::StrVal(s)) => assert_eq(s.raw(), "hello world")
+        Some(@value.Value::String(s)) => assert_eq(s.raw(), "hello world")
         _ => assert_true(false)
       }
     Err(_) => assert_true(false)
@@ -126,7 +126,7 @@ test "exec_file: augmented list extend adds elements" {
   match exec_s("lst = [1, 2]\nlst += [3, 4]") {
     Ok(m) =>
       match get_s(m, "lst") {
-        Some(@value.Value::ListVal(l)) => assert_eq(l.length(), 4)
+        Some(@value.Value::List(l)) => assert_eq(l.length(), 4)
         _ => assert_true(false)
       }
     Err(_) => assert_true(false)
@@ -139,8 +139,8 @@ test "exec_file: augmented list extend adds elements" {
 test "exec_file: simple tuple unpacking assigns each element" {
   match exec_s("a, b = 1, 2") {
     Ok(m) => {
-      assert_true(get_s(m, "a") == Some(@value.Value::IntVal(1L)))
-      assert_true(get_s(m, "b") == Some(@value.Value::IntVal(2L)))
+      assert_true(get_s(m, "a") == Some(@value.Value::Int(1L)))
+      assert_true(get_s(m, "b") == Some(@value.Value::Int(2L)))
     }
     Err(_) => assert_true(false)
   }
@@ -150,9 +150,9 @@ test "exec_file: simple tuple unpacking assigns each element" {
 test "exec_file: tuple unpacking from list value" {
   match exec_s("a, b, c = [10, 20, 30]") {
     Ok(m) => {
-      assert_true(get_s(m, "a") == Some(@value.Value::IntVal(10L)))
-      assert_true(get_s(m, "b") == Some(@value.Value::IntVal(20L)))
-      assert_true(get_s(m, "c") == Some(@value.Value::IntVal(30L)))
+      assert_true(get_s(m, "a") == Some(@value.Value::Int(10L)))
+      assert_true(get_s(m, "b") == Some(@value.Value::Int(20L)))
+      assert_true(get_s(m, "c") == Some(@value.Value::Int(30L)))
     }
     Err(_) => assert_true(false)
   }
@@ -166,7 +166,7 @@ test "exec_file: tuple unpacking with wrong count raises error" {
 ///|
 test "exec_file: tuple unpacking in for loop" {
   match exec_s("s = 0\nfor a, b in [(1, 2), (3, 4)]:\n  s = s + a + b") {
-    Ok(m) => assert_true(get_s(m, "s") == Some(@value.Value::IntVal(10L)))
+    Ok(m) => assert_true(get_s(m, "s") == Some(@value.Value::Int(10L)))
     Err(_) => assert_true(false)
   }
 }
@@ -177,7 +177,7 @@ test "exec_file: tuple unpacking in for loop" {
 test "exec_file: for loop break stops iteration early" {
   match
     exec_s("x = 0\nfor i in [1, 2, 3, 4, 5]:\n  if i == 3:\n    break\n  x = i") {
-    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::IntVal(2L)))
+    Ok(m) => assert_true(get_s(m, "x") == Some(@value.Value::Int(2L)))
     Err(_) => assert_true(false)
   }
 }
@@ -188,7 +188,7 @@ test "exec_file: for loop continue skips rest of body for matching iterations" {
     exec_s(
       "s = 0\nfor i in [1, 2, 3, 4, 5]:\n  if i == 3:\n    continue\n  s = s + i",
     ) {
-    Ok(m) => assert_true(get_s(m, "s") == Some(@value.Value::IntVal(12L)))
+    Ok(m) => assert_true(get_s(m, "s") == Some(@value.Value::Int(12L)))
     Err(_) => assert_true(false)
   }
 }
@@ -200,9 +200,9 @@ test "exec_file: dict subscript assignment sets key-value pair" {
   match exec_s("d = {}\nd[\"x\"] = 42") {
     Ok(m) =>
       match get_s(m, "d") {
-        Some(@value.Value::DictVal(d)) => {
-          let key = @value.Value::StrVal(@value.StarlarkString::new("x"))
-          assert_true(d.get(key) == Ok(Some(@value.Value::IntVal(42L))))
+        Some(@value.Value::Dict(d)) => {
+          let key = @value.Value::String(@value.StarlarkString::new("x"))
+          assert_true(d.get(key) == Ok(Some(@value.Value::Int(42L))))
         }
         _ => assert_true(false)
       }
@@ -215,8 +215,8 @@ test "exec_file: list subscript assignment updates element in place" {
   match exec_s("lst = [1, 2, 3]\nlst[1] = 99") {
     Ok(m) =>
       match get_s(m, "lst") {
-        Some(@value.Value::ListVal(l)) =>
-          assert_true(l.get(1) == @value.Value::IntVal(99L))
+        Some(@value.Value::List(l)) =>
+          assert_true(l.get(1) == @value.Value::Int(99L))
         _ => assert_true(false)
       }
     Err(_) => assert_true(false)
@@ -233,7 +233,7 @@ test "exec_file: load statement raises error when no loader is set" {
 ///|
 test "exec_file: load statement makes symbol usable within the file" {
   let exported : Map[String, @value.Value] = {}
-  exported["answer"] = @value.Value::IntVal(42L)
+  exported["answer"] = @value.Value::Int(42L)
   let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
     _thread,
     _path,
@@ -248,7 +248,7 @@ test "exec_file: load statement makes symbol usable within the file" {
     Options::default(),
   )
   match result {
-    Ok(m) => assert_true(m.get("x") == Some(@value.Value::IntVal(43L)))
+    Ok(m) => assert_true(m.get("x") == Some(@value.Value::Int(43L)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -256,7 +256,7 @@ test "exec_file: load statement makes symbol usable within the file" {
 ///|
 test "exec_file: load statement supports aliased bindings" {
   let exported : Map[String, @value.Value] = {}
-  exported["foo"] = @value.Value::IntVal(1L)
+  exported["foo"] = @value.Value::Int(1L)
   let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
     _thread,
     _path,
@@ -271,7 +271,7 @@ test "exec_file: load statement supports aliased bindings" {
     Options::default(),
   )
   match result {
-    Ok(m) => assert_true(m.get("y") == Some(@value.Value::IntVal(2L)))
+    Ok(m) => assert_true(m.get("y") == Some(@value.Value::Int(2L)))
     Err(e) => fail(e.to_string())
   }
 }

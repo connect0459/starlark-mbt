@@ -155,21 +155,21 @@ pub fn StarlarkString::raw(Self) -> String
 pub fn StarlarkString::to_bytes(Self) -> Bytes
 
 pub(all) enum Value {
-  NoneVal
-  BoolVal(Bool)
-  IntVal(Int64)
-  FloatVal(Double)
-  StrVal(StarlarkString)
-  BytesVal(Bytes)
-  ListVal(StarlarkList)
-  TupleVal(Array[Value])
-  DictVal(StarlarkDict)
-  SetVal(StarlarkSet)
-  RangeVal(StarlarkRange)
-  FuncVal(StarlarkFunction)
-  BuiltinFuncVal(StarlarkBuiltinFunc)
-  BoundMethodVal(StarlarkBoundMethod)
-  ModuleVal(StarlarkModule)
+  None
+  Bool(Bool)
+  Int(Int64)
+  Float(Double)
+  String(StarlarkString)
+  Bytes(Bytes)
+  List(StarlarkList)
+  Tuple(Array[Value])
+  Dict(StarlarkDict)
+  Set(StarlarkSet)
+  Range(StarlarkRange)
+  Function(StarlarkFunction)
+  Builtin(StarlarkBuiltinFunc)
+  BoundMethod(StarlarkBoundMethod)
+  Module(StarlarkModule)
 }
 pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
 pub fn Value::new_dict() -> Self

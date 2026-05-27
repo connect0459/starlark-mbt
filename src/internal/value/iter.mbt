@@ -26,12 +26,12 @@ pub fn StarlarkIterator::done(self : StarlarkIterator) -> Unit {
 ///|
 pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
   match v {
-    ListVal(l) => Ok(list_iter(l))
-    TupleVal(t) => Ok(tuple_iter(t))
-    BytesVal(b) => Ok(bytes_elem_iter(b))
-    DictVal(d) => Ok(dict_key_iter(d))
-    SetVal(s) => Ok(set_key_iter(s))
-    RangeVal(r) => Ok(range_iter(r))
+    List(l) => Ok(list_iter(l))
+    Tuple(t) => Ok(tuple_iter(t))
+    Bytes(b) => Ok(bytes_elem_iter(b))
+    Dict(d) => Ok(dict_key_iter(d))
+    Set(s) => Ok(set_key_iter(s))
+    Range(r) => Ok(range_iter(r))
     _ => Err("'\{type_name(v)}' object is not iterable")
   }
 }
@@ -39,13 +39,13 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
 ///|
 pub fn length_of(v : Value) -> Result[Int, String] {
   match v {
-    StrVal(s) => Ok(s.byte_len())
-    BytesVal(b) => Ok(b.length())
-    ListVal(l) => Ok(l.items.length())
-    TupleVal(t) => Ok(t.length())
-    DictVal(d) => Ok(d.length())
-    SetVal(s) => Ok(s.length())
-    RangeVal(r) => Ok(r.length())
+    String(s) => Ok(s.byte_len())
+    Bytes(b) => Ok(b.length())
+    List(l) => Ok(l.items.length())
+    Tuple(t) => Ok(t.length())
+    Dict(d) => Ok(d.length())
+    Set(s) => Ok(s.length())
+    Range(r) => Ok(r.length())
     _ => Err("object of type '\{type_name(v)}' has no len()")
   }
 }
@@ -95,7 +95,7 @@ fn bytes_elem_iter(b : Bytes) -> StarlarkIterator {
       if cur.pos < b.length() {
         let byte_int = b[cur.pos].to_int().to_int64()
         cur.pos += 1
-        Some(IntVal(byte_int))
+        Some(Int(byte_int))
       } else {
         None
       }
@@ -152,7 +152,7 @@ fn range_iter(r : StarlarkRange) -> StarlarkIterator {
       if cur.pos < len {
         let v = r.index_at(cur.pos)
         cur.pos += 1
-        Some(IntVal(v))
+        Some(Int(v))
       } else {
         None
       }

@@ -5,7 +5,7 @@ fn make_error_fn(errors : Array[String]) -> @value.Value {
       return Err("error: got \{pos_args.length()} arguments, want 1")
     }
     errors.push(@value.to_str(pos_args[0]))
-    Ok(@value.Value::NoneVal)
+    Ok(@value.Value::None)
   })
 }
 
@@ -27,18 +27,18 @@ fn floateq(xf : Double, yf : Double) -> Bool {
 ///|
 fn assert_float_eq(x : @value.Value, y : @value.Value) -> Bool {
   let xf : Double? = match x {
-    @value.Value::FloatVal(f) => Some(f)
-    @value.Value::IntVal(n) => Some(n.to_double())
+    @value.Value::Float(f) => Some(f)
+    @value.Value::Int(n) => Some(n.to_double())
     _ => None
   }
   let yf : Double? = match y {
-    @value.Value::FloatVal(f) => Some(f)
-    @value.Value::IntVal(n) => Some(n.to_double())
+    @value.Value::Float(f) => Some(f)
+    @value.Value::Int(n) => Some(n.to_double())
     _ => None
   }
   match (xf, yf) {
     (Some(xf), Some(yf)) =>
-      if x is @value.Value::FloatVal(_) || y is @value.Value::FloatVal(_) {
+      if x is @value.Value::Float(_) || y is @value.Value::Float(_) {
         floateq(xf, yf)
       } else {
         @value.starlark_equals(x, y)
@@ -58,7 +58,7 @@ fn make_eq_fn(errors : Array[String]) -> @value.Value {
     if !assert_float_eq(x, y) {
       errors.push("\{@value.repr(x)} != \{@value.repr(y)}")
     }
-    Ok(@value.Value::NoneVal)
+    Ok(@value.Value::None)
   })
 }
 
@@ -73,7 +73,7 @@ fn make_ne_fn(errors : Array[String]) -> @value.Value {
     if @value.starlark_equals(x, y) {
       errors.push("\{@value.repr(x)} == \{@value.repr(y)}")
     }
-    Ok(@value.Value::NoneVal)
+    Ok(@value.Value::None)
   })
 }
 
@@ -101,7 +101,7 @@ fn make_true_fn(errors : Array[String]) -> @value.Value {
     if !@value.truth(cond) {
       errors.push(msg)
     }
-    Ok(@value.Value::NoneVal)
+    Ok(@value.Value::None)
   })
 }
 
@@ -122,7 +122,7 @@ fn make_lt_fn(errors : Array[String]) -> @value.Value {
         }
       Err(msg) => return Err(msg)
     }
-    Ok(@value.Value::NoneVal)
+    Ok(@value.Value::None)
   })
 }
 
@@ -139,28 +139,28 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
     let container = pos_args[0]
     let item = pos_args[1]
     let found = match container {
-      @value.Value::ListVal(l) =>
+      @value.Value::List(l) =>
         l.iter().any(fn(v) { @value.starlark_equals(v, item) })
-      @value.Value::TupleVal(t) =>
+      @value.Value::Tuple(t) =>
         t.iter().any(fn(v) { @value.starlark_equals(v, item) })
-      @value.Value::StrVal(s) =>
+      @value.Value::String(s) =>
         match item {
-          @value.Value::StrVal(n) => s.raw().contains(n.raw())
+          @value.Value::String(n) => s.raw().contains(n.raw())
           _ => return Err("'in <string>' requires string as left operand")
         }
-      @value.Value::DictVal(d) =>
+      @value.Value::Dict(d) =>
         match d.get(item) {
           Ok(Some(_)) => true
           _ => false
         }
-      @value.Value::SetVal(s) =>
+      @value.Value::Set(s) =>
         match s.contains(item) {
           Ok(found) => found
           Err(_) => false
         }
-      @value.Value::RangeVal(r) =>
+      @value.Value::Range(r) =>
         match item {
-          @value.Value::IntVal(n) => r.contains(n)
+          @value.Value::Int(n) => r.contains(n)
           _ => false
         }
       _ =>
@@ -173,7 +173,7 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
         "\{@value.to_str(container)} does not contain \{@value.to_str(item)}",
       )
     }
-    Ok(@value.Value::NoneVal)
+    Ok(@value.Value::None)
   })
 }
 
@@ -238,7 +238,7 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
     }
     let f = pos_args[0]
     let pattern = match pos_args[1] {
-      @value.Value::StrVal(s) => s.raw()
+      @value.Value::String(s) => s.raw()
       _ => return Err("assert.fails: pattern must be a string")
     }
     match
@@ -256,7 +256,7 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
           errors.push("pattern \"\{pattern}\" did not match error \"\{msg}\"")
         }
     }
-    Ok(@value.Value::NoneVal)
+    Ok(@value.Value::None)
   })
 }
 
@@ -282,7 +282,7 @@ fn build_assert_module(errors : Array[String]) -> @value.Value {
   attrs["lt"] = make_lt_fn(errors)
   attrs["contains"] = make_contains_fn(errors)
   attrs["fails"] = make_fails_fn(errors)
-  @value.Value::ModuleVal(@value.StarlarkModule::new("assert", attrs))
+  @value.Value::Module(@value.StarlarkModule::new("assert", attrs))
 }
 
 ///|

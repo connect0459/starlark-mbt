@@ -6,46 +6,42 @@ pub impl Eq for Value with fn equal(a, b) -> Bool {
 ///|
 pub fn to_str(v : Value) -> String {
   match v {
-    NoneVal => "None"
-    BoolVal(true) => "True"
-    BoolVal(false) => "False"
-    IntVal(i) => i.to_string()
-    FloatVal(f) => format_float(f)
-    StrVal(s) => s.raw
-    BytesVal(b) => repr_bytes_val(b)
-    ListVal(l) => repr_list(l)
-    TupleVal(t) => repr_tuple(t)
-    DictVal(d) => repr_dict(d)
-    SetVal(s) => repr_set(s)
-    RangeVal(_)
-    | FuncVal(_)
-    | BuiltinFuncVal(_)
-    | BoundMethodVal(_)
-    | ModuleVal(_) => repr(v)
+    None => "None"
+    Bool(true) => "True"
+    Bool(false) => "False"
+    Int(i) => i.to_string()
+    Float(f) => format_float(f)
+    String(s) => s.raw
+    Bytes(b) => repr_bytes_val(b)
+    List(l) => repr_list(l)
+    Tuple(t) => repr_tuple(t)
+    Dict(d) => repr_dict(d)
+    Set(s) => repr_set(s)
+    Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) => repr(v)
   }
 }
 
 ///|
 pub fn starlark_equals(a : Value, b : Value) -> Bool {
   match (a, b) {
-    (NoneVal, NoneVal) => true
-    (BoolVal(x), BoolVal(y)) => x == y
-    (IntVal(x), IntVal(y)) => x == y
-    (FloatVal(x), FloatVal(y)) => if x.is_nan() { y.is_nan() } else { x == y }
-    (StrVal(x), StrVal(y)) => x.equals(y)
-    (BytesVal(x), BytesVal(y)) => x.equal(y)
-    (ListVal(x), ListVal(y)) => slice_equals(x.items[:], y.items[:])
-    (TupleVal(x), TupleVal(y)) => slice_equals(x[:], y[:])
-    (IntVal(n), FloatVal(f)) => int_float_eq(n, f)
-    (FloatVal(f), IntVal(n)) => int_float_eq(n, f)
-    (DictVal(x), DictVal(y)) => dict_equals(x, y)
-    (SetVal(x), SetVal(y)) => set_equals(x, y)
-    (RangeVal(x), RangeVal(y)) => range_equals(x, y)
+    (None, None) => true
+    (Bool(x), Bool(y)) => x == y
+    (Int(x), Int(y)) => x == y
+    (Float(x), Float(y)) => if x.is_nan() { y.is_nan() } else { x == y }
+    (String(x), String(y)) => x.equals(y)
+    (Bytes(x), Bytes(y)) => x.equal(y)
+    (List(x), List(y)) => slice_equals(x.items[:], y.items[:])
+    (Tuple(x), Tuple(y)) => slice_equals(x[:], y[:])
+    (Int(n), Float(f)) => int_float_eq(n, f)
+    (Float(f), Int(n)) => int_float_eq(n, f)
+    (Dict(x), Dict(y)) => dict_equals(x, y)
+    (Set(x), Set(y)) => set_equals(x, y)
+    (Range(x), Range(y)) => range_equals(x, y)
     // Functions use identity: two distinct objects are never equal
-    (FuncVal(_), FuncVal(_)) => false
-    (BuiltinFuncVal(x), BuiltinFuncVal(y)) => x.name == y.name
+    (Function(_), Function(_)) => false
+    (Builtin(x), Builtin(y)) => x.name == y.name
     // Modules use identity equality
-    (ModuleVal(_), ModuleVal(_)) => false
+    (Module(_), Module(_)) => false
     _ => false
   }
 }
@@ -142,22 +138,22 @@ fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
 ///|
 pub fn starlark_hash(v : Value) -> Result[UInt, String] {
   match v {
-    NoneVal => Ok(0U)
-    BoolVal(false) => Ok(0U)
-    BoolVal(true) => Ok(1U)
-    IntVal(n) => Ok(hash_int64(n))
-    FloatVal(f) => Ok(hash_float(f))
-    StrVal(s) => Ok(fnv1a(s.bytes))
-    BytesVal(b) => Ok(fnv1a(b))
-    TupleVal(t) => hash_tuple(t)
-    ListVal(_) => Err("unhashable type: list")
-    DictVal(_) => Err("unhashable type: dict")
-    SetVal(_) => Err("unhashable type: set")
-    RangeVal(_) => Err("unhashable: range")
-    FuncVal(_) => Err("unhashable type: function")
-    BuiltinFuncVal(_) => Err("unhashable type: builtin_function_or_method")
-    BoundMethodVal(_) => Err("unhashable type: builtin_function_or_method")
-    ModuleVal(_) => Err("unhashable: module")
+    None => Ok(0U)
+    Bool(false) => Ok(0U)
+    Bool(true) => Ok(1U)
+    Int(n) => Ok(hash_int64(n))
+    Float(f) => Ok(hash_float(f))
+    String(s) => Ok(fnv1a(s.bytes))
+    Bytes(b) => Ok(fnv1a(b))
+    Tuple(t) => hash_tuple(t)
+    List(_) => Err("unhashable type: list")
+    Dict(_) => Err("unhashable type: dict")
+    Set(_) => Err("unhashable type: set")
+    Range(_) => Err("unhashable: range")
+    Function(_) => Err("unhashable type: function")
+    Builtin(_) => Err("unhashable type: builtin_function_or_method")
+    BoundMethod(_) => Err("unhashable type: builtin_function_or_method")
+    Module(_) => Err("unhashable: module")
   }
 }
 
@@ -238,7 +234,7 @@ fn int_float_cmp(n : Int64, f : Double) -> Int {
 ///|
 pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
   match (a, b) {
-    (BoolVal(x), BoolVal(y)) =>
+    (Bool(x), Bool(y)) =>
       Ok(
         match (x, y) {
           (false, true) => -1
@@ -246,14 +242,14 @@ pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
           _ => 0
         },
       )
-    (IntVal(x), IntVal(y)) => Ok(int64_signum(x, y))
-    (FloatVal(x), FloatVal(y)) => Ok(float_cmp(x, y))
-    (StrVal(x), StrVal(y)) => Ok(bytes_lex_cmp(x.bytes, y.bytes))
-    (BytesVal(x), BytesVal(y)) => Ok(bytes_lex_cmp(x, y))
-    (TupleVal(x), TupleVal(y)) => slice_cmp(x[:], y[:])
-    (ListVal(x), ListVal(y)) => slice_cmp(x.items[:], y.items[:])
-    (IntVal(n), FloatVal(f)) => Ok(int_float_cmp(n, f))
-    (FloatVal(f), IntVal(n)) => Ok(-int_float_cmp(n, f))
+    (Int(x), Int(y)) => Ok(int64_signum(x, y))
+    (Float(x), Float(y)) => Ok(float_cmp(x, y))
+    (String(x), String(y)) => Ok(bytes_lex_cmp(x.bytes, y.bytes))
+    (Bytes(x), Bytes(y)) => Ok(bytes_lex_cmp(x, y))
+    (Tuple(x), Tuple(y)) => slice_cmp(x[:], y[:])
+    (List(x), List(y)) => slice_cmp(x.items[:], y.items[:])
+    (Int(n), Float(f)) => Ok(int_float_cmp(n, f))
+    (Float(f), Int(n)) => Ok(-int_float_cmp(n, f))
     _ => Err("\{type_name(a)} < \{type_name(b)} not implemented")
   }
 }
@@ -266,7 +262,7 @@ pub fn freeze_value(v : Value) -> Unit {
 ///|
 fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
   match v {
-    ListVal(l) => {
+    List(l) => {
       if l.is_frozen() {
         return
       }
@@ -275,7 +271,7 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
         freeze_value_inner(item, seen_funcs)
       }
     }
-    DictVal(d) => {
+    Dict(d) => {
       if d.is_frozen() {
         return
       }
@@ -285,18 +281,18 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
         freeze_value_inner(val, seen_funcs)
       })
     }
-    SetVal(s) => {
+    Set(s) => {
       if s.is_frozen() {
         return
       }
       s.freeze()
       s.each(fn(k) { freeze_value_inner(k, seen_funcs) })
     }
-    TupleVal(t) =>
+    Tuple(t) =>
       for item in t {
         freeze_value_inner(item, seen_funcs)
       }
-    FuncVal(f) => {
+    Function(f) => {
       if seen_funcs.contains(f.name) {
         return
       }
@@ -311,7 +307,7 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
         scope_map.each(fn(_, val) { freeze_value_inner(val, seen_funcs) })
       }
     }
-    ModuleVal(_) => ()
+    Module(_) => ()
     _ => ()
   }
 }

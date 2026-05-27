@@ -16,6 +16,16 @@ pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, @
 
 pub fn module_get(@eval.Module, String) -> @value.Value?
 
+pub fn repr(@value.Value) -> String
+
+pub fn starlark_equals(@value.Value, @value.Value) -> Bool
+
+pub fn to_str(@value.Value) -> String
+
+pub fn truth(@value.Value) -> Bool
+
+pub fn type_name(@value.Value) -> String
+
 // Errors
 
 // Types and methods

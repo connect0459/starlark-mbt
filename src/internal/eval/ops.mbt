@@ -40,7 +40,7 @@ fn eval_unary(
   match op {
     @syntax.UnaryOp::OpPlus =>
       match v {
-        @value.Value::IntVal(_) | @value.Value::FloatVal(_) => v
+        @value.Value::Int(_) | @value.Value::Float(_) => v
         _ =>
           raise EvalErr(
             make_eval_error(
@@ -51,8 +51,8 @@ fn eval_unary(
       }
     @syntax.UnaryOp::OpMinus =>
       match v {
-        @value.Value::IntVal(n) => @value.Value::IntVal(-n)
-        @value.Value::FloatVal(f) => @value.Value::FloatVal(-f)
+        @value.Value::Int(n) => @value.Value::Int(-n)
+        @value.Value::Float(f) => @value.Value::Float(-f)
         _ =>
           raise EvalErr(
             make_eval_error(
@@ -63,7 +63,7 @@ fn eval_unary(
       }
     @syntax.UnaryOp::OpBitNot =>
       match v {
-        @value.Value::IntVal(n) => @value.Value::IntVal(n.lnot())
+        @value.Value::Int(n) => @value.Value::Int(n.lnot())
         _ =>
           raise EvalErr(
             make_eval_error(
@@ -72,7 +72,7 @@ fn eval_unary(
             ),
           )
       }
-    @syntax.UnaryOp::OpNot => @value.Value::BoolVal(!@value.truth(v))
+    @syntax.UnaryOp::OpNot => @value.Value::Bool(!@value.truth(v))
   }
 }
 
@@ -97,10 +97,9 @@ fn eval_binary(
     @syntax.BinaryOp::OpBitXor => eval_bitwise(ctx, lv, rv, pos, "lxor")
     @syntax.BinaryOp::OpLShift => eval_shift(ctx, lv, rv, pos, "lshift")
     @syntax.BinaryOp::OpRShift => eval_shift(ctx, lv, rv, pos, "rshift")
-    @syntax.BinaryOp::OpEq =>
-      @value.Value::BoolVal(@value.starlark_equals(lv, rv))
+    @syntax.BinaryOp::OpEq => @value.Value::Bool(@value.starlark_equals(lv, rv))
     @syntax.BinaryOp::OpNe =>
-      @value.Value::BoolVal(!@value.starlark_equals(lv, rv))
+      @value.Value::Bool(!@value.starlark_equals(lv, rv))
     @syntax.BinaryOp::OpLt => eval_cmp(ctx, lv, rv, pos, -1, true)
     @syntax.BinaryOp::OpLe => eval_cmp(ctx, lv, rv, pos, -1, false)
     @syntax.BinaryOp::OpGt => eval_cmp(ctx, lv, rv, pos, 1, true)
@@ -109,8 +108,8 @@ fn eval_binary(
     @syntax.BinaryOp::OpNotIn => {
       let r = in_op(ctx, lv, rv, pos)
       match r {
-        @value.Value::BoolVal(b) => @value.Value::BoolVal(!b)
-        _ => @value.Value::BoolVal(false)
+        @value.Value::Bool(b) => @value.Value::Bool(!b)
+        _ => @value.Value::Bool(false)
       }
     }
     @syntax.BinaryOp::OpAnd | @syntax.BinaryOp::OpOr =>
@@ -128,17 +127,16 @@ fn eval_add(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::IntVal(a + b)
-    (@value.Value::FloatVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(a + b)
-    (@value.Value::IntVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(a.to_double() + b)
-    (@value.Value::FloatVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::FloatVal(a + b.to_double())
-    (@value.Value::StrVal(a), @value.Value::StrVal(b)) =>
-      @value.Value::StrVal(@value.StarlarkString::new(a.raw() + b.raw()))
-    (@value.Value::ListVal(a), @value.Value::ListVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Int(b)) => @value.Value::Int(a + b)
+    (@value.Value::Float(a), @value.Value::Float(b)) =>
+      @value.Value::Float(a + b)
+    (@value.Value::Int(a), @value.Value::Float(b)) =>
+      @value.Value::Float(a.to_double() + b)
+    (@value.Value::Float(a), @value.Value::Int(b)) =>
+      @value.Value::Float(a + b.to_double())
+    (@value.Value::String(a), @value.Value::String(b)) =>
+      @value.Value::String(@value.StarlarkString::new(a.raw() + b.raw()))
+    (@value.Value::List(a), @value.Value::List(b)) => {
       let items : Array[@value.Value] = []
       for v in a.iter() {
         items.push(v)
@@ -146,9 +144,9 @@ fn eval_add(
       for v in b.iter() {
         items.push(v)
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
-    (@value.Value::TupleVal(a), @value.Value::TupleVal(b)) => {
+    (@value.Value::Tuple(a), @value.Value::Tuple(b)) => {
       let items : Array[@value.Value] = []
       for v in a {
         items.push(v)
@@ -156,9 +154,9 @@ fn eval_add(
       for v in b {
         items.push(v)
       }
-      @value.Value::TupleVal(items)
+      @value.Value::Tuple(items)
     }
-    (@value.Value::BytesVal(a), @value.Value::BytesVal(b)) => {
+    (@value.Value::Bytes(a), @value.Value::Bytes(b)) => {
       let items : Array[Byte] = []
       for i in 0..<a.length() {
         items.push(a[i])
@@ -166,7 +164,7 @@ fn eval_add(
       for i in 0..<b.length() {
         items.push(b[i])
       }
-      @value.Value::BytesVal(Bytes::from_array(items))
+      @value.Value::Bytes(Bytes::from_array(items))
     }
     _ =>
       raise EvalErr(
@@ -186,15 +184,14 @@ fn eval_arith_sub(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::IntVal(a - b)
-    (@value.Value::FloatVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(a - b)
-    (@value.Value::IntVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(a.to_double() - b)
-    (@value.Value::FloatVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::FloatVal(a - b.to_double())
-    (@value.Value::SetVal(ls), @value.Value::SetVal(rs)) => {
+    (@value.Value::Int(a), @value.Value::Int(b)) => @value.Value::Int(a - b)
+    (@value.Value::Float(a), @value.Value::Float(b)) =>
+      @value.Value::Float(a - b)
+    (@value.Value::Int(a), @value.Value::Float(b)) =>
+      @value.Value::Float(a.to_double() - b)
+    (@value.Value::Float(a), @value.Value::Int(b)) =>
+      @value.Value::Float(a - b.to_double())
+    (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = @value.StarlarkSet::new()
       ls.each(fn(v) {
         match rs.contains(v) {
@@ -202,7 +199,7 @@ fn eval_arith_sub(
           _ => ()
         }
       })
-      @value.Value::SetVal(result)
+      @value.Value::Set(result)
     }
     _ =>
       raise EvalErr(
@@ -222,30 +219,29 @@ fn eval_mul(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::IntVal(a * b)
-    (@value.Value::FloatVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(a * b)
-    (@value.Value::IntVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(a.to_double() * b)
-    (@value.Value::FloatVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::FloatVal(a * b.to_double())
-    (@value.Value::StrVal(s), @value.Value::IntVal(n)) =>
-      @value.Value::StrVal(check(ctx, repeat_string(s, n)))
-    (@value.Value::IntVal(n), @value.Value::StrVal(s)) =>
-      @value.Value::StrVal(check(ctx, repeat_string(s, n)))
-    (@value.Value::ListVal(l), @value.Value::IntVal(n)) =>
-      @value.Value::ListVal(check(ctx, repeat_list(l, n)))
-    (@value.Value::IntVal(n), @value.Value::ListVal(l)) =>
-      @value.Value::ListVal(check(ctx, repeat_list(l, n)))
-    (@value.Value::TupleVal(t), @value.Value::IntVal(n)) =>
-      @value.Value::TupleVal(check(ctx, repeat_tuple(t, n)))
-    (@value.Value::IntVal(n), @value.Value::TupleVal(t)) =>
-      @value.Value::TupleVal(check(ctx, repeat_tuple(t, n)))
-    (@value.Value::BytesVal(b), @value.Value::IntVal(n)) =>
-      @value.Value::BytesVal(check(ctx, repeat_bytes(b, n)))
-    (@value.Value::IntVal(n), @value.Value::BytesVal(b)) =>
-      @value.Value::BytesVal(check(ctx, repeat_bytes(b, n)))
+    (@value.Value::Int(a), @value.Value::Int(b)) => @value.Value::Int(a * b)
+    (@value.Value::Float(a), @value.Value::Float(b)) =>
+      @value.Value::Float(a * b)
+    (@value.Value::Int(a), @value.Value::Float(b)) =>
+      @value.Value::Float(a.to_double() * b)
+    (@value.Value::Float(a), @value.Value::Int(b)) =>
+      @value.Value::Float(a * b.to_double())
+    (@value.Value::String(s), @value.Value::Int(n)) =>
+      @value.Value::String(check(ctx, repeat_string(s, n)))
+    (@value.Value::Int(n), @value.Value::String(s)) =>
+      @value.Value::String(check(ctx, repeat_string(s, n)))
+    (@value.Value::List(l), @value.Value::Int(n)) =>
+      @value.Value::List(check(ctx, repeat_list(l, n)))
+    (@value.Value::Int(n), @value.Value::List(l)) =>
+      @value.Value::List(check(ctx, repeat_list(l, n)))
+    (@value.Value::Tuple(t), @value.Value::Int(n)) =>
+      @value.Value::Tuple(check(ctx, repeat_tuple(t, n)))
+    (@value.Value::Int(n), @value.Value::Tuple(t)) =>
+      @value.Value::Tuple(check(ctx, repeat_tuple(t, n)))
+    (@value.Value::Bytes(b), @value.Value::Int(n)) =>
+      @value.Value::Bytes(check(ctx, repeat_bytes(b, n)))
+    (@value.Value::Int(n), @value.Value::Bytes(b)) =>
+      @value.Value::Bytes(check(ctx, repeat_bytes(b, n)))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -374,29 +370,29 @@ fn eval_div(
     raise EvalErr(make_eval_error(ctx, "real division is not allowed"))
   }
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Int(b)) => {
       if b == 0L {
         raise EvalErr(make_eval_error(ctx, "integer division by zero"))
       }
-      @value.Value::FloatVal(a.to_double() / b.to_double())
+      @value.Value::Float(a.to_double() / b.to_double())
     }
-    (@value.Value::FloatVal(a), @value.Value::FloatVal(b)) => {
+    (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float division by zero"))
       }
-      @value.Value::FloatVal(a / b)
+      @value.Value::Float(a / b)
     }
-    (@value.Value::IntVal(a), @value.Value::FloatVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float division by zero"))
       }
-      @value.Value::FloatVal(a.to_double() / b)
+      @value.Value::Float(a.to_double() / b)
     }
-    (@value.Value::FloatVal(a), @value.Value::IntVal(b)) => {
+    (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b == 0L {
         raise EvalErr(make_eval_error(ctx, "float division by zero"))
       }
-      @value.Value::FloatVal(a / b.to_double())
+      @value.Value::Float(a / b.to_double())
     }
     _ =>
       raise EvalErr(
@@ -416,25 +412,25 @@ fn eval_floor_div(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::IntVal(check(ctx, @value.floor_div(a, b)))
-    (@value.Value::FloatVal(a), @value.Value::FloatVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Int(b)) =>
+      @value.Value::Int(check(ctx, @value.floor_div(a, b)))
+    (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
       }
-      @value.Value::FloatVal((a / b).floor())
+      @value.Value::Float((a / b).floor())
     }
-    (@value.Value::IntVal(a), @value.Value::FloatVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
       }
-      @value.Value::FloatVal((a.to_double() / b).floor())
+      @value.Value::Float((a.to_double() / b).floor())
     }
-    (@value.Value::FloatVal(a), @value.Value::IntVal(b)) => {
+    (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b == 0L {
         raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
       }
-      @value.Value::FloatVal((a / b.to_double()).floor())
+      @value.Value::Float((a / b.to_double()).floor())
     }
     _ =>
       raise EvalErr(
@@ -464,27 +460,27 @@ fn eval_mod(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::IntVal(check(ctx, @value.starlark_mod(a, b)))
-    (@value.Value::FloatVal(a), @value.Value::FloatVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Int(b)) =>
+      @value.Value::Int(check(ctx, @value.starlark_mod(a, b)))
+    (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::FloatVal(float_floor_mod(a, b))
+      @value.Value::Float(float_floor_mod(a, b))
     }
-    (@value.Value::IntVal(a), @value.Value::FloatVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::FloatVal(float_floor_mod(a.to_double(), b))
+      @value.Value::Float(float_floor_mod(a.to_double(), b))
     }
-    (@value.Value::FloatVal(a), @value.Value::IntVal(b)) => {
+    (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b == 0L {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::FloatVal(float_floor_mod(a, b.to_double()))
+      @value.Value::Float(float_floor_mod(a, b.to_double()))
     }
-    (@value.Value::StrVal(s), _) => check(ctx, percent_format(s.raw(), rv))
+    (@value.Value::String(s), _) => check(ctx, percent_format(s.raw(), rv))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -501,7 +497,7 @@ fn percent_format(
   args : @value.Value,
 ) -> Result[@value.Value, String] {
   let arg_list : Array[@value.Value] = match args {
-    @value.Value::TupleVal(t) => t
+    @value.Value::Tuple(t) => t
     v => [v]
   }
   let buf = StringBuilder::new()
@@ -536,22 +532,21 @@ fn percent_format(
       'r' => buf.write_string(@value.repr(arg))
       'd' | 'i' =>
         match arg {
-          @value.Value::IntVal(n2) => buf.write_string(n2.to_string())
-          @value.Value::FloatVal(f) =>
-            buf.write_string(f.to_int64().to_string())
-          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          @value.Value::Int(n2) => buf.write_string(n2.to_string())
+          @value.Value::Float(f) => buf.write_string(f.to_int64().to_string())
+          @value.Value::Bool(_) => return Err("cannot convert bool to int")
           _ => return Err("cannot convert \{@value.type_name(arg)} to int")
         }
       'o' =>
         match arg {
-          @value.Value::IntVal(n2) =>
+          @value.Value::Int(n2) =>
             if n2 < 0L {
               buf.write_char('-')
               buf.write_string(int64_to_octal(n2.abs()))
             } else {
               buf.write_string(int64_to_octal(n2))
             }
-          @value.Value::FloatVal(f) => {
+          @value.Value::Float(f) => {
             let n2 = f.to_int64()
             if n2 < 0L {
               buf.write_char('-')
@@ -560,19 +555,19 @@ fn percent_format(
               buf.write_string(int64_to_octal(n2))
             }
           }
-          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          @value.Value::Bool(_) => return Err("cannot convert bool to int")
           _ => return Err("cannot convert \{@value.type_name(arg)} to int")
         }
       'x' =>
         match arg {
-          @value.Value::IntVal(n2) =>
+          @value.Value::Int(n2) =>
             if n2 < 0L {
               buf.write_char('-')
               buf.write_string(int64_to_hex(n2.abs(), false))
             } else {
               buf.write_string(int64_to_hex(n2, false))
             }
-          @value.Value::FloatVal(f) => {
+          @value.Value::Float(f) => {
             let n2 = f.to_int64()
             if n2 < 0L {
               buf.write_char('-')
@@ -581,19 +576,19 @@ fn percent_format(
               buf.write_string(int64_to_hex(n2, false))
             }
           }
-          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          @value.Value::Bool(_) => return Err("cannot convert bool to int")
           _ => return Err("cannot convert \{@value.type_name(arg)} to int")
         }
       'X' =>
         match arg {
-          @value.Value::IntVal(n2) =>
+          @value.Value::Int(n2) =>
             if n2 < 0L {
               buf.write_char('-')
               buf.write_string(int64_to_hex(n2.abs(), true))
             } else {
               buf.write_string(int64_to_hex(n2, true))
             }
-          @value.Value::FloatVal(f) => {
+          @value.Value::Float(f) => {
             let n2 = f.to_int64()
             if n2 < 0L {
               buf.write_char('-')
@@ -602,13 +597,13 @@ fn percent_format(
               buf.write_string(int64_to_hex(n2, true))
             }
           }
-          @value.Value::BoolVal(_) => return Err("cannot convert bool to int")
+          @value.Value::Bool(_) => return Err("cannot convert bool to int")
           _ => return Err("cannot convert \{@value.type_name(arg)} to int")
         }
       'e' | 'E' | 'f' | 'g' | 'G' => {
         let f = match arg {
-          @value.Value::FloatVal(f) => f
-          @value.Value::IntVal(n2) => n2.to_double()
+          @value.Value::Float(f) => f
+          @value.Value::Int(n2) => n2.to_double()
           _ => return Err("cannot convert \{@value.type_name(arg)} to float")
         }
         let s2 = match spec {
@@ -629,14 +624,14 @@ fn percent_format(
       }
       'c' =>
         match arg {
-          @value.Value::IntVal(n2) => {
+          @value.Value::Int(n2) => {
             let cp = n2.to_int()
             if cp < 0 || cp > 0x10FFFF {
               return Err("%c requires a valid Unicode code point")
             }
             buf.write_char(cp.unsafe_to_char())
           }
-          @value.Value::StrVal(s2) =>
+          @value.Value::String(s2) =>
             if s2.raw().length() == 1 {
               buf.write_string(s2.raw())
             } else {
@@ -650,7 +645,7 @@ fn percent_format(
   if arg_idx < arg_list.length() {
     return Err("too many arguments for format string")
   }
-  Ok(@value.Value::StrVal(@value.StarlarkString::new(buf.to_string())))
+  Ok(@value.Value::String(@value.StarlarkString::new(buf.to_string())))
 }
 
 ///|
@@ -743,14 +738,14 @@ fn eval_pow(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::IntVal(check(ctx, int_pow(a, b)))
-    (@value.Value::FloatVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(float_pow(a, b))
-    (@value.Value::IntVal(a), @value.Value::FloatVal(b)) =>
-      @value.Value::FloatVal(float_pow(a.to_double(), b))
-    (@value.Value::FloatVal(a), @value.Value::IntVal(b)) =>
-      @value.Value::FloatVal(float_pow(a, b.to_double()))
+    (@value.Value::Int(a), @value.Value::Int(b)) =>
+      @value.Value::Int(check(ctx, int_pow(a, b)))
+    (@value.Value::Float(a), @value.Value::Float(b)) =>
+      @value.Value::Float(float_pow(a, b))
+    (@value.Value::Int(a), @value.Value::Float(b)) =>
+      @value.Value::Float(float_pow(a.to_double(), b))
+    (@value.Value::Float(a), @value.Value::Int(b)) =>
+      @value.Value::Float(float_pow(a, b.to_double()))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -810,29 +805,29 @@ fn eval_bitwise(
     _ => "^"
   }
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Int(b)) => {
       let r = match op {
         "land" => a.land(b)
         "lor" => a.lor(b)
         "lxor" => a.lxor(b)
         _ => a
       }
-      @value.Value::IntVal(r)
+      @value.Value::Int(r)
     }
-    (@value.Value::DictVal(ld), @value.Value::DictVal(rd)) if op == "lor" => {
+    (@value.Value::Dict(ld), @value.Value::Dict(rd)) if op == "lor" => {
       let result = @value.StarlarkDict::new()
       ld.each(fn(k, v) { ignore(result.set(k, v)) })
       rd.each(fn(k, v) { ignore(result.set(k, v)) })
-      @value.Value::DictVal(result)
+      @value.Value::Dict(result)
     }
-    (@value.Value::DictVal(_), _) if op == "lor" =>
+    (@value.Value::Dict(_), _) if op == "lor" =>
       raise EvalErr(
         make_eval_error(
           ctx,
           "unknown binary op: dict | \{@value.type_name(rv)}",
         ),
       )
-    (@value.Value::SetVal(ls), @value.Value::SetVal(rs)) => {
+    (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = @value.StarlarkSet::new()
       match op {
         "lor" => {
@@ -861,16 +856,16 @@ fn eval_bitwise(
           })
         }
       }
-      @value.Value::SetVal(result)
+      @value.Value::Set(result)
     }
-    (@value.Value::SetVal(_), _) =>
+    (@value.Value::Set(_), _) =>
       raise EvalErr(
         make_eval_error(
           ctx,
           "unknown binary op: set \{op_char} \{@value.type_name(rv)}",
         ),
       )
-    (_, @value.Value::SetVal(_)) =>
+    (_, @value.Value::Set(_)) =>
       raise EvalErr(
         make_eval_error(
           ctx,
@@ -896,7 +891,7 @@ fn eval_shift(
   dir : String,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::IntVal(a), @value.Value::IntVal(b)) => {
+    (@value.Value::Int(a), @value.Value::Int(b)) => {
       if b < 0L {
         raise EvalErr(make_eval_error(ctx, "negative shift count"))
       }
@@ -908,7 +903,7 @@ fn eval_shift(
         "lshift" => a << shift
         _ => a >> shift
       }
-      @value.Value::IntVal(r)
+      @value.Value::Int(r)
     }
     _ =>
       raise EvalErr(
@@ -944,7 +939,7 @@ fn eval_cmp(
   strict : Bool,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::SetVal(ls), @value.Value::SetVal(rs)) => {
+    (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = if strict_sign > 0 {
         let is_sup = set_is_subset(rs, ls)
         if strict {
@@ -960,7 +955,7 @@ fn eval_cmp(
           is_sub
         }
       }
-      @value.Value::BoolVal(result)
+      @value.Value::Bool(result)
     }
     _ => {
       let c = check(ctx, @value.compare_values(lv, rv))
@@ -975,7 +970,7 @@ fn eval_cmp(
       } else {
         c <= 0
       }
-      @value.Value::BoolVal(result)
+      @value.Value::Bool(result)
     }
   }
 }
@@ -988,33 +983,31 @@ fn in_op(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match haystack {
-    @value.Value::ListVal(l) => {
+    @value.Value::List(l) => {
       for item in l.iter() {
         if @value.starlark_equals(needle, item) {
-          return @value.Value::BoolVal(true)
+          return @value.Value::Bool(true)
         }
       }
-      @value.Value::BoolVal(false)
+      @value.Value::Bool(false)
     }
-    @value.Value::TupleVal(t) => {
+    @value.Value::Tuple(t) => {
       for item in t {
         if @value.starlark_equals(needle, item) {
-          return @value.Value::BoolVal(true)
+          return @value.Value::Bool(true)
         }
       }
-      @value.Value::BoolVal(false)
+      @value.Value::Bool(false)
     }
-    @value.Value::DictVal(d) =>
+    @value.Value::Dict(d) =>
       match d.get(needle) {
-        Ok(Some(_)) => @value.Value::BoolVal(true)
-        _ => @value.Value::BoolVal(false)
+        Ok(Some(_)) => @value.Value::Bool(true)
+        _ => @value.Value::Bool(false)
       }
-    @value.Value::SetVal(s) =>
-      @value.Value::BoolVal(check(ctx, s.contains(needle)))
-    @value.Value::StrVal(s) =>
+    @value.Value::Set(s) => @value.Value::Bool(check(ctx, s.contains(needle)))
+    @value.Value::String(s) =>
       match needle {
-        @value.Value::StrVal(n) =>
-          @value.Value::BoolVal(s.raw().contains(n.raw()))
+        @value.Value::String(n) => @value.Value::Bool(s.raw().contains(n.raw()))
         _ =>
           raise EvalErr(
             make_eval_error(
@@ -1022,18 +1015,18 @@ fn in_op(
             ),
           )
       }
-    @value.Value::RangeVal(r) =>
+    @value.Value::Range(r) =>
       match needle {
-        @value.Value::IntVal(n) => @value.Value::BoolVal(r.contains(n))
-        @value.Value::FloatVal(f) =>
+        @value.Value::Int(n) => @value.Value::Bool(r.contains(n))
+        @value.Value::Float(f) =>
           if f.is_nan() || f.is_inf() {
-            @value.Value::BoolVal(false)
+            @value.Value::Bool(false)
           } else {
             let n = f.to_int64()
             if n.to_double() != f {
-              @value.Value::BoolVal(false)
+              @value.Value::Bool(false)
             } else {
-              @value.Value::BoolVal(r.contains(n))
+              @value.Value::Bool(r.contains(n))
             }
           }
         _ =>
@@ -1044,16 +1037,16 @@ fn in_op(
             ),
           )
       }
-    @value.Value::BytesVal(haystack_b) =>
+    @value.Value::Bytes(haystack_b) =>
       match needle {
-        @value.Value::BytesVal(needle_b) => {
+        @value.Value::Bytes(needle_b) => {
           let hlen = haystack_b.length()
           let nlen = needle_b.length()
           if nlen == 0 {
-            return @value.Value::BoolVal(true)
+            return @value.Value::Bool(true)
           }
           if nlen > hlen {
-            return @value.Value::BoolVal(false)
+            return @value.Value::Bool(false)
           }
           let mut found = false
           for i in 0..<=(hlen - nlen) {
@@ -1069,9 +1062,9 @@ fn in_op(
               break
             }
           }
-          @value.Value::BoolVal(found)
+          @value.Value::Bool(found)
         }
-        @value.Value::IntVal(n) => {
+        @value.Value::Int(n) => {
           if n < 0L || n > max_byte_val {
             raise EvalErr(
               make_eval_error(ctx, "int in bytes: \{n} out of range"),
@@ -1085,7 +1078,7 @@ fn in_op(
               break
             }
           }
-          @value.Value::BoolVal(found)
+          @value.Value::Bool(found)
         }
         _ =>
           raise EvalErr(
@@ -1113,44 +1106,44 @@ fn eval_index(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match obj {
-    @value.Value::ListVal(l) =>
+    @value.Value::List(l) =>
       match idx {
-        @value.Value::IntVal(i) => {
+        @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, l.length()))
           l.get(j)
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "list indices must be integers"))
       }
-    @value.Value::TupleVal(t) =>
+    @value.Value::Tuple(t) =>
       match idx {
-        @value.Value::IntVal(i) => {
+        @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, t.length()))
           t[j]
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "tuple indices must be integers"))
       }
-    @value.Value::StrVal(s) =>
+    @value.Value::String(s) =>
       match idx {
-        @value.Value::IntVal(i) => {
+        @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, s.byte_len()))
           let one_byte = Bytes::from_array([s.byte_at(j)])
-          @value.Value::StrVal(@value.StarlarkString::from_bytes(one_byte))
+          @value.Value::String(@value.StarlarkString::from_bytes(one_byte))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "string indices must be integers"))
       }
-    @value.Value::BytesVal(b) =>
+    @value.Value::Bytes(b) =>
       match idx {
-        @value.Value::IntVal(i) => {
+        @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, b.length()))
-          @value.Value::BytesVal(Bytes::from_array([b[j]]))
+          @value.Value::Bytes(Bytes::from_array([b[j]]))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "bytes indices must be integers"))
       }
-    @value.Value::DictVal(d) =>
+    @value.Value::Dict(d) =>
       match check(ctx, d.get(idx)) {
         None =>
           raise EvalErr(
@@ -1158,11 +1151,11 @@ fn eval_index(
           )
         Some(v) => v
       }
-    @value.Value::RangeVal(r) =>
+    @value.Value::Range(r) =>
       match idx {
-        @value.Value::IntVal(i) => {
+        @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, r.length()))
-          @value.Value::IntVal(r.index_at(j))
+          @value.Value::Int(r.index_at(j))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "range indices must be integers"))
@@ -1186,16 +1179,16 @@ fn set_index(
   _pos : @errors.Position,
 ) -> Unit raise EvalErr {
   match obj {
-    @value.Value::ListVal(l) =>
+    @value.Value::List(l) =>
       match idx {
-        @value.Value::IntVal(i) => {
+        @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, l.length()))
           check(ctx, l.set(j, val))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "list indices must be integers"))
       }
-    @value.Value::DictVal(d) => check(ctx, d.set(idx, val))
+    @value.Value::Dict(d) => check(ctx, d.set(idx, val))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -1222,7 +1215,7 @@ fn eval_slice(
     raise EvalErr(make_eval_error(ctx, "slice step cannot be zero"))
   }
   match obj {
-    @value.Value::ListVal(l) => {
+    @value.Value::List(l) => {
       let len = l.length()
       let (start, stop) = normalize_slice(lo_opt, hi_opt, len, step)
       let items : Array[@value.Value] = []
@@ -1239,9 +1232,9 @@ fn eval_slice(
           i += step
         }
       }
-      @value.Value::ListVal(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(items))
     }
-    @value.Value::TupleVal(t) => {
+    @value.Value::Tuple(t) => {
       let len = t.length()
       let (start, stop) = normalize_slice(lo_opt, hi_opt, len, step)
       let items : Array[@value.Value] = []
@@ -1258,9 +1251,9 @@ fn eval_slice(
           i += step
         }
       }
-      @value.Value::TupleVal(items)
+      @value.Value::Tuple(items)
     }
-    @value.Value::StrVal(s) => {
+    @value.Value::String(s) => {
       let len = s.byte_len()
       let (start, stop) = normalize_slice(lo_opt, hi_opt, len, step)
       let bytes_arr : Array[Byte] = []
@@ -1277,21 +1270,21 @@ fn eval_slice(
           i += step
         }
       }
-      @value.Value::StrVal(
+      @value.Value::String(
         @value.StarlarkString::from_bytes(Bytes::from_array(bytes_arr)),
       )
     }
-    @value.Value::RangeVal(r) => {
+    @value.Value::Range(r) => {
       let len = r.length()
       let (start, end_idx) = normalize_slice(lo_opt, hi_opt, len, step)
       let new_start = r.start() + r.step() * start.to_int64()
       let new_stop = r.start() + r.step() * end_idx.to_int64()
       let new_step = r.step() * step.to_int64()
-      @value.Value::RangeVal(
+      @value.Value::Range(
         @value.StarlarkRange::new(new_start, new_stop, new_step),
       )
     }
-    @value.Value::BytesVal(b) => {
+    @value.Value::Bytes(b) => {
       let len = b.length()
       let (start, stop) = normalize_slice(lo_opt, hi_opt, len, step)
       let bytes_arr : Array[Byte] = []
@@ -1308,7 +1301,7 @@ fn eval_slice(
           i += step
         }
       }
-      @value.Value::BytesVal(Bytes::from_array(bytes_arr))
+      @value.Value::Bytes(Bytes::from_array(bytes_arr))
     }
     _ =>
       raise EvalErr(

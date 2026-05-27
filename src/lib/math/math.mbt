@@ -1,8 +1,8 @@
 ///|
 fn to_float(name : String, v : @value.Value) -> Result[Double, String] {
   match v {
-    @value.Value::FloatVal(f) => Ok(f)
-    @value.Value::IntVal(i) => Ok(i.to_double())
+    @value.Value::Float(f) => Ok(f)
+    @value.Value::Int(i) => Ok(i.to_double())
     _ => Err("\{name}: got \{@value.type_name(v)}, want float or int")
   }
 }
@@ -15,7 +15,7 @@ fn make_unary(name : String, f : (Double) -> Double) -> @value.Value {
         "\{name}: got \{pos_args.length()} positional arguments, want 1",
       )
     }
-    to_float(name, pos_args[0]).map(fn(x) { @value.Value::FloatVal(f(x)) })
+    to_float(name, pos_args[0]).map(fn(x) { @value.Value::Float(f(x)) })
   })
 }
 
@@ -28,7 +28,7 @@ fn make_binary(name : String, f : (Double, Double) -> Double) -> @value.Value {
       )
     }
     match (to_float(name, pos_args[0]), to_float(name, pos_args[1])) {
-      (Ok(x), Ok(y)) => Ok(@value.Value::FloatVal(f(x, y)))
+      (Ok(x), Ok(y)) => Ok(@value.Value::Float(f(x, y)))
       (Err(e), _) | (_, Err(e)) => Err(e)
     }
   })
@@ -98,7 +98,7 @@ fn make_log_fn() -> @value.Value {
       Err(e) => Err(e)
       Ok(x) =>
         if pos_args.length() == 1 {
-          Ok(@value.Value::FloatVal(@std_math.ln(x)))
+          Ok(@value.Value::Float(@std_math.ln(x)))
         } else {
           match to_float("math.log", pos_args[1]) {
             Err(e) => Err(e)
@@ -106,7 +106,7 @@ fn make_log_fn() -> @value.Value {
               if base == 0.0 {
                 Err("math.log: division by zero")
               } else {
-                Ok(@value.Value::FloatVal(@std_math.ln(x) / @std_math.ln(base)))
+                Ok(@value.Value::Float(@std_math.ln(x) / @std_math.ln(base)))
               }
           }
         }
@@ -117,8 +117,8 @@ fn make_log_fn() -> @value.Value {
 ///|
 pub fn math_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
-  attrs["e"] = @value.Value::FloatVal(2.718281828459045)
-  attrs["pi"] = @value.Value::FloatVal(@std_math.PI)
+  attrs["e"] = @value.Value::Float(2.718281828459045)
+  attrs["pi"] = @value.Value::Float(@std_math.PI)
   attrs["ceil"] = make_unary("math.ceil", @std_math.ceil)
   attrs["floor"] = make_unary("math.floor", @std_math.floor)
   attrs["round"] = make_unary("math.round", @std_math.round)
@@ -151,5 +151,5 @@ pub fn math_module() -> @value.Value {
   attrs["atan2"] = make_binary("math.atan2", @std_math.atan2)
   attrs["hypot"] = make_binary("math.hypot", @std_math.hypot)
   attrs["log"] = make_log_fn()
-  @value.Value::ModuleVal(@value.StarlarkModule::new("math", attrs))
+  @value.Value::Module(@value.StarlarkModule::new("math", attrs))
 }
