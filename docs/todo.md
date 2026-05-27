@@ -768,6 +768,18 @@ Track with `moon coverage analyze > uncovered.log` after each phase.
 | 7.5 json extension          | 85%    | Small, easily covered              |
 | 8 Release prep              | n/a    | Manual review                      |
 
+### Achieved coverage
+
+- **Lexer** (`src/internal/lexer/`): ~93% — `scanner.mbt` 716/766, `quote.mbt`
+  199/216, `lexer.mbt` 114/128. Added dedicated tests for `quote`/`unquote`
+  escape and error paths, scanner escape/number/indentation error branches,
+  and `Token::to_string` rendering. Remaining gaps are unreachable defensive
+  branches (e.g. empty/invalid-digit checks in the integer parsers).
+- **Syntax/AST** (`src/internal/syntax/`): ~98% — `walker.mbt` 116/119,
+  `syntax.mbt` fully covered. Added a whitebox suite exercising the AST walker
+  across every node kind (including visitor short-circuit), `expr_pos`/
+  `stmt_pos` for all variants, and `File` accessors.
+
 ---
 
 ## Workflow Notes
