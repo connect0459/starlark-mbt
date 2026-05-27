@@ -267,3 +267,18 @@ test "function.star: trailing comma in defs and calls" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let function_bound_method_identity_src : String =
+  #|load("assert.star", "assert")
+  #|# builtin_function_or_method use identity equivalence.
+  #|closures = set(["".count for _ in range(10)])
+  #|assert.eq(len(closures), 10)
+
+///|
+test "function.star: bound method identity in sets (each access is unique)" {
+  let errs = run_star_string(function_bound_method_identity_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

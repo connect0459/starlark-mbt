@@ -40,6 +40,8 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     // Functions use identity: two distinct objects are never equal
     (Function(_), Function(_)) => false
     (Builtin(x), Builtin(y)) => x.name == y.name
+    // Bound methods use identity: each access creates a new unique object
+    (BoundMethod(x), BoundMethod(y)) => x.id == y.id
     // Modules use identity equality
     (Module(_), Module(_)) => false
     _ => false
@@ -105,6 +107,11 @@ fn fnv1a(bytes : Bytes) -> UInt {
 }
 
 ///|
+fn hash_int(n : Int) -> UInt {
+  n.reinterpret_as_uint() * fnv_prime
+}
+
+///|
 fn hash_int64(n : Int64) -> UInt {
   let lo = n.to_int().reinterpret_as_uint()
   int_hash_mult * (lo + 3U)
@@ -152,7 +159,7 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     Range(_) => Err("unhashable: range")
     Function(_) => Err("unhashable type: function")
     Builtin(_) => Err("unhashable type: builtin_function_or_method")
-    BoundMethod(_) => Err("unhashable type: builtin_function_or_method")
+    BoundMethod(m) => Ok(hash_int(m.id))
     Module(_) => Err("unhashable: module")
   }
 }

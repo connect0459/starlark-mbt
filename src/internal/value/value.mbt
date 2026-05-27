@@ -390,9 +390,13 @@ pub fn StarlarkBuiltinFunc::call_body(
 }
 
 ///|
+let bound_method_id_counter : Ref[Int] = { val: 0 }
+
+///|
 pub struct StarlarkBoundMethod {
   priv recv : Value
   priv method_name : String
+  priv id : Int
 }
 
 ///|
@@ -400,7 +404,9 @@ pub fn StarlarkBoundMethod::new(
   recv : Value,
   method_name : String,
 ) -> StarlarkBoundMethod {
-  { recv, method_name }
+  let id = bound_method_id_counter.val
+  bound_method_id_counter.val += 1
+  { recv, method_name, id }
 }
 
 ///|
