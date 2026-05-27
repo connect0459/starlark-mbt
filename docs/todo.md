@@ -48,7 +48,7 @@ are not part of the published API.
 - `src/internal/resolver/` — name resolution & static checks
 - `src/internal/eval/` — `Thread`, evaluator, control-flow signals
 - `src/internal/builtins/` — predeclared functions + per-type methods
-- `src/internal/format/` — `%`-formatting and `str.format` engine
+- ~~`src/internal/format/`~~ — removed (YAGNI; format logic lives in `eval/ops.mbt`)
 - `src/internal/unpack/` — argument binding helper for built-ins
 - `src/internal/starlarktest/` — test harness for executing `.star` scripts as
   MoonBit tests; embeds `assert.star` as a `const` string; not part of the
@@ -671,6 +671,13 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       `execution_steps()` always returned 0 on uncapped threads); added 5 tests covering
       `Thread.cancel`, `Thread.uncancel`, `Thread.execution_steps`, and
       `Thread.with_step_budget`.
+- [x] **[MED]** Fifth-pass audit — restricted `pub(all)` struct fields to private on
+      `StarlarkString` (`bytes`), `StarlarkRange` (`start`/`stop`/`step`), and
+      `StarlarkBuiltinFunc` (`body`); added accessor methods (`to_bytes()`,
+      `start()`/`stop()`/`step()`, `call_body()`) and factory constructor
+      `StarlarkBuiltinFunc::dispatch()`; updated all call sites in `eval`, `json`,
+      and test packages. Removed the empty `src/internal/format/` placeholder package
+      (YAGNI: no exports, no dependents).
 
 ### Deferred API hardening (requires large eval refactoring)
 
