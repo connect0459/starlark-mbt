@@ -39,10 +39,12 @@ pub struct BuiltinCallCtx {
 pub fn BuiltinCallCtx::invoke(Self, Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
 pub fn BuiltinCallCtx::new((Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]) -> Self
 
-pub(all) struct StarlarkBoundMethod {
-  recv : Value
-  method_name : String
+pub struct StarlarkBoundMethod {
+  // private fields
 }
+pub fn StarlarkBoundMethod::method_name(Self) -> String
+pub fn StarlarkBoundMethod::new(Value, String) -> Self
+pub fn StarlarkBoundMethod::recv(Self) -> Value
 
 pub struct StarlarkBuiltinFunc {
   name : String

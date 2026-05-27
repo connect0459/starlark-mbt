@@ -158,14 +158,14 @@ test "Value: truth for builtin function is always true" {
 ///|
 test "Value: type_name for bound method is builtin_function_or_method" {
   let recv = Value::StrVal(StarlarkString::new("hello"))
-  let m = StarlarkBoundMethod::{ recv, method_name: "upper" }
+  let m = StarlarkBoundMethod::new(recv, "upper")
   assert_eq(type_name(Value::BoundMethodVal(m)), "builtin_function_or_method")
 }
 
 ///|
 test "Value: repr for bound method shows receiver type and method name" {
   let recv = Value::StrVal(StarlarkString::new("hello"))
-  let m = StarlarkBoundMethod::{ recv, method_name: "upper" }
+  let m = StarlarkBoundMethod::new(recv, "upper")
   assert_eq(
     repr(Value::BoundMethodVal(m)),
     "<built-in method upper of string value>",
@@ -175,7 +175,7 @@ test "Value: repr for bound method shows receiver type and method name" {
 ///|
 test "Value: truth for bound method is always true" {
   let recv = Value::NoneVal
-  let m = StarlarkBoundMethod::{ recv, method_name: "something" }
+  let m = StarlarkBoundMethod::new(recv, "something")
   assert_true(truth(Value::BoundMethodVal(m)))
 }
 

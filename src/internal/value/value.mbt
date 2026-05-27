@@ -375,9 +375,27 @@ pub fn StarlarkBuiltinFunc::call_body(
 }
 
 ///|
-pub(all) struct StarlarkBoundMethod {
-  recv : Value
-  method_name : String
+pub struct StarlarkBoundMethod {
+  priv recv : Value
+  priv method_name : String
+}
+
+///|
+pub fn StarlarkBoundMethod::new(
+  recv : Value,
+  method_name : String,
+) -> StarlarkBoundMethod {
+  { recv, method_name }
+}
+
+///|
+pub fn StarlarkBoundMethod::recv(self : StarlarkBoundMethod) -> Value {
+  self.recv
+}
+
+///|
+pub fn StarlarkBoundMethod::method_name(self : StarlarkBoundMethod) -> String {
+  self.method_name
 }
 
 ///|

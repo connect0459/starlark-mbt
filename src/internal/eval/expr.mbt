@@ -221,7 +221,7 @@ fn eval_getattr(
     | @value.Value::DictVal(_)
     | @value.Value::SetVal(_)
     | @value.Value::BytesVal(_) =>
-      @value.Value::BoundMethodVal({ recv: obj, method_name: attr })
+      @value.Value::BoundMethodVal(@value.StarlarkBoundMethod::new(obj, attr))
     @value.Value::ModuleVal(m) =>
       match m.get(attr) {
         Some(v) => v
@@ -324,7 +324,7 @@ fn call_value(
       }
     }
     @value.Value::BoundMethodVal(m) =>
-      call_method(ctx, m.recv, m.method_name, pos_args, kw_args, pos)
+      call_method(ctx, m.recv(), m.method_name(), pos_args, kw_args, pos)
     _ =>
       raise EvalErr(
         make_eval_error(
