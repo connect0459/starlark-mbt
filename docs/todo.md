@@ -53,7 +53,8 @@ are not part of the published API.
 - `src/internal/starlarktest/` — test harness for executing `.star` scripts as
   MoonBit tests; embeds `assert.star` as a `const` string; not part of the
   public API (internal only). Created in Phase 6 before porting `.star` files.
-- `src/main/` — CLI entry point (deferred until Phase 8)
+- `src/cmd/` — CLI entry point (renamed from `src/main/` in Phase 8)
+- `src/repl/` — public REPL library (eval_input, run, make_load)
 
 Sub-packages may be added or split when any file exceeds ~600 LOC.
 
@@ -718,8 +719,8 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 ### General release tasks
 
 - [ ] Finalise public API; review `.mbti` diff
-- [x] CLI implementation in `src/main/` — run `.star` files
-- [ ] Optional REPL — interactive `read → eval → print` loop (in `src/internal/repl/`)
+- [x] CLI implementation in `src/cmd/` — run `.star` files; `src/main/` renamed to `src/cmd/`
+- [x] Optional REPL — interactive `read → eval → print` loop (public `src/repl/` library)
 - [ ] Usage examples as doc tests in `README.mbt.md`
 - [ ] Mooncakes publish prep
 
@@ -768,7 +769,7 @@ Track with `moon coverage analyze > uncovered.log` after each phase.
 - After each Green phase: `moon fmt && moon info && moon test`
 - Commit after each Red→Green→Refactor cycle
 - Split `src/starlark/` into sub-packages when any file exceeds ~600 LOC
-- Keep `src/main/` thin — CLI wiring only (deferred until Phase 8)
+- Keep `src/cmd/` thin — CLI wiring only
 - All test names in English (AGENTS.md requirement)
 - Use snapshot tests (`moon test --update`) for error message format tests
 
