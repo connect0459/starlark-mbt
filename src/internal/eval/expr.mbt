@@ -312,13 +312,11 @@ fn call_value(
   match func_val {
     @value.Value::FuncVal(f) => call_func(ctx, f, pos_args, kw_args, pos)
     @value.Value::BuiltinFuncVal(f) => {
-      let call_ctx : @value.BuiltinCallCtx = {
-        call: fn(f2, args, kwargs) {
-          Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
-            EvalErr(e) => Err(e.msg)
-          }
-        },
-      }
+      let call_ctx = @value.BuiltinCallCtx::new(fn(f2, args, kwargs) {
+        Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
+          EvalErr(e) => Err(e.msg)
+        }
+      })
       match f.call_body(call_ctx, pos_args, kw_args) {
         Some(Ok(v)) => v
         Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))

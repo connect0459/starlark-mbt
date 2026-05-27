@@ -33,9 +33,11 @@ pub fn type_name(Value) -> String
 // Errors
 
 // Types and methods
-pub(all) struct BuiltinCallCtx {
-  call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
+pub struct BuiltinCallCtx {
+  // private fields
 }
+pub fn BuiltinCallCtx::invoke(Self, Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
+pub fn BuiltinCallCtx::new((Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]) -> Self
 
 pub(all) struct StarlarkBoundMethod {
   recv : Value

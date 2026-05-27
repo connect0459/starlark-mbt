@@ -242,7 +242,7 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
       _ => return Err("assert.fails: pattern must be a string")
     }
     match
-      (call_ctx.call)(
+      call_ctx.invoke(
         f,
         ([] : Array[@value.Value]),
         ([] : Array[(String, @value.Value)]),

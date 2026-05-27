@@ -146,8 +146,28 @@ pub(all) struct StarlarkFunction {
 }
 
 ///|
-pub(all) struct BuiltinCallCtx {
-  call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
+pub struct BuiltinCallCtx {
+  priv call : (Value, Array[Value], Array[(String, Value)]) -> Result[
+    Value,
+    String,
+  ]
+}
+
+///|
+pub fn BuiltinCallCtx::new(
+  call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String],
+) -> BuiltinCallCtx {
+  { call, }
+}
+
+///|
+pub fn BuiltinCallCtx::invoke(
+  self : BuiltinCallCtx,
+  callee : Value,
+  args : Array[Value],
+  kwargs : Array[(String, Value)],
+) -> Result[Value, String] {
+  (self.call)(callee, args, kwargs)
 }
 
 ///|
