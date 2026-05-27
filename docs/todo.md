@@ -684,6 +684,17 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       package (~270 lines removed). Functions had identical logic under different names
       (`hex_digit`, `utf8_decode_rune_q`, `is_unicode_print`).
 
+- [x] **[MED]** Seventh-pass audit — restricted all remaining `pub`/`pub(all)` struct
+      fields to `priv` with accessor methods across every package:
+      `resolver` (`Binding.name/pos/scope`, `ResolvedFile.globals/locals/errors`,
+      `ResolveOptions` all nine flags); added `with_allow_*` fluent mutators to
+      `ResolveOptions` replacing struct-update syntax in tests.
+      `syntax` (`File.path/stmts`); added `File::new` constructor.
+      `eval` (`Options` all nine flags + `with_load_binds_globally`; `Thread.name`,
+      `Thread.max_recursion_depth`, `Thread.max_steps`).
+      `value` (`StarlarkFunction.name`, `StarlarkBuiltinFunc.name`,
+      `StarlarkModule.name`, `StarlarkIterator.next_fn/done_fn`).
+
 ### Deferred API hardening (requires large eval refactoring)
 
 - [x] **[LOW]** Restrict `StarlarkList` mutable fields — `items`, `frozen`, `itercount`
