@@ -2,6 +2,6 @@ import {
   "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/value",
   "connect0459/starlark/internal/eval",
-  "connect0459/starlark/starlark/json",
+  "connect0459/starlark/json",
   "moonbitlang/core/bench",
 }
