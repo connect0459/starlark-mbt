@@ -393,6 +393,55 @@ pub fn exec_file_with_predeclared(
 }
 
 ///|
+pub fn exec_repl_chunk(
+  thread : Thread,
+  filename : String,
+  src : String,
+  globals : @value.StarlarkDict,
+  opts : Options,
+) -> Result[Unit, @errors.EvalError] {
+  let file = match @parser.parse_file(filename, src) {
+    Ok(f) => f
+    Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
+  }
+  let ctx = EvalContext::new(thread, { ..opts, load_binds_globally: true })
+  globals.each(fn(k, v) {
+    match k {
+      @value.Value::StrVal(s) => ctx.global_env.bind(s.raw(), v)
+      _ => ()
+    }
+  })
+  let extra_names : Array[String] = []
+  globals.each(fn(k, _) {
+    match k {
+      @value.Value::StrVal(s) => extra_names.push(s.raw())
+      _ => ()
+    }
+  })
+  let resolve_opts = @resolver.ResolveOptions::default().with_load_binds_globally(
+    true,
+  )
+  let resolved = @resolver.resolve(
+    file,
+    fn(name) { is_builtin(name) || extra_names.contains(name) },
+    fn(name) { name == "None" || name == "True" || name == "False" },
+    resolve_opts,
+  )
+  if !resolved.is_valid() {
+    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
+    return Err(@errors.EvalError::simple(msg))
+  }
+  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
+    EvalErr(e) => return Err(e)
+  }
+  ctx.global_env.locals.each(fn(name, v) {
+    let key = @value.Value::StrVal(@value.StarlarkString::new(name))
+    globals.set(key, v) |> ignore
+  })
+  Ok(())
+}
+
+///|
 pub fn eval_expr(
   thread : Thread,
   filename : String,

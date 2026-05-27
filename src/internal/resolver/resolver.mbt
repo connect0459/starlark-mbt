@@ -134,6 +134,14 @@ pub fn ResolveOptions::with_allow_recursion(
 }
 
 ///|
+pub fn ResolveOptions::with_load_binds_globally(
+  self : ResolveOptions,
+  v : Bool,
+) -> ResolveOptions {
+  { ..self, load_binds_globally: v }
+}
+
+///|
 pub struct ResolvedFile {
   priv globals : Array[Binding]
   priv locals : Array[Binding]
