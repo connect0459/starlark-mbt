@@ -1,4 +1,4 @@
 import {
-  "moonbitlang/core/math",
+  "connect0459/starlark/internal/std_math",
   "connect0459/starlark/internal/value",
 }

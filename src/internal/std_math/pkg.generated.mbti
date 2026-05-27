@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "connect0459/starlark/internal/std_math"
+
+// Values
+pub const PI : Double = 3.141592653589793
+
+pub fn acos(Double) -> Double
+
+pub fn acosh(Double) -> Double
+
+pub fn asin(Double) -> Double
+
+pub fn asinh(Double) -> Double
+
+pub fn atan(Double) -> Double
+
+pub fn atan2(Double, Double) -> Double
+
+pub fn atanh(Double) -> Double
+
+pub fn ceil(Double) -> Double
+
+pub fn cos(Double) -> Double
+
+pub fn cosh(Double) -> Double
+
+pub fn exp(Double) -> Double
+
+pub fn floor(Double) -> Double
+
+pub fn hypot(Double, Double) -> Double
+
+pub fn ln(Double) -> Double
+
+pub fn pow(Double, Double) -> Double
+
+pub fn round(Double) -> Double
+
+pub fn sin(Double) -> Double
+
+pub fn sinh(Double) -> Double
+
+pub fn tan(Double) -> Double
+
+pub fn tanh(Double) -> Double
+
+pub fn trunc(Double) -> Double
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

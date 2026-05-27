@@ -55,12 +55,12 @@ fn float_copysign(x : Double, y : Double) -> Double {
 
 ///|
 fn float_mod(x : Double, y : Double) -> Double {
-  x - @math.trunc(x / y) * y
+  x - @std_math.trunc(x / y) * y
 }
 
 ///|
 fn float_remainder(x : Double, y : Double) -> Double {
-  x - @math.round(x / y) * y
+  x - @std_math.round(x / y) * y
 }
 
 ///|
@@ -76,7 +76,7 @@ let lanczos_c : Array[Double] = [
 ///|
 fn float_gamma(x : Double) -> Double {
   if x < 0.5 {
-    @math.PI / (@math.sin(@math.PI * x) * float_gamma(1.0 - x))
+    @std_math.PI / (@std_math.sin(@std_math.PI * x) * float_gamma(1.0 - x))
   } else {
     let z = x - 1.0
     let mut a = lanczos_c[0]
@@ -84,7 +84,7 @@ fn float_gamma(x : Double) -> Double {
       a += lanczos_c[i] / (z + i.to_double())
     }
     let t = z + 7.5
-    sqrt_2pi * @math.pow(t, z + 0.5) * @math.exp(-t) * a
+    sqrt_2pi * @std_math.pow(t, z + 0.5) * @std_math.exp(-t) * a
   }
 }
 
@@ -98,7 +98,7 @@ fn make_log_fn() -> @value.Value {
       Err(e) => Err(e)
       Ok(x) =>
         if pos_args.length() == 1 {
-          Ok(@value.Value::FloatVal(@math.ln(x)))
+          Ok(@value.Value::FloatVal(@std_math.ln(x)))
         } else {
           match to_float("math.log", pos_args[1]) {
             Err(e) => Err(e)
@@ -106,7 +106,7 @@ fn make_log_fn() -> @value.Value {
               if base == 0.0 {
                 Err("math.log: division by zero")
               } else {
-                Ok(@value.Value::FloatVal(@math.ln(x) / @math.ln(base)))
+                Ok(@value.Value::FloatVal(@std_math.ln(x) / @std_math.ln(base)))
               }
           }
         }
@@ -118,34 +118,38 @@ fn make_log_fn() -> @value.Value {
 pub fn math_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["e"] = @value.Value::FloatVal(2.718281828459045)
-  attrs["pi"] = @value.Value::FloatVal(@math.PI)
-  attrs["ceil"] = make_unary("math.ceil", @math.ceil)
-  attrs["floor"] = make_unary("math.floor", @math.floor)
-  attrs["round"] = make_unary("math.round", @math.round)
+  attrs["pi"] = @value.Value::FloatVal(@std_math.PI)
+  attrs["ceil"] = make_unary("math.ceil", @std_math.ceil)
+  attrs["floor"] = make_unary("math.floor", @std_math.floor)
+  attrs["round"] = make_unary("math.round", @std_math.round)
   attrs["fabs"] = make_unary("math.fabs", float_abs)
-  attrs["exp"] = make_unary("math.exp", @math.exp)
-  attrs["sqrt"] = make_unary("math.sqrt", fn(x) { @math.pow(x, 0.5) })
-  attrs["acos"] = make_unary("math.acos", @math.acos)
-  attrs["asin"] = make_unary("math.asin", @math.asin)
-  attrs["atan"] = make_unary("math.atan", @math.atan)
-  attrs["cos"] = make_unary("math.cos", @math.cos)
-  attrs["sin"] = make_unary("math.sin", @math.sin)
-  attrs["tan"] = make_unary("math.tan", @math.tan)
-  attrs["acosh"] = make_unary("math.acosh", @math.acosh)
-  attrs["asinh"] = make_unary("math.asinh", @math.asinh)
-  attrs["atanh"] = make_unary("math.atanh", @math.atanh)
-  attrs["cosh"] = make_unary("math.cosh", @math.cosh)
-  attrs["sinh"] = make_unary("math.sinh", @math.sinh)
-  attrs["tanh"] = make_unary("math.tanh", @math.tanh)
-  attrs["degrees"] = make_unary("math.degrees", fn(x) { x * 180.0 / @math.PI })
-  attrs["radians"] = make_unary("math.radians", fn(x) { x * @math.PI / 180.0 })
+  attrs["exp"] = make_unary("math.exp", @std_math.exp)
+  attrs["sqrt"] = make_unary("math.sqrt", fn(x) { @std_math.pow(x, 0.5) })
+  attrs["acos"] = make_unary("math.acos", @std_math.acos)
+  attrs["asin"] = make_unary("math.asin", @std_math.asin)
+  attrs["atan"] = make_unary("math.atan", @std_math.atan)
+  attrs["cos"] = make_unary("math.cos", @std_math.cos)
+  attrs["sin"] = make_unary("math.sin", @std_math.sin)
+  attrs["tan"] = make_unary("math.tan", @std_math.tan)
+  attrs["acosh"] = make_unary("math.acosh", @std_math.acosh)
+  attrs["asinh"] = make_unary("math.asinh", @std_math.asinh)
+  attrs["atanh"] = make_unary("math.atanh", @std_math.atanh)
+  attrs["cosh"] = make_unary("math.cosh", @std_math.cosh)
+  attrs["sinh"] = make_unary("math.sinh", @std_math.sinh)
+  attrs["tanh"] = make_unary("math.tanh", @std_math.tanh)
+  attrs["degrees"] = make_unary("math.degrees", fn(x) {
+    x * 180.0 / @std_math.PI
+  })
+  attrs["radians"] = make_unary("math.radians", fn(x) {
+    x * @std_math.PI / 180.0
+  })
   attrs["gamma"] = make_unary("math.gamma", float_gamma)
   attrs["copysign"] = make_binary("math.copysign", float_copysign)
   attrs["mod"] = make_binary("math.mod", float_mod)
-  attrs["pow"] = make_binary("math.pow", @math.pow)
+  attrs["pow"] = make_binary("math.pow", @std_math.pow)
   attrs["remainder"] = make_binary("math.remainder", float_remainder)
-  attrs["atan2"] = make_binary("math.atan2", @math.atan2)
-  attrs["hypot"] = make_binary("math.hypot", @math.hypot)
+  attrs["atan2"] = make_binary("math.atan2", @std_math.atan2)
+  attrs["hypot"] = make_binary("math.hypot", @std_math.hypot)
   attrs["log"] = make_log_fn()
   @value.Value::ModuleVal(@value.StarlarkModule::new("math", attrs))
 }
