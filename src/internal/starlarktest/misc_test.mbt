@@ -1,6 +1,5 @@
 // Integration tests derived from misc.star.
 // Omitted: cyclic data structure tests (cycle detection not implemented).
-// Omitted: "did you mean" typo suggestion in load errors (not implemented).
 
 ///|
 let misc_ordered_cmp_src : String =
@@ -117,6 +116,18 @@ let misc_error_positions_chunked : String =
 ///|
 test "misc.star: error position regression and load errors (chunked)" {
   let failures = run_chunked_string(misc_error_positions_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
+
+///|
+let misc_load_did_you_mean_chunked : String =
+  #|load('assert.star', 'froze') ### "froze not found.*did you mean freeze"
+
+///|
+test "misc.star: load error suggests spelling correction (did you mean)" {
+  let failures = run_chunked_string(misc_load_did_you_mean_chunked)
   if failures.length() != 0 {
     fail(failures.join("\n"))
   }
