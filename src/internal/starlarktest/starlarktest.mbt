@@ -398,7 +398,7 @@ fn exec_chunk_raw(
   let thread = @eval.Thread::with_loader("test", loader)
   match @eval.exec_file(thread, "<test>", src, @eval.Options::default()) {
     Ok(_) => Ok(assert_errors)
-    Err(e) => Err((e.msg, assert_errors))
+    Err(e) => Err((e.msg(), assert_errors))
   }
 }
 
@@ -477,7 +477,7 @@ pub fn run_star_string(src : String) -> Array[String] {
   let thread = @eval.Thread::with_loader("test", loader)
   match @eval.exec_file(thread, "<test>", src, @eval.Options::default()) {
     Ok(_) => ()
-    Err(e) => errors.push(e.msg)
+    Err(e) => errors.push(e.msg())
   }
   errors
 }

@@ -40,7 +40,7 @@ fn Parser::advance(self : Parser) -> Unit raise ParseErr {
 
 ///|
 fn Parser::syntax_error(self : Parser, msg : String) -> @errors.SyntaxError {
-  { pos: self.pos, msg }
+  @errors.SyntaxError::new(self.pos, msg)
 }
 
 ///|

@@ -36,7 +36,7 @@ fn with_universal(names : Array[String]) -> (String) -> Bool {
 
 ///|
 fn has_error(result : ResolvedFile, substr : String) -> Bool {
-  result.errors.any(fn(e) { e.msg.contains(substr) })
+  result.errors.any(fn(e) { e.msg().contains(substr) })
 }
 
 // --- Basic resolution: valid programs ---

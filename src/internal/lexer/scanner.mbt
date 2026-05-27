@@ -95,7 +95,7 @@ fn Scanner::make_error(
   pos : @errors.Position,
   msg : String,
 ) -> @errors.SyntaxError {
-  { pos, msg }
+  @errors.SyntaxError::new(pos, msg)
 }
 
 // count_indent counts indentation at the start of a line (tab = 8 spaces).

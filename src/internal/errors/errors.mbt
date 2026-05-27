@@ -1,13 +1,28 @@
 ///|
-pub(all) struct Position {
-  filename : String
-  line : Int
-  col : Int
+pub struct Position {
+  priv filename : String
+  priv line : Int
+  priv col : Int
 }
 
 ///|
 pub fn Position::new(filename : String, line : Int, col : Int) -> Position {
   { filename, line, col }
+}
+
+///|
+pub fn Position::filename(self : Position) -> String {
+  self.filename
+}
+
+///|
+pub fn Position::line(self : Position) -> Int {
+  self.line
+}
+
+///|
+pub fn Position::col(self : Position) -> Int {
+  self.col
 }
 
 ///|
@@ -38,9 +53,24 @@ pub fn Position::is_before(self : Position, other : Position) -> Bool {
 }
 
 ///|
-pub(all) struct Span {
-  start : Position
-  end_ : Position
+pub struct Span {
+  priv start : Position
+  priv end_ : Position
+}
+
+///|
+pub fn Span::new(start : Position, end_ : Position) -> Span {
+  { start, end_ }
+}
+
+///|
+pub fn Span::start(self : Span) -> Position {
+  self.start
+}
+
+///|
+pub fn Span::end_pos(self : Span) -> Position {
+  self.end_
 }
 
 ///|
@@ -49,9 +79,24 @@ pub fn Span::to_string(self : Span) -> String {
 }
 
 ///|
-pub(all) struct SyntaxError {
-  pos : Position
-  msg : String
+pub struct SyntaxError {
+  priv pos : Position
+  priv msg : String
+}
+
+///|
+pub fn SyntaxError::new(pos : Position, msg : String) -> SyntaxError {
+  { pos, msg }
+}
+
+///|
+pub fn SyntaxError::pos(self : SyntaxError) -> Position {
+  self.pos
+}
+
+///|
+pub fn SyntaxError::msg(self : SyntaxError) -> String {
+  self.msg
 }
 
 ///|
@@ -60,9 +105,24 @@ pub fn SyntaxError::to_string(self : SyntaxError) -> String {
 }
 
 ///|
-pub(all) struct ResolveError {
-  pos : Position
-  msg : String
+pub struct ResolveError {
+  priv pos : Position
+  priv msg : String
+}
+
+///|
+pub fn ResolveError::new(pos : Position, msg : String) -> ResolveError {
+  { pos, msg }
+}
+
+///|
+pub fn ResolveError::pos(self : ResolveError) -> Position {
+  self.pos
+}
+
+///|
+pub fn ResolveError::msg(self : ResolveError) -> String {
+  self.msg
 }
 
 ///|
@@ -71,9 +131,24 @@ pub fn ResolveError::to_string(self : ResolveError) -> String {
 }
 
 ///|
-pub(all) struct CallFrame {
-  name : String
-  pos : Position
+pub struct CallFrame {
+  priv name : String
+  priv pos : Position
+}
+
+///|
+pub fn CallFrame::new(name : String, pos : Position) -> CallFrame {
+  { name, pos }
+}
+
+///|
+pub fn CallFrame::name(self : CallFrame) -> String {
+  self.name
+}
+
+///|
+pub fn CallFrame::pos(self : CallFrame) -> Position {
+  self.pos
 }
 
 ///|
@@ -101,7 +176,7 @@ pub fn CallStack::to_string(self : CallStack) -> String {
 
 ///|
 pub struct EvalError {
-  msg : String
+  priv msg : String
   priv call_stack : CallStack
 }
 
@@ -116,6 +191,11 @@ pub fn EvalError::with_stack(msg : String, call_stack : CallStack) -> EvalError 
 }
 
 ///|
+pub fn EvalError::msg(self : EvalError) -> String {
+  self.msg
+}
+
+///|
 pub fn EvalError::to_string(self : EvalError) -> String {
   self.msg
 }
@@ -126,6 +206,16 @@ pub fn EvalError::backtrace(self : EvalError) -> String {
 }
 
 ///|
-pub(all) struct Halt {
-  reason : String
+pub struct Halt {
+  priv reason : String
+}
+
+///|
+pub fn Halt::new(reason : String) -> Halt {
+  { reason, }
+}
+
+///|
+pub fn Halt::reason(self : Halt) -> String {
+  self.reason
 }

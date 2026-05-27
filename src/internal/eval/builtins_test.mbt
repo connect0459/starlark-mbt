@@ -1800,7 +1800,7 @@ test "exec_file: str.splitlines with keepends=True keeps line endings" {
 test "exec_file: str.splitlines rejects non-bool keepends argument" {
   match exec_b("r = \"a\\nb\".splitlines(1)") {
     Ok(_) => assert_true(false)
-    Err(e) => assert_true(e.msg.contains("want bool"))
+    Err(e) => assert_true(e.msg().contains("want bool"))
   }
 }
 

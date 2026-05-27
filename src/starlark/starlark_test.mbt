@@ -14,7 +14,7 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
       "i = 0\nwhile i < 1000000:\n  i = i + 1",
       @starlark.Options::default(),
     ) {
-    Err(e) => assert_true(e.msg.contains("step budget"))
+    Err(e) => assert_true(e.msg().contains("step budget"))
     Ok(_) => assert_true(false)
   }
 }
@@ -50,7 +50,7 @@ test "exec_file reports a runtime error as EvalError" {
   let t = @starlark.Thread::new("test")
   match
     @starlark.exec_file(t, "<test>", "x = 1 // 0", @starlark.Options::default()) {
-    Err(e) => assert_true(e.msg.contains("zero"))
+    Err(e) => assert_true(e.msg().contains("zero"))
     Ok(_) => assert_true(false)
   }
 }
@@ -65,7 +65,7 @@ test "exec_file reports a syntax error wrapped as EvalError" {
       "def f(: pass",
       @starlark.Options::default(),
     ) {
-    Err(e) => assert_true(e.msg.length() > 0)
+    Err(e) => assert_true(e.msg().length() > 0)
     Ok(_) => assert_true(false)
   }
 }

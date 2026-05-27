@@ -6,10 +6,12 @@ package "connect0459/starlark/internal/errors"
 // Errors
 
 // Types and methods
-pub(all) struct CallFrame {
-  name : String
-  pos : Position
+pub struct CallFrame {
+  // private fields
 }
+pub fn CallFrame::name(Self) -> String
+pub fn CallFrame::new(String, Position) -> Self
+pub fn CallFrame::pos(Self) -> Position
 
 pub struct CallStack {
   // private fields
@@ -18,44 +20,53 @@ pub fn CallStack::new(Array[CallFrame]) -> Self
 pub fn CallStack::to_string(Self) -> String
 
 pub struct EvalError {
-  msg : String
   // private fields
 }
 pub fn EvalError::backtrace(Self) -> String
+pub fn EvalError::msg(Self) -> String
 pub fn EvalError::simple(String) -> Self
 pub fn EvalError::to_string(Self) -> String
 pub fn EvalError::with_stack(String, CallStack) -> Self
 
-pub(all) struct Halt {
-  reason : String
+pub struct Halt {
+  // private fields
 }
+pub fn Halt::new(String) -> Self
+pub fn Halt::reason(Self) -> String
 
-pub(all) struct Position {
-  filename : String
-  line : Int
-  col : Int
+pub struct Position {
+  // private fields
 }
+pub fn Position::col(Self) -> Int
+pub fn Position::filename(Self) -> String
 pub fn Position::is_before(Self, Self) -> Bool
 pub fn Position::is_valid(Self) -> Bool
+pub fn Position::line(Self) -> Int
 pub fn Position::new(String, Int, Int) -> Self
 pub fn Position::to_string(Self) -> String
 
-pub(all) struct ResolveError {
-  pos : Position
-  msg : String
+pub struct ResolveError {
+  // private fields
 }
+pub fn ResolveError::msg(Self) -> String
+pub fn ResolveError::new(Position, String) -> Self
+pub fn ResolveError::pos(Self) -> Position
 pub fn ResolveError::to_string(Self) -> String
 
-pub(all) struct Span {
-  start : Position
-  end_ : Position
+pub struct Span {
+  // private fields
 }
+pub fn Span::end_pos(Self) -> Position
+pub fn Span::new(Position, Position) -> Self
+pub fn Span::start(Self) -> Position
 pub fn Span::to_string(Self) -> String
 
-pub(all) struct SyntaxError {
-  pos : Position
-  msg : String
+pub struct SyntaxError {
+  // private fields
 }
+pub fn SyntaxError::msg(Self) -> String
+pub fn SyntaxError::new(Position, String) -> Self
+pub fn SyntaxError::pos(Self) -> Position
 pub fn SyntaxError::to_string(Self) -> String
 
 // Type aliases

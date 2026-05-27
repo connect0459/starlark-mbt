@@ -33,7 +33,7 @@ fn exec_param_module() -> @eval.Module raise {
       @eval.Options::default(),
     ) {
     Ok(m) => m
-    Err(e) => fail("exec_file failed: \{e.msg}")
+    Err(e) => fail("exec_file failed: \{e.msg()}")
   }
 }
 

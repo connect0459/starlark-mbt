@@ -65,7 +65,7 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
       "i = 0\nwhile i < 1000000:\n  i = i + 1",
       Options::default(),
     ) {
-    Err(e) => assert_true(e.msg.contains("step budget"))
+    Err(e) => assert_true(e.msg().contains("step budget"))
     Ok(_) => assert_true(false)
   }
 }
@@ -76,7 +76,7 @@ test "Thread::cancel halts execution with the given reason" {
   t.cancel("timeout")
   match exec_file(t, "<test>", "x = 1\ny = 2", Options::default()) {
     Err(e) =>
-      assert_true(e.msg.contains("cancelled") && e.msg.contains("timeout"))
+      assert_true(e.msg().contains("cancelled") && e.msg().contains("timeout"))
     Ok(_) => fail("expected cancellation error")
   }
 }
@@ -87,7 +87,8 @@ test "Thread::cancel preserves the first reason when called multiple times" {
   t.cancel("first")
   t.cancel("second")
   match exec_file(t, "<test>", "x = 1", Options::default()) {
-    Err(e) => assert_true(e.msg.contains("first") && !e.msg.contains("second"))
+    Err(e) =>
+      assert_true(e.msg().contains("first") && !e.msg().contains("second"))
     Ok(_) => fail("expected cancellation error")
   }
 }
@@ -99,7 +100,7 @@ test "Thread::uncancel allows execution to proceed after cancellation" {
   t.uncancel()
   match exec_file(t, "<test>", "x = 42", Options::default()) {
     Ok(_) => ()
-    Err(e) => fail("expected success after uncancel, got: \{e.msg}")
+    Err(e) => fail("expected success after uncancel, got: \{e.msg()}")
   }
 }
 
@@ -128,7 +129,7 @@ test "Thread: with_print routes output to the custom callback" {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], "hello")
     }
-    Err(e) => fail(e.msg)
+    Err(e) => fail(e.msg())
   }
 }
 
@@ -466,7 +467,7 @@ test "load_binds_globally=false: loaded names excluded from module globals" {
     ) {
     Ok(m) => assert_true(get_global(m, "x") is None)
     Err(e) => {
-      println(e.msg)
+      println(e.msg())
       assert_true(false)
     }
   }
@@ -487,7 +488,7 @@ test "load_binds_globally=true: loaded names included in module globals" {
     ) {
     Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::IntVal(42L)))
     Err(e) => {
-      println(e.msg)
+      println(e.msg())
       assert_true(false)
     }
   }
@@ -508,7 +509,7 @@ test "load_binds_globally=false: loaded name is usable within the same file" {
       assert_true(get_global(m, "y") == Some(@value.Value::IntVal(43L)))
     }
     Err(e) => {
-      println(e.msg)
+      println(e.msg())
       assert_true(false)
     }
   }
@@ -531,7 +532,7 @@ test "load_binds_globally=false: loaded name is accessible from a function body"
       assert_true(get_global(m, "result") == Some(@value.Value::IntVal(42L)))
     }
     Err(e) => {
-      println(e.msg)
+      println(e.msg())
       assert_true(false)
     }
   }

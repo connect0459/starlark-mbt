@@ -302,7 +302,7 @@ fn exec_load(
       let loaded = match loader(ctx.thread, path) {
         Ok(m) => m
         Err(e) =>
-          raise EvalErr(make_eval_error(ctx, "\{pos.to_string()}: \{e.msg}"))
+          raise EvalErr(make_eval_error(ctx, "\{pos.to_string()}: \{e.msg()}"))
       }
       for pair in bindings {
         let (local_name, export_name) = pair

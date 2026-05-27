@@ -6,7 +6,7 @@ fn exec(src : String) -> Unit {
   let thread = @eval.Thread::new("bench")
   match @eval.exec_file(thread, "<bench>", src, @eval.Options::default()) {
     Ok(_) => ()
-    Err(e) => abort("bench exec error: \{e.msg}")
+    Err(e) => abort("bench exec error: \{e.msg()}")
   }
 }
 

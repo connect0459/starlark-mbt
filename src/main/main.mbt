@@ -33,7 +33,9 @@ fn make_loader(
       @eval.exec_file(load_thread, resolved, load_src, @eval.Options::default()) {
       Ok(m) => Ok(m)
       Err(e) =>
-        Err(@errors.EvalError::simple("cannot load \"\{load_path}\": \{e.msg}"))
+        Err(
+          @errors.EvalError::simple("cannot load \"\{load_path}\": \{e.msg()}"),
+        )
     }
   }
 }
@@ -51,7 +53,7 @@ fn run_file(filepath : String) -> Int {
   match @eval.exec_file(thread, filepath, src, @eval.Options::default()) {
     Ok(_) => 0
     Err(e) => {
-      println(e.msg)
+      println(e.msg())
       1
     }
   }

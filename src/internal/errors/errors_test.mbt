@@ -6,13 +6,13 @@ test "Position: format with filename line and col" {
 
 ///|
 test "Position: format with unknown col shows only line" {
-  let pos = Position::{ filename: "a.star", line: 5, col: 0 }
+  let pos = Position::new("a.star", 5, 0)
   inspect(pos.to_string(), content="a.star:5")
 }
 
 ///|
 test "Position: format with unknown line shows only filename" {
-  let pos = Position::{ filename: "a.star", line: 0, col: 0 }
+  let pos = Position::new("a.star", 0, 0)
   inspect(pos.to_string(), content="a.star")
 }
 
@@ -24,7 +24,7 @@ test "Position: is_valid returns true when line is set" {
 
 ///|
 test "Position: is_valid returns false for zero line" {
-  let pos = Position::{ filename: "", line: 0, col: 0 }
+  let pos = Position::new("", 0, 0)
   assert_false(pos.is_valid())
 }
 
@@ -42,36 +42,36 @@ test "Position: is_before compares line then col" {
 test "Span: to_string shows start and end" {
   let start = Position::new("f.star", 1, 1)
   let end_ = Position::new("f.star", 1, 5)
-  let span = Span::{ start, end_ }
+  let span = Span::new(start, end_)
   inspect(span.to_string(), content="f.star:1:1-f.star:1:5")
 }
 
 ///|
 test "SyntaxError: format as position plus message" {
   let pos = Position::new("bad.star", 4, 2)
-  let err = SyntaxError::{ pos, msg: "unexpected token '}'" }
+  let err = SyntaxError::new(pos, "unexpected token '}'")
   inspect(err.to_string(), content="bad.star:4:2: unexpected token '}'")
 }
 
 ///|
 test "ResolveError: format as position plus message" {
   let pos = Position::new("x.star", 10, 1)
-  let err = ResolveError::{ pos, msg: "undefined variable 'foo'" }
+  let err = ResolveError::new(pos, "undefined variable 'foo'")
   inspect(err.to_string(), content="x.star:10:1: undefined variable 'foo'")
 }
 
 ///|
 test "CallFrame: stores name and position" {
   let pos = Position::new("m.star", 5, 1)
-  let frame = CallFrame::{ name: "myFunc", pos }
-  assert_eq(frame.name, "myFunc")
-  assert_eq(frame.pos.line, 5)
+  let frame = CallFrame::new("myFunc", pos)
+  assert_eq(frame.name(), "myFunc")
+  assert_eq(frame.pos().line(), 5)
 }
 
 ///|
 test "CallStack: to_string formats as traceback" {
-  let frame1 = CallFrame::{ name: "outer", pos: Position::new("m.star", 1, 1) }
-  let frame2 = CallFrame::{ name: "inner", pos: Position::new("m.star", 5, 3) }
+  let frame1 = CallFrame::new("outer", Position::new("m.star", 1, 1))
+  let frame2 = CallFrame::new("inner", Position::new("m.star", 5, 3))
   let stack = CallStack::new([frame1, frame2])
   let s = stack.to_string()
   assert_true(s.contains("Traceback (most recent call last):"))
@@ -87,7 +87,7 @@ test "CallStack: empty stack produces empty string" {
 
 ///|
 test "EvalError: format shows message and backtrace" {
-  let frame = CallFrame::{ name: "f", pos: Position::new("s.star", 3, 1) }
+  let frame = CallFrame::new("f", Position::new("s.star", 3, 1))
   let stack = CallStack::new([frame])
   let err = EvalError::with_stack("division by zero", stack)
   let s = err.backtrace()
@@ -104,6 +104,6 @@ test "EvalError: to_string returns just the message" {
 
 ///|
 test "Halt: is distinct from EvalError" {
-  let h = Halt::{ reason: "cancelled" }
-  assert_eq(h.reason, "cancelled")
+  let h = Halt::new("cancelled")
+  assert_eq(h.reason(), "cancelled")
 }

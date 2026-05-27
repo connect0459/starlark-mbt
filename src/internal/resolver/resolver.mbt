@@ -128,7 +128,7 @@ fn Resolver::errorf(
   pos : @errors.Position,
   msg : String,
 ) -> Unit {
-  self.errors.push({ pos, msg })
+  self.errors.push(@errors.ResolveError::new(pos, msg))
 }
 
 ///|

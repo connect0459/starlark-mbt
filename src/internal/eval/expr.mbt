@@ -314,7 +314,7 @@ fn call_value(
     @value.Value::BuiltinFuncVal(f) => {
       let call_ctx = @value.BuiltinCallCtx::new(fn(f2, args, kwargs) {
         Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
-          EvalErr(e) => Err(e.msg)
+          EvalErr(e) => Err(e.msg())
         }
       })
       match f.call_body(call_ctx, pos_args, kw_args) {
@@ -346,7 +346,7 @@ fn call_func(
   if ctx.thread.call_stack.length() >= ctx.thread.max_recursion_depth {
     raise EvalErr(make_eval_error(ctx, "maximum recursion depth exceeded"))
   }
-  let frame : @errors.CallFrame = { name: f.name, pos }
+  let frame : @errors.CallFrame = @errors.CallFrame::new(f.name, pos)
   ctx.thread.call_stack.push(frame)
   try {
     let mut parent = ctx.global_env

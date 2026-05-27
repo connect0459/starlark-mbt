@@ -10,7 +10,7 @@ test "error format: syntax error includes filename line col and message" {
   match result {
     Err(e) =>
       inspect(
-        e.msg,
+        e.msg(),
         content=(
           #|test.star:1:6: unexpected token end of file
         ),
@@ -31,7 +31,7 @@ test "error format: resolve error for undefined variable includes position" {
   match result {
     Err(e) =>
       inspect(
-        e.msg,
+        e.msg(),
         content=(
           #|test.star:1:5: undefined: undefined_var
         ),
@@ -52,7 +52,7 @@ test "error format: type error in binary op" {
   match result {
     Err(e) =>
       inspect(
-        e.msg,
+        e.msg(),
         content=(
           #|unknown binary op: int + string
         ),
@@ -73,7 +73,7 @@ test "error format: integer division by zero" {
   match result {
     Err(e) =>
       inspect(
-        e.msg,
+        e.msg(),
         content=(
           #|integer division by zero
         ),
@@ -94,7 +94,7 @@ test "error format: list index out of range" {
   match result {
     Err(e) =>
       inspect(
-        e.msg,
+        e.msg(),
         content=(
           #|index 10 out of range for sequence of length 3
         ),
@@ -170,7 +170,7 @@ test "error format: wrong number of args to function" {
   match result {
     Err(e) =>
       inspect(
-        e.msg,
+        e.msg(),
         content=(
           #|function f missing 1 argument (b)
         ),
@@ -195,7 +195,7 @@ test "error format: recursion depth exceeded" {
   match result {
     Err(e) =>
       inspect(
-        e.msg,
+        e.msg(),
         content=(
           #|maximum recursion depth exceeded
         ),
@@ -216,7 +216,7 @@ test "Thread.cancel: pre-cancel prevents execution and returns cancellation erro
   )
   match result {
     Err(e) =>
-      assert_true(e.msg.contains("Starlark computation cancelled: nope"))
+      assert_true(e.msg().contains("Starlark computation cancelled: nope"))
     Ok(_) => abort("expected cancellation error")
   }
 }
@@ -234,7 +234,7 @@ test "Thread.cancel: cancellation is sticky across multiple execs" {
   )
   match result {
     Err(e) =>
-      assert_true(e.msg.contains("Starlark computation cancelled: stop"))
+      assert_true(e.msg().contains("Starlark computation cancelled: stop"))
     Ok(_) => abort("expected sticky cancellation on second exec")
   }
 }
@@ -277,7 +277,8 @@ test "Thread.with_step_budget: halts when budget is exceeded" {
   match result {
     Err(e) =>
       assert_true(
-        e.msg.contains("step budget exceeded") || e.msg.contains("cancelled"),
+        e.msg().contains("step budget exceeded") ||
+        e.msg().contains("cancelled"),
       )
     Ok(_) => abort("expected step budget error")
   }

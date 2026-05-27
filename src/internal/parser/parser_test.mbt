@@ -614,8 +614,8 @@ test "load statement with aliased binding" {
 test "integer literal has position line 1 col 1" {
   match parse_e("42") {
     ELiteral(_, pos) => {
-      assert_eq(pos.line, 1)
-      assert_eq(pos.col, 1)
+      assert_eq(pos.line(), 1)
+      assert_eq(pos.col(), 1)
     }
     _ => fail("expected literal")
   }
@@ -676,7 +676,7 @@ test "print-as-statement syntax is rejected" {
 ///|
 fn parse_e_err(src : String) -> String {
   match @parser.parse_expr("test.star", src) {
-    Err(e) => e.msg
+    Err(e) => e.msg()
     Ok(_) => ""
   }
 }
@@ -709,18 +709,18 @@ test "chained in not-in is rejected as non-associative" {
 test "parenthesized comparisons are allowed" {
   match @parser.parse_expr("test.star", "(0 == 1) == 2") {
     Ok(_) => ()
-    Err(e) => fail("unexpected error: \{e.msg}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
   }
   match @parser.parse_expr("test.star", "0 == (1 == 2)") {
     Ok(_) => ()
-    Err(e) => fail("unexpected error: \{e.msg}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
 
 ///|
 fn parse_f_err(src : String) -> String {
   match @parser.parse_file("test.star", src) {
-    Err(e) => e.msg
+    Err(e) => e.msg()
     Ok(_) => ""
   }
 }
