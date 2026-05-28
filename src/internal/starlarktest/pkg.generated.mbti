@@ -1,10 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark/internal/starlarktest"
 
+import {
+  "connect0459/starlark/internal/eval",
+}
+
 // Values
 pub fn run_chunked_string(String) -> Array[String]
 
 pub fn run_star_string(String) -> Array[String]
+
+pub fn run_with_predeclared(@eval.Predeclared, String) -> Array[String]
 
 // Errors
 

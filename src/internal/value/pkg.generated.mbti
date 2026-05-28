@@ -46,6 +46,31 @@ pub struct BuiltinCallCtx {
 pub fn BuiltinCallCtx::invoke(Self, Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
 pub fn BuiltinCallCtx::new((Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]) -> Self
 
+pub struct CustomValue {
+  // private fields
+}
+pub fn CustomValue::do_freeze(Self) -> Unit
+pub fn CustomValue::get_attr(Self, String) -> Result[Value?, String]
+pub fn CustomValue::get_attr_names(Self) -> Array[String]?
+pub fn CustomValue::get_contains(Self, Value) -> Result[Bool, String]?
+pub fn CustomValue::get_equals(Self, Value) -> Bool
+pub fn CustomValue::get_hash(Self) -> Result[UInt, String]
+pub fn CustomValue::get_iterate(Self) -> Result[StarlarkIterator, String]
+pub fn CustomValue::get_length(Self) -> Result[Int, String]
+pub fn CustomValue::get_repr(Self) -> String
+pub fn CustomValue::get_set_field(Self, String, Value) -> Result[Unit, String]
+pub fn CustomValue::get_truth(Self) -> Bool
+pub fn CustomValue::get_type_name(Self) -> String
+pub fn CustomValue::new(() -> String, () -> Bool, () -> String) -> Self
+pub fn CustomValue::with_attrs(Self, (String) -> Result[Value?, String], () -> Array[String]) -> Self
+pub fn CustomValue::with_contains(Self, (Value) -> Result[Bool, String]) -> Self
+pub fn CustomValue::with_equals(Self, (Value) -> Bool) -> Self
+pub fn CustomValue::with_freeze(Self, () -> Unit) -> Self
+pub fn CustomValue::with_hash(Self, () -> Result[UInt, String]) -> Self
+pub fn CustomValue::with_iterate(Self, () -> Result[StarlarkIterator, String]) -> Self
+pub fn CustomValue::with_length(Self, () -> Int) -> Self
+pub fn CustomValue::with_set_field(Self, (String, Value) -> Result[Unit, String]) -> Self
+
 pub struct StarlarkBoundMethod {
   // private fields
 }
@@ -220,6 +245,7 @@ pub(all) enum Value {
   StringElems(StarlarkStringElems)
   StringCodepoints(StarlarkStringCodepoints)
   BytesElems(StarlarkBytesElems)
+  ExtVal(CustomValue)
 }
 pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
 pub fn Value::new_dict() -> Self
@@ -231,6 +257,10 @@ pub impl Eq for Value
 // Type aliases
 
 // Traits
+pub trait Container {
+  fn has(Self, Value) -> Result[Bool, String]
+}
+
 pub trait HasAttrs {
   fn get_attr(Self, String) -> Result[Value?, String]
   fn attr_names(Self) -> Array[String]

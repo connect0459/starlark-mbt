@@ -48,3 +48,215 @@ pub trait Indexable {
   /// Return the number of elements.
   fn indexable_len(Self) -> Int
 }
+
+///|
+/// Container protocol for the `in` operator. Embedders implement `has` on
+/// custom types to define membership semantics.
+pub trait Container {
+  fn has(Self, Value) -> Result[Bool, String]
+}
+
+///|
+/// Vtable-based wrapper for embedding custom Starlark value types.
+/// Construct with `CustomValue::new`, then call `with_*` builder methods to add
+/// optional protocol support. Wrap in `Value::ExtVal(cv)` to produce a Value.
+pub struct CustomValue {
+  priv type_name_fn : () -> String
+  priv truth_fn : () -> Bool
+  priv repr_fn : () -> String
+  priv hash_fn : (() -> Result[UInt, String])?
+  priv equals_fn : ((Value) -> Bool)?
+  priv get_attr_fn : ((String) -> Result[Value?, String])?
+  priv attr_names_fn : (() -> Array[String])?
+  priv set_field_fn : ((String, Value) -> Result[Unit, String])?
+  priv contains_fn : ((Value) -> Result[Bool, String])?
+  priv iterate_fn : (() -> Result[StarlarkIterator, String])?
+  priv length_fn : (() -> Int)?
+  priv freeze_fn : (() -> Unit)?
+}
+
+///|
+pub fn CustomValue::new(
+  type_name_fn : () -> String,
+  truth_fn : () -> Bool,
+  repr_fn : () -> String,
+) -> CustomValue {
+  {
+    type_name_fn,
+    truth_fn,
+    repr_fn,
+    hash_fn: None,
+    equals_fn: None,
+    get_attr_fn: None,
+    attr_names_fn: None,
+    set_field_fn: None,
+    contains_fn: None,
+    iterate_fn: None,
+    length_fn: None,
+    freeze_fn: None,
+  }
+}
+
+///|
+pub fn CustomValue::with_hash(
+  self : CustomValue,
+  hash_fn : () -> Result[UInt, String],
+) -> CustomValue {
+  { ..self, hash_fn: Some(hash_fn) }
+}
+
+///|
+pub fn CustomValue::with_equals(
+  self : CustomValue,
+  equals_fn : (Value) -> Bool,
+) -> CustomValue {
+  { ..self, equals_fn: Some(equals_fn) }
+}
+
+///|
+pub fn CustomValue::with_attrs(
+  self : CustomValue,
+  get_attr_fn : (String) -> Result[Value?, String],
+  attr_names_fn : () -> Array[String],
+) -> CustomValue {
+  { ..self, get_attr_fn: Some(get_attr_fn), attr_names_fn: Some(attr_names_fn) }
+}
+
+///|
+pub fn CustomValue::with_set_field(
+  self : CustomValue,
+  set_field_fn : (String, Value) -> Result[Unit, String],
+) -> CustomValue {
+  { ..self, set_field_fn: Some(set_field_fn) }
+}
+
+///|
+pub fn CustomValue::with_contains(
+  self : CustomValue,
+  contains_fn : (Value) -> Result[Bool, String],
+) -> CustomValue {
+  { ..self, contains_fn: Some(contains_fn) }
+}
+
+///|
+pub fn CustomValue::with_iterate(
+  self : CustomValue,
+  iterate_fn : () -> Result[StarlarkIterator, String],
+) -> CustomValue {
+  { ..self, iterate_fn: Some(iterate_fn) }
+}
+
+///|
+pub fn CustomValue::with_length(
+  self : CustomValue,
+  length_fn : () -> Int,
+) -> CustomValue {
+  { ..self, length_fn: Some(length_fn) }
+}
+
+///|
+pub fn CustomValue::with_freeze(
+  self : CustomValue,
+  freeze_fn : () -> Unit,
+) -> CustomValue {
+  { ..self, freeze_fn: Some(freeze_fn) }
+}
+
+///|
+pub fn CustomValue::get_type_name(self : CustomValue) -> String {
+  (self.type_name_fn)()
+}
+
+///|
+pub fn CustomValue::get_truth(self : CustomValue) -> Bool {
+  (self.truth_fn)()
+}
+
+///|
+pub fn CustomValue::get_repr(self : CustomValue) -> String {
+  (self.repr_fn)()
+}
+
+///|
+pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
+  match self.hash_fn {
+    Some(f) => f()
+    None => Err("unhashable type: \{(self.type_name_fn)()}")
+  }
+}
+
+///|
+pub fn CustomValue::get_equals(self : CustomValue, other : Value) -> Bool {
+  match self.equals_fn {
+    Some(f) => f(other)
+    None => false
+  }
+}
+
+///|
+pub fn CustomValue::get_attr(
+  self : CustomValue,
+  name : String,
+) -> Result[Value?, String] {
+  match self.get_attr_fn {
+    Some(f) => f(name)
+    None => Ok(None)
+  }
+}
+
+///|
+pub fn CustomValue::get_attr_names(self : CustomValue) -> Array[String]? {
+  match self.attr_names_fn {
+    Some(f) => Some(f())
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::get_set_field(
+  self : CustomValue,
+  name : String,
+  v : Value,
+) -> Result[Unit, String] {
+  match self.set_field_fn {
+    Some(f) => f(name, v)
+    None => Err("cannot set field on \{(self.type_name_fn)()}")
+  }
+}
+
+///|
+pub fn CustomValue::get_contains(
+  self : CustomValue,
+  v : Value,
+) -> Result[Bool, String]? {
+  match self.contains_fn {
+    Some(f) => Some(f(v))
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::get_iterate(
+  self : CustomValue,
+) -> Result[StarlarkIterator, String] {
+  match self.iterate_fn {
+    Some(f) => f()
+    None => Err("'\{(self.type_name_fn)()}' object is not iterable")
+  }
+}
+
+///|
+pub fn CustomValue::get_length(self : CustomValue) -> Result[Int, String] {
+  match self.length_fn {
+    Some(f) => Ok(f())
+    None => Err("object of type '\{(self.type_name_fn)()}' has no len()")
+  }
+}
+
+///|
+pub fn CustomValue::do_freeze(self : CustomValue) -> Unit {
+  match self.freeze_fn {
+    Some(f) => f()
+    None => ()
+  }
+}

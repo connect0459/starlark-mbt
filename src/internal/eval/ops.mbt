@@ -1095,6 +1095,18 @@ fn in_op(
             ),
           )
       }
+    @value.Value::ExtVal(c) =>
+      match c.get_contains(needle) {
+        Some(Ok(b)) => @value.Value::Bool(b)
+        Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+        None =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "argument of type '\{@value.type_name(haystack)}' is not iterable",
+            ),
+          )
+      }
     _ =>
       raise EvalErr(
         make_eval_error(

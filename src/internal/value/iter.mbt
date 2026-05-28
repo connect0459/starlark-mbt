@@ -35,6 +35,7 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
     StringElems(e) => Ok(string_elems_iter(e))
     StringCodepoints(c) => Ok(string_codepoints_iter(c))
     BytesElems(e) => Ok(bytes_elems_iter(e))
+    ExtVal(c) => c.get_iterate()
     _ => Err("'\{type_name(v)}' object is not iterable")
   }
 }
@@ -53,6 +54,7 @@ pub fn length_of(v : Value) -> Result[Int, String] {
     BytesElems(e) => Ok(e.b.length())
     StringCodepoints(_) =>
       Err("object of type 'string.codepoints' has no len()")
+    ExtVal(c) => c.get_length()
     _ => Err("object of type '\{type_name(v)}' has no len()")
   }
 }

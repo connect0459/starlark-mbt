@@ -238,6 +238,18 @@ fn eval_getattr(
             make_eval_error(ctx, "module has no .\{attr} field or method"),
           )
       }
+    @value.Value::ExtVal(c) =>
+      match c.get_attr(attr) {
+        Ok(Some(v)) => v
+        Ok(None) =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "\{@value.type_name(obj)} has no attribute '\{attr}'",
+            ),
+          )
+        Err(e) => raise EvalErr(make_eval_error(ctx, e))
+      }
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -808,6 +820,21 @@ fn call_builtin(
           })
           keys
         }
+        @value.Value::ExtVal(c) =>
+          match c.get_attr_names() {
+            Some(names) => {
+              names.sort_by(fn(a, b) {
+                let av = @value.Value::String(@value.StarlarkString::new(a))
+                let bv = @value.Value::String(@value.StarlarkString::new(b))
+                match @value.compare_values(av, bv) {
+                  Ok(cmp) => cmp
+                  Err(_) => 0
+                }
+              })
+              names
+            }
+            None => []
+          }
         _ => []
       }
       let items = names.map(fn(n) {

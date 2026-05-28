@@ -19,6 +19,7 @@ pub fn to_str(v : Value) -> String {
     Set(s) => repr_inner(Set(s), [], [])
     Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) => repr(v)
     StringElems(_) | StringCodepoints(_) | BytesElems(_) => repr(v)
+    ExtVal(c) => c.get_repr()
   }
 }
 
@@ -49,6 +50,7 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     (StringElems(_), StringElems(_)) => false
     (StringCodepoints(_), StringCodepoints(_)) => false
     (BytesElems(_), BytesElems(_)) => false
+    (ExtVal(a), ExtVal(b)) => a.get_equals(ExtVal(b))
     _ => false
   }
 }
@@ -169,6 +171,7 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     StringElems(_) => Err("unhashable: string.elems")
     StringCodepoints(_) => Err("unhashable: string.codepoints")
     BytesElems(_) => Err("unhashable: bytes.elems")
+    ExtVal(c) => c.get_hash()
   }
 }
 
@@ -302,6 +305,7 @@ pub fn starlark_equals_depth(
     (StringElems(_), StringElems(_)) => Ok(false)
     (StringCodepoints(_), StringCodepoints(_)) => Ok(false)
     (BytesElems(_), BytesElems(_)) => Ok(false)
+    (ExtVal(a), ExtVal(b)) => Ok(a.get_equals(ExtVal(b)))
     _ => Ok(false)
   }
 }
@@ -443,6 +447,7 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
       }
     }
     Module(_) => ()
+    ExtVal(c) => c.do_freeze()
     _ => ()
   }
 }

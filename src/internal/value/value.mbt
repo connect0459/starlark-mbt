@@ -732,6 +732,7 @@ pub(all) enum Value {
   StringElems(StarlarkStringElems)
   StringCodepoints(StarlarkStringCodepoints)
   BytesElems(StarlarkBytesElems)
+  ExtVal(CustomValue)
 }
 
 ///|
@@ -786,6 +787,7 @@ pub fn type_name(v : Value) -> String {
     StringElems(_) => "string.elems"
     StringCodepoints(_) => "string.codepoints"
     BytesElems(_) => "bytes.elems"
+    ExtVal(c) => c.get_type_name()
   }
 }
 
@@ -808,6 +810,7 @@ pub fn truth(v : Value) -> Bool {
     BoundMethod(_) => true
     Module(_) => true
     StringElems(_) | StringCodepoints(_) | BytesElems(_) => true
+    ExtVal(c) => c.get_truth()
   }
 }
 
@@ -985,6 +988,7 @@ fn repr_inner(
       repr_string_val(c.s) + "." + suffix
     }
     BytesElems(e) => repr_bytes_val(e.b) + ".elems()"
+    ExtVal(c) => c.get_repr()
   }
 }
 

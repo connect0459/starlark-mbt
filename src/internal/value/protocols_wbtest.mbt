@@ -84,3 +84,156 @@ test "Indexable protocol: len returns sequence length" {
   let s : SimpleSeq = { items: [Value::None, Value::None, Value::None] }
   assert_eq(s.indexable_len(), 3)
 }
+
+///|
+test "CustomValue: type_name delegates to type_name_fn" {
+  let cv = CustomValue::new(fn() { "my_type" }, fn() { true }, fn() {
+    "<my_type>"
+  })
+  assert_eq(cv.get_type_name(), "my_type")
+}
+
+///|
+test "CustomValue: truth delegates to truth_fn" {
+  let cv_true = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  let cv_false = CustomValue::new(fn() { "f" }, fn() { false }, fn() { "" })
+  assert_eq(cv_true.get_truth(), true)
+  assert_eq(cv_false.get_truth(), false)
+}
+
+///|
+test "CustomValue: repr delegates to repr_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "custom_repr" })
+  assert_eq(cv.get_repr(), "custom_repr")
+}
+
+///|
+test "CustomValue: hash returns Err when no hash_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_hash() is Err(_))
+}
+
+///|
+test "CustomValue: hash delegates to hash_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_hash(fn() {
+      Ok(42U)
+    },
+  )
+  assert_true(cv.get_hash() is Ok(42U))
+}
+
+///|
+test "CustomValue: equals returns false by default" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_eq(cv.get_equals(Value::None), false)
+}
+
+///|
+test "CustomValue: equals delegates to equals_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_equals(fn(
+      other,
+    ) {
+      other is Value::None
+    },
+  )
+  assert_eq(cv.get_equals(Value::None), true)
+  assert_eq(cv.get_equals(Value::Bool(true)), false)
+}
+
+///|
+test "CustomValue: attr_names returns None when no attr_names_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_attr_names() is None)
+}
+
+///|
+test "CustomValue: attr_names delegates to attr_names_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_attrs(
+    fn(_name) { Ok(None) },
+    fn() { ["a", "b"] },
+  )
+  match cv.get_attr_names() {
+    Some(names) => {
+      assert_eq(names.length(), 2)
+      assert_eq(names[0], "a")
+      assert_eq(names[1], "b")
+    }
+    None => fail("expected Some")
+  }
+}
+
+///|
+test "CustomValue: get_attr returns Ok(None) when no get_attr_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_attr("x") is Ok(None))
+}
+
+///|
+test "CustomValue: get_attr delegates to get_attr_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_attrs(
+    fn(name) { if name == "x" { Ok(Some(Value::Int(42L))) } else { Ok(None) } },
+    fn() { ["x"] },
+  )
+  assert_true(cv.get_attr("x") is Ok(Some(Value::Int(42L))))
+  assert_true(cv.get_attr("y") is Ok(None))
+}
+
+///|
+test "CustomValue: contains returns None when no contains_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_contains(Value::None) is None)
+}
+
+///|
+test "CustomValue: contains delegates to contains_fn" {
+  let items = [Value::Int(1L), Value::Int(2L)]
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_contains(fn(
+      v,
+    ) {
+      for item in items {
+        if starlark_equals(item, v) {
+          return Ok(true)
+        }
+      }
+      Ok(false)
+    },
+  )
+  assert_true(cv.get_contains(Value::Int(1L)) is Some(Ok(true)))
+  assert_true(cv.get_contains(Value::Int(3L)) is Some(Ok(false)))
+}
+
+///|
+test "Value::ExtVal type_name" {
+  let cv = CustomValue::new(fn() { "my_type" }, fn() { true }, fn() { "<obj>" })
+  let v = Value::ExtVal(cv)
+  assert_eq(type_name(v), "my_type")
+}
+
+///|
+test "Value::ExtVal truth" {
+  let cv_true = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  let cv_false = CustomValue::new(fn() { "f" }, fn() { false }, fn() { "" })
+  assert_eq(truth(Value::ExtVal(cv_true)), true)
+  assert_eq(truth(Value::ExtVal(cv_false)), false)
+}
+
+///|
+test "Value::ExtVal repr" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "<custom>" })
+  assert_eq(repr(Value::ExtVal(cv)), "<custom>")
+}
+
+///|
+test "Value::ExtVal hash Err when no hash_fn" {
+  let cv = CustomValue::new(fn() { "my_type" }, fn() { true }, fn() { "" })
+  assert_true(starlark_hash(Value::ExtVal(cv)) is Err(_))
+}
+
+///|
+test "Value::ExtVal hash delegates to hash_fn" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_hash(fn() {
+      Ok(99U)
+    },
+  )
+  assert_true(starlark_hash(Value::ExtVal(cv)) is Ok(99U))
+}

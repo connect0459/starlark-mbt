@@ -503,6 +503,49 @@ pub fn run_chunked_string(src : String) -> Array[String] {
 }
 
 ///|
+pub fn run_with_predeclared(
+  predeclared : @eval.Predeclared,
+  src : String,
+) -> Array[String] {
+  let errors : Array[String] = []
+  let assert_module = build_assert_module(errors)
+  let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
+    _thread,
+    path,
+  ) {
+    if path == "assert.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["assert"] = assert_module
+      exports["freeze"] = make_freeze_fn()
+      Ok(@eval.Module::from_map(exports))
+    } else if path == "json.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["json"] = @json.json_module()
+      Ok(@eval.Module::from_map(exports))
+    } else if path == "math.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["math"] = @math.math_module()
+      Ok(@eval.Module::from_map(exports))
+    } else {
+      Err(@errors.EvalError::simple("no loader for \"\{path}\""))
+    }
+  }
+  let thread = @eval.Thread::with_loader("test", loader)
+  match
+    @eval.exec_file_with_predeclared(
+      thread,
+      "<test>",
+      src,
+      @eval.Options::default(),
+      predeclared,
+    ) {
+    Ok(_) => ()
+    Err(e) => errors.push(e.msg())
+  }
+  errors
+}
+
+///|
 pub fn run_star_string(src : String) -> Array[String] {
   let errors : Array[String] = []
   let assert_module = build_assert_module(errors)
