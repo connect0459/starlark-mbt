@@ -807,6 +807,27 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 
 ---
 
+## Post-Release Bugfixes
+
+Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
+
+- [x] **BUG-1**: `hash()` used FNV-1a instead of Java `String.hashCode` for strings — fixed
+      in `value/traits.mbt` (`java_string_hash`); `expr.mbt` dispatch updated. Commit: `d24583c`
+- [x] **BUG-2**: String `+` corrupted bytes when operands contained invalid UTF-8 — fixed
+      in `eval/ops.mbt`: concat now joins `to_bytes()` arrays directly instead of via `raw`. Commit: `21e555c`
+- [x] **BUG-3**: String `*` corrupted bytes when string contained invalid UTF-8 — fixed
+      in `eval/ops.mbt` `repeat_string`: now iterates over `to_bytes()` instead of `raw()`. Commit: `21e555c`
+- [x] **BUG-4**: `xs.extend(xs)` / `xs += xs` raised error or silently no-op'd — fixed
+      in `eval/expr.mbt` and `eval/stmt.mbt`: both paths now snapshot source items via
+      `StarlarkList::copy_items()` when the argument is a `List`, bypassing iterator
+      protocol to match starlark-go `listExtend` fast path. Commit: `b950f33`
+- [x] **MISSING-3**: Test coverage for partial/invalid UTF-8 string operations — added
+      in `starlarktest/string_test.mbt`: ord on continuation bytes, repr of single-byte
+      slices, codepoint_ords/elem_ords/elems on concat with invalid bytes.
+- [ ] **MISSING-4**: Test for `str(b"\xED\xB0\x80")` (surrogate bytes → U+FFFD × 3) [LOW]
+
+---
+
 ## Future work (out of initial release scope)
 
 - Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
