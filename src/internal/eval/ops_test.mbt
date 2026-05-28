@@ -350,3 +350,137 @@ test "eval_expr: modulo sign follows divisor not dividend" {
   assert_true(eval_op("-7 % 2") is Ok(@value.Value::Int(1L)))
   assert_true(eval_op("7 % -2") is Ok(@value.Value::Int(-1L)))
 }
+
+// --- ExtVal protocol dispatch ---
+
+///|
+fn make_ext_seq(items : Array[@value.Value]) -> @value.Value {
+  @value.Value::ExtVal(
+    @value.CustomValue::new(fn() { "myseq" }, fn() { true }, fn() {
+      let parts = items.map(fn(v) { @value.repr(v) }).join(", ")
+      "myseq([\{parts}])"
+    })
+    .with_length(fn() { items.length() })
+    .with_get_index(fn(i) { Ok(items[i]) })
+    .with_set_index(fn(i, v) {
+      items[i] = v
+      Ok(())
+    })
+    .with_slice(fn(start, stop, step) {
+      let result : Array[@value.Value] = []
+      if step > 0 {
+        let mut i = start
+        while i < stop {
+          result.push(items[i])
+          i += step
+        }
+      } else {
+        let mut i = start
+        while i > stop {
+          result.push(items[i])
+          i += step
+        }
+      }
+      Ok(@value.Value::Tuple(result))
+    }),
+  )
+}
+
+///|
+fn eval_with_env(
+  src : String,
+  bindings : Array[(String, @value.Value)],
+) -> Result[@value.Value, @errors.EvalError] {
+  let t = Thread::new("test")
+  let env = @value.StarlarkDict::new()
+  for pair in bindings {
+    let (name, v) = pair
+    let key = @value.Value::String(@value.StarlarkString::new(name))
+    env.set(key, v) |> ignore
+  }
+  eval_expr(t, "<test>", src, env)
+}
+
+///|
+fn exec_with_predeclared(
+  src : String,
+  bindings : Array[(String, @value.Value)],
+) -> Result[Module, @errors.EvalError] {
+  let t = Thread::new("test")
+  let pd = Predeclared::new()
+  for pair in bindings {
+    let (name, v) = pair
+    pd.set(name, v)
+  }
+  exec_file_with_predeclared(t, "<test>", src, Options::default(), pd)
+}
+
+///|
+test "eval_expr: ExtVal with get_index supports subscript read" {
+  let seq = make_ext_seq([
+    @value.Value::Int(10L),
+    @value.Value::Int(20L),
+    @value.Value::Int(30L),
+  ])
+  assert_true(eval_with_env("s[0]", [("s", seq)]) is Ok(@value.Value::Int(10L)))
+  assert_true(eval_with_env("s[2]", [("s", seq)]) is Ok(@value.Value::Int(30L)))
+}
+
+///|
+test "eval_expr: ExtVal with get_index supports negative index" {
+  let seq = make_ext_seq([
+    @value.Value::Int(10L),
+    @value.Value::Int(20L),
+    @value.Value::Int(30L),
+  ])
+  assert_true(
+    eval_with_env("s[-1]", [("s", seq)]) is Ok(@value.Value::Int(30L)),
+  )
+  assert_true(
+    eval_with_env("s[-3]", [("s", seq)]) is Ok(@value.Value::Int(10L)),
+  )
+}
+
+///|
+test "eval_expr: ExtVal without get_index raises error on subscript" {
+  let cv = @value.CustomValue::new(fn() { "noseq" }, fn() { true }, fn() { "" })
+  let v = @value.Value::ExtVal(cv)
+  assert_true(eval_with_env("x[0]", [("x", v)]) is Err(_))
+}
+
+///|
+test "exec_file: ExtVal with set_index supports subscript assignment" {
+  let seq = make_ext_seq([
+    @value.Value::Int(1L),
+    @value.Value::Int(2L),
+    @value.Value::Int(3L),
+  ])
+  match exec_with_predeclared("s[1] = 99\nresult = s[1]", [("s", seq)]) {
+    Ok(m) => assert_true(m.get("result") == Some(@value.Value::Int(99L)))
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: ExtVal with slice supports slice notation" {
+  let seq = make_ext_seq([
+    @value.Value::Int(0L),
+    @value.Value::Int(1L),
+    @value.Value::Int(2L),
+    @value.Value::Int(3L),
+  ])
+  match eval_with_env("s[1:3]", [("s", seq)]) {
+    Ok(@value.Value::Tuple(t)) => assert_eq(t.length(), 2)
+    Ok(other) => fail("expected Tuple, got \{@value.repr(other)}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: ExtVal without slice raises error on slice" {
+  let cv = @value.CustomValue::new(fn() { "noslice" }, fn() { true }, fn() {
+    ""
+  })
+  let v = @value.Value::ExtVal(cv)
+  assert_true(eval_with_env("x[0:1]", [("x", v)]) is Err(_))
+}

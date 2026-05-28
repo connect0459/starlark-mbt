@@ -25,6 +25,11 @@ impl Mapping for SimpleMap with fn mapping_len(self) {
 }
 
 ///|
+impl IterableMapping for SimpleMap with fn items(self) {
+  Ok(self.data)
+}
+
+///|
 test "Mapping protocol: get returns value for existing key" {
   let m : SimpleMap = { data: [(Value::Int(1L), Value::Bool(true))] }
   let result = m.mapping_get(Value::Int(1L))
@@ -70,6 +75,44 @@ impl Indexable for SimpleSeq with fn indexable_get(self, i) {
 ///|
 impl Indexable for SimpleSeq with fn indexable_len(self) {
   self.items.length()
+}
+
+///|
+impl HasSetIndex for SimpleSeq with fn set_index(self, i, v) {
+  self.items[i] = v
+  Ok(())
+}
+
+///|
+impl Sliceable for SimpleSeq with fn slice(self, start, stop, step) {
+  let result : Array[Value] = []
+  if step > 0 {
+    let mut i = start
+    while i < stop {
+      result.push(self.items[i])
+      i += step
+    }
+  } else {
+    let mut i = start
+    while i > stop {
+      result.push(self.items[i])
+      i += step
+    }
+  }
+  Ok(Value::Tuple(result))
+}
+
+///|
+struct SimpleInt {
+  val : Int
+}
+
+///|
+impl TotallyOrdered for SimpleInt with fn cmp(self, other) {
+  match other {
+    Value::Int(n) => Some(self.val.to_int64().compare(n))
+    _ => None
+  }
 }
 
 ///|
@@ -308,4 +351,155 @@ test "CustomValue: compare_fn dispatches ordering" {
 test "CustomValue: compare_fn returns None when no compare_fn set" {
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
   assert_true(cv.get_compare(Value::Int(1L)) == None)
+}
+
+///|
+test "CustomValue: get_index_fn dispatches subscript read" {
+  let items = [Value::Int(10L), Value::Int(20L), Value::Int(30L)]
+  let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
+    .with_length(fn() { items.length() })
+    .with_get_index(fn(i) { Ok(items[i]) })
+  assert_true(cv.get_index(0) is Ok(Value::Int(10L)))
+  assert_true(cv.get_index(2) is Ok(Value::Int(30L)))
+}
+
+///|
+test "CustomValue: get_index returns Err when no get_index_fn" {
+  let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_index(0) is Err(_))
+}
+
+///|
+test "CustomValue: set_index_fn dispatches subscript write" {
+  let items = [Value::Int(10L), Value::Int(20L)]
+  let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
+    .with_length(fn() { items.length() })
+    .with_set_index(fn(i, v) {
+      items[i] = v
+      Ok(())
+    })
+  let result = cv.do_set_index(0, Value::Int(99L))
+  assert_true(result is Some(Ok(_)))
+  assert_true(items[0] == Value::Int(99L))
+}
+
+///|
+test "CustomValue: do_set_index returns None when no set_index_fn" {
+  let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
+  assert_true(cv.do_set_index(0, Value::Int(1L)) is None)
+}
+
+///|
+test "CustomValue: slice_fn dispatches slice operation" {
+  let items = [Value::Int(0L), Value::Int(1L), Value::Int(2L), Value::Int(3L)]
+  let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
+    .with_length(fn() { items.length() })
+    .with_slice(fn(start, stop, step) {
+      let result : Array[Value] = []
+      let mut i = start
+      while i < stop {
+        result.push(items[i])
+        i += step
+      }
+      Ok(Value::Tuple(result))
+    })
+  match cv.do_slice(1, 3, 1) {
+    Some(Ok(Value::Tuple(t))) => assert_eq(t.length(), 2)
+    _ => fail("expected Some(Ok(Tuple))")
+  }
+}
+
+///|
+test "CustomValue: do_slice returns None when no slice_fn" {
+  let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
+  assert_true(cv.do_slice(0, 1, 1) is None)
+}
+
+///|
+test "CustomValue: items_fn dispatches items retrieval" {
+  let key = Value::String(StarlarkString::new("a"))
+  let val = Value::Int(1L)
+  let cv = CustomValue::new(fn() { "mymap" }, fn() { true }, fn() { "" }).with_items(fn() {
+      Ok([(key, val)])
+    },
+  )
+  match cv.get_items() {
+    Some(Ok(items)) => assert_eq(items.length(), 1)
+    _ => fail("expected Some(Ok)")
+  }
+}
+
+///|
+test "CustomValue: get_items returns None when no items_fn" {
+  let cv = CustomValue::new(fn() { "mymap" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_items() is None)
+}
+
+///|
+test "HasSetIndex protocol: set_index updates element" {
+  let items = [Value::Int(1L), Value::Int(2L), Value::Int(3L)]
+  let seq : SimpleSeq = { items, }
+  assert_true(seq.set_index(1, Value::Int(99L)) is Ok(_))
+  assert_true(items[1] == Value::Int(99L))
+}
+
+///|
+test "TotallyOrdered protocol: cmp returns negative when less" {
+  let a : SimpleInt = { val: 3 }
+  match a.cmp(Value::Int(5L)) {
+    Some(n) => assert_true(n < 0)
+    None => fail("expected Some")
+  }
+}
+
+///|
+test "TotallyOrdered protocol: cmp returns zero when equal" {
+  let a : SimpleInt = { val: 5 }
+  match a.cmp(Value::Int(5L)) {
+    Some(n) => assert_eq(n, 0)
+    None => fail("expected Some")
+  }
+}
+
+///|
+test "TotallyOrdered protocol: cmp returns positive when greater" {
+  let a : SimpleInt = { val: 7 }
+  match a.cmp(Value::Int(5L)) {
+    Some(n) => assert_true(n > 0)
+    None => fail("expected Some")
+  }
+}
+
+///|
+test "TotallyOrdered protocol: cmp returns None for incompatible type" {
+  let a : SimpleInt = { val: 3 }
+  assert_true(a.cmp(Value::None) == None)
+}
+
+///|
+test "Sliceable protocol: slice returns sub-sequence" {
+  let s : SimpleSeq = {
+    items: [Value::Int(0L), Value::Int(1L), Value::Int(2L)],
+  }
+  match s.slice(0, 2, 1) {
+    Ok(Value::Tuple(t)) => assert_eq(t.length(), 2)
+    _ => fail("expected Ok(Tuple)")
+  }
+}
+
+///|
+test "IterableMapping protocol: items returns all key-value pairs" {
+  let m : SimpleMap = {
+    data: [
+      (Value::Int(1L), Value::Bool(true)),
+      (Value::Int(2L), Value::Bool(false)),
+    ],
+  }
+  match m.items() {
+    Ok(pairs) => {
+      assert_eq(pairs.length(), 2)
+      assert_true(pairs[0] == (Value::Int(1L), Value::Bool(true)))
+    }
+    Err(e) => fail("unexpected error: \{e}")
+  }
 }
