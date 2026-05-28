@@ -9,8 +9,7 @@ pub(all) enum Token {
   Outdent
   // Literals with embedded values
   Ident(String)
-  Int(Int64)
-  BigInt(String) // integer too large for Int64
+  Int(BigInt)
   Float(Double)
   Str(String) // decoded string content (UTF-8)
   Bytes(Bytes) // decoded bytes content
@@ -111,7 +110,6 @@ pub fn Token::to_string(self : Token) -> String {
     Outdent => "outdent"
     Ident(_) => "identifier"
     Int(_) => "int literal"
-    BigInt(_) => "int literal"
     Float(_) => "float literal"
     Str(_) => "string literal"
     Bytes(_) => "bytes literal"

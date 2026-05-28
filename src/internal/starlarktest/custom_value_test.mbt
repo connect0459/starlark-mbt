@@ -2,9 +2,9 @@
 test "ExtVal Container: `in` operator works on custom container" {
   let items = @value.Value::List(
     @value.StarlarkList::new([
-      @value.Value::Int(1L),
-      @value.Value::Int(2L),
-      @value.Value::Int(3L),
+      @value.Value::Int(1N),
+      @value.Value::Int(2N),
+      @value.Value::Int(3N),
     ]),
   )
   let cv = @value.CustomValue::new(fn() { "my_container" }, fn() { true }, fn() {
@@ -45,7 +45,7 @@ test "ExtVal HasAttrs: dir() returns attr_names for custom value" {
   }).with_attrs(
     fn(name) {
       if name == "x" {
-        Ok(Some(@value.Value::Int(42L)))
+        Ok(Some(@value.Value::Int(42N)))
       } else {
         Ok(None)
       }
@@ -73,7 +73,7 @@ test "ExtVal HasAttrs: getattr works on custom value" {
   }).with_attrs(
     fn(name) {
       if name == "x" {
-        Ok(Some(@value.Value::Int(42L)))
+        Ok(Some(@value.Value::Int(42N)))
       } else {
         Ok(None)
       }
@@ -121,7 +121,7 @@ test "ExtVal binary_fn: + operator dispatches to binary_fn" {
   }).with_binary(fn(op, rhs, _is_left) {
     if op == "+" {
       match rhs {
-        @value.Value::Int(n) => Some(Ok(@value.Value::Int(n + 100L)))
+        @value.Value::Int(n) => Some(Ok(@value.Value::Int(n + 100N)))
         _ => None
       }
     } else {
@@ -149,7 +149,7 @@ test "ExtVal binary_fn: right-hand dispatch when ExtVal is rhs" {
   }).with_binary(fn(op, lhs, _is_left) {
     if op == "+" {
       match lhs {
-        @value.Value::Int(n) => Some(Ok(@value.Value::Int(n + 200L)))
+        @value.Value::Int(n) => Some(Ok(@value.Value::Int(n + 200N)))
         _ => None
       }
     } else {
@@ -176,7 +176,7 @@ test "ExtVal unary_fn: - operator dispatches to unary_fn" {
     "<mynum>"
   }).with_unary(fn(op) {
     if op == "-" {
-      Some(Ok(@value.Value::Int(-99L)))
+      Some(Ok(@value.Value::Int(-99N)))
     } else {
       None
     }
@@ -197,7 +197,7 @@ test "ExtVal unary_fn: - operator dispatches to unary_fn" {
 
 ///|
 test "ExtVal compare_fn: < operator dispatches to compare_fn" {
-  let make_num = fn(val : Int64) -> @value.Value {
+  let make_num = fn(val : BigInt) -> @value.Value {
     @value.Value::ExtVal(
       @value.CustomValue::new(fn() { "num" }, fn() { true }, fn() { "<num>" })
       .with_compare(fn(other) {
@@ -224,7 +224,7 @@ test "ExtVal compare_fn: < operator dispatches to compare_fn" {
       }),
     )
   }
-  let n5 = make_num(5L)
+  let n5 = make_num(5N)
   let predeclared = @eval.Predeclared::new()
   predeclared.set("n5", n5)
   let errs = run_with_predeclared(

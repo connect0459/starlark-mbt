@@ -56,11 +56,11 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
 }
 
 ///|
-fn int_float_eq(n : Int64, f : Double) -> Bool {
+fn int_float_eq(n : BigInt, f : Double) -> Bool {
   if f.is_nan() || f.is_inf() {
     return false
   }
-  n.to_double() == f
+  bigint_to_double(n) == f
 }
 
 ///|
@@ -125,6 +125,12 @@ fn hash_int64(n : Int64) -> UInt {
 }
 
 ///|
+fn hash_bigint(n : BigInt) -> UInt {
+  let lo = n.to_int64().to_int().reinterpret_as_uint()
+  int_hash_mult * (lo + 3U)
+}
+
+///|
 fn hash_float(f : Double) -> UInt {
   if f.is_nan() || f.is_inf() {
     return float_special_hash
@@ -155,7 +161,7 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     None => Ok(0U)
     Bool(false) => Ok(0U)
     Bool(true) => Ok(1U)
-    Int(n) => Ok(hash_int64(n))
+    Int(n) => Ok(hash_bigint(n))
     Float(f) => Ok(hash_float(f))
     String(s) => Ok(fnv1a(s.bytes))
     Bytes(b) => Ok(fnv1a(b))
@@ -184,6 +190,11 @@ fn int64_signum(a : Int64, b : Int64) -> Int {
   } else {
     0
   }
+}
+
+///|
+fn bigint_signum(a : BigInt, b : BigInt) -> Int {
+  a.compare(b)
 }
 
 ///|
@@ -223,7 +234,14 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 }
 
 ///|
-fn int_float_cmp(n : Int64, f : Double) -> Int {
+pub fn bigint_to_double(n : BigInt) -> Double {
+  @string.parse_double(n.to_string()) catch {
+    _ => 0.0
+  }
+}
+
+///|
+fn int_float_cmp(n : BigInt, f : Double) -> Int {
   if f != f {
     // f is NaN; NaN > everything, so int < NaN
     -1
@@ -232,8 +250,8 @@ fn int_float_cmp(n : Int64, f : Double) -> Int {
   } else if f == @double.neg_infinity {
     1 // n > -inf
   } else {
-    // finite: compare as float (precision loss possible for large Int64)
-    float_cmp(n.to_double(), f)
+    // finite: compare as float (precision loss possible for large BigInt)
+    float_cmp(bigint_to_double(n), f)
   }
 }
 
@@ -263,7 +281,7 @@ pub fn compare_values_depth(
           _ => 0
         },
       )
-    (Int(x), Int(y)) => Ok(int64_signum(x, y))
+    (Int(x), Int(y)) => Ok(bigint_signum(x, y))
     (Float(x), Float(y)) => Ok(float_cmp(x, y))
     (String(x), String(y)) => Ok(bytes_lex_cmp(x.bytes, y.bytes))
     (Bytes(x), Bytes(y)) => Ok(bytes_lex_cmp(x, y))

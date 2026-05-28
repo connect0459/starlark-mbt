@@ -3,6 +3,7 @@ package "connect0459/starlark/internal/syntax"
 
 import {
   "connect0459/starlark/internal/errors",
+  "moonbitlang/core/bigint",
 }
 
 // Values
@@ -100,8 +101,7 @@ pub fn File::stmts(Self) -> Array[Stmt]
 pub(all) enum LiteralVal {
   LitNone
   LitBool(Bool)
-  LitInt(Int64)
-  LitBigInt(String)
+  LitInt(@bigint.BigInt)
   LitFloat(Double)
   LitString(String)
   LitBytes(Bytes)

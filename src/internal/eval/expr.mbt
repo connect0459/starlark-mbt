@@ -1,14 +1,9 @@
 ///|
-fn eval_literal(
-  ctx : EvalContext,
-  lit : @syntax.LiteralVal,
-) -> @value.Value raise EvalErr {
+fn eval_literal(lit : @syntax.LiteralVal) -> @value.Value {
   match lit {
     @syntax.LiteralVal::LitNone => @value.Value::None
     @syntax.LiteralVal::LitBool(b) => @value.Value::Bool(b)
     @syntax.LiteralVal::LitInt(n) => @value.Value::Int(n)
-    @syntax.LiteralVal::LitBigInt(s) =>
-      raise EvalErr(make_eval_error(ctx, "integer too large: '\{s}'"))
     @syntax.LiteralVal::LitFloat(f) => @value.Value::Float(f)
     @syntax.LiteralVal::LitString(s) =>
       @value.Value::String(@value.StarlarkString::new(s))
@@ -24,7 +19,7 @@ fn eval_expr_node(
 ) -> @value.Value raise EvalErr {
   check_steps(ctx)
   match expr {
-    @syntax.Expr::ELiteral(lit, _) => eval_literal(ctx, lit)
+    @syntax.Expr::ELiteral(lit, _) => eval_literal(lit)
     @syntax.Expr::EIdent(name, pos) =>
       match env.lookup(name) {
         LFound(v) => v
@@ -621,7 +616,7 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "len() takes exactly one argument"))
       }
       let n = check(ctx, @value.length_of(pos_args[0]))
-      @value.Value::Int(n.to_int64())
+      @value.Value::Int(BigInt::from_int(n))
     }
     "str" =>
       if pos_args.length() == 0 {
@@ -711,10 +706,10 @@ fn call_builtin(
               make_eval_error(ctx, "cannot convert float infinity to integer"),
             )
           } else {
-            @value.Value::Int(f.to_int64())
+            @value.Value::Int(BigInt::from_int64(f.to_int64()))
           }
         (@value.Value::Bool(b), None) =>
-          @value.Value::Int(if b { 1L } else { 0L })
+          @value.Value::Int(if b { 1N } else { 0N })
         (v, None) =>
           raise EvalErr(
             make_eval_error(
@@ -730,7 +725,8 @@ fn call_builtin(
       } else if pos_args.length() == 1 {
         match pos_args[0] {
           @value.Value::Float(f) => @value.Value::Float(f)
-          @value.Value::Int(n) => @value.Value::Float(n.to_double())
+          @value.Value::Int(n) =>
+            @value.Value::Float(@value.bigint_to_double(n))
           @value.Value::Bool(b) =>
             @value.Value::Float(if b { 1.0 } else { 0.0 })
           @value.Value::String(s) => {
@@ -770,7 +766,7 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "abs() takes exactly one argument"))
       }
       match pos_args[0] {
-        @value.Value::Int(n) => @value.Value::Int(n.abs())
+        @value.Value::Int(n) => @value.Value::Int(if n < 0N { -n } else { n })
         @value.Value::Float(f) => @value.Value::Float(f.abs())
         v =>
           raise EvalErr(
@@ -800,7 +796,7 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "hash() takes exactly one argument"))
       }
       let h = check(ctx, @value.starlark_hash(pos_args[0]))
-      @value.Value::Int(h.to_int64())
+      @value.Value::Int(BigInt::from_int64(h.to_int64()))
     }
     "dir" => {
       if pos_args.length() != 1 {
@@ -868,7 +864,7 @@ fn call_builtin(
       }
       match pos_args[0] {
         @value.Value::Int(n) => {
-          if n < 0L || n > 0x10ffffL {
+          if n < 0N || n > BigInt::from_int(0x10ffff) {
             raise EvalErr(
               make_eval_error(
                 ctx,
@@ -902,7 +898,7 @@ fn call_builtin(
               ),
             )
           }
-          @value.Value::Int(chars[0].to_int().to_int64())
+          @value.Value::Int(BigInt::from_int(chars[0].to_int()))
         }
         @value.Value::Bytes(b) => {
           if b.length() != 1 {
@@ -913,7 +909,7 @@ fn call_builtin(
               ),
             )
           }
-          @value.Value::Int(b[0].to_int().to_int64())
+          @value.Value::Int(BigInt::from_int(b[0].to_int()))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "ord() argument must be a string"))
@@ -1032,7 +1028,9 @@ fn builtin_range(
     1 =>
       match pos_args[0] {
         @value.Value::Int(stop) =>
-          @value.Value::Range(@value.StarlarkRange::new(0L, stop, 1L))
+          @value.Value::Range(
+            @value.StarlarkRange::new(0L, stop.to_int64(), 1L),
+          )
         _ =>
           raise EvalErr(
             make_eval_error(ctx, "range() arguments must be integers"),
@@ -1041,7 +1039,9 @@ fn builtin_range(
     2 =>
       match (pos_args[0], pos_args[1]) {
         (@value.Value::Int(start), @value.Value::Int(stop)) =>
-          @value.Value::Range(@value.StarlarkRange::new(start, stop, 1L))
+          @value.Value::Range(
+            @value.StarlarkRange::new(start.to_int64(), stop.to_int64(), 1L),
+          )
         _ =>
           raise EvalErr(
             make_eval_error(ctx, "range() arguments must be integers"),
@@ -1054,12 +1054,18 @@ fn builtin_range(
           @value.Value::Int(stop),
           @value.Value::Int(step),
         ) => {
-          if step == 0L {
+          if step.is_zero() {
             raise EvalErr(
               make_eval_error(ctx, "range() step argument must not be zero"),
             )
           }
-          @value.Value::Range(@value.StarlarkRange::new(start, stop, step))
+          @value.Value::Range(
+            @value.StarlarkRange::new(
+              start.to_int64(),
+              stop.to_int64(),
+              step.to_int64(),
+            ),
+          )
         }
         _ =>
           raise EvalErr(
@@ -1335,10 +1341,10 @@ fn builtin_enumerate(
   let start = if pos_args.length() >= 2 {
     match pos_args[1] {
       @value.Value::Int(n) => n
-      _ => 0L
+      _ => 0N
     }
   } else {
-    0L
+    0N
   }
   let result : Array[@value.Value] = []
   let it = require_seq(ctx, pos_args[0])
@@ -1351,7 +1357,7 @@ fn builtin_enumerate(
       }
       Some(v) => {
         result.push(@value.Value::Tuple([@value.Value::Int(idx), v]))
-        idx = idx + 1L
+        idx = idx + 1N
       }
     }
   }
@@ -1677,10 +1683,11 @@ fn call_list_method(
         @value.Value::Int(i) => {
           let len = l.length()
           let j = {
-            let jj = if i < 0L { i + len.to_int64() } else { i }
-            if jj < 0L {
+            let len64 = BigInt::from_int(len)
+            let jj = if i < 0N { i + len64 } else { i }
+            if jj < 0N {
               0
-            } else if jj > len.to_int64() {
+            } else if jj > len64 {
               len
             } else {
               jj.to_int()
@@ -1753,7 +1760,7 @@ fn call_list_method(
       }
       for i in start..<end {
         if @value.starlark_equals(l.get(i), item) {
-          return @value.Value::Int(i.to_int64())
+          return @value.Value::Int(BigInt::from_int(i))
         }
       }
       raise EvalErr(make_eval_error(ctx, "value not in list"))
@@ -1771,7 +1778,7 @@ fn call_list_method(
           count += 1
         }
       }
-      @value.Value::Int(count.to_int64())
+      @value.Value::Int(BigInt::from_int(count))
     }
     "sort" => {
       let mut sort_err : @errors.EvalError? = None
@@ -2205,7 +2212,7 @@ fn call_str_method(
           }
           let result = find_substr(slice, sub.raw())
           @value.Value::Int(
-            (if result >= 0 { result + start } else { -1 }).to_int64(),
+            BigInt::from_int(if result >= 0 { result + start } else { -1 }),
           )
         }
         _ =>
@@ -2258,7 +2265,7 @@ fn call_str_method(
           } else {
             ""
           }
-          @value.Value::Int(count_substr(slice, sub.raw()).to_int64())
+          @value.Value::Int(BigInt::from_int(count_substr(slice, sub.raw())))
         }
         _ =>
           raise EvalErr(
@@ -2451,7 +2458,7 @@ fn call_str_method(
           if result < 0 {
             raise EvalErr(make_eval_error(ctx, "substring not found"))
           }
-          @value.Value::Int(result.to_int64())
+          @value.Value::Int(BigInt::from_int(result))
         }
         _ =>
           raise EvalErr(
@@ -2505,7 +2512,7 @@ fn call_str_method(
           }
           let result = rfind_substr(slice, sub.raw())
           @value.Value::Int(
-            (if result >= 0 { result + start } else { -1 }).to_int64(),
+            BigInt::from_int(if result >= 0 { result + start } else { -1 }),
           )
         }
         _ =>
@@ -2526,7 +2533,7 @@ fn call_str_method(
           if result < 0 {
             raise EvalErr(make_eval_error(ctx, "substring not found"))
           }
-          @value.Value::Int(result.to_int64())
+          @value.Value::Int(BigInt::from_int(result))
         }
         _ =>
           raise EvalErr(
@@ -3191,7 +3198,7 @@ fn builtin_bytes(
             break
           }
           Some(@value.Value::Int(n)) => {
-            if n < 0L || n > 255L {
+            if n < 0N || n > 255N {
               it.done()
               raise EvalErr(
                 make_eval_error(
@@ -3781,7 +3788,7 @@ fn str_format(
 }
 
 ///|
-fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
+fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
   let s = s.trim().to_owned()
   if s.length() == 0 {
     return Err("invalid literal with base \{base}: \{s}")
@@ -3828,9 +3835,9 @@ fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
   if digit_start >= s.length() {
     return Err("invalid literal with base \{report_base}: \{s}")
   }
-  let mut result = 0L
-  for i in digit_start..<s.length() {
-    let c = s[i].to_int()
+  let digits = s[digit_start:].to_owned()
+  for i in 0..<digits.length() {
+    let c = digits[i].to_int()
     let digit = if c >= '0'.to_int() && c <= '9'.to_int() {
       c - '0'.to_int()
     } else if c >= 'a'.to_int() && c <= 'z'.to_int() {
@@ -3843,8 +3850,8 @@ fn parse_int_str(s : String, base : Int) -> Result[Int64, String] {
     if digit >= actual_base {
       return Err("invalid literal with base \{report_base}: \{s}")
     }
-    result = result * actual_base.to_int64() + digit.to_int64()
   }
+  let result = BigInt::from_string(digits, radix=actual_base)
   Ok(if negative { -result } else { result })
 }
 

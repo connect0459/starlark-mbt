@@ -5,8 +5,7 @@
 pub(all) enum LiteralVal {
   LitNone
   LitBool(Bool)
-  LitInt(Int64)
-  LitBigInt(String)
+  LitInt(BigInt)
   LitFloat(Double)
   LitString(String)
   LitBytes(Bytes)

@@ -102,12 +102,12 @@ test "eval_expr: float floor division truncates toward negative infinity" {
 
 ///|
 test "eval_expr: integer power computes correctly" {
-  assert_true(eval_op("2 ** 10") is Ok(@value.Value::Int(1024L)))
+  assert_true(eval_op("2 ** 10") is Ok(@value.Value::Int(1024N)))
 }
 
 ///|
 test "eval_expr: power of zero always returns one" {
-  assert_true(eval_op("99 ** 0") is Ok(@value.Value::Int(1L)))
+  assert_true(eval_op("99 ** 0") is Ok(@value.Value::Int(1N)))
 }
 
 ///|
@@ -119,38 +119,38 @@ test "eval_expr: negative integer exponent raises error" {
 
 ///|
 test "eval_expr: bitwise and on integers" {
-  assert_true(eval_op("0b1100 & 0b1010") is Ok(@value.Value::Int(0b1000L)))
+  assert_true(eval_op("0b1100 & 0b1010") is Ok(@value.Value::Int(0b1000N)))
 }
 
 ///|
 test "eval_expr: bitwise or on integers" {
-  assert_true(eval_op("0b1100 | 0b1010") is Ok(@value.Value::Int(0b1110L)))
+  assert_true(eval_op("0b1100 | 0b1010") is Ok(@value.Value::Int(0b1110N)))
 }
 
 ///|
 test "eval_expr: bitwise xor on integers" {
-  assert_true(eval_op("0b1100 ^ 0b1010") is Ok(@value.Value::Int(0b0110L)))
+  assert_true(eval_op("0b1100 ^ 0b1010") is Ok(@value.Value::Int(0b0110N)))
 }
 
 ///|
 test "eval_expr: left shift multiplies by power of two" {
-  assert_true(eval_op("1 << 4") is Ok(@value.Value::Int(16L)))
+  assert_true(eval_op("1 << 4") is Ok(@value.Value::Int(16N)))
 }
 
 ///|
 test "eval_expr: right shift divides by power of two" {
-  assert_true(eval_op("16 >> 2") is Ok(@value.Value::Int(4L)))
+  assert_true(eval_op("16 >> 2") is Ok(@value.Value::Int(4N)))
 }
 
 ///|
 test "eval_expr: bitwise not flips all bits" {
-  assert_true(eval_op("~0") is Ok(@value.Value::Int(-1L)))
-  assert_true(eval_op("~(-1)") is Ok(@value.Value::Int(0L)))
+  assert_true(eval_op("~0") is Ok(@value.Value::Int(-1N)))
+  assert_true(eval_op("~(-1)") is Ok(@value.Value::Int(0N)))
 }
 
 ///|
 test "eval_expr: unary plus leaves integer unchanged" {
-  assert_true(eval_op("+5") is Ok(@value.Value::Int(5L)))
+  assert_true(eval_op("+5") is Ok(@value.Value::Int(5N)))
 }
 
 // --- Comparison operators (untested edge cases) ---
@@ -223,12 +223,12 @@ test "eval_expr: in operator checks membership in range" {
 
 ///|
 test "eval_expr: list subscript access by positive index" {
-  assert_true(eval_op("[10, 20, 30][1]") is Ok(@value.Value::Int(20L)))
+  assert_true(eval_op("[10, 20, 30][1]") is Ok(@value.Value::Int(20N)))
 }
 
 ///|
 test "eval_expr: list subscript access by negative index counts from end" {
-  assert_true(eval_op("[10, 20, 30][-1]") is Ok(@value.Value::Int(30L)))
+  assert_true(eval_op("[10, 20, 30][-1]") is Ok(@value.Value::Int(30N)))
 }
 
 ///|
@@ -244,7 +244,7 @@ test "eval_expr: string subscript returns single-byte string" {
 
 ///|
 test "eval_expr: dict subscript access retrieves associated value" {
-  assert_true(eval_op("{\"x\": 42}[\"x\"]") is Ok(@value.Value::Int(42L)))
+  assert_true(eval_op("{\"x\": 42}[\"x\"]") is Ok(@value.Value::Int(42N)))
 }
 
 ///|
@@ -254,7 +254,7 @@ test "eval_expr: dict subscript with missing key raises error" {
 
 ///|
 test "eval_expr: range subscript accesses element by index" {
-  assert_true(eval_op("range(0, 10, 2)[3]") is Ok(@value.Value::Int(6L)))
+  assert_true(eval_op("range(0, 10, 2)[3]") is Ok(@value.Value::Int(6N)))
 }
 
 ///|
@@ -269,8 +269,8 @@ test "eval_expr: list slice with positive bounds" {
   match eval_op("[1, 2, 3, 4, 5][1:4]") {
     Ok(@value.Value::List(l)) => {
       assert_eq(l.length(), 3)
-      assert_true(l.get(0) == @value.Value::Int(2L))
-      assert_true(l.get(2) == @value.Value::Int(4L))
+      assert_true(l.get(0) == @value.Value::Int(2N))
+      assert_true(l.get(2) == @value.Value::Int(4N))
     }
     _ => assert_true(false)
   }
@@ -289,8 +289,8 @@ test "eval_expr: list slice with negative step reverses list" {
   match eval_op("[1, 2, 3, 4, 5][::-1]") {
     Ok(@value.Value::List(l)) => {
       assert_eq(l.length(), 5)
-      assert_true(l.get(0) == @value.Value::Int(5L))
-      assert_true(l.get(4) == @value.Value::Int(1L))
+      assert_true(l.get(0) == @value.Value::Int(5N))
+      assert_true(l.get(4) == @value.Value::Int(1N))
     }
     _ => assert_true(false)
   }
@@ -341,14 +341,14 @@ test "eval_expr: modulo by zero raises error" {
 
 ///|
 test "eval_expr: floor division of negative dividend rounds toward negative infinity" {
-  assert_true(eval_op("-7 // 2") is Ok(@value.Value::Int(-4L)))
-  assert_true(eval_op("7 // -2") is Ok(@value.Value::Int(-4L)))
+  assert_true(eval_op("-7 // 2") is Ok(@value.Value::Int(-4N)))
+  assert_true(eval_op("7 // -2") is Ok(@value.Value::Int(-4N)))
 }
 
 ///|
 test "eval_expr: modulo sign follows divisor not dividend" {
-  assert_true(eval_op("-7 % 2") is Ok(@value.Value::Int(1L)))
-  assert_true(eval_op("7 % -2") is Ok(@value.Value::Int(-1L)))
+  assert_true(eval_op("-7 % 2") is Ok(@value.Value::Int(1N)))
+  assert_true(eval_op("7 % -2") is Ok(@value.Value::Int(-1N)))
 }
 
 // --- ExtVal protocol dispatch ---
@@ -418,26 +418,26 @@ fn exec_with_predeclared(
 ///|
 test "eval_expr: ExtVal with get_index supports subscript read" {
   let seq = make_ext_seq([
-    @value.Value::Int(10L),
-    @value.Value::Int(20L),
-    @value.Value::Int(30L),
+    @value.Value::Int(10N),
+    @value.Value::Int(20N),
+    @value.Value::Int(30N),
   ])
-  assert_true(eval_with_env("s[0]", [("s", seq)]) is Ok(@value.Value::Int(10L)))
-  assert_true(eval_with_env("s[2]", [("s", seq)]) is Ok(@value.Value::Int(30L)))
+  assert_true(eval_with_env("s[0]", [("s", seq)]) is Ok(@value.Value::Int(10N)))
+  assert_true(eval_with_env("s[2]", [("s", seq)]) is Ok(@value.Value::Int(30N)))
 }
 
 ///|
 test "eval_expr: ExtVal with get_index supports negative index" {
   let seq = make_ext_seq([
-    @value.Value::Int(10L),
-    @value.Value::Int(20L),
-    @value.Value::Int(30L),
+    @value.Value::Int(10N),
+    @value.Value::Int(20N),
+    @value.Value::Int(30N),
   ])
   assert_true(
-    eval_with_env("s[-1]", [("s", seq)]) is Ok(@value.Value::Int(30L)),
+    eval_with_env("s[-1]", [("s", seq)]) is Ok(@value.Value::Int(30N)),
   )
   assert_true(
-    eval_with_env("s[-3]", [("s", seq)]) is Ok(@value.Value::Int(10L)),
+    eval_with_env("s[-3]", [("s", seq)]) is Ok(@value.Value::Int(10N)),
   )
 }
 
@@ -451,12 +451,12 @@ test "eval_expr: ExtVal without get_index raises error on subscript" {
 ///|
 test "exec_file: ExtVal with set_index supports subscript assignment" {
   let seq = make_ext_seq([
-    @value.Value::Int(1L),
-    @value.Value::Int(2L),
-    @value.Value::Int(3L),
+    @value.Value::Int(1N),
+    @value.Value::Int(2N),
+    @value.Value::Int(3N),
   ])
   match exec_with_predeclared("s[1] = 99\nresult = s[1]", [("s", seq)]) {
-    Ok(m) => assert_true(m.get("result") == Some(@value.Value::Int(99L)))
+    Ok(m) => assert_true(m.get("result") == Some(@value.Value::Int(99N)))
     Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
@@ -464,10 +464,10 @@ test "exec_file: ExtVal with set_index supports subscript assignment" {
 ///|
 test "eval_expr: ExtVal with slice supports slice notation" {
   let seq = make_ext_seq([
-    @value.Value::Int(0L),
-    @value.Value::Int(1L),
-    @value.Value::Int(2L),
-    @value.Value::Int(3L),
+    @value.Value::Int(0N),
+    @value.Value::Int(1N),
+    @value.Value::Int(2N),
+    @value.Value::Int(3N),
   ])
   match eval_with_env("s[1:3]", [("s", seq)]) {
     Ok(@value.Value::Tuple(t)) => assert_eq(t.length(), 2)

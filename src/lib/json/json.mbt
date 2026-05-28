@@ -142,7 +142,7 @@ fn encode_inner(
       let len = r.length()
       let items : Array[@value.Value] = Array::make(len, @value.Value::None)
       for i in 0..<len {
-        items[i] = @value.Value::Int(r.index_at(i))
+        items[i] = @value.Value::Int(BigInt::from_int64(r.index_at(i)))
       }
       encode_sequence(items.iter(), "range", state)
     }
@@ -555,8 +555,24 @@ fn parse_json_number(
     }
     Ok((@value.Value::Float(f), j))
   } else {
-    let n = @string.parse_int64(num_str) catch {
-      _ => return Err("invalid number: \{num_str}")
+    let digits = if num_str.length() > 0 && num_str[0] == '-' {
+      num_str[1:]
+    } else {
+      num_str[:]
+    }
+    for c in digits.iter() {
+      if c < '0' || c > '9' {
+        return Err("invalid number: \{num_str}")
+      }
+    }
+    if digits.length() == 0 {
+      return Err("invalid number: \{num_str}")
+    }
+    let abs_n = BigInt::from_string(digits.to_owned())
+    let n = if num_str.length() > 0 && num_str[0] == '-' {
+      -abs_n
+    } else {
+      abs_n
     }
     Ok((@value.Value::Int(n), j))
   }

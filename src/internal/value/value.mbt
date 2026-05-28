@@ -716,7 +716,7 @@ pub fn StarlarkBytesElems::raw_bytes(self : StarlarkBytesElems) -> Bytes {
 pub(all) enum Value {
   None
   Bool(Bool)
-  Int(Int64)
+  Int(BigInt)
   Float(Double)
   String(StarlarkString)
   Bytes(Bytes)
@@ -796,7 +796,7 @@ pub fn truth(v : Value) -> Bool {
   match v {
     None => false
     Bool(b) => b
-    Int(i) => i != 0L
+    Int(i) => !i.is_zero()
     Float(f) => f != 0.0
     String(s) => s.byte_len() > 0
     Bytes(b) => b.length() > 0
@@ -815,26 +815,28 @@ pub fn truth(v : Value) -> Bool {
 }
 
 ///|
-pub fn floor_div(a : Int64, b : Int64) -> Result[Int64, String] {
-  if b == 0L {
+pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
+  if b.is_zero() {
     return Err("integer division by zero")
   }
   let q = a / b
   let r = a % b
-  if r != 0L && (r < 0L) != (b < 0L) {
-    Ok(q - 1L)
+  let zero = 0N
+  if r != zero && (r < zero) != (b < zero) {
+    Ok(q - 1N)
   } else {
     Ok(q)
   }
 }
 
 ///|
-pub fn starlark_mod(a : Int64, b : Int64) -> Result[Int64, String] {
-  if b == 0L {
+pub fn starlark_mod(a : BigInt, b : BigInt) -> Result[BigInt, String] {
+  if b.is_zero() {
     return Err("integer modulo by zero")
   }
   let r = a % b
-  if r != 0L && (r < 0L) != (b < 0L) {
+  let zero = 0N
+  if r != zero && (r < zero) != (b < zero) {
     Ok(r + b)
   } else {
     Ok(r)

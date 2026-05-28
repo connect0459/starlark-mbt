@@ -3,6 +3,7 @@ package "connect0459/starlark/internal/lexer"
 
 import {
   "connect0459/starlark/internal/errors",
+  "moonbitlang/core/bigint",
 }
 
 // Values
@@ -30,8 +31,7 @@ pub(all) enum Token {
   Indent
   Outdent
   Ident(String)
-  Int(Int64)
-  BigInt(String)
+  Int(@bigint.BigInt)
   Float(Double)
   Str(String)
   Bytes(Bytes)

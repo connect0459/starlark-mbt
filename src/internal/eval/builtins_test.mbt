@@ -20,8 +20,8 @@ test "exec_file: range(stop) produces correct sequence when iterated" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 5)
-          assert_true(l.get(0) == @value.Value::Int(0L))
-          assert_true(l.get(4) == @value.Value::Int(4L))
+          assert_true(l.get(0) == @value.Value::Int(0N))
+          assert_true(l.get(4) == @value.Value::Int(4N))
         }
         _ => assert_true(false)
       }
@@ -36,7 +36,7 @@ test "exec_file: range(start, stop) begins at start" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(2L))
+          assert_true(l.get(0) == @value.Value::Int(2N))
         }
         _ => assert_true(false)
       }
@@ -54,7 +54,7 @@ test "exec_file: range with step of zero raises error" {
 ///|
 test "exec_file: len returns element count of list" {
   match exec_b("n = len([1, 2, 3])") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -62,7 +62,7 @@ test "exec_file: len returns element count of list" {
 ///|
 test "exec_file: len returns byte count of string" {
   match exec_b("n = len(\"hello\")") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(5L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(5N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -131,7 +131,7 @@ test "exec_file: bool() with no argument returns False" {
 ///|
 test "exec_file: int converts float to integer by truncation" {
   match exec_b("n = int(3.9)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -139,7 +139,7 @@ test "exec_file: int converts float to integer by truncation" {
 ///|
 test "exec_file: int parses decimal string" {
   match exec_b("n = int(\"42\")") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(42L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(42N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -147,7 +147,7 @@ test "exec_file: int parses decimal string" {
 ///|
 test "exec_file: int parses hex string with explicit base keyword" {
   match exec_b("n = int(\"ff\", base=16)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(255L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(255N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -156,8 +156,8 @@ test "exec_file: int parses hex string with explicit base keyword" {
 test "exec_file: int converts Bool to integer without TypeError" {
   match exec_b("a = int(True)\nb = int(False)") {
     Ok(m) => {
-      assert_true(g(m, "a") == Some(@value.Value::Int(1L)))
-      assert_true(g(m, "b") == Some(@value.Value::Int(0L)))
+      assert_true(g(m, "a") == Some(@value.Value::Int(1N)))
+      assert_true(g(m, "b") == Some(@value.Value::Int(0N)))
     }
     Err(e) => fail(e.to_string())
   }
@@ -184,7 +184,7 @@ test "exec_file: float converts integer to float" {
 ///|
 test "exec_file: abs returns absolute value of negative integer" {
   match exec_b("n = abs(-7)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(7L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(7N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -202,7 +202,7 @@ test "exec_file: abs returns absolute value of negative float" {
 ///|
 test "exec_file: min returns smallest element from list" {
   match exec_b("n = min([3, 1, 4, 1, 5])") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(1L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(1N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -210,7 +210,7 @@ test "exec_file: min returns smallest element from list" {
 ///|
 test "exec_file: max returns largest element from list" {
   match exec_b("n = max([3, 1, 4, 1, 5])") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(5L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(5N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -218,7 +218,7 @@ test "exec_file: max returns largest element from list" {
 ///|
 test "exec_file: min of multiple positional args" {
   match exec_b("n = min(5, 2, 8)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(2L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(2N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -230,8 +230,8 @@ test "exec_file: sorted returns a new list in ascending order" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 6)
-          assert_true(l.get(0) == @value.Value::Int(1L))
-          assert_true(l.get(5) == @value.Value::Int(9L))
+          assert_true(l.get(0) == @value.Value::Int(1N))
+          assert_true(l.get(5) == @value.Value::Int(9N))
         }
         _ => assert_true(false)
       }
@@ -246,8 +246,8 @@ test "exec_file: reversed returns elements in reverse order" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(3L))
-          assert_true(l.get(2) == @value.Value::Int(1L))
+          assert_true(l.get(0) == @value.Value::Int(3N))
+          assert_true(l.get(2) == @value.Value::Int(1N))
         }
         _ => assert_true(false)
       }
@@ -265,7 +265,7 @@ test "exec_file: enumerate wraps each element with its index" {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 2)
           match l.get(0) {
-            @value.Value::Tuple(t) => assert_true(t[0] == @value.Value::Int(0L))
+            @value.Value::Tuple(t) => assert_true(t[0] == @value.Value::Int(0N))
             _ => assert_true(false)
           }
         }
@@ -284,7 +284,7 @@ test "exec_file: zip pairs elements from two sequences" {
           assert_eq(l.length(), 2)
           match l.get(0) {
             @value.Value::Tuple(t) => {
-              assert_true(t[0] == @value.Value::Int(1L))
+              assert_true(t[0] == @value.Value::Int(1N))
               match t[1] {
                 @value.Value::String(s) => assert_eq(s.raw(), "a")
                 _ => assert_true(false)
@@ -532,7 +532,7 @@ test "exec_file: print sends output through Thread print callback" {
 ///|
 test "exec_file: list.append adds element to end of list" {
   match exec_b("lst = [1, 2]\nlst.append(3)\nn = len(lst)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -540,7 +540,7 @@ test "exec_file: list.append adds element to end of list" {
 ///|
 test "exec_file: list.extend adds all elements from iterable" {
   match exec_b("lst = [1, 2]\nlst.extend([3, 4])\nn = len(lst)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(4L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(4N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -549,7 +549,7 @@ test "exec_file: list.extend adds all elements from iterable" {
 test "exec_file: list.pop removes and returns last element" {
   match exec_b("lst = [1, 2, 3]\nv = lst.pop()") {
     Ok(m) => {
-      assert_true(g(m, "v") == Some(@value.Value::Int(3L)))
+      assert_true(g(m, "v") == Some(@value.Value::Int(3N)))
       match g(m, "lst") {
         Some(@value.Value::List(l)) => assert_eq(l.length(), 2)
         _ => assert_true(false)
@@ -562,7 +562,7 @@ test "exec_file: list.pop removes and returns last element" {
 ///|
 test "exec_file: list.remove deletes first matching element" {
   match exec_b("lst = [1, 2, 3, 2]\nlst.remove(2)\nn = len(lst)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -573,8 +573,8 @@ test "exec_file: list.sort orders elements in place" {
     Ok(m) =>
       match g(m, "lst") {
         Some(@value.Value::List(l)) => {
-          assert_true(l.get(0) == @value.Value::Int(1L))
-          assert_true(l.get(3) == @value.Value::Int(4L))
+          assert_true(l.get(0) == @value.Value::Int(1N))
+          assert_true(l.get(3) == @value.Value::Int(4N))
         }
         _ => assert_true(false)
       }
@@ -588,8 +588,8 @@ test "exec_file: list.reverse reverses elements in place" {
     Ok(m) =>
       match g(m, "lst") {
         Some(@value.Value::List(l)) => {
-          assert_true(l.get(0) == @value.Value::Int(3L))
-          assert_true(l.get(2) == @value.Value::Int(1L))
+          assert_true(l.get(0) == @value.Value::Int(3N))
+          assert_true(l.get(2) == @value.Value::Int(1N))
         }
         _ => assert_true(false)
       }
@@ -600,7 +600,7 @@ test "exec_file: list.reverse reverses elements in place" {
 ///|
 test "exec_file: list.index returns position of first matching element" {
   match exec_b("i = [10, 20, 30].index(20)") {
-    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(1L)))
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(1N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -608,7 +608,7 @@ test "exec_file: list.index returns position of first matching element" {
 ///|
 test "exec_file: list.count returns number of occurrences" {
   match exec_b("n = [1, 2, 1, 3, 1].count(1)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -620,7 +620,7 @@ test "exec_file: list.insert places element at given index" {
       match g(m, "lst") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(1) == @value.Value::Int(2L))
+          assert_true(l.get(1) == @value.Value::Int(2N))
         }
         _ => assert_true(false)
       }
@@ -633,7 +633,7 @@ test "exec_file: list.insert places element at given index" {
 ///|
 test "exec_file: dict.get returns value for existing key" {
   match exec_b("v = {\"x\": 1}.get(\"x\")") {
-    Ok(m) => assert_true(g(m, "v") == Some(@value.Value::Int(1L)))
+    Ok(m) => assert_true(g(m, "v") == Some(@value.Value::Int(1N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -649,7 +649,7 @@ test "exec_file: dict.get returns None when key is absent" {
 ///|
 test "exec_file: dict.get returns default when key is absent and default provided" {
   match exec_b("v = {}.get(\"x\", 42)") {
-    Ok(m) => assert_true(g(m, "v") == Some(@value.Value::Int(42L)))
+    Ok(m) => assert_true(g(m, "v") == Some(@value.Value::Int(42N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -697,7 +697,7 @@ test "exec_file: dict.items returns list of key-value tuples" {
 test "exec_file: dict.pop removes key and returns its value" {
   match exec_b("d = {\"x\": 99}\nv = d.pop(\"x\")") {
     Ok(m) => {
-      assert_true(g(m, "v") == Some(@value.Value::Int(99L)))
+      assert_true(g(m, "v") == Some(@value.Value::Int(99N)))
       match g(m, "d") {
         Some(@value.Value::Dict(d)) => assert_eq(d.length(), 0)
         _ => assert_true(false)
@@ -723,7 +723,7 @@ test "exec_file: dict.update merges another dict's entries" {
 test "exec_file: dict.setdefault inserts key with default when absent" {
   match exec_b("d = {}\nv = d.setdefault(\"x\", 42)") {
     Ok(m) => {
-      assert_true(g(m, "v") == Some(@value.Value::Int(42L)))
+      assert_true(g(m, "v") == Some(@value.Value::Int(42N)))
       match g(m, "d") {
         Some(@value.Value::Dict(d)) => assert_eq(d.length(), 1)
         _ => assert_true(false)
@@ -790,7 +790,7 @@ test "exec_file: string.endswith returns true when string ends with suffix" {
 ///|
 test "exec_file: string.find returns index of first occurrence" {
   match exec_b("i = \"hello world\".find(\"world\")") {
-    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(6L)))
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(6N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -798,7 +798,7 @@ test "exec_file: string.find returns index of first occurrence" {
 ///|
 test "exec_file: string.find returns -1 when substring is absent" {
   match exec_b("i = \"hello\".find(\"xyz\")") {
-    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(-1L)))
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(-1N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -842,7 +842,7 @@ test "exec_file: string.join concatenates parts with separator" {
 ///|
 test "exec_file: string.count returns number of non-overlapping occurrences" {
   match exec_b("n = \"abcabc\".count(\"ab\")") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(2L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(2N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -862,7 +862,7 @@ test "exec_file: string.capitalize uppercases first character and lowercases res
 ///|
 test "exec_file: string.index returns position when substring is found" {
   match exec_b("i = \"hello world\".index(\"world\")") {
-    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(6L)))
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(6N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -875,7 +875,7 @@ test "exec_file: string.index raises error when substring is absent" {
 ///|
 test "exec_file: string.rfind returns index of last occurrence" {
   match exec_b("i = \"abcabc\".rfind(\"ab\")") {
-    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -883,7 +883,7 @@ test "exec_file: string.rfind returns index of last occurrence" {
 ///|
 test "exec_file: string.rfind returns -1 when substring is absent" {
   match exec_b("i = \"hello\".rfind(\"xyz\")") {
-    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(-1L)))
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(-1N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1055,7 +1055,7 @@ test "exec_file: string.elem_ords returns string.elems type (ords mode)" {
 ///|
 test "exec_file: set.add inserts element into set" {
   match exec_b("s = set()\ns.add(1)\nn = len(s)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(1L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(1N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1063,7 +1063,7 @@ test "exec_file: set.add inserts element into set" {
 ///|
 test "exec_file: set.discard removes element without error when absent" {
   match exec_b("s = {1, 2}\ns.discard(9)\nn = len(s)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(2L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(2N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1071,7 +1071,7 @@ test "exec_file: set.discard removes element without error when absent" {
 ///|
 test "exec_file: set.remove removes existing element" {
   match exec_b("s = {1, 2}\ns.remove(1)\nn = len(s)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(1L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(1N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1084,7 +1084,7 @@ test "exec_file: set.remove raises error when element is absent" {
 ///|
 test "exec_file: set.clear removes all elements" {
   match exec_b("s = {1, 2, 3}\ns.clear()\nn = len(s)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(0L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(0N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1093,7 +1093,7 @@ test "exec_file: set.clear removes all elements" {
 test "exec_file: set.pop removes and returns an arbitrary element" {
   match exec_b("s = {42}\nv = s.pop()") {
     Ok(m) => {
-      assert_true(g(m, "v") == Some(@value.Value::Int(42L)))
+      assert_true(g(m, "v") == Some(@value.Value::Int(42N)))
       match g(m, "s") {
         Some(@value.Value::Set(s)) => assert_eq(s.length(), 0)
         _ => assert_true(false)
@@ -1183,7 +1183,7 @@ test "exec_file: set.issuperset returns true when self contains all of other" {
 ///|
 test "exec_file: set.update adds all elements from other into self" {
   match exec_b("s = {1, 2}\ns.update({2, 3, 4})\nn = len(s)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(4L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(4N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1193,7 +1193,7 @@ test "exec_file: set.update adds all elements from other into self" {
 ///|
 test "exec_file: dict.clear removes all entries" {
   match exec_b("d = {\"a\": 1, \"b\": 2}\nd.clear()\nn = len(d)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(0L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(0N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1202,7 +1202,7 @@ test "exec_file: dict.clear removes all entries" {
 test "exec_file: dict.popitem removes and returns an item as tuple" {
   match exec_b("d = {\"x\": 1}\nt = d.popitem()\nn = len(d)") {
     Ok(m) => {
-      assert_true(g(m, "n") == Some(@value.Value::Int(0L)))
+      assert_true(g(m, "n") == Some(@value.Value::Int(0N)))
       assert_true(g(m, "t") is Some(@value.Value::Tuple(_)))
     }
     Err(e) => fail(e.to_string())
@@ -1248,7 +1248,7 @@ test "exec_file: chr raises error for code point above valid Unicode range" {
 ///|
 test "exec_file: ord returns code point of single-character string" {
   match exec_b("n = ord(\"A\")") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(65L)))
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(65N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1268,7 +1268,7 @@ test "exec_file: ord raises error for string with more than one character" {
 ///|
 test "exec_file: lambda produces a callable value" {
   match exec_b("f = lambda x: x + 1\nr = f(41)") {
-    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(42L)))
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(42N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1276,7 +1276,7 @@ test "exec_file: lambda produces a callable value" {
 ///|
 test "exec_file: lambda with no parameters returns constant" {
   match exec_b("f = lambda: 99\nr = f()") {
-    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(99L)))
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(99N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1290,8 +1290,8 @@ test "exec_file: list comprehension transforms and filters elements" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 2)
-          assert_true(l.get(0) == @value.Value::Int(6L))
-          assert_true(l.get(1) == @value.Value::Int(8L))
+          assert_true(l.get(0) == @value.Value::Int(6N))
+          assert_true(l.get(1) == @value.Value::Int(8N))
         }
         _ => assert_true(false)
       }
@@ -1306,8 +1306,8 @@ test "exec_file: dict comprehension builds a mapping from iterable" {
       match g(m, "d") {
         Some(@value.Value::Dict(d)) => {
           assert_eq(d.length(), 3)
-          let key = @value.Value::Int(2L)
-          assert_true(d.get(key) == Ok(Some(@value.Value::Int(4L))))
+          let key = @value.Value::Int(2N)
+          assert_true(d.get(key) == Ok(Some(@value.Value::Int(4N))))
         }
         _ => assert_true(false)
       }
@@ -1332,7 +1332,7 @@ test "exec_file: set comprehension deduplicates elements" {
 ///|
 test "exec_file: function with default parameter uses default when omitted" {
   match exec_b("def f(x, y=10):\n  return x + y\nr = f(5)") {
-    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(15L)))
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(15N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1340,7 +1340,7 @@ test "exec_file: function with default parameter uses default when omitted" {
 ///|
 test "exec_file: function with star args collects extra positional arguments" {
   match exec_b("def f(*args):\n  return len(args)\nr = f(1, 2, 3)") {
-    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1348,7 +1348,7 @@ test "exec_file: function with star args collects extra positional arguments" {
 ///|
 test "exec_file: function with keyword args collects extra keyword arguments" {
   match exec_b("def f(**kwargs):\n  return len(kwargs)\nr = f(x=1, y=2)") {
-    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(2L)))
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Int(2N)))
     Err(e) => fail(e.to_string())
   }
 }
@@ -1415,9 +1415,9 @@ test "exec_file: bytes.elems returns list of integer byte values" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(65L))
-          assert_true(l.get(1) == @value.Value::Int(66L))
-          assert_true(l.get(2) == @value.Value::Int(67L))
+          assert_true(l.get(0) == @value.Value::Int(65N))
+          assert_true(l.get(1) == @value.Value::Int(66N))
+          assert_true(l.get(2) == @value.Value::Int(67N))
         }
         _ => assert_true(false)
       }
@@ -1524,8 +1524,8 @@ test "exec_file: sorted with reverse=True returns descending order" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(3L))
-          assert_true(l.get(2) == @value.Value::Int(1L))
+          assert_true(l.get(0) == @value.Value::Int(3N))
+          assert_true(l.get(2) == @value.Value::Int(1N))
         }
         _ => assert_true(false)
       }
@@ -1689,9 +1689,9 @@ test "exec_file: str.codepoint_ords returns list of code point integers" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(65L))
-          assert_true(l.get(1) == @value.Value::Int(66L))
-          assert_true(l.get(2) == @value.Value::Int(67L))
+          assert_true(l.get(0) == @value.Value::Int(65N))
+          assert_true(l.get(1) == @value.Value::Int(66N))
+          assert_true(l.get(2) == @value.Value::Int(67N))
         }
         _ => assert_true(false)
       }
@@ -1731,7 +1731,7 @@ test "exec_file: module attribute access via dot returns correct value" {
   match exec_b("m = module(\"mymod\", x=42)\nr = m.x") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::Int(n)) => assert_eq(n, 42L)
+        Some(@value.Value::Int(n)) => assert_eq(n, 42N)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())

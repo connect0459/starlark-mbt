@@ -76,7 +76,7 @@ fn struct_get_attr(
     return Ok(Some(ctor))
   }
   if name == "__n" {
-    return Ok(Some(@value.Value::Int(entries.length().to_int64())))
+    return Ok(Some(@value.Value::Int(BigInt::from_int(entries.length()))))
   }
   let nlen = name.length()
   if nlen > 7 && name[0:7] == "__name_" {
@@ -336,7 +336,8 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
       match other {
         @value.Value::ExtVal(c) if c.get_type_name() == "symbol" =>
           match c.get_attr("__id") {
-            Ok(Some(@value.Value::Int(oid))) => oid == sym_id.to_int64()
+            Ok(Some(@value.Value::Int(oid))) =>
+              oid == BigInt::from_int64(sym_id.to_int64())
             _ => false
           }
         _ => false
@@ -345,7 +346,7 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
     .with_attrs(
       fn(attr) {
         if attr == "__id" {
-          Ok(Some(@value.Value::Int(sym_id.to_int64())))
+          Ok(Some(@value.Value::Int(BigInt::from_int64(sym_id.to_int64()))))
         } else {
           Ok(None)
         }

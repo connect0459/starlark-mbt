@@ -12,11 +12,11 @@ fn must_iterate(v : Value) -> StarlarkIterator {
 
 ///|
 test "iterate: list yields items in insertion order" {
-  let l = StarlarkList::new([Value::Int(1L), Value::Int(2L), Value::Int(3L)])
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N), Value::Int(3N)])
   let it = must_iterate(Value::List(l))
-  assert_true(it.next() == Some(Value::Int(1L)))
-  assert_true(it.next() == Some(Value::Int(2L)))
-  assert_true(it.next() == Some(Value::Int(3L)))
+  assert_true(it.next() == Some(Value::Int(1N)))
+  assert_true(it.next() == Some(Value::Int(2N)))
+  assert_true(it.next() == Some(Value::Int(3N)))
   assert_true(it.next() == None)
   it.done()
 }
@@ -31,11 +31,11 @@ test "iterate: empty list is immediately exhausted" {
 ///|
 test "iterate: tuple yields items in order" {
   let t = Value::Tuple([
-    Value::Int(10L),
+    Value::Int(10N),
     Value::String(StarlarkString::new("x")),
   ])
   let it = must_iterate(t)
-  assert_true(it.next() == Some(Value::Int(10L)))
+  assert_true(it.next() == Some(Value::Int(10N)))
   assert_true(it.next() == Some(Value::String(StarlarkString::new("x"))))
   assert_true(it.next() == None)
   it.done()
@@ -61,9 +61,9 @@ test "iterate: string with multibyte is not iterable" {
 test "iterate: bytes yields integer value of each byte" {
   let b = Value::Bytes(Bytes::from_array([b'\x01', b'\x02', b'\x03']))
   let it = must_iterate(b)
-  assert_true(it.next() == Some(Value::Int(1L)))
-  assert_true(it.next() == Some(Value::Int(2L)))
-  assert_true(it.next() == Some(Value::Int(3L)))
+  assert_true(it.next() == Some(Value::Int(1N)))
+  assert_true(it.next() == Some(Value::Int(2N)))
+  assert_true(it.next() == Some(Value::Int(3N)))
   assert_true(it.next() == None)
   it.done()
 }
@@ -71,9 +71,9 @@ test "iterate: bytes yields integer value of each byte" {
 ///|
 test "iterate: dict yields keys in insertion order" {
   let d = StarlarkDict::new()
-  d.set(Value::String(StarlarkString::new("a")), Value::Int(1L)) |> ignore
-  d.set(Value::String(StarlarkString::new("b")), Value::Int(2L)) |> ignore
-  d.set(Value::String(StarlarkString::new("c")), Value::Int(3L)) |> ignore
+  d.set(Value::String(StarlarkString::new("a")), Value::Int(1N)) |> ignore
+  d.set(Value::String(StarlarkString::new("b")), Value::Int(2N)) |> ignore
+  d.set(Value::String(StarlarkString::new("c")), Value::Int(3N)) |> ignore
   let it = must_iterate(Value::Dict(d))
   assert_true(it.next() == Some(Value::String(StarlarkString::new("a"))))
   assert_true(it.next() == Some(Value::String(StarlarkString::new("b"))))
@@ -85,13 +85,13 @@ test "iterate: dict yields keys in insertion order" {
 ///|
 test "iterate: set yields keys in insertion order" {
   let s = StarlarkSet::new()
-  s.add(Value::Int(10L)) |> ignore
-  s.add(Value::Int(20L)) |> ignore
-  s.add(Value::Int(30L)) |> ignore
+  s.add(Value::Int(10N)) |> ignore
+  s.add(Value::Int(20N)) |> ignore
+  s.add(Value::Int(30N)) |> ignore
   let it = must_iterate(Value::Set(s))
-  assert_true(it.next() == Some(Value::Int(10L)))
-  assert_true(it.next() == Some(Value::Int(20L)))
-  assert_true(it.next() == Some(Value::Int(30L)))
+  assert_true(it.next() == Some(Value::Int(10N)))
+  assert_true(it.next() == Some(Value::Int(20N)))
+  assert_true(it.next() == Some(Value::Int(30N)))
   assert_true(it.next() == None)
   it.done()
 }
@@ -100,9 +100,9 @@ test "iterate: set yields keys in insertion order" {
 test "iterate: range yields integer values with step" {
   let r = Value::Range(StarlarkRange::new(0L, 5L, 2L))
   let it = must_iterate(r)
-  assert_true(it.next() == Some(Value::Int(0L)))
-  assert_true(it.next() == Some(Value::Int(2L)))
-  assert_true(it.next() == Some(Value::Int(4L)))
+  assert_true(it.next() == Some(Value::Int(0N)))
+  assert_true(it.next() == Some(Value::Int(2N)))
+  assert_true(it.next() == Some(Value::Int(4N)))
   assert_true(it.next() == None)
   it.done()
 }
@@ -111,18 +111,18 @@ test "iterate: range yields integer values with step" {
 test "iterate: range with negative step yields values in descending order" {
   let r = Value::Range(StarlarkRange::new(5L, 0L, -1L))
   let it = must_iterate(r)
-  assert_true(it.next() == Some(Value::Int(5L)))
-  assert_true(it.next() == Some(Value::Int(4L)))
-  assert_true(it.next() == Some(Value::Int(3L)))
-  assert_true(it.next() == Some(Value::Int(2L)))
-  assert_true(it.next() == Some(Value::Int(1L)))
+  assert_true(it.next() == Some(Value::Int(5N)))
+  assert_true(it.next() == Some(Value::Int(4N)))
+  assert_true(it.next() == Some(Value::Int(3N)))
+  assert_true(it.next() == Some(Value::Int(2N)))
+  assert_true(it.next() == Some(Value::Int(1N)))
   assert_true(it.next() == None)
   it.done()
 }
 
 ///|
 test "iterate: non-iterable int returns error naming the type" {
-  let result = iterate(Value::Int(42L))
+  let result = iterate(Value::Int(42N))
   assert_true(result is Err(_))
   match result {
     Err(e) => assert_true(e.contains("int"))
@@ -147,13 +147,13 @@ test "iterate: non-iterable function returns error" {
 
 ///|
 test "iterate: list is mutable before iteration starts" {
-  let l = StarlarkList::new([Value::Int(1L)])
+  let l = StarlarkList::new([Value::Int(1N)])
   assert_true(l.check_mutable("append to") is Ok(_))
 }
 
 ///|
 test "iterate: list becomes immutable while iterator is active" {
-  let l = StarlarkList::new([Value::Int(1L)])
+  let l = StarlarkList::new([Value::Int(1N)])
   let it = must_iterate(Value::List(l))
   assert_true(l.check_mutable("append to") is Err(_))
   it.done()
@@ -162,7 +162,7 @@ test "iterate: list becomes immutable while iterator is active" {
 
 ///|
 test "iterate: list stays immutable until all concurrent iterators complete" {
-  let l = StarlarkList::new([Value::Int(1L)])
+  let l = StarlarkList::new([Value::Int(1N)])
   let it1 = must_iterate(Value::List(l))
   let it2 = must_iterate(Value::List(l))
   assert_true(l.check_mutable("append to") is Err(_))
@@ -174,7 +174,7 @@ test "iterate: list stays immutable until all concurrent iterators complete" {
 
 ///|
 test "iterate: frozen list remains immutable after iterator completes" {
-  let l = StarlarkList::new([Value::Int(1L)])
+  let l = StarlarkList::new([Value::Int(1N)])
   l.freeze()
   let it = must_iterate(Value::List(l))
   assert_true(l.check_mutable("append to") is Err(_))
@@ -184,7 +184,7 @@ test "iterate: frozen list remains immutable after iterator completes" {
 
 ///|
 test "iterate: check_mutable blocks mutation while list is being iterated" {
-  let l = StarlarkList::new([Value::Int(1L), Value::Int(2L)])
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N)])
   let it = must_iterate(Value::List(l))
   assert_true(l.check_mutable("append to") is Err(_))
   it.done()
@@ -194,21 +194,21 @@ test "iterate: check_mutable blocks mutation while list is being iterated" {
 ///|
 test "iterate: dict blocks insertion while iterator is active" {
   let d = StarlarkDict::new()
-  d.set(Value::Int(1L), Value::Int(1L)) |> ignore
+  d.set(Value::Int(1N), Value::Int(1N)) |> ignore
   let it = must_iterate(Value::Dict(d))
-  assert_true(d.set(Value::Int(2L), Value::Int(2L)) is Err(_))
+  assert_true(d.set(Value::Int(2N), Value::Int(2N)) is Err(_))
   it.done()
-  assert_true(d.set(Value::Int(2L), Value::Int(2L)) is Ok(_))
+  assert_true(d.set(Value::Int(2N), Value::Int(2N)) is Ok(_))
 }
 
 ///|
 test "iterate: set blocks insertion while iterator is active" {
   let s = StarlarkSet::new()
-  s.add(Value::Int(1L)) |> ignore
+  s.add(Value::Int(1N)) |> ignore
   let it = must_iterate(Value::Set(s))
-  assert_true(s.add(Value::Int(2L)) is Err(_))
+  assert_true(s.add(Value::Int(2N)) is Err(_))
   it.done()
-  assert_true(s.add(Value::Int(2L)) is Ok(_))
+  assert_true(s.add(Value::Int(2N)) is Ok(_))
 }
 
 // --- length_of ---
@@ -228,7 +228,7 @@ test "length_of: bytes returns byte count" {
 
 ///|
 test "length_of: list returns item count" {
-  let l = StarlarkList::new([Value::Int(1L), Value::Int(2L)])
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N)])
   assert_true(length_of(Value::List(l)) == Ok(2))
   assert_true(length_of(Value::List(StarlarkList::new([]))) == Ok(0))
 }
@@ -236,7 +236,7 @@ test "length_of: list returns item count" {
 ///|
 test "length_of: tuple returns item count" {
   assert_true(
-    length_of(Value::Tuple([Value::Int(1L), Value::Int(2L), Value::Int(3L)])) ==
+    length_of(Value::Tuple([Value::Int(1N), Value::Int(2N), Value::Int(3N)])) ==
     Ok(3),
   )
   assert_true(length_of(Value::Tuple([])) == Ok(0))
@@ -246,8 +246,8 @@ test "length_of: tuple returns item count" {
 test "length_of: dict returns number of key-value pairs" {
   let d = StarlarkDict::new()
   assert_true(length_of(Value::Dict(d)) == Ok(0))
-  d.set(Value::Int(1L), Value::Int(1L)) |> ignore
-  d.set(Value::Int(2L), Value::Int(2L)) |> ignore
+  d.set(Value::Int(1N), Value::Int(1N)) |> ignore
+  d.set(Value::Int(2N), Value::Int(2N)) |> ignore
   assert_true(length_of(Value::Dict(d)) == Ok(2))
 }
 
@@ -255,7 +255,7 @@ test "length_of: dict returns number of key-value pairs" {
 test "length_of: set returns number of elements" {
   let s = StarlarkSet::new()
   assert_true(length_of(Value::Set(s)) == Ok(0))
-  s.add(Value::Int(1L)) |> ignore
+  s.add(Value::Int(1N)) |> ignore
   assert_true(length_of(Value::Set(s)) == Ok(1))
 }
 
@@ -269,7 +269,7 @@ test "length_of: range returns computed length" {
 
 ///|
 test "length_of: non-sized type returns error" {
-  assert_true(length_of(Value::Int(42L)) is Err(_))
+  assert_true(length_of(Value::Int(42N)) is Err(_))
   assert_true(length_of(Value::None) is Err(_))
   assert_true(
     length_of(

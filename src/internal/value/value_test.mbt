@@ -50,7 +50,7 @@ test "Value: type_name for Bool" {
 
 ///|
 test "Value: type_name for Int" {
-  assert_eq(type_name(Value::Int(42L)), "int")
+  assert_eq(type_name(Value::Int(42N)), "int")
 }
 
 ///|
@@ -81,13 +81,13 @@ test "Value: truth for Bool" {
 
 ///|
 test "Value: truth for Int zero is false" {
-  assert_false(truth(Value::Int(0L)))
+  assert_false(truth(Value::Int(0N)))
 }
 
 ///|
 test "Value: truth for nonzero Int is true" {
-  assert_true(truth(Value::Int(1L)))
-  assert_true(truth(Value::Int(-1L)))
+  assert_true(truth(Value::Int(1N)))
+  assert_true(truth(Value::Int(-1N)))
 }
 
 ///|
@@ -123,40 +123,40 @@ test "Value: truth for nonempty Bytes is true" {
 
 ///|
 test "Int: floor_div positive operands" {
-  assert_true(floor_div(7L, 2L) == Ok(3L))
-  assert_true(floor_div(6L, 2L) == Ok(3L))
+  assert_true(floor_div(7N, 2N) == Ok(3N))
+  assert_true(floor_div(6N, 2N) == Ok(3N))
 }
 
 ///|
 test "Int: floor_div truncates toward negative infinity" {
   // -7 // 2 = -4 (not -3)
-  assert_true(floor_div(-7L, 2L) == Ok(-4L))
+  assert_true(floor_div(-7N, 2N) == Ok(-4N))
   // 7 // -2 = -4 (not -3)
-  assert_true(floor_div(7L, -2L) == Ok(-4L))
+  assert_true(floor_div(7N, -2N) == Ok(-4N))
   // -7 // -2 = 3
-  assert_true(floor_div(-7L, -2L) == Ok(3L))
+  assert_true(floor_div(-7N, -2N) == Ok(3N))
 }
 
 ///|
 test "Int: floor_div by zero is error" {
-  assert_true(floor_div(7L, 0L) is Err(_))
+  assert_true(floor_div(7N, 0N) is Err(_))
 }
 
 ///|
 test "Int: starlark_mod result has same sign as divisor" {
   // positive % positive
-  assert_true(starlark_mod(7L, 2L) == Ok(1L))
+  assert_true(starlark_mod(7N, 2N) == Ok(1N))
   // negative dividend, positive divisor: result is positive
-  assert_true(starlark_mod(-7L, 2L) == Ok(1L))
+  assert_true(starlark_mod(-7N, 2N) == Ok(1N))
   // positive dividend, negative divisor: result is negative
-  assert_true(starlark_mod(7L, -2L) == Ok(-1L))
+  assert_true(starlark_mod(7N, -2N) == Ok(-1N))
   // negative % negative
-  assert_true(starlark_mod(-7L, -2L) == Ok(-1L))
+  assert_true(starlark_mod(-7N, -2N) == Ok(-1N))
 }
 
 ///|
 test "Int: starlark_mod by zero is error" {
-  assert_true(starlark_mod(7L, 0L) is Err(_))
+  assert_true(starlark_mod(7N, 0N) is Err(_))
 }
 
 ///|
@@ -172,9 +172,9 @@ test "Value: repr for Bool" {
 
 ///|
 test "Value: repr for Int" {
-  assert_eq(repr(Value::Int(42L)), "42")
-  assert_eq(repr(Value::Int(-1L)), "-1")
-  assert_eq(repr(Value::Int(0L)), "0")
+  assert_eq(repr(Value::Int(42N)), "42")
+  assert_eq(repr(Value::Int(-1N)), "-1")
+  assert_eq(repr(Value::Int(0N)), "0")
 }
 
 ///|
@@ -265,13 +265,13 @@ test "StarlarkList: push appends item accessible by index" {
 ///|
 test "StarlarkList: push multiple items maintains insertion order" {
   let l = StarlarkList::new([])
-  l.push(Value::Int(1L)) |> ignore
-  l.push(Value::Int(2L)) |> ignore
-  l.push(Value::Int(3L)) |> ignore
+  l.push(Value::Int(1N)) |> ignore
+  l.push(Value::Int(2N)) |> ignore
+  l.push(Value::Int(3N)) |> ignore
   assert_eq(l.length(), 3)
-  assert_true(l.get(0) is Value::Int(1L))
-  assert_true(l.get(1) is Value::Int(2L))
-  assert_true(l.get(2) is Value::Int(3L))
+  assert_true(l.get(0) is Value::Int(1N))
+  assert_true(l.get(1) is Value::Int(2N))
+  assert_true(l.get(2) is Value::Int(3N))
 }
 
 ///|
@@ -284,7 +284,7 @@ test "Value::of_string wraps a string without manual StarlarkString::new" {
 
 ///|
 test "Value::new_list wraps an array as a mutable list" {
-  let v = Value::new_list([Value::Int(1L), Value::Int(2L)])
+  let v = Value::new_list([Value::Int(1N), Value::Int(2N)])
   match v {
     List(l) => assert_eq(l.length(), 2)
     _ => fail("expected List")
@@ -311,7 +311,7 @@ test "Value::new_set creates an empty set" {
 test "Value::new_builtin wraps a named host function" {
   let f = Value::new_builtin("double", fn(_ctx, args, _kw) {
     match args[0] {
-      Value::Int(n) => Ok(Value::Int(n * 2L))
+      Value::Int(n) => Ok(Value::Int(n * 2N))
       _ => Err("expected int")
     }
   })
@@ -323,12 +323,12 @@ test "Value::new_builtin wraps a named host function" {
 
 ///|
 test "StarlarkList::to_iter allows for-in iteration over elements" {
-  let l = StarlarkList::new([Value::Int(10L), Value::Int(20L), Value::Int(30L)])
+  let l = StarlarkList::new([Value::Int(10N), Value::Int(20N), Value::Int(30N)])
   let elems : Array[Value] = []
   for v in l.to_iter() {
     elems.push(v)
   }
   assert_eq(elems.length(), 3)
-  assert_true(elems[0] == Value::Int(10L))
-  assert_true(elems[2] == Value::Int(30L))
+  assert_true(elems[0] == Value::Int(10N))
+  assert_true(elems[2] == Value::Int(30N))
 }

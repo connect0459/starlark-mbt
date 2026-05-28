@@ -38,7 +38,6 @@ fn tok_to_test_string(tok : Token) -> String {
     Outdent => "outdent"
     Ident(s) => s
     Int(n) => n.to_string()
-    BigInt(s) => s
     Float(f) => format_float_e(f)
     Str(s) => quote_str(s)
     Bytes(b) => quote_bytes(b)

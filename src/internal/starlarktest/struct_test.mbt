@@ -295,14 +295,14 @@ test "struct: hash is consistent for equal structs" {
   let s1 = @struct.make_struct(
     @value.Value::String(@value.StarlarkString::new("struct")),
     [
-      ("a", @value.Value::Int(1L)),
+      ("a", @value.Value::Int(1N)),
       ("b", @value.Value::String(@value.StarlarkString::new("x"))),
     ],
   )
   let s2 = @struct.make_struct(
     @value.Value::String(@value.StarlarkString::new("struct")),
     [
-      ("a", @value.Value::Int(1L)),
+      ("a", @value.Value::Int(1N)),
       ("b", @value.Value::String(@value.StarlarkString::new("x"))),
     ],
   )

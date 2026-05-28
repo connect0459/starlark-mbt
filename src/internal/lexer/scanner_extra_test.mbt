@@ -220,18 +220,24 @@ test "scan: rejects 0o with no octal digit" {
 }
 
 ///|
-test "scan: rejects hex integer overflow" {
-  assert_true(scan("0x" + rep("F", 17)).contains("integer overflow"))
+test "scan: accepts hex integer beyond Int64 range" {
+  let s = scan("0x" + rep("F", 17))
+  assert_true(!s.contains("integer overflow"))
+  assert_true(s.contains("EOF"))
 }
 
 ///|
-test "scan: rejects octal integer overflow" {
-  assert_true(scan("0o" + rep("7", 22)).contains("integer overflow"))
+test "scan: accepts octal integer beyond Int64 range" {
+  let s = scan("0o" + rep("7", 22))
+  assert_true(!s.contains("integer overflow"))
+  assert_true(s.contains("EOF"))
 }
 
 ///|
-test "scan: rejects binary integer overflow" {
-  assert_true(scan("0b" + rep("1", 65)).contains("integer overflow"))
+test "scan: accepts binary integer beyond Int64 range" {
+  let s = scan("0b" + rep("1", 65))
+  assert_true(!s.contains("integer overflow"))
+  assert_true(s.contains("EOF"))
 }
 
 ///|
@@ -245,6 +251,6 @@ test "scan: rejects an exponent with no digits" {
 }
 
 ///|
-test "scan: a decimal literal too large for Int64 becomes a BigInt" {
+test "scan: a decimal literal too large for Int64 is an int token" {
   assert_eq(scan(rep("9", 23)), rep("9", 23) + " EOF")
 }

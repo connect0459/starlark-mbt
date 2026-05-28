@@ -1272,10 +1272,6 @@ fn Parser::parse_atom(self : Parser) -> @syntax.Expr raise ParseErr {
       self.advance()
       @syntax.Expr::ELiteral(@syntax.LiteralVal::LitInt(n), p)
     }
-    @lexer.Token::BigInt(s) => {
-      self.advance()
-      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBigInt(s), p)
-    }
     @lexer.Token::Float(f) => {
       self.advance()
       @syntax.Expr::ELiteral(@syntax.LiteralVal::LitFloat(f), p)

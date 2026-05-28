@@ -145,7 +145,7 @@ pub fn equal(a : Value, b : Value) -> Result[Bool, EvalError] {
 ///|
 pub fn number_to_int(v : Value) -> Int64? {
   match v {
-    @value.Value::Int(n) => Some(n)
+    @value.Value::Int(n) => Some(n.to_int64())
     @value.Value::Float(f) => Some(f.to_int64())
     _ => None
   }
@@ -155,7 +155,7 @@ pub fn number_to_int(v : Value) -> Int64? {
 pub fn as_float(v : Value) -> (Double, Bool) {
   match v {
     @value.Value::Float(f) => (f, true)
-    @value.Value::Int(n) => (n.to_double(), true)
+    @value.Value::Int(n) => (@value.bigint_to_double(n), true)
     _ => (0.0, false)
   }
 }

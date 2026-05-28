@@ -4,16 +4,19 @@ package "connect0459/starlark/internal/value"
 import {
   "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/syntax",
+  "moonbitlang/core/bigint",
 }
 
 // Values
+pub fn bigint_to_double(@bigint.BigInt) -> Double
+
 pub let compare_limit : Int
 
 pub fn compare_values(Value, Value) -> Result[Int, String]
 
 pub fn compare_values_depth(Value, Value, Int) -> Result[Int, String]
 
-pub fn floor_div(Int64, Int64) -> Result[Int64, String]
+pub fn floor_div(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
 
 pub fn freeze_value(Value) -> Unit
 
@@ -29,7 +32,7 @@ pub fn starlark_equals_depth(Value, Value, Int) -> Result[Bool, String]
 
 pub fn starlark_hash(Value) -> Result[UInt, String]
 
-pub fn starlark_mod(Int64, Int64) -> Result[Int64, String]
+pub fn starlark_mod(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
 
 pub fn to_str(Value) -> String
 
@@ -245,7 +248,7 @@ pub fn StarlarkStringElems::source_string(Self) -> StarlarkString
 pub(all) enum Value {
   None
   Bool(Bool)
-  Int(Int64)
+  Int(@bigint.BigInt)
   Float(Double)
   String(StarlarkString)
   Bytes(Bytes)

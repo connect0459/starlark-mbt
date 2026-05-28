@@ -1,33 +1,12 @@
 ///|
-fn adjust_index(i : Int64, length : Int) -> Result[Int, String] {
-  let len = length.to_int64()
-  let j = if i < 0L { i + len } else { i }
-  if j < 0L || j >= len {
+fn adjust_index(i : BigInt, length : Int) -> Result[Int, String] {
+  let len = BigInt::from_int(length)
+  let j = if i < 0N { i + len } else { i }
+  if j < 0N || j >= len {
     Err("index \{i} out of range for sequence of length \{length}")
   } else {
     Ok(j.to_int())
   }
-}
-
-///|
-fn int_pow(base : Int64, exp : Int64) -> Result[Int64, String] {
-  if exp < 0L {
-    return Err("integer power with negative exponent is not allowed")
-  }
-  if exp == 0L {
-    return Ok(1L)
-  }
-  let mut result = 1L
-  let mut b = base
-  let mut e = exp
-  while e > 0L {
-    if e.land(1L) != 0L {
-      result = result * b
-    }
-    b = b * b
-    e = e >> 1
-  }
-  Ok(result)
 }
 
 ///|
@@ -99,7 +78,7 @@ fn eval_unary(
       }
     @syntax.UnaryOp::OpBitNot =>
       match v {
-        @value.Value::Int(n) => @value.Value::Int(n.lnot())
+        @value.Value::Int(n) => @value.Value::Int(-n - 1N)
         _ =>
           raise EvalErr(
             make_eval_error(
@@ -188,9 +167,9 @@ fn eval_add(
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(a + b)
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(a.to_double() + b)
+      @value.Value::Float(@value.bigint_to_double(a) + b)
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(a + b.to_double())
+      @value.Value::Float(a + @value.bigint_to_double(b))
     (@value.Value::String(a), @value.Value::String(b)) =>
       @value.Value::String(@value.StarlarkString::new(a.raw() + b.raw()))
     (@value.Value::List(a), @value.Value::List(b)) => {
@@ -245,9 +224,9 @@ fn eval_arith_sub(
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(a - b)
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(a.to_double() - b)
+      @value.Value::Float(@value.bigint_to_double(a) - b)
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(a - b.to_double())
+      @value.Value::Float(a - @value.bigint_to_double(b))
     (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = @value.StarlarkSet::new()
       ls.each(fn(v) {
@@ -280,9 +259,9 @@ fn eval_mul(
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(a * b)
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(a.to_double() * b)
+      @value.Value::Float(@value.bigint_to_double(a) * b)
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(a * b.to_double())
+      @value.Value::Float(a * @value.bigint_to_double(b))
     (@value.Value::String(s), @value.Value::Int(n)) =>
       @value.Value::String(check(ctx, repeat_string(s, n)))
     (@value.Value::Int(n), @value.Value::String(s)) =>
@@ -310,23 +289,20 @@ fn eval_mul(
 }
 
 ///|
-let max_int32 : Int64 = 2147483647L
+let max_int32 : BigInt = 2147483647N
 
 ///|
 let max_alloc : Int = 1073741824
 
 ///|
-let max_int64_shift : Int64 = 63L
-
-///|
-let max_byte_val : Int64 = 255L
+let max_byte_val : BigInt = 255N
 
 ///|
 fn repeat_string(
   s : @value.StarlarkString,
-  n : Int64,
+  n : BigInt,
 ) -> Result[@value.StarlarkString, String] {
-  if n <= 0L {
+  if n <= 0N {
     return Ok(@value.StarlarkString::new(""))
   }
   if n > max_int32 {
@@ -347,9 +323,9 @@ fn repeat_string(
 ///|
 fn repeat_list(
   l : @value.StarlarkList,
-  n : Int64,
+  n : BigInt,
 ) -> Result[@value.StarlarkList, String] {
-  if n <= 0L {
+  if n <= 0N {
     return Ok(@value.StarlarkList::new([]))
   }
   if n > max_int32 {
@@ -372,9 +348,9 @@ fn repeat_list(
 ///|
 fn repeat_tuple(
   t : Array[@value.Value],
-  n : Int64,
+  n : BigInt,
 ) -> Result[Array[@value.Value], String] {
-  if n <= 0L {
+  if n <= 0N {
     return Ok([])
   }
   if n > max_int32 {
@@ -395,8 +371,8 @@ fn repeat_tuple(
 }
 
 ///|
-fn repeat_bytes(b : Bytes, n : Int64) -> Result[Bytes, String] {
-  if n <= 0L {
+fn repeat_bytes(b : Bytes, n : BigInt) -> Result[Bytes, String] {
+  if n <= 0N {
     return Ok(Bytes::from_array([]))
   }
   if n > max_int32 {
@@ -428,10 +404,12 @@ fn eval_div(
   }
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) => {
-      if b == 0L {
+      if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "integer division by zero"))
       }
-      @value.Value::Float(a.to_double() / b.to_double())
+      @value.Value::Float(
+        @value.bigint_to_double(a) / @value.bigint_to_double(b),
+      )
     }
     (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
@@ -443,13 +421,13 @@ fn eval_div(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float division by zero"))
       }
-      @value.Value::Float(a.to_double() / b)
+      @value.Value::Float(@value.bigint_to_double(a) / b)
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
-      if b == 0L {
+      if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "float division by zero"))
       }
-      @value.Value::Float(a / b.to_double())
+      @value.Value::Float(a / @value.bigint_to_double(b))
     }
     _ =>
       raise EvalErr(
@@ -481,13 +459,13 @@ fn eval_floor_div(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
       }
-      @value.Value::Float((a.to_double() / b).floor())
+      @value.Value::Float((@value.bigint_to_double(a) / b).floor())
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
-      if b == 0L {
+      if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
       }
-      @value.Value::Float((a / b.to_double()).floor())
+      @value.Value::Float((a / @value.bigint_to_double(b)).floor())
     }
     _ =>
       raise EvalErr(
@@ -529,13 +507,13 @@ fn eval_mod(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::Float(float_floor_mod(a.to_double(), b))
+      @value.Value::Float(float_floor_mod(@value.bigint_to_double(a), b))
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
-      if b == 0L {
+      if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::Float(float_floor_mod(a, b.to_double()))
+      @value.Value::Float(float_floor_mod(a, @value.bigint_to_double(b)))
     }
     (@value.Value::String(s), _) => check(ctx, percent_format(s.raw(), rv))
     _ =>
@@ -590,24 +568,25 @@ fn percent_format(
       'd' | 'i' =>
         match arg {
           @value.Value::Int(n2) => buf.write_string(n2.to_string())
-          @value.Value::Float(f) => buf.write_string(f.to_int64().to_string())
+          @value.Value::Float(f) =>
+            buf.write_string(BigInt::from_int64(f.to_int64()).to_string())
           @value.Value::Bool(_) => return Err("cannot convert bool to int")
           _ => return Err("cannot convert \{@value.type_name(arg)} to int")
         }
       'o' =>
         match arg {
           @value.Value::Int(n2) =>
-            if n2 < 0L {
+            if n2 < 0N {
               buf.write_char('-')
-              buf.write_string(int64_to_octal(n2.abs()))
+              buf.write_string(int64_to_octal(-n2))
             } else {
               buf.write_string(int64_to_octal(n2))
             }
           @value.Value::Float(f) => {
-            let n2 = f.to_int64()
-            if n2 < 0L {
+            let n2 = BigInt::from_int64(f.to_int64())
+            if n2 < 0N {
               buf.write_char('-')
-              buf.write_string(int64_to_octal(n2.abs()))
+              buf.write_string(int64_to_octal(-n2))
             } else {
               buf.write_string(int64_to_octal(n2))
             }
@@ -618,17 +597,17 @@ fn percent_format(
       'x' =>
         match arg {
           @value.Value::Int(n2) =>
-            if n2 < 0L {
+            if n2 < 0N {
               buf.write_char('-')
-              buf.write_string(int64_to_hex(n2.abs(), false))
+              buf.write_string(int64_to_hex(-n2, false))
             } else {
               buf.write_string(int64_to_hex(n2, false))
             }
           @value.Value::Float(f) => {
-            let n2 = f.to_int64()
-            if n2 < 0L {
+            let n2 = BigInt::from_int64(f.to_int64())
+            if n2 < 0N {
               buf.write_char('-')
-              buf.write_string(int64_to_hex(n2.abs(), false))
+              buf.write_string(int64_to_hex(-n2, false))
             } else {
               buf.write_string(int64_to_hex(n2, false))
             }
@@ -639,17 +618,17 @@ fn percent_format(
       'X' =>
         match arg {
           @value.Value::Int(n2) =>
-            if n2 < 0L {
+            if n2 < 0N {
               buf.write_char('-')
-              buf.write_string(int64_to_hex(n2.abs(), true))
+              buf.write_string(int64_to_hex(-n2, true))
             } else {
               buf.write_string(int64_to_hex(n2, true))
             }
           @value.Value::Float(f) => {
-            let n2 = f.to_int64()
-            if n2 < 0L {
+            let n2 = BigInt::from_int64(f.to_int64())
+            if n2 < 0N {
               buf.write_char('-')
-              buf.write_string(int64_to_hex(n2.abs(), true))
+              buf.write_string(int64_to_hex(-n2, true))
             } else {
               buf.write_string(int64_to_hex(n2, true))
             }
@@ -660,7 +639,7 @@ fn percent_format(
       'e' | 'E' | 'f' | 'g' | 'G' => {
         let f = match arg {
           @value.Value::Float(f) => f
-          @value.Value::Int(n2) => n2.to_double()
+          @value.Value::Int(n2) => @value.bigint_to_double(n2)
           _ => return Err("cannot convert \{@value.type_name(arg)} to float")
         }
         let s2 = match spec {
@@ -682,11 +661,10 @@ fn percent_format(
       'c' =>
         match arg {
           @value.Value::Int(n2) => {
-            let cp = n2.to_int()
-            if cp < 0 || cp > 0x10FFFF {
+            if n2 < 0N || n2 > 1114111N {
               return Err("%c requires a valid Unicode code point")
             }
-            buf.write_char(cp.unsafe_to_char())
+            buf.write_char(n2.to_int().unsafe_to_char())
           }
           @value.Value::String(s2) =>
             if s2.raw().length() == 1 {
@@ -706,16 +684,16 @@ fn percent_format(
 }
 
 ///|
-fn int64_to_octal(n : Int64) -> String {
-  if n == 0L {
+fn int64_to_octal(n : BigInt) -> String {
+  if n.is_zero() {
     return "0"
   }
   let buf = StringBuilder::new()
   let mut v = n
   let digits : Array[Int] = []
-  while v > 0L {
-    digits.push((v % 8L).to_int())
-    v = v / 8L
+  while v > 0N {
+    digits.push((v % 8N).to_int())
+    v = v / 8N
   }
   let mut j = digits.length() - 1
   while j >= 0 {
@@ -726,16 +704,16 @@ fn int64_to_octal(n : Int64) -> String {
 }
 
 ///|
-fn int64_to_hex(n : Int64, upper : Bool) -> String {
-  if n == 0L {
+fn int64_to_hex(n : BigInt, upper : Bool) -> String {
+  if n.is_zero() {
     return "0"
   }
   let buf = StringBuilder::new()
   let mut v = n
   let digits : Array[Int] = []
-  while v > 0L {
-    digits.push((v % 16L).to_int())
-    v = v / 16L
+  while v > 0N {
+    digits.push((v % 16N).to_int())
+    v = v / 16N
   }
   let base_char = if upper { 'A'.to_int() } else { 'a'.to_int() }
   let mut j = digits.length() - 1
@@ -795,14 +773,22 @@ fn eval_pow(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
-    (@value.Value::Int(a), @value.Value::Int(b)) =>
-      @value.Value::Int(check(ctx, int_pow(a, b)))
+    (@value.Value::Int(a), @value.Value::Int(b)) => {
+      if b < 0N {
+        raise EvalErr(
+          make_eval_error(
+            ctx, "integer power with negative exponent is not allowed",
+          ),
+        )
+      }
+      @value.Value::Int(a.pow(b))
+    }
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(float_pow(a, b))
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(float_pow(a.to_double(), b))
+      @value.Value::Float(float_pow(@value.bigint_to_double(a), b))
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(float_pow(a, b.to_double()))
+      @value.Value::Float(float_pow(a, @value.bigint_to_double(b)))
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -825,7 +811,7 @@ fn float_pow(base : Double, exp : Double) -> Double {
     return base
   }
   let n = exp.to_int64()
-  if n.to_double() == exp && n >= -max_int64_shift && n <= max_int64_shift {
+  if n.to_double() == exp && n >= -63L && n <= 63L {
     if n >= 0L {
       let mut r = 1.0
       let mut b = base
@@ -864,9 +850,9 @@ fn eval_bitwise(
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) => {
       let r = match op {
-        "land" => a.land(b)
-        "lor" => a.lor(b)
-        "lxor" => a.lxor(b)
+        "land" => a & b
+        "lor" => a | b
+        "lxor" => a ^ b
         _ => a
       }
       @value.Value::Int(r)
@@ -949,10 +935,10 @@ fn eval_shift(
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) => {
-      if b < 0L {
+      if b < 0N {
         raise EvalErr(make_eval_error(ctx, "negative shift count"))
       }
-      if b > max_int64_shift {
+      if b >= 512N {
         raise EvalErr(make_eval_error(ctx, "shift count too large"))
       }
       let shift = b.to_int()
@@ -1074,7 +1060,7 @@ fn in_op(
       }
     @value.Value::Range(r) =>
       match needle {
-        @value.Value::Int(n) => @value.Value::Bool(r.contains(n))
+        @value.Value::Int(n) => @value.Value::Bool(r.contains(n.to_int64()))
         @value.Value::Float(f) =>
           if f.is_nan() || f.is_inf() {
             @value.Value::Bool(false)
@@ -1122,7 +1108,7 @@ fn in_op(
           @value.Value::Bool(found)
         }
         @value.Value::Int(n) => {
-          if n < 0L || n > max_byte_val {
+          if n < 0N || n > max_byte_val {
             raise EvalErr(
               make_eval_error(ctx, "int in bytes: \{n} out of range"),
             )
@@ -1224,7 +1210,7 @@ fn eval_index(
       match idx {
         @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, r.length()))
-          @value.Value::Int(r.index_at(j))
+          @value.Value::Int(BigInt::from_int64(r.index_at(j)))
         }
         _ =>
           raise EvalErr(make_eval_error(ctx, "range indices must be integers"))

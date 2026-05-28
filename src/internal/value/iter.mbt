@@ -102,7 +102,7 @@ fn bytes_elem_iter(b : Bytes) -> StarlarkIterator {
   {
     next_fn: fn() -> Value? {
       if cur.pos < b.length() {
-        let byte_int = b[cur.pos].to_int().to_int64()
+        let byte_int = BigInt::from_int(b[cur.pos].to_int())
         cur.pos += 1
         Some(Int(byte_int))
       } else {
@@ -159,7 +159,7 @@ fn range_iter(r : StarlarkRange) -> StarlarkIterator {
   {
     next_fn: fn() -> Value? {
       if cur.pos < len {
-        let v = r.index_at(cur.pos)
+        let v = BigInt::from_int64(r.index_at(cur.pos))
         cur.pos += 1
         Some(Int(v))
       } else {
@@ -178,7 +178,7 @@ fn string_elems_iter(e : StarlarkStringElems) -> StarlarkIterator {
     {
       next_fn: fn() -> Value? {
         if cur.pos < bytes.length() {
-          let v = Int(bytes[cur.pos].to_int().to_int64())
+          let v = Int(BigInt::from_int(bytes[cur.pos].to_int()))
           cur.pos += 1
           Some(v)
         } else {
@@ -211,7 +211,7 @@ fn string_codepoints_iter(c : StarlarkStringCodepoints) -> StarlarkIterator {
     {
       next_fn: fn() -> Value? {
         if cur.pos < chars.length() {
-          let v = Int(chars[cur.pos].to_int().to_int64())
+          let v = Int(BigInt::from_int(chars[cur.pos].to_int()))
           cur.pos += 1
           Some(v)
         } else {
@@ -244,7 +244,7 @@ fn bytes_elems_iter(e : StarlarkBytesElems) -> StarlarkIterator {
   {
     next_fn: fn() -> Value? {
       if cur.pos < b.length() {
-        let v = Int(b[cur.pos].to_int().to_int64())
+        let v = Int(BigInt::from_int(b[cur.pos].to_int()))
         cur.pos += 1
         Some(v)
       } else {

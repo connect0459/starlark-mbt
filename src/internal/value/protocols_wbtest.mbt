@@ -31,22 +31,22 @@ impl IterableMapping for SimpleMap with fn items(self) {
 
 ///|
 test "Mapping protocol: get returns value for existing key" {
-  let m : SimpleMap = { data: [(Value::Int(1L), Value::Bool(true))] }
-  let result = m.mapping_get(Value::Int(1L))
+  let m : SimpleMap = { data: [(Value::Int(1N), Value::Bool(true))] }
+  let result = m.mapping_get(Value::Int(1N))
   assert_true(result is Ok(Some(Value::Bool(true))))
 }
 
 ///|
 test "Mapping protocol: get returns None for missing key" {
   let m : SimpleMap = { data: [] }
-  let result = m.mapping_get(Value::Int(42L))
+  let result = m.mapping_get(Value::Int(42N))
   assert_true(result is Ok(None))
 }
 
 ///|
 test "Mapping protocol: keys returns all keys" {
   let m : SimpleMap = {
-    data: [(Value::Int(1L), Value::None), (Value::Int(2L), Value::None)],
+    data: [(Value::Int(1N), Value::None), (Value::Int(2N), Value::None)],
   }
   match m.mapping_keys() {
     Ok(keys) => assert_eq(keys.length(), 2)
@@ -57,7 +57,7 @@ test "Mapping protocol: keys returns all keys" {
 ///|
 test "Mapping protocol: len returns entry count" {
   let m : SimpleMap = {
-    data: [(Value::Int(1L), Value::None), (Value::Int(2L), Value::None)],
+    data: [(Value::Int(1N), Value::None), (Value::Int(2N), Value::None)],
   }
   assert_eq(m.mapping_len(), 2)
 }
@@ -110,16 +110,16 @@ struct SimpleInt {
 ///|
 impl TotallyOrdered for SimpleInt with fn cmp(self, other) {
   match other {
-    Value::Int(n) => Some(self.val.to_int64().compare(n))
+    Value::Int(n) => Some(BigInt::from_int64(self.val.to_int64()).compare(n))
     _ => None
   }
 }
 
 ///|
 test "Indexable protocol: get returns element at index" {
-  let s : SimpleSeq = { items: [Value::Int(10L), Value::Int(20L)] }
-  assert_true(s.indexable_get(0) is Ok(Value::Int(10L)))
-  assert_true(s.indexable_get(1) is Ok(Value::Int(20L)))
+  let s : SimpleSeq = { items: [Value::Int(10N), Value::Int(20N)] }
+  assert_true(s.indexable_get(0) is Ok(Value::Int(10N)))
+  assert_true(s.indexable_get(1) is Ok(Value::Int(20N)))
 }
 
 ///|
@@ -214,10 +214,10 @@ test "CustomValue: get_attr returns Ok(None) when no get_attr_fn" {
 ///|
 test "CustomValue: get_attr delegates to get_attr_fn" {
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_attrs(
-    fn(name) { if name == "x" { Ok(Some(Value::Int(42L))) } else { Ok(None) } },
+    fn(name) { if name == "x" { Ok(Some(Value::Int(42N))) } else { Ok(None) } },
     fn() { ["x"] },
   )
-  assert_true(cv.get_attr("x") is Ok(Some(Value::Int(42L))))
+  assert_true(cv.get_attr("x") is Ok(Some(Value::Int(42N))))
   assert_true(cv.get_attr("y") is Ok(None))
 }
 
@@ -229,7 +229,7 @@ test "CustomValue: contains returns None when no contains_fn" {
 
 ///|
 test "CustomValue: contains delegates to contains_fn" {
-  let items = [Value::Int(1L), Value::Int(2L)]
+  let items = [Value::Int(1N), Value::Int(2N)]
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_contains(fn(
       v,
     ) {
@@ -241,8 +241,8 @@ test "CustomValue: contains delegates to contains_fn" {
       Ok(false)
     },
   )
-  assert_true(cv.get_contains(Value::Int(1L)) is Some(Ok(true)))
-  assert_true(cv.get_contains(Value::Int(3L)) is Some(Ok(false)))
+  assert_true(cv.get_contains(Value::Int(1N)) is Some(Ok(true)))
+  assert_true(cv.get_contains(Value::Int(3N)) is Some(Ok(false)))
 }
 
 ///|
@@ -288,18 +288,18 @@ test "CustomValue: binary_fn dispatches addition" {
   }).with_binary(fn(op, rhs, _is_left) {
     if op == "+" {
       match rhs {
-        Value::Int(n) => Some(Ok(Value::Int(n + 100L)))
+        Value::Int(n) => Some(Ok(Value::Int(n + 100N)))
         _ => None
       }
     } else {
       None
     }
   })
-  match cv.get_binary("+", Value::Int(5L), true) {
-    Some(Ok(Value::Int(105L))) => ()
+  match cv.get_binary("+", Value::Int(5N), true) {
+    Some(Ok(Value::Int(105N))) => ()
     _ => fail("expected Some(Ok(105))")
   }
-  assert_true(cv.get_binary("-", Value::Int(5L), true) is None)
+  assert_true(cv.get_binary("-", Value::Int(5N), true) is None)
 }
 
 ///|
@@ -308,20 +308,20 @@ test "CustomValue: unary_fn dispatches negation" {
       op,
     ) {
       if op == "-" {
-        Some(Ok(Value::Int(-42L)))
+        Some(Ok(Value::Int(-42N)))
       } else {
         None
       }
     },
   )
-  assert_true(cv.get_unary("-") is Some(Ok(Value::Int(-42L))))
+  assert_true(cv.get_unary("-") is Some(Ok(Value::Int(-42N))))
   assert_true(cv.get_unary("+") is None)
 }
 
 ///|
 test "CustomValue: binary_fn returns None when no binary_fn set" {
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
-  assert_true(cv.get_binary("+", Value::Int(1L), true) is None)
+  assert_true(cv.get_binary("+", Value::Int(1N), true) is None)
 }
 
 ///|
@@ -336,31 +336,31 @@ test "CustomValue: compare_fn dispatches ordering" {
       other,
     ) {
       match other {
-        Value::Int(n) => Some(if n > 5L { -1 } else if n < 5L { 1 } else { 0 })
+        Value::Int(n) => Some(if n > 5N { -1 } else if n < 5N { 1 } else { 0 })
         _ => None
       }
     },
   )
-  assert_true(cv.get_compare(Value::Int(5L)) == Some(0))
-  assert_true(cv.get_compare(Value::Int(6L)) == Some(-1))
-  assert_true(cv.get_compare(Value::Int(4L)) == Some(1))
+  assert_true(cv.get_compare(Value::Int(5N)) == Some(0))
+  assert_true(cv.get_compare(Value::Int(6N)) == Some(-1))
+  assert_true(cv.get_compare(Value::Int(4N)) == Some(1))
   assert_true(cv.get_compare(Value::None) == None)
 }
 
 ///|
 test "CustomValue: compare_fn returns None when no compare_fn set" {
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
-  assert_true(cv.get_compare(Value::Int(1L)) == None)
+  assert_true(cv.get_compare(Value::Int(1N)) == None)
 }
 
 ///|
 test "CustomValue: get_index_fn dispatches subscript read" {
-  let items = [Value::Int(10L), Value::Int(20L), Value::Int(30L)]
+  let items = [Value::Int(10N), Value::Int(20N), Value::Int(30N)]
   let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
     .with_length(fn() { items.length() })
     .with_get_index(fn(i) { Ok(items[i]) })
-  assert_true(cv.get_index(0) is Ok(Value::Int(10L)))
-  assert_true(cv.get_index(2) is Ok(Value::Int(30L)))
+  assert_true(cv.get_index(0) is Ok(Value::Int(10N)))
+  assert_true(cv.get_index(2) is Ok(Value::Int(30N)))
 }
 
 ///|
@@ -371,27 +371,27 @@ test "CustomValue: get_index returns Err when no get_index_fn" {
 
 ///|
 test "CustomValue: set_index_fn dispatches subscript write" {
-  let items = [Value::Int(10L), Value::Int(20L)]
+  let items = [Value::Int(10N), Value::Int(20N)]
   let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
     .with_length(fn() { items.length() })
     .with_set_index(fn(i, v) {
       items[i] = v
       Ok(())
     })
-  let result = cv.do_set_index(0, Value::Int(99L))
+  let result = cv.do_set_index(0, Value::Int(99N))
   assert_true(result is Some(Ok(_)))
-  assert_true(items[0] == Value::Int(99L))
+  assert_true(items[0] == Value::Int(99N))
 }
 
 ///|
 test "CustomValue: do_set_index returns None when no set_index_fn" {
   let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
-  assert_true(cv.do_set_index(0, Value::Int(1L)) is None)
+  assert_true(cv.do_set_index(0, Value::Int(1N)) is None)
 }
 
 ///|
 test "CustomValue: slice_fn dispatches slice operation" {
-  let items = [Value::Int(0L), Value::Int(1L), Value::Int(2L), Value::Int(3L)]
+  let items = [Value::Int(0N), Value::Int(1N), Value::Int(2N), Value::Int(3N)]
   let cv = CustomValue::new(fn() { "myseq" }, fn() { true }, fn() { "" })
     .with_length(fn() { items.length() })
     .with_slice(fn(start, stop, step) {
@@ -418,7 +418,7 @@ test "CustomValue: do_slice returns None when no slice_fn" {
 ///|
 test "CustomValue: items_fn dispatches items retrieval" {
   let key = Value::String(StarlarkString::new("a"))
-  let val = Value::Int(1L)
+  let val = Value::Int(1N)
   let cv = CustomValue::new(fn() { "mymap" }, fn() { true }, fn() { "" }).with_items(fn() {
       Ok([(key, val)])
     },
@@ -437,16 +437,16 @@ test "CustomValue: get_items returns None when no items_fn" {
 
 ///|
 test "HasSetIndex protocol: set_index updates element" {
-  let items = [Value::Int(1L), Value::Int(2L), Value::Int(3L)]
+  let items = [Value::Int(1N), Value::Int(2N), Value::Int(3N)]
   let seq : SimpleSeq = { items, }
-  assert_true(seq.set_index(1, Value::Int(99L)) is Ok(_))
-  assert_true(items[1] == Value::Int(99L))
+  assert_true(seq.set_index(1, Value::Int(99N)) is Ok(_))
+  assert_true(items[1] == Value::Int(99N))
 }
 
 ///|
 test "TotallyOrdered protocol: cmp returns negative when less" {
   let a : SimpleInt = { val: 3 }
-  match a.cmp(Value::Int(5L)) {
+  match a.cmp(Value::Int(5N)) {
     Some(n) => assert_true(n < 0)
     None => fail("expected Some")
   }
@@ -455,7 +455,7 @@ test "TotallyOrdered protocol: cmp returns negative when less" {
 ///|
 test "TotallyOrdered protocol: cmp returns zero when equal" {
   let a : SimpleInt = { val: 5 }
-  match a.cmp(Value::Int(5L)) {
+  match a.cmp(Value::Int(5N)) {
     Some(n) => assert_eq(n, 0)
     None => fail("expected Some")
   }
@@ -464,7 +464,7 @@ test "TotallyOrdered protocol: cmp returns zero when equal" {
 ///|
 test "TotallyOrdered protocol: cmp returns positive when greater" {
   let a : SimpleInt = { val: 7 }
-  match a.cmp(Value::Int(5L)) {
+  match a.cmp(Value::Int(5N)) {
     Some(n) => assert_true(n > 0)
     None => fail("expected Some")
   }
@@ -479,7 +479,7 @@ test "TotallyOrdered protocol: cmp returns None for incompatible type" {
 ///|
 test "Sliceable protocol: slice returns sub-sequence" {
   let s : SimpleSeq = {
-    items: [Value::Int(0L), Value::Int(1L), Value::Int(2L)],
+    items: [Value::Int(0N), Value::Int(1N), Value::Int(2N)],
   }
   match s.slice(0, 2, 1) {
     Ok(Value::Tuple(t)) => assert_eq(t.length(), 2)
@@ -491,14 +491,14 @@ test "Sliceable protocol: slice returns sub-sequence" {
 test "IterableMapping protocol: items returns all key-value pairs" {
   let m : SimpleMap = {
     data: [
-      (Value::Int(1L), Value::Bool(true)),
-      (Value::Int(2L), Value::Bool(false)),
+      (Value::Int(1N), Value::Bool(true)),
+      (Value::Int(2N), Value::Bool(false)),
     ],
   }
   match m.items() {
     Ok(pairs) => {
       assert_eq(pairs.length(), 2)
-      assert_true(pairs[0] == (Value::Int(1L), Value::Bool(true)))
+      assert_true(pairs[0] == (Value::Int(1N), Value::Bool(true)))
     }
     Err(e) => fail("unexpected error: \{e}")
   }

@@ -40,7 +40,7 @@ test "Program: repeated exec with different predeclared values" {
   // x=42, expect y=84
   {
     let pred = Predeclared::new()
-    pred.set("x", @value.Value::Int(42L))
+    pred.set("x", @value.Value::Int(42N))
     match prog.init(Thread::new("test"), pred) {
       Err(e) => fail("x=42: \{e.to_string()}")
       Ok(m) =>

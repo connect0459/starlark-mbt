@@ -59,7 +59,7 @@ fn fv(x : Double) -> @value.Value {
 
 ///|
 fn iv(x : Int64) -> @value.Value {
-  @value.Value::Int(x)
+  @value.Value::Int(BigInt::from_int64(x))
 }
 
 ///|
@@ -91,7 +91,7 @@ fn expect_int(
 ) -> Unit raise Error {
   match r {
     Ok(@value.Value::Int(i)) =>
-      if i != expected {
+      if i != BigInt::from_int64(expected) {
         fail("expected \{expected}, got \{i}")
       }
     Ok(v) => fail("expected Int, got \{@value.type_name(v)}")

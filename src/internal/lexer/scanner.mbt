@@ -631,7 +631,7 @@ fn Scanner::scan_number(
         return Err(self.make_error(start, "invalid int literal"))
       } else {
         // Just 0 (or 00...0 which equals 0)
-        return Ok({ tok: Int(0L), pos: start })
+        return Ok({ tok: Int(0N), pos: start })
       }
     }
   } else {
@@ -687,7 +687,7 @@ fn Scanner::scan_number(
     }
   } else {
     match parse_int_decimal(raw_str) {
-      Err(_) => Ok({ tok: BigInt(raw_str), pos: start })
+      Err(_) => Err(self.make_error(start, "invalid decimal literal"))
       Ok(n) => Ok({ tok: Int(n), pos: start })
     }
   }
@@ -1048,78 +1048,46 @@ fn append_utf8_codepoint(cp : Int, buf : Array[Byte]) -> Unit {
 // --- Integer and float parsers ---
 
 ///|
-fn parse_int_decimal(s : String) -> Result[Int64, String] {
+fn parse_int_decimal(s : String) -> Result[BigInt, String] {
   if s.length() == 0 {
     return Err("empty integer")
   }
-  let bytes = @utf8.encode(s)
-  let mut result = 0L
-  let max_safe = 922337203685477580L // Int64::max / 10
-  for i in 0..<bytes.length() {
-    let b = bytes[i]
-    if b < b'0' || b > b'9' {
+  for i in 0..<s.length() {
+    let c = s[i]
+    if c < '0' || c > '9' {
       return Err("invalid digit in decimal literal")
     }
-    let d = (b.to_int() - 0x30).to_int64()
-    if result > max_safe || (result == max_safe && d > 7L) {
-      return Err("integer overflow")
-    }
-    result = result * 10L + d
   }
-  Ok(result)
+  Ok(BigInt::from_string(s))
 }
 
 ///|
-fn parse_int_hex(s : String) -> Result[Int64, String] {
+fn parse_int_hex(s : String) -> Result[BigInt, String] {
   if s.length() == 0 {
     return Err("empty hex literal")
   }
   let bytes = @utf8.encode(s)
-  let mut result = 0L
   for i in 0..<bytes.length() {
-    let b = bytes[i]
-    if !is_xdigit_byte(b) {
+    if !is_xdigit_byte(bytes[i]) {
       return Err("invalid hex digit")
     }
-    let d = xdigit_to_int(b).to_int64()
-    // Check overflow: Int64 max = 9223372036854775807
-    // To avoid overflow on *16, check if result > 9223372036854775807/16
-    let max_safe_hex = 576460752303423487L // 0x7FFFFFFFFFFFFFFF / 16
-    if result > max_safe_hex {
-      return Err("integer overflow")
-    }
-    result = result * 16L + d
-    if result < 0L {
-      return Err("integer overflow")
-    }
   }
-  Ok(result)
+  Ok(BigInt::from_string(s, radix=16))
 }
 
 ///|
-fn parse_int_base(s : String, base : Int) -> Result[Int64, String] {
+fn parse_int_base(s : String, base : Int) -> Result[BigInt, String] {
   if s.length() == 0 {
     return Err("empty literal")
   }
   let bytes = @utf8.encode(s)
-  let mut result = 0L
-  let base64 = base.to_int64()
-  let max_before = 9223372036854775807L / base64
   for i in 0..<bytes.length() {
-    let b = bytes[i]
-    let d = (b.to_int() - 0x30).to_int64()
-    if d < 0L || d >= base64 {
+    let d = bytes[i].to_int() - 0x30
+    if d < 0 || d >= base {
       return Err("invalid digit for base \{base}")
     }
-    if result > max_before {
-      return Err("integer overflow")
-    }
-    result = result * base64 + d
-    if result < 0L {
-      return Err("integer overflow")
-    }
   }
-  Ok(result)
+  Ok(BigInt::from_string(s, radix=base))
 }
 
 // parse_float_str converts a decimal float string to Double.

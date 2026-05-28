@@ -217,7 +217,7 @@ test "StarlarkList: freeze marks list as frozen" {
 
 ///|
 test "freeze_value: freezes a list and its mutable nested values" {
-  let inner = StarlarkList::new([Value::Int(1L)])
+  let inner = StarlarkList::new([Value::Int(1N)])
   let outer = StarlarkList::new([Value::List(inner)])
   freeze_value(Value::List(outer))
   assert_true(outer.is_frozen())
@@ -237,7 +237,7 @@ test "freeze_value: freezes a dict and its mutable nested values" {
 ///|
 test "freeze_value: freezes a set" {
   let s = StarlarkSet::new()
-  s.add(Value::Int(1L)) |> ignore
+  s.add(Value::Int(1N)) |> ignore
   freeze_value(Value::Set(s))
   assert_true(s.is_frozen())
 }
@@ -252,7 +252,7 @@ test "freeze_value: is idempotent on already-frozen values" {
 
 ///|
 test "freeze_value: primitives are not mutable, freeze is no-op" {
-  freeze_value(Value::Int(42L))
+  freeze_value(Value::Int(42N))
   freeze_value(Value::String(StarlarkString::new("hello")))
   freeze_value(Value::None)
 }

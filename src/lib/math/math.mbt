@@ -2,7 +2,7 @@
 fn to_float(name : String, v : @value.Value) -> Result[Double, String] {
   match v {
     @value.Value::Float(f) => Ok(f)
-    @value.Value::Int(i) => Ok(i.to_double())
+    @value.Value::Int(i) => Ok(@value.bigint_to_double(i))
     _ => Err("\{name}: got \{@value.type_name(v)}, want float or int")
   }
 }
@@ -156,7 +156,7 @@ fn float_to_int(name : String, f : Double) -> Result[@value.Value, String] {
   } else if f.is_nan() {
     Err("\{name}: cannot convert float NaN to integer")
   } else {
-    Ok(@value.Value::Int(f.to_int64()))
+    Ok(@value.Value::Int(BigInt::from_int64(f.to_int64())))
   }
 }
 

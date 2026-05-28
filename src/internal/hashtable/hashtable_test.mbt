@@ -27,7 +27,7 @@ test "Hashtable: lookup on empty table returns None" {
 test "Hashtable: insert and lookup a string key" {
   let ht = new_dict()
   let key = @value.Value::String(@value.StarlarkString::new("hello"))
-  let val = @value.Value::Int(42L)
+  let val = @value.Value::Int(42N)
   assert_true(ht.insert(key, val) is Ok(_))
   assert_eq(ht.length(), 1)
   assert_true(ht.lookup(key) == Ok(Some(val)))
@@ -36,17 +36,17 @@ test "Hashtable: insert and lookup a string key" {
 ///|
 test "Hashtable: insert duplicate key updates value" {
   let ht = new_dict()
-  let key = @value.Value::Int(1L)
-  assert_true(ht.insert(key, @value.Value::Int(10L)) is Ok(_))
-  assert_true(ht.insert(key, @value.Value::Int(20L)) is Ok(_))
+  let key = @value.Value::Int(1N)
+  assert_true(ht.insert(key, @value.Value::Int(10N)) is Ok(_))
+  assert_true(ht.insert(key, @value.Value::Int(20N)) is Ok(_))
   assert_eq(ht.length(), 1)
-  assert_true(ht.lookup(key) == Ok(Some(@value.Value::Int(20L))))
+  assert_true(ht.lookup(key) == Ok(Some(@value.Value::Int(20N))))
 }
 
 ///|
 test "Hashtable: delete existing key returns true" {
   let ht = new_dict()
-  let key = @value.Value::Int(5L)
+  let key = @value.Value::Int(5N)
   ht.insert(key, @value.Value::None) |> ignore
   assert_true(ht.delete(key) == Ok(true))
   assert_eq(ht.length(), 0)
@@ -56,7 +56,7 @@ test "Hashtable: delete existing key returns true" {
 ///|
 test "Hashtable: delete missing key returns false" {
   let ht = new_dict()
-  let result = ht.delete(@value.Value::Int(99L))
+  let result = ht.delete(@value.Value::Int(99N))
   assert_true(result == Ok(false))
 }
 
@@ -64,13 +64,13 @@ test "Hashtable: delete missing key returns false" {
 test "Hashtable: multiple keys coexist" {
   let ht = new_dict()
   for i in 0..<10 {
-    let key = @value.Value::Int(i.to_int64())
-    ht.insert(key, @value.Value::Int((i * 2).to_int64())) |> ignore
+    let key = @value.Value::Int(BigInt::from_int(i))
+    ht.insert(key, @value.Value::Int(BigInt::from_int(i * 2))) |> ignore
   }
   assert_eq(ht.length(), 10)
   for i in 0..<10 {
-    let key = @value.Value::Int(i.to_int64())
-    let expected = @value.Value::Int((i * 2).to_int64())
+    let key = @value.Value::Int(BigInt::from_int(i))
+    let expected = @value.Value::Int(BigInt::from_int(i * 2))
     assert_true(ht.lookup(key) == Ok(Some(expected)))
   }
 }
@@ -97,9 +97,9 @@ test "Hashtable: insertion order preserved during iteration" {
 ///|
 test "Hashtable: insertion order maintained after delete" {
   let ht = new_dict()
-  let k0 = @value.Value::Int(0L)
-  let k1 = @value.Value::Int(1L)
-  let k2 = @value.Value::Int(2L)
+  let k0 = @value.Value::Int(0N)
+  let k1 = @value.Value::Int(1N)
+  let k2 = @value.Value::Int(2N)
   ht.insert(k0, @value.Value::None) |> ignore
   ht.insert(k1, @value.Value::None) |> ignore
   ht.insert(k2, @value.Value::None) |> ignore
@@ -114,28 +114,28 @@ test "Hashtable: insertion order maintained after delete" {
 ///|
 test "Hashtable: None key is hashable" {
   let ht = new_dict()
-  assert_true(ht.insert(@value.Value::None, @value.Value::Int(1L)) is Ok(_))
-  assert_true(ht.lookup(@value.Value::None) == Ok(Some(@value.Value::Int(1L))))
+  assert_true(ht.insert(@value.Value::None, @value.Value::Int(1N)) is Ok(_))
+  assert_true(ht.lookup(@value.Value::None) == Ok(Some(@value.Value::Int(1N))))
 }
 
 ///|
 test "Hashtable: Bool keys are hashable" {
   let ht = new_dict()
-  ht.insert(@value.Value::Bool(true), @value.Value::Int(1L)) |> ignore
-  ht.insert(@value.Value::Bool(false), @value.Value::Int(0L)) |> ignore
+  ht.insert(@value.Value::Bool(true), @value.Value::Int(1N)) |> ignore
+  ht.insert(@value.Value::Bool(false), @value.Value::Int(0N)) |> ignore
   assert_eq(ht.length(), 2)
   assert_true(
-    ht.lookup(@value.Value::Bool(true)) == Ok(Some(@value.Value::Int(1L))),
+    ht.lookup(@value.Value::Bool(true)) == Ok(Some(@value.Value::Int(1N))),
   )
   assert_true(
-    ht.lookup(@value.Value::Bool(false)) == Ok(Some(@value.Value::Int(0L))),
+    ht.lookup(@value.Value::Bool(false)) == Ok(Some(@value.Value::Int(0N))),
   )
 }
 
 ///|
 test "Hashtable: Tuple key is hashable" {
   let ht = new_dict()
-  let key = @value.Value::Tuple([@value.Value::Int(1L), @value.Value::Int(2L)])
+  let key = @value.Value::Tuple([@value.Value::Int(1N), @value.Value::Int(2N)])
   assert_true(
     ht.insert(key, @value.Value::String(@value.StarlarkString::new("ok")))
     is Ok(_),
@@ -158,16 +158,16 @@ test "Hashtable: List key is unhashable" {
 test "Hashtable: freeze prevents insert" {
   let ht = new_dict()
   ht.freeze()
-  let result = ht.insert(@value.Value::Int(1L), @value.Value::None)
+  let result = ht.insert(@value.Value::Int(1N), @value.Value::None)
   assert_true(result is Err(_))
 }
 
 ///|
 test "Hashtable: freeze prevents delete" {
   let ht = new_dict()
-  ht.insert(@value.Value::Int(1L), @value.Value::None) |> ignore
+  ht.insert(@value.Value::Int(1N), @value.Value::None) |> ignore
   ht.freeze()
-  let result = ht.delete(@value.Value::Int(1L))
+  let result = ht.delete(@value.Value::Int(1N))
   assert_true(result is Err(_))
 }
 
@@ -175,13 +175,16 @@ test "Hashtable: freeze prevents delete" {
 test "Hashtable: maintains correctness when storing many entries" {
   let ht = new_dict()
   for i in 0..<100 {
-    ht.insert(@value.Value::Int(i.to_int64()), @value.Value::Int(i.to_int64()))
+    ht.insert(
+      @value.Value::Int(BigInt::from_int(i)),
+      @value.Value::Int(BigInt::from_int(i)),
+    )
     |> ignore
   }
   assert_eq(ht.length(), 100)
   for i in 0..<100 {
-    let key = @value.Value::Int(i.to_int64())
-    let expected = Some(@value.Value::Int(i.to_int64()))
+    let key = @value.Value::Int(BigInt::from_int(i))
+    let expected = Some(@value.Value::Int(BigInt::from_int(i)))
     assert_true(ht.lookup(key) == Ok(expected))
   }
 }
@@ -189,8 +192,8 @@ test "Hashtable: maintains correctness when storing many entries" {
 ///|
 test "Hashtable: contains returns true for existing key" {
   let ht = new_dict()
-  let key = @value.Value::Int(7L)
+  let key = @value.Value::Int(7N)
   ht.insert(key, @value.Value::None) |> ignore
   assert_true(ht.contains(key) == Ok(true))
-  assert_true(ht.contains(@value.Value::Int(99L)) == Ok(false))
+  assert_true(ht.contains(@value.Value::Int(99N)) == Ok(false))
 }

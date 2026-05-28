@@ -219,3 +219,35 @@ test "int.star: all assertions pass" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let bigint_star_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|maxint64 = (1 << 63) - 1
+  #|minint64 = -1 << 63
+  #|maxint32 = (1 << 31) - 1
+  #|minint32 = -1 << 31
+  #|
+  #|# overflow past Int64 range
+  #|assert.eq(str(maxint64 + 1), "9223372036854775808")
+  #|assert.eq(str(minint64 - 1), "-9223372036854775809")
+  #|assert.eq(str(minint64 * minint64), "85070591730234615865843651857942052864")
+  #|
+  #|# large literals
+  #|assert.eq(9223372036854775808, maxint64 + 1)
+  #|
+  #|# power
+  #|assert.eq(str(2 ** 64), "18446744073709551616")
+  #|assert.eq(str(2 ** 100), "1267650600228229401496703205376")
+  #|
+  #|# minint64 literal
+  #|assert.eq(str(-9223372036854775808), "-9223372036854775808")
+
+///|
+test "int.star: bigint precision cases" {
+  let errs = run_star_string(bigint_star_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

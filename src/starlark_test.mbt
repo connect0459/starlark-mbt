@@ -39,7 +39,7 @@ test "exec_file runs a simple script and exposes globals" {
     @starlark.exec_file(t, "<test>", "x = 1 + 2", @starlark.Options::default()) {
     Ok(m) =>
       assert_true(
-        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(3L)),
+        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(3N)),
       )
     Err(_) => assert_true(false)
   }
@@ -75,7 +75,7 @@ test "eval_expr evaluates an expression in an empty environment" {
   let t = @starlark.Thread::new("test")
   let env = @starlark.StarlarkDict::new()
   match @starlark.eval_expr(t, "<test>", "1 + 2", env) {
-    Ok(v) => assert_true(v is @starlark.Value::Int(3L))
+    Ok(v) => assert_true(v is @starlark.Value::Int(3N))
     Err(_) => assert_true(false)
   }
 }
@@ -84,7 +84,7 @@ test "eval_expr evaluates an expression in an empty environment" {
 test "exec_file_with_predeclared injects host bindings" {
   let t = @starlark.Thread::new("test")
   let predeclared = @starlark.Predeclared::from_map({
-    "ANSWER": @starlark.Value::Int(42L),
+    "ANSWER": @starlark.Value::Int(42N),
   })
   match
     @starlark.exec_file_with_predeclared(
@@ -96,7 +96,7 @@ test "exec_file_with_predeclared injects host bindings" {
     ) {
     Ok(m) =>
       assert_true(
-        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(43L)),
+        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(43N)),
       )
     Err(_) => assert_true(false)
   }
@@ -151,28 +151,28 @@ test "Thread::call_stack snapshot is independent after pop" {
 
 ///|
 test "equal returns Ok(true) for equal values" {
-  let a = @starlark.Value::Int(42L)
-  let b = @starlark.Value::Int(42L)
+  let a = @starlark.Value::Int(42N)
+  let b = @starlark.Value::Int(42N)
   assert_true(@starlark.equal(a, b) is Ok(true))
 }
 
 ///|
 test "equal returns Ok(false) for unequal values" {
-  let a = @starlark.Value::Int(1L)
-  let b = @starlark.Value::Int(2L)
+  let a = @starlark.Value::Int(1N)
+  let b = @starlark.Value::Int(2N)
   assert_true(@starlark.equal(a, b) is Ok(false))
 }
 
 ///|
 test "equal returns Ok(true) for Int equal to Float" {
-  let a = @starlark.Value::Int(1L)
+  let a = @starlark.Value::Int(1N)
   let b = @starlark.Value::Float(1.0)
   assert_true(@starlark.equal(a, b) is Ok(true))
 }
 
 ///|
 test "number_to_int returns Some for Int" {
-  let v = @starlark.Value::Int(7L)
+  let v = @starlark.Value::Int(7N)
   assert_true(@starlark.number_to_int(v) is Some(7L))
 }
 
@@ -198,7 +198,7 @@ test "as_float extracts Double from Float" {
 
 ///|
 test "as_float converts Int to Double" {
-  let v = @starlark.Value::Int(3L)
+  let v = @starlark.Value::Int(3N)
   let (f, ok) = @starlark.as_float(v)
   assert_true(ok)
   assert_true(f == 3.0)
@@ -222,7 +222,7 @@ test "as_string extracts raw string from String value" {
 
 ///|
 test "as_string returns empty string and false for non-string" {
-  let v = @starlark.Value::Int(1L)
+  let v = @starlark.Value::Int(1N)
   let (s, ok) = @starlark.as_string(v)
   assert_false(ok)
   assert_eq(s, "")
@@ -232,8 +232,8 @@ test "as_string returns empty string and false for non-string" {
 test "len_of returns sequence length for List" {
   let v = @starlark.Value::List(
     @starlark.StarlarkList::new([
-      @starlark.Value::Int(1L),
-      @starlark.Value::Int(2L),
+      @starlark.Value::Int(1N),
+      @starlark.Value::Int(2N),
     ]),
   )
   assert_eq(@starlark.len_of(v), 2)
@@ -241,18 +241,18 @@ test "len_of returns sequence length for List" {
 
 ///|
 test "len_of returns -1 for non-sequence" {
-  let v = @starlark.Value::Int(5L)
+  let v = @starlark.Value::Int(5N)
   assert_eq(@starlark.len_of(v), -1)
 }
 
 ///|
 test "iterate returns an iterator for a list" {
   let lst = @starlark.Value::List(
-    @starlark.StarlarkList::new([@starlark.Value::Int(10L)]),
+    @starlark.StarlarkList::new([@starlark.Value::Int(10N)]),
   )
   match @starlark.iterate(lst) {
     Ok(it) => {
-      assert_true(it.next() is Some(@starlark.Value::Int(10L)))
+      assert_true(it.next() is Some(@starlark.Value::Int(10N)))
       it.done()
     }
     Err(_) => assert_true(false)
@@ -261,7 +261,7 @@ test "iterate returns an iterator for a list" {
 
 ///|
 test "iterate returns Err for non-iterable" {
-  let v = @starlark.Value::Int(1L)
+  let v = @starlark.Value::Int(1N)
   assert_true(@starlark.iterate(v) is Err(_))
 }
 
@@ -282,10 +282,10 @@ test "call invokes a Starlark function from the host" {
             @starlark.call(
               t,
               fn_val,
-              [@starlark.Value::Int(3L), @starlark.Value::Int(4L)],
+              [@starlark.Value::Int(3N), @starlark.Value::Int(4N)],
               [],
             ) {
-            Ok(v) => assert_true(v is @starlark.Value::Int(7L))
+            Ok(v) => assert_true(v is @starlark.Value::Int(7N))
             Err(_) => assert_true(false)
           }
         None => assert_true(false)
@@ -297,12 +297,12 @@ test "call invokes a Starlark function from the host" {
 ///|
 test "StringDict: basic construction and access" {
   let d = @starlark.StringDict::new()
-  d.set("x", @starlark.Value::Int(1L))
+  d.set("x", @starlark.Value::Int(1N))
   d.set("y", @starlark.Value::Bool(true))
   assert_true(d.has("x"))
   assert_true(d.has("y"))
   assert_false(d.has("z"))
-  assert_true(d.get("x") == Some(@starlark.Value::Int(1L)))
+  assert_true(d.get("x") == Some(@starlark.Value::Int(1N)))
   assert_true(d.get("missing") == None)
 }
 
@@ -319,7 +319,7 @@ test "StringDict::keys returns sorted keys" {
 ///|
 test "StringDict::freeze freezes contained values" {
   let d = @starlark.StringDict::new()
-  let lst = @starlark.StarlarkList::new([@starlark.Value::Int(1L)])
+  let lst = @starlark.StarlarkList::new([@starlark.Value::Int(1N)])
   d.set("lst", @starlark.Value::List(lst))
   d.freeze()
   assert_true(lst.is_frozen())
@@ -327,14 +327,14 @@ test "StringDict::freeze freezes contained values" {
 
 ///|
 test "binary: integer arithmetic via public API" {
-  let two = @starlark.Value::Int(2L)
-  let three = @starlark.Value::Int(3L)
+  let two = @starlark.Value::Int(2N)
+  let three = @starlark.Value::Int(3N)
   match @starlark.binary("+", two, three) {
-    Ok(v) => assert_true(v == @starlark.Value::Int(5L))
+    Ok(v) => assert_true(v == @starlark.Value::Int(5N))
     Err(_) => assert_true(false)
   }
   match @starlark.binary("*", two, three) {
-    Ok(v) => assert_true(v == @starlark.Value::Int(6L))
+    Ok(v) => assert_true(v == @starlark.Value::Int(6N))
     Err(_) => assert_true(false)
   }
 }
@@ -349,8 +349,8 @@ test "unary: not operator via public API" {
 
 ///|
 test "compare: integer comparison via public API" {
-  let two = @starlark.Value::Int(2L)
-  let three = @starlark.Value::Int(3L)
+  let two = @starlark.Value::Int(2N)
+  let three = @starlark.Value::Int(3N)
   match @starlark.compare("<", two, three) {
     Ok(b) => assert_true(b)
     Err(_) => assert_true(false)
@@ -378,8 +378,8 @@ test "equal_depth with depth 0 returns recursion error" {
 
 ///|
 test "equal_depth with positive depth compares equal values" {
-  let a = @starlark.Value::Int(42L)
-  let b = @starlark.Value::Int(42L)
+  let a = @starlark.Value::Int(42N)
+  let b = @starlark.Value::Int(42N)
   match @starlark.equal_depth(a, b, 10) {
     Ok(true) => ()
     _ => assert_true(false)
@@ -398,8 +398,8 @@ test "compare_depth with depth 0 returns recursion error" {
 
 ///|
 test "compare_depth with positive depth handles ordered comparison" {
-  let a = @starlark.Value::Int(1L)
-  let b = @starlark.Value::Int(2L)
+  let a = @starlark.Value::Int(1N)
+  let b = @starlark.Value::Int(2N)
   match @starlark.compare_depth("<", a, b, 10) {
     Ok(true) => ()
     _ => assert_true(false)
@@ -579,7 +579,7 @@ test "Module::globals_map returns all module-level globals" {
 test "Module::predeclared_map returns predeclared bindings" {
   let t = @starlark.Thread::new("test")
   let pre = @starlark.Predeclared::new()
-  pre.set("answer", @starlark.Value::Int(42L))
+  pre.set("answer", @starlark.Value::Int(42N))
   match
     @starlark.exec_file_with_predeclared(
       t,
@@ -624,10 +624,10 @@ test "StarlarkBuiltinFunc::receiver returns None for unbound builtin" {
 ///|
 test "StarlarkBuiltinFunc::bind_receiver creates a bound builtin" {
   let b = @starlark.StarlarkBuiltinFunc::dispatch("my_method")
-  let recv = @starlark.Value::Int(42L)
+  let recv = @starlark.Value::Int(42N)
   let bound = b.bind_receiver(recv)
   match bound.receiver() {
-    Some(@starlark.Value::Int(42L)) => ()
+    Some(@starlark.Value::Int(42N)) => ()
     _ => assert_true(false)
   }
 }

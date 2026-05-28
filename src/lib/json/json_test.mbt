@@ -5,7 +5,7 @@ fn str_val(s : String) -> @value.Value {
 
 ///|
 fn int_val(n : Int64) -> @value.Value {
-  @value.Value::Int(n)
+  @value.Value::Int(BigInt::from_int64(n))
 }
 
 ///|

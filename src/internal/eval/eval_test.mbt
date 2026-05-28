@@ -114,7 +114,7 @@ test "Thread without step budget completes a long computation" {
       "x = 0\nfor i in range(100):\n  x = x + i",
       Options::default(),
     ) {
-    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(4950L)))
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(4950N)))
     Err(_) => assert_true(false)
   }
 }
@@ -248,7 +248,7 @@ test "eval_expr: False literal evaluates to Bool(false)" {
 
 ///|
 test "eval_expr: integer literal evaluates to Int" {
-  assert_true(eval_e("42") is Ok(@value.Value::Int(42L)))
+  assert_true(eval_e("42") is Ok(@value.Value::Int(42N)))
 }
 
 ///|
@@ -268,34 +268,34 @@ test "eval_expr: string literal evaluates to String" {
 
 ///|
 test "eval_expr: integer addition produces correct sum" {
-  assert_true(eval_e("1 + 2") is Ok(@value.Value::Int(3L)))
+  assert_true(eval_e("1 + 2") is Ok(@value.Value::Int(3N)))
 }
 
 ///|
 test "eval_expr: integer subtraction produces correct difference" {
-  assert_true(eval_e("10 - 3") is Ok(@value.Value::Int(7L)))
+  assert_true(eval_e("10 - 3") is Ok(@value.Value::Int(7N)))
 }
 
 ///|
 test "eval_expr: integer multiplication produces correct product" {
-  assert_true(eval_e("4 * 5") is Ok(@value.Value::Int(20L)))
+  assert_true(eval_e("4 * 5") is Ok(@value.Value::Int(20N)))
 }
 
 ///|
 test "eval_expr: floor division truncates toward negative infinity" {
-  assert_true(eval_e("7 // 2") is Ok(@value.Value::Int(3L)))
-  assert_true(eval_e("-7 // 2") is Ok(@value.Value::Int(-4L)))
-  assert_true(eval_e("7 // -2") is Ok(@value.Value::Int(-4L)))
+  assert_true(eval_e("7 // 2") is Ok(@value.Value::Int(3N)))
+  assert_true(eval_e("-7 // 2") is Ok(@value.Value::Int(-4N)))
+  assert_true(eval_e("7 // -2") is Ok(@value.Value::Int(-4N)))
 }
 
 ///|
 test "eval_expr: modulo returns remainder consistent with floor division" {
-  assert_true(eval_e("7 % 3") is Ok(@value.Value::Int(1L)))
+  assert_true(eval_e("7 % 3") is Ok(@value.Value::Int(1N)))
 }
 
 ///|
 test "eval_expr: unary negation negates integer" {
-  assert_true(eval_e("-5") is Ok(@value.Value::Int(-5L)))
+  assert_true(eval_e("-5") is Ok(@value.Value::Int(-5N)))
 }
 
 ///|
@@ -322,7 +322,7 @@ test "eval_expr: and returns first falsy operand" {
 
 ///|
 test "eval_expr: and returns last operand when both truthy" {
-  assert_true(eval_e("True and 42") is Ok(@value.Value::Int(42L)))
+  assert_true(eval_e("True and 42") is Ok(@value.Value::Int(42N)))
 }
 
 ///|
@@ -332,7 +332,7 @@ test "eval_expr: or returns first truthy operand" {
 
 ///|
 test "eval_expr: or returns last operand when all falsy" {
-  assert_true(eval_e("False or 0") is Ok(@value.Value::Int(0L)))
+  assert_true(eval_e("False or 0") is Ok(@value.Value::Int(0N)))
 }
 
 // --- eval_expr: comparisons ---
@@ -361,12 +361,12 @@ test "eval_expr: greater than holds between ordered integers" {
 
 ///|
 test "eval_expr: conditional returns true branch when condition is truthy" {
-  assert_true(eval_e("1 if True else 2") is Ok(@value.Value::Int(1L)))
+  assert_true(eval_e("1 if True else 2") is Ok(@value.Value::Int(1N)))
 }
 
 ///|
 test "eval_expr: conditional returns false branch when condition is falsy" {
-  assert_true(eval_e("1 if False else 2") is Ok(@value.Value::Int(2L)))
+  assert_true(eval_e("1 if False else 2") is Ok(@value.Value::Int(2N)))
 }
 
 // --- eval_expr: collection literals ---
@@ -384,8 +384,8 @@ test "eval_expr: list literal with elements has correct elements" {
   match eval_e("[1, 2, 3]") {
     Ok(@value.Value::List(l)) => {
       assert_eq(l.length(), 3)
-      assert_true(l.get(0) == @value.Value::Int(1L))
-      assert_true(l.get(2) == @value.Value::Int(3L))
+      assert_true(l.get(0) == @value.Value::Int(1N))
+      assert_true(l.get(2) == @value.Value::Int(3N))
     }
     _ => assert_true(false)
   }
@@ -396,7 +396,7 @@ test "eval_expr: tuple literal with elements has correct elements" {
   match eval_e("(1, 2)") {
     Ok(@value.Value::Tuple(t)) => {
       assert_eq(t.length(), 2)
-      assert_true(t[0] == @value.Value::Int(1L))
+      assert_true(t[0] == @value.Value::Int(1N))
     }
     _ => assert_true(false)
   }
@@ -408,7 +408,7 @@ test "eval_expr: dict literal with entries has correct entries" {
     Ok(@value.Value::Dict(d)) => {
       assert_eq(d.length(), 1)
       let key = @value.Value::String(@value.StarlarkString::new("a"))
-      assert_true(d.get(key) == Ok(Some(@value.Value::Int(1L))))
+      assert_true(d.get(key) == Ok(Some(@value.Value::Int(1N))))
     }
     _ => assert_true(false)
   }
@@ -419,7 +419,7 @@ test "eval_expr: dict literal with entries has correct entries" {
 ///|
 test "exec_file: integer assignment binds value to global variable" {
   match exec_src("x = 42") {
-    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(42L)))
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(42N)))
     Err(_) => assert_true(false)
   }
 }
@@ -427,7 +427,7 @@ test "exec_file: integer assignment binds value to global variable" {
 ///|
 test "exec_file: expression evaluation produces correct global binding" {
   match exec_src("x = 1 + 2") {
-    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(3L)))
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(3N)))
     Err(_) => assert_true(false)
   }
 }
@@ -435,7 +435,7 @@ test "exec_file: expression evaluation produces correct global binding" {
 ///|
 test "exec_file: if-true branch binds the consequent value" {
   match exec_src("if True:\n  x = 1\nelse:\n  x = 2") {
-    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(1L)))
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(1N)))
     Err(_) => assert_true(false)
   }
 }
@@ -443,7 +443,7 @@ test "exec_file: if-true branch binds the consequent value" {
 ///|
 test "exec_file: if-false branch binds the alternative value" {
   match exec_src("if False:\n  x = 1\nelse:\n  x = 2") {
-    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(2L)))
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(2N)))
     Err(_) => assert_true(false)
   }
 }
@@ -451,7 +451,7 @@ test "exec_file: if-false branch binds the alternative value" {
 ///|
 test "exec_file: for loop accumulates sum over range" {
   match exec_src("x = 0\nfor i in [1, 2, 3]:\n  x = x + i") {
-    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(6L)))
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(6N)))
     Err(_) => assert_true(false)
   }
 }
@@ -460,7 +460,7 @@ test "exec_file: for loop accumulates sum over range" {
 test "exec_file: function definition and call returns correct value" {
   match exec_src("def f(x):\n  return x + 1\nresult = f(41)") {
     Ok(m) =>
-      assert_true(get_global(m, "result") == Some(@value.Value::Int(42L)))
+      assert_true(get_global(m, "result") == Some(@value.Value::Int(42N)))
     Err(_) => assert_true(false)
   }
 }
@@ -500,7 +500,7 @@ fn make_loader(
 ///|
 test "load_binds_globally=false: loaded names excluded from module globals" {
   let mods : Map[String, Map[String, @value.Value]] = {
-    "a.star": { "x": @value.Value::Int(42L) },
+    "a.star": { "x": @value.Value::Int(42N) },
   }
   let t = Thread::with_loader("test", make_loader(mods))
   match
@@ -521,7 +521,7 @@ test "load_binds_globally=false: loaded names excluded from module globals" {
 ///|
 test "load_binds_globally=true: loaded names included in module globals" {
   let mods : Map[String, Map[String, @value.Value]] = {
-    "a.star": { "x": @value.Value::Int(42L) },
+    "a.star": { "x": @value.Value::Int(42N) },
   }
   let t = Thread::with_loader("test", make_loader(mods))
   match
@@ -531,7 +531,7 @@ test "load_binds_globally=true: loaded names included in module globals" {
       "load(\"a.star\", \"x\")",
       make_opts_load_binds(true),
     ) {
-    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(42L)))
+    Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(42N)))
     Err(e) => {
       println(e.msg())
       assert_true(false)
@@ -542,7 +542,7 @@ test "load_binds_globally=true: loaded names included in module globals" {
 ///|
 test "load_binds_globally=false: loaded name is usable within the same file" {
   let mods : Map[String, Map[String, @value.Value]] = {
-    "a.star": { "x": @value.Value::Int(42L) },
+    "a.star": { "x": @value.Value::Int(42N) },
   }
   let t = Thread::with_loader("test", make_loader(mods))
   let src =
@@ -551,7 +551,7 @@ test "load_binds_globally=false: loaded name is usable within the same file" {
   match exec_file(t, "<test>", src, make_opts_load_binds(false)) {
     Ok(m) => {
       assert_true(get_global(m, "x") is None)
-      assert_true(get_global(m, "y") == Some(@value.Value::Int(43L)))
+      assert_true(get_global(m, "y") == Some(@value.Value::Int(43N)))
     }
     Err(e) => {
       println(e.msg())
@@ -563,7 +563,7 @@ test "load_binds_globally=false: loaded name is usable within the same file" {
 ///|
 test "load_binds_globally=false: loaded name is accessible from a function body" {
   let mods : Map[String, Map[String, @value.Value]] = {
-    "a.star": { "x": @value.Value::Int(42L) },
+    "a.star": { "x": @value.Value::Int(42N) },
   }
   let t = Thread::with_loader("test", make_loader(mods))
   let src =
@@ -574,7 +574,7 @@ test "load_binds_globally=false: loaded name is accessible from a function body"
   match exec_file(t, "<test>", src, make_opts_load_binds(false)) {
     Ok(m) => {
       assert_true(get_global(m, "x") is None)
-      assert_true(get_global(m, "result") == Some(@value.Value::Int(42L)))
+      assert_true(get_global(m, "result") == Some(@value.Value::Int(42N)))
     }
     Err(e) => {
       println(e.msg())
@@ -600,7 +600,7 @@ test "exec_repl_chunk: assigns a variable into globals dict" {
   let globals = @value.StarlarkDict::new()
   match
     exec_repl_chunk(thread, "<repl>", "x = 42", globals, Options::default()) {
-    Ok(_) => assert_true(dict_get(globals, "x") == Some(@value.Value::Int(42L)))
+    Ok(_) => assert_true(dict_get(globals, "x") == Some(@value.Value::Int(42N)))
     Err(e) => {
       println(e.msg())
       assert_true(false)
@@ -621,7 +621,7 @@ test "exec_repl_chunk: subsequent chunk sees variables from previous chunk" {
   )
   match
     exec_repl_chunk(thread, "<repl>", "y = x + 5", globals, Options::default()) {
-    Ok(_) => assert_true(dict_get(globals, "y") == Some(@value.Value::Int(15L)))
+    Ok(_) => assert_true(dict_get(globals, "y") == Some(@value.Value::Int(15N)))
     Err(e) => {
       println(e.msg())
       assert_true(false)

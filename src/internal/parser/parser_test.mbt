@@ -21,7 +21,7 @@ fn parse_f(src : String) -> @syntax.File {
 ///|
 test "integer literal is parsed as LitInt" {
   match parse_e("42") {
-    ELiteral(LitInt(42L), _) => ()
+    ELiteral(LitInt(42N), _) => ()
     _ => fail("expected LitInt(42)")
   }
 }
@@ -29,7 +29,7 @@ test "integer literal is parsed as LitInt" {
 ///|
 test "zero integer literal" {
   match parse_e("0") {
-    ELiteral(LitInt(0L), _) => ()
+    ELiteral(LitInt(0N), _) => ()
     _ => fail("expected LitInt(0)")
   }
 }
@@ -37,7 +37,7 @@ test "zero integer literal" {
 ///|
 test "hex integer literal" {
   match parse_e("0xFF") {
-    ELiteral(LitInt(255L), _) => ()
+    ELiteral(LitInt(255N), _) => ()
     _ => fail("expected LitInt(255)")
   }
 }
@@ -95,7 +95,7 @@ test "identifier is parsed as EIdent" {
 ///|
 test "unary minus on integer" {
   match parse_e("-1") {
-    EUnary(OpMinus, ELiteral(LitInt(1L), _), _) => ()
+    EUnary(OpMinus, ELiteral(LitInt(1N), _), _) => ()
     _ => fail("expected EUnary(OpMinus, LitInt(1))")
   }
 }
@@ -121,7 +121,7 @@ test "unary bitwise not" {
 ///|
 test "binary addition" {
   match parse_e("1 + 2") {
-    EBinary(ELiteral(LitInt(1L), _), OpAdd, ELiteral(LitInt(2L), _), _) => ()
+    EBinary(ELiteral(LitInt(1N), _), OpAdd, ELiteral(LitInt(2N), _), _) => ()
     _ => fail("expected 1 + 2")
   }
 }
@@ -130,9 +130,9 @@ test "binary addition" {
 test "multiplication has higher precedence than addition" {
   match parse_e("1 + 2 * 3") {
     EBinary(
-      ELiteral(LitInt(1L), _),
+      ELiteral(LitInt(1N), _),
       OpAdd,
-      EBinary(ELiteral(LitInt(2L), _), OpMul, ELiteral(LitInt(3L), _), _),
+      EBinary(ELiteral(LitInt(2N), _), OpMul, ELiteral(LitInt(3N), _), _),
       _
     ) => ()
     _ => fail("expected 1 + (2 * 3)")
@@ -150,7 +150,7 @@ test "floor division" {
 ///|
 test "power operator" {
   match parse_e("2 ** 10") {
-    EBinary(ELiteral(LitInt(2L), _), OpPow, ELiteral(LitInt(10L), _), _) => ()
+    EBinary(ELiteral(LitInt(2N), _), OpPow, ELiteral(LitInt(10N), _), _) => ()
     _ => fail("expected 2 ** 10")
   }
 }
@@ -201,9 +201,9 @@ test "boolean or" {
 test "conditional expression x if c else y" {
   match parse_e("1 if True else 0") {
     ECond(
-      ELiteral(LitInt(1L), _),
+      ELiteral(LitInt(1N), _),
       ELiteral(LitBool(true), _),
-      ELiteral(LitInt(0L), _),
+      ELiteral(LitInt(0N), _),
       _
     ) => ()
     _ => fail("expected conditional expression")
@@ -300,7 +300,7 @@ test "function call with keyword arg" {
     ECall(EIdent("f", _), args, _) => {
       assert_eq(args.length(), 1)
       match args[0] {
-        ArgKw("x", ELiteral(LitInt(1L), _), _) => ()
+        ArgKw("x", ELiteral(LitInt(1N), _), _) => ()
         _ => fail("expected keyword arg x=1")
       }
     }
@@ -319,7 +319,7 @@ test "attribute access" {
 ///|
 test "index access" {
   match parse_e("lst[0]") {
-    EIndex(EIdent("lst", _), ELiteral(LitInt(0L), _), _) => ()
+    EIndex(EIdent("lst", _), ELiteral(LitInt(0N), _), _) => ()
     _ => fail("expected lst[0]")
   }
 }
@@ -329,8 +329,8 @@ test "slice with start and end" {
   match parse_e("lst[1:3]") {
     ESlice(
       EIdent("lst", _),
-      Some(ELiteral(LitInt(1L), _)),
-      Some(ELiteral(LitInt(3L), _)),
+      Some(ELiteral(LitInt(1N), _)),
+      Some(ELiteral(LitInt(3N), _)),
       None,
       _
     ) => ()
@@ -341,7 +341,7 @@ test "slice with start and end" {
 ///|
 test "full slice with step" {
   match parse_e("lst[::2]") {
-    ESlice(EIdent("lst", _), None, None, Some(ELiteral(LitInt(2L), _)), _) => ()
+    ESlice(EIdent("lst", _), None, None, Some(ELiteral(LitInt(2N), _)), _) => ()
     _ => fail("expected lst[::2]")
   }
 }
@@ -351,7 +351,7 @@ test "full slice with step" {
 ///|
 test "lambda with no params" {
   match parse_e("lambda: 42") {
-    ELambda(params, ELiteral(LitInt(42L), _), _) =>
+    ELambda(params, ELiteral(LitInt(42N), _), _) =>
       assert_eq(params.length(), 0)
     _ => fail("expected lambda: 42")
   }
@@ -435,7 +435,7 @@ test "continue statement" {
 test "return with value" {
   let f = parse_f("return 42\n")
   match f.stmts()[0] {
-    SReturn(Some(ELiteral(LitInt(42L), _)), _) => ()
+    SReturn(Some(ELiteral(LitInt(42N), _)), _) => ()
     _ => fail("expected SReturn(42)")
   }
 }
@@ -453,7 +453,7 @@ test "return without value" {
 test "simple assignment" {
   let f = parse_f("x = 1\n")
   match f.stmts()[0] {
-    SAssign(EIdent("x", _), ELiteral(LitInt(1L), _), _) => ()
+    SAssign(EIdent("x", _), ELiteral(LitInt(1N), _), _) => ()
     _ => fail("expected x = 1")
   }
 }
@@ -462,7 +462,7 @@ test "simple assignment" {
 test "augmented assignment plus-equals" {
   let f = parse_f("x += 1\n")
   match f.stmts()[0] {
-    SAugAssign(EIdent("x", _), AugAdd, ELiteral(LitInt(1L), _), _) => ()
+    SAugAssign(EIdent("x", _), AugAdd, ELiteral(LitInt(1N), _), _) => ()
     _ => fail("expected x += 1")
   }
 }
@@ -544,7 +544,7 @@ test "function definition with param and default" {
         _ => fail("expected param x")
       }
       match params[1] {
-        ParamDefault("y", ELiteral(LitInt(1L), _), _) => ()
+        ParamDefault("y", ELiteral(LitInt(1N), _), _) => ()
         _ => fail("expected param y=1")
       }
     }

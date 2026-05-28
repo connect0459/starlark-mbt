@@ -19,7 +19,7 @@ fn extract_duration_ns(v : @value.Value) -> Int64? {
     @value.Value::ExtVal(c) =>
       if c.get_type_name() == "time.duration" {
         match c.get_attr("__ns") {
-          Ok(Some(@value.Value::Int(n))) => Some(n)
+          Ok(Some(@value.Value::Int(n))) => Some(n.to_int64())
           _ => None
         }
       } else {
@@ -36,7 +36,7 @@ fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
       if c.get_type_name() == "time.time" {
         match (c.get_attr("__sec"), c.get_attr("__nsec")) {
           (Ok(Some(@value.Value::Int(s))), Ok(Some(@value.Value::Int(n)))) =>
-            Some((s, n.to_int()))
+            Some((s.to_int64(), n.to_int()))
           _ => None
         }
       } else {
@@ -79,16 +79,18 @@ fn duration_equals(ns : Int64, other : @value.Value) -> Bool {
 ///|
 fn duration_attr(ns : Int64, name : String) -> Result[@value.Value?, String] {
   match name {
-    "__ns" => Ok(Some(@value.Value::Int(ns)))
+    "__ns" => Ok(Some(@value.Value::Int(BigInt::from_int64(ns))))
     "hours" =>
       Ok(Some(@value.Value::Float(ns.to_double() / ns_per_hour.to_double())))
     "minutes" =>
       Ok(Some(@value.Value::Float(ns.to_double() / ns_per_minute.to_double())))
     "seconds" =>
       Ok(Some(@value.Value::Float(ns.to_double() / ns_per_second.to_double())))
-    "milliseconds" => Ok(Some(@value.Value::Int(ns / ns_per_millisecond)))
-    "microseconds" => Ok(Some(@value.Value::Int(ns / ns_per_microsecond)))
-    "nanoseconds" => Ok(Some(@value.Value::Int(ns)))
+    "milliseconds" =>
+      Ok(Some(@value.Value::Int(BigInt::from_int64(ns / ns_per_millisecond))))
+    "microseconds" =>
+      Ok(Some(@value.Value::Int(BigInt::from_int64(ns / ns_per_microsecond))))
+    "nanoseconds" => Ok(Some(@value.Value::Int(BigInt::from_int64(ns))))
     _ => Ok(None)
   }
 }
@@ -133,10 +135,10 @@ fn duration_binary(
       if is_left {
         match rhs {
           @value.Value::Int(i) =>
-            if i == 0L {
+            if i.is_zero() {
               Some(Err("time.duration division by zero"))
             } else {
-              Some(Ok(make_duration(ns / i)))
+              Some(Ok(make_duration(ns / i.to_int64())))
             }
           @value.Value::Float(f) =>
             if f == 0.0 {
@@ -167,7 +169,7 @@ fn duration_binary(
             if rhs_ns == 0L {
               Some(Err("time.duration division by zero"))
             } else {
-              Some(Ok(@value.Value::Int(ns / rhs_ns)))
+              Some(Ok(@value.Value::Int(BigInt::from_int64(ns / rhs_ns))))
             }
           None => None
         }
@@ -176,7 +178,7 @@ fn duration_binary(
       }
     "*" =>
       match rhs {
-        @value.Value::Int(i) => Some(Ok(make_duration(ns * i)))
+        @value.Value::Int(i) => Some(Ok(make_duration(ns * i.to_int64())))
         _ => None
       }
     _ => None
@@ -541,11 +543,17 @@ fn time_attr(
   name : String,
 ) -> Result[@value.Value?, String] {
   match name {
-    "__sec" => Ok(Some(@value.Value::Int(sec)))
-    "__nsec" => Ok(Some(@value.Value::Int(nsec.to_int64())))
-    "unix" => Ok(Some(@value.Value::Int(sec)))
+    "__sec" => Ok(Some(@value.Value::Int(BigInt::from_int64(sec))))
+    "__nsec" => Ok(Some(@value.Value::Int(BigInt::from_int(nsec))))
+    "unix" => Ok(Some(@value.Value::Int(BigInt::from_int64(sec))))
     "unix_nano" =>
-      Ok(Some(@value.Value::Int(sec * ns_per_second + nsec.to_int64())))
+      Ok(
+        Some(
+          @value.Value::Int(
+            BigInt::from_int64(sec * ns_per_second + nsec.to_int64()),
+          ),
+        ),
+      )
     "in_location" => {
       let m = make_in_location_method(sec, nsec)
       Ok(Some(m))
@@ -563,13 +571,13 @@ fn time_attr(
         _ => return Err("invalid time")
       }
       let v = match name {
-        "year" => @value.Value::Int(dt.year().to_int64())
-        "month" => @value.Value::Int(dt.month().to_int64())
-        "day" => @value.Value::Int(dt.day().to_int64())
-        "hour" => @value.Value::Int(dt.hour().to_int64())
-        "minute" => @value.Value::Int(dt.minute().to_int64())
-        "second" => @value.Value::Int(dt.second().to_int64())
-        "nanosecond" => @value.Value::Int(dt.nanosecond().to_int64())
+        "year" => @value.Value::Int(BigInt::from_int(dt.year()))
+        "month" => @value.Value::Int(BigInt::from_int(dt.month()))
+        "day" => @value.Value::Int(BigInt::from_int(dt.day()))
+        "hour" => @value.Value::Int(BigInt::from_int(dt.hour()))
+        "minute" => @value.Value::Int(BigInt::from_int(dt.minute()))
+        "second" => @value.Value::Int(BigInt::from_int(dt.second()))
+        "nanosecond" => @value.Value::Int(BigInt::from_int(dt.nanosecond()))
         _ => return Ok(None)
       }
       Ok(Some(v))
@@ -834,7 +842,7 @@ fn make_from_timestamp_fn() -> @value.Value {
       return Err("time.from_timestamp: unexpected keyword arguments")
     }
     let sec = match pos_args[0] {
-      @value.Value::Int(n) => n
+      @value.Value::Int(n) => n.to_int64()
       _ => return Err("time.from_timestamp: sec must be an integer")
     }
     let nsec = if pos_args.length() >= 2 {

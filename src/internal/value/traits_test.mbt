@@ -22,9 +22,9 @@ test "to_str: Bool returns True or False" {
 
 ///|
 test "to_str: Int returns decimal string" {
-  assert_eq(to_str(Value::Int(0L)), "0")
-  assert_eq(to_str(Value::Int(42L)), "42")
-  assert_eq(to_str(Value::Int(-1L)), "-1")
+  assert_eq(to_str(Value::Int(0N)), "0")
+  assert_eq(to_str(Value::Int(42N)), "42")
+  assert_eq(to_str(Value::Int(-1N)), "-1")
 }
 
 ///|
@@ -42,7 +42,7 @@ test "to_str: Bytes returns b-quoted repr" {
 test "to_str: List and Tuple same as repr" {
   assert_eq(to_str(Value::List(StarlarkList::new([]))), "[]")
   assert_eq(to_str(Value::Tuple([])), "()")
-  assert_eq(to_str(Value::Tuple([Value::Int(1L)])), "(1,)")
+  assert_eq(to_str(Value::Tuple([Value::Int(1N)])), "(1,)")
 }
 
 // --- starlark_equals ---
@@ -61,9 +61,9 @@ test "starlark_equals: Bool equal when same" {
 
 ///|
 test "starlark_equals: Int equal when same value" {
-  assert_true(starlark_equals(Value::Int(42L), Value::Int(42L)))
-  assert_false(starlark_equals(Value::Int(42L), Value::Int(43L)))
-  assert_true(starlark_equals(Value::Int(-1L), Value::Int(-1L)))
+  assert_true(starlark_equals(Value::Int(42N), Value::Int(42N)))
+  assert_false(starlark_equals(Value::Int(42N), Value::Int(43N)))
+  assert_true(starlark_equals(Value::Int(-1N), Value::Int(-1N)))
 }
 
 ///|
@@ -108,10 +108,10 @@ test "starlark_equals: List equal when same length and elements" {
   let mk = fn(items : Array[Value]) -> Value {
     Value::List(StarlarkList::new(items))
   }
-  let a = mk([Value::Int(1L), Value::Int(2L)])
-  let b = mk([Value::Int(1L), Value::Int(2L)])
-  let c = mk([Value::Int(1L), Value::Int(3L)])
-  let d = mk([Value::Int(1L)])
+  let a = mk([Value::Int(1N), Value::Int(2N)])
+  let b = mk([Value::Int(1N), Value::Int(2N)])
+  let c = mk([Value::Int(1N), Value::Int(3N)])
+  let d = mk([Value::Int(1N)])
   assert_true(starlark_equals(a, b))
   assert_false(starlark_equals(a, c))
   assert_false(starlark_equals(a, d))
@@ -119,29 +119,29 @@ test "starlark_equals: List equal when same length and elements" {
 
 ///|
 test "starlark_equals: Tuple equal when same length and elements" {
-  let a = Value::Tuple([Value::Int(1L), Value::Int(2L)])
-  let b = Value::Tuple([Value::Int(1L), Value::Int(2L)])
-  let c = Value::Tuple([Value::Int(1L), Value::Int(3L)])
+  let a = Value::Tuple([Value::Int(1N), Value::Int(2N)])
+  let b = Value::Tuple([Value::Int(1N), Value::Int(2N)])
+  let c = Value::Tuple([Value::Int(1N), Value::Int(3N)])
   assert_true(starlark_equals(a, b))
   assert_false(starlark_equals(a, c))
 }
 
 ///|
 test "starlark_equals: Int equals Float when numerically equal" {
-  assert_true(starlark_equals(Value::Int(1L), Value::Float(1.0)))
-  assert_true(starlark_equals(Value::Float(1.0), Value::Int(1L)))
-  assert_false(starlark_equals(Value::Int(1L), Value::Float(1.5)))
+  assert_true(starlark_equals(Value::Int(1N), Value::Float(1.0)))
+  assert_true(starlark_equals(Value::Float(1.0), Value::Int(1N)))
+  assert_false(starlark_equals(Value::Int(1N), Value::Float(1.5)))
   assert_false(
-    starlark_equals(Value::Int(1L), Value::Float(@double.not_a_number)),
+    starlark_equals(Value::Int(1N), Value::Float(@double.not_a_number)),
   )
-  assert_false(starlark_equals(Value::Int(1L), Value::Float(@double.infinity)))
+  assert_false(starlark_equals(Value::Int(1N), Value::Float(@double.infinity)))
 }
 
 ///|
 test "starlark_equals: different non-numeric types are unequal" {
   assert_false(starlark_equals(Value::None, Value::Bool(false)))
-  assert_false(starlark_equals(Value::Int(1L), Value::Bool(true)))
-  assert_false(starlark_equals(Value::Int(0L), Value::None))
+  assert_false(starlark_equals(Value::Int(1N), Value::Bool(true)))
+  assert_false(starlark_equals(Value::Int(0N), Value::None))
 }
 
 // --- starlark_hash ---
@@ -160,18 +160,18 @@ test "starlark_hash: Bool false hashes to 0, true hashes to 1" {
 ///|
 test "starlark_hash: Int hash values ensure equal Int and Float produce the same hash" {
   let mul : UInt = 12582917U
-  assert_true(starlark_hash(Value::Int(0L)) == Ok(mul * (0U + 3U)))
-  assert_true(starlark_hash(Value::Int(1L)) == Ok(mul * (1U + 3U)))
-  assert_true(starlark_hash(Value::Int(-1L)) == Ok(mul * (0xFFFFFFFFU + 3U)))
+  assert_true(starlark_hash(Value::Int(0N)) == Ok(mul * (0U + 3U)))
+  assert_true(starlark_hash(Value::Int(1N)) == Ok(mul * (1U + 3U)))
+  assert_true(starlark_hash(Value::Int(-1N)) == Ok(mul * (0xFFFFFFFFU + 3U)))
 }
 
 ///|
 test "starlark_hash: equal Int and Float produce same hash" {
   // hash(1.0) must equal hash(1) because 1.0 == 1 in starlark cross-type equality
-  let h_int = starlark_hash(Value::Int(1L))
+  let h_int = starlark_hash(Value::Int(1N))
   let h_float = starlark_hash(Value::Float(1.0))
   assert_true(h_int == h_float)
-  let h_int0 = starlark_hash(Value::Int(0L))
+  let h_int0 = starlark_hash(Value::Int(0N))
   let h_float0 = starlark_hash(Value::Float(0.0))
   assert_true(h_int0 == h_float0)
 }
@@ -209,8 +209,8 @@ test "starlark_hash: empty Tuple has the spec-defined initial hash value" {
 
 ///|
 test "starlark_hash: Tuple hashes combine element hashes deterministically" {
-  let t1 = Value::Tuple([Value::Int(0L)])
-  let t2 = Value::Tuple([Value::Int(1L)])
+  let t1 = Value::Tuple([Value::Int(0N)])
+  let t2 = Value::Tuple([Value::Int(1N)])
   let h1 = starlark_hash(t1)
   let h2 = starlark_hash(t2)
   assert_true(h1 is Ok(_))
@@ -239,10 +239,10 @@ test "compare_values: Bool False less than True" {
 
 ///|
 test "compare_values: Int numerical ordering" {
-  assert_true(compare_values(Value::Int(1L), Value::Int(2L)) == Ok(-1))
-  assert_true(compare_values(Value::Int(2L), Value::Int(1L)) == Ok(1))
-  assert_true(compare_values(Value::Int(1L), Value::Int(1L)) == Ok(0))
-  assert_true(compare_values(Value::Int(-1L), Value::Int(0L)) == Ok(-1))
+  assert_true(compare_values(Value::Int(1N), Value::Int(2N)) == Ok(-1))
+  assert_true(compare_values(Value::Int(2N), Value::Int(1N)) == Ok(1))
+  assert_true(compare_values(Value::Int(1N), Value::Int(1N)) == Ok(0))
+  assert_true(compare_values(Value::Int(-1N), Value::Int(0N)) == Ok(-1))
 }
 
 ///|
@@ -288,9 +288,9 @@ test "compare_values: Bytes lexicographic ordering" {
 
 ///|
 test "compare_values: Tuple lexicographic element ordering" {
-  let t1 = Value::Tuple([Value::Int(1L), Value::Int(2L)])
-  let t2 = Value::Tuple([Value::Int(1L), Value::Int(3L)])
-  let t3 = Value::Tuple([Value::Int(2L)])
+  let t1 = Value::Tuple([Value::Int(1N), Value::Int(2N)])
+  let t2 = Value::Tuple([Value::Int(1N), Value::Int(3N)])
+  let t3 = Value::Tuple([Value::Int(2N)])
   let empty = Value::Tuple([])
   assert_true(compare_values(t1, t2) == Ok(-1))
   assert_true(compare_values(t2, t1) == Ok(1))
@@ -301,21 +301,21 @@ test "compare_values: Tuple lexicographic element ordering" {
 
 ///|
 test "compare_values: Int and Float cross-type ordering" {
-  assert_true(compare_values(Value::Int(1L), Value::Float(1.5)) == Ok(-1))
-  assert_true(compare_values(Value::Int(2L), Value::Float(1.5)) == Ok(1))
-  assert_true(compare_values(Value::Int(1L), Value::Float(1.0)) == Ok(0))
+  assert_true(compare_values(Value::Int(1N), Value::Float(1.5)) == Ok(-1))
+  assert_true(compare_values(Value::Int(2N), Value::Float(1.5)) == Ok(1))
+  assert_true(compare_values(Value::Int(1N), Value::Float(1.0)) == Ok(0))
   // Int vs infinity
   assert_true(
-    compare_values(Value::Int(1000000L), Value::Float(@double.infinity)) ==
+    compare_values(Value::Int(1000000N), Value::Float(@double.infinity)) ==
     Ok(-1),
   )
   assert_true(
-    compare_values(Value::Int(1000000L), Value::Float(@double.neg_infinity)) ==
+    compare_values(Value::Int(1000000N), Value::Float(@double.neg_infinity)) ==
     Ok(1),
   )
   // Float vs Int (reversed operands)
-  assert_true(compare_values(Value::Float(1.5), Value::Int(1L)) == Ok(1))
-  assert_true(compare_values(Value::Float(1.5), Value::Int(2L)) == Ok(-1))
+  assert_true(compare_values(Value::Float(1.5), Value::Int(1N)) == Ok(1))
+  assert_true(compare_values(Value::Float(1.5), Value::Int(2N)) == Ok(-1))
 }
 
 ///|
@@ -327,7 +327,7 @@ test "compare_values: None is not orderable" {
 ///|
 test "compare_values: different types are not orderable" {
   let result = compare_values(
-    Value::Int(1L),
+    Value::Int(1N),
     Value::String(StarlarkString::new("a")),
   )
   assert_true(result is Err(_))

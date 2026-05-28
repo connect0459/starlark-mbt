@@ -28,12 +28,12 @@ fn floateq(xf : Double, yf : Double) -> Bool {
 fn assert_float_eq(x : @value.Value, y : @value.Value) -> Bool {
   let xf : Double? = match x {
     @value.Value::Float(f) => Some(f)
-    @value.Value::Int(n) => Some(n.to_double())
+    @value.Value::Int(n) => Some(@value.bigint_to_double(n))
     _ => None
   }
   let yf : Double? = match y {
     @value.Value::Float(f) => Some(f)
-    @value.Value::Int(n) => Some(n.to_double())
+    @value.Value::Int(n) => Some(@value.bigint_to_double(n))
     _ => None
   }
   match (xf, yf) {
@@ -160,7 +160,7 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
         }
       @value.Value::Range(r) =>
         match item {
-          @value.Value::Int(n) => r.contains(n)
+          @value.Value::Int(n) => r.contains(n.to_int64())
           _ => false
         }
       _ =>
@@ -263,8 +263,8 @@ fn make_fails_fn(errors : Array[String]) -> @value.Value {
 ///|
 fn make_fibonacci_list() -> @value.Value {
   let fibs : Array[@value.Value] = []
-  let mut a = 0L
-  let mut b = 1L
+  let mut a = 0N
+  let mut b = 1N
   for _ in 0..<100 {
     fibs.push(@value.Value::Int(a))
     let c = a + b
