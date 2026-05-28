@@ -14,11 +14,6 @@ fn read_line(_prompt : String) -> String? {
 }
 
 ///|
-fn write_prompt(_prompt : String) -> Unit {
-  ()
-}
-
-///|
 fn load_file(
   _thread : @eval.Thread,
   path : String,

@@ -114,14 +114,12 @@ fn dir_of(path : String) -> String {
 
 ///|
 pub fn run(thread : @eval.Thread, globals : @value.StarlarkDict) -> Unit {
-  write_prompt(">>> ")
   while true {
-    match read_line("") {
+    match read_line(">>> ") {
       None => break
       Some(raw) => {
         let trimmed = raw.trim_end().to_owned()
         if trimmed.is_empty() {
-          write_prompt(">>> ")
           continue
         }
         match eval_input(thread, globals, trimmed) {
@@ -129,7 +127,6 @@ pub fn run(thread : @eval.Thread, globals : @value.StarlarkDict) -> Unit {
           Empty => ()
           EvalError(msg) => println(msg)
         }
-        write_prompt(">>> ")
       }
     }
   }

@@ -11,16 +11,20 @@ pub fn is_terminal() -> Bool {
 }
 
 ///|
-fn read_line(_prompt : String) -> String? {
-  match read_line_ffi(b"") {
+fn read_line(prompt : String) -> String? {
+  let n = prompt.length()
+  let arr : Array[Byte] = Array::make(n, b'\x00')
+  let mut i = 0
+  prompt
+  .iter()
+  .each(fn(c) {
+    arr[i] = c.to_int().to_byte()
+    i += 1
+  })
+  match read_line_ffi(Bytes::from_array(arr)) {
     None => None
-    Some(bytes) => Some(String::from_bytes(bytes))
+    Some(bytes) => Some(bytes.to_unchecked_string())
   }
-}
-
-///|
-fn write_prompt(prompt : String) -> Unit {
-  print(prompt)
 }
 
 ///|
