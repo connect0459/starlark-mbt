@@ -121,7 +121,22 @@ fn check_steps(ctx : EvalContext) -> Unit raise EvalErr {
     None => ()
     Some(max) =>
       if ctx.thread.steps > max {
-        raise EvalErr(make_eval_error(ctx, "step budget exceeded"))
+        match ctx.thread.on_max_steps {
+          Some(cb) => {
+            cb(ctx.thread)
+            match ctx.thread.cancel_reason {
+              Some(reason) =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "Starlark computation cancelled: \{reason}",
+                  ),
+                )
+              None => ()
+            }
+          }
+          None => raise EvalErr(make_eval_error(ctx, "step budget exceeded"))
+        }
       }
   }
 }

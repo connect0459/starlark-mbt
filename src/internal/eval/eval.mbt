@@ -152,9 +152,10 @@ pub struct Thread {
   priv load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   priv call_stack : Array[@errors.CallFrame]
   priv max_recursion_depth : Int
-  priv max_steps : Int?
+  priv mut max_steps : Int?
   priv mut steps : Int
   priv mut cancel_reason : String?
+  priv mut on_max_steps : ((Thread) -> Unit)?
 }
 
 ///|
@@ -168,6 +169,7 @@ pub fn Thread::new(name : String) -> Thread {
     max_steps: None,
     steps: 0,
     cancel_reason: None,
+    on_max_steps: None,
   }
 }
 
@@ -182,6 +184,7 @@ pub fn Thread::with_print(name : String, print_fn : (String) -> Unit) -> Thread 
     max_steps: None,
     steps: 0,
     cancel_reason: None,
+    on_max_steps: None,
   }
 }
 
@@ -199,6 +202,7 @@ pub fn Thread::with_loader(
     max_steps: None,
     steps: 0,
     cancel_reason: None,
+    on_max_steps: None,
   }
 }
 
@@ -213,6 +217,7 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
     max_steps: Some(max_steps),
     steps: 0,
     cancel_reason: None,
+    on_max_steps: None,
   }
 }
 
@@ -226,6 +231,16 @@ pub fn Thread::cancel(self : Thread, reason : String) -> Unit {
 ///|
 pub fn Thread::uncancel(self : Thread) -> Unit {
   self.cancel_reason = None
+}
+
+///|
+pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
+  self.max_steps = Some(max)
+}
+
+///|
+pub fn Thread::set_on_max_steps(self : Thread, cb : (Thread) -> Unit) -> Unit {
+  self.on_max_steps = Some(cb)
 }
 
 ///|

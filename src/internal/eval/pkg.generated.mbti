@@ -72,6 +72,8 @@ pub fn Thread::max_recursion_depth(Self) -> Int
 pub fn Thread::max_steps(Self) -> Int?
 pub fn Thread::name(Self) -> String
 pub fn Thread::new(String) -> Self
+pub fn Thread::set_max_steps(Self, Int) -> Unit
+pub fn Thread::set_on_max_steps(Self, (Self) -> Unit) -> Unit
 pub fn Thread::uncancel(Self) -> Unit
 pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self
 pub fn Thread::with_print(String, (String) -> Unit) -> Self

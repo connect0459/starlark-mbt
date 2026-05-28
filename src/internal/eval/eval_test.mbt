@@ -120,6 +120,62 @@ test "Thread without step budget completes a long computation" {
 }
 
 ///|
+test "Thread::set_on_max_steps callback is invoked when step budget is exceeded" {
+  let called : Ref[Bool] = { val: false }
+  let t = Thread::with_step_budget("test", 5)
+  t.set_on_max_steps(fn(th) {
+    called.val = true
+    th.cancel("callback cancelled")
+  })
+  match
+    exec_file(
+      t,
+      "<test>",
+      "i = 0\nwhile i < 1000000:\n  i = i + 1",
+      Options::default(),
+    ) {
+    Err(e) => {
+      assert_true(called.val)
+      assert_true(e.msg().contains("callback cancelled"))
+    }
+    Ok(_) => fail("expected error when step budget exceeded")
+  }
+}
+
+///|
+test "Thread::set_on_max_steps callback can extend the step budget" {
+  let call_count : Ref[Int] = { val: 0 }
+  let t = Thread::with_step_budget("test", 10)
+  t.set_on_max_steps(fn(th) {
+    call_count.val += 1
+    if call_count.val < 3 {
+      th.set_max_steps(th.execution_steps() + 10)
+    } else {
+      th.cancel("budget exhausted")
+    }
+  })
+  match
+    exec_file(
+      t,
+      "<test>",
+      "i = 0\nwhile i < 1000000:\n  i = i + 1",
+      Options::default(),
+    ) {
+    Err(e) => assert_true(e.msg().contains("budget exhausted"))
+    Ok(_) => fail("expected error when budget exhausted")
+  }
+  assert_eq(call_count.val, 3)
+}
+
+///|
+test "Thread::set_max_steps updates the step budget on an existing thread" {
+  let t = Thread::with_step_budget("test", 50)
+  assert_true(t.max_steps() == Some(50))
+  t.set_max_steps(200)
+  assert_true(t.max_steps() == Some(200))
+}
+
+///|
 test "Thread: with_print routes output to the custom callback" {
   let msgs : Array[String] = []
   let t = Thread::with_print("test", fn(msg) { msgs.push(msg) })
