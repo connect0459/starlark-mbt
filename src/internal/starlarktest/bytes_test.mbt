@@ -129,6 +129,21 @@ test "bytes.star: all assertions pass" {
 }
 
 ///|
+test "str(bytes) with surrogate UTF-8 sequence produces U+FFFD replacements (MISSING-4)" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|# b"\xED\xB0\x80" is the UTF-8 encoding of surrogate U+DC00.
+      #|# starlark-go's utf8Transcode replaces each byte individually => 3 U+FFFD.
+      #|assert.eq(str(b"\xED\xB0\x80"), "���")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "bytes.elems() has type bytes.elems and str representation" {
   let errs = run_star_string(
     (

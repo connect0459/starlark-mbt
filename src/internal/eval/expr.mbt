@@ -679,7 +679,11 @@ fn call_builtin(
       } else if pos_args.length() == 1 {
         match pos_args[0] {
           @value.Value::Bytes(b) =>
-            @value.Value::String(@value.StarlarkString::from_bytes(b))
+            @value.Value::String(
+              @value.StarlarkString::new(
+                @value.StarlarkString::from_bytes(b).raw(),
+              ),
+            )
           v =>
             @value.Value::String(@value.StarlarkString::new(@value.to_str(v)))
         }
