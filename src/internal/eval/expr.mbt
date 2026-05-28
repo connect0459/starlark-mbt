@@ -1247,14 +1247,45 @@ fn builtin_dict(
               }
               check(ctx, d.set(pair.get(0), pair.get(1)))
             }
-            _ => {
-              it.done()
-              raise EvalErr(
-                make_eval_error(
-                  ctx, "dict() items must be sequences of length 2",
-                ),
-              )
-            }
+            Some(item) =>
+              match @value.iterate(item) {
+                Err(_) => {
+                  it.done()
+                  raise EvalErr(
+                    make_eval_error(
+                      ctx,
+                      "dictionary update sequence element is not iterable (\{@value.type_name(item)})",
+                    ),
+                  )
+                }
+                Ok(item_it) => {
+                  let elems : Array[@value.Value] = []
+                  while true {
+                    match item_it.next() {
+                      None => {
+                        item_it.done()
+                        break
+                      }
+                      Some(e) => {
+                        elems.push(e)
+                        if elems.length() > 2 {
+                          item_it.done()
+                          break
+                        }
+                      }
+                    }
+                  }
+                  if elems.length() != 2 {
+                    it.done()
+                    raise EvalErr(
+                      make_eval_error(
+                        ctx, "dict() items must be sequences of length 2",
+                      ),
+                    )
+                  }
+                  check(ctx, d.set(elems[0], elems[1]))
+                }
+              }
           }
         }
       }

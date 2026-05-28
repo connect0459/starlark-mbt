@@ -16,7 +16,7 @@ let float_type_truth_src : String =
   #|
   #|# not iterable
   #|assert.fails(lambda: len(0.0), 'has no len')
-  #|assert.fails(lambda: [x for x in 0.0], 'object is not iterable')
+  #|assert.fails(lambda: [x for x in 0.0], 'float value is not iterable')
   #|
   #|# literals
   #|assert.eq(type(1.234), "float")

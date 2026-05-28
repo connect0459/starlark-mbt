@@ -36,7 +36,7 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
     StringCodepoints(c) => Ok(string_codepoints_iter(c))
     BytesElems(e) => Ok(bytes_elems_iter(e))
     ExtVal(c) => c.get_iterate()
-    _ => Err("'\{type_name(v)}' object is not iterable")
+    _ => Err("\{type_name(v)} value is not iterable")
   }
 }
 

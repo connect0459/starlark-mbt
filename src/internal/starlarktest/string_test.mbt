@@ -414,6 +414,27 @@ test "string.star: all assertions pass" {
 }
 
 ///|
+let string_not_iterable_src : String =
+  #|load("assert.star", "assert")
+  #|def for_string():
+  #|  for x in "abc":
+  #|    pass
+  #|assert.fails(lambda: enumerate("ab"), "got string, want iterable")
+  #|assert.fails(lambda: sorted("abc"), "got string, want iterable")
+  #|assert.fails(lambda: zip("ab", "cd"), "not iterable: string")
+  #|assert.fails(lambda: dict(["ab"]), "not iterable")
+  #|assert.fails(for_string, "string value is not iterable")
+  #|assert.fails(lambda: [x for x in "abc"], "string value is not iterable")
+
+///|
+test "strings are not iterable (string.star lines 424-430)" {
+  let errs = run_star_string(string_not_iterable_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "str.elems returns string.elems type with len and index support" {
   let errs = run_star_string(
     (
