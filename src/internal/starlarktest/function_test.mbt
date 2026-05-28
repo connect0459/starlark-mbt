@@ -1,7 +1,7 @@
 // Integration tests derived from function.star.
 // Tests Starlark function semantics: lexical scope, closures, defaults, parameter binding.
-// Omitted: hasfields(), recursion detection (fib/Y-combinator), BoundMethod identity in sets,
-// local-variable-before-assignment (unbound cell detection not implemented).
+// Omitted: hasfields() (test-only application-defined type, not a standard built-in).
+// Fib/Y-combinator recursion-limit tests live in recursion_test.mbt.
 
 ///|
 let function_closures_src : String =

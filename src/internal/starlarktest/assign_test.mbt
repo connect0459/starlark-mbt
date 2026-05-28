@@ -1,6 +1,5 @@
 // Integration tests derived from assign.star.
-// Omitted: hasfields() tests (application-defined type).
-// Omitted: error chunks for globalreassign/loadbindsglobally (need unbound cell detection).
+// Omitted: hasfields() tests (test-only application-defined type, not a standard built-in).
 
 ///|
 let assign_tuple_success_src : String =
