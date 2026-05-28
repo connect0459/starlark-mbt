@@ -553,8 +553,11 @@ End-to-end tests that execute `.star` scripts and assert output.
       `recursion.star`, `misc.star`, `function_param.star`
   - [x] `int.star` — bigint cases excluded; shift/int()/% formatting fixed to pass
   - [x] `bool.star` — all assertions pass
-  - [x] `string.star` — all assertions pass; unicode byte-index and iterable-string cases excluded
-  - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases and
+  - [x] `string.star` — all assertions pass; unicode iterable-string multi-byte tests
+        now included (codepoints/elem_ords/elems for "abcЙ😿"); ord() error message
+        aligned with starlark-go ("string encodes N Unicode code points, want 1")
+  - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases now
+        included (fix: parser accepts lambda in comprehension if-clause);
         f7 (hasfields) excluded; f4 (local-var-before-assignment via +=) excluded
         (runtime does not yet distinguish unbound locals from globals)
   - [x] `tuple.star` — all assertions pass; tuple multiplication with overflow checks
@@ -574,8 +577,7 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `builtins.star` — all assertions pass; hasfields() tests excluded
         (application-defined type not available in harness)
   - [x] `bytes.star` — all assertions pass; type(hello.elems())=="bytes.elems"
-        and str(hello.elems()) tests excluded (elems() returns list, not
-        bytes.elems iterator type)
+        and str(hello.elems()) now included (BytesElems type properly implemented)
   - [x] `assign.star` — all assertions pass; passing-case dialect chunks for
         option:globalreassign and option:loadbindsglobally added; error chunks
         requiring unbound-cell detection excluded; hasfields() tests excluded.
