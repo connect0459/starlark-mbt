@@ -148,7 +148,7 @@ pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
 ///|
 pub struct Thread {
   priv name : String
-  priv print_fn : (String) -> Unit
+  priv print_fn : (Thread, String) -> Unit
   priv load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   priv call_stack : Array[@errors.CallFrame]
   priv debug_stack : Array[ActiveCallFrame]
@@ -164,7 +164,7 @@ pub struct Thread {
 pub fn Thread::new(name : String) -> Thread {
   {
     name,
-    print_fn: fn(msg) { println(msg) },
+    print_fn: fn(_, msg) { println(msg) },
     load_fn: None,
     call_stack: [],
     debug_stack: [],
@@ -178,7 +178,10 @@ pub fn Thread::new(name : String) -> Thread {
 }
 
 ///|
-pub fn Thread::with_print(name : String, print_fn : (String) -> Unit) -> Thread {
+pub fn Thread::with_print(
+  name : String,
+  print_fn : (Thread, String) -> Unit,
+) -> Thread {
   {
     name,
     print_fn,
@@ -201,7 +204,7 @@ pub fn Thread::with_loader(
 ) -> Thread {
   {
     name,
-    print_fn: fn(msg) { println(msg) },
+    print_fn: fn(_, msg) { println(msg) },
     load_fn: Some(load_fn),
     call_stack: [],
     debug_stack: [],
@@ -218,7 +221,7 @@ pub fn Thread::with_loader(
 pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
   {
     name,
-    print_fn: fn(msg) { println(msg) },
+    print_fn: fn(_, msg) { println(msg) },
     load_fn: None,
     call_stack: [],
     debug_stack: [],

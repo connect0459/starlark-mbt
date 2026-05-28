@@ -181,7 +181,7 @@ test "error format: wrong number of args to function" {
 
 ///|
 test "error format: recursion depth exceeded" {
-  let thread = @eval.Thread::with_print("test", fn(_) {  })
+  let thread = @eval.Thread::with_print("test", fn(_, _) {  })
   let src =
     #|def f():
     #|  return f()

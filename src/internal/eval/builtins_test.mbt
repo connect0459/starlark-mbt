@@ -516,7 +516,7 @@ test "exec_file: set converts list and deduplicates elements" {
 ///|
 test "exec_file: print sends output through Thread print callback" {
   let msgs : Array[String] = []
-  let t = Thread::with_print("test", fn(msg) { msgs.push(msg) })
+  let t = Thread::with_print("test", fn(_, msg) { msgs.push(msg) })
   match
     exec_file(t, "<test>", "print(\"hello\", \"world\")", Options::default()) {
     Ok(_) => {
@@ -1564,7 +1564,7 @@ test "exec_file: max with key= returns element with largest key" {
 ///|
 test "exec_file: print with sep= uses custom separator" {
   let captured = Array::new()
-  let t = Thread::with_print("<test>", fn(s) { captured.push(s) })
+  let t = Thread::with_print("<test>", fn(_, s) { captured.push(s) })
   ignore(
     exec_file(t, "<test>", "print(1, 2, 3, sep=\"-\")", Options::default()),
   )
@@ -1574,7 +1574,7 @@ test "exec_file: print with sep= uses custom separator" {
 ///|
 test "exec_file: print with sep= and no args outputs empty string" {
   let captured = Array::new()
-  let t = Thread::with_print("<test>", fn(s) { captured.push(s) })
+  let t = Thread::with_print("<test>", fn(_, s) { captured.push(s) })
   ignore(exec_file(t, "<test>", "print(sep=\",\")", Options::default()))
   assert_true(captured.length() > 0 && captured[0] == "")
 }

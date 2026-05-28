@@ -651,7 +651,7 @@ fn call_builtin(
         first = false
         buf.write_string(@value.to_str(arg))
       }
-      (ctx.thread.print_fn)(buf.to_string())
+      (ctx.thread.print_fn)(ctx.thread, buf.to_string())
       @value.Value::None
     }
     "len" => {

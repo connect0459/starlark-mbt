@@ -178,11 +178,30 @@ test "Thread::set_max_steps updates the step budget on an existing thread" {
 ///|
 test "Thread: with_print routes output to the custom callback" {
   let msgs : Array[String] = []
-  let t = Thread::with_print("test", fn(msg) { msgs.push(msg) })
+  let t = Thread::with_print("test", fn(_thread, msg) { msgs.push(msg) })
   match exec_file(t, "<test>", "print(\"hello\")", Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], "hello")
+    }
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
+test "Thread: with_print callback receives Thread with accessible call stack" {
+  let captured_depth : Array[Int] = []
+  let src =
+    #|def f():
+    #|  print("inside f")
+    #|f()
+  let t = Thread::with_print("test", fn(thread, _msg) {
+    captured_depth.push(thread.call_stack_depth())
+  })
+  match exec_file(t, "foo.star", src, Options::default()) {
+    Ok(_) => {
+      assert_eq(captured_depth.length(), 1)
+      assert_true(captured_depth[0] > 0)
     }
     Err(e) => fail(e.msg())
   }
