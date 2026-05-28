@@ -307,3 +307,112 @@ test "json.star: BigInt encode and decode" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let json_dir_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|
+  #|assert.eq(dir(json), ["decode", "encode", "encode_indent", "indent"])
+
+///|
+test "json.star: dir(json) lists all exported names in sorted order" {
+  let errs = run_star_string(json_dir_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_invalid_utf8_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|
+  #|assert.contains(['"\\ufffd"', '"\\u003f"'], json.encode("😹"[:1]))
+
+///|
+test "json.star: encode invalid UTF-8 bytes produces replacement char" {
+  let errs = run_star_string(json_invalid_utf8_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_bigint_float_decode_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|
+  #|assert.eq(json.decode("3539537889086624823140625.0"), float(3539537889086624823140625))
+
+///|
+test "json.star: decode large integer-valued float literal to Float" {
+  let errs = run_star_string(json_bigint_float_decode_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_tiny_float_decode_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|
+  #|assert.eq(
+  #|    json.decode("-0.000000000000000000000000000000000000000000000000000000000000000000000000000001"),
+  #|    -0.000000000000000000000000000000000000000000000000000000000000000000000000000001)
+
+///|
+test "json.star: decode very small negative float with long mantissa" {
+  let errs = run_star_string(json_tiny_float_decode_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_roundtrip_extended_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|
+  #|def codec(x):
+  #|    return json.decode(json.encode(x))
+  #|
+  #|numbers = [
+  #|    0, 1, -1, +1, 1.23e45, -1.23e-45,
+  #|    3539537889086624823140625,
+  #|    float(3539537889086624823140625),
+  #|    float(1.0),
+  #|]
+  #|def number_roundtrip():
+  #|    show = lambda n: (n, type(n))
+  #|    for n in numbers:
+  #|      assert.eq(show(codec(n)), show(n))
+  #|number_roundtrip()
+
+///|
+test "json.star: number round-trip with BigInt and float(BigInt)" {
+  let errs = run_star_string(json_roundtrip_extended_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_codepoint_roundtrip_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|
+  #|def codec(x):
+  #|    return json.decode(json.encode(x))
+  #|
+  #|codepoints = ''.join(['%c' % c for c in range(65536)])
+  #|assert.eq(codec(codepoints), codepoints)
+
+///|
+test "json.star: every 16-bit codepoint survives JSON encode/decode round-trip" {
+  let errs = run_star_string(json_codepoint_roundtrip_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
