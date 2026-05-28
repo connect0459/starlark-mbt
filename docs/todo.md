@@ -557,7 +557,8 @@ End-to-end tests that execute `.star` scripts and assert output.
         now included (codepoints/elem_ords/elems for "abcЙ😿"); ord() error message
         aligned with starlark-go ("string encodes N Unicode code points, want 1");
         hash parity assertions (lines 161-170) now included after fixing hash() to
-        use java.lang.String.hashCode instead of FNV-1a
+        use java.lang.String.hashCode instead of FNV-1a; string-not-iterable error
+        assertions (lines 424-430) now included (enumerate/sorted/zip/dict/for/comp)
   - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases now
         included (fix: parser accepts lambda in comprehension if-clause);
         f7 (hasfields) excluded; f4 (local-var-before-assignment via +=) excluded
