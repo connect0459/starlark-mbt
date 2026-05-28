@@ -293,3 +293,70 @@ test "call invokes a Starlark function from the host" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+test "StringDict: basic construction and access" {
+  let d = @starlark.StringDict::new()
+  d.set("x", @starlark.Value::Int(1L))
+  d.set("y", @starlark.Value::Bool(true))
+  assert_true(d.has("x"))
+  assert_true(d.has("y"))
+  assert_false(d.has("z"))
+  assert_true(d.get("x") == Some(@starlark.Value::Int(1L)))
+  assert_true(d.get("missing") == None)
+}
+
+///|
+test "StringDict::keys returns sorted keys" {
+  let d = @starlark.StringDict::new()
+  d.set("beta", @starlark.Value::None)
+  d.set("alpha", @starlark.Value::None)
+  d.set("gamma", @starlark.Value::None)
+  let keys = d.keys()
+  assert_true(keys == ["alpha", "beta", "gamma"])
+}
+
+///|
+test "StringDict::freeze freezes contained values" {
+  let d = @starlark.StringDict::new()
+  let lst = @starlark.StarlarkList::new([@starlark.Value::Int(1L)])
+  d.set("lst", @starlark.Value::List(lst))
+  d.freeze()
+  assert_true(lst.is_frozen())
+}
+
+///|
+test "binary: integer arithmetic via public API" {
+  let two = @starlark.Value::Int(2L)
+  let three = @starlark.Value::Int(3L)
+  match @starlark.binary("+", two, three) {
+    Ok(v) => assert_true(v == @starlark.Value::Int(5L))
+    Err(_) => assert_true(false)
+  }
+  match @starlark.binary("*", two, three) {
+    Ok(v) => assert_true(v == @starlark.Value::Int(6L))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "unary: not operator via public API" {
+  match @starlark.unary("not", @starlark.Value::Bool(false)) {
+    Ok(v) => assert_true(v == @starlark.Value::Bool(true))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "compare: integer comparison via public API" {
+  let two = @starlark.Value::Int(2L)
+  let three = @starlark.Value::Int(3L)
+  match @starlark.compare("<", two, three) {
+    Ok(b) => assert_true(b)
+    Err(_) => assert_true(false)
+  }
+  match @starlark.compare("==", two, two) {
+    Ok(b) => assert_true(b)
+    Err(_) => assert_true(false)
+  }
+}

@@ -163,3 +163,77 @@ pub fn call(
 ) -> Result[Value, EvalError] {
   @eval.call(thread, func, args, kwargs)
 }
+
+///|
+pub struct StringDict {
+  priv data : Map[String, Value]
+}
+
+///|
+pub fn StringDict::new() -> StringDict {
+  { data: {} }
+}
+
+///|
+pub fn StringDict::from_map(m : Map[String, Value]) -> StringDict {
+  { data: m }
+}
+
+///|
+pub fn StringDict::set(self : StringDict, key : String, v : Value) -> Unit {
+  self.data[key] = v
+}
+
+///|
+pub fn StringDict::get(self : StringDict, key : String) -> Value? {
+  self.data.get(key)
+}
+
+///|
+pub fn StringDict::has(self : StringDict, key : String) -> Bool {
+  self.data.contains(key)
+}
+
+///|
+pub fn StringDict::keys(self : StringDict) -> Array[String] {
+  let ks = self.data.keys().collect()
+  ks.sort_by(fn(a, b) {
+    let la = a.length()
+    let lb = b.length()
+    let min_len = if la < lb { la } else { lb }
+    let mut result = 0
+    let mut i = 0
+    while i < min_len && result == 0 {
+      let ca = a.get_char(i).unwrap()
+      let cb = b.get_char(i).unwrap()
+      result = ca.compare(cb)
+      i = i + 1
+    }
+    if result != 0 {
+      result
+    } else {
+      la.compare(lb)
+    }
+  })
+  ks
+}
+
+///|
+pub fn StringDict::freeze(self : StringDict) -> Unit {
+  self.data.each(fn(_, v) { @value.freeze_value(v) })
+}
+
+///|
+pub fn binary(op : String, x : Value, y : Value) -> Result[Value, EvalError] {
+  @eval.binary(op, x, y)
+}
+
+///|
+pub fn unary(op : String, x : Value) -> Result[Value, EvalError] {
+  @eval.unary(op, x)
+}
+
+///|
+pub fn compare(op : String, x : Value, y : Value) -> Result[Bool, EvalError] {
+  @eval.compare(op, x, y)
+}

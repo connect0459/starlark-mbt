@@ -12,7 +12,11 @@ pub fn as_float(@value.Value) -> (Double, Bool)
 
 pub fn as_string(@value.Value) -> (String, Bool)
 
+pub fn binary(String, @value.Value, @value.Value) -> Result[@value.Value, @errors.EvalError]
+
 pub fn call(@eval.Thread, @value.Value, Array[@value.Value], Array[(String, @value.Value)]) -> Result[@value.Value, @errors.EvalError]
+
+pub fn compare(String, @value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
 pub fn equal(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
@@ -40,9 +44,21 @@ pub fn truth(@value.Value) -> Bool
 
 pub fn type_name(@value.Value) -> String
 
+pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
+
 // Errors
 
 // Types and methods
+pub struct StringDict {
+  // private fields
+}
+pub fn StringDict::freeze(Self) -> Unit
+pub fn StringDict::from_map(Map[String, @value.Value]) -> Self
+pub fn StringDict::get(Self, String) -> @value.Value?
+pub fn StringDict::has(Self, String) -> Bool
+pub fn StringDict::keys(Self) -> Array[String]
+pub fn StringDict::new() -> Self
+pub fn StringDict::set(Self, String, @value.Value) -> Unit
 
 // Type aliases
 pub using @errors {type CallFrame}
