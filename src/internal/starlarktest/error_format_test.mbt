@@ -283,3 +283,77 @@ test "Thread.with_step_budget: halts when budget is exceeded" {
     Ok(_) => abort("expected step budget error")
   }
 }
+
+///|
+test "error format: load failure uses cannot-load prefix" {
+  let thread = @eval.Thread::with_loader("test", fn(_thread, _path) {
+    Err(@errors.EvalError::simple("floored division by zero"))
+  })
+  let result = @eval.exec_file(
+    thread,
+    "root.star",
+    "load('crash.star', 'x')",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      inspect(
+        e.msg(),
+        content=(
+          #|cannot load crash.star: floored division by zero
+        ),
+      )
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: builtin method error shows Error-in prefix" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|def f():
+    #|  ''.join([1])
+    #|f()
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      inspect(
+        e.backtrace(),
+        content=(
+          #|Traceback (most recent call last):
+          #|  test.star:3:2: in f
+          #|Error in join: join: in list, want string, got int
+        ),
+      )
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: builtin with callback shows builtin frame in traceback" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|def bad(x): return 1 // 0
+    #|def f():
+    #|  min([1], key=bad)
+    #|f()
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      let bt = e.backtrace()
+      assert_true(bt.contains("<builtin>: in min"))
+      assert_true(bt.contains("integer division by zero"))
+    }
+    Ok(_) => abort("expected error")
+  }
+}

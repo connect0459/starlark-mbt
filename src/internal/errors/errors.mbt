@@ -246,7 +246,20 @@ pub fn EvalError::to_string(self : EvalError) -> String {
 
 ///|
 pub fn EvalError::backtrace(self : EvalError) -> String {
-  "\{self.call_stack.to_string()}Error: \{self.msg}"
+  let frames = self.call_stack.frames
+  let n = frames.length()
+  let (stack_str, suffix) = if n > 0 &&
+    frames[n - 1].pos.filename == "<builtin>" {
+    let name = frames[n - 1].name
+    let trimmed : Array[CallFrame] = []
+    for i in 0..<(n - 1) {
+      trimmed.push(frames[i])
+    }
+    (CallStack::new(trimmed).to_string(), " in " + name)
+  } else {
+    (self.call_stack.to_string(), "")
+  }
+  "\{stack_str}Error\{suffix}: \{self.msg}"
 }
 
 ///|

@@ -327,19 +327,53 @@ fn call_value(
   match func_val {
     @value.Value::Function(f) => call_func(ctx, f, pos_args, kw_args, pos)
     @value.Value::Builtin(f) => {
+      let builtin_frame = @errors.CallFrame::new(
+        f.name(),
+        @errors.Position::new("<builtin>", 0, 0),
+      )
+      ctx.thread.call_stack.push(builtin_frame)
       let call_ctx = @value.BuiltinCallCtx::new(fn(f2, args, kwargs) {
         Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
           EvalErr(e) => Err(e.msg())
         }
       })
-      match f.call_body(call_ctx, pos_args, kw_args) {
-        Some(Ok(v)) => v
-        Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
-        None => call_builtin(ctx, f.name(), pos_args, kw_args, pos)
+      let result : @value.Value = try {
+        match f.call_body(call_ctx, pos_args, kw_args) {
+          Some(Ok(v)) => v
+          Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
+          None => call_builtin(ctx, f.name(), pos_args, kw_args, pos)
+        }
+      } catch {
+        EvalErr(e) => {
+          ignore(ctx.thread.call_stack.pop())
+          raise EvalErr(e)
+        }
       }
+      ignore(ctx.thread.call_stack.pop())
+      result
     }
-    @value.Value::BoundMethod(m) =>
-      call_method(ctx, m.recv(), m.method_name(), pos_args, kw_args, pos)
+    @value.Value::BoundMethod(m) => {
+      let builtin_frame = @errors.CallFrame::new(
+        m.method_name(),
+        @errors.Position::new("<builtin>", 0, 0),
+      )
+      ctx.thread.call_stack.push(builtin_frame)
+      let result : @value.Value = call_method(
+        ctx,
+        m.recv(),
+        m.method_name(),
+        pos_args,
+        kw_args,
+        pos,
+      ) catch {
+        EvalErr(e) => {
+          ignore(ctx.thread.call_stack.pop())
+          raise EvalErr(e)
+        }
+      }
+      ignore(ctx.thread.call_stack.pop())
+      result
+    }
     @value.Value::ExtVal(c) =>
       match c.do_call(pos_args, kw_args) {
         Some(Ok(v)) => v
