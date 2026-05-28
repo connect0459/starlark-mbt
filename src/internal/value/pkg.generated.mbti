@@ -49,6 +49,7 @@ pub fn BuiltinCallCtx::new((Value, Array[Value], Array[(String, Value)]) -> Resu
 pub struct CustomValue {
   // private fields
 }
+pub fn CustomValue::do_call(Self, Array[Value], Array[(String, Value)]) -> Result[Value, String]?
 pub fn CustomValue::do_freeze(Self) -> Unit
 pub fn CustomValue::do_set_index(Self, Int, Value) -> Result[Unit, String]?
 pub fn CustomValue::do_slice(Self, Int, Int, Int) -> Result[Value, String]?
@@ -71,6 +72,7 @@ pub fn CustomValue::get_unary(Self, String) -> Result[Value, String]?
 pub fn CustomValue::new(() -> String, () -> Bool, () -> String) -> Self
 pub fn CustomValue::with_attrs(Self, (String) -> Result[Value?, String], () -> Array[String]) -> Self
 pub fn CustomValue::with_binary(Self, (String, Value, Bool) -> Result[Value, String]?) -> Self
+pub fn CustomValue::with_call(Self, (Array[Value], Array[(String, Value)]) -> Result[Value, String]) -> Self
 pub fn CustomValue::with_compare(Self, (Value) -> Int?) -> Self
 pub fn CustomValue::with_contains(Self, (Value) -> Result[Bool, String]) -> Self
 pub fn CustomValue::with_equals(Self, (Value) -> Bool) -> Self

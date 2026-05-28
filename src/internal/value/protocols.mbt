@@ -134,6 +134,10 @@ pub struct CustomValue {
   priv set_index_fn : ((Int, Value) -> Result[Unit, String])?
   priv slice_fn : ((Int, Int, Int) -> Result[Value, String])?
   priv items_fn : (() -> Result[Array[(Value, Value)], String])?
+  priv call_fn : ((Array[Value], Array[(String, Value)]) -> Result[
+    Value,
+    String,
+  ])?
 }
 
 ///|
@@ -162,6 +166,7 @@ pub fn CustomValue::new(
     set_index_fn: None,
     slice_fn: None,
     items_fn: None,
+    call_fn: None,
   }
 }
 
@@ -459,6 +464,26 @@ pub fn CustomValue::get_items(
 ) -> Result[Array[(Value, Value)], String]? {
   match self.items_fn {
     Some(f) => Some(f())
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::with_call(
+  self : CustomValue,
+  call_fn : (Array[Value], Array[(String, Value)]) -> Result[Value, String],
+) -> CustomValue {
+  { ..self, call_fn: Some(call_fn) }
+}
+
+///|
+pub fn CustomValue::do_call(
+  self : CustomValue,
+  pos_args : Array[Value],
+  kw_args : Array[(String, Value)],
+) -> Result[Value, String]? {
+  match self.call_fn {
+    Some(f) => Some(f(pos_args, kw_args))
     None => None
   }
 }

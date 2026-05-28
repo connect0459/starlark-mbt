@@ -345,6 +345,18 @@ fn call_value(
     }
     @value.Value::BoundMethod(m) =>
       call_method(ctx, m.recv(), m.method_name(), pos_args, kw_args, pos)
+    @value.Value::ExtVal(c) =>
+      match c.do_call(pos_args, kw_args) {
+        Some(Ok(v)) => v
+        Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
+        None =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "'\{c.get_type_name()}' object is not callable",
+            ),
+          )
+      }
     _ =>
       raise EvalErr(
         make_eval_error(
