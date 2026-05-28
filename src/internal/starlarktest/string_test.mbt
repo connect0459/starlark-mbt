@@ -37,8 +37,8 @@ let string_star_src : String =
   #|assert.fails(lambda: chr(-1), "not in range")
   #|assert.fails(lambda: chr(0x110000), "not in range")
   #|assert.eq(ord("A"), 0x41)
-  #|assert.fails(lambda: ord("abc"), "expected a character")
-  #|assert.fails(lambda: ord(""), "expected a character")
+  #|assert.fails(lambda: ord("abc"), "string encodes 3 Unicode code points, want 1")
+  #|assert.fails(lambda: ord(""), "string encodes 0 Unicode code points, want 1")
   #|
   #|# codepoint_ords returns string.codepoints iterable
   #|assert.eq(list("abc".codepoint_ords()), [97, 98, 99])
@@ -403,6 +403,8 @@ test "str.elems returns string.elems type with len and index support" {
       #|assert.eq(list("abc".elems()), ["a", "b", "c"])
       #|assert.eq(list("abc".elem_ords()), [97, 98, 99])
       #|assert.eq(str("abc".elems()), '"abc".elems()')
+      #|assert.eq("abc".elem_ords()[2], 99)
+      #|assert.eq("abc".elem_ords()[0], 97)
     ),
   )
   if errs.length() != 0 {
@@ -438,6 +440,41 @@ test "bytes.elems returns bytes.elems type" {
       #|assert.eq(type(hello.elems()), "bytes.elems")
       #|assert.eq(list(hello.elems()), [104, 101, 108, 108, 111])
       #|assert.eq(bytes(hello.elems()), hello)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "string iterators work correctly for multi-byte Unicode strings" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|s = "abcЙ😿"
+      #|# codepoint_ords: type and contents
+      #|assert.eq(type(s.codepoint_ords()), "string.codepoints")
+      #|assert.eq(str(s.codepoint_ords()), '"abcЙ😿".codepoint_ords()')
+      #|assert.eq(list(s.codepoint_ords()), [97, 98, 99, 1049, 128575])
+      #|assert.fails(lambda: len(s.codepoint_ords()), "no len")
+      #|assert.fails(lambda: s.codepoint_ords()[2], "unhandled index")
+      #|# codepoints: type and contents
+      #|assert.eq(type(s.codepoints()), "string.codepoints")
+      #|assert.eq(str(s.codepoints()), '"abcЙ😿".codepoints()')
+      #|assert.eq(list(s.codepoints()), ["a", "b", "c", "Й", "😿"])
+      #|# elem_ords: type, contents, indexing, length
+      #|assert.eq(type(s.elem_ords()), "string.elems")
+      #|assert.eq(str(s.elem_ords()), '"abcЙ😿".elem_ords()')
+      #|assert.eq(list(s.elem_ords()), [97, 98, 99, 208, 153, 240, 159, 152, 191])
+      #|assert.eq(s.elem_ords()[2], 99)
+      #|assert.eq(len(s.elem_ords()), 9)
+      #|# elems: type, contents, indexing, length, repr of non-ASCII bytes
+      #|assert.eq(type(s.elems()), "string.elems")
+      #|assert.eq(str(s.elems()), '"abcЙ😿".elems()')
+      #|assert.eq(s.elems()[2], "c")
+      #|assert.eq(len(s.elems()), 9)
+      #|assert.eq(repr(list(s.elems())), r'["a", "b", "c", "\xd0", "\x99", "\xf0", "\x9f", "\x98", "\xbf"]')
     ),
   )
   if errs.length() != 0 {

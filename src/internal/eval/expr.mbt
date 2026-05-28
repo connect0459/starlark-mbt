@@ -937,7 +937,7 @@ fn call_builtin(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "ord() expected a character, but string of length \{chars.length()} found",
+                "string encodes \{chars.length()} Unicode code points, want 1",
               ),
             )
           }
