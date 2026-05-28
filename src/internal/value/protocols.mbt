@@ -57,6 +57,60 @@ pub trait Container {
 }
 
 ///|
+/// HasBinary protocol for custom types that define binary operators
+/// (+, -, *, /, //, %, **, &, |, ^, <<, >>, in, not in).
+/// Return `Some(Ok(v))` to provide a result, `Some(Err(msg))` to signal an
+/// error, or `None` to decline (let the evaluator try the other operand or
+/// raise a TypeError).
+pub trait HasBinary {
+  fn binary_op(Self, op : String, other : Value, is_left : Bool) -> Result[
+    Value,
+    String,
+  ]?
+}
+
+///|
+/// HasUnary protocol for custom types that define unary operators (+, -, ~).
+/// Return `Some(Ok(v))` to provide a result, `Some(Err(msg))` to signal an
+/// error, or `None` to decline.
+pub trait HasUnary {
+  fn unary_op(Self, op : String) -> Result[Value, String]?
+}
+
+///|
+/// HasSetIndex protocol for indexed sequence types that support element update
+/// (`a[i] = v`). The index `i` is already bounds-checked and adjusted for
+/// negative values before this method is called.
+pub trait HasSetIndex: Indexable {
+  fn set_index(Self, Int, Value) -> Result[Unit, String]
+}
+
+///|
+/// TotallyOrdered protocol for types that define a complete ordering.
+/// `cmp` returns a negative Int if `self < other`, zero if equal, or a
+/// positive Int if `self > other`. Return `None` if the two values are not
+/// comparable (e.g., different types).
+pub trait TotallyOrdered {
+  fn cmp(Self, Value) -> Int?
+}
+
+///|
+/// Sliceable protocol for sequence types that support the slice operator
+/// (`a[start:end:step]`). `start`, `end`, and `step` are already normalised
+/// by the evaluator (non-zero step, adjusted for sequence length).
+pub trait Sliceable: Indexable {
+  fn slice(Self, Int, Int, Int) -> Result[Value, String]
+}
+
+///|
+/// IterableMapping protocol for mapping types that support key enumeration
+/// and bulk key/value retrieval. Combines `Mapping` with an `items()` method
+/// that returns all key/value pairs.
+pub trait IterableMapping: Mapping {
+  fn items(Self) -> Result[Array[(Value, Value)], String]
+}
+
+///|
 /// Vtable-based wrapper for embedding custom Starlark value types.
 /// Construct with `CustomValue::new`, then call `with_*` builder methods to add
 /// optional protocol support. Wrap in `Value::ExtVal(cv)` to produce a Value.
@@ -76,6 +130,10 @@ pub struct CustomValue {
   priv binary_fn : ((String, Value, Bool) -> Result[Value, String]?)?
   priv unary_fn : ((String) -> Result[Value, String]?)?
   priv compare_fn : ((Value) -> Int?)?
+  priv get_index_fn : ((Int) -> Result[Value, String])?
+  priv set_index_fn : ((Int, Value) -> Result[Unit, String])?
+  priv slice_fn : ((Int, Int, Int) -> Result[Value, String])?
+  priv items_fn : (() -> Result[Array[(Value, Value)], String])?
 }
 
 ///|
@@ -100,6 +158,10 @@ pub fn CustomValue::new(
     binary_fn: None,
     unary_fn: None,
     compare_fn: None,
+    get_index_fn: None,
+    set_index_fn: None,
+    slice_fn: None,
+    items_fn: None,
   }
 }
 
@@ -319,6 +381,84 @@ pub fn CustomValue::get_unary(
 pub fn CustomValue::get_compare(self : CustomValue, other : Value) -> Int? {
   match self.compare_fn {
     Some(f) => f(other)
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::with_get_index(
+  self : CustomValue,
+  get_index_fn : (Int) -> Result[Value, String],
+) -> CustomValue {
+  { ..self, get_index_fn: Some(get_index_fn) }
+}
+
+///|
+pub fn CustomValue::get_index(
+  self : CustomValue,
+  i : Int,
+) -> Result[Value, String] {
+  match self.get_index_fn {
+    Some(f) => f(i)
+    None => Err("'\{(self.type_name_fn)()}' object does not support indexing")
+  }
+}
+
+///|
+pub fn CustomValue::with_set_index(
+  self : CustomValue,
+  set_index_fn : (Int, Value) -> Result[Unit, String],
+) -> CustomValue {
+  { ..self, set_index_fn: Some(set_index_fn) }
+}
+
+///|
+pub fn CustomValue::do_set_index(
+  self : CustomValue,
+  i : Int,
+  v : Value,
+) -> Result[Unit, String]? {
+  match self.set_index_fn {
+    Some(f) => Some(f(i, v))
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::with_slice(
+  self : CustomValue,
+  slice_fn : (Int, Int, Int) -> Result[Value, String],
+) -> CustomValue {
+  { ..self, slice_fn: Some(slice_fn) }
+}
+
+///|
+pub fn CustomValue::do_slice(
+  self : CustomValue,
+  start : Int,
+  stop : Int,
+  step : Int,
+) -> Result[Value, String]? {
+  match self.slice_fn {
+    Some(f) => Some(f(start, stop, step))
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::with_items(
+  self : CustomValue,
+  items_fn : () -> Result[Array[(Value, Value)], String],
+) -> CustomValue {
+  { ..self, items_fn: Some(items_fn) }
+}
+
+///|
+pub fn CustomValue::get_items(
+  self : CustomValue,
+) -> Result[Array[(Value, Value)], String]? {
+  match self.items_fn {
+    Some(f) => Some(f())
     None => None
   }
 }

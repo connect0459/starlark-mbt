@@ -50,6 +50,8 @@ pub struct CustomValue {
   // private fields
 }
 pub fn CustomValue::do_freeze(Self) -> Unit
+pub fn CustomValue::do_set_index(Self, Int, Value) -> Result[Unit, String]?
+pub fn CustomValue::do_slice(Self, Int, Int, Int) -> Result[Value, String]?
 pub fn CustomValue::get_attr(Self, String) -> Result[Value?, String]
 pub fn CustomValue::get_attr_names(Self) -> Array[String]?
 pub fn CustomValue::get_binary(Self, String, Value, Bool) -> Result[Value, String]?
@@ -57,6 +59,8 @@ pub fn CustomValue::get_compare(Self, Value) -> Int?
 pub fn CustomValue::get_contains(Self, Value) -> Result[Bool, String]?
 pub fn CustomValue::get_equals(Self, Value) -> Bool
 pub fn CustomValue::get_hash(Self) -> Result[UInt, String]
+pub fn CustomValue::get_index(Self, Int) -> Result[Value, String]
+pub fn CustomValue::get_items(Self) -> Result[Array[(Value, Value)], String]?
 pub fn CustomValue::get_iterate(Self) -> Result[StarlarkIterator, String]
 pub fn CustomValue::get_length(Self) -> Result[Int, String]
 pub fn CustomValue::get_repr(Self) -> String
@@ -71,10 +75,14 @@ pub fn CustomValue::with_compare(Self, (Value) -> Int?) -> Self
 pub fn CustomValue::with_contains(Self, (Value) -> Result[Bool, String]) -> Self
 pub fn CustomValue::with_equals(Self, (Value) -> Bool) -> Self
 pub fn CustomValue::with_freeze(Self, () -> Unit) -> Self
+pub fn CustomValue::with_get_index(Self, (Int) -> Result[Value, String]) -> Self
 pub fn CustomValue::with_hash(Self, () -> Result[UInt, String]) -> Self
+pub fn CustomValue::with_items(Self, () -> Result[Array[(Value, Value)], String]) -> Self
 pub fn CustomValue::with_iterate(Self, () -> Result[StarlarkIterator, String]) -> Self
 pub fn CustomValue::with_length(Self, () -> Int) -> Self
 pub fn CustomValue::with_set_field(Self, (String, Value) -> Result[Unit, String]) -> Self
+pub fn CustomValue::with_set_index(Self, (Int, Value) -> Result[Unit, String]) -> Self
+pub fn CustomValue::with_slice(Self, (Int, Int, Int) -> Result[Value, String]) -> Self
 pub fn CustomValue::with_unary(Self, (String) -> Result[Value, String]?) -> Self
 
 pub struct StarlarkBoundMethod {
@@ -272,13 +280,29 @@ pub trait HasAttrs {
   fn attr_names(Self) -> Array[String]
 }
 
+pub trait HasBinary {
+  fn binary_op(Self, String, Value, Bool) -> Result[Value, String]?
+}
+
 pub trait HasSetField {
   fn set_field(Self, String, Value) -> Result[Unit, String]
+}
+
+pub trait HasSetIndex : Indexable {
+  fn set_index(Self, Int, Value) -> Result[Unit, String]
+}
+
+pub trait HasUnary {
+  fn unary_op(Self, String) -> Result[Value, String]?
 }
 
 pub trait Indexable {
   fn indexable_get(Self, Int) -> Result[Value, String]
   fn indexable_len(Self) -> Int
+}
+
+pub trait IterableMapping : Mapping {
+  fn items(Self) -> Result[Array[(Value, Value)], String]
 }
 
 pub trait Mapping {
@@ -287,7 +311,15 @@ pub trait Mapping {
   fn mapping_len(Self) -> Int
 }
 
+pub trait Sliceable : Indexable {
+  fn slice(Self, Int, Int, Int) -> Result[Value, String]
+}
+
 pub trait StarlarkComparable {
   fn compare_same_type(Self, Value) -> Result[Int, String]
+}
+
+pub trait TotallyOrdered {
+  fn cmp(Self, Value) -> Int?
 }
 

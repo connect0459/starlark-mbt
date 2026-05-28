@@ -1242,6 +1242,27 @@ fn eval_index(
             make_eval_error(ctx, "string.elems indices must be integers"),
           )
       }
+    @value.Value::ExtVal(c) =>
+      match idx {
+        @value.Value::Int(i) => {
+          let len = match c.get_length() {
+            Ok(n) => n
+            Err(e) => raise EvalErr(make_eval_error(ctx, e))
+          }
+          let j = check(ctx, adjust_index(i, len))
+          match c.get_index(j) {
+            Ok(v) => v
+            Err(e) => raise EvalErr(make_eval_error(ctx, e))
+          }
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "'\{@value.type_name(obj)}' indices must be integers",
+            ),
+          )
+      }
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -1271,6 +1292,34 @@ fn set_index(
           raise EvalErr(make_eval_error(ctx, "list indices must be integers"))
       }
     @value.Value::Dict(d) => check(ctx, d.set(idx, val))
+    @value.Value::ExtVal(c) =>
+      match idx {
+        @value.Value::Int(i) => {
+          let len = match c.get_length() {
+            Ok(n) => n
+            Err(e) => raise EvalErr(make_eval_error(ctx, e))
+          }
+          let j = check(ctx, adjust_index(i, len))
+          match c.do_set_index(j, val) {
+            Some(Ok(_)) => ()
+            Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+            None =>
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "'\{@value.type_name(obj)}' object does not support item assignment",
+                ),
+              )
+          }
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "'\{@value.type_name(obj)}' indices must be integers",
+            ),
+          )
+      }
     _ =>
       raise EvalErr(
         make_eval_error(
@@ -1384,6 +1433,24 @@ fn eval_slice(
         }
       }
       @value.Value::Bytes(Bytes::from_array(bytes_arr))
+    }
+    @value.Value::ExtVal(c) => {
+      let len = match c.get_length() {
+        Ok(n) => n
+        Err(e) => raise EvalErr(make_eval_error(ctx, e))
+      }
+      let (start, stop) = normalize_slice(lo_opt, hi_opt, len, step)
+      match c.do_slice(start, stop, step) {
+        Some(Ok(v)) => v
+        Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+        None =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "'\{@value.type_name(obj)}' object is not sliceable",
+            ),
+          )
+      }
     }
     _ =>
       raise EvalErr(
