@@ -604,10 +604,6 @@ End-to-end tests that execute `.star` scripts and assert output.
       abandoned (see Phase 6 architecture note) because StarlarkFunction
       uses the caller's global_env, making predeclared helpers invisible
       inside loaded modules.
-- [x] Cover all bitflow subset contract scenarios
-      (9 tests in bitflow_subset_test.mbt: variables-in-args, conditionals,
-       for-loops, func-with-defaults, list-comprehensions, dict-ops, strings,
-       end-to-end workflow simulation, load+freeze pattern)
 - [x] Snapshot tests for error message formats
       (9 tests in `error_format_test.mbt`: syntax/resolve/type/div-zero/index-OOB
        errors, full backtrace, no-frame backtrace, wrong-arg-count, recursion limit)
