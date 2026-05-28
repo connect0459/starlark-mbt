@@ -725,6 +725,9 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [x] Optional REPL — interactive `read → eval → print` loop (public `src/repl/` library)
 - [x] Usage examples as doc tests in `README.mbt.md`; detailed API reference in `docs/api.md`
 - [ ] Mooncakes publish prep
+  - [x] API docs updated (docs/api.md) — Phase 9 additions documented
+  - [x] README updated with `call()` usage example
+  - [ ] `moon publish` — publish to mooncakes.io
 
 ---
 
