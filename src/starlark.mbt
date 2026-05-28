@@ -52,10 +52,16 @@ pub type ResolveError = @errors.ResolveError
 pub type Position = @errors.Position
 
 ///|
+pub type Binding = @errors.Binding
+
+///|
 pub type CallFrame = @errors.CallFrame
 
 ///|
 pub type CallStack = @errors.CallStack
+
+///|
+pub type DebugFrame = @eval.DebugFrame
 
 ///|
 pub fn exec_file(

@@ -381,9 +381,16 @@ fn call_func(
     }
     let known_locals = collect_assigned_names(f.body())
     let func_env = EvalEnv::with_parent_and_known_locals(parent, known_locals)
+    let all_local_names = collect_all_local_names(f, known_locals)
+    ctx.thread.debug_stack.push(ActiveCallFrame::{
+      func_val: @value.Value::Function(f),
+      all_local_names,
+      locals_map: func_env.locals,
+    })
     bind_args(ctx, f, pos_args, kw_args, func_env, pos)
     let sig = exec_stmts(ctx, func_env, f.body())
     ignore(ctx.thread.call_stack.pop())
+    ignore(ctx.thread.debug_stack.pop())
     match sig {
       Signal::SigReturn(v) => v
       _ => @value.Value::None
@@ -391,6 +398,7 @@ fn call_func(
   } catch {
     EvalErr(e) => {
       ignore(ctx.thread.call_stack.pop())
+      ignore(ctx.thread.debug_stack.pop())
       raise EvalErr(e)
     }
   }

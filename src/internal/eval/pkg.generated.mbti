@@ -26,6 +26,15 @@ pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
 // Errors
 
 // Types and methods
+pub struct DebugFrame {
+  // private fields
+}
+pub fn DebugFrame::callable(Self) -> @value.Value
+pub fn DebugFrame::frame_local(Self, Int) -> (@errors.Binding, @value.Value?)
+pub fn DebugFrame::local_by_name(Self, String) -> @value.Value?
+pub fn DebugFrame::num_locals(Self) -> Int
+pub fn DebugFrame::position(Self) -> @errors.Position
+
 pub struct Module {
   // private fields
 }
@@ -69,6 +78,7 @@ pub fn Thread::call_frames(Self) -> Array[@errors.CallFrame]
 pub fn Thread::call_stack(Self) -> @errors.CallStack
 pub fn Thread::call_stack_depth(Self) -> Int
 pub fn Thread::cancel(Self, String) -> Unit
+pub fn Thread::debug_frame(Self, Int) -> DebugFrame?
 pub fn Thread::execution_steps(Self) -> Int
 pub fn Thread::get_local(Self, String) -> @value.Value?
 pub fn Thread::max_recursion_depth(Self) -> Int

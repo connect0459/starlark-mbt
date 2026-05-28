@@ -6,6 +6,13 @@ package "connect0459/starlark/internal/errors"
 // Errors
 
 // Types and methods
+pub struct Binding {
+  // private fields
+}
+pub fn Binding::name(Self) -> String
+pub fn Binding::new(String, Position) -> Self
+pub fn Binding::pos(Self) -> Position
+
 pub struct CallFrame {
   // private fields
 }

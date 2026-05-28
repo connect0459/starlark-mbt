@@ -131,6 +131,27 @@ pub fn ResolveError::to_string(self : ResolveError) -> String {
 }
 
 ///|
+pub struct Binding {
+  priv name : String
+  priv pos : Position
+}
+
+///|
+pub fn Binding::new(name : String, pos : Position) -> Binding {
+  { name, pos }
+}
+
+///|
+pub fn Binding::name(self : Binding) -> String {
+  self.name
+}
+
+///|
+pub fn Binding::pos(self : Binding) -> Position {
+  self.pos
+}
+
+///|
 pub struct CallFrame {
   priv name : String
   priv pos : Position

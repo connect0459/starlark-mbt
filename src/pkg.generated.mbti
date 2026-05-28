@@ -69,11 +69,15 @@ pub fn StringDict::new() -> Self
 pub fn StringDict::set(Self, String, @value.Value) -> Unit
 
 // Type aliases
+pub using @errors {type Binding}
+
 pub using @errors {type CallFrame}
 
 pub using @errors {type CallStack}
 
 pub using @value {type CustomValue}
+
+pub using @eval {type DebugFrame}
 
 pub using @errors {type EvalError}
 

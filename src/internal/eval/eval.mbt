@@ -151,6 +151,7 @@ pub struct Thread {
   priv print_fn : (String) -> Unit
   priv load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   priv call_stack : Array[@errors.CallFrame]
+  priv debug_stack : Array[ActiveCallFrame]
   priv max_recursion_depth : Int
   priv mut max_steps : Int?
   priv mut steps : Int
@@ -166,6 +167,7 @@ pub fn Thread::new(name : String) -> Thread {
     print_fn: fn(msg) { println(msg) },
     load_fn: None,
     call_stack: [],
+    debug_stack: [],
     max_recursion_depth: default_max_recursion_depth,
     max_steps: None,
     steps: 0,
@@ -182,6 +184,7 @@ pub fn Thread::with_print(name : String, print_fn : (String) -> Unit) -> Thread 
     print_fn,
     load_fn: None,
     call_stack: [],
+    debug_stack: [],
     max_recursion_depth: default_max_recursion_depth,
     max_steps: None,
     steps: 0,
@@ -201,6 +204,7 @@ pub fn Thread::with_loader(
     print_fn: fn(msg) { println(msg) },
     load_fn: Some(load_fn),
     call_stack: [],
+    debug_stack: [],
     max_recursion_depth: default_max_recursion_depth,
     max_steps: None,
     steps: 0,
@@ -217,6 +221,7 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
     print_fn: fn(msg) { println(msg) },
     load_fn: None,
     call_stack: [],
+    debug_stack: [],
     max_recursion_depth: default_max_recursion_depth,
     max_steps: Some(max_steps),
     steps: 0,
@@ -265,6 +270,15 @@ pub fn Thread::set_on_max_steps(self : Thread, cb : (Thread) -> Unit) -> Unit {
 ///|
 pub fn Thread::call_stack_depth(self : Thread) -> Int {
   self.call_stack.length()
+}
+
+///|
+pub fn Thread::debug_frame(self : Thread, depth : Int) -> DebugFrame? {
+  let idx = self.debug_stack.length() - 1 - depth
+  if idx < 0 || idx >= self.debug_stack.length() {
+    return None
+  }
+  Some(DebugFrame::from_active(self.debug_stack[idx]))
 }
 
 ///|
