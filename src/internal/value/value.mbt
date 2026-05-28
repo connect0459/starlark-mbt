@@ -362,6 +362,16 @@ pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] 
 }
 
 ///|
+pub fn StarlarkFunction::defining_module(
+  self : StarlarkFunction,
+) -> StarlarkModule? {
+  match self.module_globals {
+    None => None
+    Some(globals) => Some(StarlarkModule::new(self.pos.filename(), globals))
+  }
+}
+
+///|
 pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
   match self.body {
     [

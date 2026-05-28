@@ -700,3 +700,29 @@ test "StarlarkFunction::globals returns module global variables" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+test "StarlarkFunction::module returns the defining module" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "mymod.star",
+      "CONST = 42\ndef f(): return CONST",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) =>
+          match f.defining_module() {
+            Some(mod_ref) => {
+              assert_eq(mod_ref.name(), "mymod.star")
+              assert_true(mod_ref.get("CONST") is Some(_))
+            }
+            None => assert_true(false)
+          }
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}

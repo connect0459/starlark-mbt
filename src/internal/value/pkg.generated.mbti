@@ -94,8 +94,10 @@ pub struct StarlarkFunction {
 pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
 pub fn StarlarkFunction::captured_scope(Self) -> Array[(Map[String, Value], Array[String])]
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
+pub fn StarlarkFunction::defining_module(Self) -> StarlarkModule?
 pub fn StarlarkFunction::doc(Self) -> String
 pub fn StarlarkFunction::free_var(Self, Int) -> (String, Value)?
+pub fn StarlarkFunction::globals(Self) -> Map[String, Value]
 pub fn StarlarkFunction::has_kwargs(Self) -> Bool
 pub fn StarlarkFunction::has_varargs(Self) -> Bool
 pub fn StarlarkFunction::name(Self) -> String
@@ -107,6 +109,7 @@ pub fn StarlarkFunction::param(Self, Int) -> (String, @errors.Position)
 pub fn StarlarkFunction::param_default(Self, Int) -> Value?
 pub fn StarlarkFunction::params(Self) -> Array[@syntax.Param]
 pub fn StarlarkFunction::position(Self) -> @errors.Position
+pub fn StarlarkFunction::with_module_globals(Self, Map[String, Value]) -> Self
 
 pub struct StarlarkIterator {
   // private fields
