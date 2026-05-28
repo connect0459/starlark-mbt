@@ -64,6 +64,19 @@ pub type CallStack = @errors.CallStack
 pub type DebugFrame = @eval.DebugFrame
 
 ///|
+pub type Program = @eval.Program
+
+///|
+pub fn source_program(
+  filename : String,
+  src : String,
+  opts : Options,
+  is_predeclared : (String) -> Bool,
+) -> Result[Program, EvalError] {
+  @eval.source_program(filename, src, opts, is_predeclared)
+}
+
+///|
 pub fn exec_file(
   thread : Thread,
   filename : String,

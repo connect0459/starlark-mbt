@@ -44,6 +44,8 @@ pub fn number_to_int(@value.Value) -> Int64?
 
 pub fn repr(@value.Value) -> String
 
+pub fn source_program(String, String, @eval.Options, (String) -> Bool) -> Result[@eval.Program, @errors.EvalError]
+
 pub fn starlark_equals(@value.Value, @value.Value) -> Bool
 
 pub fn to_str(@value.Value) -> String
@@ -88,6 +90,8 @@ pub using @eval {type Options}
 pub using @errors {type Position}
 
 pub using @eval {type Predeclared}
+
+pub using @eval {type Program}
 
 pub using @errors {type ResolveError}
 

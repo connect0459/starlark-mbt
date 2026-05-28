@@ -21,6 +21,8 @@ pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) 
 
 pub fn exec_repl_chunk(Thread, String, String, @value.StarlarkDict, Options) -> Result[Unit, @errors.EvalError]
 
+pub fn source_program(String, String, Options, (String) -> Bool) -> Result[Program, @errors.EvalError]
+
 pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
 
 // Errors
@@ -70,6 +72,14 @@ pub fn Predeclared::from_map(Map[String, @value.Value]) -> Self
 pub fn Predeclared::get(Self, String) -> @value.Value?
 pub fn Predeclared::new() -> Self
 pub fn Predeclared::set(Self, String, @value.Value) -> Unit
+
+pub struct Program {
+  // private fields
+}
+pub fn Program::filename(Self) -> String
+pub fn Program::init(Self, Thread, Predeclared) -> Result[Module, @errors.EvalError]
+pub fn Program::load(Self, Int) -> (String, @errors.Position)
+pub fn Program::num_loads(Self) -> Int
 
 pub struct Thread {
   // private fields
