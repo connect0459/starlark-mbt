@@ -328,7 +328,7 @@ let json_invalid_utf8_src : String =
   #|load("assert.star", "assert")
   #|load("json.star", "json")
   #|
-  #|assert.contains(['"\\ufffd"', '"\\u003f"'], json.encode("😹"[:1]))
+  #|assert.contains(['"\\ufffd"', '"�"'], json.encode("😹"[:1]))
 
 ///|
 test "json.star: encode invalid UTF-8 bytes produces replacement char" {
