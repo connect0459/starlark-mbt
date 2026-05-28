@@ -817,6 +817,13 @@ Low-cost public API additions derived from gap analysis against starlark-go.
   (request IDs, profiling state, etc.) — reference: `starlark-go` `Thread.SetLocal`
 - Custom Unpacker protocol for user-defined `Value` types — reference:
   `starlark-go/starlark/unpack.go` `Unpacker` interface
+- ~~"did you mean" for module attribute access~~ — implemented; spell_nearest called in
+  eval_getattr for Module variant; module.star line 17 now covered
+- ~~Print callback thread context~~ — implemented; `Thread.print_fn` changed from
+  `(String) -> Unit` to `(Thread, String) -> Unit`; breaking API change to `with_print`
+- Full `TestPrint` position parity — `<toplevel>` frame with live PC tracking not yet
+  implemented; requires pushing `<toplevel>` at exec_file and updating current position
+  as statements execute (AST walker does not track PC)
 
 ---
 
