@@ -577,6 +577,14 @@ fn is_stmt_terminator(tok : @lexer.Token) -> Bool {
 }
 
 ///|
+fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
+  if self.tok == @lexer.Token::Lambda {
+    return self.parse_lambda_expr()
+  }
+  self.parse_or_test()
+}
+
+///|
 pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::Lambda {
     return self.parse_lambda_expr()
@@ -1449,7 +1457,7 @@ fn Parser::parse_comp_clauses(
       @lexer.Token::If => {
         let pp = self.pos
         self.advance()
-        let cond = self.parse_or_test()
+        let cond = self.parse_test_no_cond()
         clauses.push(@syntax.CompClause::ClauseIf(cond, pp))
       }
       _ => break

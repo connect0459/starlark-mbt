@@ -1225,8 +1225,12 @@ fn eval_index(
         @value.Value::Int(i) => {
           let bytes = e.source_string().to_bytes()
           let j = check(ctx, adjust_index(i, bytes.length()))
-          let one = Bytes::from_array([bytes[j]])
-          @value.Value::String(@value.StarlarkString::from_bytes(one))
+          if e.is_ords() {
+            @value.Value::Int(BigInt::from_int(bytes[j].to_int()))
+          } else {
+            let one = Bytes::from_array([bytes[j]])
+            @value.Value::String(@value.StarlarkString::from_bytes(one))
+          }
         }
         _ =>
           raise EvalErr(
