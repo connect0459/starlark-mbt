@@ -38,6 +38,8 @@ pub fn len_of(@value.Value) -> Int
 
 pub fn module_get(@eval.Module, String) -> @value.Value?
 
+pub fn new_custom_value(@value.CustomValue) -> @value.Value
+
 pub fn number_to_int(@value.Value) -> Int64?
 
 pub fn repr(@value.Value) -> String
@@ -70,6 +72,8 @@ pub fn StringDict::set(Self, String, @value.Value) -> Unit
 pub using @errors {type CallFrame}
 
 pub using @errors {type CallStack}
+
+pub using @value {type CustomValue}
 
 pub using @errors {type EvalError}
 

@@ -32,6 +32,14 @@ pub type StarlarkBuiltinFunc = @value.StarlarkBuiltinFunc
 pub type StarlarkIterator = @value.StarlarkIterator
 
 ///|
+pub type CustomValue = @value.CustomValue
+
+///|
+pub fn new_custom_value(cv : CustomValue) -> Value {
+  @value.Value::ExtVal(cv)
+}
+
+///|
 pub type EvalError = @errors.EvalError
 
 ///|
