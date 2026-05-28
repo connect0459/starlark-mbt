@@ -141,3 +141,35 @@ test "parameter passing: required keyword-only params" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let mixed_varargs_kwonly_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|# j(a, b=42, *args, c, d=123, e, **kwargs) — *args with required keyword-only params
+  #|def j(a, b=42, *args, c, d=123, e, **kwargs):
+  #|    return a, b, args, c, d, e, kwargs
+  #|
+  #|assert.fails(lambda: j(), "missing")
+  #|assert.fails(lambda: j(0), "missing")
+  #|assert.fails(lambda: j(0, 1), "missing")
+  #|assert.fails(lambda: j(0, 1, 2), "missing")
+  #|assert.fails(lambda: j(0, 1, e=2), "missing")
+  #|assert.fails(lambda: j(0, 1, 2, 3), "missing")
+  #|assert.fails(lambda: j(a=0), "missing")
+  #|assert.fails(lambda: j(0, b=1), "missing")
+  #|assert.fails(lambda: j(0, a=1), "multiple values")
+  #|assert.fails(lambda: j(0, b=1, c=2), "missing")
+  #|assert.fails(lambda: j(0, b=1, d=2), "missing")
+  #|assert.fails(lambda: j(0, b=1, c=2, d=3), "missing")
+  #|assert.eq(j(0, b=1, c=2, d=3, e=4), (0, 1, (), 2, 3, 4, {}))
+  #|assert.fails(lambda: j(0, 1, b=1, c=2, d=3, e=4), "multiple values")
+  #|assert.eq(j(0, 1, 2, c=3, e=4), (0, 1, (2,), 3, 123, 4, {}))
+
+///|
+test "parameter passing: *args with required keyword-only params (function j)" {
+  let errs = run_star_string(mixed_varargs_kwonly_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

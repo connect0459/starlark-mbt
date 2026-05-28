@@ -266,6 +266,28 @@ test "Thread.execution_steps: returns nonzero after evaluating expressions" {
 }
 
 ///|
+test "Thread.execution_steps: scales linearly with computation size" {
+  let count_steps : (Int) -> Int = fn(n) {
+    let thread = @eval.Thread::new("test")
+    let steps0 = thread.execution_steps()
+    let _ = @eval.exec_file_with_predeclared(
+      thread,
+      "steps.star",
+      "squares = [x*x for x in range(n)]",
+      @eval.Options::default(),
+      @eval.Predeclared::from_map({
+        "n": @value.Value::Int(BigInt::from_int(n)),
+      }),
+    )
+    thread.execution_steps() - steps0
+  }
+  let steps_small = count_steps(1000)
+  let steps_large = count_steps(100000)
+  let ratio = steps_large.to_double() / steps_small.to_double()
+  assert_true(ratio >= 99.0 && ratio <= 101.0)
+}
+
+///|
 test "Thread.with_step_budget: halts when budget is exceeded" {
   let thread = @eval.Thread::with_step_budget("test", 10)
   let result = @eval.exec_file(

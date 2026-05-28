@@ -37,3 +37,17 @@ test "time module: DST-aware in_location converts UTC to EDT" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "time module: now is after a known past date" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.true(time.now() > time.parse_time("2021-03-20T00:00:00Z"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

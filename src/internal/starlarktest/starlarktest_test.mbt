@@ -114,3 +114,48 @@ test "run_chunked_string: backtick-quoted pattern" {
   let failures = run_chunked_string(src)
   assert_eq(failures.length(), 0)
 }
+
+///|
+test "StarlarkFunction.doc: returns docstring from first string literal" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|def somefunc():
+    #|    "somefunc doc"
+    #|    return 0
+  let result = @eval.exec_file(
+    thread,
+    "doc.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Ok(m) =>
+      match m.get("somefunc") {
+        Some(@value.Value::Function(f)) => assert_eq(f.doc(), "somefunc doc")
+        _ => abort("expected Function value for somefunc")
+      }
+    Err(e) => abort("exec_file failed: \{e.msg()}")
+  }
+}
+
+///|
+test "StarlarkFunction.doc: returns empty string when no docstring" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|def nodoc():
+    #|    return 42
+  let result = @eval.exec_file(
+    thread,
+    "doc.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Ok(m) =>
+      match m.get("nodoc") {
+        Some(@value.Value::Function(f)) => assert_eq(f.doc(), "")
+        _ => abort("expected Function value for nodoc")
+      }
+    Err(e) => abort("exec_file failed: \{e.msg()}")
+  }
+}
