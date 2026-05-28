@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/x/time" @x_time,
+  "connect0459/starlark/internal/value",
+}
+
+options(
+  "native-stub": [ "time_now_native.c" ],
+  targets: {
+    "time_now_native.mbt": [ "native", "llvm" ],
+    "time_now_stub.mbt": [ "wasm", "wasm-gc", "js" ],
+  },
+)

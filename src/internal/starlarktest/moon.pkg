@@ -4,5 +4,6 @@ import {
   "connect0459/starlark/internal/eval",
   "connect0459/starlark/lib/json",
   "connect0459/starlark/lib/math",
+  "connect0459/starlark/lib/time",
   "moonbitlang/core/bench",
 }

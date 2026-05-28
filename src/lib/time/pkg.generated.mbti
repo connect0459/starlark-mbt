@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "connect0459/starlark/lib/time"
+
+import {
+  "connect0459/starlark/internal/value",
+}
+
+// Values
+pub fn get_unix_time_now() -> (Int64, Int)
+
+pub fn time_module() -> @value.Value
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

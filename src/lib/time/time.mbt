@@ -1,0 +1,1038 @@
+///|
+let ns_per_second : Int64 = 1_000_000_000L
+
+///|
+let ns_per_millisecond : Int64 = 1_000_000L
+
+///|
+let ns_per_microsecond : Int64 = 1_000L
+
+///|
+let ns_per_minute : Int64 = 60_000_000_000L
+
+///|
+let ns_per_hour : Int64 = 3_600_000_000_000L
+
+///|
+fn extract_duration_ns(v : @value.Value) -> Int64? {
+  match v {
+    @value.Value::ExtVal(c) =>
+      if c.get_type_name() == "time.duration" {
+        match c.get_attr("__ns") {
+          Ok(Some(@value.Value::Int(n))) => Some(n)
+          _ => None
+        }
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
+  match v {
+    @value.Value::ExtVal(c) =>
+      if c.get_type_name() == "time.time" {
+        match (c.get_attr("__sec"), c.get_attr("__nsec")) {
+          (Ok(Some(@value.Value::Int(s))), Ok(Some(@value.Value::Int(n)))) =>
+            Some((s, n.to_int()))
+          _ => None
+        }
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+fn duration_hash(ns : Int64) -> Result[UInt, String] {
+  let lo = ns.to_int().reinterpret_as_uint()
+  let hi = (ns >> 32).to_int().reinterpret_as_uint()
+  Ok(lo ^ hi)
+}
+
+///|
+fn duration_compare(ns : Int64, other : @value.Value) -> Int? {
+  match extract_duration_ns(other) {
+    Some(other_ns) =>
+      if ns < other_ns {
+        Some(-1)
+      } else if ns > other_ns {
+        Some(1)
+      } else {
+        Some(0)
+      }
+    None => None
+  }
+}
+
+///|
+fn duration_equals(ns : Int64, other : @value.Value) -> Bool {
+  match duration_compare(ns, other) {
+    Some(0) => true
+    _ => false
+  }
+}
+
+///|
+fn duration_attr(ns : Int64, name : String) -> Result[@value.Value?, String] {
+  match name {
+    "__ns" => Ok(Some(@value.Value::Int(ns)))
+    "hours" =>
+      Ok(Some(@value.Value::Float(ns.to_double() / ns_per_hour.to_double())))
+    "minutes" =>
+      Ok(Some(@value.Value::Float(ns.to_double() / ns_per_minute.to_double())))
+    "seconds" =>
+      Ok(Some(@value.Value::Float(ns.to_double() / ns_per_second.to_double())))
+    "milliseconds" => Ok(Some(@value.Value::Int(ns / ns_per_millisecond)))
+    "microseconds" => Ok(Some(@value.Value::Int(ns / ns_per_microsecond)))
+    "nanoseconds" => Ok(Some(@value.Value::Int(ns)))
+    _ => Ok(None)
+  }
+}
+
+///|
+fn duration_attr_names() -> Array[String] {
+  ["hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"]
+}
+
+///|
+fn duration_binary(
+  ns : Int64,
+  op : String,
+  rhs : @value.Value,
+  is_left : Bool,
+) -> Result[@value.Value, String]? {
+  match op {
+    "+" =>
+      match extract_duration_ns(rhs) {
+        Some(rhs_ns) => Some(Ok(make_duration(ns + rhs_ns)))
+        None =>
+          match extract_time_parts(rhs) {
+            Some((sec, nsec)) => {
+              let total_ns = sec * ns_per_second + nsec.to_int64() + ns
+              let new_sec = total_ns / ns_per_second
+              let new_nsec = (total_ns % ns_per_second).to_int()
+              Some(Ok(make_time(new_sec, new_nsec)))
+            }
+            None => None
+          }
+      }
+    "-" =>
+      if is_left {
+        match extract_duration_ns(rhs) {
+          Some(rhs_ns) => Some(Ok(make_duration(ns - rhs_ns)))
+          None => None
+        }
+      } else {
+        None
+      }
+    "/" =>
+      if is_left {
+        match rhs {
+          @value.Value::Int(i) =>
+            if i == 0L {
+              Some(Err("time.duration division by zero"))
+            } else {
+              Some(Ok(make_duration(ns / i)))
+            }
+          @value.Value::Float(f) =>
+            if f == 0.0 {
+              Some(Err("time.duration division by zero"))
+            } else {
+              Some(Ok(make_duration((ns.to_double() / f).to_int64())))
+            }
+          _ =>
+            match extract_duration_ns(rhs) {
+              Some(rhs_ns) =>
+                if rhs_ns == 0L {
+                  Some(Err("time.duration division by zero"))
+                } else {
+                  Some(
+                    Ok(@value.Value::Float(ns.to_double() / rhs_ns.to_double())),
+                  )
+                }
+              None => None
+            }
+        }
+      } else {
+        Some(Err("unsupported operation"))
+      }
+    "//" =>
+      if is_left {
+        match extract_duration_ns(rhs) {
+          Some(rhs_ns) =>
+            if rhs_ns == 0L {
+              Some(Err("time.duration division by zero"))
+            } else {
+              Some(Ok(@value.Value::Int(ns / rhs_ns)))
+            }
+          None => None
+        }
+      } else {
+        None
+      }
+    "*" =>
+      match rhs {
+        @value.Value::Int(i) => Some(Ok(make_duration(ns * i)))
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn fmt_frac9(ns_frac : Int64) -> String {
+  let s = ns_frac.to_string()
+  let pad_len = 9 - s.length()
+  let buf = StringBuilder::new()
+  for _ in 0..<pad_len {
+    buf.write_char('0')
+  }
+  buf.write_string(s)
+  let full = buf.to_string()
+  let chars = full.to_array()
+  let mut end = chars.length()
+  while end > 1 && chars[end - 1] == '0' {
+    end -= 1
+  }
+  full[0:end].to_owned()
+}
+
+///|
+fn fmt_duration(ns : Int64) -> String {
+  if ns == 0L {
+    return "0s"
+  }
+  let buf = StringBuilder::new()
+  let abs_ns = if ns < 0L { 0L - ns } else { ns }
+  if ns < 0L {
+    buf.write_char('-')
+  }
+  if abs_ns < ns_per_second {
+    if abs_ns < ns_per_microsecond {
+      buf.write_string(abs_ns.to_string())
+      buf.write_string("ns")
+    } else if abs_ns < ns_per_millisecond {
+      let us = abs_ns / ns_per_microsecond
+      let frac = abs_ns % ns_per_microsecond
+      if frac == 0L {
+        buf.write_string(us.to_string())
+        buf.write_string("µs")
+      } else {
+        buf.write_string(abs_ns.to_string())
+        buf.write_string("ns")
+      }
+    } else {
+      let ms = abs_ns / ns_per_millisecond
+      let frac = abs_ns % ns_per_millisecond
+      if frac == 0L {
+        buf.write_string(ms.to_string())
+        buf.write_string("ms")
+      } else {
+        let us = abs_ns / ns_per_microsecond
+        let ns_frac = abs_ns % ns_per_microsecond
+        if ns_frac == 0L {
+          buf.write_string(us.to_string())
+          buf.write_string("µs")
+        } else {
+          buf.write_string(abs_ns.to_string())
+          buf.write_string("ns")
+        }
+      }
+    }
+  } else {
+    let total_sec = abs_ns / ns_per_second
+    let ns_frac = abs_ns % ns_per_second
+    let hours = total_sec / 3600L
+    let minutes = total_sec % 3600L / 60L
+    let secs = total_sec % 60L
+    if hours > 0L {
+      buf.write_string(hours.to_string())
+      buf.write_char('h')
+      buf.write_string(minutes.to_string())
+      buf.write_char('m')
+    } else if minutes > 0L {
+      buf.write_string(minutes.to_string())
+      buf.write_char('m')
+    }
+    if ns_frac == 0L {
+      buf.write_string(secs.to_string())
+      buf.write_char('s')
+    } else {
+      buf.write_string(secs.to_string())
+      buf.write_char('.')
+      buf.write_string(fmt_frac9(ns_frac))
+      buf.write_char('s')
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn make_duration(ns : Int64) -> @value.Value {
+  @value.Value::ExtVal(
+    @value.CustomValue::new(fn() { "time.duration" }, fn() { ns != 0L }, fn() {
+      fmt_duration(ns)
+    })
+    .with_hash(fn() { duration_hash(ns) })
+    .with_equals(fn(other) { duration_equals(ns, other) })
+    .with_compare(fn(other) { duration_compare(ns, other) })
+    .with_binary(fn(op, rhs, is_left) { duration_binary(ns, op, rhs, is_left) })
+    .with_attrs(fn(name) { duration_attr(ns, name) }, fn() {
+      duration_attr_names()
+    }),
+  )
+}
+
+///|
+fn parse_digits_at(chars : Array[Char], i : Int) -> (String, Int) {
+  let buf = StringBuilder::new()
+  let mut j = i
+  while j < chars.length() && chars[j] >= '0' && chars[j] <= '9' {
+    buf.write_char(chars[j])
+    j += 1
+  }
+  (buf.to_string(), j)
+}
+
+///|
+fn parse_int64_str(s : String) -> Int64? {
+  if s.is_empty() {
+    return None
+  }
+  let chars = s.to_array()
+  let mut result = 0L
+  for c in chars {
+    if c < '0' || c > '9' {
+      return None
+    }
+    result = result * 10L + (c.to_int() - '0'.to_int()).to_int64()
+  }
+  Some(result)
+}
+
+///|
+fn parse_duration_number(
+  num_str : String,
+  scale : Int64,
+) -> Result[Int64, String] {
+  match num_str.find(".") {
+    None =>
+      match parse_int64_str(num_str) {
+        Some(n) => Ok(n * scale)
+        None => Err("time: invalid duration number \"\{num_str}\"")
+      }
+    Some(dot_pos) => {
+      let int_part = num_str[0:dot_pos].to_owned()
+      let frac_part = num_str[dot_pos + 1:].to_owned()
+      let int_val = if int_part.is_empty() {
+        0L
+      } else {
+        match parse_int64_str(int_part) {
+          Some(n) => n
+          None => return Err("time: invalid duration number \"\{num_str}\"")
+        }
+      }
+      let int_ns = int_val * scale
+      let frac_ns = if frac_part.is_empty() {
+        0L
+      } else {
+        let chars = frac_part.to_array()
+        let mut frac_val = 0L
+        let mut frac_scale = scale
+        for c in chars {
+          if c < '0' || c > '9' {
+            return Err("time: invalid duration number \"\{num_str}\"")
+          }
+          frac_scale = frac_scale / 10L
+          if frac_scale > 0L {
+            frac_val = frac_val +
+              (c.to_int() - '0'.to_int()).to_int64() * frac_scale
+          }
+        }
+        frac_val
+      }
+      Ok(int_ns + frac_ns)
+    }
+  }
+}
+
+///|
+fn parse_duration_component(
+  s : String,
+) -> Result[(String, String, String), String] {
+  let chars = s.to_array()
+  let len = chars.length()
+  if len == 0 {
+    return Err("time: invalid duration component \"\"")
+  }
+  let mut i = 0
+  let num_buf = StringBuilder::new()
+  while i < len && (chars[i] == '.' || (chars[i] >= '0' && chars[i] <= '9')) {
+    num_buf.write_char(chars[i])
+    i += 1
+  }
+  let num_str = num_buf.to_string()
+  if num_str.is_empty() {
+    return Err("time: invalid duration component \"\{s}\"")
+  }
+  let unit_buf = StringBuilder::new()
+  while i < len {
+    let c = chars[i]
+    if (c >= 'a' && c <= 'z') || c == 'µ' || c == 'μ' {
+      unit_buf.write_char(c)
+      i += 1
+    } else {
+      break
+    }
+  }
+  let unit_str = unit_buf.to_string()
+  if unit_str.is_empty() {
+    return Err("time: missing unit in duration \"\{s}\"")
+  }
+  let remaining = s[i:].to_owned()
+  Ok((num_str, unit_str, remaining))
+}
+
+///|
+fn parse_duration_str(s : String) -> Result[Int64, String] {
+  if s == "0" || s == "+0" || s == "-0" {
+    return Ok(0L)
+  }
+  let orig = s
+  let mut neg = false
+  let mut rest = s
+  if rest.has_prefix("-") {
+    neg = true
+    rest = rest[1:].to_owned()
+  } else if rest.has_prefix("+") {
+    rest = rest[1:].to_owned()
+  }
+  if rest.is_empty() {
+    return Err("time: invalid duration \"\{orig}\"")
+  }
+  let mut total_ns : Int64 = 0L
+  while !rest.is_empty() {
+    match parse_duration_component(rest) {
+      Err(e) => return Err(e)
+      Ok((num_str, unit_str, remaining)) => {
+        let scale : Int64 = match unit_str {
+          "ns" => 1L
+          "us" | "µs" | "μs" => ns_per_microsecond
+          "ms" => ns_per_millisecond
+          "s" => ns_per_second
+          "m" => ns_per_minute
+          "h" => ns_per_hour
+          _ =>
+            return Err(
+              "time: unknown unit \"\{unit_str}\" in duration \"\{orig}\"",
+            )
+        }
+        match parse_duration_number(num_str, scale) {
+          Err(e) => return Err(e)
+          Ok(ns_val) => {
+            total_ns = total_ns + ns_val
+            rest = remaining
+          }
+        }
+      }
+    }
+  }
+  if neg {
+    Ok(0L - total_ns)
+  } else {
+    Ok(total_ns)
+  }
+}
+
+///|
+fn write_pad2(buf : StringBuilder, n : Int) -> Unit {
+  if n < 10 {
+    buf.write_char('0')
+  }
+  buf.write_string(n.to_string())
+}
+
+///|
+fn fmt_time(sec : Int64, nsec : Int) -> String {
+  let dt = @x_time.ZonedDateTime::from_unix_second(
+    sec,
+    nanosecond=nsec,
+    zone=@x_time.utc_zone,
+  ) catch {
+    _ => return "invalid time"
+  }
+  let buf = StringBuilder::new()
+  buf.write_string(dt.year().to_string())
+  buf.write_char('-')
+  write_pad2(buf, dt.month())
+  buf.write_char('-')
+  write_pad2(buf, dt.day())
+  buf.write_char(' ')
+  write_pad2(buf, dt.hour())
+  buf.write_char(':')
+  write_pad2(buf, dt.minute())
+  buf.write_char(':')
+  write_pad2(buf, dt.second())
+  if nsec != 0 {
+    buf.write_char('.')
+    buf.write_string(fmt_frac9(nsec.to_int64()))
+  }
+  buf.write_string(" +0000 UTC")
+  buf.to_string()
+}
+
+///|
+fn time_hash(sec : Int64, nsec : Int) -> Result[UInt, String] {
+  let unix_nano = sec * ns_per_second + nsec.to_int64()
+  let lo = unix_nano.to_int().reinterpret_as_uint()
+  let hi = (unix_nano >> 32).to_int().reinterpret_as_uint()
+  Ok(lo ^ hi)
+}
+
+///|
+fn time_compare(sec : Int64, nsec : Int, other : @value.Value) -> Int? {
+  match extract_time_parts(other) {
+    Some((other_sec, other_nsec)) =>
+      if sec < other_sec || (sec == other_sec && nsec < other_nsec) {
+        Some(-1)
+      } else if sec > other_sec || (sec == other_sec && nsec > other_nsec) {
+        Some(1)
+      } else {
+        Some(0)
+      }
+    None => None
+  }
+}
+
+///|
+fn time_equals(sec : Int64, nsec : Int, other : @value.Value) -> Bool {
+  match time_compare(sec, nsec, other) {
+    Some(0) => true
+    _ => false
+  }
+}
+
+///|
+fn time_truth(sec : Int64, nsec : Int) -> Bool {
+  let dt = @x_time.ZonedDateTime::from_unix_second(
+    sec,
+    nanosecond=nsec,
+    zone=@x_time.utc_zone,
+  ) catch {
+    _ => return false
+  }
+  !(dt.year() == 1 &&
+  dt.month() == 1 &&
+  dt.day() == 1 &&
+  dt.hour() == 0 &&
+  dt.minute() == 0 &&
+  dt.second() == 0 &&
+  dt.nanosecond() == 0)
+}
+
+///|
+fn time_attr(
+  sec : Int64,
+  nsec : Int,
+  name : String,
+) -> Result[@value.Value?, String] {
+  match name {
+    "__sec" => Ok(Some(@value.Value::Int(sec)))
+    "__nsec" => Ok(Some(@value.Value::Int(nsec.to_int64())))
+    "unix" => Ok(Some(@value.Value::Int(sec)))
+    "unix_nano" =>
+      Ok(Some(@value.Value::Int(sec * ns_per_second + nsec.to_int64())))
+    "in_location" => {
+      let m = make_in_location_method(sec, nsec)
+      Ok(Some(m))
+    }
+    "format" => {
+      let m = make_format_method(sec, nsec)
+      Ok(Some(m))
+    }
+    _ => {
+      let dt = @x_time.ZonedDateTime::from_unix_second(
+        sec,
+        nanosecond=nsec,
+        zone=@x_time.utc_zone,
+      ) catch {
+        _ => return Err("invalid time")
+      }
+      let v = match name {
+        "year" => @value.Value::Int(dt.year().to_int64())
+        "month" => @value.Value::Int(dt.month().to_int64())
+        "day" => @value.Value::Int(dt.day().to_int64())
+        "hour" => @value.Value::Int(dt.hour().to_int64())
+        "minute" => @value.Value::Int(dt.minute().to_int64())
+        "second" => @value.Value::Int(dt.second().to_int64())
+        "nanosecond" => @value.Value::Int(dt.nanosecond().to_int64())
+        _ => return Ok(None)
+      }
+      Ok(Some(v))
+    }
+  }
+}
+
+///|
+fn time_attr_names() -> Array[String] {
+  [
+    "year", "month", "day", "hour", "minute", "second", "nanosecond", "unix", "unix_nano",
+    "in_location", "format",
+  ]
+}
+
+///|
+fn time_binary(
+  sec : Int64,
+  nsec : Int,
+  op : String,
+  rhs : @value.Value,
+  is_left : Bool,
+) -> Result[@value.Value, String]? {
+  if !is_left {
+    return None
+  }
+  match op {
+    "+" =>
+      match extract_duration_ns(rhs) {
+        Some(dns) => {
+          let total_ns = sec * ns_per_second + nsec.to_int64() + dns
+          let new_sec = total_ns / ns_per_second
+          let new_nsec = (total_ns % ns_per_second).to_int()
+          Some(Ok(make_time(new_sec, new_nsec)))
+        }
+        None => None
+      }
+    "-" =>
+      match extract_duration_ns(rhs) {
+        Some(dns) => {
+          let total_ns = sec * ns_per_second + nsec.to_int64() - dns
+          let new_sec = total_ns / ns_per_second
+          let new_nsec = (total_ns % ns_per_second).to_int()
+          Some(Ok(make_time(new_sec, new_nsec)))
+        }
+        None =>
+          match extract_time_parts(rhs) {
+            Some((other_sec, other_nsec)) => {
+              let diff_ns = sec * ns_per_second +
+                nsec.to_int64() -
+                (other_sec * ns_per_second + other_nsec.to_int64())
+              Some(Ok(make_duration(diff_ns)))
+            }
+            None => None
+          }
+      }
+    _ => None
+  }
+}
+
+///|
+fn make_time(sec : Int64, nsec : Int) -> @value.Value {
+  @value.Value::ExtVal(
+    @value.CustomValue::new(
+      fn() { "time.time" },
+      fn() { time_truth(sec, nsec) },
+      fn() { fmt_time(sec, nsec) },
+    )
+    .with_hash(fn() { time_hash(sec, nsec) })
+    .with_equals(fn(other) { time_equals(sec, nsec, other) })
+    .with_compare(fn(other) { time_compare(sec, nsec, other) })
+    .with_binary(fn(op, rhs, is_left) {
+      time_binary(sec, nsec, op, rhs, is_left)
+    })
+    .with_attrs(fn(name) { time_attr(sec, nsec, name) }, fn() {
+      time_attr_names()
+    }),
+  )
+}
+
+///|
+fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
+  @value.Value::new_builtin("in_location", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 || kw_args.length() != 0 {
+      return Err("in_location: got \{pos_args.length()} arguments, want 1")
+    }
+    let loc = match pos_args[0] {
+      @value.Value::String(s) => s.raw()
+      _ => return Err("in_location: argument must be a string")
+    }
+    if loc != "UTC" {
+      return Err("in_location: unsupported timezone \"\{loc}\"")
+    }
+    Ok(make_time(sec, nsec))
+  })
+}
+
+///|
+fn make_format_method(sec : Int64, nsec : Int) -> @value.Value {
+  @value.Value::new_builtin("format", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 || kw_args.length() != 0 {
+      return Err("format: got \{pos_args.length()} arguments, want 1")
+    }
+    let _fmt = match pos_args[0] {
+      @value.Value::String(s) => s.raw()
+      _ => return Err("format: argument must be a string")
+    }
+    Ok(@value.Value::String(@value.StarlarkString::new(fmt_time(sec, nsec))))
+  })
+}
+
+///|
+fn parse_2digits(chars : Array[Char], i : Int) -> (Int, Int)? {
+  if i + 1 >= chars.length() {
+    return None
+  }
+  let c0 = chars[i].to_int() - '0'.to_int()
+  let c1 = chars[i + 1].to_int() - '0'.to_int()
+  if c0 < 0 || c0 > 9 || c1 < 0 || c1 > 9 {
+    return None
+  }
+  Some((c0 * 10 + c1, i + 2))
+}
+
+///|
+fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
+  let chars = s.to_array()
+  let len = chars.length()
+  if len < 10 {
+    return Err("time: invalid RFC3339 time \"\{s}\"")
+  }
+  let (year_i, _) = parse_digits_at(chars, 0)
+  let year = match parse_int64_str(year_i) {
+    Some(y) => y.to_int()
+    None => return Err("time: invalid year in \"\{s}\"")
+  }
+  let year_end = year_i.length()
+  if year_end >= len || chars[year_end] != '-' {
+    return Err("time: invalid RFC3339 time \"\{s}\"")
+  }
+  let i = year_end + 1
+  let (month, i) = match parse_2digits(chars, i) {
+    Some(v) => v
+    None => return Err("time: invalid month in \"\{s}\"")
+  }
+  if i >= len || chars[i] != '-' {
+    return Err("time: invalid RFC3339 time \"\{s}\"")
+  }
+  let i = i + 1
+  let (day, i) = match parse_2digits(chars, i) {
+    Some(v) => v
+    None => return Err("time: invalid day in \"\{s}\"")
+  }
+  if i >= len || (chars[i] != 'T' && chars[i] != 't' && chars[i] != ' ') {
+    return Err("time: invalid RFC3339 time \"\{s}\"")
+  }
+  let i = i + 1
+  let (hour, i) = match parse_2digits(chars, i) {
+    Some(v) => v
+    None => return Err("time: invalid hour in \"\{s}\"")
+  }
+  if i >= len || chars[i] != ':' {
+    return Err("time: invalid RFC3339 time \"\{s}\"")
+  }
+  let i = i + 1
+  let (minute, i) = match parse_2digits(chars, i) {
+    Some(v) => v
+    None => return Err("time: invalid minute in \"\{s}\"")
+  }
+  if i >= len || chars[i] != ':' {
+    return Err("time: invalid RFC3339 time \"\{s}\"")
+  }
+  let i = i + 1
+  let (second, i) = match parse_2digits(chars, i) {
+    Some(v) => v
+    None => return Err("time: invalid second in \"\{s}\"")
+  }
+  let (nsec, i) = if i < len && chars[i] == '.' {
+    let j = i + 1
+    let (frac_str, end) = parse_digits_at(chars, j)
+    let frac_len = frac_str.length()
+    if frac_len == 0 {
+      return Err("time: invalid fractional seconds in \"\{s}\"")
+    }
+    let frac_val = match parse_int64_str(frac_str) {
+      Some(v) => v
+      None => return Err("time: invalid fractional seconds in \"\{s}\"")
+    }
+    let ns = if frac_len >= 9 {
+      frac_val / pow10_int64(frac_len - 9)
+    } else {
+      frac_val * pow10_int64(9 - frac_len)
+    }
+    (ns.to_int(), end)
+  } else {
+    (0, i)
+  }
+  let tz_offset_sec = if i >= len || chars[i] == 'Z' || chars[i] == 'z' {
+    0
+  } else if chars[i] == '+' || chars[i] == '-' {
+    let sign = if chars[i] == '+' { 1 } else { -1 }
+    let j = i + 1
+    let (tz_hour, j) = match parse_2digits(chars, j) {
+      Some(v) => v
+      None => return Err("time: invalid timezone in \"\{s}\"")
+    }
+    if j >= len || chars[j] != ':' {
+      return Err("time: invalid timezone in \"\{s}\"")
+    }
+    let j = j + 1
+    let (tz_minute, _j) = match parse_2digits(chars, j) {
+      Some(v) => v
+      None => return Err("time: invalid timezone in \"\{s}\"")
+    }
+    sign * (tz_hour * 3600 + tz_minute * 60)
+  } else {
+    return Err("time: invalid timezone in \"\{s}\"")
+  }
+  let dt = @x_time.ZonedDateTime::of(
+    year,
+    month,
+    day,
+    hour~,
+    minute~,
+    second~,
+    nanosecond=nsec,
+    zone=@x_time.utc_zone,
+  ) catch {
+    _ => return Err("time: invalid time \"\{s}\"")
+  }
+  let unix_sec = dt.to_unix_second() - tz_offset_sec.to_int64()
+  Ok((unix_sec, nsec))
+}
+
+///|
+fn pow10_int64(n : Int) -> Int64 {
+  let mut result = 1L
+  for _ in 0..<n {
+    result = result * 10L
+  }
+  result
+}
+
+///|
+fn make_now_fn() -> @value.Value {
+  @value.Value::new_builtin("time.now", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 0 || kw_args.length() != 0 {
+      return Err("time.now: unexpected arguments")
+    }
+    let (sec, nsec) = get_unix_time_now()
+    Ok(make_time(sec, nsec))
+  })
+}
+
+///|
+fn make_from_timestamp_fn() -> @value.Value {
+  @value.Value::new_builtin("time.from_timestamp", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() < 1 {
+      return Err("time.from_timestamp: missing required argument 'sec'")
+    }
+    if kw_args.length() != 0 {
+      return Err("time.from_timestamp: unexpected keyword arguments")
+    }
+    let sec = match pos_args[0] {
+      @value.Value::Int(n) => n
+      _ => return Err("time.from_timestamp: sec must be an integer")
+    }
+    let nsec = if pos_args.length() >= 2 {
+      match pos_args[1] {
+        @value.Value::Int(n) => n.to_int()
+        _ => return Err("time.from_timestamp: nsec must be an integer")
+      }
+    } else {
+      0
+    }
+    Ok(make_time(sec, nsec))
+  })
+}
+
+///|
+fn make_parse_time_fn() -> @value.Value {
+  @value.Value::new_builtin("time.parse_time", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() < 1 {
+      return Err("time.parse_time: missing required argument 'x'")
+    }
+    let x = match pos_args[0] {
+      @value.Value::String(s) => s.raw()
+      _ => return Err("time.parse_time: x must be a string")
+    }
+    let mut fmt = "2006-01-02T15:04:05Z07:00"
+    let mut location = "UTC"
+    for kw in kw_args {
+      let (k, v) = kw
+      match k {
+        "format" =>
+          match v {
+            @value.Value::String(s) => fmt = s.raw()
+            _ => return Err("time.parse_time: format must be a string")
+          }
+        "location" =>
+          match v {
+            @value.Value::String(s) => location = s.raw()
+            _ => return Err("time.parse_time: location must be a string")
+          }
+        _ => return Err("time.parse_time: unexpected keyword argument \{k}")
+      }
+    }
+    if pos_args.length() >= 2 {
+      match pos_args[1] {
+        @value.Value::String(s) => fmt = s.raw()
+        _ => return Err("time.parse_time: format must be a string")
+      }
+    }
+    if pos_args.length() >= 3 {
+      match pos_args[2] {
+        @value.Value::String(s) => location = s.raw()
+        _ => return Err("time.parse_time: location must be a string")
+      }
+    }
+    if location != "UTC" {
+      return Err("time.parse_time: unsupported timezone \"\{location}\"")
+    }
+    let _ = fmt
+    match parse_rfc3339(x) {
+      Ok((sec, nsec)) => Ok(make_time(sec, nsec))
+      Err(e) => Err(e)
+    }
+  })
+}
+
+///|
+fn make_parse_duration_fn() -> @value.Value {
+  @value.Value::new_builtin("time.parse_duration", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() != 1 || kw_args.length() != 0 {
+      return Err(
+        "time.parse_duration: got \{pos_args.length()} arguments, want 1",
+      )
+    }
+    let s = match pos_args[0] {
+      @value.Value::String(s) => s.raw()
+      _ => return Err("time.parse_duration: argument must be a string")
+    }
+    match parse_duration_str(s) {
+      Ok(ns) => Ok(make_duration(ns))
+      Err(e) => Err(e)
+    }
+  })
+}
+
+///|
+fn make_time_constructor_fn() -> @value.Value {
+  @value.Value::new_builtin("time.time", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() > 0 {
+      return Err("time.time: unexpected positional argument")
+    }
+    let mut year = 0
+    let mut month = 1
+    let mut day = 1
+    let mut hour = 0
+    let mut minute = 0
+    let mut second = 0
+    let mut nanosecond = 0
+    let mut location = "UTC"
+    for kw in kw_args {
+      let (k, v) = kw
+      match k {
+        "year" =>
+          match v {
+            @value.Value::Int(n) => year = n.to_int()
+            _ => return Err("time.time: year must be an integer")
+          }
+        "month" =>
+          match v {
+            @value.Value::Int(n) => month = n.to_int()
+            _ => return Err("time.time: month must be an integer")
+          }
+        "day" =>
+          match v {
+            @value.Value::Int(n) => day = n.to_int()
+            _ => return Err("time.time: day must be an integer")
+          }
+        "hour" =>
+          match v {
+            @value.Value::Int(n) => hour = n.to_int()
+            _ => return Err("time.time: hour must be an integer")
+          }
+        "minute" =>
+          match v {
+            @value.Value::Int(n) => minute = n.to_int()
+            _ => return Err("time.time: minute must be an integer")
+          }
+        "second" =>
+          match v {
+            @value.Value::Int(n) => second = n.to_int()
+            _ => return Err("time.time: second must be an integer")
+          }
+        "nanosecond" =>
+          match v {
+            @value.Value::Int(n) => nanosecond = n.to_int()
+            _ => return Err("time.time: nanosecond must be an integer")
+          }
+        "location" =>
+          match v {
+            @value.Value::String(s) => location = s.raw()
+            _ => return Err("time.time: location must be a string")
+          }
+        _ => return Err("time.time: unexpected keyword argument \{k}")
+      }
+    }
+    if location != "UTC" && location != "" {
+      return Err("time.time: unsupported timezone \"\{location}\"")
+    }
+    let dt = @x_time.ZonedDateTime::of(
+      year,
+      month,
+      day,
+      hour~,
+      minute~,
+      second~,
+      nanosecond~,
+      zone=@x_time.utc_zone,
+    ) catch {
+      _ => return Err("time.time: invalid date/time parameters")
+    }
+    let sec = dt.to_unix_second()
+    Ok(make_time(sec, nanosecond))
+  })
+}
+
+///|
+fn make_is_valid_timezone_fn() -> @value.Value {
+  @value.Value::new_builtin("time.is_valid_timezone", fn(
+    _ctx,
+    pos_args,
+    kw_args,
+  ) {
+    if pos_args.length() != 1 || kw_args.length() != 0 {
+      return Err(
+        "time.is_valid_timezone: got \{pos_args.length()} arguments, want 1",
+      )
+    }
+    let s = match pos_args[0] {
+      @value.Value::String(s) => s.raw()
+      _ => return Err("time.is_valid_timezone: argument must be a string")
+    }
+    Ok(@value.Value::Bool(s == "UTC"))
+  })
+}
+
+///|
+pub fn time_module() -> @value.Value {
+  let attrs : Map[String, @value.Value] = {}
+  attrs["now"] = make_now_fn()
+  attrs["from_timestamp"] = make_from_timestamp_fn()
+  attrs["parse_time"] = make_parse_time_fn()
+  attrs["parse_duration"] = make_parse_duration_fn()
+  attrs["time"] = make_time_constructor_fn()
+  attrs["is_valid_timezone"] = make_is_valid_timezone_fn()
+  attrs["nanosecond"] = make_duration(1L)
+  attrs["microsecond"] = make_duration(ns_per_microsecond)
+  attrs["millisecond"] = make_duration(ns_per_millisecond)
+  attrs["second"] = make_duration(ns_per_second)
+  attrs["minute"] = make_duration(ns_per_minute)
+  attrs["hour"] = make_duration(ns_per_hour)
+  @value.Value::Module(@value.StarlarkModule::new("time", attrs))
+}

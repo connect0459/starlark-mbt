@@ -440,6 +440,10 @@ fn exec_chunk_raw(
       let exports : Map[String, @value.Value] = {}
       exports["math"] = @math.math_module()
       Ok(@eval.Module::from_map(exports))
+    } else if path == "time.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["time"] = @time.time_module()
+      Ok(@eval.Module::from_map(exports))
     } else {
       Err(@errors.EvalError::simple("no loader for \"\{path}\""))
     }
@@ -526,6 +530,10 @@ pub fn run_with_predeclared(
       let exports : Map[String, @value.Value] = {}
       exports["math"] = @math.math_module()
       Ok(@eval.Module::from_map(exports))
+    } else if path == "time.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["time"] = @time.time_module()
+      Ok(@eval.Module::from_map(exports))
     } else {
       Err(@errors.EvalError::simple("no loader for \"\{path}\""))
     }
@@ -565,6 +573,10 @@ pub fn run_star_string(src : String) -> Array[String] {
     } else if path == "math.star" {
       let exports : Map[String, @value.Value] = {}
       exports["math"] = @math.math_module()
+      Ok(@eval.Module::from_map(exports))
+    } else if path == "time.star" {
+      let exports : Map[String, @value.Value] = {}
+      exports["time"] = @time.time_module()
       Ok(@eval.Module::from_map(exports))
     } else {
       Err(@errors.EvalError::simple("no loader for \"\{path}\""))
