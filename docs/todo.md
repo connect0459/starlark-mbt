@@ -555,7 +555,9 @@ End-to-end tests that execute `.star` scripts and assert output.
   - [x] `bool.star` — all assertions pass
   - [x] `string.star` — all assertions pass; unicode iterable-string multi-byte tests
         now included (codepoints/elem_ords/elems for "abcЙ😿"); ord() error message
-        aligned with starlark-go ("string encodes N Unicode code points, want 1")
+        aligned with starlark-go ("string encodes N Unicode code points, want 1");
+        hash parity assertions (lines 161-170) now included after fixing hash() to
+        use java.lang.String.hashCode instead of FNV-1a
   - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases now
         included (fix: parser accepts lambda in comprehension if-clause);
         f7 (hasfields) excluded; f4 (local-var-before-assignment via +=) excluded
@@ -569,7 +571,8 @@ End-to-end tests that execute `.star` scripts and assert output.
         mutable defaults, lambda parsing, missing/duplicate param errors, dynamic
         **kwargs checks, CALL_VAR_KW, eval order, recursive closures, forward refs,
         trailing commas; recursion detection (fib/Y-combinator), hasfields(),
-        and unbound-cell detection excluded (not yet implemented)
+        and unbound-cell detection excluded (not yet implemented); "did you mean"
+        spell-check for unexpected kwargs now included (min keg→key)
   - [x] `while.star` — basic accumulation, break, continue all pass
   - [x] `recursion.star` — fibonacci (fib(5)=8) and depth-limit enforcement pass
   - [x] `set.star` — all assertions pass; covers constructor, truth, binary ops
