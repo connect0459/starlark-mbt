@@ -113,3 +113,128 @@ test "ExtVal: type() returns custom type name" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "ExtVal binary_fn: + operator dispatches to binary_fn" {
+  let cv = @value.CustomValue::new(fn() { "counter" }, fn() { true }, fn() {
+    "<counter>"
+  }).with_binary(fn(op, rhs, _is_left) {
+    if op == "+" {
+      match rhs {
+        @value.Value::Int(n) => Some(Ok(@value.Value::Int(n + 100L)))
+        _ => None
+      }
+    } else {
+      None
+    }
+  })
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("counter", @value.Value::ExtVal(cv))
+  let errs = run_with_predeclared(
+    predeclared,
+    (
+      #|load("assert.star", "assert")
+      #|assert.eq(counter + 5, 105)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "ExtVal binary_fn: right-hand dispatch when ExtVal is rhs" {
+  let cv = @value.CustomValue::new(fn() { "counter" }, fn() { true }, fn() {
+    "<counter>"
+  }).with_binary(fn(op, lhs, _is_left) {
+    if op == "+" {
+      match lhs {
+        @value.Value::Int(n) => Some(Ok(@value.Value::Int(n + 200L)))
+        _ => None
+      }
+    } else {
+      None
+    }
+  })
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("counter", @value.Value::ExtVal(cv))
+  let errs = run_with_predeclared(
+    predeclared,
+    (
+      #|load("assert.star", "assert")
+      #|assert.eq(5 + counter, 205)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "ExtVal unary_fn: - operator dispatches to unary_fn" {
+  let cv = @value.CustomValue::new(fn() { "mynum" }, fn() { true }, fn() {
+    "<mynum>"
+  }).with_unary(fn(op) {
+    if op == "-" {
+      Some(Ok(@value.Value::Int(-99L)))
+    } else {
+      None
+    }
+  })
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("mynum", @value.Value::ExtVal(cv))
+  let errs = run_with_predeclared(
+    predeclared,
+    (
+      #|load("assert.star", "assert")
+      #|assert.eq(-mynum, -99)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "ExtVal compare_fn: < operator dispatches to compare_fn" {
+  let make_num = fn(val : Int64) -> @value.Value {
+    @value.Value::ExtVal(
+      @value.CustomValue::new(fn() { "num" }, fn() { true }, fn() { "<num>" })
+      .with_compare(fn(other) {
+        match other {
+          @value.Value::ExtVal(oc) =>
+            if oc.get_type_name() == "num" {
+              Some(0)
+            } else {
+              None
+            }
+          _ => None
+        }
+      })
+      .with_equals(fn(other) { other is @value.Value::ExtVal(_) })
+      .with_binary(fn(op, rhs, _is_left) {
+        if op == "-" {
+          match rhs {
+            @value.Value::ExtVal(_) => Some(Ok(@value.Value::Int(val - val)))
+            _ => None
+          }
+        } else {
+          None
+        }
+      }),
+    )
+  }
+  let n5 = make_num(5L)
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("n5", n5)
+  let errs = run_with_predeclared(
+    predeclared,
+    (
+      #|load("assert.star", "assert")
+      #|assert.eq(n5 == n5, True)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

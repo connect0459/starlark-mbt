@@ -73,6 +73,9 @@ pub struct CustomValue {
   priv iterate_fn : (() -> Result[StarlarkIterator, String])?
   priv length_fn : (() -> Int)?
   priv freeze_fn : (() -> Unit)?
+  priv binary_fn : ((String, Value, Bool) -> Result[Value, String]?)?
+  priv unary_fn : ((String) -> Result[Value, String]?)?
+  priv compare_fn : ((Value) -> Int?)?
 }
 
 ///|
@@ -94,6 +97,9 @@ pub fn CustomValue::new(
     iterate_fn: None,
     length_fn: None,
     freeze_fn: None,
+    binary_fn: None,
+    unary_fn: None,
+    compare_fn: None,
   }
 }
 
@@ -160,6 +166,30 @@ pub fn CustomValue::with_freeze(
   freeze_fn : () -> Unit,
 ) -> CustomValue {
   { ..self, freeze_fn: Some(freeze_fn) }
+}
+
+///|
+pub fn CustomValue::with_binary(
+  self : CustomValue,
+  binary_fn : (String, Value, Bool) -> Result[Value, String]?,
+) -> CustomValue {
+  { ..self, binary_fn: Some(binary_fn) }
+}
+
+///|
+pub fn CustomValue::with_unary(
+  self : CustomValue,
+  unary_fn : (String) -> Result[Value, String]?,
+) -> CustomValue {
+  { ..self, unary_fn: Some(unary_fn) }
+}
+
+///|
+pub fn CustomValue::with_compare(
+  self : CustomValue,
+  compare_fn : (Value) -> Int?,
+) -> CustomValue {
+  { ..self, compare_fn: Some(compare_fn) }
 }
 
 ///|
@@ -258,5 +288,37 @@ pub fn CustomValue::do_freeze(self : CustomValue) -> Unit {
   match self.freeze_fn {
     Some(f) => f()
     None => ()
+  }
+}
+
+///|
+pub fn CustomValue::get_binary(
+  self : CustomValue,
+  op : String,
+  rhs : Value,
+  is_left : Bool,
+) -> Result[Value, String]? {
+  match self.binary_fn {
+    Some(f) => f(op, rhs, is_left)
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::get_unary(
+  self : CustomValue,
+  op : String,
+) -> Result[Value, String]? {
+  match self.unary_fn {
+    Some(f) => f(op)
+    None => None
+  }
+}
+
+///|
+pub fn CustomValue::get_compare(self : CustomValue, other : Value) -> Int? {
+  match self.compare_fn {
+    Some(f) => f(other)
+    None => None
   }
 }

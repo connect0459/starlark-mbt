@@ -271,6 +271,16 @@ pub fn compare_values_depth(
     (List(x), List(y)) => slice_cmp_depth(x.items[:], y.items[:], depth - 1)
     (Int(n), Float(f)) => Ok(int_float_cmp(n, f))
     (Float(f), Int(n)) => Ok(-int_float_cmp(n, f))
+    (ExtVal(ac), _) =>
+      match ac.get_compare(b) {
+        Some(c) => Ok(c)
+        None => Err("\{type_name(a)} < \{type_name(b)} not implemented")
+      }
+    (_, ExtVal(rc)) =>
+      match rc.get_compare(a) {
+        Some(c) => Ok(-c)
+        None => Err("\{type_name(a)} < \{type_name(b)} not implemented")
+      }
     _ => Err("\{type_name(a)} < \{type_name(b)} not implemented")
   }
 }

@@ -237,3 +237,75 @@ test "Value::ExtVal hash delegates to hash_fn" {
   )
   assert_true(starlark_hash(Value::ExtVal(cv)) is Ok(99U))
 }
+
+///|
+test "CustomValue: binary_fn dispatches addition" {
+  let cv = CustomValue::new(fn() { "counter" }, fn() { true }, fn() {
+    "<counter>"
+  }).with_binary(fn(op, rhs, _is_left) {
+    if op == "+" {
+      match rhs {
+        Value::Int(n) => Some(Ok(Value::Int(n + 100L)))
+        _ => None
+      }
+    } else {
+      None
+    }
+  })
+  match cv.get_binary("+", Value::Int(5L), true) {
+    Some(Ok(Value::Int(105L))) => ()
+    _ => fail("expected Some(Ok(105))")
+  }
+  assert_true(cv.get_binary("-", Value::Int(5L), true) is None)
+}
+
+///|
+test "CustomValue: unary_fn dispatches negation" {
+  let cv = CustomValue::new(fn() { "num" }, fn() { true }, fn() { "" }).with_unary(fn(
+      op,
+    ) {
+      if op == "-" {
+        Some(Ok(Value::Int(-42L)))
+      } else {
+        None
+      }
+    },
+  )
+  assert_true(cv.get_unary("-") is Some(Ok(Value::Int(-42L))))
+  assert_true(cv.get_unary("+") is None)
+}
+
+///|
+test "CustomValue: binary_fn returns None when no binary_fn set" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_binary("+", Value::Int(1L), true) is None)
+}
+
+///|
+test "CustomValue: unary_fn returns None when no unary_fn set" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_unary("-") is None)
+}
+
+///|
+test "CustomValue: compare_fn dispatches ordering" {
+  let cv = CustomValue::new(fn() { "num" }, fn() { true }, fn() { "" }).with_compare(fn(
+      other,
+    ) {
+      match other {
+        Value::Int(n) => Some(if n > 5L { -1 } else if n < 5L { 1 } else { 0 })
+        _ => None
+      }
+    },
+  )
+  assert_true(cv.get_compare(Value::Int(5L)) == Some(0))
+  assert_true(cv.get_compare(Value::Int(6L)) == Some(-1))
+  assert_true(cv.get_compare(Value::Int(4L)) == Some(1))
+  assert_true(cv.get_compare(Value::None) == None)
+}
+
+///|
+test "CustomValue: compare_fn returns None when no compare_fn set" {
+  let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
+  assert_true(cv.get_compare(Value::Int(1L)) == None)
+}

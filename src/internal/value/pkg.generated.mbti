@@ -52,6 +52,8 @@ pub struct CustomValue {
 pub fn CustomValue::do_freeze(Self) -> Unit
 pub fn CustomValue::get_attr(Self, String) -> Result[Value?, String]
 pub fn CustomValue::get_attr_names(Self) -> Array[String]?
+pub fn CustomValue::get_binary(Self, String, Value, Bool) -> Result[Value, String]?
+pub fn CustomValue::get_compare(Self, Value) -> Int?
 pub fn CustomValue::get_contains(Self, Value) -> Result[Bool, String]?
 pub fn CustomValue::get_equals(Self, Value) -> Bool
 pub fn CustomValue::get_hash(Self) -> Result[UInt, String]
@@ -61,8 +63,11 @@ pub fn CustomValue::get_repr(Self) -> String
 pub fn CustomValue::get_set_field(Self, String, Value) -> Result[Unit, String]
 pub fn CustomValue::get_truth(Self) -> Bool
 pub fn CustomValue::get_type_name(Self) -> String
+pub fn CustomValue::get_unary(Self, String) -> Result[Value, String]?
 pub fn CustomValue::new(() -> String, () -> Bool, () -> String) -> Self
 pub fn CustomValue::with_attrs(Self, (String) -> Result[Value?, String], () -> Array[String]) -> Self
+pub fn CustomValue::with_binary(Self, (String, Value, Bool) -> Result[Value, String]?) -> Self
+pub fn CustomValue::with_compare(Self, (Value) -> Int?) -> Self
 pub fn CustomValue::with_contains(Self, (Value) -> Result[Bool, String]) -> Self
 pub fn CustomValue::with_equals(Self, (Value) -> Bool) -> Self
 pub fn CustomValue::with_freeze(Self, () -> Unit) -> Self
@@ -70,6 +75,7 @@ pub fn CustomValue::with_hash(Self, () -> Result[UInt, String]) -> Self
 pub fn CustomValue::with_iterate(Self, () -> Result[StarlarkIterator, String]) -> Self
 pub fn CustomValue::with_length(Self, () -> Int) -> Self
 pub fn CustomValue::with_set_field(Self, (String, Value) -> Result[Unit, String]) -> Self
+pub fn CustomValue::with_unary(Self, (String) -> Result[Value, String]?) -> Self
 
 pub struct StarlarkBoundMethod {
   // private fields

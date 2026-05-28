@@ -31,12 +31,48 @@ fn int_pow(base : Int64, exp : Int64) -> Result[Int64, String] {
 }
 
 ///|
+fn unary_op_to_str(op : @syntax.UnaryOp) -> String {
+  match op {
+    @syntax.UnaryOp::OpPlus => "+"
+    @syntax.UnaryOp::OpMinus => "-"
+    @syntax.UnaryOp::OpBitNot => "~"
+    @syntax.UnaryOp::OpNot => "not"
+  }
+}
+
+///|
+fn op_to_str(op : @syntax.BinaryOp) -> String {
+  match op {
+    @syntax.BinaryOp::OpAdd => "+"
+    @syntax.BinaryOp::OpSub => "-"
+    @syntax.BinaryOp::OpMul => "*"
+    @syntax.BinaryOp::OpDiv => "/"
+    @syntax.BinaryOp::OpFloorDiv => "//"
+    @syntax.BinaryOp::OpMod => "%"
+    @syntax.BinaryOp::OpPow => "**"
+    @syntax.BinaryOp::OpBitAnd => "&"
+    @syntax.BinaryOp::OpBitOr => "|"
+    @syntax.BinaryOp::OpBitXor => "^"
+    @syntax.BinaryOp::OpLShift => "<<"
+    @syntax.BinaryOp::OpRShift => ">>"
+    _ => "?"
+  }
+}
+
+///|
 fn eval_unary(
   ctx : EvalContext,
   op : @syntax.UnaryOp,
   v : @value.Value,
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
+  if v is @value.Value::ExtVal(c) {
+    match c.get_unary(unary_op_to_str(op)) {
+      Some(Ok(r)) => return r
+      Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+      None => ()
+    }
+  }
   match op {
     @syntax.UnaryOp::OpPlus =>
       match v {
@@ -84,6 +120,20 @@ fn eval_binary(
   rv : @value.Value,
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
+  if lv is @value.Value::ExtVal(lc) {
+    match lc.get_binary(op_to_str(op), rv, true) {
+      Some(Ok(v)) => return v
+      Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+      None => ()
+    }
+  }
+  if rv is @value.Value::ExtVal(rc) {
+    match rc.get_binary(op_to_str(op), lv, false) {
+      Some(Ok(v)) => return v
+      Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+      None => ()
+    }
+  }
   match op {
     @syntax.BinaryOp::OpAdd => eval_add(ctx, lv, rv, pos)
     @syntax.BinaryOp::OpSub => eval_arith_sub(ctx, lv, rv, pos)
