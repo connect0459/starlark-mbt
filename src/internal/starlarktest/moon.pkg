@@ -8,3 +8,7 @@ import {
   "connect0459/starlark/lib/struct",
   "moonbitlang/core/bench",
 }
+
+options(
+  targets: { "time_tz_native_test.mbt": [ "native", "llvm" ] },
+)
