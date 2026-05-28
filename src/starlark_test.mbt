@@ -678,3 +678,25 @@ test "StarlarkFunction::free_var returns binding from captured scope" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+test "StarlarkFunction::globals returns module global variables" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "X = 10\ndef f(): return X",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => {
+          let g = f.globals()
+          assert_true(g.contains("X"))
+        }
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}

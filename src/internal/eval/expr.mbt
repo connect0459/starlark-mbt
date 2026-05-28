@@ -167,7 +167,7 @@ fn eval_expr_node(
         defaults,
         captured_scope,
         pos,
-      )
+      ).with_module_globals(ctx.global_env.locals)
       @value.Value::Function(func)
     }
     @syntax.Expr::EListComp(body_expr, clauses, _) => {

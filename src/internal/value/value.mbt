@@ -296,6 +296,7 @@ pub struct StarlarkFunction {
   priv defaults : Array[Value?]
   priv captured_scope : Array[(Map[String, Value], Array[String])]
   priv pos : @errors.Position
+  priv module_globals : Map[String, Value]?
 }
 
 ///|
@@ -307,7 +308,7 @@ pub fn StarlarkFunction::new(
   captured_scope : Array[(Map[String, Value], Array[String])],
   pos : @errors.Position,
 ) -> StarlarkFunction {
-  { name, params, body, defaults, captured_scope, pos }
+  { name, params, body, defaults, captured_scope, pos, module_globals: None }
 }
 
 ///|
@@ -342,6 +343,22 @@ pub fn StarlarkFunction::captured_scope(
   self : StarlarkFunction,
 ) -> Array[(Map[String, Value], Array[String])] {
   self.captured_scope
+}
+
+///|
+pub fn StarlarkFunction::with_module_globals(
+  self : StarlarkFunction,
+  g : Map[String, Value],
+) -> StarlarkFunction {
+  { ..self, module_globals: Some(g) }
+}
+
+///|
+pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] {
+  match self.module_globals {
+    Some(g) => g
+    None => {}
+  }
 }
 
 ///|

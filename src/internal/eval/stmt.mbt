@@ -121,7 +121,7 @@ fn exec_stmt(
       let captured_scope = env.collect_local_scopes()
       let func = @value.StarlarkFunction::new(
         name, params, body, defaults, captured_scope, pos,
-      )
+      ).with_module_globals(ctx.global_env.locals)
       env.bind(name, @value.Value::Function(func))
       Signal::SigNormal
     }
