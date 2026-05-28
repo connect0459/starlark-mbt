@@ -80,3 +80,16 @@ test "module.star: accessing missing field raises descriptive error" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let module_did_you_mean_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda : assert.falls, "module has no .falls field or method (did you mean .fails?)")
+
+///|
+test "module.star: missing field with similar name includes 'did you mean' hint" {
+  let errs = run_star_string(module_did_you_mean_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

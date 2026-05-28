@@ -228,10 +228,19 @@ fn eval_getattr(
     @value.Value::Module(m) =>
       match m.get(attr) {
         Some(v) => v
-        None =>
+        None => {
+          let candidates = m.attr_names()
+          let hint = match spell_nearest(attr, candidates) {
+            "" => ""
+            s => " (did you mean .\{s}?)"
+          }
           raise EvalErr(
-            make_eval_error(ctx, "module has no .\{attr} field or method"),
+            make_eval_error(
+              ctx,
+              "module has no .\{attr} field or method\{hint}",
+            ),
           )
+        }
       }
     @value.Value::ExtVal(c) =>
       match c.get_attr(attr) {
