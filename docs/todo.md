@@ -807,7 +807,7 @@ Low-cost public API additions derived from gap analysis against starlark-go.
   `@syntax.Stmt` / `@syntax.Param` AST types. Requires moving call dispatch logic into
   the `value` package or introducing a trait boundary to avoid circular imports.
 - `math` extension library — implemented as `src/lib/math/`
-- `time` extension library (`starlark-go/lib/time`)
+- ~~`time` extension library~~ — implemented as `src/lib/time/`; non-UTC timezones via IANA tzdb (native) / static table (wasm/js); native-only DST tests in `time_tz_native_test.mbt`
 - `proto` extension library (`starlark-go/lib/proto`)
 - ~~`starlarkstruct`~~ — implemented as `src/lib/struct/`; `struct()` builtin, `gensym()` callable symbols, `+` merge, `make_struct` API
 - Bytecode compilation / interpreter (currently AST-walking only)
