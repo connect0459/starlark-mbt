@@ -265,3 +265,23 @@ test "list.star: all assertions pass" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let list_unbound_local_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|# Unlike list.extend(iterable), list += iterable makes its LHS name local.
+  #|a_list = []
+  #|
+  #|def f4():
+  #|    a_list += [1]  # binding use => a_list is a local var
+  #|
+  #|assert.fails(f4, "local variable a_list referenced before assignment")
+
+///|
+test "list augmented-assign to global name raises unbound local error" {
+  let errs = run_star_string(list_unbound_local_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

@@ -282,3 +282,42 @@ test "function.star: bound method identity in sets (each access is unique)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let function_unbound_cell_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|def e():
+  #|    x = 1
+  #|    def f():
+  #|      print(x) # this reference to x fails
+  #|      x = 3    # because this assignment makes x local to f
+  #|    f()
+  #|
+  #|assert.fails(e, "local variable x referenced before assignment")
+  #|
+  #|def f():
+  #|    def inner():
+  #|        return x
+  #|    if False:
+  #|        x = 0
+  #|    return x # fails (x is an uninitialized cell of this function)
+  #|
+  #|assert.fails(f, "local variable x referenced before assignment")
+  #|
+  #|def g():
+  #|    def inner():
+  #|        return x # fails (x is an uninitialized cell of the enclosing function)
+  #|    if False:
+  #|        x = 0
+  #|    return inner()
+  #|
+  #|assert.fails(g, "local variable x referenced before assignment")
+
+///|
+test "function.star: local variable referenced before assignment" {
+  let errs = run_star_string(function_unbound_cell_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
