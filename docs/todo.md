@@ -823,6 +823,10 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 - [x] **MISSING-4**: `str(b"\xED\xB0\x80")` == U+FFFD × 3 — fixed `str(Bytes)` to re-encode
       via `from_bytes().raw() + new()`. MoonBit `decode_lossy` gives 3 U+FFFD per byte.
       Commit: `a6d20d1`
+- [x] **BUG-5**: `range()` with BigInt arg overflowing Int64 silently truncated — fixed
+      in `eval/expr.mbt`: `range_arg_to_int64` checks bounds via `BigInt::compare_int64`
+      and raises `"N out of range (want value in signed 64-bit range)"`. Matches
+      starlark-go `AsInt` error format. Commit: `6915be5`
 
 ---
 
