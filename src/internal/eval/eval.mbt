@@ -338,6 +338,85 @@ pub fn call(
 }
 
 ///|
+pub fn binary(
+  op : String,
+  x : @value.Value,
+  y : @value.Value,
+) -> Result[@value.Value, @errors.EvalError] {
+  let bop = match op {
+    "+" => @syntax.BinaryOp::OpAdd
+    "-" => @syntax.BinaryOp::OpSub
+    "*" => @syntax.BinaryOp::OpMul
+    "/" => @syntax.BinaryOp::OpDiv
+    "//" => @syntax.BinaryOp::OpFloorDiv
+    "%" => @syntax.BinaryOp::OpMod
+    "**" => @syntax.BinaryOp::OpPow
+    "&" => @syntax.BinaryOp::OpBitAnd
+    "|" => @syntax.BinaryOp::OpBitOr
+    "^" => @syntax.BinaryOp::OpBitXor
+    "<<" => @syntax.BinaryOp::OpLShift
+    ">>" => @syntax.BinaryOp::OpRShift
+    _ => return Err(@errors.EvalError::simple("unknown binary operator: \{op}"))
+  }
+  let thread = Thread::new("<binary>")
+  let ctx = EvalContext::new(thread, Options::default())
+  let pos = @errors.Position::new("<binary>", 0, 0)
+  Ok(eval_binary(ctx, x, bop, y, pos)) catch {
+    EvalErr(e) => Err(e)
+  }
+}
+
+///|
+pub fn unary(
+  op : String,
+  x : @value.Value,
+) -> Result[@value.Value, @errors.EvalError] {
+  let uop = match op {
+    "+" => @syntax.UnaryOp::OpPlus
+    "-" => @syntax.UnaryOp::OpMinus
+    "~" => @syntax.UnaryOp::OpBitNot
+    "not" => @syntax.UnaryOp::OpNot
+    _ => return Err(@errors.EvalError::simple("unknown unary operator: \{op}"))
+  }
+  let thread = Thread::new("<unary>")
+  let ctx = EvalContext::new(thread, Options::default())
+  let pos = @errors.Position::new("<unary>", 0, 0)
+  Ok(eval_unary(ctx, uop, x, pos)) catch {
+    EvalErr(e) => Err(e)
+  }
+}
+
+///|
+pub fn compare(
+  op : String,
+  x : @value.Value,
+  y : @value.Value,
+) -> Result[Bool, @errors.EvalError] {
+  let bop = match op {
+    "==" => @syntax.BinaryOp::OpEq
+    "!=" => @syntax.BinaryOp::OpNe
+    "<" => @syntax.BinaryOp::OpLt
+    "<=" => @syntax.BinaryOp::OpLe
+    ">" => @syntax.BinaryOp::OpGt
+    ">=" => @syntax.BinaryOp::OpGe
+    _ =>
+      return Err(
+        @errors.EvalError::simple("unknown comparison operator: \{op}"),
+      )
+  }
+  let thread = Thread::new("<compare>")
+  let ctx = EvalContext::new(thread, Options::default())
+  let pos = @errors.Position::new("<compare>", 0, 0)
+  let result = eval_binary(ctx, x, bop, y, pos) catch {
+    EvalErr(e) => return Err(e)
+  }
+  match result {
+    @value.Value::Bool(b) => Ok(b)
+    _ => Err(@errors.EvalError::simple("comparison did not return bool"))
+  }
+}
+
+///|
 pub fn exec_file(
   thread : Thread,
   filename : String,

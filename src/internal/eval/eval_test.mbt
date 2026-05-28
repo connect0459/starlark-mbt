@@ -585,6 +585,84 @@ test "exec_repl_chunk: returns EvalError on runtime error" {
 }
 
 ///|
+fn ok_value(r : Result[@value.Value, @errors.EvalError]) -> @value.Value {
+  match r {
+    Ok(v) => v
+    Err(e) =>
+      @value.Value::String(@value.StarlarkString::new("ERR: \{e.msg()}"))
+  }
+}
+
+///|
+test "binary: arithmetic operations on integers" {
+  let two = @value.Value::Int(2)
+  let three = @value.Value::Int(3)
+  assert_true(ok_value(binary("+", two, three)) == @value.Value::Int(5))
+  assert_true(ok_value(binary("-", three, two)) == @value.Value::Int(1))
+  assert_true(ok_value(binary("*", two, three)) == @value.Value::Int(6))
+  assert_true(ok_value(binary("//", three, two)) == @value.Value::Int(1))
+  assert_true(ok_value(binary("%", three, two)) == @value.Value::Int(1))
+  assert_true(ok_value(binary("**", two, three)) == @value.Value::Int(8))
+}
+
+///|
+test "binary: unknown operator returns error" {
+  let x = @value.Value::Int(1)
+  let y = @value.Value::Int(2)
+  match binary("??", x, y) {
+    Err(e) => assert_true(e.msg().contains("unknown binary operator"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
+test "unary: numeric operations" {
+  let three = @value.Value::Int(3)
+  assert_true(ok_value(unary("-", three)) == @value.Value::Int(-3))
+  assert_true(ok_value(unary("+", three)) == @value.Value::Int(3))
+  assert_true(
+    ok_value(unary("not", @value.Value::Bool(false))) ==
+    @value.Value::Bool(true),
+  )
+}
+
+///|
+test "unary: unknown operator returns error" {
+  match unary("??", @value.Value::Int(1)) {
+    Err(e) => assert_true(e.msg().contains("unknown unary operator"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
+fn ok_bool(r : Result[Bool, @errors.EvalError]) -> Bool {
+  match r {
+    Ok(b) => b
+    Err(_) => false
+  }
+}
+
+///|
+test "compare: integer comparisons" {
+  let two = @value.Value::Int(2)
+  let three = @value.Value::Int(3)
+  assert_true(ok_bool(compare("==", two, two)))
+  assert_true(ok_bool(compare("!=", two, three)))
+  assert_true(ok_bool(compare("<", two, three)))
+  assert_true(ok_bool(compare("<=", two, three)))
+  assert_true(ok_bool(compare(">", three, two)))
+  assert_true(ok_bool(compare(">=", three, two)))
+}
+
+///|
+test "compare: unknown operator returns error" {
+  match compare("??", @value.Value::Int(1), @value.Value::Int(2)) {
+    Err(e) => assert_true(e.msg().contains("unknown comparison operator"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
 test "exec_repl_chunk: returns EvalError on parse or resolve error" {
   let thread = Thread::new("repl")
   let globals = @value.StarlarkDict::new()
