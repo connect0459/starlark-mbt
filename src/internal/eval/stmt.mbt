@@ -239,25 +239,34 @@ fn eval_aug_val(
 ) -> @value.Value raise EvalErr {
   match (lv, aug_op) {
     (@value.Value::List(l), @syntax.AugOp::AugAdd) =>
-      match @value.iterate(rv) {
-        Ok(iter) => {
-          match l.check_mutable("apply += to") {
-            Err(msg) => {
-              iter.done()
-              raise EvalErr(make_eval_error(ctx, msg))
-            }
-            Ok(_) => ()
-          }
-          while true {
-            match iter.next() {
-              None => break
-              Some(item) => l.push(item) |> ignore
-            }
-          }
-          iter.done()
-          lv
+      if rv is @value.Value::List(src) {
+        let snapshot = src.copy_items()
+        check(ctx, l.check_mutable("apply += to"))
+        for item in snapshot {
+          l.push(item) |> ignore
         }
-        Err(_) => eval_binary(ctx, lv, @syntax.BinaryOp::OpAdd, rv, pos)
+        lv
+      } else {
+        match @value.iterate(rv) {
+          Ok(iter) => {
+            match l.check_mutable("apply += to") {
+              Err(msg) => {
+                iter.done()
+                raise EvalErr(make_eval_error(ctx, msg))
+              }
+              Ok(_) => ()
+            }
+            while true {
+              match iter.next() {
+                None => break
+                Some(item) => l.push(item) |> ignore
+              }
+            }
+            iter.done()
+            lv
+          }
+          Err(_) => eval_binary(ctx, lv, @syntax.BinaryOp::OpAdd, rv, pos)
+        }
       }
     (@value.Value::Dict(ld), @syntax.AugOp::AugBitOr) =>
       match rv {

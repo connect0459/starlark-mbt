@@ -1734,15 +1734,23 @@ fn call_list_method(
           make_eval_error(ctx, "extend() takes exactly one argument"),
         )
       }
-      check(ctx, l.check_mutable("extend"))
-      let it = require_seq(ctx, pos_args[0])
-      while true {
-        match it.next() {
-          None => {
-            it.done()
-            break
+      if pos_args[0] is @value.Value::List(src) {
+        let snapshot = src.copy_items()
+        check(ctx, l.check_mutable("extend"))
+        for item in snapshot {
+          l.push(item) |> ignore
+        }
+      } else {
+        check(ctx, l.check_mutable("extend"))
+        let it = require_seq(ctx, pos_args[0])
+        while true {
+          match it.next() {
+            None => {
+              it.done()
+              break
+            }
+            Some(v) => l.push(v) |> ignore
           }
-          Some(v) => l.push(v) |> ignore
         }
       }
       @value.Value::None

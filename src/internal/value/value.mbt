@@ -122,6 +122,11 @@ pub fn StarlarkList::is_same_storage(
 }
 
 ///|
+pub fn StarlarkList::copy_items(self : StarlarkList) -> Array[Value] {
+  self.items.copy()
+}
+
+///|
 pub fn StarlarkList::push(
   self : StarlarkList,
   v : Value,

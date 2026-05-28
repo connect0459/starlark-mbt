@@ -299,3 +299,33 @@ test "lambda in comprehension if-clause is truthy and filters correctly" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "list.extend(self) doubles the list without error (BUG-4)" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|xs = [1, 2, 3]
+      #|xs.extend(xs)
+      #|assert.eq(xs, [1, 2, 3, 1, 2, 3])
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "list += self doubles the list without error (BUG-4)" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|xs = [1, 2, 3]
+      #|xs += xs
+      #|assert.eq(xs, [1, 2, 3, 1, 2, 3])
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
