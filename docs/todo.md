@@ -809,7 +809,7 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 - `math` extension library — implemented as `src/lib/math/`
 - `time` extension library (`starlark-go/lib/time`)
 - `proto` extension library (`starlark-go/lib/proto`)
-- `starlarkstruct` — Bazel-style structs and modules
+- ~~`starlarkstruct`~~ — implemented as `src/lib/struct/`; `struct()` builtin, `gensym()` callable symbols, `+` merge, `make_struct` API
 - Bytecode compilation / interpreter (currently AST-walking only)
 - Profiling and debugging hooks (`starlark-go/starlark/profile.go`)
 - Big-integer `Int` (upgrade from `Int64` once overflow demands it)
