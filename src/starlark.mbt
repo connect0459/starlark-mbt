@@ -26,6 +26,9 @@ pub type StarlarkList = @value.StarlarkList
 pub type StarlarkString = @value.StarlarkString
 
 ///|
+pub type StarlarkBuiltinFunc = @value.StarlarkBuiltinFunc
+
+///|
 pub type StarlarkIterator = @value.StarlarkIterator
 
 ///|

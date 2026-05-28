@@ -56,9 +56,11 @@ pub fn StarlarkBoundMethod::recv(Self) -> Value
 pub struct StarlarkBuiltinFunc {
   // private fields
 }
+pub fn StarlarkBuiltinFunc::bind_receiver(Self, Value) -> Self
 pub fn StarlarkBuiltinFunc::call_body(Self, BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[Value, String]?
 pub fn StarlarkBuiltinFunc::dispatch(String) -> Self
 pub fn StarlarkBuiltinFunc::name(Self) -> String
+pub fn StarlarkBuiltinFunc::receiver(Self) -> Value?
 
 pub struct StarlarkBytesElems {
   // private fields

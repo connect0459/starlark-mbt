@@ -156,6 +156,7 @@ pub struct Thread {
   priv mut steps : Int
   priv mut cancel_reason : String?
   priv mut on_max_steps : ((Thread) -> Unit)?
+  priv locals : Map[String, @value.Value]
 }
 
 ///|
@@ -170,6 +171,7 @@ pub fn Thread::new(name : String) -> Thread {
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
+    locals: {},
   }
 }
 
@@ -185,6 +187,7 @@ pub fn Thread::with_print(name : String, print_fn : (String) -> Unit) -> Thread 
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
+    locals: {},
   }
 }
 
@@ -203,6 +206,7 @@ pub fn Thread::with_loader(
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
+    locals: {},
   }
 }
 
@@ -218,7 +222,22 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
+    locals: {},
   }
+}
+
+///|
+pub fn Thread::set_local(
+  self : Thread,
+  key : String,
+  value : @value.Value,
+) -> Unit {
+  self.locals[key] = value
+}
+
+///|
+pub fn Thread::get_local(self : Thread, key : String) -> @value.Value? {
+  self.locals.get(key)
 }
 
 ///|

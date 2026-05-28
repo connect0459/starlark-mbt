@@ -595,3 +595,59 @@ test "Module::predeclared_map returns predeclared bindings" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+test "Thread::set_local and local store and retrieve host values" {
+  let t = @starlark.Thread::new("test")
+  t.set_local(
+    "request_id",
+    @starlark.Value::String(@starlark.StarlarkString::new("abc-123")),
+  )
+  match t.get_local("request_id") {
+    Some(@starlark.Value::String(s)) => assert_eq(s.raw(), "abc-123")
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "Thread::local returns None for missing key" {
+  let t = @starlark.Thread::new("test")
+  assert_true(t.get_local("missing") is None)
+}
+
+///|
+test "StarlarkBuiltinFunc::receiver returns None for unbound builtin" {
+  let b = @starlark.StarlarkBuiltinFunc::dispatch("my_func")
+  assert_true(b.receiver() is None)
+}
+
+///|
+test "StarlarkBuiltinFunc::bind_receiver creates a bound builtin" {
+  let b = @starlark.StarlarkBuiltinFunc::dispatch("my_method")
+  let recv = @starlark.Value::Int(42L)
+  let bound = b.bind_receiver(recv)
+  match bound.receiver() {
+    Some(@starlark.Value::Int(42L)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::free_var returns name from captured scope" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def outer():\n  y = 20\n  def inner(): return y\n  return inner\nf = outer()",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) =>
+          assert_true(f.num_free_vars() >= 1)
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}

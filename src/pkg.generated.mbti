@@ -83,6 +83,8 @@ pub using @eval {type Predeclared}
 
 pub using @errors {type ResolveError}
 
+pub using @value {type StarlarkBuiltinFunc}
+
 pub using @value {type StarlarkDict}
 
 pub using @value {type StarlarkIterator}

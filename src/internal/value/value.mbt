@@ -497,16 +497,30 @@ pub struct StarlarkBuiltinFunc {
     Value,
     String,
   ])?
+  priv recv : Value?
 }
 
 ///|
 pub fn StarlarkBuiltinFunc::dispatch(name : String) -> StarlarkBuiltinFunc {
-  { name, body: None }
+  { name, body: None, recv: None }
 }
 
 ///|
 pub fn StarlarkBuiltinFunc::name(self : StarlarkBuiltinFunc) -> String {
   self.name
+}
+
+///|
+pub fn StarlarkBuiltinFunc::receiver(self : StarlarkBuiltinFunc) -> Value? {
+  self.recv
+}
+
+///|
+pub fn StarlarkBuiltinFunc::bind_receiver(
+  self : StarlarkBuiltinFunc,
+  recv : Value,
+) -> StarlarkBuiltinFunc {
+  { ..self, recv: Some(recv) }
 }
 
 ///|
@@ -700,7 +714,7 @@ pub fn Value::new_builtin(
     String,
   ],
 ) -> Value {
-  Builtin({ name, body: Some(body) })
+  Builtin({ name, body: Some(body), recv: None })
 }
 
 ///|

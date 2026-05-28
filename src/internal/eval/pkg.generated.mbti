@@ -70,10 +70,12 @@ pub fn Thread::call_stack(Self) -> @errors.CallStack
 pub fn Thread::call_stack_depth(Self) -> Int
 pub fn Thread::cancel(Self, String) -> Unit
 pub fn Thread::execution_steps(Self) -> Int
+pub fn Thread::get_local(Self, String) -> @value.Value?
 pub fn Thread::max_recursion_depth(Self) -> Int
 pub fn Thread::max_steps(Self) -> Int?
 pub fn Thread::name(Self) -> String
 pub fn Thread::new(String) -> Self
+pub fn Thread::set_local(Self, String, @value.Value) -> Unit
 pub fn Thread::set_max_steps(Self, Int) -> Unit
 pub fn Thread::set_on_max_steps(Self, (Self) -> Unit) -> Unit
 pub fn Thread::uncancel(Self) -> Unit
