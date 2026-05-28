@@ -758,7 +758,7 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 
 - [x] **Cycle detection** — `repr`/`str` truncates circular references as `[...]`;
       `==` / `<` on cyclic structures raises "maximum recursion" (`misc_test`)
-- [ ] **Unbound cell detection** — referencing a local before assignment raises an error
+- [x] **Unbound cell detection** — referencing a local before assignment raises an error
       (`list_test`, `function_test`)
 - [x] **`BoundMethod` hash identity** — each method access creates a unique ID so
       `{x.f, x.f}` produces a 10-element set (`function_test`)
