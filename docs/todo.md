@@ -812,7 +812,7 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 - ~~`starlarkstruct`~~ — implemented as `src/lib/struct/`; `struct()` builtin, `gensym()` callable symbols, `+` merge, `make_struct` API
 - Bytecode compilation / interpreter (currently AST-walking only)
 - Profiling and debugging hooks (`starlark-go/starlark/profile.go`)
-- Big-integer `Int` (upgrade from `Int64` once overflow demands it)
+- ~~Big-integer `Int`~~ — implemented; `Value::Int` now uses MoonBit `BigInt` (arbitrary precision)
 - Thread-local storage `Thread.set_local()` / `Thread.local()` for embedder context
   (request IDs, profiling state, etc.) — reference: `starlark-go` `Thread.SetLocal`
 - Custom Unpacker protocol for user-defined `Value` types — reference:
