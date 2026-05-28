@@ -281,6 +281,64 @@ test "indent_json rejects invalid JSON" {
 }
 
 ///|
+test "encode ExtVal with attrs as JSON object" {
+  let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
+    "myobj(x=1, y=\"two\")"
+  }).with_attrs(
+    fn(name) {
+      match name {
+        "x" => Ok(Some(int_val(1L)))
+        "y" => Ok(Some(str_val("two")))
+        _ => Ok(None)
+      }
+    },
+    fn() { ["x", "y"] },
+  )
+  check_encode(@value.Value::ExtVal(cv), "{\"x\":1,\"y\":\"two\"}")
+}
+
+///|
+test "encode ExtVal with attrs uses sorted key order" {
+  let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
+    "myobj()"
+  }).with_attrs(
+    fn(name) {
+      match name {
+        "y" => Ok(Some(str_val("two")))
+        "x" => Ok(Some(int_val(1L)))
+        _ => Ok(None)
+      }
+    },
+    fn() { ["y", "x"] },
+  )
+  check_encode(@value.Value::ExtVal(cv), "{\"x\":1,\"y\":\"two\"}")
+}
+
+///|
+test "encode ExtVal without attrs raises error" {
+  let cv = @value.CustomValue::new(fn() { "opaque" }, fn() { true }, fn() {
+    "opaque()"
+  })
+  check_encode_err(@value.Value::ExtVal(cv), "cannot encode opaque as JSON")
+}
+
+///|
+test "encode ExtVal field error propagates with field name prefix" {
+  let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
+    "myobj()"
+  }).with_attrs(
+    fn(name) {
+      match name {
+        "bad" => Ok(Some(@value.Value::Float(@double.not_a_number)))
+        _ => Ok(None)
+      }
+    },
+    fn() { ["bad"] },
+  )
+  check_encode_err(@value.Value::ExtVal(cv), "in field .bad:")
+}
+
+///|
 test "encode then decode round-trips values" {
   let values : Array[@value.Value] = [
     @value.Value::None,

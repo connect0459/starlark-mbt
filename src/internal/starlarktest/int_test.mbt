@@ -1,5 +1,4 @@
 // Integration tests derived from int.star (bazelbuild/starlark test suite).
-// Bigint cases (numbers exceeding Int64 range) are excluded.
 
 ///|
 let int_star_src : String =
@@ -17,7 +16,7 @@ let int_star_src : String =
   #|maxint32 = (1 << 31) - 1
   #|minint32 = -1 << 31
   #|assert.eq(maxint64, 9223372036854775807)
-  #|# minint64 == -9223372036854775808 skipped: literal overflows Int64 parser
+  #|assert.eq(minint64, -9223372036854775808)
   #|assert.eq(maxint32, 2147483647)
   #|assert.eq(minint32, -2147483648)
   #|
@@ -243,10 +242,41 @@ let bigint_star_src : String =
   #|
   #|# minint64 literal
   #|assert.eq(str(-9223372036854775808), "-9223372036854775808")
+  #|
+  #|# large multiplications (require BigInt)
+  #|assert.eq(0x1000000000000001 * 0x1000000000000001, 0x1000000000000002000000000000001)
+  #|assert.eq(1111111111111111 * 1111111111111111, 1234567901234567654320987654321)
 
 ///|
 test "int.star: bigint precision cases" {
   let errs = run_star_string(bigint_star_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let int_base_mismatch_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|# int() rejects prefix/base mismatches
+  #|assert.fails(lambda: int("0x123", 8), "invalid literal.*base 8")
+  #|assert.fails(lambda: int("-0x123", 8), "invalid literal.*base 8")
+  #|assert.fails(lambda: int("0o123", 16), "invalid literal.*base 16")
+  #|assert.fails(lambda: int("-0o123", 16), "invalid literal.*base 16")
+  #|assert.fails(lambda: int("0x110", 2), "invalid literal.*base 2")
+  #|
+  #|# old-style octal is rejected when base=0
+  #|assert.fails(lambda: int("0123", 0), "invalid literal.*base 0")
+  #|assert.fails(lambda: int("-0123", 0), "invalid literal.*base 0")
+  #|
+  #|# double-sign is rejected
+  #|assert.fails(lambda: int("++4"), "invalid literal with base 10: ++4")
+  #|assert.fails(lambda: int("+-4"), "invalid literal with base 10: +-4")
+
+///|
+test "int.star: int() base-mismatch and invalid prefix errors" {
+  let errs = run_star_string(int_base_mismatch_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

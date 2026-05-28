@@ -58,6 +58,7 @@ let float_equality_precision_src : String =
   #|assert.eq(float(p53+7), p53+8)
   #|assert.eq(float(p53+8), p53+8)
   #|
+  #|assert.true(float(p53+1) != p53+1) # comparisons are exact
   #|assert.eq(float(p53+1) - (p53+1), 0) # arithmetic entails rounding
   #|
   #|assert.fails(lambda: {123.0: "f", 123: "i"}, "duplicate key: 123")
@@ -505,6 +506,23 @@ let float_checktypes_src : String =
 ///|
 test "float.star: checktypes()" {
   let errs = run_star_string(float_checktypes_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let float_bigint_regression_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|# Regression test for https://github.com/google/starlark-go/issues/375.
+  #|# float(maxint64) rounds up to 2^63; int() must return BigInt.
+  #|maxint64 = (1<<63)-1
+  #|assert.eq(int(float(maxint64)), 9223372036854775808)
+
+///|
+test "float.star: int(float(maxint64)) BigInt regression" {
+  let errs = run_star_string(float_bigint_regression_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

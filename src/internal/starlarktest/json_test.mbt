@@ -1,6 +1,4 @@
 // Integration tests derived from json.star.
-// Omitted: BigInt cases (project uses Int64, no arbitrary-precision integers).
-// Omitted: struct()/HasAttrs cases (not implemented in this subset).
 
 ///|
 let json_encode_basics_src : String =
@@ -266,6 +264,45 @@ let json_indent_src : String =
 ///|
 test "json.star: indent pretty-prints JSON with prefix and indent" {
   let errs = run_star_string(json_indent_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_encode_struct_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|load("struct.star", "struct")
+  #|
+  #|assert.eq(json.encode(struct(x=1, y="two")), '{"x":1,"y":"two"}')
+  #|assert.eq(json.encode(struct(y="two", x=1)), '{"x":1,"y":"two"}')
+  #|
+  #|def encode_error(expr, error):
+  #|    assert.fails(lambda: json.encode(expr), error)
+  #|
+  #|encode_error(struct(x=[1, {"x": len}]),
+  #|             'in field .x: at list index 1: in dict key "x": cannot encode')
+
+///|
+test "json.star: encode struct/HasAttrs as JSON object" {
+  let errs = run_star_string(json_encode_struct_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_bigint_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|
+  #|assert.eq(json.encode(12345*12345*12345*12345*12345*12345), "3539537889086624823140625")
+  #|assert.eq(json.decode("3539537889086624823140625"), 3539537889086624823140625)
+
+///|
+test "json.star: BigInt encode and decode" {
+  let errs = run_star_string(json_bigint_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

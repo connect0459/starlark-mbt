@@ -1,5 +1,4 @@
 // Integration tests derived from math.star.
-// Omitted: BigInt cases (project uses Int64, no arbitrary-precision integers).
 
 ///|
 let math_ceil_src : String =
@@ -768,6 +767,24 @@ let math_constants_src : String =
 ///|
 test "math.star: constants" {
   let errs = run_star_string(math_constants_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let math_bigint_boundary_src : String =
+  #|load("assert.star", "assert")
+  #|load("math.star", "math")
+  #|
+  #|# BigInt boundary: ceil and floor of float just above 2^63
+  #|# float((1<<63) + 1) rounds to 2^63 due to precision loss
+  #|assert.eq(math.ceil((1<<63) + 0.5), int(float((1<<63) + 1)))
+  #|assert.eq(math.floor((1<<63) + 0.5), int(float(1<<63)))
+
+///|
+test "math.star: ceil and floor produce BigInt beyond Int64 range" {
+  let errs = run_star_string(math_bigint_boundary_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
