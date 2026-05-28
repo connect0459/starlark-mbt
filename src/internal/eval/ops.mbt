@@ -170,8 +170,20 @@ fn eval_add(
       @value.Value::Float(@value.bigint_to_double(a) + b)
     (@value.Value::Float(a), @value.Value::Int(b)) =>
       @value.Value::Float(a + @value.bigint_to_double(b))
-    (@value.Value::String(a), @value.Value::String(b)) =>
-      @value.Value::String(@value.StarlarkString::new(a.raw() + b.raw()))
+    (@value.Value::String(a), @value.Value::String(b)) => {
+      let new_bytes : Array[Byte] = []
+      let ab = a.to_bytes()
+      for i in 0..<ab.length() {
+        new_bytes.push(ab[i])
+      }
+      let bb = b.to_bytes()
+      for i in 0..<bb.length() {
+        new_bytes.push(bb[i])
+      }
+      @value.Value::String(
+        @value.StarlarkString::from_bytes(Bytes::from_array(new_bytes)),
+      )
+    }
     (@value.Value::List(a), @value.Value::List(b)) => {
       let items : Array[@value.Value] = []
       for v in a.iter() {
@@ -313,11 +325,14 @@ fn repeat_string(
   if byte_len > 0 && count > max_alloc / byte_len {
     return Err("excessive repeat (\{byte_len} * \{count} elements)")
   }
-  let buf = StringBuilder::new()
+  let original_bytes = s.to_bytes()
+  let all_bytes : Array[Byte] = []
   for _ in 0..<count {
-    buf.write_string(s.raw())
+    for i in 0..<byte_len {
+      all_bytes.push(original_bytes[i])
+    }
   }
-  Ok(@value.StarlarkString::new(buf.to_string()))
+  Ok(@value.StarlarkString::from_bytes(Bytes::from_array(all_bytes)))
 }
 
 ///|

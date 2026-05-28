@@ -524,3 +524,58 @@ test "string iterators work correctly for multi-byte Unicode strings" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "string operations on partial UTF-8 bytes (MISSING-3)" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|# ord of a single continuation byte returns U+FFFD
+      #|assert.eq(ord("Й"[1:]), 0xFFFD)
+      #|# ord of 3 continuation bytes fails with right message
+      #|assert.fails(lambda: ord("😿"[1:]), "string encodes 3 Unicode code points, want 1")
+      #|# repr of first byte of a 3-byte sequence (0xe4)
+      #|assert.eq(repr("Hello, 世界!"[7]), '"\\xe4"')
+      #|# codepoint_ords on concat with partial bytes (uses raw, stable across BUG-2)
+      #|assert.eq(list(("A" + "😿Z"[1:]).codepoint_ords()), [65, 0xFFFD, 0xFFFD, 0xFFFD, 90])
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "string concat preserves raw bytes from invalid UTF-8 sequences (BUG-2)" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|# "😿Z"[1:] has bytes [0x9f, 0x98, 0xbf, 0x5a] (4 bytes)
+      #|# "A" + that should yield 5 bytes, not 11
+      #|assert.eq(len("A" + "😿Z"[1:]), 5)
+      #|assert.eq(list(("A" + "😿Z"[1:]).elem_ords()), [65, 159, 152, 191, 90])
+      #|assert.eq(
+      #|    repr(list(("A" + "😿Z"[1:]).elems())),
+      #|    '["A", "\\x9f", "\\x98", "\\xbf", "Z"]',
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "string repeat preserves raw bytes from invalid UTF-8 sequences (BUG-3)" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|# "😿Z"[1:] has 4 bytes; repeating twice should yield 8 bytes
+      #|assert.eq(len("😿Z"[1:] * 2), 8)
+      #|assert.eq(list(("😿Z"[1:] * 2).elem_ords()), [159, 152, 191, 90, 159, 152, 191, 90])
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
