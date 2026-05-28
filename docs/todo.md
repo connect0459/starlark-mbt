@@ -775,6 +775,12 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 - [x] **"did you mean" suggestion** — Levenshtein-based typo hint in `load` errors
       (`misc_test`)
 
+- [x] **Additional embedder protocols** — standalone traits `HasBinary`, `HasUnary`,
+      `HasSetIndex`, `TotallyOrdered`, `Sliceable`, `IterableMapping` added to
+      `protocols.mbt`; `CustomValue` vtable extended with `get_index_fn`,
+      `set_index_fn`, `slice_fn`, `items_fn`; `eval_index`/`set_index`/`eval_slice`
+      in `ops.mbt` now dispatch to `ExtVal` for subscript read/write and slicing.
+
 ---
 
 ## Future work (out of initial release scope)
