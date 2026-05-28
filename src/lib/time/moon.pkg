@@ -8,5 +8,7 @@ options(
   targets: {
     "time_now_native.mbt": [ "native", "llvm" ],
     "time_now_stub.mbt": [ "wasm", "wasm-gc", "js" ],
+    "tz_native.mbt": [ "native", "llvm" ],
+    "tz_stub.mbt": [ "wasm", "wasm-gc", "js" ],
   },
 )

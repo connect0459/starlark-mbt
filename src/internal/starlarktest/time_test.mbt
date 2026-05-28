@@ -198,14 +198,30 @@ test "time module: duration binary operations" {
 }
 
 ///|
-test "time module: is_valid_timezone (UTC only)" {
+test "time module: is_valid_timezone" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
       #|assert.true(time.is_valid_timezone("UTC"))
       #|assert.true(not time.is_valid_timezone("UKN"))
-      #|assert.true(not time.is_valid_timezone("US/Eastern"))
+      #|assert.true(time.is_valid_timezone("US/Eastern"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: in_location with US/Eastern" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.parse_time("2000-01-02T03:04:05Z")
+      #|assert.eq(t.in_location("US/Eastern"), time.parse_time("2000-01-01T22:04:05-05:00"))
+      #|assert.eq(t.in_location("US/Eastern").format("3 04 PM"), "10 04 PM")
     ),
   )
   if errs.length() != 0 {

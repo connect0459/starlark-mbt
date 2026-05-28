@@ -459,12 +459,20 @@ fn write_pad2(buf : StringBuilder, n : Int) -> Unit {
 }
 
 ///|
-fn fmt_time(sec : Int64, nsec : Int) -> String {
-  let dt = @x_time.ZonedDateTime::from_unix_second(
-    sec,
-    nanosecond=nsec,
-    zone=@x_time.utc_zone,
-  ) catch {
+fn fmt_time_at_zone(
+  sec : Int64,
+  nsec : Int,
+  tz_offset : Int,
+  tz_name : String,
+) -> String {
+  let zone = if tz_offset == 0 {
+    @x_time.utc_zone
+  } else {
+    @x_time.fixed_zone(tz_name, tz_offset) catch {
+      _ => @x_time.utc_zone
+    }
+  }
+  let dt = @x_time.ZonedDateTime::from_unix_second(sec, nanosecond=nsec, zone~) catch {
     _ => return "invalid time"
   }
   let buf = StringBuilder::new()
@@ -483,7 +491,268 @@ fn fmt_time(sec : Int64, nsec : Int) -> String {
     buf.write_char('.')
     buf.write_string(fmt_frac9(nsec.to_int64()))
   }
-  buf.write_string(" +0000 UTC")
+  buf.write_char(' ')
+  let off = dt.offset().seconds()
+  if off >= 0 {
+    buf.write_char('+')
+    write_pad2(buf, off / 3600)
+    write_pad2(buf, off % 3600 / 60)
+  } else {
+    let abs = -off
+    buf.write_char('-')
+    write_pad2(buf, abs / 3600)
+    write_pad2(buf, abs % 3600 / 60)
+  }
+  buf.write_char(' ')
+  buf.write_string(tz_name)
+  buf.to_string()
+}
+
+///|
+let month_full_names : FixedArray[String] = [
+  "", "January", "February", "March", "April", "May", "June", "July", "August", "September",
+  "October", "November", "December",
+]
+
+///|
+let month_abbrev_names : FixedArray[String] = [
+  "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+  "Dec",
+]
+
+///|
+let weekday_full_names : FixedArray[String] = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+]
+
+///|
+let weekday_abbrev_names : FixedArray[String] = [
+  "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+]
+
+///|
+fn weekday_index(year : Int, month : Int, day : Int) -> Int {
+  let dt = @x_time.ZonedDateTime::of(year, month, day, zone=@x_time.utc_zone) catch {
+    _ => return 0
+  }
+  match dt.weekday() {
+    @x_time.Weekday::Sunday => 0
+    @x_time.Weekday::Monday => 1
+    @x_time.Weekday::Tuesday => 2
+    @x_time.Weekday::Wednesday => 3
+    @x_time.Weekday::Thursday => 4
+    @x_time.Weekday::Friday => 5
+    @x_time.Weekday::Saturday => 6
+  }
+}
+
+///|
+fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
+  let ns9 = fmt_frac9(nsec.to_int64())
+  let padded = StringBuilder::new()
+  let pad_len = 9 - ns9.length()
+  for _ in 0..<pad_len {
+    padded.write_char('0')
+  }
+  padded.write_string(ns9)
+  let full = padded.to_string()
+  let trunc = if digits >= 9 {
+    full
+  } else {
+    let chars = full.to_array()
+    chars[0:digits]
+    .iter()
+    .fold(init=StringBuilder::new(), fn(buf, c) {
+      buf.write_char(c)
+      buf
+    })
+    .to_string()
+  }
+  if trimmed {
+    let chars = trunc.to_array()
+    let mut end = chars.length()
+    while end > 1 && chars[end - 1] == '0' {
+      end -= 1
+    }
+    trunc[0:end].to_owned()
+  } else {
+    trunc
+  }
+}
+
+///|
+fn fmt_go_layout(
+  year : Int,
+  month : Int,
+  day : Int,
+  hour24 : Int,
+  minute : Int,
+  second : Int,
+  nsec : Int,
+  tz_offset : Int,
+  tz_name : String,
+  layout : String,
+) -> String {
+  let buf = StringBuilder::new()
+  let lchars = layout.to_array()
+  let n = lchars.length()
+  let mut i = 0
+  while i < n {
+    let c = lchars[i]
+    if c == 'J' && i + 2 < n && lchars[i + 1] == 'a' && lchars[i + 2] == 'n' {
+      if i + 6 < n &&
+        lchars[i + 3] == 'u' &&
+        lchars[i + 4] == 'a' &&
+        lchars[i + 5] == 'r' &&
+        lchars[i + 6] == 'y' {
+        buf.write_string(month_full_names[month])
+        i += 7
+      } else {
+        buf.write_string(month_abbrev_names[month])
+        i += 3
+      }
+    } else if c == 'M' &&
+      i + 2 < n &&
+      lchars[i + 1] == 'o' &&
+      lchars[i + 2] == 'n' {
+      if i + 5 < n &&
+        lchars[i + 3] == 'd' &&
+        lchars[i + 4] == 'a' &&
+        lchars[i + 5] == 'y' {
+        buf.write_string(weekday_full_names[weekday_index(year, month, day)])
+        i += 6
+      } else {
+        buf.write_string(weekday_abbrev_names[weekday_index(year, month, day)])
+        i += 3
+      }
+    } else if c == 'M' &&
+      i + 2 < n &&
+      lchars[i + 1] == 'S' &&
+      lchars[i + 2] == 'T' {
+      buf.write_string(tz_name)
+      i += 3
+    } else if c == '2' &&
+      i + 3 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '0' &&
+      lchars[i + 3] == '6' {
+      buf.write_string(year.to_string())
+      i += 4
+    } else if c == '1' && i + 1 < n && lchars[i + 1] == '5' {
+      write_pad2(buf, hour24)
+      i += 2
+    } else if c == '0' && i + 1 < n {
+      let next = lchars[i + 1]
+      if next == '1' {
+        write_pad2(buf, month)
+        i += 2
+      } else if next == '2' {
+        write_pad2(buf, day)
+        i += 2
+      } else if next == '3' {
+        let h12 = if hour24 == 0 {
+          12
+        } else if hour24 <= 12 {
+          hour24
+        } else {
+          hour24 - 12
+        }
+        write_pad2(buf, h12)
+        i += 2
+      } else if next == '4' {
+        write_pad2(buf, minute)
+        i += 2
+      } else if next == '5' {
+        write_pad2(buf, second)
+        i += 2
+      } else if next == '6' {
+        write_pad2(buf, year % 100)
+        i += 2
+      } else {
+        buf.write_char('0')
+        i += 1
+      }
+    } else if c == 'P' && i + 1 < n && lchars[i + 1] == 'M' {
+      buf.write_string(if hour24 >= 12 { "PM" } else { "AM" })
+      i += 2
+    } else if c == 'p' && i + 1 < n && lchars[i + 1] == 'm' {
+      buf.write_string(if hour24 >= 12 { "pm" } else { "am" })
+      i += 2
+    } else if c == '3' {
+      let h12 = if hour24 == 0 {
+        12
+      } else if hour24 <= 12 {
+        hour24
+      } else {
+        hour24 - 12
+      }
+      buf.write_string(h12.to_string())
+      i += 1
+    } else if c == '4' {
+      buf.write_string(minute.to_string())
+      i += 1
+    } else if c == '5' {
+      buf.write_string(second.to_string())
+      i += 1
+    } else if c == '1' {
+      buf.write_string(month.to_string())
+      i += 1
+    } else if c == '2' {
+      buf.write_string(day.to_string())
+      i += 1
+    } else if c == '.' &&
+      i + 1 < n &&
+      (lchars[i + 1] == '9' || lchars[i + 1] == '0') {
+      let is_trimmed = lchars[i + 1] == '9'
+      let mut j = i + 1
+      while j < n && (lchars[j] == '9' || lchars[j] == '0') {
+        j += 1
+      }
+      let frac_digits = j - i - 1
+      if nsec != 0 || !is_trimmed {
+        buf.write_char('.')
+        buf.write_string(fmt_nsec_frac(nsec, frac_digits, is_trimmed))
+      }
+      i = j
+    } else if c == '-' &&
+      i + 4 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' &&
+      lchars[i + 3] == '0' &&
+      lchars[i + 4] == '0' {
+      let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
+      if tz_offset >= 0 {
+        buf.write_char('+')
+      } else {
+        buf.write_char('-')
+      }
+      write_pad2(buf, abs_off / 3600)
+      write_pad2(buf, abs_off % 3600 / 60)
+      i += 5
+    } else if c == 'Z' &&
+      i + 4 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' &&
+      lchars[i + 3] == '0' &&
+      lchars[i + 4] == '0' {
+      if tz_offset == 0 {
+        buf.write_char('Z')
+      } else {
+        let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
+        if tz_offset >= 0 {
+          buf.write_char('+')
+        } else {
+          buf.write_char('-')
+        }
+        write_pad2(buf, abs_off / 3600)
+        write_pad2(buf, abs_off % 3600 / 60)
+      }
+      i += 5
+    } else {
+      buf.write_char(c)
+      i += 1
+    }
+  }
   buf.to_string()
 }
 
@@ -540,6 +809,8 @@ fn time_truth(sec : Int64, nsec : Int) -> Bool {
 fn time_attr(
   sec : Int64,
   nsec : Int,
+  tz_offset : Int,
+  tz_name : String,
   name : String,
 ) -> Result[@value.Value?, String] {
   match name {
@@ -559,14 +830,21 @@ fn time_attr(
       Ok(Some(m))
     }
     "format" => {
-      let m = make_format_method(sec, nsec)
+      let m = make_format_method(sec, nsec, tz_offset, tz_name)
       Ok(Some(m))
     }
     _ => {
+      let zone = if tz_offset == 0 {
+        @x_time.utc_zone
+      } else {
+        @x_time.fixed_zone(tz_name, tz_offset) catch {
+          _ => @x_time.utc_zone
+        }
+      }
       let dt = @x_time.ZonedDateTime::from_unix_second(
         sec,
         nanosecond=nsec,
-        zone=@x_time.utc_zone,
+        zone~,
       ) catch {
         _ => return Err("invalid time")
       }
@@ -639,12 +917,17 @@ fn time_binary(
 }
 
 ///|
-fn make_time(sec : Int64, nsec : Int) -> @value.Value {
+fn make_time_at_zone(
+  sec : Int64,
+  nsec : Int,
+  tz_offset : Int,
+  tz_name : String,
+) -> @value.Value {
   @value.Value::ExtVal(
     @value.CustomValue::new(
       fn() { "time.time" },
       fn() { time_truth(sec, nsec) },
-      fn() { fmt_time(sec, nsec) },
+      fn() { fmt_time_at_zone(sec, nsec, tz_offset, tz_name) },
     )
     .with_hash(fn() { time_hash(sec, nsec) })
     .with_equals(fn(other) { time_equals(sec, nsec, other) })
@@ -652,10 +935,15 @@ fn make_time(sec : Int64, nsec : Int) -> @value.Value {
     .with_binary(fn(op, rhs, is_left) {
       time_binary(sec, nsec, op, rhs, is_left)
     })
-    .with_attrs(fn(name) { time_attr(sec, nsec, name) }, fn() {
+    .with_attrs(fn(name) { time_attr(sec, nsec, tz_offset, tz_name, name) }, fn() {
       time_attr_names()
     }),
   )
+}
+
+///|
+fn make_time(sec : Int64, nsec : Int) -> @value.Value {
+  make_time_at_zone(sec, nsec, 0, "UTC")
 }
 
 ///|
@@ -668,24 +956,59 @@ fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
       @value.Value::String(s) => s.raw()
       _ => return Err("in_location: argument must be a string")
     }
-    if loc != "UTC" {
+    if !is_valid_timezone_impl(loc) {
       return Err("in_location: unsupported timezone \"\{loc}\"")
     }
-    Ok(make_time(sec, nsec))
+    let offset = match get_tz_offset_at_impl(loc, sec) {
+      Some(o) => o
+      None => return Err("in_location: cannot determine offset for \"\{loc}\"")
+    }
+    Ok(make_time_at_zone(sec, nsec, offset, loc))
   })
 }
 
 ///|
-fn make_format_method(sec : Int64, nsec : Int) -> @value.Value {
+fn make_format_method(
+  sec : Int64,
+  nsec : Int,
+  tz_offset : Int,
+  tz_name : String,
+) -> @value.Value {
   @value.Value::new_builtin("format", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 || kw_args.length() != 0 {
       return Err("format: got \{pos_args.length()} arguments, want 1")
     }
-    let _fmt = match pos_args[0] {
+    let layout = match pos_args[0] {
       @value.Value::String(s) => s.raw()
       _ => return Err("format: argument must be a string")
     }
-    Ok(@value.Value::String(@value.StarlarkString::new(fmt_time(sec, nsec))))
+    let zone = if tz_offset == 0 {
+      @x_time.utc_zone
+    } else {
+      @x_time.fixed_zone(tz_name, tz_offset) catch {
+        _ => @x_time.utc_zone
+      }
+    }
+    let dt = @x_time.ZonedDateTime::from_unix_second(
+      sec,
+      nanosecond=nsec,
+      zone~,
+    ) catch {
+      _ => return Err("format: invalid time")
+    }
+    let result = fmt_go_layout(
+      dt.year(),
+      dt.month(),
+      dt.day(),
+      dt.hour(),
+      dt.minute(),
+      dt.second(),
+      dt.nanosecond(),
+      tz_offset,
+      tz_name,
+      layout,
+    )
+    Ok(@value.Value::String(@value.StarlarkString::new(result)))
   })
 }
 
@@ -813,6 +1136,33 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
 }
 
 ///|
+fn parse_time_has_tz_suffix(s : String) -> Bool {
+  let n = s.length()
+  if n == 0 {
+    return false
+  }
+  let chars = s.to_array()
+  let last = chars[n - 1]
+  if last == 'Z' || last == 'z' {
+    return true
+  }
+  // Look for +HH:MM or -HH:MM after YYYY-MM-DDTHH:MM:SS[.fff...]
+  // Minimum base length without timezone: 19 (YYYY-MM-DDTHH:MM:SS)
+  if n < 19 {
+    return false
+  }
+  let mut i = 19
+  // Skip fractional seconds
+  if i < n && chars[i] == '.' {
+    i += 1
+    while i < n && chars[i] >= '0' && chars[i] <= '9' {
+      i += 1
+    }
+  }
+  i < n && (chars[i] == '+' || chars[i] == '-')
+}
+
+///|
 fn pow10_int64(n : Int) -> Int64 {
   let mut result = 1L
   for _ in 0..<n {
@@ -897,13 +1247,41 @@ fn make_parse_time_fn() -> @value.Value {
         _ => return Err("time.parse_time: location must be a string")
       }
     }
-    if location != "UTC" {
-      return Err("time.parse_time: unsupported timezone \"\{location}\"")
-    }
-    let _ = fmt
-    match parse_rfc3339(x) {
-      Ok((sec, nsec)) => Ok(make_time(sec, nsec))
-      Err(e) => Err(e)
+    if location == "UTC" || location == "" {
+      let _ = fmt
+      match parse_rfc3339(x) {
+        Ok((sec, nsec)) => Ok(make_time(sec, nsec))
+        Err(e) => Err(e)
+      }
+    } else {
+      if !is_valid_timezone_impl(location) {
+        return Err("time.parse_time: unsupported timezone \"\{location}\"")
+      }
+      let _ = fmt
+      match parse_rfc3339(x) {
+        Err(e) => Err(e)
+        Ok((parsed_sec, nsec)) =>
+          if parse_time_has_tz_suffix(x) {
+            // String had explicit timezone → use as-is
+            Ok(make_time(parsed_sec, nsec))
+          } else {
+            // parsed_sec is "local time treated as UTC" → adjust for location
+            let offset = match get_tz_offset_at_impl(location, parsed_sec) {
+              Some(o) => o
+              None =>
+                return Err(
+                  "time.parse_time: cannot determine offset for \"\{location}\"",
+                )
+            }
+            let utc_sec = parsed_sec - offset.to_int64()
+            let final_offset = match get_tz_offset_at_impl(location, utc_sec) {
+              Some(o) => o
+              None => offset
+            }
+            let final_sec = parsed_sec - final_offset.to_int64()
+            Ok(make_time_at_zone(final_sec, nsec, final_offset, location))
+          }
+      }
     }
   })
 }
@@ -987,23 +1365,54 @@ fn make_time_constructor_fn() -> @value.Value {
         _ => return Err("time.time: unexpected keyword argument \{k}")
       }
     }
-    if location != "UTC" && location != "" {
-      return Err("time.time: unsupported timezone \"\{location}\"")
+    if location == "UTC" || location == "" {
+      let dt = @x_time.ZonedDateTime::of(
+        year,
+        month,
+        day,
+        hour~,
+        minute~,
+        second~,
+        nanosecond~,
+        zone=@x_time.utc_zone,
+      ) catch {
+        _ => return Err("time.time: invalid date/time parameters")
+      }
+      Ok(make_time(dt.to_unix_second(), nanosecond))
+    } else {
+      if !is_valid_timezone_impl(location) {
+        return Err("time.time: unsupported timezone \"\{location}\"")
+      }
+      // Compute "local time as UTC" unix timestamp
+      let dt_as_utc = @x_time.ZonedDateTime::of(
+        year,
+        month,
+        day,
+        hour~,
+        minute~,
+        second~,
+        nanosecond~,
+        zone=@x_time.utc_zone,
+      ) catch {
+        _ => return Err("time.time: invalid date/time parameters")
+      }
+      let local_sec = dt_as_utc.to_unix_second()
+      // Get timezone offset at local_sec (as an estimate)
+      let offset = match get_tz_offset_at_impl(location, local_sec) {
+        Some(o) => o
+        None =>
+          return Err("time.time: cannot determine offset for \"\{location}\"")
+      }
+      // UTC = local_time - offset (since local = UTC + offset)
+      let utc_sec = local_sec - offset.to_int64()
+      // Re-check offset at the computed UTC time
+      let final_offset = match get_tz_offset_at_impl(location, utc_sec) {
+        Some(o) => o
+        None => offset
+      }
+      let final_sec = local_sec - final_offset.to_int64()
+      Ok(make_time_at_zone(final_sec, nanosecond, final_offset, location))
     }
-    let dt = @x_time.ZonedDateTime::of(
-      year,
-      month,
-      day,
-      hour~,
-      minute~,
-      second~,
-      nanosecond~,
-      zone=@x_time.utc_zone,
-    ) catch {
-      _ => return Err("time.time: invalid date/time parameters")
-    }
-    let sec = dt.to_unix_second()
-    Ok(make_time(sec, nanosecond))
   })
 }
 
@@ -1023,7 +1432,7 @@ fn make_is_valid_timezone_fn() -> @value.Value {
       @value.Value::String(s) => s.raw()
       _ => return Err("time.is_valid_timezone: argument must be a string")
     }
-    Ok(@value.Value::Bool(s == "UTC"))
+    Ok(@value.Value::Bool(is_valid_timezone_impl(s)))
   })
 }
 
