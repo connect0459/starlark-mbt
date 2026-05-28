@@ -599,10 +599,22 @@ fn bind_args(
   if !had_kwargs_param && kw_map.length() > 0 {
     let mut first_key = ""
     kw_map.each(fn(k, _) { if first_key == "" { first_key = k } })
+    let valid_names : Array[String] = []
+    for p in f.params() {
+      match p {
+        @syntax.Param::ParamIdent(name, _) => valid_names.push(name)
+        @syntax.Param::ParamDefault(name, _, _) => valid_names.push(name)
+        _ => ()
+      }
+    }
+    let hint = match spell_nearest(first_key, valid_names) {
+      "" => ""
+      s => " (did you mean \{s}?)"
+    }
     raise EvalErr(
       make_eval_error(
         ctx,
-        "function \{f.name()} got an unexpected keyword argument \"\{first_key}\"",
+        "function \{f.name()} got an unexpected keyword argument \"\{first_key}\"\{hint}",
       ),
     )
   }
@@ -1314,6 +1326,7 @@ fn builtin_minmax(
   kw_args : Array[(String, @value.Value)],
   want_max : Bool,
 ) -> @value.Value raise EvalErr {
+  let fn_name = if want_max { "max" } else { "min" }
   let key_fn : @value.Value? = {
     let mut found : @value.Value? = None
     for kv in kw_args {
@@ -1327,8 +1340,22 @@ fn builtin_minmax(
     }
     found
   }
+  for kv in kw_args {
+    let (kw_name, _) = kv
+    if kw_name != "key" {
+      let hint = match spell_nearest(kw_name, ["key"]) {
+        "" => ""
+        s => " (did you mean \{s}?)"
+      }
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "function \{fn_name} got an unexpected keyword argument \{kw_name}\{hint}",
+        ),
+      )
+    }
+  }
   let items : Array[@value.Value] = []
-  let fn_name = if want_max { "max" } else { "min" }
   if pos_args.length() == 0 {
     raise EvalErr(
       make_eval_error(

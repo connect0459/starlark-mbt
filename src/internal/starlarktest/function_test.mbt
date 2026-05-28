@@ -321,3 +321,17 @@ test "function.star: local variable referenced before assignment" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let function_kwarg_spell_src : String =
+  #|load("assert.star", "assert")
+  #|# Unpack provides spell check for argument names.
+  #|assert.fails(lambda: min([], keg=1), "did you mean key\\?")
+
+///|
+test "function.star: unexpected keyword argument suggests nearest valid param" {
+  let errs = run_star_string(function_kwarg_spell_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
