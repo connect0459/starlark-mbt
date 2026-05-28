@@ -320,3 +320,15 @@ test "Value::new_builtin wraps a named host function" {
     _ => fail("expected Builtin")
   }
 }
+
+///|
+test "StarlarkList::to_iter allows for-in iteration over elements" {
+  let l = StarlarkList::new([Value::Int(10L), Value::Int(20L), Value::Int(30L)])
+  let elems : Array[Value] = []
+  for v in l.to_iter() {
+    elems.push(v)
+  }
+  assert_eq(elems.length(), 3)
+  assert_true(elems[0] == Value::Int(10L))
+  assert_true(elems[2] == Value::Int(30L))
+}

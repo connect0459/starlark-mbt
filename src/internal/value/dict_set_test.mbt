@@ -247,3 +247,57 @@ test "StarlarkSet: freeze prevents remove" {
   s.freeze()
   assert_true(s.remove(Value::Int(1L)) is Err(_))
 }
+
+// --- Iter[T] typed iterator adaptors ---
+
+///|
+test "StarlarkDict::to_entries yields all key-value pairs" {
+  let d = StarlarkDict::new()
+  d.set(Value::String(StarlarkString::new("a")), Value::Int(1L)) |> ignore
+  d.set(Value::String(StarlarkString::new("b")), Value::Int(2L)) |> ignore
+  let result : Array[(Value, Value)] = []
+  for entry in d.to_entries() {
+    result.push(entry)
+  }
+  assert_eq(result.length(), 2)
+}
+
+///|
+test "StarlarkDict::to_keys yields all keys" {
+  let d = StarlarkDict::new()
+  d.set(Value::String(StarlarkString::new("x")), Value::Int(10L)) |> ignore
+  d.set(Value::String(StarlarkString::new("y")), Value::Int(20L)) |> ignore
+  let keys : Array[Value] = []
+  for k in d.to_keys() {
+    keys.push(k)
+  }
+  assert_eq(keys.length(), 2)
+}
+
+///|
+test "StarlarkDict::to_entries preserves insertion order" {
+  let d = StarlarkDict::new()
+  d.set(Value::Int(3L), Value::String(StarlarkString::new("three"))) |> ignore
+  d.set(Value::Int(1L), Value::String(StarlarkString::new("one"))) |> ignore
+  d.set(Value::Int(2L), Value::String(StarlarkString::new("two"))) |> ignore
+  let keys : Array[Value] = []
+  for entry in d.to_entries() {
+    keys.push(entry.0)
+  }
+  assert_true(keys[0] == Value::Int(3L))
+  assert_true(keys[1] == Value::Int(1L))
+  assert_true(keys[2] == Value::Int(2L))
+}
+
+///|
+test "StarlarkSet::to_iter yields all elements" {
+  let s = StarlarkSet::new()
+  s.add(Value::Int(1L)) |> ignore
+  s.add(Value::Int(2L)) |> ignore
+  s.add(Value::Int(3L)) |> ignore
+  let elems : Array[Value] = []
+  for v in s.to_iter() {
+    elems.push(v)
+  }
+  assert_eq(elems.length(), 3)
+}

@@ -89,6 +89,18 @@ pub fn StarlarkDict::keys(self : StarlarkDict) -> Array[Value] {
 }
 
 ///|
+pub fn StarlarkDict::to_entries(self : StarlarkDict) -> Iter[(Value, Value)] {
+  let arr : Array[(Value, Value)] = []
+  self.ht.each(fn(k, v) { arr.push((k, v)) })
+  arr.iter()
+}
+
+///|
+pub fn StarlarkDict::to_keys(self : StarlarkDict) -> Iter[Value] {
+  self.keys().iter()
+}
+
+///|
 pub fn StarlarkDict::clear(self : StarlarkDict) -> Result[Unit, String] {
   self.ht.clear()
 }
@@ -169,6 +181,13 @@ pub fn StarlarkSet::iter_begin(self : StarlarkSet) -> Unit {
 ///|
 pub fn StarlarkSet::iter_end(self : StarlarkSet) -> Unit {
   self.ht.iter_end()
+}
+
+///|
+pub fn StarlarkSet::to_iter(self : StarlarkSet) -> Iter[Value] {
+  let arr : Array[Value] = []
+  self.ht.each_key(fn(k) { arr.push(k) })
+  arr.iter()
 }
 
 ///|

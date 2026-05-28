@@ -101,6 +101,11 @@ pub fn StarlarkList::iter(self : StarlarkList) -> Iter[Value] {
 }
 
 ///|
+pub fn StarlarkList::to_iter(self : StarlarkList) -> Iter[Value] {
+  self.items.iter()
+}
+
+///|
 pub fn StarlarkList::eachi(
   self : StarlarkList,
   f : (Int, Value) -> Unit,
