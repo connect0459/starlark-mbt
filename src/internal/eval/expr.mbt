@@ -27,8 +27,15 @@ fn eval_expr_node(
     @syntax.Expr::ELiteral(lit, _) => eval_literal(ctx, lit)
     @syntax.Expr::EIdent(name, pos) =>
       match env.lookup(name) {
-        Some(v) => v
-        None =>
+        LFound(v) => v
+        LUnbound(varname) =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "local variable \{varname} referenced before assignment",
+            ),
+          )
+        LNotFound =>
           raise EvalErr(
             make_eval_error(ctx, "\{pos.to_string()}: undefined: \{name}"),
           )
@@ -350,15 +357,17 @@ fn call_func(
   ctx.thread.call_stack.push(frame)
   try {
     let mut parent = ctx.global_env
-    for scope_map in f.captured_scope() {
+    for pair in f.captured_scope() {
       let scope_env : EvalEnv = {
-        locals: scope_map,
+        locals: pair.0,
+        known_locals: pair.1,
         parent: Some(parent),
         is_module_scope: false,
       }
       parent = scope_env
     }
-    let func_env = EvalEnv::with_parent(parent)
+    let known_locals = collect_assigned_names(f.body())
+    let func_env = EvalEnv::with_parent_and_known_locals(parent, known_locals)
     bind_args(ctx, f, pos_args, kw_args, func_env, pos)
     let sig = exec_stmts(ctx, func_env, f.body())
     ignore(ctx.thread.call_stack.pop())
@@ -3864,5 +3873,56 @@ fn eval_comp_clauses(
         eval_comp_clauses(ctx, env, clauses, idx + 1, body_fn)
       }
     }
+  }
+}
+
+///|
+fn collect_assigned_names(stmts : Array[@syntax.Stmt]) -> Array[String] {
+  let result : Array[String] = []
+  collect_stmts_names(stmts, result)
+  result
+}
+
+///|
+fn collect_stmts_names(
+  stmts : Array[@syntax.Stmt],
+  out : Array[String],
+) -> Unit {
+  for stmt in stmts {
+    match stmt {
+      @syntax.Stmt::SAssign(lhs, _, _) => collect_lhs_names(lhs, out)
+      @syntax.Stmt::SAugAssign(@syntax.Expr::EIdent(name, _), _, _, _) =>
+        push_unique_name(name, out)
+      @syntax.Stmt::SFor(target, _, body, _) => {
+        collect_lhs_names(target, out)
+        collect_stmts_names(body, out)
+      }
+      @syntax.Stmt::SDef(name, _, _, _) => push_unique_name(name, out)
+      @syntax.Stmt::SIf(_, then_body, else_body, _) => {
+        collect_stmts_names(then_body, out)
+        collect_stmts_names(else_body, out)
+      }
+      @syntax.Stmt::SWhile(_, body, _) => collect_stmts_names(body, out)
+      _ => ()
+    }
+  }
+}
+
+///|
+fn collect_lhs_names(expr : @syntax.Expr, out : Array[String]) -> Unit {
+  match expr {
+    @syntax.Expr::EIdent(name, _) => push_unique_name(name, out)
+    @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) =>
+      for elem in elems {
+        collect_lhs_names(elem, out)
+      }
+    _ => ()
+  }
+}
+
+///|
+fn push_unique_name(name : String, out : Array[String]) -> Unit {
+  if !out.contains(name) {
+    out.push(name)
   }
 }

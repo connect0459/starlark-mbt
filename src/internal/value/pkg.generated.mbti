@@ -79,10 +79,10 @@ pub struct StarlarkFunction {
   // private fields
 }
 pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
-pub fn StarlarkFunction::captured_scope(Self) -> Array[Map[String, Value]]
+pub fn StarlarkFunction::captured_scope(Self) -> Array[(Map[String, Value], Array[String])]
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
 pub fn StarlarkFunction::name(Self) -> String
-pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], Array[Value?], Array[Map[String, Value]]) -> Self
+pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], Array[Value?], Array[(Map[String, Value], Array[String])]) -> Self
 pub fn StarlarkFunction::params(Self) -> Array[@syntax.Param]
 
 pub struct StarlarkIterator {

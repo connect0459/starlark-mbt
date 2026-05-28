@@ -424,8 +424,8 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
           None => ()
         }
       }
-      for scope_map in f.captured_scope {
-        scope_map.each(fn(_, val) { freeze_value_inner(val, seen_funcs) })
+      for pair in f.captured_scope {
+        pair.0.each(fn(_, val) { freeze_value_inner(val, seen_funcs) })
       }
     }
     Module(_) => ()

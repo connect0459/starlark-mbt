@@ -1,6 +1,14 @@
 ///|
+priv enum LookupResult {
+  LFound(@value.Value)
+  LUnbound(String)
+  LNotFound
+}
+
+///|
 priv struct EvalEnv {
   locals : Map[String, @value.Value]
+  known_locals : Array[String]
   parent : EvalEnv?
   is_module_scope : Bool
 }
@@ -15,27 +23,39 @@ priv struct EvalContext {
 
 ///|
 fn EvalEnv::new() -> EvalEnv {
-  { locals: {}, parent: None, is_module_scope: true }
+  { locals: {}, known_locals: [], parent: None, is_module_scope: true }
 }
 
 ///|
 fn EvalEnv::for_module(parent : EvalEnv) -> EvalEnv {
-  { locals: {}, parent: Some(parent), is_module_scope: true }
+  { locals: {}, known_locals: [], parent: Some(parent), is_module_scope: true }
 }
 
 ///|
 fn EvalEnv::with_parent(parent : EvalEnv) -> EvalEnv {
-  { locals: {}, parent: Some(parent), is_module_scope: false }
+  { locals: {}, known_locals: [], parent: Some(parent), is_module_scope: false }
 }
 
 ///|
-fn EvalEnv::lookup(self : EvalEnv, name : String) -> @value.Value? {
+fn EvalEnv::with_parent_and_known_locals(
+  parent : EvalEnv,
+  known_locals : Array[String],
+) -> EvalEnv {
+  { locals: {}, known_locals, parent: Some(parent), is_module_scope: false }
+}
+
+///|
+fn EvalEnv::lookup(self : EvalEnv, name : String) -> LookupResult {
   match self.locals.get(name) {
-    Some(v) => Some(v)
+    Some(v) => LFound(v)
     None =>
-      match self.parent {
-        None => None
-        Some(p) => p.lookup(name)
+      if !self.is_module_scope && self.known_locals.contains(name) {
+        LUnbound(name)
+      } else {
+        match self.parent {
+          None => LNotFound
+          Some(p) => p.lookup(name)
+        }
       }
   }
 }
@@ -48,11 +68,11 @@ fn EvalEnv::bind(self : EvalEnv, name : String, v : @value.Value) -> Unit {
 ///|
 fn EvalEnv::collect_local_scopes(
   self : EvalEnv,
-) -> Array[Map[String, @value.Value]] {
-  let scopes : Array[Map[String, @value.Value]] = []
+) -> Array[(Map[String, @value.Value], Array[String])] {
+  let scopes : Array[(Map[String, @value.Value], Array[String])] = []
   let mut current = self
   while !current.is_module_scope {
-    scopes.push(current.locals)
+    scopes.push((current.locals, current.known_locals))
     match current.parent {
       None => break
       Some(p) => current = p

@@ -289,7 +289,7 @@ pub struct StarlarkFunction {
   priv params : Array[@syntax.Param]
   priv body : Array[@syntax.Stmt]
   priv defaults : Array[Value?]
-  priv captured_scope : Array[Map[String, Value]]
+  priv captured_scope : Array[(Map[String, Value], Array[String])]
 }
 
 ///|
@@ -298,7 +298,7 @@ pub fn StarlarkFunction::new(
   params : Array[@syntax.Param],
   body : Array[@syntax.Stmt],
   defaults : Array[Value?],
-  captured_scope : Array[Map[String, Value]],
+  captured_scope : Array[(Map[String, Value], Array[String])],
 ) -> StarlarkFunction {
   { name, params, body, defaults, captured_scope }
 }
@@ -328,7 +328,7 @@ pub fn StarlarkFunction::defaults(self : StarlarkFunction) -> Array[Value?] {
 ///|
 pub fn StarlarkFunction::captured_scope(
   self : StarlarkFunction,
-) -> Array[Map[String, Value]] {
+) -> Array[(Map[String, Value], Array[String])] {
   self.captured_scope
 }
 

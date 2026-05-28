@@ -267,8 +267,6 @@ test "assign.star: order of evaluation in assignments" {
 }
 
 ///|
-// Note: the Starlark spec reports "global/local variable X referenced before assignment";
-// our impl reports "undefined: X" for uninitialized lookups.
 let assign_before_assignment_src : String =
   #|load("assert.star", "assert")
   #|
@@ -284,12 +282,12 @@ let assign_before_assignment_src : String =
   #|  printok[0] = True
   #|  x = 1
   #|
-  #|assert.fails(use_before_def, 'undefined: x')
+  #|assert.fails(use_before_def, 'local variable x referenced before assignment')
   #|assert.true(not printok[0])
   #|
   #|def aug_before_assign():
   #|  x += [4]
-  #|assert.fails(aug_before_assign, "undefined: x")
+  #|assert.fails(aug_before_assign, "local variable x referenced before assignment")
 
 ///|
 test "assign.star: variable referenced before assignment errors" {
