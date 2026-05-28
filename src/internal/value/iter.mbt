@@ -32,6 +32,9 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
     Dict(d) => Ok(dict_key_iter(d))
     Set(s) => Ok(set_key_iter(s))
     Range(r) => Ok(range_iter(r))
+    StringElems(e) => Ok(string_elems_iter(e))
+    StringCodepoints(c) => Ok(string_codepoints_iter(c))
+    BytesElems(e) => Ok(bytes_elems_iter(e))
     _ => Err("'\{type_name(v)}' object is not iterable")
   }
 }
@@ -46,6 +49,10 @@ pub fn length_of(v : Value) -> Result[Int, String] {
     Dict(d) => Ok(d.length())
     Set(s) => Ok(s.length())
     Range(r) => Ok(r.length())
+    StringElems(e) => Ok(e.s.byte_len())
+    BytesElems(e) => Ok(e.b.length())
+    StringCodepoints(_) =>
+      Err("object of type 'string.codepoints' has no len()")
     _ => Err("object of type '\{type_name(v)}' has no len()")
   }
 }
@@ -153,6 +160,91 @@ fn range_iter(r : StarlarkRange) -> StarlarkIterator {
         let v = r.index_at(cur.pos)
         cur.pos += 1
         Some(Int(v))
+      } else {
+        None
+      }
+    },
+    done_fn: fn() { () },
+  }
+}
+
+///|
+fn string_elems_iter(e : StarlarkStringElems) -> StarlarkIterator {
+  let bytes = e.s.bytes
+  let cur = IterCursor::{ pos: 0 }
+  if e.ords {
+    {
+      next_fn: fn() -> Value? {
+        if cur.pos < bytes.length() {
+          let v = Int(bytes[cur.pos].to_int().to_int64())
+          cur.pos += 1
+          Some(v)
+        } else {
+          None
+        }
+      },
+      done_fn: fn() { () },
+    }
+  } else {
+    {
+      next_fn: fn() -> Value? {
+        if cur.pos < bytes.length() {
+          let one = Bytes::from_array([bytes[cur.pos]])
+          cur.pos += 1
+          Some(String(StarlarkString::from_bytes(one)))
+        } else {
+          None
+        }
+      },
+      done_fn: fn() { () },
+    }
+  }
+}
+
+///|
+fn string_codepoints_iter(c : StarlarkStringCodepoints) -> StarlarkIterator {
+  let chars = c.s.raw.to_array()
+  let cur = IterCursor::{ pos: 0 }
+  if c.ords {
+    {
+      next_fn: fn() -> Value? {
+        if cur.pos < chars.length() {
+          let v = Int(chars[cur.pos].to_int().to_int64())
+          cur.pos += 1
+          Some(v)
+        } else {
+          None
+        }
+      },
+      done_fn: fn() { () },
+    }
+  } else {
+    {
+      next_fn: fn() -> Value? {
+        if cur.pos < chars.length() {
+          let buf = StringBuilder::new()
+          buf.write_char(chars[cur.pos])
+          cur.pos += 1
+          Some(String(StarlarkString::new(buf.to_string())))
+        } else {
+          None
+        }
+      },
+      done_fn: fn() { () },
+    }
+  }
+}
+
+///|
+fn bytes_elems_iter(e : StarlarkBytesElems) -> StarlarkIterator {
+  let b = e.b
+  let cur = IterCursor::{ pos: 0 }
+  {
+    next_fn: fn() -> Value? {
+      if cur.pos < b.length() {
+        let v = Int(b[cur.pos].to_int().to_int64())
+        cur.pos += 1
+        Some(v)
       } else {
         None
       }

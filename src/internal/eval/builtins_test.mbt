@@ -1023,11 +1023,12 @@ test "exec_file: string.splitlines splits at newline characters" {
 }
 
 ///|
-test "exec_file: string.elems iterates bytes as single-byte strings" {
+test "exec_file: string.elems returns string.elems type" {
   match exec_b("r = \"abc\".elems()") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::List(l)) => assert_eq(l.length(), 3)
+        Some(@value.Value::StringElems(e)) =>
+          assert_eq(e.source_string().byte_len(), 3)
         _ => assert_true(false)
       }
     Err(e) => fail(e.to_string())
@@ -1035,13 +1036,13 @@ test "exec_file: string.elems iterates bytes as single-byte strings" {
 }
 
 ///|
-test "exec_file: string.elem_ords iterates bytes as integers" {
+test "exec_file: string.elem_ords returns string.elems type (ords mode)" {
   match exec_b("r = \"ABC\".elem_ords()") {
     Ok(m) =>
       match g(m, "r") {
-        Some(@value.Value::List(l)) => {
-          assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(65L))
+        Some(@value.Value::StringElems(e)) => {
+          assert_true(e.is_ords())
+          assert_eq(e.source_string().byte_len(), 3)
         }
         _ => assert_true(false)
       }

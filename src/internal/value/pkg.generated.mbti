@@ -57,6 +57,12 @@ pub fn StarlarkBuiltinFunc::call_body(Self, BuiltinCallCtx, Array[Value], Array[
 pub fn StarlarkBuiltinFunc::dispatch(String) -> Self
 pub fn StarlarkBuiltinFunc::name(Self) -> String
 
+pub struct StarlarkBytesElems {
+  // private fields
+}
+pub fn StarlarkBytesElems::new(Bytes) -> Self
+pub fn StarlarkBytesElems::raw_bytes(Self) -> Bytes
+
 pub struct StarlarkDict {
   // private fields
 }
@@ -163,6 +169,20 @@ pub fn StarlarkString::new(String) -> Self
 pub fn StarlarkString::raw(Self) -> String
 pub fn StarlarkString::to_bytes(Self) -> Bytes
 
+pub struct StarlarkStringCodepoints {
+  // private fields
+}
+pub fn StarlarkStringCodepoints::is_ords(Self) -> Bool
+pub fn StarlarkStringCodepoints::new(StarlarkString, Bool) -> Self
+pub fn StarlarkStringCodepoints::source_string(Self) -> StarlarkString
+
+pub struct StarlarkStringElems {
+  // private fields
+}
+pub fn StarlarkStringElems::is_ords(Self) -> Bool
+pub fn StarlarkStringElems::new(StarlarkString, Bool) -> Self
+pub fn StarlarkStringElems::source_string(Self) -> StarlarkString
+
 pub(all) enum Value {
   None
   Bool(Bool)
@@ -179,6 +199,9 @@ pub(all) enum Value {
   Builtin(StarlarkBuiltinFunc)
   BoundMethod(StarlarkBoundMethod)
   Module(StarlarkModule)
+  StringElems(StarlarkStringElems)
+  StringCodepoints(StarlarkStringCodepoints)
+  BytesElems(StarlarkBytesElems)
 }
 pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
 pub fn Value::new_dict() -> Self

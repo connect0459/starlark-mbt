@@ -454,6 +454,75 @@ pub fn StarlarkModule::attr_names(self : StarlarkModule) -> Array[String] {
 }
 
 ///|
+pub struct StarlarkStringElems {
+  priv s : StarlarkString
+  priv ords : Bool
+}
+
+///|
+pub fn StarlarkStringElems::new(
+  s : StarlarkString,
+  ords : Bool,
+) -> StarlarkStringElems {
+  { s, ords }
+}
+
+///|
+pub fn StarlarkStringElems::source_string(
+  self : StarlarkStringElems,
+) -> StarlarkString {
+  self.s
+}
+
+///|
+pub fn StarlarkStringElems::is_ords(self : StarlarkStringElems) -> Bool {
+  self.ords
+}
+
+///|
+pub struct StarlarkStringCodepoints {
+  priv s : StarlarkString
+  priv ords : Bool
+}
+
+///|
+pub fn StarlarkStringCodepoints::new(
+  s : StarlarkString,
+  ords : Bool,
+) -> StarlarkStringCodepoints {
+  { s, ords }
+}
+
+///|
+pub fn StarlarkStringCodepoints::source_string(
+  self : StarlarkStringCodepoints,
+) -> StarlarkString {
+  self.s
+}
+
+///|
+pub fn StarlarkStringCodepoints::is_ords(
+  self : StarlarkStringCodepoints,
+) -> Bool {
+  self.ords
+}
+
+///|
+pub struct StarlarkBytesElems {
+  priv b : Bytes
+}
+
+///|
+pub fn StarlarkBytesElems::new(b : Bytes) -> StarlarkBytesElems {
+  { b, }
+}
+
+///|
+pub fn StarlarkBytesElems::raw_bytes(self : StarlarkBytesElems) -> Bytes {
+  self.b
+}
+
+///|
 pub(all) enum Value {
   None
   Bool(Bool)
@@ -470,6 +539,9 @@ pub(all) enum Value {
   Builtin(StarlarkBuiltinFunc)
   BoundMethod(StarlarkBoundMethod)
   Module(StarlarkModule)
+  StringElems(StarlarkStringElems)
+  StringCodepoints(StarlarkStringCodepoints)
+  BytesElems(StarlarkBytesElems)
 }
 
 ///|
@@ -521,6 +593,9 @@ pub fn type_name(v : Value) -> String {
     Builtin(_) => "builtin_function_or_method"
     BoundMethod(_) => "builtin_function_or_method"
     Module(_) => "module"
+    StringElems(_) => "string.elems"
+    StringCodepoints(_) => "string.codepoints"
+    BytesElems(_) => "bytes.elems"
   }
 }
 
@@ -542,6 +617,7 @@ pub fn truth(v : Value) -> Bool {
     Builtin(_) => true
     BoundMethod(_) => true
     Module(_) => true
+    StringElems(_) | StringCodepoints(_) | BytesElems(_) => true
   }
 }
 
@@ -710,6 +786,15 @@ fn repr_inner(
     BoundMethod(m) =>
       "<built-in method \{m.method_name} of \{type_name(m.recv)} value>"
     Module(m) => "<module \"\{m.name}\">"
+    StringElems(e) => {
+      let suffix = if e.ords { "elem_ords()" } else { "elems()" }
+      repr_string_val(e.s) + "." + suffix
+    }
+    StringCodepoints(c) => {
+      let suffix = if c.ords { "codepoint_ords()" } else { "codepoints()" }
+      repr_string_val(c.s) + "." + suffix
+    }
+    BytesElems(e) => repr_bytes_val(e.b) + ".elems()"
   }
 }
 

@@ -1167,6 +1167,19 @@ fn eval_index(
         _ =>
           raise EvalErr(make_eval_error(ctx, "range indices must be integers"))
       }
+    @value.Value::StringElems(e) =>
+      match idx {
+        @value.Value::Int(i) => {
+          let bytes = e.source_string().to_bytes()
+          let j = check(ctx, adjust_index(i, bytes.length()))
+          let one = Bytes::from_array([bytes[j]])
+          @value.Value::String(@value.StarlarkString::from_bytes(one))
+        }
+        _ =>
+          raise EvalErr(
+            make_eval_error(ctx, "string.elems indices must be integers"),
+          )
+      }
     _ =>
       raise EvalErr(
         make_eval_error(

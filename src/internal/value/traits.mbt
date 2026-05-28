@@ -18,6 +18,7 @@ pub fn to_str(v : Value) -> String {
     Dict(d) => repr_inner(Dict(d), [], [])
     Set(s) => repr_inner(Set(s), [], [])
     Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) => repr(v)
+    StringElems(_) | StringCodepoints(_) | BytesElems(_) => repr(v)
   }
 }
 
@@ -44,6 +45,10 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     (BoundMethod(x), BoundMethod(y)) => x.id == y.id
     // Modules use identity equality
     (Module(_), Module(_)) => false
+    // Lazy iterators use identity equality
+    (StringElems(_), StringElems(_)) => false
+    (StringCodepoints(_), StringCodepoints(_)) => false
+    (BytesElems(_), BytesElems(_)) => false
     _ => false
   }
 }
@@ -161,6 +166,9 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     Builtin(_) => Err("unhashable type: builtin_function_or_method")
     BoundMethod(m) => Ok(hash_int(m.id))
     Module(_) => Err("unhashable: module")
+    StringElems(_) => Err("unhashable: string.elems")
+    StringCodepoints(_) => Err("unhashable: string.codepoints")
+    BytesElems(_) => Err("unhashable: bytes.elems")
   }
 }
 
@@ -288,6 +296,9 @@ pub fn starlark_equals_depth(
     (Builtin(x), Builtin(y)) => Ok(x.name == y.name)
     (BoundMethod(x), BoundMethod(y)) => Ok(x.id == y.id)
     (Module(_), Module(_)) => Ok(false)
+    (StringElems(_), StringElems(_)) => Ok(false)
+    (StringCodepoints(_), StringCodepoints(_)) => Ok(false)
+    (BytesElems(_), BytesElems(_)) => Ok(false)
     _ => Ok(false)
   }
 }

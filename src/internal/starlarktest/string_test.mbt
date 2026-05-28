@@ -1,6 +1,6 @@
 // Integration tests derived from string.star.
 // Regex patterns in assert.fails are simplified to plain substrings.
-// Unicode-specific byte-index tests and codepoints type-check tests are excluded.
+// Unicode-specific multi-byte byte-index tests are excluded.
 
 ///|
 let string_star_src : String =
@@ -40,15 +40,15 @@ let string_star_src : String =
   #|assert.fails(lambda: ord("abc"), "expected a character")
   #|assert.fails(lambda: ord(""), "expected a character")
   #|
-  #|# codepoint_ords returns a list in this implementation
+  #|# codepoint_ords returns string.codepoints iterable
   #|assert.eq(list("abc".codepoint_ords()), [97, 98, 99])
   #|assert.eq(list("".codepoint_ords()), [])
   #|
-  #|# codepoints returns a list
+  #|# codepoints returns string.codepoints iterable
   #|assert.eq(list("abc".codepoints()), ["a", "b", "c"])
   #|assert.eq(list("".codepoints()), [])
   #|
-  #|# elem_ords returns a list of byte values
+  #|# elem_ords returns string.elems iterable of byte values
   #|assert.eq(list("abc".elem_ords()), [97, 98, 99])
   #|assert.eq(list("".elem_ords()), [])
   #|
@@ -386,6 +386,60 @@ let string_star_src : String =
 ///|
 test "string.star: all assertions pass" {
   let errs = run_star_string(string_star_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "str.elems returns string.elems type with len and index support" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.eq(type("abc".elems()), "string.elems")
+      #|assert.eq(type("abc".elem_ords()), "string.elems")
+      #|assert.eq(len("abc".elems()), 3)
+      #|assert.eq("abc".elems()[1], "b")
+      #|assert.eq(list("abc".elems()), ["a", "b", "c"])
+      #|assert.eq(list("abc".elem_ords()), [97, 98, 99])
+      #|assert.eq(str("abc".elems()), '"abc".elems()')
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "str.codepoints returns string.codepoints type" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.eq(type("abc".codepoints()), "string.codepoints")
+      #|assert.eq(type("abc".codepoint_ords()), "string.codepoints")
+      #|assert.eq(list("abc".codepoints()), ["a", "b", "c"])
+      #|assert.eq(list("abc".codepoint_ords()), [97, 98, 99])
+      #|assert.eq(str("abc".codepoints()), '"abc".codepoints()')
+      #|assert.fails(lambda: len("abc".codepoints()), "no len")
+      #|assert.fails(lambda: "abc".codepoints()[0], "unhandled index")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "bytes.elems returns bytes.elems type" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|hello = bytes("hello")
+      #|assert.eq(type(hello.elems()), "bytes.elems")
+      #|assert.eq(list(hello.elems()), [104, 101, 108, 108, 111])
+      #|assert.eq(bytes(hello.elems()), hello)
+    ),
+  )
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

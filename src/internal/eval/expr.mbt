@@ -2772,24 +2772,10 @@ fn call_str_method(
       }
       @value.Value::List(@value.StarlarkList::new(parts))
     }
-    "elems" => {
-      let parts : Array[@value.Value] = []
-      for b in s.to_bytes() {
-        let buf = StringBuilder::new()
-        buf.write_char(b.to_int().unsafe_to_char())
-        parts.push(
-          @value.Value::String(@value.StarlarkString::new(buf.to_string())),
-        )
-      }
-      @value.Value::List(@value.StarlarkList::new(parts))
-    }
-    "elem_ords" => {
-      let ords : Array[@value.Value] = []
-      for b in s.to_bytes() {
-        ords.push(@value.Value::Int(b.to_int().to_int64()))
-      }
-      @value.Value::List(@value.StarlarkList::new(ords))
-    }
+    "elems" =>
+      @value.Value::StringElems(@value.StarlarkStringElems::new(s, false))
+    "elem_ords" =>
+      @value.Value::StringElems(@value.StarlarkStringElems::new(s, true))
     "istitle" => {
       let chars = s.raw().to_array()
       let mut cased = false
@@ -2817,24 +2803,14 @@ fn call_str_method(
       }
       @value.Value::Bool(valid && cased)
     }
-    "codepoints" => {
-      let items : Array[@value.Value] = []
-      for c in s.raw() {
-        let buf = StringBuilder::new()
-        buf.write_char(c)
-        items.push(
-          @value.Value::String(@value.StarlarkString::new(buf.to_string())),
-        )
-      }
-      @value.Value::List(@value.StarlarkList::new(items))
-    }
-    "codepoint_ords" => {
-      let items : Array[@value.Value] = []
-      for c in s.raw() {
-        items.push(@value.Value::Int(c.to_int().to_int64()))
-      }
-      @value.Value::List(@value.StarlarkList::new(items))
-    }
+    "codepoints" =>
+      @value.Value::StringCodepoints(
+        @value.StarlarkStringCodepoints::new(s, false),
+      )
+    "codepoint_ords" =>
+      @value.Value::StringCodepoints(
+        @value.StarlarkStringCodepoints::new(s, true),
+      )
     _ =>
       raise EvalErr(
         make_eval_error(ctx, "string has no method '\{method_name}'"),
@@ -3203,13 +3179,7 @@ fn call_bytes_method(
   _pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
   match method_name {
-    "elems" => {
-      let items : Array[@value.Value] = []
-      for i in 0..<b.length() {
-        items.push(@value.Value::Int(b[i].to_int().to_int64()))
-      }
-      @value.Value::List(@value.StarlarkList::new(items))
-    }
+    "elems" => @value.Value::BytesElems(@value.StarlarkBytesElems::new(b))
     _ =>
       raise EvalErr(
         make_eval_error(ctx, "bytes has no method '\{method_name}'"),
