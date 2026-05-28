@@ -285,3 +285,17 @@ test "list augmented-assign to global name raises unbound local error" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "lambda in comprehension if-clause is truthy and filters correctly" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.eq([x for x in [1, 2] if lambda: None], [1, 2])
+      #|assert.eq([x for x in [1, 2] if (lambda: 3 if True else 4)], [1, 2])
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

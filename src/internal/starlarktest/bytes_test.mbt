@@ -127,3 +127,18 @@ test "bytes.star: all assertions pass" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "bytes.elems() has type bytes.elems and str representation" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|hello = bytes("hello, 世界")
+      #|assert.eq(type(hello.elems()), "bytes.elems")
+      #|assert.eq(str(hello.elems()), 'b"hello, 世界".elems()')
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
