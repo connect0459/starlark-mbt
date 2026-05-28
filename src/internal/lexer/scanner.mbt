@@ -1090,55 +1090,12 @@ fn parse_int_base(s : String, base : Int) -> Result[BigInt, String] {
   Ok(BigInt::from_string(s, radix=base))
 }
 
-// parse_float_str converts a decimal float string to Double.
-
 ///|
 fn parse_float_str(s : String) -> Result[Double, String] {
   if s.length() == 0 {
     return Err("empty float string")
   }
-  let bytes = @utf8.encode(s)
-  let n = bytes.length()
-  let mut i = 0
-
-  // Integer part
-  let mut int_val = 0.0
-  while i < n && is_digit_byte(bytes[i]) {
-    int_val = int_val * 10.0 + (bytes[i].to_int() - 0x30).to_double()
-    i += 1
+  Ok(@string.parse_double(s)) catch {
+    _ => Err("invalid float literal: \{s}")
   }
-
-  // Fractional part
-  let mut frac = 0.0
-  let mut frac_div = 1.0
-  if i < n && bytes[i] == b'.' {
-    i += 1
-    while i < n && is_digit_byte(bytes[i]) {
-      frac = frac * 10.0 + (bytes[i].to_int() - 0x30).to_double()
-      frac_div *= 10.0
-      i += 1
-    }
-  }
-  let mantissa = int_val + frac / frac_div
-
-  // Exponent part
-  let mut result = mantissa
-  if i < n && (bytes[i] == b'e' || bytes[i] == b'E') {
-    i += 1
-    let mut exp_neg = false
-    if i < n && bytes[i] == b'-' {
-      exp_neg = true
-      i += 1
-    } else if i < n && bytes[i] == b'+' {
-      i += 1
-    }
-    let mut exp = 0
-    while i < n && is_digit_byte(bytes[i]) {
-      exp = exp * 10 + (bytes[i].to_int() - 0x30)
-      i += 1
-    }
-    let mult = @math.pow(10.0, exp.to_double())
-    result = if exp_neg { mantissa / mult } else { mantissa * mult }
-  }
-  Ok(result)
 }

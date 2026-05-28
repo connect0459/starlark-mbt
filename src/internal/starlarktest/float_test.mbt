@@ -431,7 +431,7 @@ let float_formatting_src : String =
   #|assert.eq(str(0.0), "0.0")
   #|assert.eq(str(123.0), "123.0")
   #|assert.eq(str(1.23e45), "1.23e+45")
-  #|assert.eq(str(-1.23e-45), "-1.2300000000000001e-45")
+  #|assert.eq(str(-1.23e-45), "-1.23e-45")
   #|assert.eq(str(nan), "nan")
   #|assert.eq(str(inf), "+inf")
   #|assert.eq(str(neginf), "-inf")

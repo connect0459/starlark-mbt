@@ -2,5 +2,6 @@ import {
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/double",
   "moonbitlang/core/math",
+  "moonbitlang/core/string",
   "connect0459/starlark/internal/errors",
 }

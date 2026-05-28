@@ -664,7 +664,12 @@ fn percent_format(
             if n2 < 0N || n2 > 1114111N {
               return Err("%c requires a valid Unicode code point")
             }
-            buf.write_char(n2.to_int().unsafe_to_char())
+            let cp = n2.to_int()
+            if cp >= 0xD800 && cp <= 0xDFFF {
+              buf.write_char('\u{FFFD}')
+            } else {
+              buf.write_char(cp.unsafe_to_char())
+            }
           }
           @value.Value::String(s2) =>
             if s2.raw().length() == 1 {
