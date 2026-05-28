@@ -824,7 +824,9 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 - [x] **MISSING-3**: Test coverage for partial/invalid UTF-8 string operations — added
       in `starlarktest/string_test.mbt`: ord on continuation bytes, repr of single-byte
       slices, codepoint_ords/elem_ords/elems on concat with invalid bytes.
-- [ ] **MISSING-4**: Test for `str(b"\xED\xB0\x80")` (surrogate bytes → U+FFFD × 3) [LOW]
+- [x] **MISSING-4**: `str(b"\xED\xB0\x80")` == U+FFFD × 3 — fixed `str(Bytes)` to re-encode
+      via `from_bytes().raw() + new()`. MoonBit `decode_lossy` gives 3 U+FFFD per byte.
+      Commit: `a6d20d1`
 
 ---
 
