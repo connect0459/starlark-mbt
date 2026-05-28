@@ -41,6 +41,14 @@ pub fn unpack_args(
 ) -> Result[Array[@value.Value?], String] {
   let n = param_specs.length()
   let infos : Array[ParamInfo] = param_specs.map(parse_param_spec)
+  let mut seen_optional = false
+  for i in 0..<n {
+    if infos[i].optional {
+      seen_optional = true
+    } else if seen_optional {
+      infos[i] = { ..infos[i], optional: true }
+    }
+  }
   let result : Array[@value.Value?] = Array::make(n, None)
   let defined : Array[Bool] = Array::make(n, false)
   if pos_args.length() > n {

@@ -200,3 +200,47 @@ test "unpack_positional: too many args returns error mentioning fn name" {
     Ok(_) => panic()
   }
 }
+
+// --- unpack_args: optional inference (starlark-go TestUnpackRequiredAfterOptional) ---
+
+///|
+test "unpack_args: param after optional is implicitly optional (positional)" {
+  let pos = [@value.Value::Int(1N), @value.Value::Int(2N)]
+  let kw : Array[(String, @value.Value)] = []
+  // "z" comes after "y?" — must be implicitly optional per starlark-go semantics
+  match unpack_args("f", pos, kw, ["x", "y?", "z"]) {
+    Ok(r) => {
+      assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
+      assert_true(val_eq(r[1], Some(@value.Value::Int(2N))))
+      assert_true(val_eq(r[2], None))
+    }
+    Err(e) => fail("expected Ok, got Err: \{e}")
+  }
+}
+
+///|
+test "unpack_args: param after optional is implicitly optional (keyword)" {
+  let pos : Array[@value.Value] = []
+  let kw = [("x", @value.Value::Int(1N)), ("y", @value.Value::Int(2N))]
+  match unpack_args("unpack", pos, kw, ["x", "y?", "z"]) {
+    Ok(r) => {
+      assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
+      assert_true(val_eq(r[1], Some(@value.Value::Int(2N))))
+      assert_true(val_eq(r[2], None))
+    }
+    Err(e) => fail("expected Ok, got Err: \{e}")
+  }
+}
+
+///|
+test "unpack_args: only first arg provided; params after optional are None" {
+  let pos = [@value.Value::String(@value.StarlarkString::new("a"))]
+  let kw : Array[(String, @value.Value)] = []
+  match unpack_args("unpack", pos, kw, ["a", "b?", "c"]) {
+    Ok(r) => {
+      assert_true(val_eq(r[1], None))
+      assert_true(val_eq(r[2], None))
+    }
+    Err(e) => fail("expected Ok, got Err: \{e}")
+  }
+}
