@@ -178,6 +178,37 @@ test {
 }
 ```
 
+### Calling Starlark functions from host code
+
+Use `call()` to invoke any Starlark callable (function, built-in, or bound method) from
+MoonBit code without re-parsing source.
+
+```moonbit
+test {
+  let thread = @starlark.Thread::new("main")
+  match @starlark.exec_file(
+    thread, "lib.star",
+    "def add(x, y): return x + y",
+    @starlark.Options::default(),
+  ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "add") {
+        Some(func) =>
+          match @starlark.call(
+            thread, func,
+            [@starlark.Value::Int(3L), @starlark.Value::Int(4L)],
+            [],
+          ) {
+            Ok(v) => assert_true(v is @starlark.Value::Int(7L))
+            Err(e) => fail!(e.to_string())
+          }
+        None => fail!("function not found")
+      }
+    Err(e) => fail!(e.to_string())
+  }
+}
+```
+
 ## Documentation
 
 - [API Reference](docs/api.md) — Full API reference for all packages

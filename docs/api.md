@@ -16,17 +16,49 @@ All `src/internal/*` packages are implementation details and are not importable 
 
 ### Top-level functions
 
+#### Execution
+
 | Function | Signature | Description |
 | :--- | :--- | :--- |
 | `exec_file` | `(Thread, String, String, Options) -> Result[Module, EvalError]` | Execute a Starlark source file |
 | `eval_expr` | `(Thread, String, String, StarlarkDict) -> Result[Value, EvalError]` | Evaluate a single Starlark expression |
 | `exec_file_with_predeclared` | `(Thread, String, String, Options, Predeclared) -> Result[Module, EvalError]` | Execute with extra host bindings visible to the script |
 | `module_get` | `(Module, String) -> Value?` | Look up a global by name in an executed module |
+| `call` | `(Thread, Value, Array[Value], Array[(String, Value)]) -> Result[Value, EvalError]` | Call any Starlark callable from host code |
+
+#### Value inspection
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
 | `repr` | `(Value) -> String` | Starlark `repr()` of a value (quoted strings, recursive containers) |
 | `to_str` | `(Value) -> String` | Starlark `str()` of a value (unquoted strings) |
 | `type_name` | `(Value) -> String` | Starlark `type()` string for a value |
 | `truth` | `(Value) -> Bool` | Starlark truthiness (`if` / `and` / `or` semantics) |
 | `starlark_equals` | `(Value, Value) -> Bool` | Structural equality (`==` semantics; `NaN == NaN`) |
+| `equal` | `(Value, Value) -> Result[Bool, EvalError]` | Equality check returning `Result` (for error propagation) |
+| `len_of` | `(Value) -> Int` | Sequence length; returns `-1` for non-sequences |
+| `iterate` | `(Value) -> Result[StarlarkIterator, EvalError]` | Obtain an iterator over a Starlark iterable |
+| `number_to_int` | `(Value) -> Int64?` | Convert `Int` or `Float` to `Int64`; `None` otherwise |
+| `as_float` | `(Value) -> (Double, Bool)` | Extract `Float` or convert `Int` to `Double`; second element is `true` on success |
+| `as_string` | `(Value) -> (String, Bool)` | Extract raw string from `String` value; second element is `true` on success |
+
+#### Operator dispatch
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `binary` | `(String, Value, Value) -> Result[Value, EvalError]` | Apply a binary operator by name (`"+"`, `"-"`, `"*"`, etc.) |
+| `unary` | `(String, Value) -> Result[Value, EvalError]` | Apply a unary operator by name (`"-"`, `"~"`, `"not"`) |
+| `compare` | `(String, Value, Value) -> Result[Bool, EvalError]` | Apply a comparison operator by name (`"=="`, `"<"`, etc.) |
+
+#### Depth-limited comparison
+
+Prevents infinite recursion on cyclic data structures.
+
+| Symbol | Signature | Description |
+| :--- | :--- | :--- |
+| `compare_limit` | `Int` | Default recursion depth for comparisons (value: `10`) |
+| `equal_depth` | `(Value, Value, Int) -> Result[Bool, EvalError]` | Equality with explicit depth limit |
+| `compare_depth` | `(String, Value, Value, Int) -> Result[Bool, EvalError]` | Comparison with explicit depth limit |
 
 #### `exec_file`
 
@@ -110,6 +142,23 @@ closure can capture a custom print buffer. See the "Loading modules" example in 
 | `execution_steps()` | `Int` | Steps consumed so far |
 | `call_stack_depth()` | `Int` | Current call depth |
 | `call_frames()` | `Array[CallFrame]` | Current call stack frames |
+| `call_stack()` | `CallStack` | Snapshot of the current call stack |
+
+#### Step budget control
+
+| Method | Description |
+| :--- | :--- |
+| `set_max_steps(Int?)` | Set or remove the step budget |
+| `on_max_steps(((Int) -> Unit)?)` | Set a callback invoked when the step budget is reached instead of halting |
+
+#### Thread-local storage
+
+Embedders can store per-thread context (request IDs, counters, etc.) without subclassing.
+
+| Method | Description |
+| :--- | :--- |
+| `set_local(String, Value)` | Store a value under a string key |
+| `get_local(String) -> Value?` | Retrieve a stored value; `None` if not set |
 
 #### Cancellation
 
@@ -185,6 +234,8 @@ pub struct Module { /* private fields */ }
 | `globals_count` | `() -> Int` | Number of defined globals |
 | `is_frozen` | `() -> Bool` | Always `true` after `exec_file` returns |
 | `freeze` | `() -> Unit` | Freeze the module manually (rarely needed) |
+| `globals_map` | `() -> Map[String, Value]` | Copy of all global bindings as a MoonBit map |
+| `predeclared_map` | `() -> Map[String, Value]` | Copy of predeclared bindings injected before execution |
 | `new` | `() -> Module` | Empty unfrozen module |
 | `from_map` | `(Map[String, Value]) -> Module` | Construct a module from a map (for testing) |
 
@@ -243,8 +294,15 @@ pub enum Value {
   Builtin(StarlarkBuiltinFunc)
   BoundMethod(StarlarkBoundMethod)
   Module(StarlarkModule)
+  StringElems(StarlarkStringElems)      // returned by str.elems()
+  StringCodepoints(StarlarkStringCodepoints) // returned by str.codepoints()
+  BytesElems(StarlarkBytesElems)        // returned by bytes.elems()
 }
 ```
+
+The three iterator variants (`StringElems`, `StringCodepoints`, `BytesElems`) are lazy iterables
+returned by the respective string/bytes methods. They report their own `type()` strings
+(`"string.elems"`, `"string.codepoints"`, `"bytes.elems"`) and support `len()`.
 
 Pattern matching is the primary way to inspect a `Value`:
 
@@ -284,6 +342,149 @@ pub struct StarlarkDict { /* private fields */ }
 | `delete(Value) -> Result[Bool, String]` | Remove a key |
 | `clear() -> Result[Unit, String]` | Remove all entries |
 | `length() -> Int` | Number of entries |
+
+---
+
+### `StringDict`
+
+A `Map[String, Value]` wrapper used for host-side string-keyed dictionaries. Analogous to
+`starlark.StringDict` in starlark-go.
+
+```moonbit
+pub struct StringDict { /* private fields */ }
+```
+
+| Method | Description |
+| :--- | :--- |
+| `StringDict::new()` | Empty map |
+| `StringDict::from_map(Map[String, Value])` | Wrap an existing map |
+| `set(String, Value)` | Add or replace a binding |
+| `get(String) -> Value?` | Look up by key |
+| `has(String) -> Bool` | Test for key presence |
+| `keys() -> Array[String]` | Sorted list of keys |
+| `freeze()` | Transitively freeze all contained values |
+
+---
+
+### `StarlarkBuiltinFunc`
+
+A host-provided callable injected into the Starlark environment.
+
+```moonbit
+pub struct StarlarkBuiltinFunc { /* private fields */ }
+```
+
+| Method | Description |
+| :--- | :--- |
+| `StarlarkBuiltinFunc::dispatch(String)` | Create a named built-in with no body (stub for forward references) |
+| `name() -> String` | Built-in function name |
+| `receiver() -> Value?` | Bound receiver value, if any |
+| `bind_receiver(Value) -> StarlarkBuiltinFunc` | Return a copy bound to the given receiver |
+
+---
+
+### `StarlarkFunction`
+
+A user-defined (Starlark-source) function. Obtain via `Value::Function(f)` pattern matching.
+
+```moonbit
+pub struct StarlarkFunction { /* private fields */ }
+```
+
+#### Identity
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `name()` | `String` | Function name; `"<lambda>"` for lambda expressions |
+| `position()` | `Position` | Source position of the `def` keyword |
+| `doc()` | `String` | Docstring (first string literal in body); `""` if absent |
+
+#### Parameters
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `num_params()` | `Int` | Total parameter count |
+| `num_kwonly_params()` | `Int` | Number of keyword-only parameters (after `*args`) |
+| `has_varargs()` | `Bool` | Whether the function has a `*args` parameter |
+| `has_kwargs()` | `Bool` | Whether the function has a `**kwargs` parameter |
+| `param(Int)` | `(String, Position)` | Name and position of the i-th parameter |
+| `param_default(Int)` | `Value?` | Default value of the i-th parameter; `None` if required |
+
+#### Closure / module
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `num_free_vars()` | `Int` | Number of captured (closure) variables |
+| `free_var(Int)` | `(String, Value)?` | Name and current value of the i-th free variable |
+| `globals()` | `Map[String, Value]` | Module globals visible when the function was defined |
+| `defining_module()` | `StarlarkModule?` | Module that defined this function; `None` for functions not created via `exec_file` |
+
+```moonbit
+test {
+  let thread = @starlark.Thread::new("main")
+  match @starlark.exec_file(
+    thread, "lib.star",
+    "CONST = 99\ndef greet(name):\n  \"\"\"Say hello.\"\"\"\n  return 'hi ' + name",
+    @starlark.Options::default(),
+  ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "greet") {
+        Some(@starlark.Value::Function(f)) => {
+          assert_eq(f.name(), "greet")
+          assert_eq(f.num_params(), 1)
+          assert_eq(f.doc(), "Say hello.")
+          assert_true(f.globals().contains("CONST"))
+          match f.defining_module() {
+            Some(mod_ref) => assert_eq(mod_ref.name(), "lib.star")
+            None => fail!("expected module")
+          }
+        }
+        _ => fail!("expected function")
+      }
+    Err(e) => fail!(e.to_string())
+  }
+}
+```
+
+---
+
+### `CallStack` and `CallFrame`
+
+A snapshot of the call stack at a point in time.
+
+```moonbit
+pub struct CallStack { /* private fields */ }
+pub struct CallFrame { /* private fields */ }
+```
+
+#### `CallStack`
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `length()` | `Int` | Number of frames |
+| `at(Int)` | `CallFrame?` | Frame at index (0 = outermost) |
+| `pop()` | `CallFrame?` | Remove and return the innermost frame |
+| `to_string()` | `String` | Human-readable backtrace |
+
+#### `CallFrame`
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `name()` | `String` | Function name at this frame |
+| `pos()` | `Position` | Call-site position |
+
+```moonbit
+test {
+  let thread = @starlark.Thread::new("main")
+  let _ = @starlark.exec_file(
+    thread, "x.star",
+    "def f(): pass\nf()",
+    @starlark.Options::default(),
+  )
+  let stack = thread.call_stack()
+  assert_eq(stack.length(), 0) // stack is empty after execution
+}
+```
 
 ---
 
