@@ -18,7 +18,13 @@ pub fn call(@eval.Thread, @value.Value, Array[@value.Value], Array[(String, @val
 
 pub fn compare(String, @value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
+pub fn compare_depth(String, @value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]
+
+pub let compare_limit : Int
+
 pub fn equal(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
+
+pub fn equal_depth(@value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]
 
 pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 

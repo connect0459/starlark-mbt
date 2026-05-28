@@ -1,6 +1,7 @@
 import {
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/double",
+  "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/hashtable",
   "connect0459/starlark/internal/syntax",
   "connect0459/starlark/internal/utf8util",

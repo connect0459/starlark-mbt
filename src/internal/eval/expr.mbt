@@ -166,6 +166,7 @@ fn eval_expr_node(
         [body_stmt],
         defaults,
         captured_scope,
+        pos,
       )
       @value.Value::Function(func)
     }

@@ -98,12 +98,12 @@ fn eval_binary(
     @syntax.BinaryOp::OpLShift => eval_shift(ctx, lv, rv, pos, "lshift")
     @syntax.BinaryOp::OpRShift => eval_shift(ctx, lv, rv, pos, "rshift")
     @syntax.BinaryOp::OpEq =>
-      match @value.starlark_equals_depth(lv, rv, 10) {
+      match @value.starlark_equals_depth(lv, rv, @value.compare_limit) {
         Ok(b) => @value.Value::Bool(b)
         Err(e) => raise EvalErr(make_eval_error(ctx, e))
       }
     @syntax.BinaryOp::OpNe =>
-      match @value.starlark_equals_depth(lv, rv, 10) {
+      match @value.starlark_equals_depth(lv, rv, @value.compare_limit) {
         Ok(b) => @value.Value::Bool(!b)
         Err(e) => raise EvalErr(make_eval_error(ctx, e))
       }

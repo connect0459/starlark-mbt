@@ -235,8 +235,11 @@ fn int_float_cmp(n : Int64, f : Double) -> Int {
 }
 
 ///|
+pub let compare_limit : Int = 10
+
+///|
 pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
-  compare_values_depth(a, b, 10)
+  compare_values_depth(a, b, compare_limit)
 }
 
 ///|

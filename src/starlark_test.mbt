@@ -360,3 +360,238 @@ test "compare: integer comparison via public API" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+test "compare_limit constant equals 10" {
+  assert_eq(@starlark.compare_limit, 10)
+}
+
+///|
+test "equal_depth with depth 0 returns recursion error" {
+  let a = @starlark.Value::List(@starlark.StarlarkList::new([]))
+  let b = @starlark.Value::List(@starlark.StarlarkList::new([]))
+  match @starlark.equal_depth(a, b, 0) {
+    Err(e) => assert_true(e.msg().contains("maximum recursion"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
+test "equal_depth with positive depth compares equal values" {
+  let a = @starlark.Value::Int(42L)
+  let b = @starlark.Value::Int(42L)
+  match @starlark.equal_depth(a, b, 10) {
+    Ok(true) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "compare_depth with depth 0 returns recursion error" {
+  let a = @starlark.Value::List(@starlark.StarlarkList::new([]))
+  let b = @starlark.Value::List(@starlark.StarlarkList::new([]))
+  match @starlark.compare_depth("==", a, b, 0) {
+    Err(e) => assert_true(e.msg().contains("maximum recursion"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
+test "compare_depth with positive depth handles ordered comparison" {
+  let a = @starlark.Value::Int(1L)
+  let b = @starlark.Value::Int(2L)
+  match @starlark.compare_depth("<", a, b, 10) {
+    Ok(true) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::num_params counts positional parameters" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def f(a, b, c): pass",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => assert_eq(f.num_params(), 3)
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::has_varargs detects star-args parameter" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def f(a, *args): pass",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => {
+          assert_true(f.has_varargs())
+          assert_false(f.has_kwargs())
+        }
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::has_kwargs detects double-star parameter" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def f(a, **kwargs): pass",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => {
+          assert_false(f.has_varargs())
+          assert_true(f.has_kwargs())
+        }
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::num_kwonly_params counts keyword-only params" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def f(a, *, b, c): pass",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) =>
+          assert_eq(f.num_kwonly_params(), 2)
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::param returns name and position by index" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def f(x, y): pass",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => {
+          let (name0, _pos0) = f.param(0)
+          let (name1, _pos1) = f.param(1)
+          assert_eq(name0, "x")
+          assert_eq(name1, "y")
+        }
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::doc returns first string literal as docstring" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def f():\n  \"the doc\"\n  pass",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => assert_eq(f.doc(), "the doc")
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "StarlarkFunction::position returns def site position" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def f(): pass",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => {
+          let pos = f.position()
+          assert_eq(pos.filename(), "<test>")
+          assert_eq(pos.line(), 1)
+        }
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "Module::globals_map returns all module-level globals" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "x = 1\ny = 2",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) => {
+      let gmap = m.globals_map()
+      assert_true(gmap.contains("x"))
+      assert_true(gmap.contains("y"))
+      assert_eq(gmap.length(), 2)
+    }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "Module::predeclared_map returns predeclared bindings" {
+  let t = @starlark.Thread::new("test")
+  let pre = @starlark.Predeclared::new()
+  pre.set("answer", @starlark.Value::Int(42L))
+  match
+    @starlark.exec_file_with_predeclared(
+      t,
+      "<test>",
+      "x = answer",
+      @starlark.Options::default(),
+      pre,
+    ) {
+    Ok(m) => {
+      let pmap = m.predeclared_map()
+      assert_true(pmap.contains("answer"))
+    }
+    Err(_) => assert_true(false)
+  }
+}

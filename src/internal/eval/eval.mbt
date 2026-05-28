@@ -282,11 +282,12 @@ pub fn Thread::max_steps(self : Thread) -> Int? {
 pub struct Module {
   priv globals : @value.StarlarkDict
   priv mut frozen : Bool
+  priv predeclared : Map[String, @value.Value]
 }
 
 ///|
 pub fn Module::new() -> Module {
-  { globals: @value.StarlarkDict::new(), frozen: false }
+  { globals: @value.StarlarkDict::new(), frozen: false, predeclared: {} }
 }
 
 ///|
@@ -323,6 +324,23 @@ pub fn Module::get(self : Module, name : String) -> @value.Value? {
 ///|
 pub fn Module::globals_count(self : Module) -> Int {
   self.globals.length()
+}
+
+///|
+pub fn Module::globals_map(self : Module) -> Map[String, @value.Value] {
+  let result : Map[String, @value.Value] = {}
+  self.globals.each(fn(k, v) {
+    match k {
+      @value.Value::String(s) => result[s.raw()] = v
+      _ => ()
+    }
+  })
+  result
+}
+
+///|
+pub fn Module::predeclared_map(self : Module) -> Map[String, @value.Value] {
+  self.predeclared
 }
 
 ///|
@@ -501,7 +519,7 @@ pub fn exec_file_with_predeclared(
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
     EvalErr(e) => return Err(e)
   }
-  let m = Module::new()
+  let m = { ..Module::new(), predeclared: predeclared.bindings }
   ctx.global_env.locals.each(fn(name, v) {
     if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
       let key = @value.Value::String(@value.StarlarkString::new(name))

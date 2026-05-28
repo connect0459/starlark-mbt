@@ -295,6 +295,7 @@ pub struct StarlarkFunction {
   priv body : Array[@syntax.Stmt]
   priv defaults : Array[Value?]
   priv captured_scope : Array[(Map[String, Value], Array[String])]
+  priv pos : @errors.Position
 }
 
 ///|
@@ -304,13 +305,19 @@ pub fn StarlarkFunction::new(
   body : Array[@syntax.Stmt],
   defaults : Array[Value?],
   captured_scope : Array[(Map[String, Value], Array[String])],
+  pos : @errors.Position,
 ) -> StarlarkFunction {
-  { name, params, body, defaults, captured_scope }
+  { name, params, body, defaults, captured_scope, pos }
 }
 
 ///|
 pub fn StarlarkFunction::name(self : StarlarkFunction) -> String {
   self.name
+}
+
+///|
+pub fn StarlarkFunction::position(self : StarlarkFunction) -> @errors.Position {
+  self.pos
 }
 
 ///|
@@ -335,6 +342,127 @@ pub fn StarlarkFunction::captured_scope(
   self : StarlarkFunction,
 ) -> Array[(Map[String, Value], Array[String])] {
   self.captured_scope
+}
+
+///|
+pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
+  match self.body {
+    [
+      @syntax.Stmt::SExpr(
+        @syntax.Expr::ELiteral(@syntax.LiteralVal::LitString(s), _)
+      ),
+      ..,
+    ] => s
+    _ => ""
+  }
+}
+
+///|
+pub fn StarlarkFunction::has_varargs(self : StarlarkFunction) -> Bool {
+  for p in self.params {
+    if p is @syntax.Param::ParamStarIdent(_, _) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
+  for p in self.params {
+    if p is @syntax.Param::ParamKwIdent(_, _) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
+  let mut count = 0
+  for p in self.params {
+    match p {
+      @syntax.Param::ParamStarBare(_) => ()
+      _ => count = count + 1
+    }
+  }
+  count
+}
+
+///|
+pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int {
+  let mut after_star = false
+  let mut count = 0
+  for p in self.params {
+    match p {
+      @syntax.Param::ParamStarBare(_) | @syntax.Param::ParamStarIdent(_, _) =>
+        after_star = true
+      @syntax.Param::ParamKwIdent(_, _) => ()
+      @syntax.Param::ParamIdent(_, _) | @syntax.Param::ParamDefault(_, _, _) =>
+        if after_star {
+          count = count + 1
+        }
+    }
+  }
+  count
+}
+
+///|
+pub fn StarlarkFunction::param(
+  self : StarlarkFunction,
+  i : Int,
+) -> (String, @errors.Position) {
+  let mut idx = 0
+  for p in self.params {
+    match p {
+      @syntax.Param::ParamStarBare(_) => ()
+      @syntax.Param::ParamIdent(name, pos) => {
+        if idx == i {
+          return (name, pos)
+        }
+        idx = idx + 1
+      }
+      @syntax.Param::ParamDefault(name, _, pos) => {
+        if idx == i {
+          return (name, pos)
+        }
+        idx = idx + 1
+      }
+      @syntax.Param::ParamStarIdent(name, pos) => {
+        if idx == i {
+          return (name, pos)
+        }
+        idx = idx + 1
+      }
+      @syntax.Param::ParamKwIdent(name, pos) => {
+        if idx == i {
+          return (name, pos)
+        }
+        idx = idx + 1
+      }
+    }
+  }
+  abort("StarlarkFunction::param: index \{i} out of range")
+}
+
+///|
+pub fn StarlarkFunction::param_default(
+  self : StarlarkFunction,
+  i : Int,
+) -> Value? {
+  if i < 0 || i >= self.defaults.length() {
+    return None
+  }
+  self.defaults[i]
+}
+
+///|
+pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
+  let mut total = 0
+  for scope in self.captured_scope {
+    total = total + scope.0.length()
+  }
+  total
 }
 
 ///|

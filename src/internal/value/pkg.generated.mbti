@@ -2,10 +2,13 @@
 package "connect0459/starlark/internal/value"
 
 import {
+  "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/syntax",
 }
 
 // Values
+pub let compare_limit : Int
+
 pub fn compare_values(Value, Value) -> Result[Int, String]
 
 pub fn compare_values_depth(Value, Value, Int) -> Result[Int, String]
@@ -89,9 +92,18 @@ pub struct StarlarkFunction {
 pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
 pub fn StarlarkFunction::captured_scope(Self) -> Array[(Map[String, Value], Array[String])]
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
+pub fn StarlarkFunction::doc(Self) -> String
+pub fn StarlarkFunction::has_kwargs(Self) -> Bool
+pub fn StarlarkFunction::has_varargs(Self) -> Bool
 pub fn StarlarkFunction::name(Self) -> String
-pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], Array[Value?], Array[(Map[String, Value], Array[String])]) -> Self
+pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], Array[Value?], Array[(Map[String, Value], Array[String])], @errors.Position) -> Self
+pub fn StarlarkFunction::num_free_vars(Self) -> Int
+pub fn StarlarkFunction::num_kwonly_params(Self) -> Int
+pub fn StarlarkFunction::num_params(Self) -> Int
+pub fn StarlarkFunction::param(Self, Int) -> (String, @errors.Position)
+pub fn StarlarkFunction::param_default(Self, Int) -> Value?
 pub fn StarlarkFunction::params(Self) -> Array[@syntax.Param]
+pub fn StarlarkFunction::position(Self) -> @errors.Position
 
 pub struct StarlarkIterator {
   // private fields

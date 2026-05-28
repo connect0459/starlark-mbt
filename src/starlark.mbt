@@ -224,6 +224,54 @@ pub fn StringDict::freeze(self : StringDict) -> Unit {
 }
 
 ///|
+pub let compare_limit : Int = @value.compare_limit
+
+///|
+pub fn equal_depth(
+  a : Value,
+  b : Value,
+  depth : Int,
+) -> Result[Bool, EvalError] {
+  match @value.starlark_equals_depth(a, b, depth) {
+    Ok(b) => Ok(b)
+    Err(e) => Err(@errors.EvalError::simple(e))
+  }
+}
+
+///|
+pub fn compare_depth(
+  op : String,
+  a : Value,
+  b : Value,
+  depth : Int,
+) -> Result[Bool, EvalError] {
+  match op {
+    "==" =>
+      match @value.starlark_equals_depth(a, b, depth) {
+        Ok(v) => Ok(v)
+        Err(e) => Err(@errors.EvalError::simple(e))
+      }
+    "!=" =>
+      match @value.starlark_equals_depth(a, b, depth) {
+        Ok(v) => Ok(!v)
+        Err(e) => Err(@errors.EvalError::simple(e))
+      }
+    "<" | "<=" | ">" | ">=" =>
+      match @value.compare_values_depth(a, b, depth) {
+        Ok(c) =>
+          match op {
+            "<" => Ok(c < 0)
+            "<=" => Ok(c <= 0)
+            ">" => Ok(c > 0)
+            _ => Ok(c >= 0)
+          }
+        Err(e) => Err(@errors.EvalError::simple(e))
+      }
+    _ => Err(@errors.EvalError::simple("unknown comparison operator: \{op}"))
+  }
+}
+
+///|
 pub fn binary(op : String, x : Value, y : Value) -> Result[Value, EvalError] {
   @eval.binary(op, x, y)
 }
