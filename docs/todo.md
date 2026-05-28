@@ -781,6 +781,24 @@ Low-cost public API additions derived from gap analysis against starlark-go.
       `set_index_fn`, `slice_fn`, `items_fn`; `eval_index`/`set_index`/`eval_slice`
       in `ops.mbt` now dispatch to `ExtVal` for subscript read/write and slicing.
 
+### Debugger API (カテゴリ4, 9)
+
+- [x] **DebugFrame API** — `Thread.debug_frame(depth)` returns a `DebugFrame` snapshot
+      of an active call frame (depth 0 = innermost Starlark function); `DebugFrame`
+      exposes `callable()`, `num_locals()`, `frame_local(i)`, `local_by_name(name)`,
+      and `position()`. `Binding` type carries local name + position.
+      `Thread.debug_stack` is maintained by `call_func` push/pop around Starlark calls.
+
+### Program API (カテゴリ10, 20)
+
+- [x] **Program API** — `source_program(filename, src, opts, is_predeclared)` parses and
+      resolves a file without executing it, returning an immutable `Program` value.
+      `Program.init(thread, predeclared)` executes the resolved AST and returns an
+      unfrozen `Module`; may be called multiple times with different `predeclared`
+      dictionaries. Includes `Program.filename()`, `Program.num_loads()`,
+      `Program.load(i)` for inspecting load statements.
+      Unlike `exec_file`, `Program.init` does NOT freeze the returned module.
+
 ---
 
 ## Future work (out of initial release scope)
