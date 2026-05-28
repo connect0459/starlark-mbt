@@ -95,6 +95,7 @@ pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
 pub fn StarlarkFunction::captured_scope(Self) -> Array[(Map[String, Value], Array[String])]
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
 pub fn StarlarkFunction::doc(Self) -> String
+pub fn StarlarkFunction::free_var(Self, Int) -> (String, Value)?
 pub fn StarlarkFunction::has_kwargs(Self) -> Bool
 pub fn StarlarkFunction::has_varargs(Self) -> Bool
 pub fn StarlarkFunction::name(Self) -> String

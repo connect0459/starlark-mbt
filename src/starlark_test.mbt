@@ -651,3 +651,30 @@ test "StarlarkFunction::free_var returns name from captured scope" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+test "StarlarkFunction::free_var returns binding from captured scope" {
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file(
+      t,
+      "<test>",
+      "def outer():\n  captured = 99\n  def inner(): return captured\n  return inner\nf = outer()",
+      @starlark.Options::default(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "f") {
+        Some(@starlark.Value::Function(f)) => {
+          let n = f.num_free_vars()
+          assert_true(n >= 1)
+          // The first free var should be the captured binding
+          match f.free_var(0) {
+            Some((name, _val)) => assert_true(name.length() > 0)
+            None => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}

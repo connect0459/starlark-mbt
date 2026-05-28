@@ -466,6 +466,27 @@ pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
 }
 
 ///|
+pub fn StarlarkFunction::free_var(
+  self : StarlarkFunction,
+  i : Int,
+) -> (String, Value)? {
+  let mut idx = 0
+  let mut result : (String, Value)? = None
+  for scope in self.captured_scope {
+    scope.0.each(fn(name, v) {
+      if idx == i && result is None {
+        result = Some((name, v))
+      }
+      idx = idx + 1
+    })
+    if result is Some(_) {
+      break
+    }
+  }
+  result
+}
+
+///|
 pub struct BuiltinCallCtx {
   priv call : (Value, Array[Value], Array[(String, Value)]) -> Result[
     Value,
