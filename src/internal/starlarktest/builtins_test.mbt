@@ -123,6 +123,7 @@ let builtins_star_src : String =
   #|assert.fails(lambda: "one" in range(10), "requires integer")
   #|assert.true(4 not in range(4))
   #|assert.fails(lambda: range(0, 0, 2)[:][0], "index 0 out of range")
+  #|assert.fails(lambda: range(1<<64), ".* out of range .*want value in signed .*-bit range")
   #|
   #|# list
   #|assert.eq(list("abc".elems()), ["a", "b", "c"])

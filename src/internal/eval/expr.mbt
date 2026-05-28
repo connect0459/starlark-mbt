@@ -1094,6 +1094,20 @@ fn builtin_module(
 }
 
 ///|
+fn range_arg_to_int64(ctx : EvalContext, b : BigInt) -> Int64 raise EvalErr {
+  if b.compare_int64(@int64.MAX_VALUE) > 0 ||
+    b.compare_int64(@int64.MIN_VALUE) < 0 {
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "\{b} out of range (want value in signed 64-bit range)",
+      ),
+    )
+  }
+  b.to_int64()
+}
+
+///|
 fn builtin_range(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1103,7 +1117,7 @@ fn builtin_range(
       match pos_args[0] {
         @value.Value::Int(stop) =>
           @value.Value::Range(
-            @value.StarlarkRange::new(0L, stop.to_int64(), 1L),
+            @value.StarlarkRange::new(0L, range_arg_to_int64(ctx, stop), 1L),
           )
         _ =>
           raise EvalErr(
@@ -1114,7 +1128,11 @@ fn builtin_range(
       match (pos_args[0], pos_args[1]) {
         (@value.Value::Int(start), @value.Value::Int(stop)) =>
           @value.Value::Range(
-            @value.StarlarkRange::new(start.to_int64(), stop.to_int64(), 1L),
+            @value.StarlarkRange::new(
+              range_arg_to_int64(ctx, start),
+              range_arg_to_int64(ctx, stop),
+              1L,
+            ),
           )
         _ =>
           raise EvalErr(
@@ -1135,9 +1153,9 @@ fn builtin_range(
           }
           @value.Value::Range(
             @value.StarlarkRange::new(
-              start.to_int64(),
-              stop.to_int64(),
-              step.to_int64(),
+              range_arg_to_int64(ctx, start),
+              range_arg_to_int64(ctx, stop),
+              range_arg_to_int64(ctx, step),
             ),
           )
         }
