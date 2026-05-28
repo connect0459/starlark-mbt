@@ -706,7 +706,7 @@ fn call_builtin(
               make_eval_error(ctx, "cannot convert float infinity to integer"),
             )
           } else {
-            @value.Value::Int(BigInt::from_int64(f.to_int64()))
+            @value.Value::Int(@value.double_to_bigint(f.trunc()))
           }
         (@value.Value::Bool(b), None) =>
           @value.Value::Int(if b { 1N } else { 0N })

@@ -156,7 +156,7 @@ fn float_to_int(name : String, f : Double) -> Result[@value.Value, String] {
   } else if f.is_nan() {
     Err("\{name}: cannot convert float NaN to integer")
   } else {
-    Ok(@value.Value::Int(BigInt::from_int64(f.to_int64())))
+    Ok(@value.Value::Int(@value.double_to_bigint(f)))
   }
 }
 

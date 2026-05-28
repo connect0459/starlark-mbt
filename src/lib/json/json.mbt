@@ -151,8 +151,51 @@ fn encode_inner(
       s.each(fn(k) { items.push(k) })
       encode_sequence(items.iter(), "set", state)
     }
+    @value.Value::ExtVal(c) =>
+      match c.get_attr_names() {
+        Some(names) => encode_ext_val_as_object(c, names, state)
+        None => Err("cannot encode \{@value.type_name(v)} as JSON")
+      }
     _ => Err("cannot encode \{@value.type_name(v)} as JSON")
   }
+}
+
+///|
+fn encode_ext_val_as_object(
+  c : @value.CustomValue,
+  names : Array[String],
+  state : EncodeState,
+) -> Result[String, String] {
+  let sorted = names.copy()
+  sorted.sort()
+  let buf = StringBuilder::new()
+  buf.write_char('{')
+  let mut first = true
+  for name in sorted {
+    match c.get_attr(name) {
+      Err(e) =>
+        return Err("cannot access attribute \{c.get_type_name()}.\{name}: \{e}")
+      Ok(None) =>
+        return Err(
+          "missing attribute \{c.get_type_name()}.\{name} (despite appearing in dir())",
+        )
+      Ok(Some(v)) => {
+        if first {
+          first = false
+        } else {
+          buf.write_char(',')
+        }
+        buf.write_string(json_quote_string(@value.StarlarkString::new(name)))
+        buf.write_char(':')
+        match encode_inner(v, state) {
+          Err(e) => return Err("in field .\{name}: \{e}")
+          Ok(s) => buf.write_string(s)
+        }
+      }
+    }
+  }
+  buf.write_char('}')
+  Ok(buf.to_string())
 }
 
 ///|

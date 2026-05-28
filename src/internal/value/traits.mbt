@@ -56,11 +56,38 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
 }
 
 ///|
+pub fn double_to_bigint(f : Double) -> BigInt {
+  // f must be finite and satisfy f == f.trunc() (no fractional part).
+  // Handles the full double range via IEEE 754 bit extraction.
+  let bits = f.reinterpret_as_uint64()
+  let negative = bits >> 63 != 0UL
+  let biased_exp = ((bits >> 52) & 0x7FFUL).to_int()
+  if biased_exp < 1023 {
+    return 0N
+  }
+  let mantissa = (bits & 0x000FFFFFFFFFFFFFUL) | 0x0010000000000000UL
+  let shift = biased_exp - 1023 - 52
+  let abs_val = if shift >= 0 {
+    BigInt::from_uint64(mantissa) << shift
+  } else {
+    BigInt::from_uint64(mantissa) >> -shift
+  }
+  if negative {
+    -abs_val
+  } else {
+    abs_val
+  }
+}
+
+///|
 fn int_float_eq(n : BigInt, f : Double) -> Bool {
   if f.is_nan() || f.is_inf() {
     return false
   }
-  bigint_to_double(n) == f
+  if f != f.trunc() {
+    return false
+  }
+  n == double_to_bigint(f)
 }
 
 ///|
@@ -243,15 +270,26 @@ pub fn bigint_to_double(n : BigInt) -> Double {
 ///|
 fn int_float_cmp(n : BigInt, f : Double) -> Int {
   if f != f {
-    // f is NaN; NaN > everything, so int < NaN
-    -1
+    -1 // NaN > everything in starlark ordering
   } else if f == @double.infinity {
     -1 // n < +inf
   } else if f == @double.neg_infinity {
     1 // n > -inf
   } else {
-    // finite: compare as float (precision loss possible for large BigInt)
-    float_cmp(bigint_to_double(n), f)
+    // finite f: compare exactly using floor(f)
+    let ffloor = f.floor()
+    let f_floor_big = double_to_bigint(ffloor)
+    if f == ffloor {
+      n.compare(f_floor_big)
+    } else {
+      // f is in (ffloor, ffloor+1); n is an integer
+      let cmp = n.compare(f_floor_big)
+      if cmp <= 0 {
+        -1
+      } else {
+        1
+      }
+    }
   }
 }
 

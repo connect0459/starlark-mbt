@@ -16,6 +16,8 @@ pub fn compare_values(Value, Value) -> Result[Int, String]
 
 pub fn compare_values_depth(Value, Value, Int) -> Result[Int, String]
 
+pub fn double_to_bigint(Double) -> @bigint.BigInt
+
 pub fn floor_div(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
 
 pub fn freeze_value(Value) -> Unit
