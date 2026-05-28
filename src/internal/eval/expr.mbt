@@ -838,8 +838,23 @@ fn call_builtin(
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "hash() takes exactly one argument"))
       }
-      let h = check(ctx, @value.starlark_hash(pos_args[0]))
-      @value.Value::Int(BigInt::from_int64(h.to_int64()))
+      match pos_args[0] {
+        @value.Value::String(s) =>
+          @value.Value::Int(
+            BigInt::from_int64(@value.java_string_hash(s).to_int64()),
+          )
+        @value.Value::Bytes(b) => {
+          let h = check(ctx, @value.starlark_hash(@value.Value::Bytes(b)))
+          @value.Value::Int(BigInt::from_int64(h.to_int64()))
+        }
+        v =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "hash: got \{@value.type_name(v)}, want string or bytes",
+            ),
+          )
+      }
     }
     "dir" => {
       if pos_args.length() != 1 {

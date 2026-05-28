@@ -183,6 +183,22 @@ test "builtins.star: all assertions pass" {
 }
 
 ///|
+let hash_type_errors_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: hash(True), "hash: got bool, want string or bytes")
+  #|assert.fails(lambda: hash(1), "hash: got int, want string or bytes")
+  #|assert.fails(lambda: hash(None), "hash: got NoneType, want string or bytes")
+  #|assert.fails(lambda: hash((1, 2)), "hash: got tuple, want string or bytes")
+
+///|
+test "hash() rejects non-string/bytes types with error" {
+  let errs = run_star_string(hash_type_errors_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let builtins_fail_chunked : String =
   #|fail() ### `fail: $`
   #|---

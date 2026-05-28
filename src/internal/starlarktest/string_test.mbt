@@ -384,6 +384,28 @@ let string_star_src : String =
   #|assert.eq("Apricot".removeprefix("pr"), "Apricot")
 
 ///|
+let string_hash_parity_src : String =
+  #|load("assert.star", "assert")
+  #|# hash must follow java.lang.String.hashCode
+  #|wanthash = {
+  #|    "": 0,
+  #|    "\0" * 100: 0,
+  #|    "hello": 99162322,
+  #|    "world": 113318802,
+  #|    "Hello, 世界!": 417292677,
+  #|}
+  #|gothash = {s: hash(s) for s in wanthash}
+  #|assert.eq(gothash, wanthash)
+
+///|
+test "string hash follows java.lang.String.hashCode" {
+  let errs = run_star_string(string_hash_parity_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "string.star: all assertions pass" {
   let errs = run_star_string(string_star_src)
   if errs.length() != 0 {

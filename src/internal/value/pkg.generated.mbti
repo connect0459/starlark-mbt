@@ -24,6 +24,8 @@ pub fn freeze_value(Value) -> Unit
 
 pub fn iterate(Value) -> Result[StarlarkIterator, String]
 
+pub fn java_string_hash(StarlarkString) -> Int
+
 pub fn length_of(Value) -> Result[Int, String]
 
 pub fn repr(Value) -> String

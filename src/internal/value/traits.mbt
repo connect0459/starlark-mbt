@@ -141,6 +141,19 @@ fn fnv1a(bytes : Bytes) -> UInt {
 }
 
 ///|
+pub fn java_string_hash(s : StarlarkString) -> Int {
+  let b = s.bytes
+  let mut h : Int = 0
+  let mut pos = 0
+  while pos < b.length() {
+    let (cp, n) = @utf8util.utf8_decode_rune(b, pos)
+    pos += n
+    h = 31 * h + (if cp < 0 { 0xFFFD } else { cp })
+  }
+  h
+}
+
+///|
 fn hash_int(n : Int) -> UInt {
   n.reinterpret_as_uint() * fnv_prime
 }
