@@ -748,6 +748,11 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 - [x] `len_of(v) -> Int` — sequence length; -1 for non-sequences (starlark-go `Len`)
 - [x] `iterate(v) -> Result[StarlarkIterator, EvalError]` — public iterator access
 - [x] `call(thread, fn, args, kwargs) -> Result[Value, EvalError]` — host-side callable invocation
+- [x] `binary(op, x, y) -> Result[Value, EvalError]` — string-keyed binary operator dispatch
+- [x] `unary(op, x) -> Result[Value, EvalError]` — string-keyed unary operator dispatch
+- [x] `compare(op, x, y) -> Result[Bool, EvalError]` — string-keyed comparison dispatch
+- [x] `StringDict` named type — wrapper around `Map[String, Value]` with `keys()`, `has()`,
+      `freeze()`, `get()`, `set()`, `from_map()` methods; `keys()` returns lexicographic order
 
 ### Additional type re-exports
 
