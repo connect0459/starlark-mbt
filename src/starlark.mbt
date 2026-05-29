@@ -145,8 +145,19 @@ pub fn equal(a : Value, b : Value) -> Result[Bool, EvalError] {
 ///|
 pub fn number_to_int(v : Value) -> Int64? {
   match v {
-    @value.Value::Int(n) => Some(n.to_int64())
-    @value.Value::Float(f) => Some(f.to_int64())
+    @value.Value::Int(n) =>
+      if n.compare_int64(@int64.MAX_VALUE) > 0 ||
+        n.compare_int64(@int64.MIN_VALUE) < 0 {
+        None
+      } else {
+        Some(n.to_int64())
+      }
+    @value.Value::Float(f) =>
+      if f.is_nan() || f.is_inf() {
+        None
+      } else {
+        Some(f.to_int64())
+      }
     _ => None
   }
 }

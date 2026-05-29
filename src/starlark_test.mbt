@@ -186,6 +186,32 @@ test "number_to_int truncates Float to Int" {
 }
 
 ///|
+test "number_to_int returns None for Int that overflows Int64" {
+  let big = @starlark.Value::Int(
+    BigInt::from_string("1208925819614629174706176"),
+  )
+  assert_true(@starlark.number_to_int(big) is None)
+}
+
+///|
+test "number_to_int returns None for Float NaN" {
+  let nan = @starlark.Value::Float(0.0 / 0.0)
+  assert_true(@starlark.number_to_int(nan) is None)
+}
+
+///|
+test "number_to_int returns None for Float positive Inf" {
+  let inf = @starlark.Value::Float(1.0 / 0.0)
+  assert_true(@starlark.number_to_int(inf) is None)
+}
+
+///|
+test "number_to_int returns None for Float negative Inf" {
+  let inf = @starlark.Value::Float(-1.0 / 0.0)
+  assert_true(@starlark.number_to_int(inf) is None)
+}
+
+///|
 test "number_to_int returns None for non-number" {
   let v = @starlark.Value::String(@starlark.StarlarkString::new("hi"))
   assert_true(@starlark.number_to_int(v) is None)
