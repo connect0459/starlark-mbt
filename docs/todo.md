@@ -934,6 +934,14 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       `starlarktest/error_format_test.mbt`: one for the simple `f→g` chain verifying
       `f` shows 4:4 (fixed), and one for the deep `i→h→min→g→f` chain verifying each
       intermediate frame shows the call-site within that function. Commit: `c79a41c`
+- [x] **BUG-22**: `int()` error message for unsupported types changed from
+      `"int() argument must be a number or string, not 'T'"` to
+      `"int: cannot convert T to int"`, matching starlark-go `NumberToInt` format.
+      Commit: `022b898`
+- [x] **MISSING-24**: BigInt arithmetic boundary tests — ported starlark-go `TestIntOpts`
+      coverage: Add/Mul/Div/And/Or/Xor/Not/Shift at MaxInt32/MinInt32/MaxUint32 boundaries
+      verifying results that cross int32 range. Tests pass immediately since MoonBit uses
+      native BigInt. Commit: `45ae3e2`
 
 ---
 
