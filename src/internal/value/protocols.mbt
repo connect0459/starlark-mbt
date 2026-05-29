@@ -132,6 +132,7 @@ pub struct CustomValue {
   priv compare_fn : ((Value) -> Int?)?
   priv get_index_fn : ((Int) -> Result[Value, String])?
   priv set_index_fn : ((Int, Value) -> Result[Unit, String])?
+  priv set_key_fn : ((Value, Value) -> Result[Unit, String])?
   priv slice_fn : ((Int, Int, Int) -> Result[Value, String])?
   priv items_fn : (() -> Result[Array[(Value, Value)], String])?
   priv call_fn : ((Array[Value], Array[(String, Value)]) -> Result[
@@ -164,6 +165,7 @@ pub fn CustomValue::new(
     compare_fn: None,
     get_index_fn: None,
     set_index_fn: None,
+    set_key_fn: None,
     slice_fn: None,
     items_fn: None,
     call_fn: None,
@@ -425,6 +427,28 @@ pub fn CustomValue::do_set_index(
 ) -> Result[Unit, String]? {
   match self.set_index_fn {
     Some(f) => Some(f(i, v))
+    None => None
+  }
+}
+
+///|
+// HasSetKey hook: `x[k] = v` for custom mapping values, where `k` is an
+// arbitrary Starlark value (not restricted to an integer index).
+pub fn CustomValue::with_set_key(
+  self : CustomValue,
+  set_key_fn : (Value, Value) -> Result[Unit, String],
+) -> CustomValue {
+  { ..self, set_key_fn: Some(set_key_fn) }
+}
+
+///|
+pub fn CustomValue::do_set_key(
+  self : CustomValue,
+  k : Value,
+  v : Value,
+) -> Result[Unit, String]? {
+  match self.set_key_fn {
+    Some(f) => Some(f(k, v))
     None => None
   }
 }

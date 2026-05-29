@@ -238,3 +238,35 @@ test "ExtVal compare_fn: < operator dispatches to compare_fn" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "ExtVal HasSetKey: x[k]=v dispatches to set_key_fn for arbitrary keys (MISSING-57)" {
+  let backing = @value.StarlarkDict::new()
+  let cv = @value.CustomValue::new(fn() { "mymap" }, fn() { true }, fn() {
+      "<mymap>"
+    })
+    .with_set_key(fn(k, v) { backing.set(k, v) })
+    .with_contains(fn(k) {
+      match backing.get(k) {
+        Ok(Some(_)) => Ok(true)
+        Ok(None) => Ok(false)
+        Err(e) => Err(e)
+      }
+    })
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("m", @value.Value::ExtVal(cv))
+  let errs = run_with_predeclared(
+    predeclared,
+    (
+      #|load("assert.star", "assert")
+      #|m["a"] = 1
+      #|m[42] = 2
+      #|assert.eq("a" in m, True)
+      #|assert.eq(42 in m, True)
+      #|assert.eq("missing" in m, False)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

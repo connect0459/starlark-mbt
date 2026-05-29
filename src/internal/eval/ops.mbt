@@ -1451,32 +1451,39 @@ fn set_index(
       }
     @value.Value::Dict(d) => check(ctx, d.set(idx, val))
     @value.Value::ExtVal(c) =>
-      match idx {
-        @value.Value::Int(i) => {
-          let len = match c.get_length() {
-            Ok(n) => n
-            Err(e) => raise EvalErr(make_eval_error(ctx, e))
-          }
-          let j = check(ctx, adjust_index(i, len, @value.type_name(obj)))
-          match c.do_set_index(j, val) {
-            Some(Ok(_)) => ()
-            Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
-            None =>
+      // HasSetKey (arbitrary key) takes precedence; otherwise fall back to the
+      // integer-indexed HasSetIndex hook.
+      match c.do_set_key(idx, val) {
+        Some(Ok(_)) => ()
+        Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+        None =>
+          match idx {
+            @value.Value::Int(i) => {
+              let len = match c.get_length() {
+                Ok(n) => n
+                Err(e) => raise EvalErr(make_eval_error(ctx, e))
+              }
+              let j = check(ctx, adjust_index(i, len, @value.type_name(obj)))
+              match c.do_set_index(j, val) {
+                Some(Ok(_)) => ()
+                Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
+                None =>
+                  raise EvalErr(
+                    make_eval_error(
+                      ctx,
+                      "'\{@value.type_name(obj)}' object does not support item assignment",
+                    ),
+                  )
+              }
+            }
+            _ =>
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "'\{@value.type_name(obj)}' object does not support item assignment",
+                  "'\{@value.type_name(obj)}' indices must be integers",
                 ),
               )
           }
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "'\{@value.type_name(obj)}' indices must be integers",
-            ),
-          )
       }
     _ =>
       raise EvalErr(
