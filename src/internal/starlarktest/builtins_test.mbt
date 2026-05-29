@@ -296,3 +296,22 @@ test "builtin/method error messages use nameErr prefix (MISSING-41)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+// MISSING-65: sorted must be stable — equal-key elements keep their original
+// relative order, including with reverse=True (starlark-go uses sort.Stable).
+let sorted_stability_src : String =
+  #|load("assert.star", "assert")
+  #|pairs = [(1, "a"), (1, "b"), (0, "c"), (1, "d"), (0, "e")]
+  #|by_key = sorted(pairs, key=lambda p: p[0])
+  #|assert.eq(by_key, [(0, "c"), (0, "e"), (1, "a"), (1, "b"), (1, "d")])
+  #|rev = sorted(pairs, key=lambda p: p[0], reverse=True)
+  #|assert.eq(rev, [(1, "a"), (1, "b"), (1, "d"), (0, "c"), (0, "e")])
+
+///|
+test "sorted is stable for equal keys including reverse (MISSING-65)" {
+  let errs = run_star_string(sorted_stability_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

@@ -1693,7 +1693,17 @@ fn builtin_sorted(
         sort_err = Some(make_eval_error(ctx, msg))
         0
       }
-      Ok(c) => if reverse { -c } else { c }
+      Ok(c) => {
+        let cc = if reverse { -c } else { c }
+        // Break ties by original index so the sort is stable regardless of the
+        // underlying sort_by's stability; reverse keeps equal-key order (not
+        // reversed), matching starlark-go's sort.Stable.
+        if cc != 0 {
+          cc
+        } else {
+          a - b
+        }
+      }
     }
   })
   match sort_err {
