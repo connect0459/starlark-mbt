@@ -1939,45 +1939,6 @@ fn call_list_method(
       }
       raise EvalErr(make_eval_error(ctx, "value not in list"))
     }
-    "count" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "count() takes exactly one argument"),
-        )
-      }
-      let item = pos_args[0]
-      let mut count = 0
-      for v in l.iter() {
-        if @value.starlark_equals(v, item) {
-          count += 1
-        }
-      }
-      @value.Value::Int(BigInt::from_int(count))
-    }
-    "sort" => {
-      let mut sort_err : @errors.EvalError? = None
-      check(
-        ctx,
-        l.sort_by(fn(a, b) {
-          match @value.compare_values(a, b) {
-            Err(msg) => {
-              sort_err = Some(make_eval_error(ctx, msg))
-              0
-            }
-            Ok(c) => c
-          }
-        }),
-      )
-      |> ignore
-      match sort_err {
-        Some(e) => raise EvalErr(e)
-        None => @value.Value::None
-      }
-    }
-    "reverse" => {
-      check(ctx, l.reverse()) |> ignore
-      @value.Value::None
-    }
     _ =>
       raise EvalErr(make_eval_error(ctx, "list has no method '\{method_name}'"))
   }

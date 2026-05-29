@@ -568,47 +568,9 @@ test "exec_file: list.remove deletes first matching element" {
 }
 
 ///|
-test "exec_file: list.sort orders elements in place" {
-  match exec_b("lst = [3, 1, 4, 1]\nlst.sort()") {
-    Ok(m) =>
-      match g(m, "lst") {
-        Some(@value.Value::List(l)) => {
-          assert_true(l.get(0) == @value.Value::Int(1N))
-          assert_true(l.get(3) == @value.Value::Int(4N))
-        }
-        _ => assert_true(false)
-      }
-    Err(e) => fail(e.to_string())
-  }
-}
-
-///|
-test "exec_file: list.reverse reverses elements in place" {
-  match exec_b("lst = [1, 2, 3]\nlst.reverse()") {
-    Ok(m) =>
-      match g(m, "lst") {
-        Some(@value.Value::List(l)) => {
-          assert_true(l.get(0) == @value.Value::Int(3N))
-          assert_true(l.get(2) == @value.Value::Int(1N))
-        }
-        _ => assert_true(false)
-      }
-    Err(e) => fail(e.to_string())
-  }
-}
-
-///|
 test "exec_file: list.index returns position of first matching element" {
   match exec_b("i = [10, 20, 30].index(20)") {
     Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(1N)))
-    Err(e) => fail(e.to_string())
-  }
-}
-
-///|
-test "exec_file: list.count returns number of occurrences" {
-  match exec_b("n = [1, 2, 1, 3, 1].count(1)") {
-    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(3N)))
     Err(e) => fail(e.to_string())
   }
 }
