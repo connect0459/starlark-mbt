@@ -384,6 +384,14 @@ fn call_value(
   kw_args : Array[(String, @value.Value)],
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
+  let depth = ctx.thread.call_stack.length()
+  if depth > 0 {
+    let caller = ctx.thread.call_stack[depth - 1]
+    ctx.thread.call_stack[depth - 1] = @errors.CallFrame::new(
+      caller.name(),
+      pos,
+    )
+  }
   match func_val {
     @value.Value::Function(f) => call_func(ctx, f, pos_args, kw_args, pos)
     @value.Value::Builtin(f) => {

@@ -125,7 +125,7 @@ test "error format: EvalError backtrace includes traceback with call frames" {
         content=(
           #|Traceback (most recent call last):
           #|  test.star:5:2: in <toplevel>
-          #|  test.star:5:2: in f
+          #|  test.star:4:4: in f
           #|  test.star:4:4: in g
           #|Error: unknown binary op: int + string
         ),
@@ -351,7 +351,7 @@ test "error format: builtin method error shows Error-in prefix" {
         content=(
           #|Traceback (most recent call last):
           #|  test.star:3:2: in <toplevel>
-          #|  test.star:3:2: in f
+          #|  test.star:2:10: in f
           #|Error in join: join: in list, want string, got int
         ),
       )
@@ -423,6 +423,71 @@ test "error format: function call from toplevel shows <toplevel> frame (BUG-3)" 
       assert_true(bt.contains("in f"))
       assert_true(bt.contains("in g"))
     }
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: intermediate frame shows call-site within function (BUG-21)" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|def g():
+    #|  return 1 + "oops"
+    #|def f():
+    #|  g()
+    #|f()
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      inspect(
+        e.backtrace(),
+        content=(
+          #|Traceback (most recent call last):
+          #|  test.star:5:2: in <toplevel>
+          #|  test.star:4:4: in f
+          #|  test.star:4:4: in g
+          #|Error: unknown binary op: int + string
+        ),
+      )
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: deep call chain frames show call positions (BUG-21)" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|def f(x): return 1//x
+    #|def g(x): return f(x)
+    #|def h(): return min([1, 2, 0], key=g)
+    #|def i(): return h()
+    #|i()
+  let result = @eval.exec_file(
+    thread,
+    "crash.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      inspect(
+        e.backtrace(),
+        content=(
+          #|Traceback (most recent call last):
+          #|  crash.star:5:2: in <toplevel>
+          #|  crash.star:4:18: in i
+          #|  crash.star:3:20: in h
+          #|  <builtin>: in min
+          #|  crash.star:2:19: in g
+          #|  crash.star:2:19: in f
+          #|Error: integer division by zero
+        ),
+      )
     Ok(_) => abort("expected error")
   }
 }
