@@ -527,6 +527,32 @@ test "exec_file: print sends output through Thread print callback" {
   }
 }
 
+///|
+test "exec_file: print outputs Bytes as raw decoded string, not repr" {
+  let msgs : Array[String] = []
+  let t = Thread::with_print("test", fn(_, msg) { msgs.push(msg) })
+  match exec_file(t, "<test>", "print(b\"hello\")", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], "hello")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: print outputs Bytes with hex escapes as raw decoded string" {
+  let msgs : Array[String] = []
+  let t = Thread::with_print("test", fn(_, msg) { msgs.push(msg) })
+  match exec_file(t, "<test>", "print(b\"\\x61\\x62\")", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], "ab")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
 // --- List methods ---
 
 ///|

@@ -720,7 +720,11 @@ fn call_builtin(
           buf.write_string(sep)
         }
         first = false
-        buf.write_string(@value.to_str(arg))
+        match arg {
+          @value.Value::Bytes(b) =>
+            buf.write_string(@value.StarlarkString::from_bytes(b).raw())
+          _ => buf.write_string(@value.to_str(arg))
+        }
       }
       (ctx.thread.print_fn)(ctx.thread, buf.to_string())
       @value.Value::None
