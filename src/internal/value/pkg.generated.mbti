@@ -22,6 +22,8 @@ pub fn double_to_bigint(Double) -> @bigint.BigInt
 
 pub fn floor_div(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
 
+pub fn format_float(Double) -> String
+
 pub fn freeze_value(Value) -> Unit
 
 pub fn iterate(Value) -> Result[StarlarkIterator, String]
