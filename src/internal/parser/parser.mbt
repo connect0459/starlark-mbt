@@ -564,11 +564,15 @@ fn terminates_expr_list(tok : @lexer.Token) -> Bool {
 }
 
 ///|
+// Parses for-loop / comprehension target variables. Targets are restricted to
+// primary-with-suffix expressions (identifiers, `x.attr`, `x[i]`, groupings) —
+// matching starlark-go `parseForLoopVariables`. This rejects targets like
+// `for a + b in xs`, which would otherwise parse as a binary expression.
 fn Parser::parse_expr_list_as_expr(
   self : Parser,
 ) -> @syntax.Expr raise ParseErr {
   let p = self.pos
-  let first = self.parse_test()
+  let first = self.parse_primary()
   if self.tok != @lexer.Token::Comma {
     return first
   }
@@ -578,7 +582,7 @@ fn Parser::parse_expr_list_as_expr(
     if self.tok == @lexer.Token::In || is_stmt_terminator(self.tok) {
       break
     }
-    items.push(self.parse_test())
+    items.push(self.parse_primary())
   }
   if items.length() == 1 {
     first

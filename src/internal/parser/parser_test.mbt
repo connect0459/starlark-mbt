@@ -906,3 +906,27 @@ test "parenthesized singleton tuple with trailing comma is allowed (MISSING-44)"
     Err(e) => fail("unexpected error: \{e.to_string()}")
   }
 }
+
+///|
+test "for-loop target with binary operator is rejected (MISSING-45)" {
+  match @parser.parse_file("test.star", "for a + b in xs:\n  pass\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for non-primary for-target")
+  }
+}
+
+///|
+test "comprehension target with binary operator is rejected (MISSING-45)" {
+  match @parser.parse_expr("test.star", "[x for a + b in xs]") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for non-primary comprehension target")
+  }
+}
+
+///|
+test "for-loop with index/attribute targets parses (MISSING-45)" {
+  match @parser.parse_file("test.star", "for a[0], b.c in xs:\n  pass\n") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.to_string()}")
+  }
+}
