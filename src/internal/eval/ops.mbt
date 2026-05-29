@@ -826,19 +826,6 @@ fn int64_to_hex(n : BigInt, upper : Bool) -> String {
 }
 
 ///|
-fn format_special_float(f : Double) -> String? {
-  if f.is_nan() {
-    Some("nan")
-  } else if f == @double.infinity {
-    Some("+inf")
-  } else if f == @double.neg_infinity {
-    Some("-inf")
-  } else {
-    None
-  }
-}
-
-///|
 fn format_padded_int(n : Int, width : Int) -> String {
   let s = n.to_string()
   let pad = width - s.length()
@@ -935,37 +922,7 @@ fn format_float_f(f : Double) -> String {
 
 ///|
 fn format_float_g(f : Double) -> String {
-  match format_special_float(f) {
-    Some(s) => return s
-    None => ()
-  }
-  if f == 0.0 && 1.0 / f < 0.0 {
-    return "-0.0"
-  }
-  let s = f.to_string()
-  if s.contains("e") || s.contains(".") {
-    return s
-  }
-  let (sign_s, abs_s) = if s.has_prefix("-") { ("-", s[1:]) } else { ("", s) }
-  let n = abs_s.length()
-  if n >= 7 {
-    let exp = n - 1
-    let first = abs_s[0:1]
-    let rest = abs_s[1:]
-    let mz = first + "." + rest
-    let mut ei = mz.length()
-    while ei > 0 && mz[ei - 1:ei] == "0" {
-      ei -= 1
-    }
-    if ei > 0 && mz[ei - 1:ei] == "." {
-      ei -= 1
-    }
-    let mantissa = mz[0:ei]
-    let exp_str = if exp < 10 { "0\{exp}" } else { exp.to_string() }
-    "\{sign_s}\{mantissa}e+\{exp_str}"
-  } else {
-    s + ".0"
-  }
+  @value.format_float(f)
 }
 
 ///|

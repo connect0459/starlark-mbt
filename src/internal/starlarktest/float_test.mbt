@@ -476,6 +476,34 @@ test "float.star: string formatting" {
 }
 
 ///|
+let float_go_fmt_src : String =
+  #|load("assert.star", "assert")
+  #|# str()/repr() of floats must match starlark-go behavior (BUG-31)
+  #|# Large round numbers with 7+ integer digits -> scientific
+  #|assert.eq(str(1e20), "1e+20")
+  #|assert.eq(str(1e6), "1e+06")
+  #|assert.eq(str(1e10), "1e+10")
+  #|assert.eq(str(-1e20), "-1e+20")
+  #|# 6-digit integers stay fixed
+  #|assert.eq(str(1e5), "100000.0")
+  #|# Small numbers: exponent < -4 -> scientific
+  #|assert.eq(str(1e-5), "1e-05")
+  #|assert.eq(str(1e-7), "1e-07")
+  #|assert.eq(str(-1e-5), "-1e-05")
+  #|# Normal decimals stay fixed
+  #|assert.eq(str(123.0), "123.0")
+  #|# exp=-4 is NOT scientific (threshold is < -4, not <= -4)
+  #|assert.eq(str(1e-4), "0.0001")
+
+///|
+test "float.star: str() uses Go-compatible g-format for large/small floats (BUG-31)" {
+  let errs = run_star_string(float_go_fmt_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let float_checktypes_src : String =
   #|load("assert.star", "assert")
   #|

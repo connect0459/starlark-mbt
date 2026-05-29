@@ -854,7 +854,7 @@ fn is_neg_zero(f : Double) -> Bool {
 }
 
 ///|
-fn format_float(f : Double) -> String {
+pub fn format_float(f : Double) -> String {
   if f.is_nan() {
     return "nan"
   }
@@ -868,11 +868,118 @@ fn format_float(f : Double) -> String {
     return "-0.0"
   }
   let s = f.to_string()
-  if s.contains(".") || s.contains("e") || s.contains("E") {
-    s
-  } else {
-    s + ".0"
+  // Already in scientific notation: normalize to Go format (e+XX, 2-digit exponent).
+  let e_idx = float_find_e(s)
+  if e_idx >= 0 {
+    return float_normalize_sci(s, e_idx)
   }
+  let neg = s.has_prefix("-")
+  let sign = if neg { "-" } else { "" }
+  let abs_s = if neg { s[1:].to_owned() } else { s }
+  if abs_s.contains(".") {
+    // Decimal form.  Only small numbers starting with "0." may need scientific.
+    if abs_s.has_prefix("0.") {
+      let frac = abs_s[2:].to_owned()
+      let leading = float_count_leading_zeros(frac)
+      // exponent = -(leading + 1); scientific when exp < -4 i.e. leading >= 4
+      if leading >= 4 {
+        let sig = frac[leading:].to_owned()
+        return sign + float_small_to_sci(sig, leading + 1)
+      }
+    }
+    return s
+  } else {
+    // Integer form: check whether scientific notation is needed.
+    return sign + float_int_to_str(abs_s)
+  }
+}
+
+// Find index of 'e' or 'E' in s; returns -1 if not found.
+
+///|
+fn float_find_e(s : String) -> Int {
+  let n = s.length()
+  let mut i = 0
+  while i < n {
+    let c = s[i:i + 1]
+    if c == "e" || c == "E" {
+      return i
+    }
+    i += 1
+  }
+  -1
+}
+
+// Normalize a scientific-notation string to Go's "e+XX" / "e-XX" (min 2 digit exp).
+
+///|
+fn float_normalize_sci(s : String, e_idx : Int) -> String {
+  let mantissa = s[0:e_idx].to_owned()
+  let exp_part = s[e_idx + 1:].to_owned()
+  let (exp_sign, exp_digits) = if exp_part.has_prefix("+") {
+    ("+", exp_part[1:].to_owned())
+  } else if exp_part.has_prefix("-") {
+    ("-", exp_part[1:].to_owned())
+  } else {
+    ("+", exp_part)
+  }
+  let exp_str = if exp_digits.length() < 2 {
+    "0" + exp_digits
+  } else {
+    exp_digits
+  }
+  // Scientific notation already satisfies the "has decimal or exponent" requirement;
+  // do NOT append ".0" to the mantissa.
+  mantissa + "e" + exp_sign + exp_str
+}
+
+// Count leading '0' chars in frac (the digits after "0.").
+
+///|
+fn float_count_leading_zeros(frac : String) -> Int {
+  let n = frac.length()
+  let mut i = 0
+  while i < n && frac[i:i + 1] == "0" {
+    i += 1
+  }
+  i
+}
+
+// Build scientific string for a small positive number.
+// sig: significant digits string (no leading zeros), exp_abs: |exponent|.
+
+///|
+fn float_small_to_sci(sig : String, exp_abs : Int) -> String {
+  if sig.length() == 0 {
+    return "0.0"
+  }
+  let first = sig[0:1].to_owned()
+  let rest = sig[1:].to_owned()
+  let mantissa = if rest == "" { first } else { first + "." + rest }
+  let exp_str = if exp_abs < 10 { "0\{exp_abs}" } else { exp_abs.to_string() }
+  mantissa + "e-" + exp_str
+}
+
+// Convert an integer-form float string (no decimal, no exponent) to Go format.
+// Go uses scientific notation when the integer representation has 7 or more digits.
+
+///|
+fn float_int_to_str(abs_s : String) -> String {
+  let n = abs_s.length()
+  if n < 7 {
+    return abs_s + ".0"
+  }
+  // 7+ digits: convert to scientific notation by stripping trailing zeros.
+  let exp = n - 1
+  let mut sig_end = n
+  while sig_end > 1 && abs_s[sig_end - 1:sig_end].to_owned() == "0" {
+    sig_end -= 1
+  }
+  let first = abs_s[0:1].to_owned()
+  let rest_sig = abs_s[1:sig_end].to_owned()
+  let mantissa = if rest_sig == "" { first } else { first + "." + rest_sig }
+  let exp_str = if exp < 10 { "0\{exp}" } else { exp.to_string() }
+  mantissa + "e+" + exp_str
 }
 
 ///|
