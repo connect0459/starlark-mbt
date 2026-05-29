@@ -313,6 +313,63 @@ test "int.star: int() parses 20-digit decimal strings as BigInt (MISSING-21)" {
 }
 
 ///|
+let int_boundary_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|maxint32 = (1 << 31) - 1
+  #|minint32 = -1 << 31
+  #|maxuint32 = (1 << 32) - 1
+  #|
+  #|# Add: crossing int32 boundary
+  #|assert.eq(maxint32 + 1, 0x80000000)
+  #|assert.eq(minint32 - 1, -0x80000001)
+  #|
+  #|# Mul: large products requiring BigInt
+  #|assert.eq(maxint32 * maxint32, 0x3fffffff00000001)
+  #|assert.eq(minint32 * minint32, 0x4000000000000000)
+  #|assert.eq(maxuint32 * maxuint32, 0xfffffffe00000001)
+  #|assert.eq(minint32 * -1, 0x80000000)
+  #|
+  #|# Floor div at int32 boundary
+  #|assert.eq(minint32 // -1, 0x80000000)
+  #|assert.eq((1 << 31) // 2, 0x40000000)
+  #|
+  #|# Bitwise AND
+  #|assert.eq(maxint32 & maxint32, 0x7fffffff)
+  #|assert.eq(minint32 & minint32, -0x80000000)
+  #|assert.eq((1 << 33) & (1 << 32), 0)
+  #|
+  #|# Modulo
+  #|assert.eq((1 << 32) % 2, 0)
+  #|
+  #|# Bitwise OR
+  #|assert.eq((1 << 32) | 0, 0x100000000)
+  #|assert.eq(maxint32 | 0, 0x7fffffff)
+  #|assert.eq(maxuint32 | 0, 0xffffffff)
+  #|assert.eq(minint32 | minint32, -0x80000000)
+  #|
+  #|# Bitwise XOR
+  #|assert.eq(minint32 ^ -1, 0x7fffffff)
+  #|
+  #|# Bitwise NOT
+  #|assert.eq(~minint32, 0x7fffffff)
+  #|assert.eq(~maxint32, -0x80000000)
+  #|
+  #|# Shift: producing values outside int32/int64 range
+  #|assert.eq(1 << 31, 0x80000000)
+  #|assert.eq(1 << 32, 0x100000000)
+  #|assert.eq((maxint32 + 1) >> 1, 0x40000000)
+  #|assert.eq((minint32 * 2) >> 1, -0x80000000)
+
+///|
+test "int.star: BigInt arithmetic boundary tests (MISSING-24)" {
+  let errs = run_star_string(int_boundary_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let int_unsupported_type_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: int([]), "int: cannot convert list to int")
