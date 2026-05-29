@@ -1016,6 +1016,19 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       `str_byte_slice`/`clamp_byte_index` helpers), consistent with subscript and
       `len()`. Removed the now-unused String-based `rfind_substr`/`count_substr`.
       Commit: `e4d407c`
+- [x] **MISSING-30/31/32/33**: String methods silently ignored excess positional
+      args, unknown keyword args, and wrong-typed optionals — fixed in `eval/expr.mbt`
+      with shared `check_positional`/`arg_as_string`/`arg_as_int` helpers mirroring
+      starlark-go `UnpackPositionalArgs`. `find`/`count`/`index`/`rindex`/`rfind`/
+      `startswith`/`endswith` reject excess/keyword args; `strip`/`lstrip`/`rstrip`
+      reject non-string chars; `replace` rejects a non-int count; `split`/`rsplit`
+      reject keyword args and validate separator/maxsplit types. Commit: `5db0691`
+- [x] **MISSING-34/35/36**: Builtins silently ignored argument errors — fixed in
+      `eval/expr.mbt`: `dict.update` rejects >1 positional arg and reports element
+      index/length in bad-pair errors; `enumerate`/`range` report the offending
+      parameter and reject keyword/excess args instead of defaulting non-int values;
+      `bytes`/`chr` reject keyword arguments and `abs`/`hash` route arity through
+      `check_positional`. Commit: `48918c7`
 
 ---
 
