@@ -847,6 +847,19 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       int. Commit: `c23ab13`
 - [x] **MISSING-6**: `set("abc")` and `set() | "abc"` error tests — added to
       `string_not_iterable_src` in `starlarktest/string_test.mbt`. Commit: `01d4b23`
+- [x] **BUG-9** (bugfix.md BUG-5): `%(name)s` dict-keyed `%` string formatting not
+      implemented — fixed in `eval/ops.mbt`: `percent_format` now detects `%(key)spec`
+      syntax, looks up key in a Dict arg, and skips "too many arguments" check when the
+      arg is a Mapping. Commit: `f3ecb44`
+- [x] **BUG-10** (bugfix.md BUG-6): `%e` and `%f` format specifiers used
+      `f.to_string()` (shortest repr) instead of 6-decimal printf precision — fixed in
+      `eval/ops.mbt`: `format_float_e` now uses `@math.log10` + adjustment loop for
+      `"1.230000e+02"` output; `format_float_f` added for `"123.000000"` output; error
+      message changed to `"%e format requires float, not string"`. Commit: `f3ecb44`
+- [x] **MISSING-7**: `%e`/`%f` test cases from `float.star` lines 410–434 — enabled in
+      `starlarktest/float_test.mbt`. Commit: `f3ecb44`
+- [x] **MISSING-8**: Dict-keyed `%` format test cases from `string.star` lines 177–178
+      — added to `starlarktest/string_test.mbt`. Commit: `f3ecb44`
 
 ---
 
