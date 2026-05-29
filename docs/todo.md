@@ -1071,6 +1071,37 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 - [x] **MISSING-52**: `load` rejects empty / leading-underscore source identifiers
       ("load: empty identifier" / "load: names with leading underscores are not
       exported: NAME") (`resolver/resolver.mbt`). Commit: `3fe9c9e`
+- [x] **MISSING-53**: `Thread.set_print` / `set_loader` allow a single thread to
+      carry print, loader, and step budget together instead of mutually-exclusive
+      constructors (`eval/eval.mbt`). Commit: `1368603`
+- [x] **MISSING-56**: `exec_repl_chunk` re-exported from the public façade
+      (`src/starlark.mbt`). Commit: `1368603`
+- [x] **MISSING-57**: `HasSetKey` hook — `CustomValue.with_set_key` lets embedders
+      implement `x[k]=v` for arbitrary keys; `set_index` dispatch tries it before the
+      integer-indexed hook (`value/protocols.mbt`, `eval/ops.mbt`). Commit: `7c55622`
+- [x] **MISSING-59**: `set_max_steps` no longer resets the accumulated step counter
+      (matching starlark-go `SetMaxExecutionSteps`); reverts the incorrect BUG-12
+      side effect. Use `reset_steps` to zero it (`eval/eval.mbt`). Commit: `1368603`
+- [x] **MISSING-65**: `sorted` is now stable via an explicit original-index
+      tie-break (never reversed), independent of `Array::sort_by` stability
+      (`eval/expr.mbt`). Commit: `20553a7`
+
+### Deferred public-API gaps (require larger surface/architectural change)
+
+- [ ] **MISSING-54**: No `Eval`/`EvalOptions` for evaluating arbitrary source as an
+      expression beyond `eval_expr`. Low value — `eval_expr` covers the expression
+      case and `exec_file` covers statements.
+- [ ] **MISSING-55**: No `FileProgram` building a `Program` from an already-parsed
+      `syntax.File`; would require exposing the internal `syntax.File` type through
+      the public façade.
+- [ ] **MISSING-58**: `Universe` is not mutably extensible. The `Universe` type is
+      not wired into execution (the actual extension mechanism is `Predeclared`),
+      so a `Universe::set` would be cosmetic without an evaluator refactor.
+- [ ] **MISSING-60/61/62/63/64**: Intentional/architectural divergences recorded in
+      `.connect0459/bugfix.md` (closed `Value` enum, `\u` in bytes rejected, no
+      bytecode program, `br"..."` permissiveness, future thread-local/Unpacker work).
+- [ ] **MISSING-66**: Bigint/huge-float hashing takes low bits differently from Go;
+      affects only hash bucketing of huge-magnitude keys, not equality. Low impact.
 
 ---
 
