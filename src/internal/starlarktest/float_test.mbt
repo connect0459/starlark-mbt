@@ -345,9 +345,9 @@ let float_conversions_src : String =
   #|assert.ne(True, 1.0)
   #|# float(string)
   #|assert.eq(float("1.1"), 1.1)
-  #|assert.fails(lambda: float("1.1abc"), "could not convert string to float")
-  #|assert.fails(lambda: float("1e100.0"), "could not convert string to float")
-  #|assert.fails(lambda: float("1e1000"), "could not convert string to float")
+  #|assert.fails(lambda: float("1.1abc"), "invalid float literal")
+  #|assert.fails(lambda: float("1e100.0"), "invalid float literal")
+  #|assert.fails(lambda: float("1e1000"), "floating-point number too large")
   #|assert.eq(float("-1.1"), -1.1)
   #|assert.eq(float("+1.1"), +1.1)
   #|assert.eq(float("+Inf"), inf)
@@ -360,8 +360,8 @@ let float_conversions_src : String =
   #|assert.eq(str(float("-inf")), "-inf")
   #|assert.eq(str(float("+InFiniTy")), "+inf")
   #|assert.eq(str(float("-iNFiniTy")), "-inf")
-  #|assert.fails(lambda: float("one point two"), "could not convert string to float")
-  #|assert.fails(lambda: float("1.2.3"), "could not convert string to float")
+  #|assert.fails(lambda: float("one point two"), "invalid float literal")
+  #|assert.fails(lambda: float("1.2.3"), "invalid float literal")
   #|
   #|# int() function
   #|assert.eq(int(0.0), 0)
@@ -523,6 +523,50 @@ let float_bigint_regression_src : String =
 ///|
 test "float.star: int(float(maxint64)) BigInt regression" {
   let errs = run_star_string(float_bigint_regression_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let float_string_errors_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: float("1.1abc"), "invalid float literal")
+  #|assert.fails(lambda: float("1e1000"), "floating-point number too large")
+  #|assert.fails(lambda: float(""), "float: empty string")
+
+///|
+test "float(): string error messages match starlark-go (BUG-4)" {
+  let errs = run_star_string(float_string_errors_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let float_bigint_overflow_src : String =
+  #|load("assert.star", "assert")
+  #|# float(huge_bigint) must raise, not silently return +Infinity (BUG-2)
+  #|huge = 123 << 500 << 500 << 50
+  #|assert.fails(lambda: float(huge), "int too large to convert to float")
+  #|assert.fails(lambda: float(-huge), "int too large to convert to float")
+  #|# mixed int+float arithmetic with huge int must raise (MISSING-5)
+  #|assert.fails(lambda: (1<<500<<500<<500) + 0.0, "int too large to convert to float")
+  #|assert.fails(lambda: 0.0 + (1<<500<<500<<500), "int too large to convert to float")
+  #|assert.fails(lambda: (1<<500<<500<<500) - 0.0, "int too large to convert to float")
+  #|assert.fails(lambda: 0.0 - (1<<500<<500<<500), "int too large to convert to float")
+  #|assert.fails(lambda: (1<<500<<500<<500) * 1.0, "int too large to convert to float")
+  #|assert.fails(lambda: 1.0 * (1<<500<<500<<500), "int too large to convert to float")
+  #|assert.fails(lambda: (1<<500<<500<<500) / 1.0, "int too large to convert to float")
+  #|assert.fails(lambda: 1.0 / (1<<500<<500<<500), "int too large to convert to float")
+  #|assert.fails(lambda: (1<<500<<500<<500) // 1.0, "int too large to convert to float")
+  #|assert.fails(lambda: 1.0 // (1<<500<<500<<500), "int too large to convert to float")
+  #|assert.fails(lambda: (1<<500<<500<<500) % 1.0, "int too large to convert to float")
+  #|assert.fails(lambda: 1.0 % (1<<500<<500<<500), "int too large to convert to float")
+
+///|
+test "float(huge_bigint) raises int too large (BUG-2, MISSING-5)" {
+  let errs = run_star_string(float_bigint_overflow_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

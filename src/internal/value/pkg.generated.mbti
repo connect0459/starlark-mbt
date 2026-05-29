@@ -10,6 +10,8 @@ import {
 // Values
 pub fn bigint_to_double(@bigint.BigInt) -> Double
 
+pub fn bigint_to_finite_double(@bigint.BigInt) -> Result[Double, String]
+
 pub let compare_limit : Int
 
 pub fn compare_values(Value, Value) -> Result[Int, String]

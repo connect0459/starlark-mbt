@@ -785,25 +785,39 @@ fn call_builtin(
         match pos_args[0] {
           @value.Value::Float(f) => @value.Value::Float(f)
           @value.Value::Int(n) =>
-            @value.Value::Float(@value.bigint_to_double(n))
+            match @value.bigint_to_finite_double(n) {
+              Ok(f) => @value.Value::Float(f)
+              Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
+            }
           @value.Value::Bool(b) =>
             @value.Value::Float(if b { 1.0 } else { 0.0 })
           @value.Value::String(s) => {
-            let raw = s.raw().trim()
+            let raw = s.raw().trim().to_owned()
+            if raw.length() == 0 {
+              raise EvalErr(make_eval_error(ctx, "float: empty string"))
+            }
             let f = match raw.to_lower() {
               "inf" | "+inf" | "infinity" | "+infinity" => @double.infinity
               "-inf" | "-infinity" => @double.neg_infinity
               "nan" | "+nan" | "-nan" => @double.not_a_number
-              _ =>
-                @string.parse_double(raw) catch {
-                  _ =>
-                    raise EvalErr(
-                      make_eval_error(
-                        ctx,
-                        "float() could not convert string to float: \"\{s.raw()}\"",
-                      ),
-                    )
+              _ => {
+                let parsed = @string.parse_double(raw) catch {
+                  _ => {
+                    let msg = if is_float_syntax(raw) {
+                      "floating-point number too large"
+                    } else {
+                      "invalid float literal: \{raw}"
+                    }
+                    raise EvalErr(make_eval_error(ctx, msg))
+                  }
                 }
+                if parsed.is_inf() {
+                  raise EvalErr(
+                    make_eval_error(ctx, "floating-point number too large"),
+                  )
+                }
+                parsed
+              }
             }
             @value.Value::Float(f)
           }
@@ -4096,4 +4110,44 @@ fn push_unique_name(name : String, out : Array[String]) -> Unit {
   if !out.contains(name) {
     out.push(name)
   }
+}
+
+///|
+fn is_float_syntax(s : String) -> Bool {
+  let n = s.length()
+  let mut i = 0
+  if i < n && (s[i] == '+' || s[i] == '-') {
+    i += 1
+  }
+  let int_start = i
+  while i < n && s[i] >= '0' && s[i] <= '9' {
+    i += 1
+  }
+  let has_int_digits = i > int_start
+  let mut has_frac_digits = false
+  if i < n && s[i] == '.' {
+    i += 1
+    let frac_start = i
+    while i < n && s[i] >= '0' && s[i] <= '9' {
+      i += 1
+    }
+    has_frac_digits = i > frac_start
+  }
+  if !has_int_digits && !has_frac_digits {
+    return false
+  }
+  if i < n && (s[i] == 'e' || s[i] == 'E') {
+    i += 1
+    if i < n && (s[i] == '+' || s[i] == '-') {
+      i += 1
+    }
+    let exp_start = i
+    while i < n && s[i] >= '0' && s[i] <= '9' {
+      i += 1
+    }
+    if i == exp_start {
+      return false
+    }
+  }
+  i == n
 }

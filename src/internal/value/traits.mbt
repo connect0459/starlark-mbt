@@ -281,6 +281,16 @@ pub fn bigint_to_double(n : BigInt) -> Double {
 }
 
 ///|
+pub fn bigint_to_finite_double(n : BigInt) -> Result[Double, String] {
+  let f = @string.parse_double(n.to_string()) catch { _ => @double.infinity }
+  if f.is_inf() {
+    Err("int too large to convert to float")
+  } else {
+    Ok(f)
+  }
+}
+
+///|
 fn int_float_cmp(n : BigInt, f : Double) -> Int {
   if f != f {
     -1 // NaN > everything in starlark ordering

@@ -156,6 +156,14 @@ fn eval_binary(
 }
 
 ///|
+fn finite_double(ctx : EvalContext, n : BigInt) -> Double raise EvalErr {
+  match @value.bigint_to_finite_double(n) {
+    Ok(f) => f
+    Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
+  }
+}
+
+///|
 fn eval_add(
   ctx : EvalContext,
   lv : @value.Value,
@@ -167,9 +175,9 @@ fn eval_add(
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(a + b)
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(@value.bigint_to_double(a) + b)
+      @value.Value::Float(finite_double(ctx, a) + b)
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(a + @value.bigint_to_double(b))
+      @value.Value::Float(a + finite_double(ctx, b))
     (@value.Value::String(a), @value.Value::String(b)) => {
       let new_bytes : Array[Byte] = []
       let ab = a.to_bytes()
@@ -236,9 +244,9 @@ fn eval_arith_sub(
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(a - b)
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(@value.bigint_to_double(a) - b)
+      @value.Value::Float(finite_double(ctx, a) - b)
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(a - @value.bigint_to_double(b))
+      @value.Value::Float(a - finite_double(ctx, b))
     (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = @value.StarlarkSet::new()
       ls.each(fn(v) {
@@ -271,9 +279,9 @@ fn eval_mul(
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(a * b)
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(@value.bigint_to_double(a) * b)
+      @value.Value::Float(finite_double(ctx, a) * b)
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(a * @value.bigint_to_double(b))
+      @value.Value::Float(a * finite_double(ctx, b))
     (@value.Value::String(s), @value.Value::Int(n)) =>
       @value.Value::String(check(ctx, repeat_string(s, n)))
     (@value.Value::Int(n), @value.Value::String(s)) =>
@@ -422,9 +430,7 @@ fn eval_div(
       if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "integer division by zero"))
       }
-      @value.Value::Float(
-        @value.bigint_to_double(a) / @value.bigint_to_double(b),
-      )
+      @value.Value::Float(finite_double(ctx, a) / finite_double(ctx, b))
     }
     (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
@@ -436,13 +442,13 @@ fn eval_div(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float division by zero"))
       }
-      @value.Value::Float(@value.bigint_to_double(a) / b)
+      @value.Value::Float(finite_double(ctx, a) / b)
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "float division by zero"))
       }
-      @value.Value::Float(a / @value.bigint_to_double(b))
+      @value.Value::Float(a / finite_double(ctx, b))
     }
     _ =>
       raise EvalErr(
@@ -474,13 +480,13 @@ fn eval_floor_div(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
       }
-      @value.Value::Float((@value.bigint_to_double(a) / b).floor())
+      @value.Value::Float((finite_double(ctx, a) / b).floor())
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
       }
-      @value.Value::Float((a / @value.bigint_to_double(b)).floor())
+      @value.Value::Float((a / finite_double(ctx, b)).floor())
     }
     _ =>
       raise EvalErr(
@@ -522,13 +528,13 @@ fn eval_mod(
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::Float(float_floor_mod(@value.bigint_to_double(a), b))
+      @value.Value::Float(float_floor_mod(finite_double(ctx, a), b))
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b.is_zero() {
         raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
       }
-      @value.Value::Float(float_floor_mod(a, @value.bigint_to_double(b)))
+      @value.Value::Float(float_floor_mod(a, finite_double(ctx, b)))
     }
     (@value.Value::String(s), _) => check(ctx, percent_format(s.raw(), rv))
     _ =>
@@ -806,9 +812,9 @@ fn eval_pow(
     (@value.Value::Float(a), @value.Value::Float(b)) =>
       @value.Value::Float(float_pow(a, b))
     (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(float_pow(@value.bigint_to_double(a), b))
+      @value.Value::Float(float_pow(finite_double(ctx, a), b))
     (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(float_pow(a, @value.bigint_to_double(b)))
+      @value.Value::Float(float_pow(a, finite_double(ctx, b)))
     _ =>
       raise EvalErr(
         make_eval_error(
