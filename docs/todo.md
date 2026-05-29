@@ -960,6 +960,22 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       `eval/expr.mbt`: added `Bytes` special case inside the print loop; decodes via
       `StarlarkString::from_bytes(b).raw()` (lossy UTF-8, consistent with `str(bytes)` and
       starlark-go's `string(b)` transcoding). Commit: `a94faea`
+- [x] **BUG-26**: Global/module-scope variable accessed before assignment gave wrong error
+      message — fixed in `eval/env.mbt` and `eval/eval.mbt`: added `known_module_globals`
+      pre-scan that collects all module-level bindings before execution; `EvalEnv::lookup`
+      now returns `LUnboundModule` for names that are known-but-not-yet-assigned, raising
+      "global variable X referenced before assignment" to match starlark-go. Commit: `aa4c4a8`
+- [x] **BUG-27**: Built-in name shadowed by later module-level assignment returned built-in
+      instead of raising "global variable X referenced before assignment" — same fix as
+      BUG-26; `known_module_globals` pre-scan correctly overrides built-in lookup for names
+      that are assigned anywhere in the module, even before the assignment executes.
+      Commit: `aa4c4a8`
+- [x] **MISSING-27**: `allow_recursion=false` recursion detection diverged from starlark-go
+      in message and timing — moved from resolver-time name-based detection to runtime
+      call-stack identity check using source position as funcode; error message changed from
+      "recursion not allowed: f" to "function f called recursively"; Y-combinator and mutual
+      recursion now detected; lambda renamed from "<lambda>" to "lambda";
+      `option:norecursion` flag added to `run_chunked_string`. Commit: `2b971c8`
 
 ---
 
