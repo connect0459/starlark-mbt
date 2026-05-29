@@ -2232,57 +2232,28 @@ fn call_str_method(
       @value.Value::String(@value.StarlarkString::new(s.raw().to_upper()))
     "lower" =>
       @value.Value::String(@value.StarlarkString::new(s.raw().to_lower()))
-    "strip" => {
+    "strip" | "lstrip" | "rstrip" => {
+      check_positional(ctx, method_name, pos_args, kw_args, 0, 1)
       let chars_opt = if pos_args.length() > 0 {
-        match pos_args[0] {
-          @value.Value::String(c) if c.raw().length() > 0 => Some(c.raw())
-          _ => None
+        let c = arg_as_string(ctx, method_name, pos_args, 0)
+        if c.raw().length() > 0 {
+          Some(c.raw())
+        } else {
+          None
         }
       } else {
         None
       }
+      let from_left = method_name != "rstrip"
+      let from_right = method_name != "lstrip"
       let result = match chars_opt {
-        None => strip_whitespace(s.raw(), true, true)
-        Some(chars) => strip_chars(s.raw(), chars, true, true)
-      }
-      @value.Value::String(@value.StarlarkString::new(result))
-    }
-    "lstrip" => {
-      let chars_opt = if pos_args.length() > 0 {
-        match pos_args[0] {
-          @value.Value::String(c) if c.raw().length() > 0 => Some(c.raw())
-          _ => None
-        }
-      } else {
-        None
-      }
-      let result = match chars_opt {
-        None => strip_whitespace(s.raw(), true, false)
-        Some(chars) => strip_chars(s.raw(), chars, true, false)
-      }
-      @value.Value::String(@value.StarlarkString::new(result))
-    }
-    "rstrip" => {
-      let chars_opt = if pos_args.length() > 0 {
-        match pos_args[0] {
-          @value.Value::String(c) if c.raw().length() > 0 => Some(c.raw())
-          _ => None
-        }
-      } else {
-        None
-      }
-      let result = match chars_opt {
-        None => strip_whitespace(s.raw(), false, true)
-        Some(chars) => strip_chars(s.raw(), chars, false, true)
+        None => strip_whitespace(s.raw(), from_left, from_right)
+        Some(chars) => strip_chars(s.raw(), chars, from_left, from_right)
       }
       @value.Value::String(@value.StarlarkString::new(result))
     }
     "startswith" => {
-      if pos_args.length() == 0 {
-        raise EvalErr(
-          make_eval_error(ctx, "startswith() takes at least one argument"),
-        )
-      }
+      check_positional(ctx, "startswith", pos_args, kw_args, 1, 3)
       let slen = s.byte_len()
       let start_idx = if pos_args.length() >= 2 {
         match pos_args[1] {
@@ -2341,11 +2312,7 @@ fn call_str_method(
       }
     }
     "endswith" => {
-      if pos_args.length() == 0 {
-        raise EvalErr(
-          make_eval_error(ctx, "endswith() takes at least one argument"),
-        )
-      }
+      check_positional(ctx, "endswith", pos_args, kw_args, 1, 3)
       let slen = s.byte_len()
       let start_idx = if pos_args.length() >= 2 {
         match pos_args[1] {
@@ -2404,11 +2371,7 @@ fn call_str_method(
       }
     }
     "find" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "find() takes at least one argument"),
-        )
-      }
+      check_positional(ctx, "find", pos_args, kw_args, 1, 3)
       match pos_args[0] {
         @value.Value::String(sub) => {
           let slen = s.byte_len()
@@ -2442,11 +2405,7 @@ fn call_str_method(
       }
     }
     "count" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "count() takes at least one argument"),
-        )
-      }
+      check_positional(ctx, "count", pos_args, kw_args, 1, 3)
       match pos_args[0] {
         @value.Value::String(sub) => {
           let slen = s.byte_len()
@@ -2480,35 +2439,23 @@ fn call_str_method(
       }
     }
     "replace" => {
-      if pos_args.length() < 2 {
-        raise EvalErr(
-          make_eval_error(ctx, "replace() takes at least 2 arguments"),
-        )
+      check_positional(ctx, "replace", pos_args, kw_args, 2, 3)
+      let old = arg_as_string(ctx, "replace", pos_args, 0)
+      let new_s = arg_as_string(ctx, "replace", pos_args, 1)
+      let max_count = if pos_args.length() >= 3 {
+        arg_as_int(ctx, "replace", pos_args, 2)
+      } else {
+        -1
       }
-      match (pos_args[0], pos_args[1]) {
-        (@value.Value::String(old), @value.Value::String(new_s)) => {
-          let max_count = if pos_args.length() >= 3 {
-            match pos_args[2] {
-              @value.Value::Int(n) => n.to_int()
-              _ => -1
-            }
-          } else {
-            -1
-          }
-          let result = if max_count < 0 {
-            s.raw().replace_all(old=old.raw(), new=new_s.raw())
-          } else {
-            str_replace_count(s.raw(), old.raw(), new_s.raw(), max_count)
-          }
-          @value.Value::String(@value.StarlarkString::new(result))
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "replace() arguments must be strings"),
-          )
+      let result = if max_count < 0 {
+        s.raw().replace_all(old=old.raw(), new=new_s.raw())
+      } else {
+        str_replace_count(s.raw(), old.raw(), new_s.raw(), max_count)
       }
+      @value.Value::String(@value.StarlarkString::new(result))
     }
-    "split" => {
+    "split" | "rsplit" => {
+      check_positional(ctx, method_name, pos_args, kw_args, 0, 2)
       let sep_opt = if pos_args.length() == 0 {
         None
       } else {
@@ -2520,87 +2467,32 @@ fn call_str_method(
             }
             Some(sep.raw())
           }
-          _ =>
-            raise EvalErr(
-              make_eval_error(ctx, "split() separator must be a string or None"),
-            )
-        }
-      }
-      let kw_sep : String? = {
-        let mut found : String? = None
-        for kv in kw_args {
-          if kv.0 == "sep" {
-            match kv.1 {
-              @value.Value::None => ()
-              @value.Value::String(sep) => found = Some(sep.raw())
-              _ => ()
-            }
-            break
-          }
-        }
-        found
-      }
-      let sep = match sep_opt {
-        Some(s2) => Some(s2)
-        None => kw_sep
-      }
-      let maxsplit = if pos_args.length() >= 2 {
-        match pos_args[1] {
-          @value.Value::Int(n) => n.to_int()
-          _ => -1
-        }
-      } else {
-        let mut found = -1
-        for kv in kw_args {
-          if kv.0 == "maxsplit" {
-            match kv.1 {
-              @value.Value::Int(n) => {
-                found = n.to_int()
-                break
-              }
-              _ => ()
-            }
-          }
-        }
-        found
-      }
-      match sep {
-        None => to_value_list(split_whitespace(s.raw(), maxsplit))
-        Some(sep_str) => to_value_list(split_by_sep(s.raw(), sep_str, maxsplit))
-      }
-    }
-    "rsplit" => {
-      let sep_opt = if pos_args.length() == 0 {
-        None
-      } else {
-        match pos_args[0] {
-          @value.Value::None => None
-          @value.Value::String(sep) => {
-            if sep.raw().length() == 0 {
-              raise EvalErr(make_eval_error(ctx, "rsplit: empty separator"))
-            }
-            Some(sep.raw())
-          }
-          _ =>
+          v =>
             raise EvalErr(
               make_eval_error(
-                ctx, "rsplit() separator must be a string or None",
+                ctx,
+                "split: got \{@value.type_name(v)} for separator, want string",
               ),
             )
         }
       }
       let maxsplit = if pos_args.length() >= 2 {
-        match pos_args[1] {
-          @value.Value::Int(n) => n.to_int()
-          _ => -1
-        }
+        arg_as_int(ctx, method_name, pos_args, 1)
       } else {
         -1
       }
-      match sep_opt {
-        None => to_value_list(rsplit_whitespace(s.raw(), maxsplit))
-        Some(sep_str) =>
-          to_value_list(rsplit_by_sep(s.raw(), sep_str, maxsplit))
+      if method_name == "split" {
+        match sep_opt {
+          None => to_value_list(split_whitespace(s.raw(), maxsplit))
+          Some(sep_str) =>
+            to_value_list(split_by_sep(s.raw(), sep_str, maxsplit))
+        }
+      } else {
+        match sep_opt {
+          None => to_value_list(rsplit_whitespace(s.raw(), maxsplit))
+          Some(sep_str) =>
+            to_value_list(rsplit_by_sep(s.raw(), sep_str, maxsplit))
+        }
       }
     }
     "join" => {
@@ -2653,11 +2545,7 @@ fn call_str_method(
       }
     }
     "index" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "index() takes at least one argument"),
-        )
-      }
+      check_positional(ctx, "index", pos_args, kw_args, 1, 3)
       match pos_args[0] {
         @value.Value::String(sub) => {
           let slen = s.byte_len()
@@ -2694,11 +2582,7 @@ fn call_str_method(
       }
     }
     "rfind" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "rfind() takes at least one argument"),
-        )
-      }
+      check_positional(ctx, "rfind", pos_args, kw_args, 1, 3)
       match pos_args[0] {
         @value.Value::String(sub) => {
           let slen = s.byte_len()
@@ -2732,11 +2616,7 @@ fn call_str_method(
       }
     }
     "rindex" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "rindex() takes at least one argument"),
-        )
-      }
+      check_positional(ctx, "rindex", pos_args, kw_args, 1, 3)
       match pos_args[0] {
         @value.Value::String(sub) => {
           let slen = s.byte_len()
@@ -3469,6 +3349,77 @@ fn call_bytes_method(
     _ =>
       raise EvalErr(
         make_eval_error(ctx, "bytes has no method '\{method_name}'"),
+      )
+  }
+}
+
+///|
+// Validate a builtin/method's positional-argument count and reject keyword
+// arguments, mirroring starlark-go `UnpackPositionalArgs`.
+fn check_positional(
+  ctx : EvalContext,
+  name : String,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+  min : Int,
+  max : Int,
+) -> Unit raise EvalErr {
+  if kw_args.length() > 0 {
+    raise EvalErr(make_eval_error(ctx, "\{name}: unexpected keyword arguments"))
+  }
+  let n = pos_args.length()
+  if n < min {
+    let atleast = if min < max { "at least " } else { "" }
+    raise EvalErr(
+      make_eval_error(ctx, "\{name}: got \{n} arguments, want \{atleast}\{min}"),
+    )
+  }
+  if n > max {
+    let atmost = if max > min { "at most " } else { "" }
+    raise EvalErr(
+      make_eval_error(ctx, "\{name}: got \{n} arguments, want \{atmost}\{max}"),
+    )
+  }
+}
+
+///|
+// Coerce the `idx`-th (0-based) positional argument to a string, raising the
+// starlark-go unpack error on type mismatch.
+fn arg_as_string(
+  ctx : EvalContext,
+  name : String,
+  pos_args : Array[@value.Value],
+  idx : Int,
+) -> @value.StarlarkString raise EvalErr {
+  match pos_args[idx] {
+    @value.Value::String(s) => s
+    v =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "\{name}: for parameter \{idx + 1}: got \{@value.type_name(v)}, want string",
+        ),
+      )
+  }
+}
+
+///|
+// Coerce the `idx`-th (0-based) positional argument to an int, raising the
+// starlark-go unpack error on type mismatch.
+fn arg_as_int(
+  ctx : EvalContext,
+  name : String,
+  pos_args : Array[@value.Value],
+  idx : Int,
+) -> Int raise EvalErr {
+  match pos_args[idx] {
+    @value.Value::Int(n) => n.to_int()
+    v =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "\{name}: for parameter \{idx + 1}: got \{@value.type_name(v)}, want int",
+        ),
       )
   }
 }

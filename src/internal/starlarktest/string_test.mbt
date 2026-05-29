@@ -694,3 +694,90 @@ test "string search methods use UTF-8 byte offsets (BUG-29)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+// MISSING-32: strip/lstrip/rstrip reject non-string chars, extra positional
+// args, and keyword args, matching starlark-go UnpackPositionalArgs.
+let string_strip_argcheck_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "x".strip(1), "strip: for parameter 1: got int, want string")
+  #|assert.fails(lambda: "x".lstrip([]), "lstrip: for parameter 1: got list, want string")
+  #|assert.fails(lambda: "x".rstrip(None), "rstrip: for parameter 1: got NoneType, want string")
+  #|assert.fails(lambda: "x".strip("a", "b"), "strip: got 2 arguments, want at most 1")
+  #|assert.fails(lambda: "x".strip(chars="a"), "strip: unexpected keyword arguments")
+  #|# valid usage still works
+  #|assert.eq("  hi  ".strip(), "hi")
+  #|assert.eq("xxhixx".strip("x"), "hi")
+
+///|
+test "str.strip rejects non-string and excess args (MISSING-32)" {
+  let errs = run_star_string(string_strip_argcheck_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+// MISSING-33: replace rejects a non-int count and validates arity/kwargs.
+let string_replace_argcheck_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "banana".replace("a", "o", "bad"), "replace: for parameter 3: got string, want int")
+  #|assert.fails(lambda: "banana".replace("a"), "replace: got 1 arguments, want at least 2")
+  #|assert.fails(lambda: "banana".replace("a", "o", 1, 9), "replace: got 4 arguments, want at most 3")
+  #|# valid usage still works
+  #|assert.eq("banana".replace("a", "o"), "bonono")
+  #|assert.eq("banana".replace("a", "o", 2), "bonona")
+
+///|
+test "str.replace rejects non-int count and excess args (MISSING-33)" {
+  let errs = run_star_string(string_replace_argcheck_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+// MISSING-30: find/count/index/rfind/rindex/startswith/endswith reject excess
+// positional args and keyword args instead of silently dropping them.
+let string_search_argcheck_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "x".find("y", 0, 1, 99), "find: got 4 arguments, want at most 3")
+  #|assert.fails(lambda: "x".count("y", 0, 1, 99), "count: got 4 arguments, want at most 3")
+  #|assert.fails(lambda: "x".rfind("y", 0, 1, 99), "rfind: got 4 arguments, want at most 3")
+  #|assert.fails(lambda: "x".find("y", start=0), "find: unexpected keyword arguments")
+  #|assert.fails(lambda: "abc".startswith("a", 0, 1, 9), "startswith: got 4 arguments, want at most 3")
+  #|assert.fails(lambda: "abc".endswith("c", 0, 1, 9), "endswith: got 4 arguments, want at most 3")
+  #|# valid usage still works
+  #|assert.eq("foofoo".find("oo", 2), 4)
+  #|assert.eq("banana".count("a", 2), 2)
+
+///|
+test "str search methods reject excess positional/keyword args (MISSING-30)" {
+  let errs = run_star_string(string_search_argcheck_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+// MISSING-31: split/rsplit reject keyword args (starlark-go uses positional-only
+// UnpackPositionalArgs) and validate the separator and maxsplit types.
+let string_split_argcheck_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "a b".split(sep=" "), "split: unexpected keyword arguments")
+  #|assert.fails(lambda: "a b".rsplit(maxsplit=1), "rsplit: unexpected keyword arguments")
+  #|assert.fails(lambda: "a b".split(1), "split: got int for separator, want string")
+  #|assert.fails(lambda: "a b".split(" ", "x"), "split: for parameter 2: got string, want int")
+  #|assert.fails(lambda: "a b".split(" ", 1, 9), "split: got 3 arguments, want at most 2")
+  #|# valid usage still works
+  #|assert.eq("a b c".split(" "), ["a", "b", "c"])
+  #|assert.eq("a b c".split(" ", 1), ["a", "b c"])
+  #|assert.eq("a b c".rsplit(" ", 1), ["a b", "c"])
+
+///|
+test "str.split/rsplit reject keyword args (MISSING-31)" {
+  let errs = run_star_string(string_split_argcheck_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
