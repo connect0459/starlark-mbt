@@ -873,3 +873,36 @@ test "parser: None True False still parse as literal expressions" {
     _ => fail("expected LitBool(false)")
   }
 }
+
+///|
+test "load with zero imported symbols is rejected (MISSING-43)" {
+  match @parser.parse_file("test.star", "load(\"m\")\n") {
+    Err(e) => assert_true(e.msg().contains("must import at least 1 symbol"))
+    Ok(_) => fail("expected error for load with no symbols")
+  }
+}
+
+///|
+test "load with at least one symbol parses (MISSING-43)" {
+  match @parser.parse_file("test.star", "load(\"m\", \"a\")\n") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.to_string()}")
+  }
+}
+
+///|
+test "unparenthesized tuple with trailing comma is rejected (MISSING-44)" {
+  match @parser.parse_file("test.star", "x, = 1,\n") {
+    Err(e) =>
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+    Ok(_) => fail("expected error for trailing comma")
+  }
+}
+
+///|
+test "parenthesized singleton tuple with trailing comma is allowed (MISSING-44)" {
+  match @parser.parse_file("test.star", "x = (1,)\n") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.to_string()}")
+  }
+}

@@ -269,6 +269,11 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
     }
   }
   self.expect(@lexer.Token::RParen)
+  if bindings.is_empty() {
+    raise ParseErr(
+      self.syntax_error("load statement must import at least 1 symbol"),
+    )
+  }
   @syntax.Stmt::SLoad(module_name, bindings, p)
 }
 
@@ -533,12 +538,29 @@ fn Parser::parse_test_list_as_expr(
   let items : Array[@syntax.Expr] = [first]
   while self.tok == @lexer.Token::Comma {
     self.advance()
-    if is_stmt_terminator(self.tok) {
-      break
+    if terminates_expr_list(self.tok) {
+      raise ParseErr(
+        self.syntax_error("unparenthesized tuple with trailing comma"),
+      )
     }
     items.push(self.parse_test())
   }
   @syntax.Expr::ETuple(items, p)
+}
+
+///|
+fn terminates_expr_list(tok : @lexer.Token) -> Bool {
+  match tok {
+    @lexer.Token::EOF
+    | @lexer.Token::Newline
+    | @lexer.Token::Semi
+    | @lexer.Token::Outdent
+    | @lexer.Token::Assign
+    | @lexer.Token::RParen
+    | @lexer.Token::RBrack
+    | @lexer.Token::RBrace => true
+    _ => false
+  }
 }
 
 ///|
