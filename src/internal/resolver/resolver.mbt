@@ -336,14 +336,58 @@ fn Resolver::bind_local(
 // Bind an LHS expression (assignment or for-target). Handles ident and tuple unpack.
 
 ///|
-fn Resolver::bind_lhs(self : Resolver, lhs : @syntax.Expr) -> Unit {
+fn Resolver::bind_lhs(
+  self : Resolver,
+  lhs : @syntax.Expr,
+  is_augmented? : Bool = false,
+) -> Unit {
   match lhs {
     @syntax.Expr::EIdent(name, pos) => self.bind_name(name, pos)
-    @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) =>
-      for elem in elems {
-        self.bind_lhs(elem)
+    // x[i] = ... / x.f = ... — the object and index are uses, not bindings.
+    @syntax.Expr::EIndex(obj, idx, _) => {
+      self.walk_expr(obj)
+      self.walk_expr(idx)
+    }
+    @syntax.Expr::EDot(obj, _, _) => self.walk_expr(obj)
+    @syntax.Expr::ETuple(elems, pos) => {
+      if is_augmented {
+        self.errorf(pos, "can't use tuple expression in augmented assignment")
       }
-    _ => ()
+      for elem in elems {
+        self.bind_lhs(elem, is_augmented~)
+      }
+    }
+    @syntax.Expr::EList(elems, pos) => {
+      if is_augmented {
+        self.errorf(pos, "can't use list expression in augmented assignment")
+      }
+      for elem in elems {
+        self.bind_lhs(elem, is_augmented~)
+      }
+    }
+    _ => self.errorf(@syntax.expr_pos(lhs), "can't assign to \{lhs_kind(lhs)}")
+  }
+}
+
+// Names the kind of a non-assignable LHS expression, mirroring starlark-go's
+// lowercased AST type name in "can't assign to <kind>".
+
+///|
+fn lhs_kind(e : @syntax.Expr) -> String {
+  match e {
+    @syntax.Expr::ELiteral(_, _) => "literal"
+    @syntax.Expr::ECall(_, _, _) => "callexpr"
+    @syntax.Expr::EBinary(_, _, _, _) => "binaryexpr"
+    @syntax.Expr::EUnary(_, _, _) => "unaryexpr"
+    @syntax.Expr::ECond(_, _, _, _) => "condexpr"
+    @syntax.Expr::ESlice(_, _, _, _, _) => "sliceexpr"
+    @syntax.Expr::EDict(_, _) => "dictexpr"
+    @syntax.Expr::ESet(_, _) => "setexpr"
+    @syntax.Expr::ELambda(_, _, _) => "lambdaexpr"
+    @syntax.Expr::EListComp(_, _, _) => "listcomp"
+    @syntax.Expr::ESetComp(_, _, _) => "setcomp"
+    @syntax.Expr::EDictComp(_, _, _, _) => "dictcomp"
+    _ => "expression"
   }
 }
 
@@ -493,12 +537,12 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
                 "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
               )
             } else {
-              self.bind_lhs(lhs)
+              self.bind_lhs(lhs, is_augmented=true)
             }
-          _ => self.bind_lhs(lhs)
+          _ => self.bind_lhs(lhs, is_augmented=true)
         }
       } else {
-        self.bind_lhs(lhs)
+        self.bind_lhs(lhs, is_augmented=true)
       }
     }
     @syntax.Stmt::SIf(cond, then_stmts, else_stmts, pos) => {

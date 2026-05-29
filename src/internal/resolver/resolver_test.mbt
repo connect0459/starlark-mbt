@@ -388,3 +388,81 @@ test "resolve: accepts call to predeclared 'module' function" {
   )
   assert_true(result.is_valid())
 }
+
+// --- Assignment-target resolution (MISSING-46/47/48) ---
+
+///|
+test "resolve: index-target object is resolved as a use (MISSING-46)" {
+  let f = parse_or_fail("undef[0] = 1")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "undefined: undef"))
+}
+
+///|
+test "resolve: dot-target object is resolved as a use (MISSING-46)" {
+  let f = parse_or_fail("undef.field = 1")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "undefined: undef"))
+}
+
+///|
+test "resolve: assignment to a literal is rejected (MISSING-47)" {
+  let f = parse_or_fail("1 = x")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "can't assign to literal"))
+}
+
+///|
+test "resolve: assignment to a call is rejected (MISSING-47)" {
+  let f = parse_or_fail("f() = x")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "can't assign to callexpr"))
+}
+
+///|
+test "resolve: augmented assignment to tuple LHS is rejected (MISSING-48)" {
+  let f = parse_or_fail("a, b += 1")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "can't use tuple expression in augmented assignment"),
+  )
+}
+
+///|
+test "resolve: augmented assignment to list LHS is rejected (MISSING-48)" {
+  let f = parse_or_fail("[a, b] += 1")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "can't use list expression in augmented assignment"),
+  )
+}
