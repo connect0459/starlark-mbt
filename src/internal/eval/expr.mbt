@@ -3887,12 +3887,29 @@ fn str_format(
           }
           if spec_part != "" {
             raise EvalErr(
-              make_eval_error(ctx, "format spec features not supported"),
+              make_eval_error(
+                ctx,
+                "format spec features not supported in replacement fields: \{spec_part}",
+              ),
             )
           }
           (raw_name, conv_part)
         } else {
-          (field, "s")
+          let colon = find_substr(field, ":")
+          if colon >= 0 {
+            let spec_part = field[colon + 1:].to_owned()
+            if spec_part != "" {
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "format spec features not supported in replacement fields: \{spec_part}",
+                ),
+              )
+            }
+            (field[0:colon].to_owned(), "s")
+          } else {
+            (field, "s")
+          }
         }
         if find_substr(name, ".") >= 0 {
           raise EvalErr(
@@ -3906,11 +3923,6 @@ fn str_format(
             make_eval_error(
               ctx, "syntax a[i] is not supported in format strings",
             ),
-          )
-        }
-        if find_substr(name, ":") >= 0 {
-          raise EvalErr(
-            make_eval_error(ctx, "format spec features not supported"),
           )
         }
         let arg = if name == "" {

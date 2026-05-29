@@ -164,8 +164,15 @@ let string_star_src : String =
   #|assert.fails(lambda: "{}}".format(1), "single '}' in format")
   #|assert.fails(lambda: "}}{".format(1), "unmatched '{' in format")
   #|assert.fails(lambda: "}{{".format(1), "single '}' in format")
-  #|assert.fails(lambda: "{:>10}".format(1), "format spec features not supported")
-  #|assert.fails(lambda: "{0:d}".format(1), "format spec features not supported")
+  #|assert.fails(lambda: "{:>10}".format(1), "format spec features not supported in replacement fields: >10")
+  #|assert.fails(lambda: "{0:d}".format(1), "format spec features not supported in replacement fields: d")
+  #|# BUG-23: empty spec after colon is valid
+  #|assert.eq("{x:}".format(x=1), "1")
+  #|assert.eq("{0:}".format(1), "1")
+  #|assert.eq("{:}".format(1), "1")
+  #|# BUG-24: non-empty spec includes spec value in error message
+  #|assert.fails(lambda: "{0:5}".format(1), "format spec features not supported in replacement fields: 5")
+  #|assert.fails(lambda: "{x!s:>3}".format(x=1), "format spec features not supported in replacement fields: >3")
   #|# str.format edge cases (string.star lines 206-215)
   #|assert.fails(lambda: "{-0}".format(1), "keyword -0 not found")
   #|assert.fails(lambda: "{0,1} and {1}".format(1, 2), "keyword 0,1 not found")
