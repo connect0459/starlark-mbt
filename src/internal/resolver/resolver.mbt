@@ -781,6 +781,10 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
 }
 
 // Walk a comprehension with an isolated scope for iteration variables.
+// Per starlark-go resolve.go: the first clause's iterable is resolved in the
+// outer scope; subsequent for-clause targets are bound BEFORE their iterables
+// so that a variable used as its own iterable (e.g. `for x in x`) is flagged
+// as "local variable x referenced before assignment".
 
 ///|
 fn Resolver::walk_comprehension(
@@ -789,22 +793,30 @@ fn Resolver::walk_comprehension(
   body2 : @syntax.Expr?,
   clauses : Array[@syntax.CompClause],
 ) -> Unit {
-  let saved = self.push_block()
-  for clause in clauses {
-    match clause {
-      @syntax.CompClause::ClauseFor(target, iter, _) => {
-        self.walk_expr(iter)
-        self.bind_lhs(target)
+  // First clause: walk iterable in the outer scope before pushing the comp block.
+  match clauses[0] {
+    @syntax.CompClause::ClauseFor(first_target, first_iter, _) => {
+      self.walk_expr(first_iter)
+      let saved = self.push_block()
+      self.bind_lhs(first_target)
+      for i in 1..<clauses.length() {
+        match clauses[i] {
+          @syntax.CompClause::ClauseFor(target, iter, _) => {
+            self.bind_lhs(target)
+            self.walk_expr(iter)
+          }
+          @syntax.CompClause::ClauseIf(cond, _) => self.walk_expr(cond)
+        }
       }
-      @syntax.CompClause::ClauseIf(cond, _) => self.walk_expr(cond)
+      self.walk_expr(body)
+      match body2 {
+        Some(e) => self.walk_expr(e)
+        None => ()
+      }
+      self.pop_block(saved)
     }
+    _ => ()
   }
-  self.walk_expr(body)
-  match body2 {
-    Some(e) => self.walk_expr(e)
-    None => ()
-  }
-  self.pop_block(saved)
 }
 
 // --- Public API ---

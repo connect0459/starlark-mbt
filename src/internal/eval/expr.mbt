@@ -176,14 +176,22 @@ fn eval_expr_node(
     }
     @syntax.Expr::EListComp(body_expr, clauses, _) => {
       let result : Array[@value.Value] = []
-      eval_comp_clauses(ctx, env, clauses, 0, fn(inner_env) raise EvalErr {
+      let comp_vars = collect_comp_target_names(clauses)
+      let comp_env = EvalEnv::with_parent_and_known_locals(env, comp_vars)
+      eval_comp_clauses(ctx, env, comp_env, clauses, 0, fn(
+        inner_env,
+      ) raise EvalErr {
         result.push(eval_expr_node(ctx, inner_env, body_expr))
       })
       @value.Value::List(@value.StarlarkList::new(result))
     }
     @syntax.Expr::ESetComp(body_expr, clauses, _) => {
       let s = @value.StarlarkSet::new()
-      eval_comp_clauses(ctx, env, clauses, 0, fn(inner_env) raise EvalErr {
+      let comp_vars = collect_comp_target_names(clauses)
+      let comp_env = EvalEnv::with_parent_and_known_locals(env, comp_vars)
+      eval_comp_clauses(ctx, env, comp_env, clauses, 0, fn(
+        inner_env,
+      ) raise EvalErr {
         let v = eval_expr_node(ctx, inner_env, body_expr)
         check(ctx, s.add(v))
       })
@@ -191,7 +199,11 @@ fn eval_expr_node(
     }
     @syntax.Expr::EDictComp(key_expr, val_expr, clauses, _) => {
       let d = @value.StarlarkDict::new()
-      eval_comp_clauses(ctx, env, clauses, 0, fn(inner_env) raise EvalErr {
+      let comp_vars = collect_comp_target_names(clauses)
+      let comp_env = EvalEnv::with_parent_and_known_locals(env, comp_vars)
+      eval_comp_clauses(ctx, env, comp_env, clauses, 0, fn(
+        inner_env,
+      ) raise EvalErr {
         let k = eval_expr_node(ctx, inner_env, key_expr)
         let v = eval_expr_node(ctx, inner_env, val_expr)
         check(ctx, d.set(k, v))
@@ -4117,19 +4129,28 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
 }
 
 ///|
+// eval_comp_clauses evaluates comprehension clauses sharing a single comp_env.
+// outer_env: the scope outside the comprehension (used only for the first
+// clause's iterable, matching starlark-go resolve.go semantics).
+// comp_env: the shared comprehension scope with all for-target names in
+// known_locals so that a target used as its own iterable raises LUnbound.
 fn eval_comp_clauses(
   ctx : EvalContext,
-  env : EvalEnv,
+  outer_env : EvalEnv,
+  comp_env : EvalEnv,
   clauses : Array[@syntax.CompClause],
   idx : Int,
   body_fn : (EvalEnv) -> Unit raise EvalErr,
 ) -> Unit raise EvalErr {
   if idx >= clauses.length() {
-    return body_fn(env)
+    return body_fn(comp_env)
   }
   match clauses[idx] {
     @syntax.CompClause::ClauseFor(target, iter_expr, clause_pos) => {
-      let iter_val = eval_expr_node(ctx, env, iter_expr)
+      // First clause's iterable is evaluated in the outer scope;
+      // subsequent clauses' iterables are evaluated in the comp scope.
+      let eval_env = if idx == 0 { outer_env } else { comp_env }
+      let iter_val = eval_expr_node(ctx, eval_env, iter_expr)
       let it = check(ctx, @value.iterate(iter_val))
       let mut continue_loop = true
       while continue_loop {
@@ -4138,28 +4159,48 @@ fn eval_comp_clauses(
             it.done()
             continue_loop = false
           }
-          Some(item) => {
-            let inner_env = EvalEnv::with_parent(env)
+          Some(item) =>
             try {
-              assign_to(ctx, inner_env, target, item, clause_pos)
-              eval_comp_clauses(ctx, inner_env, clauses, idx + 1, body_fn)
+              assign_to(ctx, comp_env, target, item, clause_pos)
+              eval_comp_clauses(
+                ctx,
+                outer_env,
+                comp_env,
+                clauses,
+                idx + 1,
+                body_fn,
+              )
             } catch {
               EvalErr(e) => {
                 it.done()
                 raise EvalErr(e)
               }
             }
-          }
         }
       }
     }
     @syntax.CompClause::ClauseIf(cond_expr, _) => {
-      let cond_val = eval_expr_node(ctx, env, cond_expr)
+      let cond_val = eval_expr_node(ctx, comp_env, cond_expr)
       if @value.truth(cond_val) {
-        eval_comp_clauses(ctx, env, clauses, idx + 1, body_fn)
+        eval_comp_clauses(ctx, outer_env, comp_env, clauses, idx + 1, body_fn)
       }
     }
   }
+}
+
+///|
+fn collect_comp_target_names(
+  clauses : Array[@syntax.CompClause],
+) -> Array[String] {
+  let result : Array[String] = []
+  for clause in clauses {
+    match clause {
+      @syntax.CompClause::ClauseFor(target, _, _) =>
+        collect_lhs_names(target, result)
+      _ => ()
+    }
+  }
+  result
 }
 
 ///|

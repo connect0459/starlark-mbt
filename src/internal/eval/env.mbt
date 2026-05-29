@@ -47,17 +47,6 @@ fn EvalEnv::for_module(parent : EvalEnv) -> EvalEnv {
 }
 
 ///|
-fn EvalEnv::with_parent(parent : EvalEnv) -> EvalEnv {
-  {
-    locals: {},
-    known_locals: [],
-    known_module_globals: {},
-    parent: Some(parent),
-    is_module_scope: false,
-  }
-}
-
-///|
 fn EvalEnv::with_parent_and_known_locals(
   parent : EvalEnv,
   known_locals : Array[String],
