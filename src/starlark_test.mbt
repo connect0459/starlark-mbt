@@ -14,7 +14,10 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
       "i = 0\nwhile i < 1000000:\n  i = i + 1",
       @starlark.Options::default(),
     ) {
-    Err(e) => assert_true(e.msg().contains("step budget"))
+    Err(e) =>
+      assert_true(
+        e.msg().contains("Starlark computation cancelled: too many steps"),
+      )
     Ok(_) => assert_true(false)
   }
 }

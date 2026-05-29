@@ -302,8 +302,7 @@ test "Thread.with_step_budget: halts when budget is exceeded" {
   match result {
     Err(e) =>
       assert_true(
-        e.msg().contains("step budget exceeded") ||
-        e.msg().contains("cancelled"),
+        e.msg().contains("Starlark computation cancelled: too many steps"),
       )
     Ok(_) => abort("expected step budget error")
   }

@@ -261,8 +261,14 @@ pub fn Thread::uncancel(self : Thread) -> Unit {
 }
 
 ///|
+pub fn Thread::reset_steps(self : Thread) -> Unit {
+  self.steps = 0
+}
+
+///|
 pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
   self.max_steps = Some(max)
+  self.reset_steps()
 }
 
 ///|
@@ -292,6 +298,15 @@ pub fn Thread::call_stack(self : Thread) -> @errors.CallStack {
 ///|
 pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
   self.call_stack.copy()
+}
+
+///|
+pub fn Thread::call_frame(self : Thread, n : Int) -> @errors.CallFrame? {
+  let idx = self.call_stack.length() - 1 - n
+  if idx < 0 || idx >= self.call_stack.length() {
+    return None
+  }
+  Some(self.call_stack[idx])
 }
 
 ///|
