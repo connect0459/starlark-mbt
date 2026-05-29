@@ -578,3 +578,52 @@ test "resolve: parameter after kwargs is rejected (MISSING-50)" {
   let r = resolve_def("def f(**kw, a): pass")
   assert_true(r |> has_error("required parameter may not follow **kw"))
 }
+
+// --- call-argument ordering rules (MISSING-49) ---
+
+///|
+fn resolve_call(src : String) -> ResolvedFile {
+  let f = parse_or_fail(src)
+  resolve(
+    f,
+    with_predeclared(["f", "a", "b", "x", "y"]),
+    no_universal,
+    ResolveOptions::default(),
+  )
+}
+
+///|
+test "resolve: positional argument after named is rejected (MISSING-49)" {
+  let r = resolve_call("f(x=1, a)")
+  assert_true(r |> has_error("positional argument may not follow named"))
+}
+
+///|
+test "resolve: repeated keyword argument is rejected (MISSING-49)" {
+  let r = resolve_call("f(x=1, x=2)")
+  assert_true(r |> has_error("keyword argument \"x\" is repeated"))
+}
+
+///|
+test "resolve: multiple *args are rejected (MISSING-49)" {
+  let r = resolve_call("f(*a, *b)")
+  assert_true(r |> has_error("multiple *args not allowed"))
+}
+
+///|
+test "resolve: multiple **kwargs are rejected (MISSING-49)" {
+  let r = resolve_call("f(**a, **b)")
+  assert_true(r |> has_error("multiple **kwargs not allowed"))
+}
+
+///|
+test "resolve: *args after **kwargs is rejected (MISSING-49)" {
+  let r = resolve_call("f(**a, *b)")
+  assert_true(r |> has_error("*args may not follow **kwargs"))
+}
+
+///|
+test "resolve: positional argument after *args is rejected (MISSING-49)" {
+  let r = resolve_call("f(*a, b)")
+  assert_true(r |> has_error("positional argument may not follow *args"))
+}

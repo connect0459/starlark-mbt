@@ -823,15 +823,68 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
     }
     @syntax.Expr::EDot(e, _, _) => self.walk_expr(e)
-    @syntax.Expr::ECall(f, args, _) => {
+    @syntax.Expr::ECall(f, args, call_pos) => {
       self.walk_expr(f)
+      let mut seen_varargs = false
+      let mut seen_kwargs = false
+      let seen_names : Map[String, Bool] = {}
+      let mut n_pos = 0
+      let mut n_kw = 0
       for arg in args {
         match arg {
-          @syntax.Arg::ArgPos(e) => self.walk_expr(e)
-          @syntax.Arg::ArgKw(_, e, _) => self.walk_expr(e)
-          @syntax.Arg::ArgStarArgs(e) => self.walk_expr(e)
-          @syntax.Arg::ArgKwArgs(e) => self.walk_expr(e)
+          @syntax.Arg::ArgKwArgs(e) => {
+            if seen_kwargs {
+              self.errorf(@syntax.expr_pos(e), "multiple **kwargs not allowed")
+            }
+            seen_kwargs = true
+            self.walk_expr(e)
+          }
+          @syntax.Arg::ArgStarArgs(e) => {
+            let pos = @syntax.expr_pos(e)
+            if seen_kwargs {
+              self.errorf(pos, "*args may not follow **kwargs")
+            } else if seen_varargs {
+              self.errorf(pos, "multiple *args not allowed")
+            }
+            seen_varargs = true
+            self.walk_expr(e)
+          }
+          @syntax.Arg::ArgKw(name, e, kpos) => {
+            n_kw = n_kw + 1
+            if seen_kwargs {
+              self.errorf(kpos, "keyword argument may not follow **kwargs")
+            } else if seen_varargs {
+              self.errorf(kpos, "keyword argument may not follow *args")
+            }
+            if seen_names.contains(name) {
+              self.errorf(kpos, "keyword argument \"\{name}\" is repeated")
+            } else {
+              seen_names[name] = true
+            }
+            self.walk_expr(e)
+          }
+          @syntax.Arg::ArgPos(e) => {
+            n_pos = n_pos + 1
+            let pos = @syntax.expr_pos(e)
+            if seen_varargs {
+              self.errorf(pos, "positional argument may not follow *args")
+            } else if seen_kwargs {
+              self.errorf(pos, "positional argument may not follow **kwargs")
+            } else if seen_names.length() > 0 {
+              self.errorf(pos, "positional argument may not follow named")
+            }
+            self.walk_expr(e)
+          }
         }
+      }
+      if n_pos >= 256 {
+        self.errorf(
+          call_pos,
+          "\{n_pos} positional arguments in call, limit is 255",
+        )
+      }
+      if n_kw >= 256 {
+        self.errorf(call_pos, "\{n_kw} keyword arguments in call, limit is 255")
       }
     }
     @syntax.Expr::EList(elems, _) =>
