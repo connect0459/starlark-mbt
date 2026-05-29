@@ -310,7 +310,7 @@ fn eval_mul(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unsupported operand types for *: '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} * \{@value.type_name(rv)}",
         ),
       )
   }
@@ -462,7 +462,7 @@ fn eval_div(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unsupported operand types for /: '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} / \{@value.type_name(rv)}",
         ),
       )
   }
@@ -500,7 +500,7 @@ fn eval_floor_div(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unsupported operand types for //: '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} // \{@value.type_name(rv)}",
         ),
       )
   }
@@ -549,7 +549,7 @@ fn eval_mod(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unsupported operand types for %: '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} % \{@value.type_name(rv)}",
         ),
       )
   }
@@ -953,7 +953,7 @@ fn eval_pow(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unsupported operand types for **: '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} ** \{@value.type_name(rv)}",
         ),
       )
   }

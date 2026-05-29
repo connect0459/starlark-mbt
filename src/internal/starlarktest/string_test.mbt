@@ -25,7 +25,7 @@ let string_star_src : String =
   #|assert.eq(-1 * "abc", "")
   #|assert.eq(1 * "abc", "abc")
   #|assert.eq(5 * "abc", "abcabcabcabcabc")
-  #|assert.fails(lambda: 1.0 * "abc", "unsupported operand types for *")
+  #|assert.fails(lambda: 1.0 * "abc", "unknown binary op: float * string")
   #|
   #|# len (ASCII only)
   #|assert.eq(len("Hello"), 5)

@@ -440,3 +440,26 @@ test "division/modulo/slice-step error messages match starlark-go (MISSING-37/40
     fail(errs.join("\n"))
   }
 }
+
+///|
+// MISSING-38/MISSING-39: unsupported binary ops use the uniform
+// "unknown binary op: LT OP RT" form, and shift errors carry the count value
+// and fall through to "unknown binary op" on a type mismatch.
+let binary_op_messages_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: 1.0 * "x", "unknown binary op: float * string")
+  #|assert.fails(lambda: 1 / "x", "unknown binary op: int / string")
+  #|assert.fails(lambda: 1 // "x", "unknown binary op: int // string")
+  #|assert.fails(lambda: 1 % [1], "unknown binary op: int % list")
+  #|assert.fails(lambda: 1 ** "x", "unknown binary op: int ** string")
+  #|assert.fails(lambda: 1 << 1.0, "unknown binary op: int << float")
+  #|assert.fails(lambda: 1 << -3, "negative shift count: -3")
+  #|assert.fails(lambda: 1 << 600, "shift count too large: 600")
+
+///|
+test "binary-op and shift error messages match starlark-go (MISSING-38/39)" {
+  let errs = run_star_string(binary_op_messages_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
