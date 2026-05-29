@@ -412,7 +412,7 @@ fn Resolver::resolve_name_at_toplevel(
 fn Resolver::resolve_function_uses(
   self : Resolver,
   block : Block,
-  fn_name : String,
+  _fn_name : String,
 ) -> Unit {
   for pair in block.uses {
     let (name, pos) = pair
@@ -420,10 +420,8 @@ fn Resolver::resolve_function_uses(
     match lookup_in_local_scope(block, name) {
       Some(_) => ()
       None =>
-        // Not a local: check for recursion, globals, and predeclared names
-        if name == fn_name && fn_name != "" && !self.opts.allow_recursion {
-          self.errorf(pos, "recursion not allowed: \{name}")
-        } else if self.globals.contains(name) {
+        // Not a local: check globals and predeclared names
+        if self.globals.contains(name) {
           ()
         } else if self.predeclared_cache.contains(name) {
           ()
@@ -764,11 +762,11 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       let saved = self.push_block()
       let old_fn = self.current_fn_name
       let old_in_func = self.in_func
-      self.current_fn_name = "<lambda>"
+      self.current_fn_name = "lambda"
       self.in_func = self.in_func + 1
       self.walk_params(params, pos)
       self.walk_expr(body)
-      self.resolve_function_uses(self.env, "<lambda>")
+      self.resolve_function_uses(self.env, "lambda")
       self.in_func = old_in_func
       self.current_fn_name = old_fn
       self.pop_block(saved)

@@ -341,11 +341,11 @@ test "resolve: accepts recursion when flag is on" {
 }
 
 ///|
-test "resolve: rejects direct recursion when flag is off" {
+test "resolve: accepts recursion at resolve time (runtime detection when flag is off)" {
   let f = parse_or_fail("def f(n):\n  return f(n - 1)")
   let opts = ResolveOptions::default().with_allow_recursion(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
-  assert_true(has_error(result, "recursion"))
+  assert_true(result.is_valid())
 }
 
 // --- Global variable collection ---

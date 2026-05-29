@@ -397,6 +397,7 @@ fn parse_chunk_options(src : String) -> @eval.Options {
         match flag.trim() {
           "globalreassign" => opts = opts.with_global_reassign(true)
           "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
+          "norecursion" => opts = opts.with_allow_recursion(false)
           _ => ()
         }
       }
@@ -406,6 +407,7 @@ fn parse_chunk_options(src : String) -> @eval.Options {
         match flag.trim() {
           "globalreassign" => opts = opts.with_global_reassign(true)
           "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
+          "norecursion" => opts = opts.with_allow_recursion(false)
           _ => ()
         }
       }
