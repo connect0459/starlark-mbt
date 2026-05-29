@@ -77,6 +77,11 @@ pub fn Program::init(
 ) -> Result[Module, @errors.EvalError] {
   let ctx = EvalContext::new(thread, self.opts)
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
+  collect_module_globals_into(
+    self.file.stmts(),
+    self.opts.load_binds_globally,
+    ctx.global_env.known_module_globals,
+  )
   ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
   ctx.thread.call_stack.push(
     @errors.CallFrame::new(

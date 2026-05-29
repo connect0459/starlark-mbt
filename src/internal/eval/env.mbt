@@ -2,6 +2,7 @@
 priv enum LookupResult {
   LFound(@value.Value)
   LUnbound(String)
+  LUnboundModule(String, Bool)
   LNotFound
 }
 
@@ -9,6 +10,7 @@ priv enum LookupResult {
 priv struct EvalEnv {
   locals : Map[String, @value.Value]
   known_locals : Array[String]
+  known_module_globals : Map[String, Bool]
   parent : EvalEnv?
   is_module_scope : Bool
 }
@@ -24,17 +26,35 @@ priv struct EvalContext {
 
 ///|
 fn EvalEnv::new() -> EvalEnv {
-  { locals: {}, known_locals: [], parent: None, is_module_scope: true }
+  {
+    locals: {},
+    known_locals: [],
+    known_module_globals: {},
+    parent: None,
+    is_module_scope: true,
+  }
 }
 
 ///|
 fn EvalEnv::for_module(parent : EvalEnv) -> EvalEnv {
-  { locals: {}, known_locals: [], parent: Some(parent), is_module_scope: true }
+  {
+    locals: {},
+    known_locals: [],
+    known_module_globals: {},
+    parent: Some(parent),
+    is_module_scope: true,
+  }
 }
 
 ///|
 fn EvalEnv::with_parent(parent : EvalEnv) -> EvalEnv {
-  { locals: {}, known_locals: [], parent: Some(parent), is_module_scope: false }
+  {
+    locals: {},
+    known_locals: [],
+    known_module_globals: {},
+    parent: Some(parent),
+    is_module_scope: false,
+  }
 }
 
 ///|
@@ -42,7 +62,13 @@ fn EvalEnv::with_parent_and_known_locals(
   parent : EvalEnv,
   known_locals : Array[String],
 ) -> EvalEnv {
-  { locals: {}, known_locals, parent: Some(parent), is_module_scope: false }
+  {
+    locals: {},
+    known_locals,
+    known_module_globals: {},
+    parent: Some(parent),
+    is_module_scope: false,
+  }
 }
 
 ///|
@@ -52,6 +78,15 @@ fn EvalEnv::lookup(self : EvalEnv, name : String) -> LookupResult {
     None =>
       if !self.is_module_scope && self.known_locals.contains(name) {
         LUnbound(name)
+      } else if self.is_module_scope {
+        match self.known_module_globals.get(name) {
+          Some(is_load_local) => LUnboundModule(name, is_load_local)
+          None =>
+            match self.parent {
+              None => LNotFound
+              Some(p) => p.lookup(name)
+            }
+        }
       } else {
         match self.parent {
           None => LNotFound

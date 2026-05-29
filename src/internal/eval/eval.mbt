@@ -80,6 +80,11 @@ pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
 }
 
 ///|
+pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
+  { ..self, allow_recursion: v }
+}
+
+///|
 pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
   { ..self, allow_global_reassign: v }
 }
@@ -395,6 +400,54 @@ pub fn Module::predeclared_map(self : Module) -> Map[String, @value.Value] {
 }
 
 ///|
+fn collect_module_globals_into(
+  stmts : Array[@syntax.Stmt],
+  load_binds_globally : Bool,
+  result : Map[String, Bool],
+) -> Unit {
+  for stmt in stmts {
+    match stmt {
+      @syntax.Stmt::SDef(name, _, _, _) => result[name] = false
+      @syntax.Stmt::SAssign(lhs, _, _) => collect_lhs_global_names(lhs, result)
+      @syntax.Stmt::SAugAssign(lhs, _, _, _) =>
+        collect_lhs_global_names(lhs, result)
+      @syntax.Stmt::SLoad(_, bindings, _) => {
+        let is_local = !load_binds_globally
+        for pair in bindings {
+          result[pair.0] = is_local
+        }
+      }
+      @syntax.Stmt::SIf(_, then_body, else_body, _) => {
+        collect_module_globals_into(then_body, load_binds_globally, result)
+        collect_module_globals_into(else_body, load_binds_globally, result)
+      }
+      @syntax.Stmt::SFor(target, _, body, _) => {
+        collect_lhs_global_names(target, result)
+        collect_module_globals_into(body, load_binds_globally, result)
+      }
+      @syntax.Stmt::SWhile(_, body, _) =>
+        collect_module_globals_into(body, load_binds_globally, result)
+      _ => ()
+    }
+  }
+}
+
+///|
+fn collect_lhs_global_names(
+  expr : @syntax.Expr,
+  result : Map[String, Bool],
+) -> Unit {
+  match expr {
+    @syntax.Expr::EIdent(name, _) => result[name] = false
+    @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) =>
+      for elem in elems {
+        collect_lhs_global_names(elem, result)
+      }
+    _ => ()
+  }
+}
+
+///|
 let builtin_names : Array[String] = [
   "print", "len", "str", "repr", "type", "range", "list", "tuple", "dict", "bool",
   "int", "float", "abs", "min", "max", "set", "enumerate", "zip", "sorted", "reversed",
@@ -512,6 +565,11 @@ pub fn exec_file(
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   let ctx = EvalContext::new(thread, opts)
+  collect_module_globals_into(
+    file.stmts(),
+    opts.load_binds_globally,
+    ctx.global_env.known_module_globals,
+  )
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(opts.allow_global_reassign)
     .with_load_binds_globally(opts.load_binds_globally)
@@ -563,6 +621,11 @@ pub fn exec_file_with_predeclared(
   }
   let ctx = EvalContext::new(thread, opts)
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
+  collect_module_globals_into(
+    file.stmts(),
+    opts.load_binds_globally,
+    ctx.global_env.known_module_globals,
+  )
   let extra_names : Array[String] = predeclared.bindings.keys().collect()
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(opts.allow_global_reassign)
@@ -620,6 +683,11 @@ pub fn exec_repl_chunk(
       _ => ()
     }
   })
+  collect_module_globals_into(
+    file.stmts(),
+    true,
+    ctx.global_env.known_module_globals,
+  )
   let extra_names : Array[String] = []
   globals.each(fn(k, _) {
     match k {

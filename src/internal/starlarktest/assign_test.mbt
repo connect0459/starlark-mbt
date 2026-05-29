@@ -271,7 +271,7 @@ let assign_before_assignment_src : String =
   #|
   #|def f():
   #|  return g
-  #|assert.fails(f, "undefined: g")
+  #|assert.fails(f, "global variable g referenced before assignment")
   #|g = 1
   #|
   #|printok = [False]
@@ -473,9 +473,19 @@ test "assign.star: list sequence assignment errors (chunked)" {
 
 ///|
 let assign_before_assign_errors_chunked : String =
-  #|z += 3 ### "undefined: z"
+  #|z += 3 ### "global variable z referenced before assignment"
   #|---
-  #|(a) += 5 ### "undefined: a"
+  #|(a) += 5 ### "global variable a referenced before assignment"
+  #|---
+  #|load("assert.star", "assert")
+  #|list = []
+  #|assert.eq(type(list), "list")
+  #|assert.fails(lambda: tuple, "global variable tuple referenced before assignment")
+  #|tuple = ()
+  #|---
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: set, "global variable set referenced before assignment")
+  #|set = [1, 2, 3]
 
 ///|
 test "assign.star: module-scope variable-before-assignment errors (chunked)" {

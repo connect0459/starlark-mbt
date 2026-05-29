@@ -30,6 +30,15 @@ fn eval_expr_node(
               "local variable \{varname} referenced before assignment",
             ),
           )
+        LUnboundModule(varname, is_load_local) => {
+          let kind = if is_load_local { "local" } else { "global" }
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "\{kind} variable \{varname} referenced before assignment",
+            ),
+          )
+        }
         LNotFound =>
           raise EvalErr(
             make_eval_error(ctx, "\{pos.to_string()}: undefined: \{name}"),
@@ -156,7 +165,7 @@ fn eval_expr_node(
       let body_stmt = @syntax.Stmt::SReturn(Some(body_expr), pos)
       let captured_scope = env.collect_local_scopes()
       let func = @value.StarlarkFunction::new(
-        "<lambda>",
+        "lambda",
         params,
         [body_stmt],
         defaults,
@@ -472,6 +481,24 @@ fn call_func(
   kw_args : Array[(String, @value.Value)],
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
+  if !ctx.opts.allow_recursion {
+    let fpos = f.position()
+    for frame in ctx.thread.debug_stack {
+      match frame.func_val {
+        @value.Value::Function(g) => {
+          let gpos = g.position()
+          if fpos.line() == gpos.line() &&
+            fpos.col() == gpos.col() &&
+            fpos.filename() == gpos.filename() {
+            raise EvalErr(
+              make_eval_error(ctx, "function \{f.name()} called recursively"),
+            )
+          }
+        }
+        _ => ()
+      }
+    }
+  }
   if ctx.thread.call_stack.length() >= ctx.thread.max_recursion_depth {
     raise EvalErr(make_eval_error(ctx, "maximum recursion depth exceeded"))
   }
@@ -483,6 +510,7 @@ fn call_func(
       let scope_env : EvalEnv = {
         locals: pair.0,
         known_locals: pair.1,
+        known_module_globals: {},
         parent: Some(parent),
         is_module_scope: false,
       }
