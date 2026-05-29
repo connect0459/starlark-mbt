@@ -425,6 +425,8 @@ let string_not_iterable_src : String =
   #|assert.fails(lambda: dict(["ab"]), "not iterable")
   #|assert.fails(for_string, "string value is not iterable")
   #|assert.fails(lambda: [x for x in "abc"], "string value is not iterable")
+  #|assert.fails(lambda: set("abc"), "got string, want iterable")
+  #|assert.fails(lambda: set() | "abc", "unknown binary op: set | string")
 
 ///|
 test "strings are not iterable (string.star lines 424-430)" {
