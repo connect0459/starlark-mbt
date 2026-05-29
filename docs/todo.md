@@ -1029,6 +1029,19 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       parameter and reject keyword/excess args instead of defaulting non-int values;
       `bytes`/`chr` reject keyword arguments and `abs`/`hash` route arity through
       `check_positional`. Commit: `48918c7`
+- [x] **MISSING-37/40**: Division/modulo/slice-step error messages now match
+      starlark-go: `/` → "floating-point division by zero", `//` → "floored division
+      by zero", `%` → "integer modulo by zero" / "floating-point modulo by zero",
+      zero slice step → "zero is not a valid slice step" (`eval/ops.mbt`,
+      `value/value.mbt`). Commits: `f0972a2`
+- [x] **MISSING-38/39**: Unsupported `*`/`/`/`//`/`%`/`**` now use the uniform
+      "unknown binary op: LT OP RT" form (matching `+`/`-`); shift errors already
+      carried the count value and fell through to "unknown binary op" on type
+      mismatch (BUG-30). Commit: `3145218`
+- [x] **MISSING-41**: Builtin/method error messages use starlark-go's nameErr
+      prefix — `min`/`max` empty/not-iterable, `list.index`, the `getattr` builtin,
+      `float` non-convertible, and `startswith`/`endswith` tuple-element errors
+      (with the real element index) all aligned (`eval/expr.mbt`). Commit: `e5be4b5`
 
 ---
 
