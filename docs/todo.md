@@ -1008,6 +1008,14 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       rune spans the whole string. Commit: `5ab5df8`
 - [x] **BUG-34**: `int(s, base)` accepted out-of-range base without error — fixed in
       `eval/expr.mbt`: validates `base == 0 || 2 <= base <= 36` before parsing. Commit: `0e3aeec`
+- [x] **BUG-29**: String search methods used UTF-16 char indices instead of UTF-8
+      byte offsets — fixed in `eval/expr.mbt`: `find`/`rfind`/`index`/`rindex`/`count`/
+      `partition`/`rpartition` and the slice form of `startswith`/`endswith` now operate
+      on byte offsets into the UTF-8 representation (via new `bytes_index_in`/
+      `bytes_last_index_in`/`bytes_count_in`/`bytes_has_prefix`/`bytes_has_suffix`/
+      `str_byte_slice`/`clamp_byte_index` helpers), consistent with subscript and
+      `len()`. Removed the now-unused String-based `rfind_substr`/`count_substr`.
+      Commit: `e4d407c`
 
 ---
 
