@@ -34,8 +34,8 @@ let string_star_src : String =
   #|# chr & ord
   #|assert.eq(chr(65), "A")
   #|assert.eq(chr(97), "a")
-  #|assert.fails(lambda: chr(-1), "not in range")
-  #|assert.fails(lambda: chr(0x110000), "not in range")
+  #|assert.fails(lambda: chr(-1), "out of range.*<0")
+  #|assert.fails(lambda: chr(0x110000), "out of range.*>0x10FFFF")
   #|assert.eq(ord("A"), 0x41)
   #|assert.fails(lambda: ord("abc"), "string encodes 3 Unicode code points, want 1")
   #|assert.fails(lambda: ord(""), "string encodes 0 Unicode code points, want 1")

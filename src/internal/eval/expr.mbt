@@ -212,6 +212,35 @@ fn eval_defaults(
 }
 
 ///|
+fn builtin_type_methods(v : @value.Value) -> Array[String]? {
+  match v {
+    @value.Value::String(_) =>
+      Some([
+        "capitalize", "codepoint_ords", "codepoints", "count", "elem_ords", "elems",
+        "endswith", "find", "format", "index", "isalnum", "isalpha", "isdigit", "islower",
+        "isspace", "istitle", "isupper", "join", "lower", "lstrip", "partition",
+        "removeprefix", "removesuffix", "replace", "rfind", "rindex", "rpartition",
+        "rsplit", "rstrip", "split", "splitlines", "startswith", "strip", "title",
+        "upper",
+      ])
+    @value.Value::List(_) =>
+      Some(["append", "clear", "extend", "index", "insert", "pop", "remove"])
+    @value.Value::Dict(_) =>
+      Some([
+        "clear", "get", "items", "keys", "pop", "popitem", "setdefault", "update",
+        "values",
+      ])
+    @value.Value::Set(_) =>
+      Some([
+        "add", "clear", "difference", "discard", "intersection", "issubset", "issuperset",
+        "pop", "remove", "symmetric_difference", "union", "update",
+      ])
+    @value.Value::Bytes(_) => Some(["elems"])
+    _ => None
+  }
+}
+
+///|
 fn eval_getattr(
   ctx : EvalContext,
   obj : @value.Value,
@@ -223,8 +252,30 @@ fn eval_getattr(
     | @value.Value::List(_)
     | @value.Value::Dict(_)
     | @value.Value::Set(_)
-    | @value.Value::Bytes(_) =>
-      @value.Value::BoundMethod(@value.StarlarkBoundMethod::new(obj, attr))
+    | @value.Value::Bytes(_) => {
+      let methods = (builtin_type_methods(obj) : Array[String]?)
+      match methods {
+        Some(ms) =>
+          if ms.contains(attr) {
+            @value.Value::BoundMethod(
+              @value.StarlarkBoundMethod::new(obj, attr),
+            )
+          } else {
+            let hint = match spell_nearest(attr, ms) {
+              "" => ""
+              s => " (did you mean .\{s}?)"
+            }
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "\{@value.type_name(obj)} has no .\{attr} field or method\{hint}",
+              ),
+            )
+          }
+        None =>
+          @value.Value::BoundMethod(@value.StarlarkBoundMethod::new(obj, attr))
+      }
+    }
     @value.Value::Module(m) =>
       match m.get(attr) {
         Some(v) => v
@@ -893,11 +944,12 @@ fn call_builtin(
       let names : Array[String] = match pos_args[0] {
         @value.Value::String(_) =>
           [
-            "capitalize", "count", "elem_ords", "elems", "endswith", "find", "format",
-            "index", "isalnum", "isalpha", "isdigit", "islower", "isspace", "istitle",
-            "isupper", "join", "lower", "lstrip", "partition", "removeprefix", "removesuffix",
-            "replace", "rfind", "rindex", "rpartition", "rstrip", "split", "splitlines",
-            "startswith", "strip", "title", "upper",
+            "capitalize", "codepoint_ords", "codepoints", "count", "elem_ords", "elems",
+            "endswith", "find", "format", "index", "isalnum", "isalpha", "isdigit",
+            "islower", "isspace", "istitle", "isupper", "join", "lower", "lstrip",
+            "partition", "removeprefix", "removesuffix", "replace", "rfind", "rindex",
+            "rpartition", "rsplit", "rstrip", "split", "splitlines", "startswith",
+            "strip", "title", "upper",
           ]
         @value.Value::List(_) =>
           ["append", "clear", "extend", "index", "insert", "pop", "remove"]
@@ -952,11 +1004,18 @@ fn call_builtin(
       }
       match pos_args[0] {
         @value.Value::Int(n) => {
-          if n < 0N || n > BigInt::from_int(0x10ffff) {
+          if n < 0N {
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "chr() argument not in range(0x110000): \{n}",
+                "chr: Unicode code point \{n} out of range (<0)",
+              ),
+            )
+          } else if n > BigInt::from_int(0x10ffff) {
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "chr: Unicode code point U+\{int64_to_hex(n, true)} out of range (>0x10FFFF)",
               ),
             )
           }
@@ -3338,7 +3397,7 @@ fn builtin_bytes(
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "at index \{idx}, \{n} out of range (want value in unsigned 8-bit range)",
+                  "bytes: at index \{idx}, \{n} out of range (want value in unsigned 8-bit range)",
                 ),
               )
             }
@@ -3350,7 +3409,7 @@ fn builtin_bytes(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "at index \{idx}, got \{@value.type_name(v)}, want int",
+                "bytes: at index \{idx}, got \{@value.type_name(v)}, want int",
               ),
             )
           }

@@ -1202,7 +1202,8 @@ fn in_op(
         _ =>
           raise EvalErr(
             make_eval_error(
-              ctx, "'in <string>' requires string as left operand",
+              ctx,
+              "'in <string>' requires string as left operand, not \{@value.type_name(needle)}",
             ),
           )
       }
