@@ -860,6 +860,29 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       `starlarktest/float_test.mbt`. Commit: `f3ecb44`
 - [x] **MISSING-8**: Dict-keyed `%` format test cases from `string.star` lines 177–178
       — added to `starlarktest/string_test.mbt`. Commit: `f3ecb44`
+- [x] **BUG-11**: Step budget exceeded message differs from starlark-go — fixed in
+      `eval/env.mbt`: no-callback overflow path now calls `thread.cancel("too many steps")`
+      and raises `"Starlark computation cancelled: too many steps"` to match starlark-go.
+      Commit: `ad4541c`
+- [x] **BUG-12**: `Thread::set_max_steps()` does not reset step counter — fixed by
+      having `set_max_steps` call the new `Thread::reset_steps()` method.
+      Commit: `ad4541c`
+- [x] **BUG-13**: `fail()` silently ignores unknown keyword arguments — fixed in
+      `eval/expr.mbt`: unknown kwargs raise `"fail: unexpected keyword argument X"`;
+      non-string `sep` raises `"fail: for parameter sep: got T, want string"`.
+      Commit: `e2ce568`
+- [x] **BUG-14**: `list.count()` / `list.reverse()` / `list.sort()` callable but absent
+      from `dir([])` — removed from `call_list_method`; these are Python-only methods
+      absent from the Starlark spec. Commit: `0f0df20`
+- [x] **MISSING-9**: `Thread::call_frame(n)` single-frame accessor — added to `eval.mbt`;
+      returns `call_stack[length-1-n]` or `None` if out of range. Commit: `ad4541c`
+- [x] **MISSING-10**: `Thread::reset_steps()` public method — added to `eval.mbt`.
+      Commit: `ad4541c`
+- [x] **MISSING-11**: `str.format()` edge-case tests from `string.star` lines 206–215 —
+      added to `starlarktest/string_test.mbt`. Commit: `6823ad6`
+- [x] **MISSING-12**: `str_format` conv/spec split diverges for `{name!conv:spec}` — fixed
+      in `eval/expr.mbt`: post-`!` portion split on `:` to separate conv from spec; empty
+      conv raises `"format: unknown conversion"` (no value). Commit: `6823ad6`
 
 ---
 
