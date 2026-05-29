@@ -85,6 +85,11 @@ pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
 }
 
 ///|
+pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
+  { ..self, allow_set: v }
+}
+
+///|
 pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
   { ..self, allow_global_reassign: v }
 }
@@ -572,6 +577,7 @@ pub fn exec_file(
   )
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(opts.allow_global_reassign)
+    .with_allow_set(opts.allow_set)
     .with_load_binds_globally(opts.load_binds_globally)
   let resolved = @resolver.resolve(
     file,
@@ -629,6 +635,7 @@ pub fn exec_file_with_predeclared(
   let extra_names : Array[String] = predeclared.bindings.keys().collect()
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(opts.allow_global_reassign)
+    .with_allow_set(opts.allow_set)
     .with_load_binds_globally(opts.load_binds_globally)
   let resolved = @resolver.resolve(
     file,
@@ -695,9 +702,9 @@ pub fn exec_repl_chunk(
       _ => ()
     }
   })
-  let resolve_opts = @resolver.ResolveOptions::default().with_load_binds_globally(
-    true,
-  )
+  let resolve_opts = @resolver.ResolveOptions::default()
+    .with_allow_set(opts.allow_set)
+    .with_load_binds_globally(true)
   let resolved = @resolver.resolve(
     file,
     fn(name) { is_builtin(name) || extra_names.contains(name) },

@@ -466,3 +466,33 @@ test "resolve: augmented assignment to list LHS is rejected (MISSING-48)" {
     has_error(result, "can't use list expression in augmented assignment"),
   )
 }
+
+// --- Dialect gating (MISSING-51) ---
+
+///|
+test "resolve: set literal rejected when allow_set is disabled (MISSING-51)" {
+  let f = parse_or_fail("x = {1, 2, 3}")
+  let opts = ResolveOptions::default().with_allow_set(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(has_error(result, "this Starlark dialect does not support sets"))
+}
+
+///|
+test "resolve: set comprehension rejected when allow_set is disabled (MISSING-51)" {
+  let f = parse_or_fail("x = {e for e in [1, 2]}")
+  let opts = ResolveOptions::default().with_allow_set(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(has_error(result, "this Starlark dialect does not support sets"))
+}
+
+///|
+test "resolve: set literal allowed by default (MISSING-51)" {
+  let f = parse_or_fail("x = {1, 2, 3}")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.is_valid())
+}

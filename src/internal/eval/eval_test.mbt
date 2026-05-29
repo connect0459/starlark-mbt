@@ -756,3 +756,13 @@ test "exec_repl_chunk: returns EvalError on parse or resolve error" {
     Ok(_) => assert_true(false)
   }
 }
+
+///|
+test "exec_file: set literal rejected when allow_set disabled (MISSING-51)" {
+  let t = Thread::new("test")
+  let opts = Options::default().with_allow_set(false)
+  match exec_file(t, "<test>", "x = {1, 2}", opts) {
+    Err(e) => assert_true(e.msg().contains("does not support sets"))
+    Ok(_) => fail("expected set-dialect error")
+  }
+}

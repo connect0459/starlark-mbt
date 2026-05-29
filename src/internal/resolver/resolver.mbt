@@ -134,6 +134,14 @@ pub fn ResolveOptions::with_allow_recursion(
 }
 
 ///|
+pub fn ResolveOptions::with_allow_set(
+  self : ResolveOptions,
+  v : Bool,
+) -> ResolveOptions {
+  { ..self, allow_set: v }
+}
+
+///|
 pub fn ResolveOptions::with_load_binds_globally(
   self : ResolveOptions,
   v : Bool,
@@ -798,10 +806,14 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
         self.walk_expr(k)
         self.walk_expr(v)
       }
-    @syntax.Expr::ESet(elems, _) =>
+    @syntax.Expr::ESet(elems, pos) => {
+      if !self.opts.allow_set {
+        self.errorf(pos, "this Starlark dialect does not support sets")
+      }
       for e in elems {
         self.walk_expr(e)
       }
+    }
     @syntax.Expr::ELambda(params, body, pos) => {
       let saved = self.push_block()
       let old_fn = self.current_fn_name
@@ -817,8 +829,12 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
     }
     @syntax.Expr::EListComp(body, clauses, _) =>
       self.walk_comprehension(body, None, clauses)
-    @syntax.Expr::ESetComp(body, clauses, _) =>
+    @syntax.Expr::ESetComp(body, clauses, pos) => {
+      if !self.opts.allow_set {
+        self.errorf(pos, "this Starlark dialect does not support sets")
+      }
       self.walk_comprehension(body, None, clauses)
+    }
     @syntax.Expr::EDictComp(key, val, clauses, _) =>
       self.walk_comprehension(key, Some(val), clauses)
   }
