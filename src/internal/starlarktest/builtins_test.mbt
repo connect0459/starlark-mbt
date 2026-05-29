@@ -174,6 +174,8 @@ let builtins_star_src : String =
   #|
   #|# fail with sep
   #|assert.fails(lambda: fail(1, 2, 3, sep="/"), "1/2/3")
+  #|assert.fails(lambda: fail("msg", x=1), "unexpected keyword argument x")
+  #|assert.fails(lambda: fail("msg", sep=1), "for parameter sep: got int, want string")
 
 ///|
 test "builtins.star: all assertions pass" {
