@@ -919,6 +919,21 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       `starlarktest/float_test.mbt`. Commit: `2b2ac82`
 - [x] **MISSING-21**: `int()` from 20-digit decimal string — tests added to
       `starlarktest/int_test.mbt`. Commit: `2b2ac82`
+- [x] **BUG-20**: `number_to_int` silently returned wrong values for BigInt overflow
+      and NaN/Inf — fixed in `src/starlark.mbt`: added `compare_int64` bounds check
+      for BigInt and `is_nan()`/`is_inf()` guard for Float; added `int64` import to
+      `src/moon.pkg`. Commit: `7e27117`
+- [x] **MISSING-22**: `number_to_int` edge-case tests — added four tests covering
+      BigInt overflow, NaN, positive Inf, and negative Inf. Commit: `7e27117`
+- [x] **BUG-21**: Backtrace non-toplevel frame positions showed call-site instead of
+      position within the caller — fixed in `eval/expr.mbt`: `call_value` now stamps
+      the current top-of-stack frame with the call expression's position before
+      dispatching to the callee, so intermediate frames show where within the caller
+      the next call was made. Commit: `c79a41c`
+- [x] **MISSING-23**: Backtrace exact position assertions — added two snapshot tests in
+      `starlarktest/error_format_test.mbt`: one for the simple `f→g` chain verifying
+      `f` shows 4:4 (fixed), and one for the deep `i→h→min→g→f` chain verifying each
+      intermediate frame shows the call-site within that function. Commit: `c79a41c`
 
 ---
 
