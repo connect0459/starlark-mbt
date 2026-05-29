@@ -420,3 +420,23 @@ test "int.star: int() rejects out-of-range base (BUG-34)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+// MISSING-37/MISSING-40: division/modulo by zero and slice-step messages match
+// starlark-go exactly (distinct text per operator and operand types).
+let div_zero_messages_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: 1 / 0, "floating-point division by zero")
+  #|assert.fails(lambda: 1 / 0.0, "floating-point division by zero")
+  #|assert.fails(lambda: 1 // 0, "floored division by zero")
+  #|assert.fails(lambda: 1 % 0, "integer modulo by zero")
+  #|assert.fails(lambda: 1 % 0.0, "floating-point modulo by zero")
+  #|assert.fails(lambda: "abc"[::0], "zero is not a valid slice step")
+
+///|
+test "division/modulo/slice-step error messages match starlark-go (MISSING-37/40)" {
+  let errs = run_star_string(div_zero_messages_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

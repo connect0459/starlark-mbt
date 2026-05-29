@@ -822,7 +822,7 @@ pub fn truth(v : Value) -> Bool {
 ///|
 pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   if b.is_zero() {
-    return Err("integer division by zero")
+    return Err("floored division by zero")
   }
   let q = a / b
   let r = a % b

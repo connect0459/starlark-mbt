@@ -436,25 +436,25 @@ fn eval_div(
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) => {
       if b.is_zero() {
-        raise EvalErr(make_eval_error(ctx, "integer division by zero"))
+        raise EvalErr(make_eval_error(ctx, "floating-point division by zero"))
       }
       @value.Value::Float(finite_double(ctx, a) / finite_double(ctx, b))
     }
     (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
-        raise EvalErr(make_eval_error(ctx, "float division by zero"))
+        raise EvalErr(make_eval_error(ctx, "floating-point division by zero"))
       }
       @value.Value::Float(a / b)
     }
     (@value.Value::Int(a), @value.Value::Float(b)) => {
       if b == 0.0 {
-        raise EvalErr(make_eval_error(ctx, "float division by zero"))
+        raise EvalErr(make_eval_error(ctx, "floating-point division by zero"))
       }
       @value.Value::Float(finite_double(ctx, a) / b)
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b.is_zero() {
-        raise EvalErr(make_eval_error(ctx, "float division by zero"))
+        raise EvalErr(make_eval_error(ctx, "floating-point division by zero"))
       }
       @value.Value::Float(a / finite_double(ctx, b))
     }
@@ -480,19 +480,19 @@ fn eval_floor_div(
       @value.Value::Int(check(ctx, @value.floor_div(a, b)))
     (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
-        raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
+        raise EvalErr(make_eval_error(ctx, "floored division by zero"))
       }
       @value.Value::Float((a / b).floor())
     }
     (@value.Value::Int(a), @value.Value::Float(b)) => {
       if b == 0.0 {
-        raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
+        raise EvalErr(make_eval_error(ctx, "floored division by zero"))
       }
       @value.Value::Float((finite_double(ctx, a) / b).floor())
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b.is_zero() {
-        raise EvalErr(make_eval_error(ctx, "float floor division by zero"))
+        raise EvalErr(make_eval_error(ctx, "floored division by zero"))
       }
       @value.Value::Float((a / finite_double(ctx, b)).floor())
     }
@@ -528,19 +528,19 @@ fn eval_mod(
       @value.Value::Int(check(ctx, @value.starlark_mod(a, b)))
     (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
-        raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
+        raise EvalErr(make_eval_error(ctx, "floating-point modulo by zero"))
       }
       @value.Value::Float(float_floor_mod(a, b))
     }
     (@value.Value::Int(a), @value.Value::Float(b)) => {
       if b == 0.0 {
-        raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
+        raise EvalErr(make_eval_error(ctx, "floating-point modulo by zero"))
       }
       @value.Value::Float(float_floor_mod(finite_double(ctx, a), b))
     }
     (@value.Value::Float(a), @value.Value::Int(b)) => {
       if b.is_zero() {
-        raise EvalErr(make_eval_error(ctx, "float modulo by zero"))
+        raise EvalErr(make_eval_error(ctx, "floating-point modulo by zero"))
       }
       @value.Value::Float(float_floor_mod(a, finite_double(ctx, b)))
     }
@@ -1501,7 +1501,7 @@ fn eval_slice(
     Some(s) => s
   }
   if step == 0 {
-    raise EvalErr(make_eval_error(ctx, "slice step cannot be zero"))
+    raise EvalErr(make_eval_error(ctx, "zero is not a valid slice step"))
   }
   match obj {
     @value.Value::List(l) => {

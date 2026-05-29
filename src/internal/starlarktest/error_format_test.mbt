@@ -75,7 +75,7 @@ test "error format: integer division by zero" {
       inspect(
         e.msg(),
         content=(
-          #|integer division by zero
+          #|floored division by zero
         ),
       )
     Ok(_) => abort("expected error")
@@ -386,7 +386,7 @@ test "error format: load failure cause preserves inner backtrace (MISSING-26)" {
         content=(
           #|Traceback (most recent call last):
           #|  root.star:2:1: in <toplevel>
-          #|Error: cannot load crash.star: integer division by zero
+          #|Error: cannot load crash.star: floored division by zero
         ),
       )
       match e.cause() {
@@ -397,7 +397,7 @@ test "error format: load failure cause preserves inner backtrace (MISSING-26)" {
               #|Traceback (most recent call last):
               #|  crash.star:4:2: in <toplevel>
               #|  crash.star:4:2: in f
-              #|Error: integer division by zero
+              #|Error: floored division by zero
             ),
           )
         None => abort("expected inner cause error")
@@ -453,7 +453,7 @@ test "error format: builtin with callback shows builtin frame in traceback" {
     Err(e) => {
       let bt = e.backtrace()
       assert_true(bt.contains("<builtin>: in min"))
-      assert_true(bt.contains("integer division by zero"))
+      assert_true(bt.contains("floored division by zero"))
     }
     Ok(_) => abort("expected error")
   }
@@ -561,7 +561,7 @@ test "error format: deep call chain frames show call positions (BUG-21)" {
           #|  <builtin>: in min
           #|  crash.star:2:19: in g
           #|  crash.star:2:19: in f
-          #|Error: integer division by zero
+          #|Error: floored division by zero
         ),
       )
     Ok(_) => abort("expected error")

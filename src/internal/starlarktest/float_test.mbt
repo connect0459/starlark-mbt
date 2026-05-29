@@ -176,9 +176,9 @@ let float_arithmetic_src : String =
   #|assert.eq(2.5 / 2, 1.25)
   #|assert.eq(5 / 4.0, 1.25)
   #|assert.eq(5 / 4, 1.25)
-  #|assert.fails(lambda: 1.0 / 0, "float division by zero")
-  #|assert.fails(lambda: 1.0 / 0.0, "float division by zero")
-  #|assert.fails(lambda: 1 / 0.0, "float division by zero")
+  #|assert.fails(lambda: 1.0 / 0, "floating-point division by zero")
+  #|assert.fails(lambda: 1.0 / 0.0, "floating-point division by zero")
+  #|assert.fails(lambda: 1 / 0.0, "floating-point division by zero")
   #|
   #|# floored division
   #|assert.eq(100.0 // 8.0, 12.0)
@@ -194,9 +194,9 @@ let float_arithmetic_src : String =
   #|assert.eq(5 // 4.0, 1.0)
   #|assert.eq(5 // 4, 1)
   #|assert.eq(type(5 // 4), "int")
-  #|assert.fails(lambda: 1.0 // 0, "float floor division by zero")
-  #|assert.fails(lambda: 1.0 // 0.0, "float floor division by zero")
-  #|assert.fails(lambda: 1 // 0.0, "float floor division by zero")
+  #|assert.fails(lambda: 1.0 // 0, "floored division by zero")
+  #|assert.fails(lambda: 1.0 // 0.0, "floored division by zero")
+  #|assert.fails(lambda: 1 // 0.0, "floored division by zero")
   #|
   #|# remainder (floor-mod: sign follows divisor)
   #|assert.eq(100.0 % 8.0, 4.0)
@@ -208,9 +208,9 @@ let float_arithmetic_src : String =
   #|assert.eq(5 % 4.0, 1.0)
   #|assert.eq(-100.0 % 7, 5.0)
   #|assert.eq(100 % 7.0, 2.0)
-  #|assert.fails(lambda: 1.0 % 0, "float modulo by zero")
-  #|assert.fails(lambda: 1.0 % 0.0, "float modulo by zero")
-  #|assert.fails(lambda: 1 % 0.0, "float modulo by zero")
+  #|assert.fails(lambda: 1.0 % 0, "floating-point modulo by zero")
+  #|assert.fails(lambda: 1.0 % 0.0, "floating-point modulo by zero")
+  #|assert.fails(lambda: 1 % 0.0, "floating-point modulo by zero")
   #|
   #|# floats cannot be used as indices
   #|assert.fails(lambda: "abc"[1.0], "indices must be integers")
