@@ -1134,25 +1134,32 @@ fn eval_shift(
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) => {
       if b < 0N {
-        raise EvalErr(make_eval_error(ctx, "negative shift count"))
+        raise EvalErr(make_eval_error(ctx, "negative shift count: \{b}"))
       }
-      if b >= 512N {
-        raise EvalErr(make_eval_error(ctx, "shift count too large"))
+      match dir {
+        "lshift" => {
+          if b >= 512N {
+            raise EvalErr(make_eval_error(ctx, "shift count too large: \{b}"))
+          }
+          @value.Value::Int(a << b.to_int())
+        }
+        _ => {
+          // Right shift: no upper cap; BigInt >> large_count = 0 (positive) or -1 (negative).
+          // Clamp b to a safe int range to avoid to_int() overflow.
+          let shift = if b > 1000000N { 1000000 } else { b.to_int() }
+          @value.Value::Int(a >> shift)
+        }
       }
-      let shift = b.to_int()
-      let r = match dir {
-        "lshift" => a << shift
-        _ => a >> shift
-      }
-      @value.Value::Int(r)
     }
-    _ =>
+    _ => {
+      let op_sym = if dir == "lshift" { "<<" } else { ">>" }
       raise EvalErr(
         make_eval_error(
           ctx,
-          "shift requires integers, got '\{@value.type_name(lv)}' and '\{@value.type_name(rv)}'",
+          "unknown binary op: \{@value.type_name(lv)} \{op_sym} \{@value.type_name(rv)}",
         ),
       )
+    }
   }
 }
 

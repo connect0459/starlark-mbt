@@ -384,3 +384,39 @@ test "int.star: int() error message for unsupported types matches starlark-go (B
     fail(errs.join("\n"))
   }
 }
+
+///|
+let int_shift_rshift_src : String =
+  #|load("assert.star", "assert")
+  #|# right shift by a large count should not error (BUG-30)
+  #|assert.eq(1 >> 1000, 0)
+  #|assert.eq((-1) >> 1000, -1)
+
+///|
+test "int.star: right shift with large count returns 0/-1 instead of error (BUG-30)" {
+  let errs = run_star_string(int_shift_rshift_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let int_base_range_src : String =
+  #|load("assert.star", "assert")
+  #|# int() with out-of-range base should error (BUG-34)
+  #|assert.fails(lambda: int("a", 1), "int: base must be an integer >= 2 && <= 36")
+  #|assert.fails(lambda: int("a", 37), "int: base must be an integer >= 2 && <= 36")
+  #|assert.fails(lambda: int("a", -1), "int: base must be an integer >= 2 && <= 36")
+  #|# base 0 is valid (auto-detect)
+  #|assert.eq(int("0xff", 0), 255)
+  #|# edge cases: base 2 and 36 are valid
+  #|assert.eq(int("z", 36), 35)
+  #|assert.eq(int("1", 2), 1)
+
+///|
+test "int.star: int() rejects out-of-range base (BUG-34)" {
+  let errs = run_star_string(int_base_range_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

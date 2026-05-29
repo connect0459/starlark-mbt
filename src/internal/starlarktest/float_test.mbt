@@ -386,6 +386,23 @@ test "float.star: float() and int() conversions" {
 }
 
 ///|
+let float_whitespace_src : String =
+  #|load("assert.star", "assert")
+  #|# float() must not accept surrounding whitespace (BUG-32)
+  #|assert.fails(lambda: float("  1.0  "), "invalid float literal")
+  #|assert.fails(lambda: float(" 1.0"), "invalid float literal")
+  #|assert.fails(lambda: float("1.0 "), "invalid float literal")
+  #|assert.fails(lambda: float("\t1.0"), "invalid float literal")
+
+///|
+test "float.star: float() rejects surrounding whitespace (BUG-32)" {
+  let errs = run_star_string(float_whitespace_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let float_formatting_src : String =
   #|load("assert.star", "assert")
   #|

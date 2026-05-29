@@ -852,6 +852,11 @@ fn call_builtin(
             Some(b) => b
             None => 10
           }
+          if base != 0 && (base < 2 || base > 36) {
+            raise EvalErr(
+              make_eval_error(ctx, "int: base must be an integer >= 2 && <= 36"),
+            )
+          }
           let n = check(ctx, parse_int_str(s.raw(), base))
           @value.Value::Int(n)
         }
@@ -895,7 +900,7 @@ fn call_builtin(
           @value.Value::Bool(b) =>
             @value.Value::Float(if b { 1.0 } else { 0.0 })
           @value.Value::String(s) => {
-            let raw = s.raw().trim().to_owned()
+            let raw = s.raw()
             if raw.length() == 0 {
               raise EvalErr(make_eval_error(ctx, "float: empty string"))
             }
