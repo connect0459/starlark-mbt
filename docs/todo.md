@@ -883,6 +883,42 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 - [x] **MISSING-12**: `str_format` conv/spec split diverges for `{name!conv:spec}` — fixed
       in `eval/expr.mbt`: post-`!` portion split on `:` to separate conv from spec; empty
       conv raises `"format: unknown conversion"` (no value). Commit: `6823ad6`
+- [x] **BUG-15**: `hasattr`/attribute access on built-in types returned a `BoundMethod` for
+      any name — fixed in `eval/expr.mbt`: `eval_getattr` now validates attribute names
+      against each type's method set and raises with spell-check hint for unknowns.
+      `dir(string)` also extended with `rsplit`, `codepoints`, `codepoint_ords`.
+      Commit: `67191bb`
+- [x] **BUG-16**: `chr()` error messages did not match starlark-go format — fixed in
+      `eval/expr.mbt`: two branches for `n<0` and `n>0x10FFFF` with exact format.
+      Commit: `67191bb`
+- [x] **BUG-17**: Index out-of-range error format differed from starlark-go — fixed in
+      `eval/ops.mbt`: `adjust_index` now accepts `type_name` and produces
+      `"T index N out of range [-len:len-1]"` / `"index N out of range: empty T"`.
+      Commit: `2b2ac82`
+- [x] **BUG-18**: `'in <string>'` error missing `, not {type}` suffix — fixed in
+      `eval/ops.mbt`. Commit: `67191bb`
+- [x] **BUG-19**: `bytes()` constructor errors missing `"bytes: "` prefix — fixed in
+      `eval/expr.mbt`. Commit: `67191bb`
+- [x] **MISSING-13**: Method spell-check tests for built-in string type — added to
+      `starlarktest/string_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-14**: `int("0o123")` / `int("-0o123")` base-10 error tests — added to
+      `starlarktest/int_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-15**: `"abc" * (1000000 * 1000000)` repeat-count-too-large test — added to
+      `starlarktest/string_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-16**: `abs(+/-123 * maxint32)` BigInt test — added to
+      `starlarktest/builtins_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-17**: `"%c" % 0x3b1` and `"%c" % "α"` non-ASCII tests — added to
+      `starlarktest/string_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-18**: `%g` format for normal float/int values — fixed `format_float_g` to
+      match starlark-go (negative zero, integer `.0` append, >= 1e6 → scientific notation);
+      tests added to `starlarktest/float_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-19**: `%e`/`%f`/`%d` with edge-case large/tiny floats — fixed `%d`/`%o`/
+      `%x`/`%X` for Float to use `double_to_bigint` (full BigInt precision); tests added.
+      Commit: `2b2ac82`
+- [x] **MISSING-20**: Float `%` modulo with negative operands — tests added to
+      `starlarktest/float_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-21**: `int()` from 20-digit decimal string — tests added to
+      `starlarktest/int_test.mbt`. Commit: `2b2ac82`
 
 ---
 
