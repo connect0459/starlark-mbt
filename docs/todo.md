@@ -1042,6 +1042,35 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       prefix — `min`/`max` empty/not-iterable, `list.index`, the `getattr` builtin,
       `float` non-convertible, and `startswith`/`endswith` tuple-element errors
       (with the real element index) all aligned (`eval/expr.mbt`). Commit: `e5be4b5`
+- [x] **MISSING-42**: Indentation tabs now expand by source column (rune position),
+      not accumulated width, matching `scan.go` for mixed space+tab indentation
+      (`lexer/scanner.mbt`). Commit: `27ec7c5`
+- [x] **MISSING-43/44**: Parser rejects `load("m")` with no symbols ("load statement
+      must import at least 1 symbol") and unparenthesized trailing-comma tuples
+      ("unparenthesized tuple with trailing comma"); `(x,)` still allowed
+      (`parser/parser.mbt`). Commit: `a63d8af`
+- [x] **MISSING-45**: For-loop / comprehension targets parsed with `parse_primary`
+      (primary-with-suffix) instead of a full test, rejecting `for a + b in xs`
+      (`parser/parser.mbt`). Commit: `a956cda`
+- [x] **MISSING-46/47/48**: Resolver walks index/dot assignment targets as uses
+      (`undef[0]=1` → undefined), rejects non-assignable LHS ("can't assign to
+      <kind>"), and rejects augmented assignment to tuple/list LHS
+      (`resolver/resolver.mbt`). Commit: `da34349`
+- [x] **MISSING-49**: Resolver validates call-argument ordering — multiple
+      `*args`/`**kwargs`, `*args` after `**kwargs`, keyword/positional after
+      `*args`/`**kwargs`, positional after named, repeated keyword, 255-arg limits
+      (`resolver/resolver.mbt`). Commit: `1d35a1f`
+- [x] **MISSING-50**: Resolver enforces full parameter-ordering rules — required
+      after optional, bare `*` must be followed by keyword-only, a `*` or parameter
+      following `**kwargs`, multiple `*` or `**` parameters
+      (`resolver/resolver.mbt`). Commit: `a653ef1`
+- [x] **MISSING-51**: Set literals/comprehensions gated on `allow_set` in the
+      resolver ("this Starlark dialect does not support sets"); the flag is now wired
+      from `Options` through to `ResolveOptions` (`resolver/resolver.mbt`,
+      `eval/eval.mbt`, `eval/program.mbt`). Commit: `5cbcfd2`
+- [x] **MISSING-52**: `load` rejects empty / leading-underscore source identifiers
+      ("load: empty identifier" / "load: names with leading underscores are not
+      exported: NAME") (`resolver/resolver.mbt`). Commit: `3fe9c9e`
 
 ---
 
