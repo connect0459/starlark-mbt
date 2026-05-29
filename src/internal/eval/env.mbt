@@ -19,6 +19,7 @@ priv struct EvalContext {
   opts : Options
   global_env : EvalEnv
   load_bound_names : Array[String]
+  mut toplevel_frame_idx : Int
 }
 
 ///|
@@ -95,7 +96,7 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
     )
   }
   let global_env = EvalEnv::for_module(base)
-  { thread, opts, global_env, load_bound_names: [] }
+  { thread, opts, global_env, load_bound_names: [], toplevel_frame_idx: -1 }
 }
 
 ///|

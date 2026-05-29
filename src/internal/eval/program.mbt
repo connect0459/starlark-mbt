@@ -77,9 +77,22 @@ pub fn Program::init(
 ) -> Result[Module, @errors.EvalError] {
   let ctx = EvalContext::new(thread, self.opts)
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
+  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
+  ctx.thread.call_stack.push(
+    @errors.CallFrame::new(
+      "<toplevel>",
+      @errors.Position::new(self.file.path(), 1, 1),
+    ),
+  )
   ignore(exec_stmts(ctx, ctx.global_env, self.file.stmts())) catch {
-    EvalErr(e) => return Err(e)
+    EvalErr(e) => {
+      ignore(ctx.thread.call_stack.pop())
+      ctx.toplevel_frame_idx = -1
+      return Err(e)
+    }
   }
+  ignore(ctx.thread.call_stack.pop())
+  ctx.toplevel_frame_idx = -1
   let m = { ..Module::new(), predeclared: predeclared.bindings }
   ctx.global_env.locals.each(fn(name, v) {
     if self.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {

@@ -124,6 +124,7 @@ test "error format: EvalError backtrace includes traceback with call frames" {
         e.backtrace(),
         content=(
           #|Traceback (most recent call last):
+          #|  test.star:5:2: in <toplevel>
           #|  test.star:5:2: in f
           #|  test.star:4:4: in g
           #|Error: unknown binary op: int + string
@@ -147,6 +148,8 @@ test "error format: EvalError backtrace with no frames shows only Error line" {
       inspect(
         e.backtrace(),
         content=(
+          #|Traceback (most recent call last):
+          #|  test.star:1:1: in <toplevel>
           #|Error: unknown binary op: int + string
         ),
       )
@@ -348,6 +351,7 @@ test "error format: builtin method error shows Error-in prefix" {
         e.backtrace(),
         content=(
           #|Traceback (most recent call last):
+          #|  test.star:3:2: in <toplevel>
           #|  test.star:3:2: in f
           #|Error in join: join: in list, want string, got int
         ),
@@ -375,6 +379,50 @@ test "error format: builtin with callback shows builtin frame in traceback" {
       let bt = e.backtrace()
       assert_true(bt.contains("<builtin>: in min"))
       assert_true(bt.contains("integer division by zero"))
+    }
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: module-level error backtrace includes <toplevel> frame (BUG-3)" {
+  let thread = @eval.Thread::new("test")
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    "x = 1 + \"oops\"",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      let bt = e.backtrace()
+      assert_true(bt.contains("in <toplevel>"))
+    }
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: function call from toplevel shows <toplevel> frame (BUG-3)" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|def g():
+    #|  return 1 + "oops"
+    #|def f():
+    #|  g()
+    #|f()
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      let bt = e.backtrace()
+      assert_true(bt.contains("in <toplevel>"))
+      assert_true(bt.contains("in f"))
+      assert_true(bt.contains("in g"))
     }
     Ok(_) => abort("expected error")
   }

@@ -5,6 +5,12 @@ fn exec_stmts(
   stmts : Array[@syntax.Stmt],
 ) -> Signal raise EvalErr {
   for stmt in stmts {
+    if ctx.toplevel_frame_idx >= 0 && env.is_module_scope {
+      ctx.thread.call_stack[ctx.toplevel_frame_idx] = @errors.CallFrame::new(
+        "<toplevel>",
+        @syntax.stmt_pos(stmt),
+      )
+    }
     match exec_stmt(ctx, env, stmt) {
       Signal::SigNormal => ()
       sig => return sig

@@ -510,9 +510,19 @@ pub fn exec_file(
     let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
+  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
+  ctx.thread.call_stack.push(
+    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
+  )
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
-    EvalErr(e) => return Err(e)
+    EvalErr(e) => {
+      ignore(ctx.thread.call_stack.pop())
+      ctx.toplevel_frame_idx = -1
+      return Err(e)
+    }
   }
+  ignore(ctx.thread.call_stack.pop())
+  ctx.toplevel_frame_idx = -1
   let m = Module::new()
   ctx.global_env.locals.each(fn(name, v) {
     if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
@@ -552,9 +562,19 @@ pub fn exec_file_with_predeclared(
     let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
+  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
+  ctx.thread.call_stack.push(
+    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
+  )
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
-    EvalErr(e) => return Err(e)
+    EvalErr(e) => {
+      ignore(ctx.thread.call_stack.pop())
+      ctx.toplevel_frame_idx = -1
+      return Err(e)
+    }
   }
+  ignore(ctx.thread.call_stack.pop())
+  ctx.toplevel_frame_idx = -1
   let m = { ..Module::new(), predeclared: predeclared.bindings }
   ctx.global_env.locals.each(fn(name, v) {
     if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
@@ -605,9 +625,19 @@ pub fn exec_repl_chunk(
     let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
+  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
+  ctx.thread.call_stack.push(
+    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
+  )
   ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
-    EvalErr(e) => return Err(e)
+    EvalErr(e) => {
+      ignore(ctx.thread.call_stack.pop())
+      ctx.toplevel_frame_idx = -1
+      return Err(e)
+    }
   }
+  ignore(ctx.thread.call_stack.pop())
+  ctx.toplevel_frame_idx = -1
   ctx.global_env.locals.each(fn(name, v) {
     let key = @value.Value::String(@value.StarlarkString::new(name))
     globals.set(key, v) |> ignore
