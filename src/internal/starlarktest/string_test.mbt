@@ -658,3 +658,39 @@ test "string.star: string * huge_int raises repeat-count-too-large (MISSING-15)"
     fail(errs.join("\n"))
   }
 }
+
+///|
+// BUG-29: string search methods must use UTF-8 byte offsets, not UTF-16 char
+// indices. s = "abcЙ😿" has bytes a(0) b(1) c(2) Й(3-4) 😿(5-8), byte_len 9.
+let string_byte_offset_src : String =
+  #|load("assert.star", "assert")
+  #|s = "abcЙ😿"
+  #|# find/index return byte offsets
+  #|assert.eq(s.find("😿"), 5)
+  #|assert.eq(s.find("Й"), 3)
+  #|assert.eq(s.find("c"), 2)
+  #|assert.eq(s.index("😿"), 5)
+  #|assert.eq(s.rfind("c"), 2)
+  #|assert.eq(s.rindex("Й"), 3)
+  #|# count over bytes
+  #|assert.eq(s.count("c"), 1)
+  #|assert.eq(s.count("😿"), 1)
+  #|# start/end arguments are byte offsets
+  #|assert.eq(s.find("c", 3), -1)
+  #|assert.eq(s.find("😿", 5), 5)
+  #|# partition splits on byte boundaries
+  #|assert.eq(s.partition("Й"), ("abc", "Й", "😿"))
+  #|assert.eq(s.rpartition("Й"), ("abc", "Й", "😿"))
+  #|# startswith/endswith with byte-offset slice form
+  #|assert.true(s.startswith("abc"))
+  #|assert.true(s.endswith("😿"))
+  #|assert.true(s.endswith("Й", 0, 5))
+  #|assert.true(not s.endswith("Й", 0, 4))
+
+///|
+test "string search methods use UTF-8 byte offsets (BUG-29)" {
+  let errs = run_star_string(string_byte_offset_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

@@ -2283,6 +2283,7 @@ fn call_str_method(
           make_eval_error(ctx, "startswith() takes at least one argument"),
         )
       }
+      let slen = s.byte_len()
       let start_idx = if pos_args.length() >= 2 {
         match pos_args[1] {
           @value.Value::Int(n) => n.to_int()
@@ -2295,34 +2296,26 @@ fn call_str_method(
       let end_idx = if pos_args.length() >= 3 {
         match pos_args[2] {
           @value.Value::Int(n) => n.to_int()
-          @value.Value::None => s.raw().length()
-          _ => s.raw().length()
+          @value.Value::None => slen
+          _ => slen
         }
       } else {
-        s.raw().length()
+        slen
       }
-      let slen = s.raw().length()
-      let i = if start_idx < 0 {
-        (slen + start_idx).max(0)
-      } else {
-        start_idx.min(slen)
+      let i = clamp_byte_index(start_idx, slen)
+      let j = clamp_byte_index(end_idx, slen)
+      let sub = str_byte_slice(s, i, j)
+      let check_prefix = fn(prefix : @value.StarlarkString) -> Bool {
+        bytes_has_prefix(sub, prefix)
       }
-      let j = if end_idx < 0 {
-        (slen + end_idx).max(0)
-      } else {
-        end_idx.min(slen)
-      }
-      let sub = if i <= j { s.raw()[i:j].to_owned() } else { "" }
-      let check_prefix = fn(prefix : String) -> Bool { sub.has_prefix(prefix) }
       match pos_args[0] {
-        @value.Value::String(prefix) =>
-          @value.Value::Bool(check_prefix(prefix.raw()))
+        @value.Value::String(prefix) => @value.Value::Bool(check_prefix(prefix))
         @value.Value::Tuple(t) => {
           let mut found = false
           for item in t {
             match item {
               @value.Value::String(p) =>
-                if check_prefix(p.raw()) {
+                if check_prefix(p) {
                   found = true
                   break
                 }
@@ -2353,6 +2346,7 @@ fn call_str_method(
           make_eval_error(ctx, "endswith() takes at least one argument"),
         )
       }
+      let slen = s.byte_len()
       let start_idx = if pos_args.length() >= 2 {
         match pos_args[1] {
           @value.Value::Int(n) => n.to_int()
@@ -2365,34 +2359,26 @@ fn call_str_method(
       let end_idx = if pos_args.length() >= 3 {
         match pos_args[2] {
           @value.Value::Int(n) => n.to_int()
-          @value.Value::None => s.raw().length()
-          _ => s.raw().length()
+          @value.Value::None => slen
+          _ => slen
         }
       } else {
-        s.raw().length()
+        slen
       }
-      let slen = s.raw().length()
-      let i = if start_idx < 0 {
-        (slen + start_idx).max(0)
-      } else {
-        start_idx.min(slen)
+      let i = clamp_byte_index(start_idx, slen)
+      let j = clamp_byte_index(end_idx, slen)
+      let sub = str_byte_slice(s, i, j)
+      let check_suffix = fn(suffix : @value.StarlarkString) -> Bool {
+        bytes_has_suffix(sub, suffix)
       }
-      let j = if end_idx < 0 {
-        (slen + end_idx).max(0)
-      } else {
-        end_idx.min(slen)
-      }
-      let sub = if i <= j { s.raw()[i:j].to_owned() } else { "" }
-      let check_suffix = fn(suffix : String) -> Bool { sub.has_suffix(suffix) }
       match pos_args[0] {
-        @value.Value::String(suffix) =>
-          @value.Value::Bool(check_suffix(suffix.raw()))
+        @value.Value::String(suffix) => @value.Value::Bool(check_suffix(suffix))
         @value.Value::Tuple(t) => {
           let mut found = false
           for item in t {
             match item {
               @value.Value::String(p) =>
-                if check_suffix(p.raw()) {
+                if check_suffix(p) {
                   found = true
                   break
                 }
@@ -2425,17 +2411,10 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::String(sub) => {
-          let slen = s.raw().length()
+          let slen = s.byte_len()
           let start = if pos_args.length() >= 2 {
             match pos_args[1] {
-              @value.Value::Int(n) => {
-                let n2 = n.to_int()
-                if n2 < 0 {
-                  (slen + n2).max(0)
-                } else {
-                  n2.min(slen)
-                }
-              }
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
               _ => 0
             }
           } else {
@@ -2443,28 +2422,18 @@ fn call_str_method(
           }
           let end = if pos_args.length() >= 3 {
             match pos_args[2] {
-              @value.Value::Int(n) => {
-                let n2 = n.to_int()
-                if n2 < 0 {
-                  (slen + n2).max(0)
-                } else {
-                  n2.min(slen)
-                }
-              }
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
               _ => slen
             }
           } else {
             slen
           }
-          let slice = if start < end {
-            s.raw()[start:end].to_owned()
+          let result = if start <= end {
+            bytes_index_in(s, start, end, sub)
           } else {
-            ""
+            -1
           }
-          let result = find_substr(slice, sub.raw())
-          @value.Value::Int(
-            BigInt::from_int(if result >= 0 { result + start } else { -1 }),
-          )
+          @value.Value::Int(BigInt::from_int(result))
         }
         _ =>
           raise EvalErr(
@@ -2480,17 +2449,10 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::String(sub) => {
-          let slen = s.raw().length()
+          let slen = s.byte_len()
           let start = if pos_args.length() >= 2 {
             match pos_args[1] {
-              @value.Value::Int(n) => {
-                let n2 = n.to_int()
-                if n2 < 0 {
-                  (slen + n2).max(0)
-                } else {
-                  n2.min(slen)
-                }
-              }
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
               _ => 0
             }
           } else {
@@ -2498,25 +2460,18 @@ fn call_str_method(
           }
           let end = if pos_args.length() >= 3 {
             match pos_args[2] {
-              @value.Value::Int(n) => {
-                let n2 = n.to_int()
-                if n2 < 0 {
-                  (slen + n2).max(0)
-                } else {
-                  n2.min(slen)
-                }
-              }
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
               _ => slen
             }
           } else {
             slen
           }
-          let slice = if start < end {
-            s.raw()[start:end].to_owned()
+          let result = if start <= end {
+            bytes_count_in(s, start, end, sub)
           } else {
-            ""
+            0
           }
-          @value.Value::Int(BigInt::from_int(count_substr(slice, sub.raw())))
+          @value.Value::Int(BigInt::from_int(result))
         }
         _ =>
           raise EvalErr(
@@ -2705,7 +2660,28 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::String(sub) => {
-          let result = find_substr(s.raw(), sub.raw())
+          let slen = s.byte_len()
+          let start = if pos_args.length() >= 2 {
+            match pos_args[1] {
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
+              _ => 0
+            }
+          } else {
+            0
+          }
+          let end = if pos_args.length() >= 3 {
+            match pos_args[2] {
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
+              _ => slen
+            }
+          } else {
+            slen
+          }
+          let result = if start <= end {
+            bytes_index_in(s, start, end, sub)
+          } else {
+            -1
+          }
           if result < 0 {
             raise EvalErr(make_eval_error(ctx, "substring not found"))
           }
@@ -2725,17 +2701,10 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::String(sub) => {
-          let slen = s.raw().length()
+          let slen = s.byte_len()
           let start = if pos_args.length() >= 2 {
             match pos_args[1] {
-              @value.Value::Int(n) => {
-                let n2 = n.to_int()
-                if n2 < 0 {
-                  (slen + n2).max(0)
-                } else {
-                  n2.min(slen)
-                }
-              }
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
               _ => 0
             }
           } else {
@@ -2743,28 +2712,18 @@ fn call_str_method(
           }
           let end = if pos_args.length() >= 3 {
             match pos_args[2] {
-              @value.Value::Int(n) => {
-                let n2 = n.to_int()
-                if n2 < 0 {
-                  (slen + n2).max(0)
-                } else {
-                  n2.min(slen)
-                }
-              }
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
               _ => slen
             }
           } else {
             slen
           }
-          let slice = if start < end {
-            s.raw()[start:end].to_owned()
+          let result = if start <= end {
+            bytes_last_index_in(s, start, end, sub)
           } else {
-            ""
+            -1
           }
-          let result = rfind_substr(slice, sub.raw())
-          @value.Value::Int(
-            BigInt::from_int(if result >= 0 { result + start } else { -1 }),
-          )
+          @value.Value::Int(BigInt::from_int(result))
         }
         _ =>
           raise EvalErr(
@@ -2780,7 +2739,28 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::String(sub) => {
-          let result = rfind_substr(s.raw(), sub.raw())
+          let slen = s.byte_len()
+          let start = if pos_args.length() >= 2 {
+            match pos_args[1] {
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
+              _ => 0
+            }
+          } else {
+            0
+          }
+          let end = if pos_args.length() >= 3 {
+            match pos_args[2] {
+              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
+              _ => slen
+            }
+          } else {
+            slen
+          }
+          let result = if start <= end {
+            bytes_last_index_in(s, start, end, sub)
+          } else {
+            -1
+          }
           if result < 0 {
             raise EvalErr(make_eval_error(ctx, "substring not found"))
           }
@@ -2921,10 +2901,10 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::String(sep) => {
-          if sep.raw().length() == 0 {
+          if sep.byte_len() == 0 {
             raise EvalErr(make_eval_error(ctx, "partition: empty separator"))
           }
-          let idx = find_substr(s.raw(), sep.raw())
+          let idx = bytes_index_in(s, 0, s.byte_len(), sep)
           if idx < 0 {
             @value.Value::Tuple([
               @value.Value::String(s),
@@ -2932,12 +2912,12 @@ fn call_str_method(
               @value.Value::String(@value.StarlarkString::new("")),
             ])
           } else {
-            let before = s.raw()[0:idx].to_owned()
-            let after = s.raw()[idx + sep.raw().length():].to_owned()
+            let before = str_byte_slice(s, 0, idx)
+            let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
             @value.Value::Tuple([
-              @value.Value::String(@value.StarlarkString::new(before)),
-              @value.Value::String(@value.StarlarkString::new(sep.raw())),
-              @value.Value::String(@value.StarlarkString::new(after)),
+              @value.Value::String(before),
+              @value.Value::String(sep),
+              @value.Value::String(after),
             ])
           }
         }
@@ -2955,10 +2935,10 @@ fn call_str_method(
       }
       match pos_args[0] {
         @value.Value::String(sep) => {
-          if sep.raw().length() == 0 {
+          if sep.byte_len() == 0 {
             raise EvalErr(make_eval_error(ctx, "rpartition: empty separator"))
           }
-          let idx = rfind_substr(s.raw(), sep.raw())
+          let idx = bytes_last_index_in(s, 0, s.byte_len(), sep)
           if idx < 0 {
             @value.Value::Tuple([
               @value.Value::String(@value.StarlarkString::new("")),
@@ -2966,12 +2946,12 @@ fn call_str_method(
               @value.Value::String(s),
             ])
           } else {
-            let before = s.raw()[0:idx].to_owned()
-            let after = s.raw()[idx + sep.raw().length():].to_owned()
+            let before = str_byte_slice(s, 0, idx)
+            let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
             @value.Value::Tuple([
-              @value.Value::String(@value.StarlarkString::new(before)),
-              @value.Value::String(@value.StarlarkString::new(sep.raw())),
-              @value.Value::String(@value.StarlarkString::new(after)),
+              @value.Value::String(before),
+              @value.Value::String(sep),
+              @value.Value::String(after),
             ])
           }
         }
@@ -3494,6 +3474,160 @@ fn call_bytes_method(
 }
 
 ///|
+// Clamp a Starlark start/end index against a byte length, mirroring
+// starlark-go `indices`: negatives count from the end, then clamp to [0, len].
+fn clamp_byte_index(idx : Int, blen : Int) -> Int {
+  if idx < 0 {
+    (blen + idx).max(0)
+  } else {
+    idx.min(blen)
+  }
+}
+
+///|
+// Slice a StarlarkString by byte offsets [lo, hi), returning a new string.
+fn str_byte_slice(
+  s : @value.StarlarkString,
+  lo : Int,
+  hi : Int,
+) -> @value.StarlarkString {
+  if lo >= hi {
+    return @value.StarlarkString::new("")
+  }
+  let buf : Array[Byte] = []
+  for i in lo..<hi {
+    buf.push(s.byte_at(i))
+  }
+  @value.StarlarkString::from_bytes(Bytes::from_array(buf))
+}
+
+///|
+// First byte offset of `needle` within `hay[lo:hi]`, or -1. Empty needle → lo.
+fn bytes_index_in(
+  hay : @value.StarlarkString,
+  lo : Int,
+  hi : Int,
+  needle : @value.StarlarkString,
+) -> Int {
+  let nlen = needle.byte_len()
+  if nlen == 0 {
+    return lo
+  }
+  let limit = hi - nlen
+  let mut i = lo
+  while i <= limit {
+    let mut k = 0
+    while k < nlen && hay.byte_at(i + k) == needle.byte_at(k) {
+      k = k + 1
+    }
+    if k == nlen {
+      return i
+    }
+    i = i + 1
+  }
+  -1
+}
+
+///|
+// Last byte offset of `needle` within `hay[lo:hi]`, or -1. Empty needle → hi.
+fn bytes_last_index_in(
+  hay : @value.StarlarkString,
+  lo : Int,
+  hi : Int,
+  needle : @value.StarlarkString,
+) -> Int {
+  let nlen = needle.byte_len()
+  if nlen == 0 {
+    return hi
+  }
+  let mut i = hi - nlen
+  while i >= lo {
+    let mut k = 0
+    while k < nlen && hay.byte_at(i + k) == needle.byte_at(k) {
+      k = k + 1
+    }
+    if k == nlen {
+      return i
+    }
+    i = i - 1
+  }
+  -1
+}
+
+///|
+fn bytes_has_prefix(
+  s : @value.StarlarkString,
+  prefix : @value.StarlarkString,
+) -> Bool {
+  let plen = prefix.byte_len()
+  if plen > s.byte_len() {
+    return false
+  }
+  for k in 0..<plen {
+    if s.byte_at(k) != prefix.byte_at(k) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn bytes_has_suffix(
+  s : @value.StarlarkString,
+  suffix : @value.StarlarkString,
+) -> Bool {
+  let slen = suffix.byte_len()
+  let off = s.byte_len() - slen
+  if off < 0 {
+    return false
+  }
+  for k in 0..<slen {
+    if s.byte_at(off + k) != suffix.byte_at(k) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+// Count non-overlapping occurrences of `needle` within `hay[lo:hi]`.
+// Empty needle yields the Unicode code point count plus one (Go strings.Count).
+fn bytes_count_in(
+  hay : @value.StarlarkString,
+  lo : Int,
+  hi : Int,
+  needle : @value.StarlarkString,
+) -> Int {
+  let nlen = needle.byte_len()
+  if nlen == 0 {
+    let bytes = hay.to_bytes()
+    let mut runes = 0
+    let mut i = lo
+    while i < hi {
+      let (_, width) = @utf8util.utf8_decode_rune(bytes, i)
+      runes = runes + 1
+      i = i + width
+    }
+    return runes + 1
+  }
+  let mut count = 0
+  let mut i = lo
+  while i <= hi - nlen {
+    let mut k = 0
+    while k < nlen && hay.byte_at(i + k) == needle.byte_at(k) {
+      k = k + 1
+    }
+    if k == nlen {
+      count = count + 1
+      i = i + nlen
+    } else {
+      i = i + 1
+    }
+  }
+  count
+}
+
+///|
 fn find_substr(s : String, sub : String) -> Int {
   if sub.length() == 0 {
     return 0
@@ -3536,60 +3670,6 @@ fn char_to_lower(c : Char) -> Char {
   } else {
     c
   }
-}
-
-///|
-fn rfind_substr(s : String, sub : String) -> Int {
-  if sub.length() == 0 {
-    return s.length()
-  }
-  let slen = s.length()
-  let sublen = sub.length()
-  if sublen > slen {
-    return -1
-  }
-  let mut i = slen - sublen
-  while i >= 0 {
-    let mut match_ = true
-    for j in 0..<sublen {
-      if s[i + j] != sub[j] {
-        match_ = false
-        break
-      }
-    }
-    if match_ {
-      return i
-    }
-    i -= 1
-  }
-  -1
-}
-
-///|
-fn count_substr(s : String, sub : String) -> Int {
-  if sub.length() == 0 {
-    return s.length() + 1
-  }
-  let mut count = 0
-  let slen = s.length()
-  let sublen = sub.length()
-  let mut i = 0
-  while i <= slen - sublen {
-    let mut match_ = true
-    for j in 0..<sublen {
-      if s[i + j] != sub[j] {
-        match_ = false
-        break
-      }
-    }
-    if match_ {
-      count += 1
-      i += sublen
-    } else {
-      i += 1
-    }
-  }
-  count
 }
 
 ///|
