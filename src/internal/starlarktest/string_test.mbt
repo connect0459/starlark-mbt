@@ -166,6 +166,11 @@ let string_star_src : String =
   #|assert.fails(lambda: "}{{".format(1), "single '}' in format")
   #|assert.fails(lambda: "{:>10}".format(1), "format spec features not supported")
   #|assert.fails(lambda: "{0:d}".format(1), "format spec features not supported")
+  #|# str.format edge cases (string.star lines 206-215)
+  #|assert.fails(lambda: "{-0}".format(1), "keyword -0 not found")
+  #|assert.fails(lambda: "{0,1} and {1}".format(1, 2), "keyword 0,1 not found")
+  #|assert.fails(lambda: "{x!:}".format(x = 1), "unknown conversion")
+  #|assert.fails(lambda: "a{}b{1}c".format(1, 2), "cannot switch from automatic")
   #|
   #|# str.split, str.rsplit
   #|assert.eq("a.b.c.d".split("."), ["a", "b", "c", "d"])

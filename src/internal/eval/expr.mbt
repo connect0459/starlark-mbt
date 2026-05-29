@@ -3810,7 +3810,20 @@ fn str_format(
         i = j + 1
         let (name, conv) = if find_substr(field, "!") >= 0 {
           let bang = find_substr(field, "!")
-          (field[0:bang].to_owned(), field[bang + 1:].to_owned())
+          let raw_name = field[0:bang].to_owned()
+          let after_bang = field[bang + 1:].to_owned()
+          let colon = find_substr(after_bang, ":")
+          let (conv_part, spec_part) = if colon >= 0 {
+            (after_bang[0:colon].to_owned(), after_bang[colon + 1:].to_owned())
+          } else {
+            (after_bang, "")
+          }
+          if spec_part != "" {
+            raise EvalErr(
+              make_eval_error(ctx, "format spec features not supported"),
+            )
+          }
+          (raw_name, conv_part)
         } else {
           (field, "s")
         }
@@ -3901,6 +3914,8 @@ fn str_format(
         match conv {
           "s" => buf.write_string(@value.to_str(arg))
           "r" => buf.write_string(@value.repr(arg))
+          "" =>
+            raise EvalErr(make_eval_error(ctx, "format: unknown conversion"))
           other =>
             raise EvalErr(
               make_eval_error(ctx, "format: unknown conversion '\{other}'"),
