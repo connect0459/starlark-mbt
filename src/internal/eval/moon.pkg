@@ -8,4 +8,5 @@ import {
   "connect0459/starlark/internal/syntax",
   "connect0459/starlark/internal/parser",
   "connect0459/starlark/internal/resolver",
+  "connect0459/starlark/internal/utf8util",
 }

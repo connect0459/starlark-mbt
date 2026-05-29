@@ -757,12 +757,17 @@ fn percent_format(
               buf.write_char(cp.unsafe_to_char())
             }
           }
-          @value.Value::String(s2) =>
-            if s2.raw().length() == 1 {
-              buf.write_string(s2.raw())
-            } else {
-              return Err("%c requires a single-character string")
+          @value.Value::String(s2) => {
+            let bytes = s2.to_bytes()
+            if bytes.length() == 0 {
+              return Err("%c format requires a single-character string")
             }
+            let (_, size) = @utf8util.utf8_decode_rune(bytes, 0)
+            if size != bytes.length() {
+              return Err("%c format requires a single-character string")
+            }
+            buf.write_string(s2.raw())
+          }
           _ => return Err("%c requires a single-character string")
         }
       _ => return Err("unknown format specifier '%\{spec}'")

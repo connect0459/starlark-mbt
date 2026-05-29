@@ -629,6 +629,23 @@ test "string.star: %c format with non-ASCII Unicode (MISSING-17)" {
 }
 
 ///|
+let string_percent_c_astral_src : String =
+  #|load("assert.star", "assert")
+  #|# %c with astral codepoint (UTF-16 surrogate pair in MoonBit) should succeed (BUG-33)
+  #|assert.eq("%c" % 0x1D11E, "𝄞")
+  #|assert.eq("%c" % "𝄞", "𝄞")
+  #|# multi-char strings must still fail
+  #|assert.fails(lambda: "%c" % "ab", "requires a single-character string")
+
+///|
+test "string.star: %c with astral codepoint is accepted (BUG-33)" {
+  let errs = run_star_string(string_percent_c_astral_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let string_repeat_overflow_src : String =
   #|load("assert.star", "assert")
   #|# string * large_int raises (string.star line 27)
