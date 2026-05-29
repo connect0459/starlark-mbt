@@ -222,21 +222,36 @@ pub fn CallStack::to_string(self : CallStack) -> String {
 pub struct EvalError {
   priv msg : String
   priv call_stack : CallStack
+  priv cause : EvalError?
 }
 
 ///|
 pub fn EvalError::simple(msg : String) -> EvalError {
-  { msg, call_stack: CallStack::new([]) }
+  { msg, call_stack: CallStack::new([]), cause: None }
 }
 
 ///|
 pub fn EvalError::with_stack(msg : String, call_stack : CallStack) -> EvalError {
-  { msg, call_stack }
+  { msg, call_stack, cause: None }
+}
+
+///|
+pub fn EvalError::with_cause(
+  msg : String,
+  call_stack : CallStack,
+  cause : EvalError,
+) -> EvalError {
+  { msg, call_stack, cause: Some(cause) }
 }
 
 ///|
 pub fn EvalError::msg(self : EvalError) -> String {
   self.msg
+}
+
+///|
+pub fn EvalError::cause(self : EvalError) -> EvalError? {
+  self.cause
 }
 
 ///|

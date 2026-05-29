@@ -360,6 +360,54 @@ test "error format: load failure backtrace shows toplevel frame" {
 }
 
 ///|
+test "error format: load failure cause preserves inner backtrace (MISSING-26)" {
+  let loaded_src =
+    #|def f(x):
+    #|  return 1 // x
+    #|
+    #|f(0)
+  let thread = @eval.Thread::with_loader("test", fn(_thread, path) {
+    let inner_thread = @eval.Thread::new("inner")
+    @eval.exec_file(inner_thread, path, loaded_src, @eval.Options::default())
+  })
+  let src =
+    #|
+    #|load('crash.star', 'x')
+  let result = @eval.exec_file(
+    thread,
+    "root.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      inspect(
+        e.backtrace(),
+        content=(
+          #|Traceback (most recent call last):
+          #|  root.star:2:1: in <toplevel>
+          #|Error: cannot load crash.star: integer division by zero
+        ),
+      )
+      match e.cause() {
+        Some(inner) =>
+          inspect(
+            inner.backtrace(),
+            content=(
+              #|Traceback (most recent call last):
+              #|  crash.star:4:2: in <toplevel>
+              #|  crash.star:4:2: in f
+              #|Error: integer division by zero
+            ),
+          )
+        None => abort("expected inner cause error")
+      }
+    }
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
 test "error format: builtin method error shows Error-in prefix" {
   let thread = @eval.Thread::new("test")
   let src =

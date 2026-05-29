@@ -385,8 +385,19 @@ fn exec_load(
     Some(loader) => {
       let loaded = match loader(ctx.thread, path) {
         Ok(m) => m
-        Err(e) =>
-          raise EvalErr(make_eval_error(ctx, "cannot load \{path}: \{e.msg()}"))
+        Err(inner) => {
+          let frames : Array[@errors.CallFrame] = []
+          for frame in ctx.thread.call_stack {
+            frames.push(frame)
+          }
+          raise EvalErr(
+            @errors.EvalError::with_cause(
+              "cannot load \{path}: \{inner.msg()}",
+              @errors.CallStack::new(frames),
+              inner,
+            ),
+          )
+        }
       }
       for pair in bindings {
         let (local_name, export_name) = pair
