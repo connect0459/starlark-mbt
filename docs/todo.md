@@ -827,6 +827,26 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       in `eval/expr.mbt`: `range_arg_to_int64` checks bounds via `BigInt::compare_int64`
       and raises `"N out of range (want value in signed 64-bit range)"`. Matches
       starlark-go `AsInt` error format. Commit: `6915be5`
+- [x] **BUG-6** (bugfix.md BUG-2): `bigint_to_double` silently returned `+Infinity`
+      for huge BigInts instead of raising "int too large to convert to float" — fixed
+      in `value/traits.mbt`: added `bigint_to_finite_double` helper; replaced all
+      mixed Int+Float arithmetic call sites in `eval/ops.mbt` and `float()` builtin
+      in `eval/expr.mbt` via `finite_double` helper. Commit: `c23ab13`
+- [x] **BUG-7** (bugfix.md BUG-3): `<toplevel>` frame missing from call stack during
+      `exec_file` — fixed by pushing/popping `CallFrame("<toplevel>")` in `exec_file`,
+      `exec_file_with_predeclared`, `exec_repl_chunk`, and `Program::init`;
+      `exec_stmts` performs live PC tracking to update the toplevel frame position
+      before each statement dispatch. Commit: `7467150`
+- [x] **BUG-8** (bugfix.md BUG-4): `float()` string error messages differed from
+      starlark-go — fixed in `eval/expr.mbt`: empty string → "float: empty string";
+      syntactically-invalid → "invalid float literal: ..."; valid-format overflow →
+      "floating-point number too large"; `is_float_syntax` helper distinguishes cases.
+      Commit: `c23ab13`
+- [x] **MISSING-5**: Tests for `float(huge_bigint)` overflow — added in
+      `starlarktest/float_test.mbt` covering all mixed Int+Float arithmetic with huge
+      int. Commit: `c23ab13`
+- [x] **MISSING-6**: `set("abc")` and `set() | "abc"` error tests — added to
+      `string_not_iterable_src` in `starlarktest/string_test.mbt`. Commit: `01d4b23`
 
 ---
 
