@@ -274,3 +274,25 @@ test "bytes/abs/chr/hash reject keyword arguments (MISSING-36)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+// MISSING-41: builtin/method error messages use starlark-go's nameErr-prefixed
+// form rather than Python-style "f() ..." text.
+let nameerr_messages_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: min([]), "min: argument is an empty sequence")
+  #|assert.fails(lambda: max([]), "max: argument is an empty sequence")
+  #|assert.fails(lambda: min(1), "min: int value is not iterable")
+  #|assert.fails(lambda: [1, 2].index(9), "index: value not in list")
+  #|assert.fails(lambda: getattr(1, "nope"), "getattr: int has no .nope field or method")
+  #|assert.fails(lambda: float([]), "float got list, want number or string")
+  #|assert.fails(lambda: "123".startswith((1, 2)), "startswith: want string, got int, for element 0")
+  #|assert.fails(lambda: "123".endswith(["3"]), "endswith: got list, want string or tuple of string")
+
+///|
+test "builtin/method error messages use nameErr prefix (MISSING-41)" {
+  let errs = run_star_string(nameerr_messages_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

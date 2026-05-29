@@ -87,7 +87,7 @@ test "ExtVal HasAttrs: getattr works on custom value" {
     (
       #|load("assert.star", "assert")
       #|assert.eq(getattr(my_obj_val, "x"), 42)
-      #|assert.fails(lambda: getattr(my_obj_val, "z"), "has no attribute")
+      #|assert.fails(lambda: getattr(my_obj_val, "z"), "has no .z field or method")
     ),
   )
   if errs.length() != 0 {

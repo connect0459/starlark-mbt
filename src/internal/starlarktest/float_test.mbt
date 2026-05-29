@@ -340,7 +340,7 @@ let float_conversions_src : String =
   #|assert.eq(float(123), 123.0)
   #|# float(float)
   #|assert.eq(float(1.1), 1.1)
-  #|assert.fails(lambda: float(None), "float.*argument.*number")
+  #|assert.fails(lambda: float(None), "float got NoneType, want number or string")
   #|assert.ne(False, 0.0)
   #|assert.ne(True, 1.0)
   #|# float(string)

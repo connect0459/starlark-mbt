@@ -933,7 +933,7 @@ fn call_builtin(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "float() argument must be a number, not '\{@value.type_name(v)}'",
+                "float got \{@value.type_name(v)}, want number or string",
               ),
             )
         }
@@ -1194,7 +1194,7 @@ fn call_builtin(
                 raise EvalErr(
                   make_eval_error(
                     ctx,
-                    "'\{@value.type_name(pos_args[0])}' has no attribute '\{s.raw()}'",
+                    "getattr: \{@value.type_name(pos_args[0])} has no .\{s.raw()} field or method",
                   ),
                 )
               }
@@ -1535,7 +1535,10 @@ fn builtin_minmax(
       Ok(it) => it
       Err(_) =>
         raise EvalErr(
-          make_eval_error(ctx, "\{fn_name}() argument is not iterable"),
+          make_eval_error(
+            ctx,
+            "\{fn_name}: \{@value.type_name(pos_args[0])} value is not iterable",
+          ),
         )
     }
     while true {
@@ -1549,7 +1552,7 @@ fn builtin_minmax(
     }
     if items.is_empty() {
       raise EvalErr(
-        make_eval_error(ctx, "\{fn_name}() arg is an empty sequence"),
+        make_eval_error(ctx, "\{fn_name}: argument is an empty sequence"),
       )
     }
   } else {
@@ -2016,7 +2019,7 @@ fn call_list_method(
           return @value.Value::Int(BigInt::from_int(i))
         }
       }
-      raise EvalErr(make_eval_error(ctx, "value not in list"))
+      raise EvalErr(make_eval_error(ctx, "index: value not in list"))
     }
     _ =>
       raise EvalErr(make_eval_error(ctx, "list has no method '\{method_name}'"))
@@ -2273,7 +2276,7 @@ fn call_str_method(
         @value.Value::String(prefix) => @value.Value::Bool(check_prefix(prefix))
         @value.Value::Tuple(t) => {
           let mut found = false
-          for item in t {
+          for idx, item in t {
             match item {
               @value.Value::String(p) =>
                 if check_prefix(p) {
@@ -2284,20 +2287,19 @@ fn call_str_method(
                 raise EvalErr(
                   make_eval_error(
                     ctx,
-                    "got \{@value.type_name(v)}, for element 0",
+                    "startswith: want string, got \{@value.type_name(v)}, for element \{idx}",
                   ),
                 )
             }
           }
           @value.Value::Bool(found)
         }
-        @value.Value::List(_) =>
-          raise EvalErr(
-            make_eval_error(ctx, "got list, want string or tuple of string"),
-          )
         v =>
           raise EvalErr(
-            make_eval_error(ctx, "got \{@value.type_name(v)}, want string"),
+            make_eval_error(
+              ctx,
+              "startswith: got \{@value.type_name(v)}, want string or tuple of string",
+            ),
           )
       }
     }
@@ -2332,7 +2334,7 @@ fn call_str_method(
         @value.Value::String(suffix) => @value.Value::Bool(check_suffix(suffix))
         @value.Value::Tuple(t) => {
           let mut found = false
-          for item in t {
+          for idx, item in t {
             match item {
               @value.Value::String(p) =>
                 if check_suffix(p) {
@@ -2343,20 +2345,19 @@ fn call_str_method(
                 raise EvalErr(
                   make_eval_error(
                     ctx,
-                    "got \{@value.type_name(v)}, for element 0",
+                    "endswith: want string, got \{@value.type_name(v)}, for element \{idx}",
                   ),
                 )
             }
           }
           @value.Value::Bool(found)
         }
-        @value.Value::List(_) =>
-          raise EvalErr(
-            make_eval_error(ctx, "got list, want string or tuple of string"),
-          )
         v =>
           raise EvalErr(
-            make_eval_error(ctx, "got \{@value.type_name(v)}, want string"),
+            make_eval_error(
+              ctx,
+              "endswith: got \{@value.type_name(v)}, want string or tuple of string",
+            ),
           )
       }
     }
