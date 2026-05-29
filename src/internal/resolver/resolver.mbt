@@ -648,13 +648,24 @@ fn Resolver::walk_params(
   def_pos : @errors.Position,
 ) -> Unit {
   let seen : Map[String, Bool] = {}
+  let mut seen_optional = false
   let mut seen_star = false
-  let mut seen_kwargs = false
+  let mut star_is_bare = false
+  let mut star_pos = def_pos
+  let mut num_kwonly = 0
+  let mut kwargs_name : String? = None
   for param in params {
     match param {
       @syntax.Param::ParamIdent(name, pos) => {
-        if seen_kwargs {
-          self.errorf(pos, "parameter after **kwargs")
+        match kwargs_name {
+          Some(kn) =>
+            self.errorf(pos, "required parameter may not follow **\{kn}")
+          None =>
+            if seen_star {
+              num_kwonly = num_kwonly + 1
+            } else if seen_optional {
+              self.errorf(pos, "required parameter may not follow optional")
+            }
         }
         if seen.contains(name) {
           self.errorf(pos, "duplicate parameter: \{name}")
@@ -664,8 +675,10 @@ fn Resolver::walk_params(
         }
       }
       @syntax.Param::ParamDefault(name, default_expr, pos) => {
-        if seen_kwargs {
-          self.errorf(pos, "parameter after **kwargs")
+        match kwargs_name {
+          Some(kn) =>
+            self.errorf(pos, "optional parameter may not follow **\{kn}")
+          None => if seen_star { num_kwonly = num_kwonly + 1 }
         }
         if seen.contains(name) {
           self.errorf(pos, "duplicate parameter: \{name}")
@@ -674,38 +687,57 @@ fn Resolver::walk_params(
           self.walk_expr(default_expr)
           self.bind_local(name, pos)
         }
+        seen_optional = true
       }
-      @syntax.Param::ParamStarBare(pos) => {
-        if seen_star {
-          self.errorf(pos, "multiple * in parameters")
+      @syntax.Param::ParamStarBare(pos) =>
+        match kwargs_name {
+          Some(kn) => self.errorf(pos, "* parameter may not follow **\{kn}")
+          None =>
+            if seen_star {
+              self.errorf(pos, "multiple * parameters not allowed")
+            } else {
+              seen_star = true
+              star_is_bare = true
+              star_pos = pos
+            }
         }
-        seen_star = true
-      }
-      @syntax.Param::ParamStarIdent(name, pos) => {
-        if seen_star {
-          self.errorf(pos, "multiple * in parameters")
+      @syntax.Param::ParamStarIdent(name, pos) =>
+        match kwargs_name {
+          Some(kn) => self.errorf(pos, "* parameter may not follow **\{kn}")
+          None =>
+            if seen_star {
+              self.errorf(pos, "multiple * parameters not allowed")
+            } else {
+              seen_star = true
+              star_is_bare = false
+              star_pos = pos
+              if seen.contains(name) {
+                self.errorf(pos, "duplicate parameter: \{name}")
+              } else {
+                seen[name] = true
+                self.bind_local(name, pos)
+              }
+            }
         }
-        if seen.contains(name) {
-          self.errorf(pos, "duplicate parameter: \{name}")
-        } else {
-          seen_star = true
-          seen[name] = true
-          self.bind_local(name, pos)
+      @syntax.Param::ParamKwIdent(name, pos) =>
+        match kwargs_name {
+          Some(_) => self.errorf(pos, "multiple ** parameters not allowed")
+          None => {
+            kwargs_name = Some(name)
+            if seen.contains(name) {
+              self.errorf(pos, "duplicate parameter: \{name}")
+            } else {
+              seen[name] = true
+              self.bind_local(name, pos)
+            }
+          }
         }
-      }
-      @syntax.Param::ParamKwIdent(name, pos) => {
-        if seen_kwargs {
-          self.errorf(def_pos, "multiple **kwargs in parameters")
-        }
-        if seen.contains(name) {
-          self.errorf(pos, "duplicate parameter: \{name}")
-        } else {
-          seen_kwargs = true
-          seen[name] = true
-          self.bind_local(name, pos)
-        }
-      }
     }
+  }
+  // A bare `*` separates positional from keyword-only parameters; it must be
+  // followed by at least one such parameter (starlark-go resolve.go:905).
+  if seen_star && star_is_bare && num_kwonly == 0 {
+    self.errorf(star_pos, "bare * must be followed by keyword-only parameters")
   }
 }
 

@@ -538,3 +538,43 @@ test "resolve: load of an exported name with underscore alias is allowed (MISSIN
   )
   assert_true(result.is_valid())
 }
+
+// --- parameter ordering rules (MISSING-50) ---
+
+///|
+fn resolve_def(src : String) -> ResolvedFile {
+  let f = parse_or_fail(src)
+  resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+}
+
+///|
+test "resolve: required parameter after optional is rejected (MISSING-50)" {
+  let r = resolve_def("def f(a=1, b): pass")
+  assert_true(r |> has_error("required parameter may not follow optional"))
+}
+
+///|
+test "resolve: bare star must be followed by keyword-only params (MISSING-50)" {
+  let r = resolve_def("def f(a, *): pass")
+  assert_true(
+    r |> has_error("bare * must be followed by keyword-only parameters"),
+  )
+}
+
+///|
+test "resolve: bare star followed by keyword-only param is allowed (MISSING-50)" {
+  let r = resolve_def("def f(a, *, b): pass")
+  assert_true(r.is_valid())
+}
+
+///|
+test "resolve: multiple star parameters are rejected (MISSING-50)" {
+  let r = resolve_def("def f(*a, *b): pass")
+  assert_true(r |> has_error("multiple * parameters not allowed"))
+}
+
+///|
+test "resolve: parameter after kwargs is rejected (MISSING-50)" {
+  let r = resolve_def("def f(**kw, a): pass")
+  assert_true(r |> has_error("required parameter may not follow **kw"))
+}
