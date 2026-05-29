@@ -158,8 +158,8 @@ pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
 ///|
 pub struct Thread {
   priv name : String
-  priv print_fn : (Thread, String) -> Unit
-  priv load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
+  priv mut print_fn : (Thread, String) -> Unit
+  priv mut load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   priv call_stack : Array[@errors.CallFrame]
   priv debug_stack : Array[ActiveCallFrame]
   priv max_recursion_depth : Int
@@ -276,9 +276,31 @@ pub fn Thread::reset_steps(self : Thread) -> Unit {
 }
 
 ///|
+// Sets the execution-step budget without resetting the accumulated step count,
+// matching starlark-go `SetMaxExecutionSteps`. Use `reset_steps` to zero the
+// counter explicitly.
 pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
   self.max_steps = Some(max)
-  self.reset_steps()
+}
+
+///|
+// Sets the print callback on an existing thread. Combined with `set_loader` and
+// `set_max_steps`, this lets a single thread carry all three (starlark-go
+// exposes them as independent mutable fields; MISSING-53).
+pub fn Thread::set_print(
+  self : Thread,
+  print_fn : (Thread, String) -> Unit,
+) -> Unit {
+  self.print_fn = print_fn
+}
+
+///|
+// Sets the load callback on an existing thread.
+pub fn Thread::set_loader(
+  self : Thread,
+  load_fn : (Thread, String) -> Result[Module, @errors.EvalError],
+) -> Unit {
+  self.load_fn = Some(load_fn)
 }
 
 ///|

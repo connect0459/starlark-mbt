@@ -766,3 +766,33 @@ test "exec_file: set literal rejected when allow_set disabled (MISSING-51)" {
     Ok(_) => fail("expected set-dialect error")
   }
 }
+
+///|
+test "Thread::set_max_steps does not reset the step counter (MISSING-59)" {
+  let t = Thread::with_step_budget("test", 1000)
+  let _ = exec_file(t, "<test>", "x = 1\ny = 2\nz = x + y", Options::default())
+  let before = t.execution_steps()
+  assert_true(before > 0)
+  t.set_max_steps(5000)
+  assert_eq(t.execution_steps(), before)
+}
+
+///|
+test "Thread can combine print, loader, and step budget via setters (MISSING-53)" {
+  let msgs : Array[String] = []
+  let t = Thread::new("test")
+  t.set_print(fn(_thread, msg) { msgs.push(msg) })
+  t.set_loader(fn(_thread, _path) {
+    let m = Module::new()
+    Ok(m)
+  })
+  t.set_max_steps(10000)
+  match exec_file(t, "<test>", "print(\"hi\")", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], "hi")
+      assert_true(t.max_steps() == Some(10000))
+    }
+    Err(e) => fail(e.msg())
+  }
+}

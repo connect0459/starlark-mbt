@@ -108,6 +108,17 @@ pub fn eval_expr(
 }
 
 ///|
+pub fn exec_repl_chunk(
+  thread : Thread,
+  filename : String,
+  src : String,
+  globals : StarlarkDict,
+  opts : Options,
+) -> Result[Unit, EvalError] {
+  @eval.exec_repl_chunk(thread, filename, src, globals, opts)
+}
+
+///|
 pub fn module_get(m : Module, name : String) -> Value? {
   m.get(name)
 }

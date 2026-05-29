@@ -32,6 +32,8 @@ pub fn exec_file(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Mo
 
 pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]
 
+pub fn exec_repl_chunk(@eval.Thread, String, String, @value.StarlarkDict, @eval.Options) -> Result[Unit, @errors.EvalError]
+
 pub fn iterate(@value.Value) -> Result[@value.StarlarkIterator, @errors.EvalError]
 
 pub fn len_of(@value.Value) -> Int
