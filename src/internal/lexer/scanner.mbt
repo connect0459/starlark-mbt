@@ -113,14 +113,21 @@ fn Scanner::make_error(
 
 ///|
 fn Scanner::count_indent(self : Scanner) -> Int {
+  // `col` is the tab-expanded indentation width; `src_col` is the number of
+  // source columns (runes) consumed so far. starlark-go advances a tab to the
+  // next stop based on the source column, not the expanded width, so the two
+  // must be tracked separately for mixed space+tab indentation (scan.go:531).
   let mut col = 0
+  let mut src_col = 0
   while true {
     let b = self.peek_byte()
     if b == b' ' {
       col += 1
+      src_col += 1
       self.read_byte() |> ignore
     } else if b == b'\t' {
-      col += tab_width - col % tab_width
+      col += tab_width - src_col % tab_width
+      src_col += 1
       self.read_byte() |> ignore
     } else {
       break
