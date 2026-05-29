@@ -956,6 +956,10 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       field to `EvalError` with `with_cause()` constructor and `cause()` accessor;
       `exec_load` now uses `with_cause()` so callers can unwrap the inner error's full
       call stack. Snapshot test verifies both outer and inner backtraces. Commit: `9be5e86`
+- [x] **BUG-25**: `print()` output `Bytes` in repr format instead of raw bytes — fixed in
+      `eval/expr.mbt`: added `Bytes` special case inside the print loop; decodes via
+      `StarlarkString::from_bytes(b).raw()` (lossy UTF-8, consistent with `str(bytes)` and
+      starlark-go's `string(b)` transcoding). Commit: `a94faea`
 
 ---
 
