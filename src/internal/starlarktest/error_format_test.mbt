@@ -332,6 +332,34 @@ test "error format: load failure uses cannot-load prefix" {
 }
 
 ///|
+test "error format: load failure backtrace shows toplevel frame" {
+  let thread = @eval.Thread::with_loader("test", fn(_thread, _path) {
+    Err(@errors.EvalError::simple("floored division by zero"))
+  })
+  let src =
+    #|
+    #|load('crash.star', 'x')
+  let result = @eval.exec_file(
+    thread,
+    "root.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      inspect(
+        e.backtrace(),
+        content=(
+          #|Traceback (most recent call last):
+          #|  root.star:2:1: in <toplevel>
+          #|Error: cannot load crash.star: floored division by zero
+        ),
+      )
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
 test "error format: builtin method error shows Error-in prefix" {
   let thread = @eval.Thread::new("test")
   let src =
