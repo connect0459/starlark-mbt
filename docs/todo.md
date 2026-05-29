@@ -942,6 +942,20 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       coverage: Add/Mul/Div/And/Or/Xor/Not/Shift at MaxInt32/MinInt32/MaxUint32 boundaries
       verifying results that cross int32 range. Tests pass immediately since MoonBit uses
       native BigInt. Commit: `45ae3e2`
+- [x] **BUG-23**: `str.format()` rejected `{name:}` (empty spec) as invalid — fixed in
+      `eval/expr.mbt`: the no-`!` branch now splits `field` on `:` to extract name and
+      spec; an empty spec is valid and returns the value unchanged. Commit: `9c02894`
+- [x] **BUG-24**: `str.format()` error message for non-empty spec omitted the spec value
+      — fixed in `eval/expr.mbt`: both the `!` and no-`!` branches now include the spec
+      string in the error: "format spec features not supported in replacement fields: X",
+      matching starlark-go. Commit: `9c02894`
+- [x] **MISSING-25**: Load error outer backtrace not tested — added snapshot test in
+      `starlarktest/error_format_test.mbt` asserting the `<toplevel>` frame appears at
+      the load statement position. Commit: `e812479`
+- [x] **MISSING-26**: Load error inner backtrace inaccessible — added `cause: EvalError?`
+      field to `EvalError` with `with_cause()` constructor and `cause()` accessor;
+      `exec_load` now uses `with_cause()` so callers can unwrap the inner error's full
+      call stack. Snapshot test verifies both outer and inner backtraces. Commit: `9be5e86`
 
 ---
 
