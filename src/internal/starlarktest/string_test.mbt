@@ -126,6 +126,9 @@ let string_star_src : String =
   #|assert.fails(lambda: "%d %d" % 1, "not enough arguments for format string")
   #|assert.fails(lambda: "%d %d" % (1, 2, 3), "too many arguments for format string")
   #|assert.fails(lambda: "" % 1, "too many arguments for format string")
+  #|# dict-keyed % format
+  #|assert.eq("A" % {'unused': 123}, "A")
+  #|assert.eq("A %(foo)d %(bar)s Z" % {"foo": 123, "bar": "hi"}, "A 123 hi Z")
   #|
   #|# %c
   #|assert.eq("%c" % 65, "A")

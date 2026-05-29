@@ -552,9 +552,13 @@ fn percent_format(
   fmt : String,
   args : @value.Value,
 ) -> Result[@value.Value, String] {
+  let is_mapping = match args {
+    @value.Value::Dict(_) => true
+    _ => false
+  }
   let arg_list : Array[@value.Value] = match args {
     @value.Value::Tuple(t) => t
-    v => [v]
+    _ => if is_mapping { [] } else { [args] }
   }
   let buf = StringBuilder::new()
   let chars = fmt.to_array()
@@ -572,17 +576,52 @@ fn percent_format(
     if i >= n {
       return Err("incomplete format specifier")
     }
-    let spec = chars[i]
-    i += 1
-    if spec == '%' {
+    if chars[i] == '%' {
       buf.write_char('%')
+      i += 1
       continue
     }
-    if arg_idx >= arg_list.length() {
-      return Err("not enough arguments for format string")
+    // Resolve (arg, spec): named %(key)spec or positional spec
+    let mut arg_val : @value.Value = @value.Value::None
+    let mut spec : Char = ' '
+    if chars[i] == '(' {
+      i += 1 // skip '('
+      let key_buf = StringBuilder::new()
+      while i < n && chars[i] != ')' {
+        key_buf.write_char(chars[i])
+        i += 1
+      }
+      if i >= n {
+        return Err("incomplete format key")
+      }
+      i += 1 // skip ')'
+      if i >= n {
+        return Err("incomplete format")
+      }
+      let key = key_buf.to_string()
+      spec = chars[i]
+      i += 1
+      match args {
+        @value.Value::Dict(d) => {
+          let kv = @value.Value::String(@value.StarlarkString::new(key))
+          match d.get(kv) {
+            Ok(Some(v)) => arg_val = v
+            Ok(None) => return Err("key not found: \{key}")
+            Err(e) => return Err(e)
+          }
+        }
+        _ => return Err("format requires a mapping")
+      }
+    } else {
+      if arg_idx >= arg_list.length() {
+        return Err("not enough arguments for format string")
+      }
+      arg_val = arg_list[arg_idx]
+      arg_idx += 1
+      spec = chars[i]
+      i += 1
     }
-    let arg = arg_list[arg_idx]
-    arg_idx += 1
+    let arg = arg_val
     match spec {
       's' => buf.write_string(@value.to_str(arg))
       'r' => buf.write_string(@value.repr(arg))
@@ -661,14 +700,17 @@ fn percent_format(
         let f = match arg {
           @value.Value::Float(f) => f
           @value.Value::Int(n2) => @value.bigint_to_double(n2)
-          _ => return Err("cannot convert \{@value.type_name(arg)} to float")
+          _ =>
+            return Err(
+              "%\{spec} format requires float, not \{@value.type_name(arg)}",
+            )
         }
         let s2 = match spec {
           'e' => format_float_e(f, false)
           'E' => format_float_e(f, true)
-          'f' => format_float_fg(f)
+          'f' => format_float_f(f)
           'g' | 'G' => {
-            let s3 = format_float_fg(f)
+            let s3 = format_float_g(f)
             if spec == 'G' && !f.is_nan() && !f.is_inf() {
               s3.to_upper()
             } else {
@@ -703,7 +745,7 @@ fn percent_format(
       _ => return Err("unknown format specifier '%\{spec}'")
     }
   }
-  if arg_idx < arg_list.length() {
+  if arg_idx < arg_list.length() && !is_mapping {
     return Err("too many arguments for format string")
   }
   Ok(@value.Value::String(@value.StarlarkString::new(buf.to_string())))
@@ -769,22 +811,102 @@ fn format_special_float(f : Double) -> String? {
 }
 
 ///|
-fn format_float_e(f : Double, upper : Bool) -> String {
-  match format_special_float(f) {
-    Some(s) => s
-    None => {
-      let s = f.to_string()
-      if upper {
-        s.to_upper()
-      } else {
-        s
-      }
-    }
+fn format_padded_int(n : Int, width : Int) -> String {
+  let s = n.to_string()
+  let pad = width - s.length()
+  if pad <= 0 {
+    return s
   }
+  let pbuf = StringBuilder::new()
+  for _ in 0..<pad {
+    pbuf.write_char('0')
+  }
+  pbuf.write_string(s)
+  pbuf.to_string()
 }
 
 ///|
-fn format_float_fg(f : Double) -> String {
+fn format_float_e(f : Double, upper : Bool) -> String {
+  if f.is_nan() {
+    return "nan"
+  }
+  if f == @double.infinity {
+    return "+inf"
+  }
+  if f == @double.neg_infinity {
+    return "-inf"
+  }
+  let is_neg = f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
+  let sign_str = if is_neg { "-" } else { "" }
+  let abs_f = if is_neg { if f < 0.0 { -f } else { 0.0 } } else { f }
+  if abs_f == 0.0 {
+    let e_char = if upper { "E" } else { "e" }
+    return "\{sign_str}0.000000\{e_char}+00"
+  }
+  let log_val = @math.log10(abs_f)
+  let mut exp = log_val.floor().to_int()
+  let pow10 = @math.pow(10.0, exp.to_double())
+  let mut m = abs_f / pow10
+  while m >= 10.0 {
+    m = m / 10.0
+    exp = exp + 1
+  }
+  while m > 0.0 && m < 1.0 {
+    m = m * 10.0
+    exp = exp - 1
+  }
+  let int_d = m.floor().to_int()
+  let frac_d = m - int_d.to_double()
+  let scaled = frac_d * 1_000_000.0 + 0.5
+  let mut frac_int = scaled.floor().to_int()
+  let mut final_int = int_d
+  let mut final_exp = exp
+  if frac_int >= 1_000_000 {
+    frac_int = 0
+    final_int = final_int + 1
+    if final_int >= 10 {
+      final_int = 1
+      final_exp = final_exp + 1
+    }
+  }
+  let frac_str = format_padded_int(frac_int, 6)
+  let e_char = if upper { "E" } else { "e" }
+  let exp_sign = if final_exp >= 0 { "+" } else { "-" }
+  let exp_abs = if final_exp >= 0 { final_exp } else { -final_exp }
+  let exp_str = if exp_abs < 10 { "0\{exp_abs}" } else { exp_abs.to_string() }
+  "\{sign_str}\{final_int}.\{frac_str}\{e_char}\{exp_sign}\{exp_str}"
+}
+
+///|
+fn format_float_f(f : Double) -> String {
+  if f.is_nan() {
+    return "nan"
+  }
+  if f == @double.infinity {
+    return "+inf"
+  }
+  if f == @double.neg_infinity {
+    return "-inf"
+  }
+  let is_neg = f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
+  let sign_str = if is_neg { "-" } else { "" }
+  let abs_f = if is_neg { if f < 0.0 { -f } else { 0.0 } } else { f }
+  let ffloor = abs_f.floor()
+  let frac_d = abs_f - ffloor
+  let scaled = frac_d * 1_000_000.0 + 0.5
+  let mut frac_int = scaled.floor().to_int()
+  let mut int_f = ffloor
+  if frac_int >= 1_000_000 {
+    frac_int = 0
+    int_f = int_f + 1.0
+  }
+  let int_str = @value.double_to_bigint(int_f).to_string()
+  let frac_str = format_padded_int(frac_int, 6)
+  "\{sign_str}\{int_str}.\{frac_str}"
+}
+
+///|
+fn format_float_g(f : Double) -> String {
   match format_special_float(f) {
     Some(s) => s
     None => f.to_string()

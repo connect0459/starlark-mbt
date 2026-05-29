@@ -401,21 +401,29 @@ let float_formatting_src : String =
   #|assert.eq("%d" % 123.0, "123")
   #|assert.eq("%d" % negzero, "0")
   #|
-  #|# %e - impl returns float.to_string() for numbers (not printf %e format)
+  #|# %e - scientific notation with 6 decimal places
   #|assert.eq("%e" % nan, "nan")
   #|assert.eq("%e" % inf, "+inf")
   #|assert.eq("%e" % neginf, "-inf")
+  #|assert.eq("%e" % 0,       "0.000000e+00")
+  #|assert.eq("%e" % 123,     "1.230000e+02")
+  #|assert.eq("%e" % 123.0,   "1.230000e+02")
+  #|assert.eq("%e" % negzero, "-0.000000e+00")
   #|
-  #|# %E - uppercase exponent for finite numbers; special values stay lowercase
+  #|# %E - uppercase exponent; special values stay lowercase
   #|assert.eq("%E" % nan, "nan")
   #|assert.eq("%E" % inf, "+inf")
   #|assert.eq("%E" % neginf, "-inf")
-  #|assert.eq("%E" % 1.23e45, "1.23E+45")
+  #|assert.eq("%E" % 1.23e45, "1.230000E+45")
   #|
-  #|# %f - impl returns float.to_string() for numbers
+  #|# %f - fixed notation with 6 decimal places
   #|assert.eq("%f" % nan, "nan")
   #|assert.eq("%f" % inf, "+inf")
   #|assert.eq("%f" % neginf, "-inf")
+  #|assert.eq("%f" % 0,       "0.000000")
+  #|assert.eq("%f" % 123,     "123.000000")
+  #|assert.eq("%f" % 123.0,   "123.000000")
+  #|assert.eq("%f" % negzero, "-0.000000")
   #|
   #|# %g - impl returns float.to_string() for numbers
   #|assert.eq("%g" % nan, "nan")
@@ -438,9 +446,9 @@ let float_formatting_src : String =
   #|assert.eq(str(negzero), "-0.0")
   #|
   #|# format errors: %e/%f/%g require float or int, not str
-  #|assert.fails(lambda: "%e" % "123", "cannot convert string to float")
-  #|assert.fails(lambda: "%f" % "123", "cannot convert string to float")
-  #|assert.fails(lambda: "%g" % "123", "cannot convert string to float")
+  #|assert.fails(lambda: "%e" % "123", "requires float, not str")
+  #|assert.fails(lambda: "%f" % "123", "requires float, not str")
+  #|assert.fails(lambda: "%g" % "123", "requires float, not str")
 
 ///|
 test "float.star: string formatting" {
