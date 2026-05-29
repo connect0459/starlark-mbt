@@ -832,7 +832,7 @@ fn call_builtin(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "int() argument must be a number or string, not '\{@value.type_name(v)}'",
+              "int: cannot convert \{@value.type_name(v)} to int",
             ),
           )
       }

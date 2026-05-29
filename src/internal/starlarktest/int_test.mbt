@@ -311,3 +311,19 @@ test "int.star: int() parses 20-digit decimal strings as BigInt (MISSING-21)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let int_unsupported_type_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: int([]), "int: cannot convert list to int")
+  #|assert.fails(lambda: int(None), "int: cannot convert NoneType to int")
+  #|assert.fails(lambda: int({}), "int: cannot convert dict to int")
+  #|assert.fails(lambda: int((1, 2)), "int: cannot convert tuple to int")
+
+///|
+test "int.star: int() error message for unsupported types matches starlark-go (BUG-22)" {
+  let errs = run_star_string(int_unsupported_type_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
