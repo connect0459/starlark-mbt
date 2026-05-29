@@ -622,7 +622,17 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
         self.errorf(pos, "load statement must be at module level")
       } else {
         for pair in names {
-          let (local_name, _original) = pair
+          let (local_name, original) = pair
+          if original.is_empty() {
+            self.errorf(pos, "load: empty identifier")
+            continue
+          }
+          if original.has_prefix("_") {
+            self.errorf(
+              pos,
+              "load: names with leading underscores are not exported: \{original}",
+            )
+          }
           self.bind_load(local_name, pos)
         }
       }

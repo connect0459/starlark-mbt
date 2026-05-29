@@ -496,3 +496,45 @@ test "resolve: set literal allowed by default (MISSING-51)" {
   )
   assert_true(result.is_valid())
 }
+
+// --- load identifier validation (MISSING-52) ---
+
+///|
+test "resolve: load with leading-underscore source name is rejected (MISSING-52)" {
+  let f = parse_or_fail("load(\"m\", x=\"_priv\")")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "names with leading underscores are not exported: _priv"),
+  )
+}
+
+///|
+test "resolve: load of a bare leading-underscore name is rejected (MISSING-52)" {
+  let f = parse_or_fail("load(\"m\", \"_x\")")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "names with leading underscores are not exported: _x"),
+  )
+}
+
+///|
+test "resolve: load of an exported name with underscore alias is allowed (MISSING-52)" {
+  let f = parse_or_fail("load(\"m\", _local=\"public\")")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.is_valid())
+}
