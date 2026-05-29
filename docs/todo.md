@@ -991,6 +991,23 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       tests added to `assign_test.mbt`. Commit: `41d5a81`
 - [x] **MISSING-29**: `assign.star` line 253 comprehension scope unbound variable test
       added to `assign_test.mbt` (unblocked by BUG-28 fix). Commit: `41d5a81`
+- [x] **BUG-30**: Right-shift count wrongly capped at 512 — fixed in `eval/ops.mbt`:
+      only left shift is capped at 512; right shift by any non-negative count now works
+      (`1 >> 1000 == 0`, `(-1) >> 1000 == -1`). Error messages now include the shift
+      count value. Commit: `0e3aeec`
+- [x] **BUG-31**: `str()`/`repr()` float formatting threshold differed from starlark-go —
+      `format_float` in `value/value.mbt` now uses Go-compatible 'g' format: scientific
+      notation for integer-form strings with 7+ digits (e.g. `str(1e20)` → "1e+20") and
+      for small decimals with exp < -4 (e.g. `str(1e-5)` → "1e-05"); normalizes exponent
+      format to "e+XX"/"e-XX". `format_float_g` in `eval/ops.mbt` now delegates to
+      `@value.format_float` for consistency. Commit: `680c1e9`
+- [x] **BUG-32**: `float("  1.0  ")` was accepted by `float()` builtin (`.trim()` call
+      in `expr.mbt`); now raises "invalid float literal" matching starlark-go. Commit: `0e3aeec`
+- [x] **BUG-33**: `%c` format rejected astral codepoints (UTF-16 length == 2) — fixed in
+      `eval/ops.mbt`: now uses `utf8_decode_rune` on UTF-8 bytes to verify exactly one
+      rune spans the whole string. Commit: `5ab5df8`
+- [x] **BUG-34**: `int(s, base)` accepted out-of-range base without error — fixed in
+      `eval/expr.mbt`: validates `base == 0 || 2 <= base <= 36` before parsing. Commit: `0e3aeec`
 
 ---
 
