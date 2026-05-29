@@ -1,9 +1,17 @@
 ///|
-fn adjust_index(i : BigInt, length : Int) -> Result[Int, String] {
+fn adjust_index(
+  i : BigInt,
+  length : Int,
+  type_name : String,
+) -> Result[Int, String] {
   let len = BigInt::from_int(length)
   let j = if i < 0N { i + len } else { i }
   if j < 0N || j >= len {
-    Err("index \{i} out of range for sequence of length \{length}")
+    if length == 0 {
+      Err("index \{i} out of range: empty \{type_name}")
+    } else {
+      Err("\{type_name} index \{i} out of range [\{-length}:\{length - 1}]")
+    }
   } else {
     Ok(j.to_int())
   }
@@ -628,8 +636,14 @@ fn percent_format(
       'd' | 'i' =>
         match arg {
           @value.Value::Int(n2) => buf.write_string(n2.to_string())
-          @value.Value::Float(f) =>
-            buf.write_string(BigInt::from_int64(f.to_int64()).to_string())
+          @value.Value::Float(f) => {
+            if f.is_nan() || f.is_inf() {
+              return Err(
+                "%d format requires integer, not \{if f.is_nan() { "nan" } else { "inf" }}",
+              )
+            }
+            buf.write_string(@value.double_to_bigint(f).to_string())
+          }
           @value.Value::Bool(_) => return Err("cannot convert bool to int")
           _ => return Err("cannot convert \{@value.type_name(arg)} to int")
         }
@@ -643,7 +657,10 @@ fn percent_format(
               buf.write_string(int64_to_octal(n2))
             }
           @value.Value::Float(f) => {
-            let n2 = BigInt::from_int64(f.to_int64())
+            if f.is_nan() || f.is_inf() {
+              return Err("%o format requires integer")
+            }
+            let n2 = @value.double_to_bigint(f)
             if n2 < 0N {
               buf.write_char('-')
               buf.write_string(int64_to_octal(-n2))
@@ -664,7 +681,10 @@ fn percent_format(
               buf.write_string(int64_to_hex(n2, false))
             }
           @value.Value::Float(f) => {
-            let n2 = BigInt::from_int64(f.to_int64())
+            if f.is_nan() || f.is_inf() {
+              return Err("%x format requires integer")
+            }
+            let n2 = @value.double_to_bigint(f)
             if n2 < 0N {
               buf.write_char('-')
               buf.write_string(int64_to_hex(-n2, false))
@@ -685,7 +705,10 @@ fn percent_format(
               buf.write_string(int64_to_hex(n2, true))
             }
           @value.Value::Float(f) => {
-            let n2 = BigInt::from_int64(f.to_int64())
+            if f.is_nan() || f.is_inf() {
+              return Err("%X format requires integer")
+            }
+            let n2 = @value.double_to_bigint(f)
             if n2 < 0N {
               buf.write_char('-')
               buf.write_string(int64_to_hex(-n2, true))
@@ -908,8 +931,35 @@ fn format_float_f(f : Double) -> String {
 ///|
 fn format_float_g(f : Double) -> String {
   match format_special_float(f) {
-    Some(s) => s
-    None => f.to_string()
+    Some(s) => return s
+    None => ()
+  }
+  if f == 0.0 && 1.0 / f < 0.0 {
+    return "-0.0"
+  }
+  let s = f.to_string()
+  if s.contains("e") || s.contains(".") {
+    return s
+  }
+  let (sign_s, abs_s) = if s.has_prefix("-") { ("-", s[1:]) } else { ("", s) }
+  let n = abs_s.length()
+  if n >= 7 {
+    let exp = n - 1
+    let first = abs_s[0:1]
+    let rest = abs_s[1:]
+    let mz = first + "." + rest
+    let mut ei = mz.length()
+    while ei > 0 && mz[ei - 1:ei] == "0" {
+      ei -= 1
+    }
+    if ei > 0 && mz[ei - 1:ei] == "." {
+      ei -= 1
+    }
+    let mantissa = mz[0:ei]
+    let exp_str = if exp < 10 { "0\{exp}" } else { exp.to_string() }
+    "\{sign_s}\{mantissa}e+\{exp_str}"
+  } else {
+    s + ".0"
   }
 }
 
@@ -1313,7 +1363,7 @@ fn eval_index(
     @value.Value::List(l) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, l.length()))
+          let j = check(ctx, adjust_index(i, l.length(), "list"))
           l.get(j)
         }
         _ =>
@@ -1322,7 +1372,7 @@ fn eval_index(
     @value.Value::Tuple(t) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, t.length()))
+          let j = check(ctx, adjust_index(i, t.length(), "tuple"))
           t[j]
         }
         _ =>
@@ -1331,7 +1381,7 @@ fn eval_index(
     @value.Value::String(s) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, s.byte_len()))
+          let j = check(ctx, adjust_index(i, s.byte_len(), "string"))
           let one_byte = Bytes::from_array([s.byte_at(j)])
           @value.Value::String(@value.StarlarkString::from_bytes(one_byte))
         }
@@ -1341,7 +1391,7 @@ fn eval_index(
     @value.Value::Bytes(b) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, b.length()))
+          let j = check(ctx, adjust_index(i, b.length(), "bytes"))
           @value.Value::Bytes(Bytes::from_array([b[j]]))
         }
         _ =>
@@ -1358,7 +1408,7 @@ fn eval_index(
     @value.Value::Range(r) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, r.length()))
+          let j = check(ctx, adjust_index(i, r.length(), "range"))
           @value.Value::Int(BigInt::from_int64(r.index_at(j)))
         }
         _ =>
@@ -1368,7 +1418,7 @@ fn eval_index(
       match idx {
         @value.Value::Int(i) => {
           let bytes = e.source_string().to_bytes()
-          let j = check(ctx, adjust_index(i, bytes.length()))
+          let j = check(ctx, adjust_index(i, bytes.length(), "string.elems"))
           if e.is_ords() {
             @value.Value::Int(BigInt::from_int(bytes[j].to_int()))
           } else {
@@ -1388,7 +1438,7 @@ fn eval_index(
             Ok(n) => n
             Err(e) => raise EvalErr(make_eval_error(ctx, e))
           }
-          let j = check(ctx, adjust_index(i, len))
+          let j = check(ctx, adjust_index(i, len, @value.type_name(obj)))
           match c.get_index(j) {
             Ok(v) => v
             Err(e) => raise EvalErr(make_eval_error(ctx, e))
@@ -1424,7 +1474,7 @@ fn set_index(
     @value.Value::List(l) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, l.length()))
+          let j = check(ctx, adjust_index(i, l.length(), "list"))
           check(ctx, l.set(j, val))
         }
         _ =>
@@ -1438,7 +1488,7 @@ fn set_index(
             Ok(n) => n
             Err(e) => raise EvalErr(make_eval_error(ctx, e))
           }
-          let j = check(ctx, adjust_index(i, len))
+          let j = check(ctx, adjust_index(i, len, @value.type_name(obj)))
           match c.do_set_index(j, val) {
             Some(Ok(_)) => ()
             Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))

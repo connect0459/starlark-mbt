@@ -218,3 +218,19 @@ test "builtins.star: fail() error messages (chunked)" {
     fail(failures.join("\n"))
   }
 }
+
+///|
+let abs_bigint_src : String =
+  #|load("assert.star", "assert")
+  #|# abs() on BigInt values (builtins.star lines 32-34)
+  #|maxint32 = (1 << 31) - 1
+  #|assert.eq(abs(+123 * maxint32), +123 * maxint32)
+  #|assert.eq(abs(-123 * maxint32), +123 * maxint32)
+
+///|
+test "builtins.star: abs() on BigInt values (MISSING-16)" {
+  let errs = run_star_string(abs_bigint_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

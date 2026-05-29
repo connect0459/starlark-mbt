@@ -579,3 +579,63 @@ test "float(huge_bigint) raises int too large (BUG-2, MISSING-5)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let float_percent_g_src : String =
+  #|load("assert.star", "assert")
+  #|# %g format specifier for normal values (float.star lines 435-448)
+  #|negzero = -1e-323 / 10
+  #|assert.eq("%g" % 0,      "0.0")
+  #|assert.eq("%g" % 0.0,    "0.0")
+  #|assert.eq("%g" % 1.110,  "1.11")
+  #|assert.eq("%g" % 1.23e45,"1.23e+45")
+  #|assert.eq("%g" % 123,    "123.0")
+  #|assert.eq("%g" % 123.0,  "123.0")
+  #|assert.eq("%g" % 1e5,    "100000.0")
+  #|assert.eq("%g" % 1e6,    "1e+06")
+  #|assert.eq("%g" % negzero, "-0.0")
+
+///|
+test "float.star: %g format specifier for normal values (MISSING-18)" {
+  let errs = run_star_string(float_percent_g_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let float_percent_ef_edge_src : String =
+  #|load("assert.star", "assert")
+  #|# %e/%f edge-case floats (float.star lines 407-435)
+  #|assert.eq("%e" % -1.23e-45, "-1.230000e-45")
+  #|assert.eq("%e" % 1.23e45,   "1.230000e+45")
+  #|assert.eq("%f" % -1.23e-45, "-0.000000")
+  #|assert.eq("%d" % 1.23e45,   "1229999999999999973814869011019624571608236032")
+
+///|
+test "float.star: %e/%f with edge-case floats (MISSING-19)" {
+  let errs = run_star_string(float_percent_ef_edge_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let float_mod_negative_src : String =
+  #|load("assert.star", "assert")
+  #|# float % with negative operands (float.star lines 148-156)
+  #|assert.eq(-100.0 % -7.0,  -2)
+  #|assert.eq(-100.0 % -8.0,  -4.0)
+  #|assert.eq(-100.0 % 7,      5)
+  #|assert.eq(-100.0 % 7.0,    5)
+  #|assert.eq(-100.0 % 8.0,    4.0)
+  #|assert.eq(-98.0  % -8.0,  -2.0)
+  #|assert.eq(-98.0  % 8.0,    6.0)
+
+///|
+test "float.star: float %% with negative operands (MISSING-20)" {
+  let errs = run_star_string(float_mod_negative_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

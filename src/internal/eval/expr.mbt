@@ -1876,7 +1876,7 @@ fn call_list_method(
       } else {
         match pos_args[0] {
           @value.Value::Int(i) => {
-            let j = check(ctx, adjust_index(i, l.length()))
+            let j = check(ctx, adjust_index(i, l.length(), "list"))
             check(ctx, l.pop_at(j))
           }
           _ =>

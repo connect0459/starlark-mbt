@@ -589,3 +589,48 @@ test "string repeat preserves raw bytes from invalid UTF-8 sequences (BUG-3)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_method_spellcheck_src : String =
+  #|load("assert.star", "assert")
+  #|# method spell check (string.star lines 471-473)
+  #|assert.fails(lambda: "".starts_with, "no .starts_with field.*did you mean .startswith")
+  #|assert.fails(lambda: "".StartsWith, "no .StartsWith field.*did you mean .startswith")
+  #|assert.fails(lambda: "".fin, "no .fin field.*did you mean .find")
+
+///|
+test "string.star: method spell-check for unknown attributes (MISSING-13)" {
+  let errs = run_star_string(string_method_spellcheck_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let string_percent_c_unicode_src : String =
+  #|load("assert.star", "assert")
+  #|# %c with non-ASCII int (string.star lines 187, 189)
+  #|assert.eq("%c" % 0x3b1, "α")
+  #|assert.eq("%c" % "α", "α")
+
+///|
+test "string.star: %c format with non-ASCII Unicode (MISSING-17)" {
+  let errs = run_star_string(string_percent_c_unicode_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let string_repeat_overflow_src : String =
+  #|load("assert.star", "assert")
+  #|# string * large_int raises (string.star line 27)
+  #|assert.fails(lambda: "abc" * (1000000 * 1000000), "repeat count 1000000000000 too large")
+
+///|
+test "string.star: string * huge_int raises repeat-count-too-large (MISSING-15)" {
+  let errs = run_star_string(string_repeat_overflow_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

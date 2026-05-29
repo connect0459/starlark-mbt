@@ -96,7 +96,7 @@ test "error format: list index out of range" {
       inspect(
         e.msg(),
         content=(
-          #|index 10 out of range for sequence of length 3
+          #|list index 10 out of range [-3:2]
         ),
       )
     Ok(_) => abort("expected error")

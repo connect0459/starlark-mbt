@@ -281,3 +281,33 @@ test "int.star: int() base-mismatch and invalid prefix errors" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let int_octal_base10_src : String =
+  #|load("assert.star", "assert")
+  #|# int("0o123") with implicit base=10 is rejected (int.star lines 112-113)
+  #|assert.fails(lambda: int("0o123"), "invalid literal.*base 10")
+  #|assert.fails(lambda: int("-0o123"), "invalid literal.*base 10")
+
+///|
+test "int.star: int(octal-prefixed string) with base=10 raises (MISSING-14)" {
+  let errs = run_star_string(int_octal_base10_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let int_large_string_src : String =
+  #|load("assert.star", "assert")
+  #|# int() from very large decimal strings (int.star lines 104-105)
+  #|assert.eq(int("100000000000000000000"),  10000000000 * 10000000000)
+  #|assert.eq(int("-100000000000000000000"), -10000000000 * 10000000000)
+
+///|
+test "int.star: int() parses 20-digit decimal strings as BigInt (MISSING-21)" {
+  let errs = run_star_string(int_large_string_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
