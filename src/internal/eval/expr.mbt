@@ -943,9 +943,7 @@ fn call_builtin(
         )
       }
     "abs" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "abs() takes exactly one argument"))
-      }
+      check_positional(ctx, "abs", pos_args, kw_args, 1, 1)
       match pos_args[0] {
         @value.Value::Int(n) => @value.Value::Int(if n < 0N { -n } else { n })
         @value.Value::Float(f) => @value.Value::Float(f.abs())
@@ -958,24 +956,25 @@ fn call_builtin(
           )
       }
     }
-    "range" => builtin_range(ctx, pos_args)
+    "range" => builtin_range(ctx, pos_args, kw_args)
     "list" => builtin_list(ctx, pos_args)
     "tuple" => builtin_tuple(ctx, pos_args)
     "dict" => builtin_dict(ctx, pos_args, kw_args)
     "set" => builtin_set(ctx, pos_args)
-    "bytes" => builtin_bytes(ctx, pos_args)
+    "bytes" => {
+      reject_kwargs(ctx, "bytes", kw_args)
+      builtin_bytes(ctx, pos_args)
+    }
     "min" => builtin_minmax(ctx, pos_args, kw_args, false)
     "max" => builtin_minmax(ctx, pos_args, kw_args, true)
-    "enumerate" => builtin_enumerate(ctx, pos_args)
+    "enumerate" => builtin_enumerate(ctx, pos_args, kw_args)
     "sorted" => builtin_sorted(ctx, pos_args, kw_args)
     "reversed" => builtin_reversed(ctx, pos_args)
     "zip" => builtin_zip(ctx, pos_args)
     "any" => builtin_any_all(ctx, pos_args, true)
     "all" => builtin_any_all(ctx, pos_args, false)
     "hash" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "hash() takes exactly one argument"))
-      }
+      check_positional(ctx, "hash", pos_args, kw_args, 1, 1)
       match pos_args[0] {
         @value.Value::String(s) =>
           @value.Value::Int(
@@ -1056,6 +1055,7 @@ fn call_builtin(
       @value.Value::List(@value.StarlarkList::new(items))
     }
     "chr" => {
+      reject_kwargs(ctx, "chr", kw_args)
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "chr() takes exactly one argument"))
       }
@@ -1255,61 +1255,30 @@ fn range_arg_to_int64(ctx : EvalContext, b : BigInt) -> Int64 raise EvalErr {
 fn builtin_range(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
-  match pos_args.length() {
-    1 =>
-      match pos_args[0] {
-        @value.Value::Int(stop) =>
-          @value.Value::Range(
-            @value.StarlarkRange::new(0L, range_arg_to_int64(ctx, stop), 1L),
-          )
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "range() arguments must be integers"),
-          )
-      }
-    2 =>
-      match (pos_args[0], pos_args[1]) {
-        (@value.Value::Int(start), @value.Value::Int(stop)) =>
-          @value.Value::Range(
-            @value.StarlarkRange::new(
-              range_arg_to_int64(ctx, start),
-              range_arg_to_int64(ctx, stop),
-              1L,
-            ),
-          )
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "range() arguments must be integers"),
-          )
-      }
-    3 =>
-      match (pos_args[0], pos_args[1], pos_args[2]) {
-        (
-          @value.Value::Int(start),
-          @value.Value::Int(stop),
-          @value.Value::Int(step),
-        ) => {
-          if step.is_zero() {
-            raise EvalErr(
-              make_eval_error(ctx, "range() step argument must not be zero"),
-            )
-          }
-          @value.Value::Range(
-            @value.StarlarkRange::new(
-              range_arg_to_int64(ctx, start),
-              range_arg_to_int64(ctx, stop),
-              range_arg_to_int64(ctx, step),
-            ),
-          )
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "range() arguments must be integers"),
-          )
-      }
-    _ => raise EvalErr(make_eval_error(ctx, "range() takes 1 to 3 arguments"))
+  check_positional(ctx, "range", pos_args, kw_args, 1, 3)
+  let param = fn(i : Int) -> Int64 raise EvalErr {
+    match pos_args[i] {
+      @value.Value::Int(n) => range_arg_to_int64(ctx, n)
+      v =>
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "range: for parameter \{i + 1}: got \{@value.type_name(v)}, want int",
+          ),
+        )
+    }
   }
+  let (start, stop, step) = match pos_args.length() {
+    1 => (0L, param(0), 1L)
+    2 => (param(0), param(1), 1L)
+    _ => (param(0), param(1), param(2))
+  }
+  if step == 0L {
+    raise EvalErr(make_eval_error(ctx, "range: step argument must not be zero"))
+  }
+  @value.Value::Range(@value.StarlarkRange::new(start, stop, step))
 }
 
 ///|
@@ -1614,17 +1583,11 @@ fn builtin_minmax(
 fn builtin_enumerate(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
-  if pos_args.length() < 1 {
-    raise EvalErr(
-      make_eval_error(ctx, "enumerate() requires at least one argument"),
-    )
-  }
+  check_positional(ctx, "enumerate", pos_args, kw_args, 1, 2)
   let start = if pos_args.length() >= 2 {
-    match pos_args[1] {
-      @value.Value::Int(n) => n
-      _ => 0N
-    }
+    BigInt::from_int(arg_as_int(ctx, "enumerate", pos_args, 1))
   } else {
     0N
   }
@@ -2123,7 +2086,15 @@ fn call_dict_method(
       }
     }
     "update" => {
-      if pos_args.length() > 0 {
+      if pos_args.length() > 1 {
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "update: got \{pos_args.length()} arguments, want at most 1",
+          ),
+        )
+      }
+      if pos_args.length() == 1 {
         let src_val = pos_args[0]
         match src_val {
           @value.Value::Dict(src) => {
@@ -2135,31 +2106,43 @@ fn call_dict_method(
             }
           }
           _ => {
-            let iter = require_seq(ctx, src_val)
+            let iter = match @value.iterate(src_val) {
+              Ok(it) => it
+              Err(_) =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "update: got \{@value.type_name(src_val)}, want iterable",
+                  ),
+                )
+            }
+            let mut i = 0
             while true {
               match iter.next() {
                 None => break
-                Some(item) =>
-                  match item {
+                Some(item) => {
+                  let kv = match item {
                     @value.Value::Tuple(pair) =>
                       if pair.length() == 2 {
-                        check(ctx, d.set(pair[0], pair[1]))
+                        Some((pair[0], pair[1]))
                       } else {
                         iter.done()
                         raise EvalErr(
                           make_eval_error(
-                            ctx, "dict.update: items must be 2-element sequences",
+                            ctx,
+                            "update: dictionary update sequence element #\{i} has length \{pair.length()}, want 2",
                           ),
                         )
                       }
                     @value.Value::List(l2) =>
                       if l2.length() == 2 {
-                        check(ctx, d.set(l2.get(0), l2.get(1)))
+                        Some((l2.get(0), l2.get(1)))
                       } else {
                         iter.done()
                         raise EvalErr(
                           make_eval_error(
-                            ctx, "dict.update: items must be 2-element sequences",
+                            ctx,
+                            "update: dictionary update sequence element #\{i} has length \{l2.length()}, want 2",
                           ),
                         )
                       }
@@ -2167,11 +2150,18 @@ fn call_dict_method(
                       iter.done()
                       raise EvalErr(
                         make_eval_error(
-                          ctx, "dict.update: items must be 2-element sequences",
+                          ctx,
+                          "update: dictionary update sequence element #\{i} is not iterable (\{@value.type_name(item)})",
                         ),
                       )
                     }
                   }
+                  match kv {
+                    Some((k, v)) => check(ctx, d.set(k, v))
+                    None => ()
+                  }
+                  i = i + 1
+                }
               }
             }
             iter.done()
@@ -3378,6 +3368,21 @@ fn check_positional(
     let atmost = if max > min { "at most " } else { "" }
     raise EvalErr(
       make_eval_error(ctx, "\{name}: got \{n} arguments, want \{atmost}\{max}"),
+    )
+  }
+}
+
+///|
+// Reject keyword arguments with starlark-go's "X does not accept keyword
+// arguments" message (used by builtins that bypass UnpackPositionalArgs).
+fn reject_kwargs(
+  ctx : EvalContext,
+  name : String,
+  kw_args : Array[(String, @value.Value)],
+) -> Unit raise EvalErr {
+  if kw_args.length() > 0 {
+    raise EvalErr(
+      make_eval_error(ctx, "\{name} does not accept keyword arguments"),
     )
   }
 }

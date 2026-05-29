@@ -234,3 +234,43 @@ test "builtins.star: abs() on BigInt values (MISSING-16)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+// MISSING-35: enumerate/range report the specific bad parameter and validate
+// arity/keyword arguments instead of silently defaulting non-int args.
+let enumerate_range_argcheck_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: enumerate([1, 2], "x"), "enumerate: for parameter 2: got string, want int")
+  #|assert.fails(lambda: enumerate([1], 0, 9), "enumerate: got 3 arguments, want at most 2")
+  #|assert.fails(lambda: enumerate([1], start=0), "enumerate: unexpected keyword arguments")
+  #|assert.fails(lambda: range("x"), "range: for parameter 1: got string, want int")
+  #|assert.fails(lambda: range(1, "x"), "range: for parameter 2: got string, want int")
+  #|assert.fails(lambda: range(1, 2, "x"), "range: for parameter 3: got string, want int")
+  #|# valid usage still works
+  #|assert.eq(list(range(3)), [0, 1, 2])
+  #|assert.eq(enumerate([7, 8], 5), [(5, 7), (6, 8)])
+
+///|
+test "enumerate/range validate argument types and arity (MISSING-35)" {
+  let errs = run_star_string(enumerate_range_argcheck_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+// MISSING-36: bytes/abs/chr/hash reject keyword arguments, matching starlark-go.
+let builtin_kwarg_rejection_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: bytes("x", k=1), "bytes does not accept keyword arguments")
+  #|assert.fails(lambda: chr(65, k=1), "chr does not accept keyword arguments")
+  #|assert.fails(lambda: abs(-1, k=1), "abs: unexpected keyword arguments")
+  #|assert.fails(lambda: hash("x", k=1), "hash: unexpected keyword arguments")
+
+///|
+test "bytes/abs/chr/hash reject keyword arguments (MISSING-36)" {
+  let errs = run_star_string(builtin_kwarg_rejection_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
