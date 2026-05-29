@@ -976,6 +976,21 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       "recursion not allowed: f" to "function f called recursively"; Y-combinator and mutual
       recursion now detected; lambda renamed from "<lambda>" to "lambda";
       `option:norecursion` flag added to `run_chunked_string`. Commit: `2b971c8`
+- [x] **BUG-28**: Comprehension scope: subsequent for-clause target variables were bound
+      AFTER their iterable was walked (in both resolver and evaluator), causing
+      `[x for _ in [3] for x in x]` to silently succeed instead of raising
+      "local variable x referenced before assignment". Fixed by: (1) resolver now walks
+      first clause's iterable in the outer scope before pushing the comp block, then for
+      subsequent clauses binds the target variable BEFORE walking the iterable (matching
+      starlark-go `resolve.go` lines 686–711); (2) evaluator now creates a single shared
+      `comp_env` with all for-clause target names as `known_locals`, evaluates the first
+      clause's iterable in the outer env, and evaluates subsequent iterables in the comp
+      env (where the target is known-but-unassigned → `LUnbound`). Removed dead
+      `EvalEnv::with_parent`. Commit: `262c2ae`
+- [x] **MISSING-28**: `assign.star` lines 337–343 load-binding-used-before-load-stmt error
+      tests added to `assign_test.mbt`. Commit: `41d5a81`
+- [x] **MISSING-29**: `assign.star` line 253 comprehension scope unbound variable test
+      added to `assign_test.mbt` (unblocked by BUG-28 fix). Commit: `41d5a81`
 
 ---
 
