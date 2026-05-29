@@ -525,3 +525,33 @@ test "assign.star: dialect option chunks (globalreassign / loadbindsglobally)" {
     fail(failures.join("\n"))
   }
 }
+
+///|
+let assign_load_binding_before_stmt_chunked : String =
+  #|# option:loadbindsglobally
+  #|_ = assert ### "global variable assert referenced before assignment"
+  #|load("assert.star", "assert")
+  #|---
+  #|_ = assert ### "local variable assert referenced before assignment"
+  #|load("assert.star", "assert")
+
+///|
+test "assign.star lines 337-343: load binding used before load stmt (chunked)" {
+  let failures = run_chunked_string(assign_load_binding_before_stmt_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
+
+///|
+let assign_comp_scope_chunked : String =
+  #|x = [1, 2]
+  #|_ = [x for _ in [3] for x in x] ### "local variable x referenced before assignment"
+
+///|
+test "assign.star line 253: comprehension scope unbound variable (BUG-28)" {
+  let failures = run_chunked_string(assign_comp_scope_chunked)
+  if failures.length() != 0 {
+    fail(failures.join("\n"))
+  }
+}
