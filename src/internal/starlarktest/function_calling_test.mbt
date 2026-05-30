@@ -173,3 +173,56 @@ test "parameter passing: *args with required keyword-only params (function j)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let kwargs_non_string_key_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|def e(**kwargs):
+  #|    return kwargs
+  #|
+  #|assert.fails(lambda: e(**{1: 2}), "keywords must be strings, not int$")
+  #|assert.fails(lambda: e(**{"x": 1, 2: 3}), "keywords must be strings, not int$")
+  #|assert.fails(lambda: e(**{None: 1}), "keywords must be strings, not NoneType$")
+
+///|
+test "**kwargs expansion rejects non-string keys" {
+  let errs = run_star_string(kwargs_non_string_key_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let splat_operand_type_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|def f(*args, **kwargs):
+  #|    return args, kwargs
+  #|
+  #|assert.fails(lambda: f(*5), "argument after * must be iterable, not int$")
+  #|assert.fails(lambda: f(*"abc"), "argument after * must be iterable, not string$")
+  #|assert.fails(lambda: f(**5), "argument after ** must be a mapping, not int$")
+
+///|
+test "splat operand type errors match starlark-go wording" {
+  let errs = run_star_string(splat_operand_type_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let non_callable_src : String =
+  #|load("assert.star", "assert")
+  #|
+  #|assert.fails(lambda: (5)(), "invalid call of non-function \\(int\\)$")
+  #|assert.fails(lambda: "abc"(), "invalid call of non-function \\(string\\)$")
+
+///|
+test "calling a non-callable value matches starlark-go wording" {
+  let errs = run_star_string(non_callable_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

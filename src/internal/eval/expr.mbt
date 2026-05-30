@@ -364,10 +364,16 @@ fn eval_args(
         kw_args.push((name, eval_expr_node(ctx, env, e)))
       @syntax.Arg::ArgStarArgs(e) => {
         let v = eval_expr_node(ctx, env, e)
-        if v is @value.Value::String(_) {
-          raise EvalErr(make_eval_error(ctx, "must be iterable, not string"))
+        let it = match @value.iterate(v) {
+          Ok(it) => it
+          Err(_) =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "argument after * must be iterable, not \{@value.type_name(v)}",
+              ),
+            )
         }
-        let it = check(ctx, @value.iterate(v))
         while true {
           match it.next() {
             None => {
@@ -382,14 +388,26 @@ fn eval_args(
         let v = eval_expr_node(ctx, env, e)
         match v {
           @value.Value::Dict(d) =>
-            d.each(fn(k, val) {
+            for entry in d.to_entries() {
+              let (k, val) = entry
               match k {
                 @value.Value::String(s) => kw_args.push((s.raw(), val))
-                _ => ()
+                _ =>
+                  raise EvalErr(
+                    make_eval_error(
+                      ctx,
+                      "keywords must be strings, not \{@value.type_name(k)}",
+                    ),
+                  )
               }
-            })
+            }
           _ =>
-            raise EvalErr(make_eval_error(ctx, "** operand must be a mapping"))
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "argument after ** must be a mapping, not \{@value.type_name(v)}",
+              ),
+            )
         }
       }
     }
@@ -474,7 +492,7 @@ fn call_value(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "'\{c.get_type_name()}' object is not callable",
+              "invalid call of non-function (\{c.get_type_name()})",
             ),
           )
       }
@@ -482,7 +500,7 @@ fn call_value(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "'\{@value.type_name(func_val)}' object is not callable",
+          "invalid call of non-function (\{@value.type_name(func_val)})",
         ),
       )
   }
