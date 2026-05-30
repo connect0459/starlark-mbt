@@ -84,3 +84,20 @@ test "control.star: fibonacci infinite iterable via predeclared" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "single-element trailing-comma for/comprehension target unpacks one-tuple" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|out = []
+      #|for a, in [(1,), (2,)]:
+      #|    out.append(a)
+      #|assert.eq(out, [1, 2])
+      #|assert.eq([a for a, in [(1,), (2,)]], [1, 2])
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

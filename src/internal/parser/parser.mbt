@@ -594,11 +594,7 @@ fn Parser::parse_expr_list_as_expr(
     }
     items.push(self.parse_primary())
   }
-  if items.length() == 1 {
-    first
-  } else {
-    @syntax.Expr::ETuple(items, p)
-  }
+  @syntax.Expr::ETuple(items, p)
 }
 
 ///|
