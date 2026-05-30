@@ -815,3 +815,29 @@ test "str.rindex/index/find/rfind/count first-arg type error uses method prefix"
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_unicode_case_src : String =
+  #|load("assert.star", "assert")
+  #|# str.capitalize with non-ASCII
+  #|assert.eq("por qué".capitalize(), "Por qué")
+  #|assert.eq("¿Por qué?".capitalize(), "¿por qué?")
+  #|# str.islower with Unicode digraphs
+  #|assert.true("ǆenan ǉubović".islower())
+  #|# str.isupper with Unicode digraphs
+  #|assert.true("ǄENAN ǇUBOVIĆ".isupper())
+  #|# str.title with non-ASCII
+  #|assert.eq("por qué".title(), "Por Qué")
+  #|assert.eq("¿Por qué?".title(), "¿Por Qué?")
+  #|assert.eq("ǉubović".title(), "ǈubović")
+  #|# str.istitle with Unicode digraphs
+  #|assert.true("ǅenan ǈubović".istitle())
+  #|assert.true(not "Ǆenan Ǉubović".istitle())
+
+///|
+test "str Unicode case methods (capitalize/islower/isupper/title/istitle)" {
+  let errs = run_star_string(string_unicode_case_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

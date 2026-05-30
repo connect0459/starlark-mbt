@@ -2544,14 +2544,20 @@ fn call_str_method(
     }
     "format" => str_format(ctx, s.raw(), pos_args, kw_args)
     "capitalize" => {
-      let chars = s.raw().to_array()
-      if chars.is_empty() {
+      let raw = s.raw()
+      if raw.length() == 0 {
         @value.Value::String(s)
       } else {
         let buf = StringBuilder::new()
-        buf.write_char(char_to_upper(chars[0]))
-        for i in 1..<chars.length() {
-          buf.write_char(char_to_lower(chars[i]))
+        let mut is_first = true
+        for c in raw {
+          let cp = c.to_int()
+          if is_first {
+            buf.write_char(codepoint_to_title(cp).unsafe_to_char())
+            is_first = false
+          } else {
+            buf.write_char(c.to_ascii_lowercase())
+          }
         }
         @value.Value::String(@value.StarlarkString::new(buf.to_string()))
       }
@@ -2655,48 +2661,36 @@ fn call_str_method(
       @value.Value::Bool(result)
     }
     "islower" => {
-      let chars = s.raw().to_array()
-      let mut has_cased = false
-      let mut result = true
-      for c in chars {
-        let n = c.to_int()
-        if n >= 'A'.to_int() && n <= 'Z'.to_int() {
-          result = false
-          break
-        } else if n >= 'a'.to_int() && n <= 'z'.to_int() {
-          has_cased = true
-        }
+      let raw = s.raw()
+      if raw.length() == 0 {
+        return @value.Value::Bool(false)
       }
-      @value.Value::Bool(result && has_cased)
+      let lo = raw.to_lower()
+      let hi = raw.to_upper()
+      // has_cased: true if any ASCII letters exist (causing lo != hi)
+      // or if non-ASCII cased digraph chars exist
+      let has_cased = lo != hi ||
+        raw.iter().any(fn(c) { is_cased_codepoint_nonascii(c.to_int()) })
+      @value.Value::Bool(has_cased && raw == lo)
     }
     "isupper" => {
-      let chars = s.raw().to_array()
-      let mut has_cased = false
-      let mut result = true
-      for c in chars {
-        let n = c.to_int()
-        if n >= 'a'.to_int() && n <= 'z'.to_int() {
-          result = false
-          break
-        } else if n >= 'A'.to_int() && n <= 'Z'.to_int() {
-          has_cased = true
-        }
+      let raw = s.raw()
+      if raw.length() == 0 {
+        return @value.Value::Bool(false)
       }
-      @value.Value::Bool(result && has_cased)
+      let lo = raw.to_lower()
+      let hi = raw.to_upper()
+      let has_cased = lo != hi ||
+        raw.iter().any(fn(c) { is_cased_codepoint_nonascii(c.to_int()) })
+      @value.Value::Bool(has_cased && raw == hi)
     }
     "isspace" => {
       if s.raw().length() == 0 {
         return @value.Value::Bool(false)
       }
       let mut result = true
-      for c in s.raw().to_array() {
-        let n = c.to_int()
-        if n != ' '.to_int() &&
-          n != '\t'.to_int() &&
-          n != '\n'.to_int() &&
-          n != '\r'.to_int() &&
-          n != 0x0C &&
-          n != 0x0B {
+      for c in s.raw() {
+        if !c.is_whitespace() {
           result = false
           break
         }
@@ -2704,29 +2698,16 @@ fn call_str_method(
       @value.Value::Bool(result)
     }
     "title" => {
-      let chars = s.raw().to_array()
       let buf = StringBuilder::new()
       let mut prev_cased = false
-      for c in chars {
-        let n = c.to_int()
-        if n >= 'a'.to_int() && n <= 'z'.to_int() {
-          if !prev_cased {
-            buf.write_char(char_to_upper(c))
-          } else {
-            buf.write_char(c)
-          }
-          prev_cased = true
-        } else if n >= 'A'.to_int() && n <= 'Z'.to_int() {
-          if prev_cased {
-            buf.write_char(char_to_lower(c))
-          } else {
-            buf.write_char(c)
-          }
-          prev_cased = true
+      for c in s.raw() {
+        let cp = c.to_int()
+        if prev_cased {
+          buf.write_char(c.to_ascii_lowercase())
         } else {
-          buf.write_char(c)
-          prev_cased = false
+          buf.write_char(codepoint_to_title(cp).unsafe_to_char())
         }
+        prev_cased = is_cased_codepoint(cp)
       }
       @value.Value::String(@value.StarlarkString::new(buf.to_string()))
     }
@@ -2885,26 +2866,30 @@ fn call_str_method(
     "elem_ords" =>
       @value.Value::StringElems(@value.StarlarkStringElems::new(s, true))
     "istitle" => {
-      let chars = s.raw().to_array()
       let mut cased = false
       let mut prev_cased = false
       let mut valid = true
-      for c in chars {
+      for c in s.raw() {
         let n = c.to_int()
-        if n >= 'A'.to_int() && n <= 'Z'.to_int() {
+        if (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
+          unicode_is_title_codepoint(n) {
           if prev_cased {
             valid = false
             break
           }
           prev_cased = true
           cased = true
-        } else if n >= 'a'.to_int() && n <= 'z'.to_int() {
+        } else if (n >= 'a'.to_int() && n <= 'z'.to_int()) ||
+          unicode_is_lower_codepoint_strict(n) {
           if !prev_cased {
             valid = false
             break
           }
           prev_cased = true
           cased = true
+        } else if unicode_is_upper_codepoint_strict(n) {
+          valid = false
+          break
         } else {
           prev_cased = false
         }
@@ -3591,26 +3576,6 @@ fn find_substr(s : String, sub : String) -> Int {
 }
 
 ///|
-fn char_to_upper(c : Char) -> Char {
-  let n = c.to_int()
-  if n >= 'a'.to_int() && n <= 'z'.to_int() {
-    (n - 32).unsafe_to_char()
-  } else {
-    c
-  }
-}
-
-///|
-fn char_to_lower(c : Char) -> Char {
-  let n = c.to_int()
-  if n >= 'A'.to_int() && n <= 'Z'.to_int() {
-    (n + 32).unsafe_to_char()
-  } else {
-    c
-  }
-}
-
-///|
 fn is_whitespace(c : Char) -> Bool {
   let n = c.to_int()
   n == ' '.to_int() ||
@@ -3619,6 +3584,64 @@ fn is_whitespace(c : Char) -> Bool {
   n == '\r'.to_int() ||
   n == 0x0B ||
   n == 0x0C
+}
+
+// Unicode digraph codepoints with distinct title forms (Lt category subset + their
+// uppercase/lowercase partners).  The digraph ranges are U+01C4..U+01CC (DZ/LJ/NJ)
+// and U+01F1..U+01F3 (DZ variant).  These are the only Unicode characters for which
+// ToTitle != ToUpper, and for which MoonBit's ASCII-only to_upper/to_lower are wrong.
+
+///|
+fn is_cased_codepoint(cp : Int) -> Bool {
+  (cp >= 'a'.to_int() && cp <= 'z'.to_int()) ||
+  (cp >= 'A'.to_int() && cp <= 'Z'.to_int()) ||
+  (cp >= 0x01C4 && cp <= 0x01CC) ||
+  (cp >= 0x01F1 && cp <= 0x01F3)
+}
+
+// Non-ASCII cased digraph characters (used to detect cased chars in islower/isupper
+// when MoonBit's ASCII-only to_lower/to_upper can't distinguish them).
+
+///|
+fn is_cased_codepoint_nonascii(cp : Int) -> Bool {
+  (cp >= 0x01C4 && cp <= 0x01CC) || (cp >= 0x01F1 && cp <= 0x01F3)
+}
+
+// Unicode title-case letters (Lt category): only U+01C5 ǅ, U+01C8 ǈ, U+01CB ǋ,
+// U+01F2 ǲ are in this category among the digraph block.
+
+///|
+fn unicode_is_title_codepoint(cp : Int) -> Bool {
+  cp == 0x01C5 || cp == 0x01C8 || cp == 0x01CB || cp == 0x01F2
+}
+
+// Uppercase digraph letters (Lu, non-ASCII): Ǆ, Ǉ, Ǌ, Ǳ.
+
+///|
+fn unicode_is_upper_codepoint_strict(cp : Int) -> Bool {
+  cp == 0x01C4 || cp == 0x01C7 || cp == 0x01CA || cp == 0x01F1
+}
+
+// Lowercase digraph letters (Ll, non-ASCII): ǆ, ǉ, ǌ, ǳ.
+
+///|
+fn unicode_is_lower_codepoint_strict(cp : Int) -> Bool {
+  cp == 0x01C6 || cp == 0x01C9 || cp == 0x01CC || cp == 0x01F3
+}
+
+// Convert a codepoint to its title-case form.  For the 8 digraph codepoints the
+// title form differs from uppercase; for ASCII lowercase a simple +32 offset
+// suffices; for everything else the codepoint is returned unchanged.
+
+///|
+fn codepoint_to_title(cp : Int) -> Int {
+  match cp {
+    0x01C4 | 0x01C6 => 0x01C5
+    0x01C7 | 0x01C9 => 0x01C8
+    0x01CA | 0x01CC => 0x01CB
+    0x01F1 | 0x01F3 => 0x01F2
+    _ => if cp >= 'a'.to_int() && cp <= 'z'.to_int() { cp - 32 } else { cp }
+  }
 }
 
 ///|
