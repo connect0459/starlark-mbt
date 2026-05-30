@@ -627,3 +627,109 @@ test "resolve: positional argument after *args is rejected (MISSING-49)" {
   let r = resolve_call("f(*a, b)")
   assert_true(r |> has_error("positional argument may not follow *args"))
 }
+
+// --- Error message parity with starlark-go (MISSING-82) ---
+
+///|
+test "resolve: break outside loop uses 'break not in a loop' (MISSING-82)" {
+  let f = parse_or_fail("break")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "break not in a loop"))
+}
+
+///|
+test "resolve: continue outside loop uses 'continue not in a loop' (MISSING-82)" {
+  let f = parse_or_fail("continue")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "continue not in a loop"))
+}
+
+///|
+test "resolve: return outside function uses 'return statement not within a function' (MISSING-82)" {
+  let f = parse_or_fail("return")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "return statement not within a function"))
+}
+
+///|
+test "resolve: top-level if uses 'if statement not within a function' (MISSING-82)" {
+  let f = parse_or_fail("if True:\n  x = 1")
+  let opts = ResolveOptions::default().with_allow_top_level_control(false)
+  let result = resolve(f, no_predeclared, only_universal, opts)
+  assert_true(has_error(result, "if statement not within a function"))
+}
+
+///|
+test "resolve: top-level for uses 'for loop not within a function' (MISSING-82)" {
+  let f = parse_or_fail("for x in []:\n  pass")
+  let opts = ResolveOptions::default().with_allow_top_level_control(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(has_error(result, "for loop not within a function"))
+}
+
+///|
+test "resolve: top-level while uses 'while loop not within a function' (MISSING-82)" {
+  let f = parse_or_fail("while True:\n  pass")
+  let opts = ResolveOptions::default()
+    .with_allow_top_level_control(false)
+    .with_allow_recursion(true)
+  let result = resolve(f, no_predeclared, only_universal, opts)
+  assert_true(has_error(result, "while loop not within a function"))
+}
+
+// --- MISSING-77: loops counter reset inside nested def ---
+
+///|
+test "resolve: break inside nested def within loop raises 'break not in a loop' (MISSING-77)" {
+  let f = parse_or_fail(
+    "def fun1():\n  for a in [1, 2, 3]:\n    def nested():\n      break",
+  )
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "break not in a loop"))
+}
+
+///|
+test "resolve: continue inside nested def within loop raises 'continue not in a loop' (MISSING-77)" {
+  let f = parse_or_fail(
+    "def fun2():\n  for a in [1, 2, 3]:\n    def nested():\n      continue",
+  )
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "continue not in a loop"))
+}
+
+///|
+test "resolve: break inside for loop within def is valid (MISSING-77 sanity)" {
+  let f = parse_or_fail("def f():\n  for x in []:\n    break")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.is_valid())
+}

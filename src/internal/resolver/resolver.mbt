@@ -555,7 +555,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
     }
     @syntax.Stmt::SIf(cond, then_stmts, else_stmts, pos) => {
       if self.is_at_module_scope() && !self.opts.allow_top_level_control {
-        self.errorf(pos, "if statements are not allowed at module level")
+        self.errorf(pos, "if statement not within a function")
       }
       self.walk_expr(cond)
       self.walk_stmts(then_stmts)
@@ -563,7 +563,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
     }
     @syntax.Stmt::SFor(target, iter, body, pos) => {
       if self.is_at_module_scope() && !self.opts.allow_top_level_control {
-        self.errorf(pos, "for loops are not allowed at module level")
+        self.errorf(pos, "for loop not within a function")
       }
       self.walk_expr(iter)
       let old_loops = self.loops
@@ -574,7 +574,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
     }
     @syntax.Stmt::SWhile(cond, body, pos) => {
       if self.is_at_module_scope() && !self.opts.allow_top_level_control {
-        self.errorf(pos, "while loops are not allowed at module level")
+        self.errorf(pos, "while loop not within a function")
       }
       self.walk_expr(cond)
       let old_loops = self.loops
@@ -587,13 +587,16 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       let saved = self.push_block()
       let old_fn = self.current_fn_name
       let old_in_func = self.in_func
+      let old_loops = self.loops
       self.current_fn_name = name
       self.in_func = self.in_func + 1
+      self.loops = 0
       self.walk_params(params, pos)
       self.pre_collect_stmts(body)
       self.walk_stmts(body)
       self.resolve_function_uses(self.env, name)
       let fn_block = self.env
+      self.loops = old_loops
       self.in_func = old_in_func
       self.current_fn_name = old_fn
       self.pop_block(saved)
@@ -601,7 +604,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
     }
     @syntax.Stmt::SReturn(e, pos) => {
       if self.in_func == 0 {
-        self.errorf(pos, "return outside function")
+        self.errorf(pos, "return statement not within a function")
       }
       match e {
         Some(expr) => self.walk_expr(expr)
@@ -610,11 +613,11 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
     }
     @syntax.Stmt::SBreak(pos) =>
       if self.loops == 0 {
-        self.errorf(pos, "break outside loop")
+        self.errorf(pos, "break not in a loop")
       }
     @syntax.Stmt::SContinue(pos) =>
       if self.loops == 0 {
-        self.errorf(pos, "continue outside loop")
+        self.errorf(pos, "continue not in a loop")
       }
     @syntax.Stmt::SPass(_) => ()
     @syntax.Stmt::SLoad(_, names, pos) =>
@@ -913,11 +916,14 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       let saved = self.push_block()
       let old_fn = self.current_fn_name
       let old_in_func = self.in_func
+      let old_loops = self.loops
       self.current_fn_name = "lambda"
       self.in_func = self.in_func + 1
+      self.loops = 0
       self.walk_params(params, pos)
       self.walk_expr(body)
       self.resolve_function_uses(self.env, "lambda")
+      self.loops = old_loops
       self.in_func = old_in_func
       self.current_fn_name = old_fn
       self.pop_block(saved)
