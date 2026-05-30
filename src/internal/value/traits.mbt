@@ -159,12 +159,6 @@ fn hash_int(n : Int) -> UInt {
 }
 
 ///|
-fn hash_int64(n : Int64) -> UInt {
-  let lo = n.to_int().reinterpret_as_uint()
-  int_hash_mult * (lo + 3U)
-}
-
-///|
 fn hash_bigint(n : BigInt) -> UInt {
   let lo = n.to_int64().to_int().reinterpret_as_uint()
   int_hash_mult * (lo + 3U)
@@ -175,7 +169,9 @@ fn hash_float(f : Double) -> UInt {
   if f.is_nan() || f.is_inf() {
     return float_special_hash
   }
-  hash_int64(f.to_int64())
+  // Convert to exact integer value then hash, matching starlark-go's
+  // finiteFloatToInt(f).Hash() — ensures hash(1e20) == hash(10**20).
+  hash_bigint(double_to_bigint(f))
 }
 
 ///|

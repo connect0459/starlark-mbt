@@ -177,6 +177,17 @@ test "starlark_hash: equal Int and Float produce same hash" {
 }
 
 ///|
+test "starlark_hash: large Float equals large Int hash (MISSING-66)" {
+  // 1e20 == 10**20 in Starlark so their hashes must match.
+  // Old code used f.to_int64() which overflows for 1e20; new code uses
+  // double_to_bigint so both sides go through hash_bigint with the same BigInt.
+  let big_int = 100000000000000000000N // 10**20
+  let h_int = starlark_hash(Value::Int(big_int))
+  let h_float = starlark_hash(Value::Float(1.0e20))
+  assert_true(h_int == h_float)
+}
+
+///|
 test "starlark_hash: Float NaN and Inf all produce the same fixed hash" {
   // 1618033 is the spec constant for non-finite floats
   let non_finite_hash : UInt = 1618033U
