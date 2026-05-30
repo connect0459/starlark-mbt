@@ -1149,8 +1149,12 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       Function-local candidates are not included (deferred uses lose block
       context); covers the most common module-level typo case.
       Commit: `0761989`
-- [ ] **MISSING-81**: Non-ASCII identifier-start accepts any byte ≥ 0x80
-      instead of checking `unicode.IsLetter`; `→` tokenizes as an identifier.
+- [x] **MISSING-81**: Non-ASCII identifier-start now decodes the full UTF-8
+      rune and checks `is_unicode_letter_rune` (explicit Unicode letter-block
+      ranges matching `unicode.IsLetter`); `→` (U+2192, So) now produces
+      "unexpected input character"; cased letters (é, α) and CJK ideographs
+      remain valid. `collect_ident_bytes` validates continuation runes the
+      same way. Commit: `6a2afe3`
 - [x] **MISSING-82** (remaining): `"load statement within a function"` vs
       `"load statement must be at module level"` distinction for load inside a
       function vs loop/conditional; `"dialect does not support while loops"`
