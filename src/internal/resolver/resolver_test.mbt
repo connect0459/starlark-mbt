@@ -163,6 +163,31 @@ test "resolve: reports error for undefined variable in function" {
   assert_true(has_error(result, "undefined: z"))
 }
 
+///|
+test "resolve: undefined suggests did-you-mean for close global name" {
+  let f = parse_or_fail("hello = 1\nprint(hollo)")
+  let result = resolve(
+    f,
+    no_predeclared,
+    fn(n) { n == "print" },
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "undefined: hollo (did you mean hello?)"))
+}
+
+///|
+test "resolve: undefined with no close match gives no hint" {
+  let f = parse_or_fail("hello = 1\nprint(goodbye)")
+  let result = resolve(
+    f,
+    no_predeclared,
+    fn(n) { n == "print" },
+    ResolveOptions::default(),
+  )
+  // "goodbye" is far from "hello" — no hint appended
+  assert_true(has_error(result, "undefined: goodbye"))
+}
+
 // --- Global reassignment ---
 
 ///|
