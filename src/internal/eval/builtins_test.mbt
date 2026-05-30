@@ -153,6 +153,26 @@ test "exec_file: int parses hex string with explicit base keyword" {
 }
 
 ///|
+test "exec_file: int rejects a non-int base for a string argument" {
+  match exec_b("n = int(\"10\", \"x\")") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(e.msg().contains("int: for base, got string, want int"))
+  }
+}
+
+///|
+test "exec_file: int rejects an explicit base for a non-string argument" {
+  match exec_b("n = int(5, base=\"x\")") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(
+        e.msg().contains("int: can't convert non-string with explicit base"),
+      )
+  }
+}
+
+///|
 test "exec_file: int converts Bool to integer without TypeError" {
   match exec_b("a = int(True)\nb = int(False)") {
     Ok(m) => {

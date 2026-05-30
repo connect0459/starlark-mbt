@@ -823,41 +823,37 @@ fn call_builtin(
       }
     }
     "int" => {
-      let base_from_kw = {
-        let mut found : Int? = None
+      // The base argument is captured as a raw value (keyword takes priority
+      // over the second positional) so its type is validated only in the
+      // string branch, matching starlark-go's UnpackArgs + AsInt32 ordering.
+      let base_arg : @value.Value? = {
+        let mut found : @value.Value? = None
         for kv in kw_args {
           if kv.0 == "base" {
-            match kv.1 {
-              @value.Value::Int(b) => {
-                found = Some(b.to_int())
-                break
-              }
-              _ => ()
-            }
+            found = Some(kv.1)
+            break
           }
         }
-        found
-      }
-      let base_from_pos = if pos_args.length() >= 2 {
-        match pos_args[1] {
-          @value.Value::Int(b) => Some(b.to_int())
-          _ => None
+        match found {
+          Some(_) => found
+          None => if pos_args.length() >= 2 { Some(pos_args[1]) } else { None }
         }
-      } else {
-        None
-      }
-      let explicit_base = match base_from_kw {
-        Some(b) => Some(b)
-        None => base_from_pos
       }
       if pos_args.length() == 0 {
         raise EvalErr(make_eval_error(ctx, "int() missing argument"))
       }
-      match (pos_args[0], explicit_base) {
-        (@value.Value::String(s), base_opt) => {
-          let base = match base_opt {
-            Some(b) => b
+      match pos_args[0] {
+        @value.Value::String(s) => {
+          let base = match base_arg {
             None => 10
+            Some(@value.Value::Int(b)) => b.to_int()
+            Some(v) =>
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "int: for base, got \{@value.type_name(v)}, want int",
+                ),
+              )
           }
           if base != 0 && (base < 2 || base > 36) {
             raise EvalErr(
@@ -867,30 +863,44 @@ fn call_builtin(
           let n = check(ctx, parse_int_str(s.raw(), base))
           @value.Value::Int(n)
         }
-        (_, Some(_)) =>
-          raise EvalErr(make_eval_error(ctx, "non-string with explicit base"))
-        (@value.Value::Int(n), None) => @value.Value::Int(n)
-        (@value.Value::Float(f), None) =>
-          if f.is_nan() {
-            raise EvalErr(
-              make_eval_error(ctx, "cannot convert float NaN to integer"),
-            )
-          } else if f.is_inf() {
-            raise EvalErr(
-              make_eval_error(ctx, "cannot convert float infinity to integer"),
-            )
-          } else {
-            @value.Value::Int(@value.double_to_bigint(f.trunc()))
+        other =>
+          match base_arg {
+            Some(_) =>
+              raise EvalErr(
+                make_eval_error(
+                  ctx, "int: can't convert non-string with explicit base",
+                ),
+              )
+            None =>
+              match other {
+                @value.Value::Int(n) => @value.Value::Int(n)
+                @value.Value::Float(f) =>
+                  if f.is_nan() {
+                    raise EvalErr(
+                      make_eval_error(
+                        ctx, "cannot convert float NaN to integer",
+                      ),
+                    )
+                  } else if f.is_inf() {
+                    raise EvalErr(
+                      make_eval_error(
+                        ctx, "cannot convert float infinity to integer",
+                      ),
+                    )
+                  } else {
+                    @value.Value::Int(@value.double_to_bigint(f.trunc()))
+                  }
+                @value.Value::Bool(b) =>
+                  @value.Value::Int(if b { 1N } else { 0N })
+                v =>
+                  raise EvalErr(
+                    make_eval_error(
+                      ctx,
+                      "int: cannot convert \{@value.type_name(v)} to int",
+                    ),
+                  )
+              }
           }
-        (@value.Value::Bool(b), None) =>
-          @value.Value::Int(if b { 1N } else { 0N })
-        (v, None) =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "int: cannot convert \{@value.type_name(v)} to int",
-            ),
-          )
       }
     }
     "float" =>
