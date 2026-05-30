@@ -709,6 +709,16 @@ test "chained == == is rejected as non-associative" {
 }
 
 ///|
+test "chained comparison error reports the position past the operator" {
+  // starlark-go reports at the scanner position one past the second operator.
+  // For "0 <= i < n" the second operator "<" ends at col 9.
+  match @parser.parse_expr("test.star", "0 <= i < n") {
+    Err(e) => assert_eq(e.pos().col(), 9)
+    Ok(_) => fail("expected non-associative error")
+  }
+}
+
+///|
 test "chained <= < is rejected as non-associative" {
   let msg = parse_e_err("0 <= i < n")
   if !msg.contains("<= does not associate with <") {

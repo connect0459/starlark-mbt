@@ -23,6 +23,7 @@ pub struct Scanner {
 }
 pub fn Scanner::new(String, String) -> Self
 pub fn Scanner::next_token(Self) -> Result[ScannedToken, @errors.SyntaxError]
+pub fn Scanner::position(Self) -> @errors.Position
 
 pub(all) enum Token {
   Illegal

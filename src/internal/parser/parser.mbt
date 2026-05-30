@@ -44,6 +44,13 @@ fn Parser::syntax_error(self : Parser, msg : String) -> @errors.SyntaxError {
 }
 
 ///|
+/// Builds a syntax error at the scanner's current read position (one past the
+/// current token), matching starlark-go errors that use `scanner.pos`.
+fn Parser::scanner_error(self : Parser, msg : String) -> @errors.SyntaxError {
+  @errors.SyntaxError::new(self.scanner.position(), msg)
+}
+
+///|
 fn Parser::expect(
   self : Parser,
   expected : @lexer.Token,
@@ -733,7 +740,7 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
     match prev_op_str {
       Some(prev) =>
         raise ParseErr(
-          self.syntax_error(
+          self.scanner_error(
             "\{prev} does not associate with \{cur_str} (use parens)",
           ),
         )
@@ -1221,7 +1228,7 @@ fn Parser::finish_comparison_from(
     match prev_op_str {
       Some(prev) =>
         raise ParseErr(
-          self.syntax_error(
+          self.scanner_error(
             "\{prev} does not associate with \{cur_str} (use parens)",
           ),
         )

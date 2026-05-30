@@ -487,6 +487,19 @@ test "scan: old-style octal is error" {
 }
 
 ///|
+test "scan: obsolete octal error reports the position past the literal" {
+  // starlark-go reports number-literal errors at the scanner position one
+  // past the last consumed digit (foo.star:1:4 for "007").
+  assert_true(scan("007").contains("foo.star:1:4: obsolete form of octal"))
+}
+
+///|
+test "scan: invalid float literal error reports the position past the literal" {
+  // "1e" has no exponent digits; the error is reported at col 3 (past "1e").
+  assert_true(scan("1e").contains("foo.star:1:3: invalid float literal"))
+}
+
+///|
 test "scan: zero followed by zero is valid" {
   assert_eq(scan("00"), "0 EOF")
 }

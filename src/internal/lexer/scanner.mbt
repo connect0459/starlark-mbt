@@ -100,6 +100,13 @@ fn Scanner::current_pos(self : Scanner) -> @errors.Position {
 }
 
 ///|
+/// The scanner's current read position: one column past the last consumed
+/// byte. Mirrors starlark-go's `scanner.pos`, which parser errors point at.
+pub fn Scanner::position(self : Scanner) -> @errors.Position {
+  self.current_pos()
+}
+
+///|
 fn Scanner::make_error(
   _self : Scanner,
   pos : @errors.Position,
@@ -645,12 +652,12 @@ fn Scanner::scan_number(
         let digits = @utf8.decode_lossy(Bytes::from_array(extra)[:])
         return Err(
           self.make_error(
-            start,
+            self.current_pos(),
             "obsolete form of octal literal; use 0o\{digits}",
           ),
         )
       } else if !all_zeros && extra.length() > 0 {
-        return Err(self.make_error(start, "invalid int literal"))
+        return Err(self.make_error(self.current_pos(), "invalid int literal"))
       } else {
         // Just 0 (or 00...0 which equals 0)
         return Ok({ tok: Int(0N), pos: start })
@@ -693,7 +700,7 @@ fn Scanner::scan_number(
       self.read_byte() |> ignore
     }
     if !is_digit_byte(self.peek_byte()) {
-      return Err(self.make_error(start, "invalid float literal"))
+      return Err(self.make_error(self.current_pos(), "invalid float literal"))
     }
     while is_digit_byte(self.peek_byte()) {
       raw.push(self.peek_byte())
@@ -704,12 +711,13 @@ fn Scanner::scan_number(
   let raw_str = @utf8.decode_lossy(Bytes::from_array(raw)[:])
   if fraction || exponent {
     match parse_float_str(raw_str) {
-      Err(e) => Err(self.make_error(start, e))
+      Err(e) => Err(self.make_error(self.current_pos(), e))
       Ok(f) => Ok({ tok: Float(f), pos: start })
     }
   } else {
     match parse_int_decimal(raw_str) {
-      Err(_) => Err(self.make_error(start, "invalid decimal literal"))
+      Err(_) =>
+        Err(self.make_error(self.current_pos(), "invalid decimal literal"))
       Ok(n) => Ok({ tok: Int(n), pos: start })
     }
   }
