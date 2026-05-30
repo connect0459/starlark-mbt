@@ -127,6 +127,15 @@ pub fn Universe::has(self : Universe, name : String) -> Bool {
 }
 
 ///|
+pub fn Universe::set(
+  self : Universe,
+  name : String,
+  value : @value.Value,
+) -> Unit {
+  self.bindings[name] = value
+}
+
+///|
 pub struct Predeclared {
   priv bindings : Map[String, @value.Value]
 }
@@ -636,6 +645,64 @@ pub fn exec_file(
 }
 
 ///|
+pub fn exec_file_with_universe(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+  universe : Universe,
+) -> Result[Module, @errors.EvalError] {
+  let file = match @parser.parse_file(filename, src) {
+    Ok(f) => f
+    Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
+  }
+  let ctx = EvalContext::new(thread, opts)
+  universe.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
+  collect_module_globals_into(
+    file.stmts(),
+    opts.load_binds_globally,
+    ctx.global_env.known_module_globals,
+  )
+  let universe_names : Array[String] = universe.bindings.keys().collect()
+  let resolve_opts = @resolver.ResolveOptions::default()
+    .with_allow_global_reassign(opts.allow_global_reassign)
+    .with_allow_set(opts.allow_set)
+    .with_load_binds_globally(opts.load_binds_globally)
+  let resolved = @resolver.resolve(
+    file,
+    fn(name) { is_builtin(name) || universe_names.contains(name) },
+    fn(name) { name == "None" || name == "True" || name == "False" },
+    resolve_opts,
+  )
+  if !resolved.is_valid() {
+    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
+    return Err(@errors.EvalError::simple(msg))
+  }
+  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
+  ctx.thread.call_stack.push(
+    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
+  )
+  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
+    EvalErr(e) => {
+      ignore(ctx.thread.call_stack.pop())
+      ctx.toplevel_frame_idx = -1
+      return Err(e)
+    }
+  }
+  ignore(ctx.thread.call_stack.pop())
+  ctx.toplevel_frame_idx = -1
+  let m = Module::new()
+  ctx.global_env.locals.each(fn(name, v) {
+    if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
+      let key = @value.Value::String(@value.StarlarkString::new(name))
+      m.globals.set(key, v) |> ignore
+    }
+  })
+  m.freeze()
+  Ok(m)
+}
+
+///|
 pub fn exec_file_with_predeclared(
   thread : Thread,
   filename : String,
@@ -764,11 +831,21 @@ pub fn eval_expr(
   src : String,
   env : @value.StarlarkDict,
 ) -> Result[@value.Value, @errors.EvalError] {
+  eval_expr_with_opts(thread, filename, src, Options::default(), env)
+}
+
+///|
+pub fn eval_expr_with_opts(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+  env : @value.StarlarkDict,
+) -> Result[@value.Value, @errors.EvalError] {
   let expr = match @parser.parse_expr(filename, src) {
     Ok(e) => e
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
-  let opts = Options::default()
   let ctx = EvalContext::new(thread, opts)
   env.each(fn(k, v) {
     match k {

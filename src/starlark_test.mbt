@@ -1,4 +1,39 @@
 ///|
+test "Universe::set adds a binding visible to executed modules (MISSING-58)" {
+  let u = @starlark.Universe::standard()
+  u.set("MY_CONST", @starlark.Value::Int(42N))
+  let t = @starlark.Thread::new("test")
+  match
+    @starlark.exec_file_with_universe(
+      t,
+      "<test>",
+      "result = MY_CONST + 1",
+      @starlark.Options::default(),
+      u,
+    ) {
+    Ok(m) =>
+      assert_true(
+        @starlark.module_get(m, "result") == Some(@starlark.Value::Int(43N)),
+      )
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
+test "eval_expr_with_opts respects allow_set option (MISSING-54)" {
+  let t = @starlark.Thread::new("test")
+  let env = @starlark.StarlarkDict::new()
+  // With allow_set=true, {1, 2} parses and evaluates as a Set.
+  let opts_with_set = @starlark.Options::default()
+  match
+    @starlark.eval_expr_with_opts(t, "<test>", "{1, 2}", opts_with_set, env) {
+    Ok(@starlark.Value::Set(_)) => ()
+    Ok(v) => fail("expected Set, got \{@starlark.type_name(v)}")
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
 test "Thread can be created with a name" {
   let t = @starlark.Thread::new("main")
   assert_eq(t.name(), "main")

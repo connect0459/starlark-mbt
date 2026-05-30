@@ -87,6 +87,17 @@ pub fn exec_file(
 }
 
 ///|
+pub fn exec_file_with_universe(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+  universe : Universe,
+) -> Result[Module, EvalError] {
+  @eval.exec_file_with_universe(thread, filename, src, opts, universe)
+}
+
+///|
 pub fn exec_file_with_predeclared(
   thread : Thread,
   filename : String,
@@ -105,6 +116,17 @@ pub fn eval_expr(
   env : StarlarkDict,
 ) -> Result[Value, EvalError] {
   @eval.eval_expr(thread, filename, src, env)
+}
+
+///|
+pub fn eval_expr_with_opts(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+  env : StarlarkDict,
+) -> Result[Value, EvalError] {
+  @eval.eval_expr_with_opts(thread, filename, src, opts, env)
 }
 
 ///|
