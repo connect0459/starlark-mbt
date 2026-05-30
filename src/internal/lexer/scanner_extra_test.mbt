@@ -66,17 +66,22 @@ test "scan: rejects a non-ASCII hex escape in a string" {
 }
 
 ///|
-test "scan: rejects \\u escapes inside bytes literals" {
-  assert_true(
-    scan("b'\\u0041'").contains("invalid escape \\u in bytes literal"),
-  )
+test "scan: \\u inside bytes literal produces UTF-8 bytes (MISSING-61)" {
+  // starlark-go accepts \uNNNN in b"..." and encodes the codepoint as UTF-8.
+  // b"A" = b"A" (U+0041 → 0x41)
+  assert_eq(scan("b'\\u0041'"), "b\"A\" EOF")
 }
 
 ///|
-test "scan: rejects \\U escapes inside bytes literals" {
-  assert_true(
-    scan("b'\\U00000041'").contains("invalid escape \\U in bytes literal"),
-  )
+test "scan: \\U inside bytes literal produces UTF-8 bytes (MISSING-61)" {
+  // b"\U00000041" = b"A"
+  assert_eq(scan("b'\\U00000041'"), "b\"A\" EOF")
+}
+
+///|
+test "scan: \\u in bytes literal for non-ASCII produces multi-byte UTF-8" {
+  // U+03B1 (α) encodes as 0xCE 0xB1 in UTF-8
+  assert_true(scan("b'\\u03B1'").contains("EOF"))
 }
 
 ///|

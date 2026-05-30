@@ -252,9 +252,9 @@ Tokenise Starlark source into a flat token stream.
   - Raw strings: `r"..."`, `r'...'`, `r"""..."""`
   - Bytes literals: `b"..."`, `b'...'`, `b"""..."""`
   - String escape sequences: `\n`, `\t`, `\r`, `\\`, `\'`, `\"`, `\a`, `\b`, `\f`, `\v`, `\0`, octal `\NNN`, hex `\xNN`, Unicode `\uNNNN`, `\UNNNNNNNN`
-  - **Bytes literal escape restriction**: `b"..."` only supports byte-range escapes
-    (`\xNN`, octal `\NNN`, `\n`, `\t`, etc.); Unicode escapes `\uNNNN` and `\UNNNNNNNN`
-    are **not valid** inside bytes literals and must raise a `SyntaxError`.
+  - **Bytes literal Unicode escapes**: `b"..."` accepts `\uNNNN` and `\UNNNNNNNN`
+    and encodes the codepoint as UTF-8 bytes, matching starlark-go behavior
+    (earlier implementation rejected them — changed in MISSING-61 fix).
   - Triple-quoted string termination rules
 - [x] Keywords: `and`, `break`, `continue`, `def`, `elif`, `else`, `for`, `if`, `in`, `lambda`, `load`, `not`, `or`, `pass`, `return`, `while`
 - [x] Keyword literals: `None`, `True`, `False` — scanned as `NoneKw`/`TrueKw`/`FalseKw`

@@ -908,25 +908,15 @@ fn Scanner::decode_escape(
       }
       buf.push(val.to_byte())
     }
-    0x75 => {
-      // Unicode: \uNNNN (string only)
-      if is_bytes {
-        return Err(
-          self.make_error(str_start, "invalid escape \\u in bytes literal"),
-        )
-      }
+    0x75 =>
+      // Unicode: \uNNNN — accepted in both string and bytes literals.
+      // In bytes, the codepoint is encoded as UTF-8 bytes, matching starlark-go.
       match self.read_n_hex(str_start, 4) {
         Err(e) => return Err(e)
         Ok(cp) => append_utf8_codepoint(cp, buf)
       }
-    }
-    0x55 => {
-      // Unicode: \UNNNNNNNN (string only)
-      if is_bytes {
-        return Err(
-          self.make_error(str_start, "invalid escape \\U in bytes literal"),
-        )
-      }
+    0x55 =>
+      // Unicode: \UNNNNNNNN — accepted in both string and bytes literals.
       match self.read_n_hex(str_start, 8) {
         Err(e) => return Err(e)
         Ok(cp) => {
@@ -944,7 +934,6 @@ fn Scanner::decode_escape(
           append_utf8_codepoint(cp, buf)
         }
       }
-    }
     _ =>
       return Err(
         self.make_error(
