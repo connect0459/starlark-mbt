@@ -272,3 +272,25 @@ test "scan: br\"...\" is NOT a raw-bytes literal (tokenized as ident + string)" 
   // Go only accepts rb"..." not br"..."; br"foo" → Ident("br") Str("foo") EOF
   assert_eq(scan("br\"foo\""), "br \"foo\" EOF")
 }
+
+// --- Unicode surrogate check in \u escape (MISSING-79) ---
+
+///|
+test "scan: \\uD800 (low surrogate) is rejected in string literal (MISSING-79)" {
+  assert_true(scan("\"\\uD800\"").contains("invalid Unicode surrogate"))
+}
+
+///|
+test "scan: \\uDFFF (high surrogate) is rejected in string literal (MISSING-79)" {
+  assert_true(scan("\"\\uDFFF\"").contains("invalid Unicode surrogate"))
+}
+
+///|
+test "scan: \\u4E2D (valid BMP) is accepted in string literal (MISSING-79)" {
+  assert_false(scan("\"\\u4E2D\"").contains("error"))
+}
+
+///|
+test "scan: \\uD800 is rejected in bytes literal (MISSING-79)" {
+  assert_true(scan("b\"\\uD800\"").contains("invalid Unicode surrogate"))
+}

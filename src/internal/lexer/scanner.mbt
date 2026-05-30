@@ -913,7 +913,16 @@ fn Scanner::decode_escape(
       // In bytes, the codepoint is encoded as UTF-8 bytes, matching starlark-go.
       match self.read_n_hex(str_start, 4) {
         Err(e) => return Err(e)
-        Ok(cp) => append_utf8_codepoint(cp, buf)
+        Ok(cp) => {
+          let surr_lo = 55296 // 0xD800
+          let surr_hi = 57344 // 0xE000
+          if cp >= surr_lo && cp < surr_hi {
+            return Err(
+              self.make_error(str_start, "invalid Unicode surrogate code point"),
+            )
+          }
+          append_utf8_codepoint(cp, buf)
+        }
       }
     0x55 =>
       // Unicode: \UNNNNNNNN — accepted in both string and bytes literals.
