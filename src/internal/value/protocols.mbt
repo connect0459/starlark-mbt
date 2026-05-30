@@ -58,7 +58,7 @@ pub trait Container {
 
 ///|
 /// HasBinary protocol for custom types that define binary operators
-/// (+, -, *, /, //, %, **, &, |, ^, <<, >>, in, not in).
+/// (+, -, *, /, //, %, &, |, ^, <<, >>, in, not in).
 /// Return `Some(Ok(v))` to provide a result, `Some(Err(msg))` to signal an
 /// error, or `None` to decline (let the evaluator try the other operand or
 /// raise a TypeError).

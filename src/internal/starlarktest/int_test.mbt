@@ -236,10 +236,6 @@ let bigint_star_src : String =
   #|# large literals
   #|assert.eq(9223372036854775808, maxint64 + 1)
   #|
-  #|# power
-  #|assert.eq(str(2 ** 64), "18446744073709551616")
-  #|assert.eq(str(2 ** 100), "1267650600228229401496703205376")
-  #|
   #|# minint64 literal
   #|assert.eq(str(-9223372036854775808), "-9223372036854775808")
   #|
@@ -444,7 +440,6 @@ let binary_op_messages_src : String =
   #|assert.fails(lambda: 1 / "x", "unknown binary op: int / string")
   #|assert.fails(lambda: 1 // "x", "unknown binary op: int // string")
   #|assert.fails(lambda: 1 % [1], "unknown binary op: int % list")
-  #|assert.fails(lambda: 1 ** "x", "unknown binary op: int ** string")
   #|assert.fails(lambda: 1 << 1.0, "unknown binary op: int << float")
   #|assert.fails(lambda: 1 << -3, "negative shift count: -3")
   #|assert.fails(lambda: 1 << 600, "shift count too large: 600")

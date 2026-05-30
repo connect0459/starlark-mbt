@@ -879,20 +879,7 @@ fn Parser::parse_factor(self : Parser) -> @syntax.Expr raise ParseErr {
       raise ParseErr(
         self.syntax_error("'*' is not allowed as assignment target in Starlark"),
       )
-    _ => self.parse_power()
-  }
-}
-
-///|
-fn Parser::parse_power(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
-  let base = self.parse_primary()
-  if self.tok == @lexer.Token::StarStar {
-    self.advance()
-    let exp = self.parse_factor()
-    @syntax.Expr::EBinary(base, @syntax.BinaryOp::OpPow, exp, p)
-  } else {
-    base
+    _ => self.parse_primary()
   }
 }
 
@@ -1027,8 +1014,7 @@ fn Parser::parse_call_arg(self : Parser) -> @syntax.Arg raise ParseErr {
       } else {
         let ident_expr = @syntax.Expr::EIdent(name, p)
         let e = self.finish_primary_from_expr(ident_expr)
-        let e2 = self.finish_power_from(e, p)
-        let full = self.finish_full_expr(e2, p)
+        let full = self.finish_full_expr(e, p)
         self.reject_malformed_kwarg()
         @syntax.Arg::ArgPos(full)
       }
@@ -1080,21 +1066,6 @@ fn Parser::finish_primary_from_expr(
     }
   }
   e
-}
-
-///|
-fn Parser::finish_power_from(
-  self : Parser,
-  base : @syntax.Expr,
-  p : @errors.Position,
-) -> @syntax.Expr raise ParseErr {
-  if self.tok == @lexer.Token::StarStar {
-    self.advance()
-    let exp = self.parse_factor()
-    @syntax.Expr::EBinary(base, @syntax.BinaryOp::OpPow, exp, p)
-  } else {
-    base
-  }
 }
 
 ///|

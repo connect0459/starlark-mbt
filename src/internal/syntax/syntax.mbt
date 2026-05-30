@@ -27,7 +27,6 @@ pub(all) enum BinaryOp {
   OpDiv
   OpFloorDiv
   OpMod
-  OpPow
   OpBitAnd
   OpBitOr
   OpBitXor

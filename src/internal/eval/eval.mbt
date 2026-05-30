@@ -522,7 +522,6 @@ pub fn binary(
     "/" => @syntax.BinaryOp::OpDiv
     "//" => @syntax.BinaryOp::OpFloorDiv
     "%" => @syntax.BinaryOp::OpMod
-    "**" => @syntax.BinaryOp::OpPow
     "&" => @syntax.BinaryOp::OpBitAnd
     "|" => @syntax.BinaryOp::OpBitOr
     "^" => @syntax.BinaryOp::OpBitXor

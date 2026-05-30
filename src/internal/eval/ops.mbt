@@ -36,7 +36,6 @@ fn op_to_str(op : @syntax.BinaryOp) -> String {
     @syntax.BinaryOp::OpDiv => "/"
     @syntax.BinaryOp::OpFloorDiv => "//"
     @syntax.BinaryOp::OpMod => "%"
-    @syntax.BinaryOp::OpPow => "**"
     @syntax.BinaryOp::OpBitAnd => "&"
     @syntax.BinaryOp::OpBitOr => "|"
     @syntax.BinaryOp::OpBitXor => "^"
@@ -119,7 +118,6 @@ fn eval_binary(
     @syntax.BinaryOp::OpDiv => eval_div(ctx, lv, rv, pos)
     @syntax.BinaryOp::OpFloorDiv => eval_floor_div(ctx, lv, rv, pos)
     @syntax.BinaryOp::OpMod => eval_mod(ctx, lv, rv, pos)
-    @syntax.BinaryOp::OpPow => eval_pow(ctx, lv, rv, pos)
     @syntax.BinaryOp::OpBitAnd => eval_bitwise(ctx, lv, rv, pos, "land")
     @syntax.BinaryOp::OpBitOr => eval_bitwise(ctx, lv, rv, pos, "lor")
     @syntax.BinaryOp::OpBitXor => eval_bitwise(ctx, lv, rv, pos, "lxor")
@@ -942,45 +940,6 @@ fn format_float_f(f : Double) -> String {
 ///|
 fn format_float_g(f : Double) -> String {
   @value.format_float(f)
-}
-
-///|
-fn eval_pow(
-  ctx : EvalContext,
-  lv : @value.Value,
-  rv : @value.Value,
-  _pos : @errors.Position,
-) -> @value.Value raise EvalErr {
-  match (lv, rv) {
-    (@value.Value::Int(a), @value.Value::Int(b)) => {
-      if b < 0N {
-        raise EvalErr(
-          make_eval_error(
-            ctx, "integer power with negative exponent is not allowed",
-          ),
-        )
-      }
-      @value.Value::Int(a.pow(b))
-    }
-    (@value.Value::Float(a), @value.Value::Float(b)) =>
-      @value.Value::Float(float_pow(a, b))
-    (@value.Value::Int(a), @value.Value::Float(b)) =>
-      @value.Value::Float(float_pow(finite_double(ctx, a), b))
-    (@value.Value::Float(a), @value.Value::Int(b)) =>
-      @value.Value::Float(float_pow(a, finite_double(ctx, b)))
-    _ =>
-      raise EvalErr(
-        make_eval_error(
-          ctx,
-          "unknown binary op: \{@value.type_name(lv)} ** \{@value.type_name(rv)}",
-        ),
-      )
-  }
-}
-
-///|
-fn float_pow(base : Double, exp : Double) -> Double {
-  @math.pow(base, exp)
 }
 
 ///|

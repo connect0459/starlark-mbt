@@ -98,30 +98,11 @@ test "eval_expr: float floor division truncates toward negative infinity" {
   assert_true(eval_op("7.0 // 2.0") is Ok(@value.Value::Float(3.0)))
 }
 
-// --- Power operator ---
+// --- Power operator (removed; ** is kwargs/params syntax only) ---
 
 ///|
-test "eval_expr: integer power computes correctly" {
-  assert_true(eval_op("2 ** 10") is Ok(@value.Value::Int(1024N)))
-}
-
-///|
-test "eval_expr: power of zero always returns one" {
-  assert_true(eval_op("99 ** 0") is Ok(@value.Value::Int(1N)))
-}
-
-///|
-test "eval_expr: negative integer exponent raises error" {
-  assert_true(eval_op("2 ** -1") is Err(_))
-}
-
-///|
-test "eval_expr: float power with non-integral exponent computes square root" {
-  match eval_op("2.0 ** 0.5") {
-    Ok(@value.Value::Float(f)) =>
-      assert_true((f - 1.4142135623730951).abs() < 1.0e-12)
-    _ => assert_true(false)
-  }
+test "eval_expr: power operator is rejected" {
+  assert_true(eval_op("2 ** 10") is Err(_))
 }
 
 // --- Bitwise operations ---

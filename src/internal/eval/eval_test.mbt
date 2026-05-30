@@ -680,7 +680,16 @@ test "binary: arithmetic operations on integers" {
   assert_true(ok_value(binary("*", two, three)) == @value.Value::Int(6))
   assert_true(ok_value(binary("//", three, two)) == @value.Value::Int(1))
   assert_true(ok_value(binary("%", three, two)) == @value.Value::Int(1))
-  assert_true(ok_value(binary("**", two, three)) == @value.Value::Int(8))
+}
+
+///|
+test "binary: power operator is not a known operator" {
+  let two = @value.Value::Int(2)
+  let three = @value.Value::Int(3)
+  match binary("**", two, three) {
+    Err(e) => assert_true(e.msg().contains("unknown binary operator"))
+    Ok(_) => assert_true(false)
+  }
 }
 
 ///|

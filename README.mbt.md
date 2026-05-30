@@ -67,7 +67,7 @@ test {
 test {
   let thread = @starlark.Thread::new("expr")
   let env = @starlark.StarlarkDict::new()
-  match @starlark.eval_expr(thread, "<expr>", "2 ** 10", env) {
+  match @starlark.eval_expr(thread, "<expr>", "2 * 512", env) {
     Ok(v) => assert_true(v is @starlark.Value::Int(1024L))
     Err(e) => fail!(e.to_string())
   }

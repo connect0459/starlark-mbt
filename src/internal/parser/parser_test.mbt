@@ -148,10 +148,10 @@ test "floor division" {
 }
 
 ///|
-test "power operator" {
-  match parse_e("2 ** 10") {
-    EBinary(ELiteral(LitInt(2N), _), OpPow, ELiteral(LitInt(10N), _), _) => ()
-    _ => fail("expected 2 ** 10")
+test "power operator is not supported" {
+  match @parser.parse_expr("test.star", "2 ** 10") {
+    Err(_) => ()
+    Ok(_) => fail("expected ** to be rejected as a binary operator")
   }
 }
 
