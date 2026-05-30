@@ -1651,31 +1651,67 @@ fn builtin_sorted(
       make_eval_error(ctx, "sorted() requires at least one argument"),
     )
   }
-  let key_fn : @value.Value? = {
-    let mut found : @value.Value? = None
-    for kv in kw_args {
-      match kv {
-        ("key", f) => {
-          found = Some(f)
-          break
-        }
-        _ => ()
-      }
-    }
-    found
+  if pos_args.length() > 3 {
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "sorted: got \{pos_args.length()} arguments, want at most 3",
+      ),
+    )
   }
-  let reverse = {
-    let mut found = false
-    for kv in kw_args {
-      match kv {
-        ("reverse", @value.Value::Bool(b)) => {
-          found = b
-          break
+  // Python's sorted permits key and reverse to be positional, thus so do we.
+  let mut key_fn : @value.Value? = if pos_args.length() >= 2 {
+    Some(pos_args[1])
+  } else {
+    None
+  }
+  let mut key_set = pos_args.length() >= 2
+  let mut reverse_arg : @value.Value? = if pos_args.length() >= 3 {
+    Some(pos_args[2])
+  } else {
+    None
+  }
+  let mut reverse_set = pos_args.length() >= 3
+  for kv in kw_args {
+    match kv.0 {
+      "key" => {
+        if key_set {
+          raise EvalErr(
+            make_eval_error(
+              ctx, "sorted: got multiple values for keyword argument key",
+            ),
+          )
         }
-        _ => ()
+        key_fn = Some(kv.1)
+        key_set = true
       }
+      "reverse" => {
+        if reverse_set {
+          raise EvalErr(
+            make_eval_error(
+              ctx, "sorted: got multiple values for keyword argument reverse",
+            ),
+          )
+        }
+        reverse_arg = Some(kv.1)
+        reverse_set = true
+      }
+      other =>
+        raise EvalErr(
+          make_eval_error(ctx, "sorted: unexpected keyword argument \{other}"),
+        )
     }
-    found
+  }
+  let reverse = match reverse_arg {
+    None => false
+    Some(@value.Value::Bool(b)) => b
+    Some(v) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "sorted: for parameter reverse: got \{@value.type_name(v)}, want bool",
+        ),
+      )
   }
   let items : Array[@value.Value] = []
   let it = match @value.iterate(pos_args[0]) {

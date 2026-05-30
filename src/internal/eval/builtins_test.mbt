@@ -1521,6 +1521,49 @@ test "exec_file: sorted with reverse=True returns descending order" {
   }
 }
 
+///|
+test "exec_file: sorted accepts key and reverse positionally" {
+  match exec_b("r = sorted([\"bb\", \"a\", \"ccc\"], len, True)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::List(l)) => {
+          assert_eq(l.length(), 3)
+          match l.get(0) {
+            @value.Value::String(s) => assert_eq(s.raw(), "ccc")
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: sorted rejects non-bool reverse" {
+  match exec_b("r = sorted([1, 2], reverse=1)") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(e.msg().contains("for parameter reverse: got int, want bool"))
+  }
+}
+
+///|
+test "exec_file: sorted rejects more than three positional args" {
+  match exec_b("r = sorted([1], len, True, 4)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("got 4 arguments, want at most 3"))
+  }
+}
+
+///|
+test "exec_file: sorted rejects None key passed positionally" {
+  match exec_b("r = sorted([1, 2, 3], None)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("got NoneType, want callable"))
+  }
+}
+
 // --- min/max with key= ---
 
 ///|
