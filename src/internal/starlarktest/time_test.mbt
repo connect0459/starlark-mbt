@@ -475,3 +475,34 @@ test "time.time: unexpected positional arguments (no prefix, plural)" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-154: parse_duration accepts existing duration ---
+
+///|
+test "time.parse_duration: accepts existing time.duration value" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|d = time.parse_duration("1s")
+      #|assert.eq(time.parse_duration(d), d)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.parse_duration: type error uses Go format" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.parse_duration(42), "parse_duration: for parameter 1: got int, want a duration, string, or int")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

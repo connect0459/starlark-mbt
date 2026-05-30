@@ -1751,17 +1751,26 @@ let default_parse_time_layout : String = "2006-01-02T15:04:05Z07:00"
 fn make_parse_duration_fn() -> @value.Value {
   @value.Value::new_builtin("parse_duration", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 || kw_args.length() != 0 {
-      return Err(
-        "time.parse_duration: got \{pos_args.length()} arguments, want 1",
-      )
+      return Err("parse_duration: got \{pos_args.length()} arguments, want 1")
     }
-    let s = match pos_args[0] {
-      @value.Value::String(s) => s.raw()
-      _ => return Err("time.parse_duration: argument must be a string")
-    }
-    match parse_duration_str(s) {
-      Ok(ns) => Ok(make_duration(ns))
-      Err(e) => Err(e)
+    match pos_args[0] {
+      @value.Value::ExtVal(_) as v =>
+        match extract_duration_ns(v) {
+          Some(_) => Ok(v)
+          None =>
+            Err(
+              "parse_duration: for parameter 1: got \{@value.type_name(v)}, want a duration, string, or int",
+            )
+        }
+      @value.Value::String(s) =>
+        match parse_duration_str(s.raw()) {
+          Ok(ns) => Ok(make_duration(ns))
+          Err(e) => Err(e)
+        }
+      v =>
+        Err(
+          "parse_duration: for parameter 1: got \{@value.type_name(v)}, want a duration, string, or int",
+        )
     }
   })
 }
