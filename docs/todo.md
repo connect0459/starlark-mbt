@@ -1126,21 +1126,27 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       Go uses Unicode-aware `unicode.IsLetter/IsDigit/IsSpace` etc. Most
       behaviorally significant gap in the second-pass analysis. Requires
       implementing Unicode general-category table lookups.
-- [ ] **MISSING-73**: String search methods (`find`/`count`/`index`/`rfind`/
+- [x] **MISSING-73**: String search methods (`find`/`count`/`index`/`rfind`/
       `rindex`/`startswith`/`endswith`) silently default a non-int / non-None
-      `start`/`end` argument instead of erroring.
-- [ ] **MISSING-76** (part 2): `rindex() argument must be a string` — also
-      needs "rindex:" prefix (only the not-found branch was fixed).
-- [ ] **MISSING-78**: `load` nested inside a top-level `if`/`for`/`while` not
-      rejected; Go emits "load statement within a loop/conditional".
+      `start`/`end` argument instead of erroring. Fixed via `parse_search_index`
+      helper; raises "METHOD: invalid start/end index: got T, want int".
+      Commit: `a673113`
+- [x] **MISSING-76** (part 2): `rindex() argument must be a string` — also
+      needs "rindex:" prefix (only the not-found branch was fixed). Fixed by
+      refactoring to use `arg_as_string` for find/count/index/rfind/rindex.
+      Commit: `a673113`
+- [x] **MISSING-78**: `load` nested inside a top-level `if`/`for`/`while` not
+      rejected; Go emits "load statement within a loop/conditional". Fixed by
+      adding `ifstmts` counter to Resolver; load now emits context-specific
+      error. Commit: `70d8e1a`
 - [ ] **MISSING-80**: Undefined-variable error lacks "did you mean" hint;
       Go appends a spell-check suggestion.
 - [ ] **MISSING-81**: Non-ASCII identifier-start accepts any byte ≥ 0x80
       instead of checking `unicode.IsLetter`; `→` tokenizes as an identifier.
-- [ ] **MISSING-82** (remaining): `"load statement within a function"` vs
+- [x] **MISSING-82** (remaining): `"load statement within a function"` vs
       `"load statement must be at module level"` distinction for load inside a
       function vs loop/conditional; `"dialect does not support while loops"`
-      message when `allow_while=false`.
+      message when `allow_while=false`. Both fixed in `70d8e1a`.
 - [ ] **MISSING-83** [low]: No pre-parsed expression eval entry point.
 - [ ] **MISSING-84** [INTENTIONAL]: `Module` does not retain originating
       `Program`. Architectural divergence, WONTFIX.
