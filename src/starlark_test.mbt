@@ -34,6 +34,58 @@ test "eval_expr_with_opts respects allow_set option (MISSING-54)" {
 }
 
 ///|
+test "parse_file + file_program + Program::init pipeline (MISSING-55)" {
+  let file = match @starlark.parse_file("<test>", "result = X + 1") {
+    Ok(f) => f
+    Err(e) => fail(e.msg())
+  }
+  let prog = match
+    @starlark.file_program(file, @starlark.Options::default(), fn(n) {
+      n == "X"
+    }) {
+    Ok(p) => p
+    Err(e) => fail(e.msg())
+  }
+  let pd1 = @starlark.Predeclared::new()
+  pd1.set("X", @starlark.Value::Int(10N))
+  let t1 = @starlark.Thread::new("test")
+  match prog.init(t1, pd1) {
+    Ok(m) =>
+      assert_true(
+        @starlark.module_get(m, "result") == Some(@starlark.Value::Int(11N)),
+      )
+    Err(e) => fail(e.msg())
+  }
+  let pd2 = @starlark.Predeclared::new()
+  pd2.set("X", @starlark.Value::Int(99N))
+  let t2 = @starlark.Thread::new("test")
+  match prog.init(t2, pd2) {
+    Ok(m) =>
+      assert_true(
+        @starlark.module_get(m, "result") == Some(@starlark.Value::Int(100N)),
+      )
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
+test "source_program_with_file returns both File and Program (MISSING-55)" {
+  match
+    @starlark.source_program_with_file(
+      "hello.star",
+      "x = 1",
+      @starlark.Options::default(),
+      fn(_) { false },
+    ) {
+    Ok((f, prog)) => {
+      assert_eq(f.path(), "hello.star")
+      assert_eq(prog.filename(), "hello.star")
+    }
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
 test "Thread can be created with a name" {
   let t = @starlark.Thread::new("main")
   assert_eq(t.name(), "main")

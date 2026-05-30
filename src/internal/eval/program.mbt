@@ -15,10 +15,34 @@ pub fn source_program(
   opts : Options,
   is_predeclared : (String) -> Bool,
 ) -> Result[Program, @errors.EvalError] {
+  source_program_with_file(filename, src, opts, is_predeclared).map(fn(pair) {
+    pair.1
+  })
+}
+
+///|
+pub fn source_program_with_file(
+  filename : String,
+  src : String,
+  opts : Options,
+  is_predeclared : (String) -> Bool,
+) -> Result[(@syntax.File, Program), @errors.EvalError] {
   let file = match @parser.parse_file(filename, src) {
     Ok(f) => f
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
+  match file_program(file, opts, is_predeclared) {
+    Ok(prog) => Ok((prog.file, prog))
+    Err(e) => Err(e)
+  }
+}
+
+///|
+pub fn file_program(
+  file : @syntax.File,
+  opts : Options,
+  is_predeclared : (String) -> Bool,
+) -> Result[Program, @errors.EvalError] {
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(opts.allow_global_reassign)
     .with_allow_set(opts.allow_set)

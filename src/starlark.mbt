@@ -40,6 +40,9 @@ pub fn new_custom_value(cv : CustomValue) -> Value {
 }
 
 ///|
+pub type SyntaxFile = @syntax.File
+
+///|
 pub type EvalError = @errors.EvalError
 
 ///|
@@ -67,6 +70,17 @@ pub type DebugFrame = @eval.DebugFrame
 pub type Program = @eval.Program
 
 ///|
+pub fn parse_file(
+  filename : String,
+  src : String,
+) -> Result[SyntaxFile, EvalError] {
+  match @parser.parse_file(filename, src) {
+    Ok(f) => Ok(f)
+    Err(e) => Err(@errors.EvalError::simple(e.to_string()))
+  }
+}
+
+///|
 pub fn source_program(
   filename : String,
   src : String,
@@ -74,6 +88,25 @@ pub fn source_program(
   is_predeclared : (String) -> Bool,
 ) -> Result[Program, EvalError] {
   @eval.source_program(filename, src, opts, is_predeclared)
+}
+
+///|
+pub fn source_program_with_file(
+  filename : String,
+  src : String,
+  opts : Options,
+  is_predeclared : (String) -> Bool,
+) -> Result[(SyntaxFile, Program), EvalError] {
+  @eval.source_program_with_file(filename, src, opts, is_predeclared)
+}
+
+///|
+pub fn file_program(
+  file : SyntaxFile,
+  opts : Options,
+  is_predeclared : (String) -> Bool,
+) -> Result[Program, EvalError] {
+  @eval.file_program(file, opts, is_predeclared)
 }
 
 ///|
