@@ -1085,6 +1085,66 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 - [x] **MISSING-65**: `sorted` is now stable via an explicit original-index
       tie-break (never reversed), independent of `Array::sort_by` stability
       (`eval/expr.mbt`). Commit: `20553a7`
+- [x] **MISSING-67**: `Function` and `Builtin` are now usable as dict/set keys —
+      `starlark_hash` returns `Ok(fnv1a(name))` for both; `Function` equality
+      uses `physical_equal` (identity). Commit: `8544f61`
+- [x] **MISSING-68**: `<float> in range(...)` now truncates toward zero (matching
+      starlark-go `NumberToInt`); NaN/Inf raise error instead of silently
+      returning `false`. Commit: `8544f61`
+- [x] **MISSING-74**: `list`/`tuple`/`set`/`reversed`/`zip`/`any`/`all`/`bool`/
+      `type`/`len`/`repr` now reject keyword arguments via `reject_kwargs`.
+      Commit: `8544f61`
+- [x] **MISSING-75**: `str()` with zero arguments now raises
+      "str: got 0 arguments, want exactly 1" instead of returning `""`.
+      Commit: `8544f61`
+- [x] **MISSING-76**: `string.index`/`rindex` "not found" error now has the
+      method-name prefix: "index: substring not found" / "rindex: substring not
+      found". Commit: `8544f61`
+- [x] **MISSING-77**: `loops` counter now saved/restored (set to 0) when entering
+      a `def` or `lambda` body, so `break`/`continue` inside a nested function
+      within a loop correctly raise "not in a loop". Commit: `d32f18b`
+- [x] **MISSING-79**: `\uXXXX` (4-digit) surrogate escapes now rejected in
+      strings and bytes literals with "invalid Unicode surrogate code point".
+      Commit: `b7f1c2f`
+- [x] **MISSING-82** (partial): resolver messages aligned with starlark-go:
+      "break/continue not in a loop", "return statement not within a function",
+      "if/for/while loop not within a function";
+      parser messages: "conditional expression without else clause",
+      "original name of loaded symbol must be quoted: NAME=\"originalname\"".
+      Commits: `d32f18b`, `30f77e9`
+
+### Deferred second-pass items (MISSING-69..86)
+
+- [ ] **MISSING-69**: `%e`/`%E`/`%f`/`%F` rounding uses half-up; Go uses
+      correctly-rounded `strconv.FormatFloat` (round-half-to-even). Last-digit
+      divergence for edge cases.
+- [ ] **MISSING-70** [low]: Hash of large negative BigInts uses two's-complement
+      low 32 bits; Go uses the low word of the magnitude. Cosmetic divergence.
+- [ ] **MISSING-71** [low]: String/list repeat allocation-limit boundary off by
+      one for products of exactly 2^30.
+- [ ] **MISSING-72**: `is*`/`title`/`capitalize` string methods are ASCII-only;
+      Go uses Unicode-aware `unicode.IsLetter/IsDigit/IsSpace` etc. Most
+      behaviorally significant gap in the second-pass analysis. Requires
+      implementing Unicode general-category table lookups.
+- [ ] **MISSING-73**: String search methods (`find`/`count`/`index`/`rfind`/
+      `rindex`/`startswith`/`endswith`) silently default a non-int / non-None
+      `start`/`end` argument instead of erroring.
+- [ ] **MISSING-76** (part 2): `rindex() argument must be a string` — also
+      needs "rindex:" prefix (only the not-found branch was fixed).
+- [ ] **MISSING-78**: `load` nested inside a top-level `if`/`for`/`while` not
+      rejected; Go emits "load statement within a loop/conditional".
+- [ ] **MISSING-80**: Undefined-variable error lacks "did you mean" hint;
+      Go appends a spell-check suggestion.
+- [ ] **MISSING-81**: Non-ASCII identifier-start accepts any byte ≥ 0x80
+      instead of checking `unicode.IsLetter`; `→` tokenizes as an identifier.
+- [ ] **MISSING-82** (remaining): `"load statement within a function"` vs
+      `"load statement must be at module level"` distinction for load inside a
+      function vs loop/conditional; `"dialect does not support while loops"`
+      message when `allow_while=false`.
+- [ ] **MISSING-83** [low]: No pre-parsed expression eval entry point.
+- [ ] **MISSING-84** [INTENTIONAL]: `Module` does not retain originating
+      `Program`. Architectural divergence, WONTFIX.
+- [ ] **MISSING-85** [out of scope]: No global profiler `StartProfile/StopProfile`.
 
 ### Resolved post-release API additions
 
