@@ -1297,6 +1297,14 @@ Each behavioral item confirmed empirically; fixed via TDD (Red test first).
       target list to the bare identifier; Go returns a `TupleExpr` whenever a
       comma was seen. Now always yields an `ETuple` once a comma is consumed.
       Commit: `a588176`
+- [x] **MISSING-120**: `math.round` used `floor(x+0.5)`/`ceil(x-0.5)`, losing
+      precision near the halfway point (`round(0.49999999999999994)`→`1.0`) and
+      for large integral mantissas. Reimplemented as Go's `math.Round` via
+      `trunc` + half-away-from-zero on the fractional remainder (exact, preserves
+      `-0.0`) in `src/lib/math/math.mbt`. Commit: `5136144`
+- [x] **MISSING-121** [low]: `math.pow(-1.0, ±Inf)` returned `nan`; C99/IEEE-754
+      mandates `1`. Added a `float_pow` wrapper guarding the special case before
+      delegating to `@std_math.pow` (`src/lib/math/math.mbt`). Commit: `99364ef`
 
 ### Resolved post-release API additions
 
