@@ -199,6 +199,36 @@ test "scan: identifier with dot and Unicode" {
 }
 
 ///|
+test "scan: accepts Unicode cased letter (α) as identifier" {
+  // α (U+03B1) is a Unicode letter (Ll); must be accepted as an identifier
+  assert_eq(scan("α"), "α EOF")
+}
+
+///|
+test "scan: accepts CJK character as identifier" {
+  // 中 (U+4E2D) is a CJK unified ideograph (Lo); must be accepted
+  assert_eq(scan("中"), "中 EOF")
+}
+
+///|
+test "scan: rejects arrow symbol as identifier start" {
+  // → (U+2192) is a symbol (So), not a Unicode letter; must produce an error
+  assert_true(scan("→").contains("unexpected input character"))
+}
+
+///|
+test "scan: Unicode letter continues identifier" {
+  // 'α' can follow ASCII letters in an identifier
+  assert_eq(scan("x_α"), "x_α EOF")
+}
+
+///|
+test "scan: non-letter stops identifier" {
+  // → is not a valid identifier character; it terminates the ident
+  assert_true(scan("abc→").contains("unexpected input character"))
+}
+
+///|
 test "scan: mixed tokens on one line" {
   assert_eq(scan("123 \"foo\" hello x.y"), "123 \"foo\" hello x . y EOF")
 }
