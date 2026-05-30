@@ -798,8 +798,6 @@ test "math.star: ceil and floor produce BigInt beyond Int64 range" {
   }
 }
 
-// --- MISSING-151/152: math builtins use bare names ---
-
 ///|
 test "math: repr uses bare function name without 'math.' prefix" {
   let errs = run_star_string(

@@ -446,8 +446,6 @@ test "time module: now returns a time.time" {
   }
 }
 
-// --- MISSING-153/154/155: time builtins use bare names ---
-
 ///|
 test "time: repr uses bare function name without 'time.' prefix" {
   let errs = run_star_string(
@@ -475,8 +473,6 @@ test "time.time: unexpected positional arguments (no prefix, plural)" {
     fail(errs.join("\n"))
   }
 }
-
-// --- MISSING-154: parse_duration accepts existing duration ---
 
 ///|
 test "time.parse_duration: accepts existing time.duration value" {

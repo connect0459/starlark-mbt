@@ -1001,8 +1001,6 @@ test "load unquoted original name produces correct message" {
   }
 }
 
-// --- MISSING-144: parser expect messages use go_string() format ---
-
 ///|
 test "parser: expect uses single-quoted punctuation in error message" {
   // def f : pass → got ':', want '('
@@ -1045,8 +1043,6 @@ test "parser: newline expectation quotes punctuation" {
   }
 }
 
-// --- MISSING-145: 'not an identifier' for keyword in identifier position ---
-
 ///|
 test "parser: def with keyword name reports 'not an identifier'" {
   match @parser.parse_file("test.star", "def pass(): pass\n") {
@@ -1063,8 +1059,6 @@ test "parser: def with keyword param reports 'not an identifier'" {
   }
 }
 
-// --- MISSING-146: comprehension-clause error includes 'for, or if' ---
-
 ///|
 test "parser: comprehension clause error includes alternatives" {
   // _ = [x for x in a if b else c] → should say want ']', for, or if
@@ -1073,8 +1067,6 @@ test "parser: comprehension clause error includes alternatives" {
     Ok(_) => fail("expected error")
   }
 }
-
-// --- MISSING-147: 'not' not followed by 'in' uses got-want format ---
 
 ///|
 test "parser: 'not' not followed by 'in' uses got/want format" {
@@ -1088,8 +1080,6 @@ test "parser: 'not' not followed by 'in' uses got/want format" {
   }
 }
 
-// --- MISSING-149: invalid int literal at start position ---
-
 ///|
 test "scanner: invalid int literal reported at start position" {
   // 012834 → error at 1:1, not 1:7
@@ -1098,8 +1088,6 @@ test "scanner: invalid int literal reported at start position" {
     Ok(_) => fail("expected error")
   }
 }
-
-// --- MISSING-150: load operand error messages ---
 
 ///|
 test "parser: load non-string operand reports correct message" {

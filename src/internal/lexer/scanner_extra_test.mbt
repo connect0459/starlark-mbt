@@ -298,8 +298,6 @@ test "scan: \\uD800 is rejected in bytes literal" {
   assert_true(scan("b\"\\uD800\"").contains("invalid Unicode code point"))
 }
 
-// --- MISSING-143: escape error messages aligned with starlark-go ---
-
 ///|
 test "scan: non-ASCII octal error includes sequence and hex encoding" {
   let msg = scan("\"\\377\"")

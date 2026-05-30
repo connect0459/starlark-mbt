@@ -1004,8 +1004,6 @@ test "iterable-argument builtins use the for-parameter-1 error prefix" {
   }
 }
 
-// --- MISSING-142: string search-index BigInt handling ---
-
 ///|
 test "string.find: large BigInt start clamps to len not wraps" {
   let errs = run_star_string(

@@ -413,8 +413,6 @@ test "string.index and rindex not-found error has method name prefix" {
   }
 }
 
-// --- MISSING-141: min/max/sorted validate key is callable ---
-
 ///|
 test "max: non-callable key raises error before iteration" {
   let errs = run_star_string(

@@ -1680,7 +1680,7 @@ fn make_parse_time_fn() -> @value.Value {
       }
     }
     // The default layout is parsed by the lenient RFC3339 reader; any other
-    // layout is parsed with the Go reference-time interpreter (MISSING-107).
+    // layout is parsed with the Go reference-time interpreter.
     // Both yield (parsed_sec, nsec, has_explicit_tz) where parsed_sec is the
     // wall-clock instant treated as UTC (already offset-adjusted when the
     // value carried an explicit zone).

@@ -806,8 +806,6 @@ test "Thread can combine print, loader, and step budget via setters" {
   }
 }
 
-// --- MISSING-136: function-call argument binding error messages ---
-
 ///|
 test "bind_args: singular 'argument' when max_pos is 1" {
   let r = exec_src("def f(a): return a\nf(1, 2)")

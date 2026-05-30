@@ -342,8 +342,6 @@ test "dict.update rejects excess args and reports bad pairs" {
   }
 }
 
-// --- MISSING-139: dict zero-arg methods reject excess positional args ---
-
 ///|
 test "dict.keys rejects excess positional arguments" {
   let errs = run_star_string(

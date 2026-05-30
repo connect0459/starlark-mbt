@@ -363,8 +363,6 @@ test "non-integer subscript assignment reports got/want int" {
   }
 }
 
-// --- MISSING-137/138/139: list method argument validation ---
-
 ///|
 test "list.append rejects keyword arguments" {
   let errs = run_star_string(

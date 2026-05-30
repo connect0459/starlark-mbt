@@ -293,8 +293,6 @@ test "set ops arity and non-iterable errors use nameErr style" {
   }
 }
 
-// --- MISSING-139/140: set method argument validation ---
-
 ///|
 test "set.clear rejects excess positional arguments" {
   let errs = run_star_string(
