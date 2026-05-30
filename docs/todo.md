@@ -1305,6 +1305,12 @@ Each behavioral item confirmed empirically; fixed via TDD (Red test first).
 - [x] **MISSING-121** [low]: `math.pow(-1.0, ±Inf)` returned `nan`; C99/IEEE-754
       mandates `1`. Added a `float_pow` wrapper guarding the special case before
       delegating to `@std_math.pow` (`src/lib/math/math.mbt`). Commit: `99364ef`
+- [x] **MISSING-122** [low-med]: `is_unicode_letter_rune` block ranges diverged
+      from Go's `unicode.IsLetter` in both directions (under-accepted µ/ª/º/Vai/
+      most SMP letters; over-accepted Devanagari digits Nd, currency Sc). Replaced
+      with an exact, sorted L-category range table (`unicode_letters.mbt`, 677
+      ranges from the UCD) looked up by binary search in `scanner.mbt`.
+      Commit: `6303838`
 
 ### Resolved post-release API additions
 
