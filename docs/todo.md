@@ -1273,6 +1273,20 @@ extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
       fixed `time.time` stored under `now_override_key`, else the real clock.
       Public helpers `time_value(sec, nsec)` and `now_override_key` added.
 
+### Fifth-pass gap analysis (MISSING-117..128)
+
+Fresh four-axis comparison against starlark-go after MISSING-1..116 closed.
+Each behavioral item confirmed empirically; fixed via TDD (Red test first).
+
+- [x] **MISSING-117** [HIGH]: Module/load freeze was **shallow** — contained
+      List/Dict/Set values stayed mutable after `exec_file`/`load`. `Module::freeze`
+      only set the container's own frozen flag (`StarlarkDict::freeze` →
+      `Hashtable::freeze`) and never recursed into the values. starlark-go
+      deep-freezes loaded globals per value. Fixed by driving the recursive
+      `@value.freeze_value` over each global value from `Module::freeze` (the
+      generic `Hashtable` cannot reach it). Now mutating a loaded
+      list/dict/set raises a frozen error. Commit: `ef5d9ac`
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
