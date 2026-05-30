@@ -1159,7 +1159,10 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       `"load statement must be at module level"` distinction for load inside a
       function vs loop/conditional; `"dialect does not support while loops"`
       message when `allow_while=false`. Both fixed in `70d8e1a`.
-- [ ] **MISSING-83** [low]: No pre-parsed expression eval entry point.
+- [x] **MISSING-83**: Pre-parsed expression eval entry point added:
+      `SyntaxExpr` type alias, `parse_expr(filename, src)`, and
+      `eval_parsed_expr(thread, expr, opts, env)` re-exported in the
+      public façade. Mirrors starlark-go `EvalExpr`. Commit: `238d4fb`
 - [ ] **MISSING-84** [INTENTIONAL]: `Module` does not retain originating
       `Program`. Architectural divergence, WONTFIX.
 - [ ] **MISSING-85** [out of scope]: No global profiler `StartProfile/StopProfile`.
