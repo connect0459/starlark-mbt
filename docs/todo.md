@@ -1370,6 +1370,29 @@ and builtin argument-error wording. Each fixed via TDD (Red test first).
       (including the alternating Upper/Lower sequence delta); routed the four
       string methods through `to_upper_rune`/`to_lower_rune`/`to_title_rune`.
       Commit: `afe64a8`
+- [x] **MISSING-133** [message]: `list`/`tuple`/`reversed`/`enumerate`/`any`/
+      `all`/`set` and `list.extend` bind their iterable argument via
+      starlark-go's `UnpackPositionalArgs`, which reports `"NAME: for parameter
+      1: got T, want iterable"`. The previous messages dropped the prefix
+      (`list`/`tuple`/`reversed`/`set` → bare `"got string, want iterable"`) or
+      carried only the name (`enumerate`). Threaded the builtin name through
+      `require_seq` (`eval/env.mbt`) and aligned the `enumerate`/`set` inline
+      errors. Behavior unchanged. Commit: `0eae31b`
+- [x] **MISSING-134** [behavioral]: `str.islower`/`isupper` derived "is cased"
+      from MoonBit's ASCII-only case folding plus a digraph table, so
+      `"é".islower()` and `"αβγ".islower()` returned false. Reimplemented via
+      `utf8util` Unicode case mapping as starlark-go's `isCasedString(s) && s ==
+      ToLower(s)` / `ToUpper(s)`; refined `is_cased_rune` to match Go's
+      `isCasedRune` for the three fold-orbit special cases (ß cased; U+0130/
+      U+0131 not). Commit: `cb99d8e`
+- [x] **MISSING-135** [behavioral]: `str.istitle` only recognized the eight
+      digraph codepoints, so non-ASCII letters were treated as uncased
+      (`"Greek: Αβγ".istitle()` wrongly true, `"Hello Wörld".istitle()` wrongly
+      false). Added Lu/Ll/Lt category range tables (stride-encoded, from Go's
+      `unicode` rangetables) + `is_upper`/`lower`/`title_letter` to `utf8util`,
+      then rewrote `istitle` to mirror starlark-go's exact branch structure
+      (ASCII A-Z or Lt leads; any other Lu disqualifies; Ll must follow a cased
+      letter). Commit: `af78161`
 
 ### Resolved post-release API additions
 
