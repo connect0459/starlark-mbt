@@ -341,3 +341,70 @@ test "dict.update rejects excess args and reports bad pairs" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-139: dict zero-arg methods reject excess positional args ---
+
+///|
+test "dict.keys rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: {1:2}.keys(5), "keys: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "dict.values rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: {1:2}.values(5), "values: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "dict.items rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: {1:2}.items(5), "items: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "dict.clear rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: {1:2}.clear(5), "clear: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "dict.popitem rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: {1:2}.popitem(5), "popitem: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

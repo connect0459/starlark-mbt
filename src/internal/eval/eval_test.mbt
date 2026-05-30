@@ -805,3 +805,65 @@ test "Thread can combine print, loader, and step budget via setters" {
     Err(e) => fail(e.msg())
   }
 }
+
+// --- MISSING-136: function-call argument binding error messages ---
+
+///|
+test "bind_args: singular 'argument' when max_pos is 1" {
+  let r = exec_src("def f(a): return a\nf(1, 2)")
+  match r {
+    Err(e) =>
+      assert_eq(e.msg(), "function f accepts 1 positional argument (2 given)")
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "bind_args: 'at most' prefix when optional positional params exist" {
+  let r = exec_src("def f(a, b=2): return a\nf(1, 2, 3)")
+  match r {
+    Err(e) =>
+      assert_eq(
+        e.msg(),
+        "function f accepts at most 2 positional arguments (3 given)",
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "bind_args: nullary function rejects positional args" {
+  let r = exec_src("def f(): return 1\nf(1, 2)")
+  match r {
+    Err(e) => assert_eq(e.msg(), "function f accepts no arguments (2 given)")
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "bind_args: nullary function counts keyword args in total" {
+  let r = exec_src("def f(): return 1\nf(a=1)")
+  match r {
+    Err(e) => assert_eq(e.msg(), "function f accepts no arguments (1 given)")
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "bind_args: nullary function counts mixed pos+kw args total" {
+  let r = exec_src("def f(): return 1\nf(1, a=2)")
+  match r {
+    Err(e) => assert_eq(e.msg(), "function f accepts no arguments (2 given)")
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "bind_args: kwonly star path uses singular and no 'at most' for required param" {
+  let r = exec_src("def f(a, *, b): return a\nf(1, 2)")
+  match r {
+    Err(e) =>
+      assert_eq(e.msg(), "function f accepts 1 positional argument (2 given)")
+    Ok(_) => fail("expected error")
+  }
+}

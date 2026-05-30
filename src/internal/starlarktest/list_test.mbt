@@ -362,3 +362,72 @@ test "non-integer subscript assignment reports got/want int" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-137/138/139: list method argument validation ---
+
+///|
+test "list.append rejects keyword arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [].append(x=1), "append: unexpected keyword arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "list.extend rejects keyword arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [].extend(x=[]), "extend: unexpected keyword arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "list.append arity error matches starlark-go UnpackPositionalArgs wording" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [].append(1, 2), "append: got 2 arguments, want 1")
+      #|assert.fails(lambda: [].append(), "append: got 0 arguments, want 1")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "list.extend arity error matches starlark-go UnpackPositionalArgs wording" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [].extend([1], [2]), "extend: got 2 arguments, want 1")
+      #|assert.fails(lambda: [].extend(), "extend: got 0 arguments, want 1")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "list.clear rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [1].clear(5), "clear: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

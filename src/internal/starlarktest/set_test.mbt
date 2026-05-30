@@ -292,3 +292,83 @@ test "set ops arity and non-iterable errors use nameErr style" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-139/140: set method argument validation ---
+
+///|
+test "set.clear rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: set([1]).clear(5), "clear: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "set.pop rejects excess positional arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: set([1]).pop(5), "pop: got 1 arguments, want 0")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "set.add rejects keyword arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: set([1]).add(1, x=2), "add: unexpected keyword arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "set.discard rejects keyword arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: set([1]).discard(1, x=2), "discard: unexpected keyword arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "set.remove rejects keyword arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: set([1]).remove(1, x=2), "remove: unexpected keyword arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "set.union rejects keyword arguments" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: set([1]).union(a=1), "union: does not accept keyword arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

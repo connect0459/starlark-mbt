@@ -412,3 +412,44 @@ test "string.index and rindex not-found error has method name prefix" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-141: min/max/sorted validate key is callable ---
+
+///|
+test "max: non-callable key raises error before iteration" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: max(1, 2, key="x"), "max: for parameter key: got string, want callable")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "min: non-callable key raises error before iteration" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: min(1, 2, key=3), "min: for parameter key: got int, want callable")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "sorted: non-callable key raises error before iteration" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: sorted([1, 2], key="x"), "sorted: for parameter key: got string, want callable")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

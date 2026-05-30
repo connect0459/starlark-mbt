@@ -590,6 +590,26 @@ fn count_max_positional(params : Array[@syntax.Param]) -> Int {
 }
 
 ///|
+fn has_optional_pos(params : Array[@syntax.Param]) -> Bool {
+  for p in params {
+    match p {
+      @syntax.Param::ParamDefault(_, _, _) => return true
+      @syntax.Param::ParamStarBare(_) | @syntax.Param::ParamStarIdent(_, _) =>
+        break
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+fn pos_arg_count_msg(max_pos : Int, given : Int, has_opt : Bool) -> String {
+  let atmost = if has_opt { "at most " } else { "" }
+  let arg_word = if max_pos == 1 { "argument" } else { "arguments" }
+  "\{atmost}\{max_pos} positional \{arg_word} (\{given} given)"
+}
+
+///|
 fn bind_args(
   ctx : EvalContext,
   f : @value.StarlarkFunction,
@@ -598,6 +618,19 @@ fn bind_args(
   func_env : EvalEnv,
   _pos : @errors.Position,
 ) -> Unit raise EvalErr {
+  let params = f.params()
+  if params.length() == 0 {
+    let nactual = pos_args.length() + kw_args.length()
+    if nactual > 0 {
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "function \{f.name()} accepts no arguments (\{nactual} given)",
+        ),
+      )
+    }
+    return
+  }
   let kw_map : Map[String, @value.Value] = {}
   for kw_pair in kw_args {
     let (kw_name, kw_val) = kw_pair
@@ -611,7 +644,6 @@ fn bind_args(
     }
     kw_map[kw_name] = kw_val
   }
-  let params = f.params()
   let defaults = f.defaults()
   let mut pos_idx = 0
   let mut param_idx = 0
@@ -685,10 +717,11 @@ fn bind_args(
         passed_star = true
         let max_pos = count_max_positional(params)
         if pos_idx < pos_args.length() {
+          let has_opt = has_optional_pos(params)
           raise EvalErr(
             make_eval_error(
               ctx,
-              "function \{f.name()} accepts at most \{max_pos} positional arguments (\{pos_args.length()} given)",
+              "function \{f.name()} accepts \{pos_arg_count_msg(max_pos, pos_args.length(), has_opt)}",
             ),
           )
         }
@@ -709,10 +742,11 @@ fn bind_args(
   }
   if pos_idx < pos_args.length() && !passed_star {
     let max_pos = count_max_positional(params)
+    let has_opt = has_optional_pos(params)
     raise EvalErr(
       make_eval_error(
         ctx,
-        "function \{f.name()} accepts \{max_pos} positional arguments (\{pos_args.length()} given)",
+        "function \{f.name()} accepts \{pos_arg_count_msg(max_pos, pos_args.length(), has_opt)}",
       ),
     )
   }
@@ -1605,6 +1639,23 @@ fn builtin_minmax(
       )
     }
   }
+  match key_fn {
+    Some(f) =>
+      match f {
+        @value.Value::Function(_)
+        | @value.Value::Builtin(_)
+        | @value.Value::BoundMethod(_)
+        | @value.Value::ExtVal(_) => ()
+        v =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "\{fn_name}: for parameter key: got \{@value.type_name(v)}, want callable",
+            ),
+          )
+      }
+    None => ()
+  }
   let items : Array[@value.Value] = []
   if pos_args.length() == 0 {
     raise EvalErr(
@@ -1777,6 +1828,23 @@ fn builtin_sorted(
           "sorted: for parameter reverse: got \{@value.type_name(v)}, want bool",
         ),
       )
+  }
+  match key_fn {
+    Some(f) =>
+      match f {
+        @value.Value::Function(_)
+        | @value.Value::Builtin(_)
+        | @value.Value::BoundMethod(_)
+        | @value.Value::ExtVal(_) => ()
+        v =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "sorted: for parameter key: got \{@value.type_name(v)}, want callable",
+            ),
+          )
+      }
+    None => ()
   }
   let items : Array[@value.Value] = []
   let it = match @value.iterate(pos_args[0]) {
@@ -1964,7 +2032,8 @@ fn call_method(
   _pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match recv {
-    @value.Value::List(l) => call_list_method(ctx, l, method_name, pos_args)
+    @value.Value::List(l) =>
+      call_list_method(ctx, l, method_name, pos_args, kw_args)
     @value.Value::Dict(d) =>
       call_dict_method(ctx, d, method_name, pos_args, kw_args)
     @value.Value::String(s) =>
@@ -1988,23 +2057,16 @@ fn call_list_method(
   l : @value.StarlarkList,
   method_name : String,
   pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
   match method_name {
     "append" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "append() takes exactly one argument"),
-        )
-      }
+      check_positional(ctx, "append", pos_args, kw_args, 1, 1)
       check(ctx, l.push(pos_args[0]))
       @value.Value::None
     }
     "extend" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "extend() takes exactly one argument"),
-        )
-      }
+      check_positional(ctx, "extend", pos_args, kw_args, 1, 1)
       if pos_args[0] is @value.Value::List(src) {
         let snapshot = src.copy_items()
         check(ctx, l.check_mutable("extend"))
@@ -2027,7 +2089,7 @@ fn call_list_method(
       @value.Value::None
     }
     "pop" => {
-      check_positional(ctx, "pop", pos_args, [], 0, 1)
+      check_positional(ctx, "pop", pos_args, kw_args, 0, 1)
       let n = l.length()
       let i = if pos_args.length() == 1 {
         match pos_args[0] {
@@ -2047,7 +2109,7 @@ fn call_list_method(
       check(ctx, l.pop_at(idx, verb="pop from"))
     }
     "remove" => {
-      check_positional(ctx, "remove", pos_args, [], 1, 1)
+      check_positional(ctx, "remove", pos_args, kw_args, 1, 1)
       let item = pos_args[0]
       let mut found = -1
       for i in 0..<l.length() {
@@ -2063,7 +2125,7 @@ fn call_list_method(
       @value.Value::None
     }
     "insert" => {
-      check_positional(ctx, "insert", pos_args, [], 2, 2)
+      check_positional(ctx, "insert", pos_args, kw_args, 2, 2)
       match pos_args[0] {
         @value.Value::Int(i) => {
           let len = l.length()
@@ -2088,11 +2150,12 @@ fn call_list_method(
       }
     }
     "clear" => {
+      check_positional(ctx, "clear", pos_args, kw_args, 0, 0)
       check(ctx, l.clear()) |> ignore
       @value.Value::None
     }
     "index" => {
-      check_positional(ctx, "index", pos_args, [], 1, 3)
+      check_positional(ctx, "index", pos_args, kw_args, 1, 3)
       let item = pos_args[0]
       let n = l.length()
       let start = if pos_args.length() >= 2 {
@@ -2179,15 +2242,18 @@ fn call_dict_method(
       }
     }
     "keys" => {
+      check_positional(ctx, "keys", pos_args, kw_args, 0, 0)
       let keys = d.keys()
       @value.Value::List(@value.StarlarkList::new(keys))
     }
     "values" => {
+      check_positional(ctx, "values", pos_args, kw_args, 0, 0)
       let vals : Array[@value.Value] = []
       d.each(fn(_k, v) { vals.push(v) })
       @value.Value::List(@value.StarlarkList::new(vals))
     }
     "items" => {
+      check_positional(ctx, "items", pos_args, kw_args, 0, 0)
       let items : Array[@value.Value] = []
       d.each(fn(k, v) { items.push(@value.Value::Tuple([k, v])) })
       @value.Value::List(@value.StarlarkList::new(items))
@@ -2221,14 +2287,17 @@ fn call_dict_method(
       @value.Value::None
     }
     "clear" => {
+      check_positional(ctx, "clear", pos_args, kw_args, 0, 0)
       check(ctx, d.clear())
       @value.Value::None
     }
-    "popitem" =>
+    "popitem" => {
+      check_positional(ctx, "popitem", pos_args, kw_args, 0, 0)
       match check(ctx, d.popitem()) {
         None => raise EvalErr(make_eval_error(ctx, "popitem: empty dict"))
         Some((k, v)) => @value.Value::Tuple([k, v])
       }
+    }
     "setdefault" => {
       check_positional(ctx, "setdefault", pos_args, kw_args, 1, 2)
       let key = pos_args[0]
@@ -2895,14 +2964,7 @@ fn call_set_method(
 ) -> @value.Value raise EvalErr {
   match method_name {
     "add" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(
-            ctx,
-            "add: got \{pos_args.length()} arguments, want 1",
-          ),
-        )
-      }
+      check_positional(ctx, "add", pos_args, kw_args, 1, 1)
       match s.add(pos_args[0]) {
         Err(e) => raise EvalErr(make_eval_error(ctx, "add: \{e}"))
         Ok(_) => ()
@@ -2910,14 +2972,7 @@ fn call_set_method(
       @value.Value::None
     }
     "discard" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(
-            ctx,
-            "discard: got \{pos_args.length()} arguments, want 1",
-          ),
-        )
-      }
+      check_positional(ctx, "discard", pos_args, kw_args, 1, 1)
       match s.remove(pos_args[0]) {
         Err(e) => raise EvalErr(make_eval_error(ctx, "discard: \{e}"))
         Ok(_) => ()
@@ -2925,14 +2980,7 @@ fn call_set_method(
       @value.Value::None
     }
     "remove" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(
-            ctx,
-            "remove: got \{pos_args.length()} arguments, want 1",
-          ),
-        )
-      }
+      check_positional(ctx, "remove", pos_args, kw_args, 1, 1)
       match s.remove(pos_args[0]) {
         Err(e) => raise EvalErr(make_eval_error(ctx, "remove: \{e}"))
         Ok(false) => raise EvalErr(make_eval_error(ctx, "remove: missing key"))
@@ -2941,6 +2989,7 @@ fn call_set_method(
       @value.Value::None
     }
     "clear" => {
+      check_positional(ctx, "clear", pos_args, kw_args, 0, 0)
       if s.length() == 0 {
         return @value.Value::None
       }
@@ -2950,13 +2999,20 @@ fn call_set_method(
       }
       @value.Value::None
     }
-    "pop" =>
+    "pop" => {
+      check_positional(ctx, "pop", pos_args, kw_args, 0, 0)
       match s.pop_first() {
         Err(e) => raise EvalErr(make_eval_error(ctx, "pop: \{e}"))
         Ok(None) => raise EvalErr(make_eval_error(ctx, "pop: empty set"))
         Ok(Some(v)) => v
       }
+    }
     "union" => {
+      if kw_args.length() > 0 {
+        raise EvalErr(
+          make_eval_error(ctx, "union: does not accept keyword arguments"),
+        )
+      }
       let result = @value.StarlarkSet::new()
       s.each(fn(v) { ignore(result.add(v)) })
       for i in 0..<pos_args.length() {
