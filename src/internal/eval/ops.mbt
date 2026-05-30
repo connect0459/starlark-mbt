@@ -799,7 +799,16 @@ fn int64_to_hex(n : BigInt, upper : Bool) -> String {
 }
 
 ///|
-fn format_padded_int(n : Int, width : Int) -> String {
+fn pow10_big(n : Int) -> BigInt {
+  let mut r = 1N
+  for _ in 0..<n {
+    r = r * 10N
+  }
+  r
+}
+
+///|
+fn pad_bigint(n : BigInt, width : Int) -> String {
   let s = n.to_string()
   let pad = width - s.length()
   if pad <= 0 {
@@ -813,6 +822,63 @@ fn format_padded_int(n : Int, width : Int) -> String {
   pbuf.to_string()
 }
 
+// Decompose a finite, strictly-positive double into (mantissa, exponent) such
+// that the value equals mantissa * 2^exponent exactly.
+
+///|
+fn decompose_double(abs_f : Double) -> (BigInt, Int) {
+  let bits = abs_f.reinterpret_as_uint64()
+  let biased = ((bits >> 52) & 0x7FFUL).to_int()
+  let frac = bits & 0x000FFFFFFFFFFFFFUL
+  if biased == 0 {
+    (BigInt::from_uint64(frac), -1074)
+  } else {
+    (BigInt::from_uint64(frac | 0x0010000000000000UL), biased - 1075)
+  }
+}
+
+// Divide two non-negative big integers (den > 0), rounding the quotient to the
+// nearest integer with ties resolved to the even value (round half to even),
+// matching Go's strconv.FormatFloat.
+
+///|
+fn round_half_even_div(num : BigInt, den : BigInt) -> BigInt {
+  let q = num / den
+  let r = num % den
+  let twice = r * 2N
+  if twice < den {
+    q
+  } else if twice > den {
+    q + 1N
+  } else if (q % 2N).is_zero() {
+    q
+  } else {
+    q + 1N
+  }
+}
+
+// Compute round_half_even(abs_f * 10^scale) using exact big-integer arithmetic
+// on the true binary value of abs_f, avoiding the rounding error of an
+// intermediate floating-point multiply. abs_f must be finite and >= 0.
+
+///|
+fn round_scaled(abs_f : Double, scale : Int) -> BigInt {
+  let (mant, e) = decompose_double(abs_f)
+  let mut num = mant
+  let mut den = 1N
+  if e >= 0 {
+    num = num << e
+  } else {
+    den = den << -e
+  }
+  if scale >= 0 {
+    num = num * pow10_big(scale)
+  } else {
+    den = den * pow10_big(-scale)
+  }
+  round_half_even_div(num, den)
+}
+
 ///|
 fn format_float_e(f : Double, upper : Bool) -> String {
   if f.is_nan() {
@@ -824,45 +890,32 @@ fn format_float_e(f : Double, upper : Bool) -> String {
   if f == @double.neg_infinity {
     return "-inf"
   }
+  let e_char = if upper { "E" } else { "e" }
   let is_neg = f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
   let sign_str = if is_neg { "-" } else { "" }
-  let abs_f = if is_neg { if f < 0.0 { -f } else { 0.0 } } else { f }
+  let abs_f = if f < 0.0 { -f } else { f }
   if abs_f == 0.0 {
-    let e_char = if upper { "E" } else { "e" }
     return "\{sign_str}0.000000\{e_char}+00"
   }
-  let log_val = @math.log10(abs_f)
-  let mut exp = log_val.floor().to_int()
-  let pow10 = @math.pow(10.0, exp.to_double())
-  let mut m = abs_f / pow10
-  while m >= 10.0 {
-    m = m / 10.0
-    exp = exp + 1
-  }
-  while m > 0.0 && m < 1.0 {
-    m = m * 10.0
+  let lo = pow10_big(6)
+  let hi = pow10_big(7)
+  let mut exp = @math.log10(abs_f).floor().to_int()
+  let mut n = round_scaled(abs_f, 6 - exp)
+  while n < lo {
     exp = exp - 1
+    n = round_scaled(abs_f, 6 - exp)
   }
-  let int_d = m.floor().to_int()
-  let frac_d = m - int_d.to_double()
-  let scaled = frac_d * 1_000_000.0 + 0.5
-  let mut frac_int = scaled.floor().to_int()
-  let mut final_int = int_d
-  let mut final_exp = exp
-  if frac_int >= 1_000_000 {
-    frac_int = 0
-    final_int = final_int + 1
-    if final_int >= 10 {
-      final_int = 1
-      final_exp = final_exp + 1
-    }
+  while n >= hi {
+    exp = exp + 1
+    n = round_scaled(abs_f, 6 - exp)
   }
-  let frac_str = format_padded_int(frac_int, 6)
-  let e_char = if upper { "E" } else { "e" }
-  let exp_sign = if final_exp >= 0 { "+" } else { "-" }
-  let exp_abs = if final_exp >= 0 { final_exp } else { -final_exp }
+  let digits = n.to_string()
+  let int_digit = digits[0:1].to_owned()
+  let frac_str = digits[1:7].to_owned()
+  let exp_sign = if exp >= 0 { "+" } else { "-" }
+  let exp_abs = if exp >= 0 { exp } else { -exp }
   let exp_str = if exp_abs < 10 { "0\{exp_abs}" } else { exp_abs.to_string() }
-  "\{sign_str}\{final_int}.\{frac_str}\{e_char}\{exp_sign}\{exp_str}"
+  "\{sign_str}\{int_digit}.\{frac_str}\{e_char}\{exp_sign}\{exp_str}"
 }
 
 ///|
@@ -878,18 +931,11 @@ fn format_float_f(f : Double) -> String {
   }
   let is_neg = f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
   let sign_str = if is_neg { "-" } else { "" }
-  let abs_f = if is_neg { if f < 0.0 { -f } else { 0.0 } } else { f }
-  let ffloor = abs_f.floor()
-  let frac_d = abs_f - ffloor
-  let scaled = frac_d * 1_000_000.0 + 0.5
-  let mut frac_int = scaled.floor().to_int()
-  let mut int_f = ffloor
-  if frac_int >= 1_000_000 {
-    frac_int = 0
-    int_f = int_f + 1.0
-  }
-  let int_str = @value.double_to_bigint(int_f).to_string()
-  let frac_str = format_padded_int(frac_int, 6)
+  let abs_f = if f < 0.0 { -f } else { f }
+  let n = round_scaled(abs_f, 6)
+  let scale = pow10_big(6)
+  let int_str = (n / scale).to_string()
+  let frac_str = pad_bigint(n % scale, 6)
   "\{sign_str}\{int_str}.\{frac_str}"
 }
 

@@ -496,6 +496,41 @@ fn op_err(src : String) -> String {
 }
 
 ///|
+fn op_ok_str(src : String) -> String {
+  match eval_op(src) {
+    Ok(@value.Value::String(s)) => s.raw()
+    Ok(other) => "non-string: \{@value.repr(other)}"
+    Err(e) => "error: \{e.msg()}"
+  }
+}
+
+///|
+test "eval_expr: %f rounds half-to-even on the exact value like starlark-go" {
+  // 5e-07 stored as a double is just below 0.0000005, so it rounds DOWN to
+  // 0.000000 — the half-up-on-inexact-intermediate algorithm wrongly produced
+  // 0.000001.
+  assert_eq(op_ok_str("\"%f\" % 5e-07"), "0.000000")
+  assert_eq(op_ok_str("\"%f\" % 1.5e-06"), "0.000002")
+  assert_eq(op_ok_str("\"%f\" % 2.5e-06"), "0.000003")
+  assert_eq(op_ok_str("\"%f\" % 123.456789"), "123.456789")
+  // carry that ripples through the integer part
+  assert_eq(op_ok_str("\"%f\" % 9.9999996"), "10.000000")
+  assert_eq(op_ok_str("\"%f\" % -0.0"), "-0.000000")
+  assert_eq(op_ok_str("\"%f\" % 1e20"), "100000000000000000000.000000")
+}
+
+///|
+test "eval_expr: %e rounds half-to-even and propagates exponent carry" {
+  assert_eq(op_ok_str("\"%e\" % 5e-07"), "5.000000e-07")
+  assert_eq(op_ok_str("\"%e\" % 123.456789"), "1.234568e+02")
+  // mantissa rounds up to 10.0000000 → renormalised to 1.000000e+01
+  assert_eq(op_ok_str("\"%e\" % 9.9999996"), "1.000000e+01")
+  assert_eq(op_ok_str("\"%e\" % 999999.96"), "1.000000e+06")
+  assert_eq(op_ok_str("\"%E\" % 1e20"), "1.000000E+20")
+  assert_eq(op_ok_str("\"%e\" % 0.0"), "0.000000e+00")
+}
+
+///|
 test "eval_expr: %d on non-number wraps NumberToInt cause like starlark-go" {
   assert_eq(
     op_err("\"%d\" % \"x\""),
