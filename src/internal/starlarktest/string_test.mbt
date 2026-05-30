@@ -859,3 +859,20 @@ test "str.partition/rpartition arity and type errors use nameErr style" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_join_argerr_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: ",".join(), "join: got 0 arguments, want 1")
+  #|assert.fails(lambda: ",".join([1], [2]), "join: got 2 arguments, want 1")
+  #|assert.fails(lambda: ",".join(5), "join: for parameter iterable: got int, want iterable")
+  #|# element-type error already carries the prefix
+  #|assert.fails(lambda: ",".join([1]), "join: in list, want string, got int")
+
+///|
+test "str.join arity and non-iterable errors use nameErr style" {
+  let errs = run_star_string(string_join_argerr_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

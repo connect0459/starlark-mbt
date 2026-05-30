@@ -2437,11 +2437,18 @@ fn call_str_method(
       }
     }
     "join" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "join() takes exactly one argument"))
-      }
+      check_positional(ctx, "join", pos_args, kw_args, 1, 1)
       let parts : Array[String] = []
-      let it = require_seq(ctx, pos_args[0])
+      let it = match @value.iterate(pos_args[0]) {
+        Ok(it) => it
+        Err(_) =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "join: for parameter iterable: got \{@value.type_name(pos_args[0])}, want iterable",
+            ),
+          )
+      }
       while true {
         match it.next() {
           None => {
