@@ -981,3 +981,25 @@ test "str.istitle uses Unicode letter categories" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let builtin_iterable_argerr_src : String =
+  #|load("assert.star", "assert")
+  #|# builtins taking an iterable report the starlark-go UnpackPositionalArgs prefix
+  #|assert.fails(lambda: list("abc"), "list: for parameter 1: got string, want iterable")
+  #|assert.fails(lambda: tuple("ab"), "tuple: for parameter 1: got string, want iterable")
+  #|assert.fails(lambda: reversed("abc"), "reversed: for parameter 1: got string, want iterable")
+  #|assert.fails(lambda: enumerate("ab"), "enumerate: for parameter 1: got string, want iterable")
+  #|assert.fails(lambda: any("ab"), "any: for parameter 1: got string, want iterable")
+  #|assert.fails(lambda: all("ab"), "all: for parameter 1: got string, want iterable")
+  #|assert.fails(lambda: set("ab"), "set: for parameter 1: got string, want iterable")
+  #|def ext(): [].extend("ab")
+  #|assert.fails(ext, "extend: for parameter 1: got string, want iterable")
+
+///|
+test "iterable-argument builtins use the for-parameter-1 error prefix" {
+  let errs = run_star_string(builtin_iterable_argerr_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

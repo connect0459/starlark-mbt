@@ -1377,7 +1377,7 @@ fn builtin_list(
     }
     v => {
       let items : Array[@value.Value] = []
-      let it = require_seq(ctx, v)
+      let it = require_seq(ctx, "list", v)
       while true {
         match it.next() {
           None => {
@@ -1404,7 +1404,7 @@ fn builtin_tuple(
     raise EvalErr(make_eval_error(ctx, "tuple() takes at most one argument"))
   }
   let items : Array[@value.Value] = []
-  let it = require_seq(ctx, pos_args[0])
+  let it = require_seq(ctx, "tuple", pos_args[0])
   while true {
     match it.next() {
       None => {
@@ -1552,7 +1552,7 @@ fn builtin_set(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "set: got \{@value.type_name(iterable)}, want iterable",
+          "set: for parameter 1: got \{@value.type_name(iterable)}, want iterable",
         ),
       )
     Ok(it) => it
@@ -1685,7 +1685,7 @@ fn builtin_enumerate(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "enumerate: got \{@value.type_name(pos_args[0])}, want iterable",
+          "enumerate: for parameter 1: got \{@value.type_name(pos_args[0])}, want iterable",
         ),
       )
   }
@@ -1853,7 +1853,7 @@ fn builtin_reversed(
     raise EvalErr(make_eval_error(ctx, "reversed() takes exactly one argument"))
   }
   let items : Array[@value.Value] = []
-  let it = require_seq(ctx, pos_args[0])
+  let it = require_seq(ctx, "reversed", pos_args[0])
   while true {
     match it.next() {
       None => {
@@ -1929,7 +1929,7 @@ fn builtin_any_all(
   if pos_args.length() != 1 {
     raise EvalErr(make_eval_error(ctx, "any/all() takes exactly one argument"))
   }
-  let it = require_seq(ctx, pos_args[0])
+  let it = require_seq(ctx, if any_mode { "any" } else { "all" }, pos_args[0])
   let mut result = !any_mode
   while true {
     match it.next() {
@@ -2013,7 +2013,7 @@ fn call_list_method(
         }
       } else {
         check(ctx, l.check_mutable("extend"))
-        let it = require_seq(ctx, pos_args[0])
+        let it = require_seq(ctx, "extend", pos_args[0])
         while true {
           match it.next() {
             None => {

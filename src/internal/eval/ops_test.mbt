@@ -576,7 +576,10 @@ test "eval_expr: unary minus on string reports unknown-unary-op" {
 
 ///|
 test "eval_expr: enumerate on non-iterable carries name prefix" {
-  assert_eq(op_err("enumerate(5)"), "enumerate: got int, want iterable")
+  assert_eq(
+    op_err("enumerate(5)"),
+    "enumerate: for parameter 1: got int, want iterable",
+  )
 }
 
 ///|
