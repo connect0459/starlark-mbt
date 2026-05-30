@@ -32,6 +32,39 @@ test "time module: from_timestamp with nanoseconds" {
 }
 
 ///|
+test "time module: parse_time honors a custom Go layout" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("2021/03/22", format="2006/01/02"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("22 Mar 2021 14:30", format="02 Jan 2006 15:04"),
+      #|  time.parse_time("2021-03-22T14:30:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22 02:30 PM", format="2006-01-02 03:04 PM"),
+      #|  time.parse_time("2021-03-22T14:30:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22T14:30:00+05:00", format="2006-01-02T15:04:05Z07:00"),
+      #|  time.parse_time("2021-03-22T09:30:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("Mon, 22 Mar 2021 14:30:00", format="Mon, 02 Jan 2006 15:04:05"),
+      #|  time.parse_time("2021-03-22T14:30:00Z"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: time attributes" {
   let errs = run_star_string(
     (

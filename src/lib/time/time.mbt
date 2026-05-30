@@ -1136,6 +1136,419 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
 }
 
 ///|
+// Read exactly `n` digits at `chars[i]`, returning the value and next index.
+fn read_fixed_digits(chars : Array[Char], i : Int, n : Int) -> (Int, Int)? {
+  let len = chars.length()
+  if i + n > len {
+    return None
+  }
+  let mut value = 0
+  for k in 0..<n {
+    let c = chars[i + k]
+    if c < '0' || c > '9' {
+      return None
+    }
+    value = value * 10 + (c.to_int() - '0'.to_int())
+  }
+  Some((value, i + n))
+}
+
+///|
+// Read 1 or 2 digits at `chars[i]` (used for the non-padded Go verbs 1/2/3/4/5).
+fn read_flex_digits(chars : Array[Char], i : Int) -> (Int, Int)? {
+  let len = chars.length()
+  if i >= len || chars[i] < '0' || chars[i] > '9' {
+    return None
+  }
+  let mut value = chars[i].to_int() - '0'.to_int()
+  let mut j = i + 1
+  if j < len && chars[j] >= '0' && chars[j] <= '9' {
+    value = value * 10 + (chars[j].to_int() - '0'.to_int())
+    j += 1
+  }
+  Some((value, j))
+}
+
+///|
+// Match one of `names[1..=count]` (1-indexed) as a prefix of `chars` at `i`.
+// Returns the matched index and the next value position.
+fn match_name(
+  chars : Array[Char],
+  i : Int,
+  names : FixedArray[String],
+  start : Int,
+  count : Int,
+) -> (Int, Int)? {
+  for idx in start..<(start + count) {
+    let name = names[idx]
+    let nchars = name.to_array()
+    let nlen = nchars.length()
+    if i + nlen <= chars.length() {
+      let mut ok = true
+      for k in 0..<nlen {
+        if chars[i + k] != nchars[k] {
+          ok = false
+          break
+        }
+      }
+      if ok {
+        return Some((idx, i + nlen))
+      }
+    }
+  }
+  None
+}
+
+///|
+// Parse `value` against a Go reference-time layout (the same token set that
+// fmt_go_layout produces). Mirrors Go's time.Parse for the common verbs.
+// Returns (year, month, day, hour, minute, second, nsec, tz_offset) where
+// tz_offset is Some when the value carried an explicit zone (a `Z` literal
+// means offset 0).
+fn parse_go_layout(
+  value : String,
+  layout : String,
+) -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
+  let lc = layout.to_array()
+  let vc = value.to_array()
+  let ln = lc.length()
+  let vn = vc.length()
+  let mut li = 0
+  let mut vi = 0
+  let mut year = 1
+  let mut month = 1
+  let mut day = 1
+  let mut hour = 0
+  let mut minute = 0
+  let mut second = 0
+  let mut nsec = 0
+  let mut tz_offset : Int? = None
+  let mut pm : Bool? = None
+  let mut hour_is_12 = false
+  let err = fn() -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
+    Err("time: parsing time \"\{value}\" as \"\{layout}\": cannot parse")
+  }
+  fn starts(tok : String) -> Bool {
+    let tc = tok.to_array()
+    let tl = tc.length()
+    if li + tl > ln {
+      return false
+    }
+    for k in 0..<tl {
+      if lc[li + k] != tc[k] {
+        return false
+      }
+    }
+    true
+  }
+
+  // Parse a numeric/sign timezone of the forms ±hh:mm / ±hhmm; `allow_z`
+  // accepts a literal `Z` meaning offset 0.
+  fn parse_zone(colon : Bool, allow_z : Bool) -> Bool {
+    if allow_z && vi < vn && (vc[vi] == 'Z' || vc[vi] == 'z') {
+      tz_offset = Some(0)
+      vi += 1
+      return true
+    }
+    if vi >= vn || (vc[vi] != '+' && vc[vi] != '-') {
+      return false
+    }
+    let sign = if vc[vi] == '+' { 1 } else { -1 }
+    let after_sign = vi + 1
+    match read_fixed_digits(vc, after_sign, 2) {
+      None => false
+      Some((hh, j)) => {
+        let mut j2 = j
+        if colon {
+          if j2 >= vn || vc[j2] != ':' {
+            return false
+          }
+          j2 += 1
+        }
+        match read_fixed_digits(vc, j2, 2) {
+          None => false
+          Some((mm, k)) => {
+            tz_offset = Some(sign * (hh * 3600 + mm * 60))
+            vi = k
+            true
+          }
+        }
+      }
+    }
+  }
+
+  while li < ln {
+    if starts("2006") {
+      match read_fixed_digits(vc, vi, 4) {
+        Some((v, j)) => {
+          year = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 4
+    } else if starts("06") {
+      match read_fixed_digits(vc, vi, 2) {
+        Some((v, j)) => {
+          year = if v >= 69 { 1900 + v } else { 2000 + v }
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("January") {
+      match match_name(vc, vi, month_full_names, 1, 12) {
+        Some((idx, j)) => {
+          month = idx
+          vi = j
+        }
+        None => return err()
+      }
+      li += 7
+    } else if starts("Jan") {
+      match match_name(vc, vi, month_abbrev_names, 1, 12) {
+        Some((idx, j)) => {
+          month = idx
+          vi = j
+        }
+        None => return err()
+      }
+      li += 3
+    } else if starts("Monday") {
+      match match_name(vc, vi, weekday_full_names, 0, 7) {
+        Some((_, j)) => vi = j
+        None => return err()
+      }
+      li += 6
+    } else if starts("Mon") {
+      match match_name(vc, vi, weekday_abbrev_names, 0, 7) {
+        Some((_, j)) => vi = j
+        None => return err()
+      }
+      li += 3
+    } else if starts("01") {
+      match read_fixed_digits(vc, vi, 2) {
+        Some((v, j)) => {
+          month = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("02") {
+      match read_fixed_digits(vc, vi, 2) {
+        Some((v, j)) => {
+          day = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("_2") {
+      if vi < vn && vc[vi] == ' ' {
+        vi += 1
+      }
+      match read_flex_digits(vc, vi) {
+        Some((v, j)) => {
+          day = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("15") {
+      match read_fixed_digits(vc, vi, 2) {
+        Some((v, j)) => {
+          hour = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("03") {
+      match read_fixed_digits(vc, vi, 2) {
+        Some((v, j)) => {
+          hour = v
+          hour_is_12 = true
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("04") {
+      match read_fixed_digits(vc, vi, 2) {
+        Some((v, j)) => {
+          minute = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("05") {
+      match read_fixed_digits(vc, vi, 2) {
+        Some((v, j)) => {
+          second = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("PM") {
+      match match_name(vc, vi, am_pm_upper, 0, 2) {
+        Some((idx, j)) => {
+          pm = Some(idx == 1)
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("pm") {
+      match match_name(vc, vi, am_pm_lower, 0, 2) {
+        Some((idx, j)) => {
+          pm = Some(idx == 1)
+          vi = j
+        }
+        None => return err()
+      }
+      li += 2
+    } else if starts("Z07:00") {
+      if !parse_zone(true, true) {
+        return err()
+      }
+      li += 6
+    } else if starts("Z0700") {
+      if !parse_zone(false, true) {
+        return err()
+      }
+      li += 5
+    } else if starts("-07:00") {
+      if !parse_zone(true, false) {
+        return err()
+      }
+      li += 6
+    } else if starts("-0700") {
+      if !parse_zone(false, false) {
+        return err()
+      }
+      li += 5
+    } else if starts("MST") {
+      // Timezone abbreviation: consume the alphabetic run but ignore it
+      // (abbreviations cannot be resolved to a fixed offset).
+      while vi < vn &&
+            (
+              (vc[vi] >= 'A' && vc[vi] <= 'Z') ||
+              (vc[vi] >= 'a' && vc[vi] <= 'z')
+            ) {
+        vi += 1
+      }
+      li += 3
+    } else if lc[li] == '3' {
+      match read_flex_digits(vc, vi) {
+        Some((v, j)) => {
+          hour = v
+          hour_is_12 = true
+          vi = j
+        }
+        None => return err()
+      }
+      li += 1
+    } else if lc[li] == '1' {
+      match read_flex_digits(vc, vi) {
+        Some((v, j)) => {
+          month = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 1
+    } else if lc[li] == '2' {
+      match read_flex_digits(vc, vi) {
+        Some((v, j)) => {
+          day = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 1
+    } else if lc[li] == '4' {
+      match read_flex_digits(vc, vi) {
+        Some((v, j)) => {
+          minute = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 1
+    } else if lc[li] == '5' {
+      match read_flex_digits(vc, vi) {
+        Some((v, j)) => {
+          second = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 1
+    } else if lc[li] == '.' &&
+      li + 1 < ln &&
+      (lc[li + 1] == '0' || lc[li + 1] == '9') {
+      let is_trimmed = lc[li + 1] == '9'
+      let mut lj = li + 1
+      while lj < ln && (lc[lj] == '0' || lc[lj] == '9') {
+        lj += 1
+      }
+      let max_digits = lj - li - 1
+      // Consume the fractional seconds from the value if present.
+      if vi < vn && vc[vi] == '.' {
+        let (frac_str, end) = parse_digits_at(vc, vi + 1)
+        let flen = frac_str.length()
+        if flen > 0 {
+          let frac_val = match parse_int64_str(frac_str) {
+            Some(v) => v
+            None => return err()
+          }
+          nsec = if flen >= 9 {
+            (frac_val / pow10_int64(flen - 9)).to_int()
+          } else {
+            (frac_val * pow10_int64(9 - flen)).to_int()
+          }
+          vi = end
+        } else if !is_trimmed {
+          return err()
+        }
+      } else if !is_trimmed {
+        return err()
+      }
+      let _ = max_digits
+      li = lj
+    } else {
+      // Literal character: must match the value verbatim.
+      if vi >= vn || vc[vi] != lc[li] {
+        return err()
+      }
+      vi += 1
+      li += 1
+    }
+  }
+  if vi != vn {
+    return err()
+  }
+  if hour_is_12 {
+    match pm {
+      Some(true) => if hour < 12 { hour += 12 }
+      Some(false) => if hour == 12 { hour = 0 }
+      None => ()
+    }
+  }
+  Ok((year, month, day, hour, minute, second, nsec, tz_offset))
+}
+
+///|
+let am_pm_upper : FixedArray[String] = ["AM", "PM"]
+
+///|
+let am_pm_lower : FixedArray[String] = ["am", "pm"]
+
+///|
 fn parse_time_has_tz_suffix(s : String) -> Bool {
   let n = s.length()
   if n == 0 {
@@ -1247,44 +1660,73 @@ fn make_parse_time_fn() -> @value.Value {
         _ => return Err("time.parse_time: location must be a string")
       }
     }
-    if location == "UTC" || location == "" {
-      let _ = fmt
+    // The default layout is parsed by the lenient RFC3339 reader; any other
+    // layout is parsed with the Go reference-time interpreter (MISSING-107).
+    // Both yield (parsed_sec, nsec, has_explicit_tz) where parsed_sec is the
+    // wall-clock instant treated as UTC (already offset-adjusted when the
+    // value carried an explicit zone).
+    let (parsed_sec, nsec, has_tz) : (Int64, Int, Bool) = if fmt ==
+      default_parse_time_layout {
       match parse_rfc3339(x) {
-        Ok((sec, nsec)) => Ok(make_time(sec, nsec))
-        Err(e) => Err(e)
+        Ok((sec, ns)) => (sec, ns, parse_time_has_tz_suffix(x))
+        Err(e) => return Err(e)
       }
+    } else {
+      match parse_go_layout(x, fmt) {
+        Err(e) => return Err(e)
+        Ok((py, pmo, pd, ph, pmi, ps, pns, ptz)) => {
+          let dt = @x_time.ZonedDateTime::of(
+            py,
+            pmo,
+            pd,
+            hour=ph,
+            minute=pmi,
+            second=ps,
+            nanosecond=pns,
+            zone=@x_time.utc_zone,
+          ) catch {
+            _ => return Err("time: invalid time \"\{x}\"")
+          }
+          let base = dt.to_unix_second()
+          match ptz {
+            Some(off) => (base - off.to_int64(), pns, true)
+            None => (base, pns, false)
+          }
+        }
+      }
+    }
+    if location == "UTC" || location == "" {
+      Ok(make_time(parsed_sec, nsec))
     } else {
       if !is_valid_timezone_impl(location) {
         return Err("time.parse_time: unsupported timezone \"\{location}\"")
       }
-      let _ = fmt
-      match parse_rfc3339(x) {
-        Err(e) => Err(e)
-        Ok((parsed_sec, nsec)) =>
-          if parse_time_has_tz_suffix(x) {
-            // String had explicit timezone → use as-is
-            Ok(make_time(parsed_sec, nsec))
-          } else {
-            // parsed_sec is "local time treated as UTC" → adjust for location
-            let offset = match get_tz_offset_at_impl(location, parsed_sec) {
-              Some(o) => o
-              None =>
-                return Err(
-                  "time.parse_time: cannot determine offset for \"\{location}\"",
-                )
-            }
-            let utc_sec = parsed_sec - offset.to_int64()
-            let final_offset = match get_tz_offset_at_impl(location, utc_sec) {
-              Some(o) => o
-              None => offset
-            }
-            let final_sec = parsed_sec - final_offset.to_int64()
-            Ok(make_time_at_zone(final_sec, nsec, final_offset, location))
-          }
+      if has_tz {
+        // Value carried an explicit timezone → parsed_sec is already UTC.
+        Ok(make_time(parsed_sec, nsec))
+      } else {
+        // parsed_sec is "local time treated as UTC" → adjust for location.
+        let offset = match get_tz_offset_at_impl(location, parsed_sec) {
+          Some(o) => o
+          None =>
+            return Err(
+              "time.parse_time: cannot determine offset for \"\{location}\"",
+            )
+        }
+        let utc_sec = parsed_sec - offset.to_int64()
+        let final_offset = match get_tz_offset_at_impl(location, utc_sec) {
+          Some(o) => o
+          None => offset
+        }
+        let final_sec = parsed_sec - final_offset.to_int64()
+        Ok(make_time_at_zone(final_sec, nsec, final_offset, location))
       }
     }
   })
 }
+
+///|
+let default_parse_time_layout : String = "2006-01-02T15:04:05Z07:00"
 
 ///|
 fn make_parse_duration_fn() -> @value.Value {
