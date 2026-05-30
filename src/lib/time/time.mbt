@@ -1600,7 +1600,7 @@ pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
 
 ///|
 fn make_now_fn() -> @value.Value {
-  @value.Value::new_builtin("time.now", fn(ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("now", fn(ctx, pos_args, kw_args) {
     if pos_args.length() != 0 || kw_args.length() != 0 {
       return Err("time.now: unexpected arguments")
     }
@@ -1616,7 +1616,7 @@ fn make_now_fn() -> @value.Value {
 
 ///|
 fn make_from_timestamp_fn() -> @value.Value {
-  @value.Value::new_builtin("time.from_timestamp", fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("from_timestamp", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() < 1 {
       return Err("time.from_timestamp: missing required argument 'sec'")
     }
@@ -1641,7 +1641,7 @@ fn make_from_timestamp_fn() -> @value.Value {
 
 ///|
 fn make_parse_time_fn() -> @value.Value {
-  @value.Value::new_builtin("time.parse_time", fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("parse_time", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() < 1 {
       return Err("time.parse_time: missing required argument 'x'")
     }
@@ -1749,7 +1749,7 @@ let default_parse_time_layout : String = "2006-01-02T15:04:05Z07:00"
 
 ///|
 fn make_parse_duration_fn() -> @value.Value {
-  @value.Value::new_builtin("time.parse_duration", fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("parse_duration", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 || kw_args.length() != 0 {
       return Err(
         "time.parse_duration: got \{pos_args.length()} arguments, want 1",
@@ -1768,9 +1768,9 @@ fn make_parse_duration_fn() -> @value.Value {
 
 ///|
 fn make_time_constructor_fn() -> @value.Value {
-  @value.Value::new_builtin("time.time", fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("time", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() > 0 {
-      return Err("time.time: unexpected positional argument")
+      return Err("time: unexpected positional arguments")
     }
     let mut year = 0
     let mut month = 1
@@ -1879,11 +1879,7 @@ fn make_time_constructor_fn() -> @value.Value {
 
 ///|
 fn make_is_valid_timezone_fn() -> @value.Value {
-  @value.Value::new_builtin("time.is_valid_timezone", fn(
-    _ctx,
-    pos_args,
-    kw_args,
-  ) {
+  @value.Value::new_builtin("is_valid_timezone", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 || kw_args.length() != 0 {
       return Err(
         "time.is_valid_timezone: got \{pos_args.length()} arguments, want 1",

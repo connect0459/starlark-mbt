@@ -445,3 +445,33 @@ test "time module: now returns a time.time" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-153/154/155: time builtins use bare names ---
+
+///|
+test "time: repr uses bare function name without 'time.' prefix" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(repr(time.now), "<built-in function now>")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.time: unexpected positional arguments (no prefix, plural)" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.time(1), "time: unexpected positional arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

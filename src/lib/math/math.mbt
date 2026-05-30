@@ -1,9 +1,16 @@
 ///|
-fn to_float(name : String, v : @value.Value) -> Result[Double, String] {
+fn to_float_param(
+  name : String,
+  param_idx : Int,
+  v : @value.Value,
+) -> Result[Double, String] {
   match v {
     @value.Value::Float(f) => Ok(f)
     @value.Value::Int(i) => Ok(@value.bigint_to_double(i))
-    _ => Err("\{name}: got \{@value.type_name(v)}, want float or int")
+    _ =>
+      Err(
+        "\{name}: for parameter \{param_idx}: got \{@value.type_name(v)}, want float or int",
+      )
   }
 }
 
@@ -11,11 +18,9 @@ fn to_float(name : String, v : @value.Value) -> Result[Double, String] {
 fn make_unary(name : String, f : (Double) -> Double) -> @value.Value {
   @value.Value::new_builtin(name, fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 || kw_args.length() != 0 {
-      return Err(
-        "\{name}: got \{pos_args.length()} positional arguments, want 1",
-      )
+      return Err("\{name}: got \{pos_args.length()} arguments, want 1")
     }
-    to_float(name, pos_args[0]).map(fn(x) { @value.Value::Float(f(x)) })
+    to_float_param(name, 1, pos_args[0]).map(fn(x) { @value.Value::Float(f(x)) })
   })
 }
 
@@ -23,11 +28,13 @@ fn make_unary(name : String, f : (Double) -> Double) -> @value.Value {
 fn make_binary(name : String, f : (Double, Double) -> Double) -> @value.Value {
   @value.Value::new_builtin(name, fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 2 || kw_args.length() != 0 {
-      return Err(
-        "\{name}: got \{pos_args.length()} positional arguments, want 2",
-      )
+      return Err("\{name}: got \{pos_args.length()} arguments, want 2")
     }
-    match (to_float(name, pos_args[0]), to_float(name, pos_args[1])) {
+    match
+      (
+        to_float_param(name, 1, pos_args[0]),
+        to_float_param(name, 2, pos_args[1]),
+      ) {
       (Ok(x), Ok(y)) => Ok(@value.Value::Float(f(x, y)))
       (Err(e), _) | (_, Err(e)) => Err(e)
     }
@@ -137,21 +144,27 @@ fn float_gamma(x : Double) -> Double {
 
 ///|
 fn make_log_fn() -> @value.Value {
-  @value.Value::new_builtin("math.log", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() < 1 || pos_args.length() > 2 || kw_args.length() != 0 {
-      return Err("math.log: got \{pos_args.length()} arguments, want 1 or 2")
+  @value.Value::new_builtin("log", fn(_ctx, pos_args, kw_args) {
+    if kw_args.length() != 0 {
+      return Err("log: unexpected keyword arguments")
     }
-    match to_float("math.log", pos_args[0]) {
+    if pos_args.length() < 1 {
+      return Err("log: got 0 arguments, want at least 1")
+    }
+    if pos_args.length() > 2 {
+      return Err("log: got \{pos_args.length()} arguments, want at most 2")
+    }
+    match to_float_param("log", 1, pos_args[0]) {
       Err(e) => Err(e)
       Ok(x) =>
         if pos_args.length() == 1 {
           Ok(@value.Value::Float(@std_math.ln(x)))
         } else {
-          match to_float("math.log", pos_args[1]) {
+          match to_float_param("log", 2, pos_args[1]) {
             Err(e) => Err(e)
             Ok(base) =>
               if base == 1.0 {
-                Err("math.log: division by zero")
+                Err("log: division by zero")
               } else {
                 Ok(@value.Value::Float(@std_math.ln(x) / @std_math.ln(base)))
               }
@@ -174,32 +187,34 @@ fn float_to_int(name : String, f : Double) -> Result[@value.Value, String] {
 
 ///|
 fn make_ceil() -> @value.Value {
-  @value.Value::new_builtin("math.ceil", fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("ceil", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 || kw_args.length() != 0 {
-      return Err(
-        "math.ceil: got \{pos_args.length()} positional arguments, want 1",
-      )
+      return Err("ceil: got \{pos_args.length()} arguments, want 1")
     }
     match pos_args[0] {
       @value.Value::Int(_) as v => Ok(v)
-      @value.Value::Float(f) => float_to_int("math.ceil", @std_math.ceil(f))
-      v => Err("math.ceil: got \{@value.type_name(v)}, want float or int")
+      @value.Value::Float(f) => float_to_int("ceil", @std_math.ceil(f))
+      v =>
+        Err(
+          "ceil: for parameter 1: got \{@value.type_name(v)}, want float or int",
+        )
     }
   })
 }
 
 ///|
 fn make_floor() -> @value.Value {
-  @value.Value::new_builtin("math.floor", fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("floor", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 || kw_args.length() != 0 {
-      return Err(
-        "math.floor: got \{pos_args.length()} positional arguments, want 1",
-      )
+      return Err("floor: got \{pos_args.length()} arguments, want 1")
     }
     match pos_args[0] {
       @value.Value::Int(_) as v => Ok(v)
-      @value.Value::Float(f) => float_to_int("math.floor", @std_math.floor(f))
-      v => Err("math.floor: got \{@value.type_name(v)}, want float or int")
+      @value.Value::Float(f) => float_to_int("floor", @std_math.floor(f))
+      v =>
+        Err(
+          "floor: for parameter 1: got \{@value.type_name(v)}, want float or int",
+        )
     }
   })
 }
@@ -211,41 +226,37 @@ pub fn math_module() -> @value.Value {
   attrs["pi"] = @value.Value::Float(@std_math.PI)
   attrs["ceil"] = make_ceil()
   attrs["floor"] = make_floor()
-  attrs["round"] = make_unary("math.round", float_round_starlark)
-  attrs["fabs"] = make_unary("math.fabs", float_abs)
-  attrs["exp"] = make_unary("math.exp", @std_math.exp)
-  attrs["sqrt"] = make_unary("math.sqrt", fn(x) {
+  attrs["round"] = make_unary("round", float_round_starlark)
+  attrs["fabs"] = make_unary("fabs", float_abs)
+  attrs["exp"] = make_unary("exp", @std_math.exp)
+  attrs["sqrt"] = make_unary("sqrt", fn(x) {
     if x < 0.0 {
       0.0 / 0.0
     } else {
       @std_math.pow(x, 0.5)
     }
   })
-  attrs["acos"] = make_unary("math.acos", @std_math.acos)
-  attrs["asin"] = make_unary("math.asin", @std_math.asin)
-  attrs["atan"] = make_unary("math.atan", @std_math.atan)
-  attrs["cos"] = make_unary("math.cos", @std_math.cos)
-  attrs["sin"] = make_unary("math.sin", @std_math.sin)
-  attrs["tan"] = make_unary("math.tan", @std_math.tan)
-  attrs["acosh"] = make_unary("math.acosh", @std_math.acosh)
-  attrs["asinh"] = make_unary("math.asinh", @std_math.asinh)
-  attrs["atanh"] = make_unary("math.atanh", @std_math.atanh)
-  attrs["cosh"] = make_unary("math.cosh", @std_math.cosh)
-  attrs["sinh"] = make_unary("math.sinh", @std_math.sinh)
-  attrs["tanh"] = make_unary("math.tanh", @std_math.tanh)
-  attrs["degrees"] = make_unary("math.degrees", fn(x) {
-    x * 180.0 / @std_math.PI
-  })
-  attrs["radians"] = make_unary("math.radians", fn(x) {
-    x * @std_math.PI / 180.0
-  })
-  attrs["gamma"] = make_unary("math.gamma", float_gamma)
-  attrs["copysign"] = make_binary("math.copysign", float_copysign)
-  attrs["mod"] = make_binary("math.mod", float_mod)
-  attrs["pow"] = make_binary("math.pow", float_pow)
-  attrs["remainder"] = make_binary("math.remainder", float_remainder)
-  attrs["atan2"] = make_binary("math.atan2", @std_math.atan2)
-  attrs["hypot"] = make_binary("math.hypot", @std_math.hypot)
+  attrs["acos"] = make_unary("acos", @std_math.acos)
+  attrs["asin"] = make_unary("asin", @std_math.asin)
+  attrs["atan"] = make_unary("atan", @std_math.atan)
+  attrs["cos"] = make_unary("cos", @std_math.cos)
+  attrs["sin"] = make_unary("sin", @std_math.sin)
+  attrs["tan"] = make_unary("tan", @std_math.tan)
+  attrs["acosh"] = make_unary("acosh", @std_math.acosh)
+  attrs["asinh"] = make_unary("asinh", @std_math.asinh)
+  attrs["atanh"] = make_unary("atanh", @std_math.atanh)
+  attrs["cosh"] = make_unary("cosh", @std_math.cosh)
+  attrs["sinh"] = make_unary("sinh", @std_math.sinh)
+  attrs["tanh"] = make_unary("tanh", @std_math.tanh)
+  attrs["degrees"] = make_unary("degrees", fn(x) { x * 180.0 / @std_math.PI })
+  attrs["radians"] = make_unary("radians", fn(x) { x * @std_math.PI / 180.0 })
+  attrs["gamma"] = make_unary("gamma", float_gamma)
+  attrs["copysign"] = make_binary("copysign", float_copysign)
+  attrs["mod"] = make_binary("mod", float_mod)
+  attrs["pow"] = make_binary("pow", float_pow)
+  attrs["remainder"] = make_binary("remainder", float_remainder)
+  attrs["atan2"] = make_binary("atan2", @std_math.atan2)
+  attrs["hypot"] = make_binary("hypot", @std_math.hypot)
   attrs["log"] = make_log_fn()
   @value.Value::Module(@value.StarlarkModule::new("math", attrs))
 }

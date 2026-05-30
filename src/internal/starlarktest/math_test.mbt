@@ -797,3 +797,47 @@ test "math.star: ceil and floor produce BigInt beyond Int64 range" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-151/152: math builtins use bare names ---
+
+///|
+test "math: repr uses bare function name without 'math.' prefix" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("math.star", "math")
+      #|assert.eq(repr(math.sqrt), "<built-in function sqrt>")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "math: arity error uses 'got N arguments, want 1' (no 'positional')" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("math.star", "math")
+      #|assert.fails(lambda: math.sqrt(1, 2), "got 2 arguments, want 1")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "math: type error includes 'for parameter 1:' prefix" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("math.star", "math")
+      #|assert.fails(lambda: math.sqrt("x"), "sqrt: for parameter 1: got string, want float or int")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
