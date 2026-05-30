@@ -1335,6 +1335,34 @@ test "exec_file: ord raises error for string with more than one character" {
   assert_true(exec_b("ord(\"ab\")") is Err(_))
 }
 
+///|
+test "exec_file: chr/ord error messages match starlark-go nameErr style" {
+  match exec_b("chr(1, 2)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("chr: got 2 arguments, want 1"))
+  }
+  match exec_b("chr(\"x\")") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("chr: got string, want int"))
+  }
+  match exec_b("ord(1, 2)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("ord: got 2 arguments, want 1"))
+  }
+  match exec_b("ord(\"ab\")") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(
+        e.msg().contains("ord: string encodes 2 Unicode code points, want 1"),
+      )
+  }
+  match exec_b("ord(5)") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(e.msg().contains("ord: got int, want string or bytes"))
+  }
+}
+
 // --- Lambda ---
 
 ///|

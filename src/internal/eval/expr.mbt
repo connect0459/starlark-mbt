@@ -1095,7 +1095,12 @@ fn call_builtin(
     "chr" => {
       reject_kwargs(ctx, "chr", kw_args)
       if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "chr() takes exactly one argument"))
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "chr: got \{pos_args.length()} arguments, want 1",
+          ),
+        )
       }
       match pos_args[0] {
         @value.Value::Int(n) => {
@@ -1119,15 +1124,21 @@ fn call_builtin(
           buf.write_char(c)
           @value.Value::String(@value.StarlarkString::new(buf.to_string()))
         }
-        _ =>
+        v =>
           raise EvalErr(
-            make_eval_error(ctx, "chr() argument must be an integer"),
+            make_eval_error(ctx, "chr: got \{@value.type_name(v)}, want int"),
           )
       }
     }
     "ord" => {
+      reject_kwargs(ctx, "ord", kw_args)
       if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "ord() takes exactly one argument"))
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "ord: got \{pos_args.length()} arguments, want 1",
+          ),
+        )
       }
       match pos_args[0] {
         @value.Value::String(s) => {
@@ -1136,7 +1147,7 @@ fn call_builtin(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "string encodes \{chars.length()} Unicode code points, want 1",
+                "ord: string encodes \{chars.length()} Unicode code points, want 1",
               ),
             )
           }
@@ -1153,8 +1164,13 @@ fn call_builtin(
           }
           @value.Value::Int(BigInt::from_int(b[0].to_int()))
         }
-        _ =>
-          raise EvalErr(make_eval_error(ctx, "ord() argument must be a string"))
+        v =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "ord: got \{@value.type_name(v)}, want string or bytes",
+            ),
+          )
       }
     }
     "fail" => {
