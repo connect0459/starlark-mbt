@@ -54,8 +54,9 @@ pub fn type_name(Value) -> String
 pub struct BuiltinCallCtx {
   // private fields
 }
+pub fn BuiltinCallCtx::get_local(Self, String) -> Value?
 pub fn BuiltinCallCtx::invoke(Self, Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]
-pub fn BuiltinCallCtx::new((Value, Array[Value], Array[(String, Value)]) -> Result[Value, String]) -> Self
+pub fn BuiltinCallCtx::new((Value, Array[Value], Array[(String, Value)]) -> Result[Value, String], get_local? : (String) -> Value?) -> Self
 
 pub struct CustomValue {
   // private fields

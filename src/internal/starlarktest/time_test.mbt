@@ -32,6 +32,33 @@ test "time module: from_timestamp with nanoseconds" {
 }
 
 ///|
+test "time module: now() honors a thread-local clock override" {
+  let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
+    _t,
+    path,
+  ) {
+    if path == "time.star" {
+      Ok(@eval.Module::from_map({ "time": @time.time_module() }))
+    } else {
+      Err(@errors.EvalError::simple("no loader for \"\{path}\""))
+    }
+  }
+  let thread = @eval.Thread::with_loader("test", loader)
+  thread.set_local(@time.now_override_key, @time.time_value(1234567890L, 0))
+  let src =
+    #|load("time.star", "time")
+    #|x = time.now().unix
+    #|y = time.now().unix
+  match @eval.exec_file(thread, "<test>", src, @eval.Options::default()) {
+    Ok(m) => {
+      assert_true(m.get("x") == Some(@value.Value::Int(1234567890N)))
+      assert_true(m.get("y") == Some(@value.Value::Int(1234567890N)))
+    }
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
 test "time module: parse_time honors a custom Go layout" {
   let errs = run_star_string(
     (

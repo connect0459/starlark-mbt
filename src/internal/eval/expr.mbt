@@ -421,11 +421,14 @@ fn call_value(
         @errors.Position::new("<builtin>", 0, 0),
       )
       ctx.thread.call_stack.push(builtin_frame)
-      let call_ctx = @value.BuiltinCallCtx::new(fn(f2, args, kwargs) {
-        Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
-          EvalErr(e) => Err(e.msg())
-        }
-      })
+      let call_ctx = @value.BuiltinCallCtx::new(
+        fn(f2, args, kwargs) {
+          Ok(call_value(ctx, f2, args, kwargs, pos)) catch {
+            EvalErr(e) => Err(e.msg())
+          }
+        },
+        get_local=fn(k) { ctx.thread.get_local(k) },
+      )
       let result : @value.Value = try {
         match f.call_body(call_ctx, pos_args, kw_args) {
           Some(Ok(v)) => v

@@ -525,13 +525,23 @@ pub struct BuiltinCallCtx {
     Value,
     String,
   ]
+  priv get_local_fn : (String) -> Value?
 }
 
 ///|
 pub fn BuiltinCallCtx::new(
   call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String],
+  get_local? : (String) -> Value? = fn(_) { None },
 ) -> BuiltinCallCtx {
-  { call, }
+  { call, get_local_fn: get_local }
+}
+
+///|
+// Read the active thread's thread-local value for `key`, mirroring
+// starlark-go's Thread.Local. Used by extension builtins (e.g. time.now) that
+// honor an embedder-provided per-thread override.
+pub fn BuiltinCallCtx::get_local(self : BuiltinCallCtx, key : String) -> Value? {
+  (self.get_local_fn)(key)
 }
 
 ///|

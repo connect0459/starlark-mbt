@@ -1585,13 +1585,32 @@ fn pow10_int64(n : Int) -> Int64 {
 }
 
 ///|
+// Thread-local key under which an embedder may store a fixed `time.time` value
+// to override `time.now()`, mirroring starlark-go's SetNow. Set it with
+// `thread.set_local(now_override_key, time_value(sec, nsec))` for reproducible
+// runs; when unset, `time.now()` reads the real system clock.
+pub let now_override_key : String = "time.now"
+
+///|
+// Construct a `time.time` value from a Unix second/nanosecond pair, for use as
+// a clock override (see now_override_key).
+pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
+  make_time(sec, nsec)
+}
+
+///|
 fn make_now_fn() -> @value.Value {
-  @value.Value::new_builtin("time.now", fn(_ctx, pos_args, kw_args) {
+  @value.Value::new_builtin("time.now", fn(ctx, pos_args, kw_args) {
     if pos_args.length() != 0 || kw_args.length() != 0 {
       return Err("time.now: unexpected arguments")
     }
-    let (sec, nsec) = get_unix_time_now()
-    Ok(make_time(sec, nsec))
+    match ctx.get_local(now_override_key) {
+      Some(v) => Ok(v)
+      None => {
+        let (sec, nsec) = get_unix_time_now()
+        Ok(make_time(sec, nsec))
+      }
+    }
   })
 }
 
