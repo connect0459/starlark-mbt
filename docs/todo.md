@@ -1152,6 +1152,51 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       `Program`. Architectural divergence, WONTFIX.
 - [ ] **MISSING-85** [out of scope]: No global profiler `StartProfile/StopProfile`.
 
+### Third-pass gap analysis (MISSING-86..101)
+
+Fresh four-axis comparison against starlark-go after MISSING-1..85 closed.
+Behavioral and message-only divergences fixed via TDD; design-decision items
+resolved with the user.
+
+- [x] **MISSING-86**: `splitlines()` now splits on `\n` only (carriage return is
+      an ordinary character), matching starlark-go. Commit: `splitlines \n only`.
+- [x] **MISSING-87**: `sorted()` accepts `key`/`reverse` positionally, rejects a
+      4th positional arg, type-errors a non-bool `reverse`, and rejects duplicate /
+      unknown keyword arguments (UnpackArgs parity).
+- [x] **MISSING-88**: `list.index` rejects more than three positional args
+      ("index: got N arguments, want at most 3").
+- [x] **MISSING-89**: `enumerate(non_iterable)` error now carries the
+      "enumerate:" name prefix.
+- [x] **MISSING-90**: Integer format verbs `%d/%i/%o/%x/%X` wrap the NumberToInt
+      cause as "%<verb> format requires integer: <cause>".
+- [x] **MISSING-91**: `%c` reports the offending value when out of range and the
+      "int or single-character string" requirement for non-int/non-string args.
+- [x] **MISSING-92**: Unknown conversion verb → "unknown conversion %<c>".
+- [x] **MISSING-93**: Trailing `%` checks argument availability before reporting
+      the missing verb ("not enough arguments for format string" / "incomplete
+      format").
+- [x] **MISSING-94**: Unary-op type error → "unknown unary op: <op> <type>".
+- [x] **MISSING-95**: Tuple-unpack mismatch uses "(got M, want N)" order with no
+      inline position prefix.
+- [x] **MISSING-96**: Item assignment → "<type> value does not support item
+      assignment".
+- [x] **MISSING-97**: Float `**` with a non-integral exponent now computes the real
+      power via `@math.pow` (was NaN).
+- [ ] **MISSING-98** [INTENTIONAL]: `**` power operator is a MoonBit extension
+      absent from starlark-go. Kept per `docs/todo.md` evaluator scope; recorded
+      for completeness.
+- [x] **MISSING-99**: Adjacent string-literal concatenation (`"a" "b"`) removed;
+      now a syntax error, matching starlark-go (decision: Go parity).
+- [x] **MISSING-100**: Malformed keyword argument (`f(a.b=1)`) → "keyword argument
+      must have form name=expr".
+- [ ] **MISSING-101** [cosmetic]: A few parser/lexer error *positions* differ from
+      Go (messages match). Record-only.
+
+Still deferred from earlier passes: MISSING-69 (%e/%f round-half-to-even),
+70 (hash neg bigint), 71 (repeat boundary), 72 (Unicode is*/title/capitalize),
+80 (undefined "did you mean"), 81 (non-ASCII ident `unicode.IsLetter`),
+83 (pre-parsed expr eval entry point).
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
