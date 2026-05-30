@@ -329,7 +329,8 @@ fn repeat_string(
   }
   let count = n.to_int()
   let byte_len = s.byte_len()
-  if byte_len > 0 && count > max_alloc / byte_len {
+  if byte_len > 0 &&
+    byte_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
     return Err("excessive repeat (\{byte_len} * \{count} elements)")
   }
   let original_bytes = s.to_bytes()
@@ -355,7 +356,8 @@ fn repeat_list(
   }
   let count = n.to_int()
   let elem_len = l.length()
-  if elem_len > 0 && count > max_alloc / elem_len {
+  if elem_len > 0 &&
+    elem_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
     return Err("excessive repeat (\{elem_len} * \{count} elements)")
   }
   let items : Array[@value.Value] = []
@@ -380,7 +382,8 @@ fn repeat_tuple(
   }
   let count = n.to_int()
   let elem_len = t.length()
-  if elem_len > 0 && count > max_alloc / elem_len {
+  if elem_len > 0 &&
+    elem_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
     return Err("excessive repeat (\{elem_len} * \{count} elements)")
   }
   let items : Array[@value.Value] = []
@@ -402,7 +405,8 @@ fn repeat_bytes(b : Bytes, n : BigInt) -> Result[Bytes, String] {
   }
   let count = n.to_int()
   let byte_len = b.length()
-  if byte_len > 0 && count > max_alloc / byte_len {
+  if byte_len > 0 &&
+    byte_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
     return Err("excessive repeat (\{byte_len} * \{count} elements)")
   }
   let items : Array[Byte] = []
