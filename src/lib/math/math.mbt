@@ -85,10 +85,14 @@ let lanczos_c : Array[Double] = [
 
 ///|
 fn float_round_starlark(x : Double) -> Double {
-  if x >= 0.0 {
-    @std_math.floor(x + 0.5)
+  let t = @std_math.trunc(x)
+  let frac = x - t
+  if frac >= 0.5 {
+    t + 1.0
+  } else if frac <= -0.5 {
+    t - 1.0
   } else {
-    @std_math.ceil(x - 0.5)
+    t
   }
 }
 

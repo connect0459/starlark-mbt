@@ -217,6 +217,11 @@ let math_round_src : String =
   #|assert.eq(math.round(-1.0), -1.0)
   #|assert.eq(math.round(-10.0), -10.0)
   #|assert.eq(math.round(-inf), -inf)
+  #|# precision near the halfway point: floor(x+0.5) would round these up wrongly
+  #|assert.eq(math.round(0.49999999999999994), 0.0)
+  #|assert.eq(math.round(-0.49999999999999994), -0.0)
+  #|# large integral mantissa stays unchanged (no fractional part)
+  #|assert.eq(math.round(4503599627370497.0), 4503599627370497.0)
   #|assert.fails(lambda: math.round("0"), "got string, want float or int")
 
 ///|
