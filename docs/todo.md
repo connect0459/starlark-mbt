@@ -1214,8 +1214,12 @@ resolved with the user.
       now a syntax error, matching starlark-go (decision: Go parity).
 - [x] **MISSING-100**: Malformed keyword argument (`f(a.b=1)`) → "keyword argument
       must have form name=expr".
-- [ ] **MISSING-101** [cosmetic]: A few parser/lexer error *positions* differ from
-      Go (messages match). Record-only.
+- [x] **MISSING-101**: Parser/lexer error *positions* now match starlark-go,
+      which points diagnostics at `scanner.pos` (one column past the last
+      consumed byte). Number-literal errors (obsolete octal, invalid float/int)
+      report at the scanner's `current_pos()` instead of the literal start; the
+      non-associative chained-comparison error reports one column past the
+      operator via a new `Scanner::position()` accessor / `Parser::scanner_error`.
 
 All earlier-pass deferrals now closed: MISSING-69 (%e/%f round-half-to-even),
 70 (hash neg bigint), 71 (repeat boundary), 72 (Unicode is*/title/capitalize),
