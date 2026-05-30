@@ -1245,6 +1245,10 @@ extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
 - [x] **MISSING-106**: a name bound only by an augmented assignment inside a
       function is pre-collected as a local, so a nested closure referencing it
       resolves cleanly instead of raising a false "undefined".
+- [x] **MISSING-107**: `time.parse_time(x, format=...)` honors the layout via a
+      Go reference-time parser (`parse_go_layout`) instead of discarding it and
+      always parsing RFC3339; supports date/time verbs, 12-hour + AM/PM, month
+      and weekday names, fractional seconds, and numeric/Z timezone tokens.
 
 ### Resolved post-release API additions
 
