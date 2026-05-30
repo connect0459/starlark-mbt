@@ -923,3 +923,29 @@ test "string upper/lower/title/capitalize apply Unicode case mapping" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_islower_isupper_unicode_src : String =
+  #|load("assert.star", "assert")
+  #|# islower/isupper apply full Unicode case detection (matching starlark-go)
+  #|assert.true("é".islower())
+  #|assert.true(not "é".isupper())
+  #|assert.true("É".isupper())
+  #|assert.true(not "É".islower())
+  #|assert.true("αβγ".islower())
+  #|assert.true("ΑΒΓ".isupper())
+  #|assert.true(not "αβγ".isupper())
+  #|# ß is cased and equals both its simple upper and lower forms
+  #|assert.true("ß".islower())
+  #|assert.true("ß".isupper())
+  #|# dotted/dotless I are not in any case-fold orbit, so they are uncased
+  #|assert.true(not "ı".islower())
+  #|assert.true(not "İ".islower())
+
+///|
+test "str.islower/isupper detect non-ASCII cased letters" {
+  let errs = run_star_string(string_islower_isupper_unicode_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

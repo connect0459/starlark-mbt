@@ -2624,27 +2624,21 @@ fn call_str_method(
     }
     "islower" => {
       let raw = s.raw()
-      if raw.length() == 0 {
-        return @value.Value::Bool(false)
-      }
-      let lo = raw.to_lower()
-      let hi = raw.to_upper()
-      // has_cased: true if any ASCII letters exist (causing lo != hi)
-      // or if non-ASCII cased digraph chars exist
-      let has_cased = lo != hi ||
-        raw.iter().any(fn(c) { is_cased_codepoint_nonascii(c.to_int()) })
-      @value.Value::Bool(has_cased && raw == lo)
+      let has_cased = raw
+        .iter()
+        .any(fn(c) { @utf8util.is_cased_rune(c.to_int()) })
+      @value.Value::Bool(
+        has_cased && raw == map_string_runes(raw, @utf8util.to_lower_rune),
+      )
     }
     "isupper" => {
       let raw = s.raw()
-      if raw.length() == 0 {
-        return @value.Value::Bool(false)
-      }
-      let lo = raw.to_lower()
-      let hi = raw.to_upper()
-      let has_cased = lo != hi ||
-        raw.iter().any(fn(c) { is_cased_codepoint_nonascii(c.to_int()) })
-      @value.Value::Bool(has_cased && raw == hi)
+      let has_cased = raw
+        .iter()
+        .any(fn(c) { @utf8util.is_cased_rune(c.to_int()) })
+      @value.Value::Bool(
+        has_cased && raw == map_string_runes(raw, @utf8util.to_upper_rune),
+      )
     }
     "isspace" => {
       if s.raw().length() == 0 {
@@ -3504,14 +3498,6 @@ fn is_whitespace(c : Char) -> Bool {
   n == '\r'.to_int() ||
   n == 0x0B ||
   n == 0x0C
-}
-
-// Non-ASCII cased digraph characters (used to detect cased chars in islower/isupper
-// when MoonBit's ASCII-only to_lower/to_upper can't distinguish them).
-
-///|
-fn is_cased_codepoint_nonascii(cp : Int) -> Bool {
-  (cp >= 0x01C4 && cp <= 0x01CC) || (cp >= 0x01F1 && cp <= 0x01F3)
 }
 
 // Unicode title-case letters (Lt category): only U+01C5 ǅ, U+01C8 ǈ, U+01CB ǋ,

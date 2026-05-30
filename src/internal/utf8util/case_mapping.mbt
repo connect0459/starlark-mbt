@@ -411,8 +411,17 @@ pub fn to_title_rune(r : Int) -> Int {
 }
 
 ///|
-/// Reports whether a rune is cased, i.e. it has a distinct upper or lower form.
-/// Mirrors starlark-go's `isCasedRune` for the purpose of `str.title`.
+/// Reports whether a rune is cased. Matches starlark-go's `isCasedRune`, which is
+/// `ASCII letter || unicode.SimpleFold(r) != r`. Across the whole codepoint space
+/// this equals "has a distinct upper or lower form" except for three runes that
+/// fold without a simple case mapping: U+00DF (ß, cased via ẞ) and U+0130/U+0131
+/// (dotted/dotless I, not in any fold orbit).
 pub fn is_cased_rune(r : Int) -> Bool {
-  to_upper_rune(r) != r || to_lower_rune(r) != r
+  if r == 0x00DF {
+    true
+  } else if r == 0x0130 || r == 0x0131 {
+    false
+  } else {
+    to_upper_rune(r) != r || to_lower_rune(r) != r
+  }
 }
