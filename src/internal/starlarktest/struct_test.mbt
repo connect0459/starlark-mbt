@@ -3,6 +3,7 @@ fn run_struct(src : String) -> Array[String] {
   let predeclared = @eval.Predeclared::from_map({
     "struct": @struct.struct_builtin(),
     "gensym": @struct.gensym_builtin(),
+    "module": @struct.module_builtin(),
   })
   run_with_predeclared(predeclared, src)
 }
@@ -134,6 +135,38 @@ test "struct: addition merges fields (right wins)" {
       #|assert.eq(bob + bob, bob)
       #|assert.eq(bob + alice, struct(age = 50, city = "NYC", name = "alice"))
       #|assert.eq(alice + bob, struct(age = 50, city = "NYC", name = "bob"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "module: creation, repr, type, and member access" {
+  let errs = run_struct(
+    (
+      #|load("assert.star", "assert")
+      #|m = module("math", pi = 3, add = lambda x, y: x + y)
+      #|assert.eq(type(m), "module")
+      #|assert.eq(str(m), '<module "math">')
+      #|assert.eq(m.pi, 3)
+      #|assert.eq(m.add(2, 3), 5)
+      #|assert.eq(dir(m), ["add", "pi"])
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "module: missing member raises an error" {
+  let errs = run_struct(
+    (
+      #|load("assert.star", "assert")
+      #|m = module("m", a = 1)
+      #|assert.fails(lambda: m.b, "module has no attribute 'b'")
     ),
   )
   if errs.length() != 0 {

@@ -450,6 +450,7 @@ fn exec_chunk_raw(
       let exports : Map[String, @value.Value] = {}
       exports["struct"] = @struct.struct_builtin()
       exports["gensym"] = @struct.gensym_builtin()
+      exports["module"] = @struct.module_builtin()
       Ok(@eval.Module::from_map(exports))
     } else {
       Err(@errors.EvalError::simple("no loader for \"\{path}\""))
@@ -545,6 +546,7 @@ pub fn run_with_predeclared(
       let exports : Map[String, @value.Value] = {}
       exports["struct"] = @struct.struct_builtin()
       exports["gensym"] = @struct.gensym_builtin()
+      exports["module"] = @struct.module_builtin()
       Ok(@eval.Module::from_map(exports))
     } else {
       Err(@errors.EvalError::simple("no loader for \"\{path}\""))
@@ -594,6 +596,7 @@ pub fn run_star_string(src : String) -> Array[String] {
       let exports : Map[String, @value.Value] = {}
       exports["struct"] = @struct.struct_builtin()
       exports["gensym"] = @struct.gensym_builtin()
+      exports["module"] = @struct.module_builtin()
       Ok(@eval.Module::from_map(exports))
     } else {
       Err(@errors.EvalError::simple("no loader for \"\{path}\""))

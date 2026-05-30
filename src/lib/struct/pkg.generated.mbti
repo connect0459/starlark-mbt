@@ -10,7 +10,11 @@ pub let default_ctor : @value.Value
 
 pub fn gensym_builtin() -> @value.Value
 
+pub fn make_module(String, Array[(String, @value.Value)]) -> @value.Value
+
 pub fn make_struct(@value.Value, Array[(String, @value.Value)]) -> @value.Value
+
+pub fn module_builtin() -> @value.Value
 
 pub fn struct_builtin() -> @value.Value
 
