@@ -43,6 +43,9 @@ pub fn new_custom_value(cv : CustomValue) -> Value {
 pub type SyntaxFile = @syntax.File
 
 ///|
+pub type SyntaxExpr = @syntax.Expr
+
+///|
 pub type EvalError = @errors.EvalError
 
 ///|
@@ -78,6 +81,27 @@ pub fn parse_file(
     Ok(f) => Ok(f)
     Err(e) => Err(@errors.EvalError::simple(e.to_string()))
   }
+}
+
+///|
+pub fn parse_expr(
+  filename : String,
+  src : String,
+) -> Result[SyntaxExpr, EvalError] {
+  match @parser.parse_expr(filename, src) {
+    Ok(e) => Ok(e)
+    Err(e) => Err(@errors.EvalError::simple(e.to_string()))
+  }
+}
+
+///|
+pub fn eval_parsed_expr(
+  thread : Thread,
+  expr : SyntaxExpr,
+  opts : Options,
+  env : StarlarkDict,
+) -> Result[Value, EvalError] {
+  @eval.eval_parsed_expr(thread, expr, opts, env)
 }
 
 ///|

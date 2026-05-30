@@ -818,6 +818,33 @@ test "StarlarkFunction::globals returns module global variables" {
 }
 
 ///|
+test "parse_expr returns a parsed expression" {
+  match @starlark.parse_expr("test.star", "1 + 2") {
+    Ok(_) => ()
+    Err(_) => assert_true(false)
+  }
+  assert_true(@starlark.parse_expr("test.star", "1 +") is Err(_))
+}
+
+///|
+test "eval_parsed_expr evaluates a pre-parsed expression" {
+  let thread = @starlark.Thread::new("test")
+  let expr = match @starlark.parse_expr("test.star", "10 * 3 + 1") {
+    Ok(e) => e
+    Err(_) => {
+      assert_true(false)
+      return
+    }
+  }
+  let env = @starlark.StarlarkDict::new()
+  match
+    @starlark.eval_parsed_expr(thread, expr, @starlark.Options::default(), env) {
+    Ok(v) => assert_true(v is @starlark.Value::Int(31N))
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
 test "StarlarkFunction::module returns the defining module" {
   let t = @starlark.Thread::new("test")
   match

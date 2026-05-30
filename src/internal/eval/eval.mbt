@@ -856,3 +856,22 @@ pub fn eval_expr_with_opts(
     EvalErr(e) => Err(e)
   }
 }
+
+///|
+pub fn eval_parsed_expr(
+  thread : Thread,
+  expr : @syntax.Expr,
+  opts : Options,
+  env : @value.StarlarkDict,
+) -> Result[@value.Value, @errors.EvalError] {
+  let ctx = EvalContext::new(thread, opts)
+  env.each(fn(k, v) {
+    match k {
+      @value.Value::String(s) => ctx.global_env.bind(s.raw(), v)
+      _ => ()
+    }
+  })
+  Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
+    EvalErr(e) => Err(e)
+  }
+}

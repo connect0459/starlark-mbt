@@ -31,6 +31,8 @@ pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@v
 
 pub fn eval_expr_with_opts(@eval.Thread, String, String, @eval.Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 
+pub fn eval_parsed_expr(@eval.Thread, @syntax.Expr, @eval.Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+
 pub fn exec_file(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]
 
 pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]
@@ -50,6 +52,8 @@ pub fn module_get(@eval.Module, String) -> @value.Value?
 pub fn new_custom_value(@value.CustomValue) -> @value.Value
 
 pub fn number_to_int(@value.Value) -> Int64?
+
+pub fn parse_expr(String, String) -> Result[@syntax.Expr, @errors.EvalError]
 
 pub fn parse_file(String, String) -> Result[@syntax.File, @errors.EvalError]
 
@@ -119,6 +123,8 @@ pub using @value {type StarlarkList}
 pub using @value {type StarlarkString}
 
 pub using @errors {type SyntaxError}
+
+pub using @syntax {type Expr as SyntaxExpr}
 
 pub using @syntax {type File as SyntaxFile}
 

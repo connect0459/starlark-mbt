@@ -18,6 +18,8 @@ pub fn eval_expr(Thread, String, String, @value.StarlarkDict) -> Result[@value.V
 
 pub fn eval_expr_with_opts(Thread, String, String, Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 
+pub fn eval_parsed_expr(Thread, @syntax.Expr, Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+
 pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
 pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) -> Result[Module, @errors.EvalError]
