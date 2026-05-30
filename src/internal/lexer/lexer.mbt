@@ -194,6 +194,58 @@ pub fn Token::to_string(self : Token) -> String {
 }
 
 ///|
+/// Renders a token the way starlark-go's `Token.GoString` does: punctuation
+/// and operator tokens are wrapped in single quotes; identifiers, literals,
+/// keywords, and structural tokens (EOF, newline, indent) are rendered bare.
+/// Used in `got %#v` style error messages to match starlark-go wording.
+pub fn Token::go_string(self : Token) -> String {
+  match self {
+    Plus
+    | Minus
+    | Star
+    | Slash
+    | SlashSlash
+    | Percent
+    | StarStar
+    | Amp
+    | Pipe
+    | Circumflex
+    | LtLt
+    | GtGt
+    | Tilde
+    | Dot
+    | Comma
+    | Assign
+    | Semi
+    | Colon
+    | LParen
+    | RParen
+    | LBrack
+    | RBrack
+    | LBrace
+    | RBrace
+    | Lt
+    | Gt
+    | Ge
+    | Le
+    | Eql
+    | Neq
+    | PlusAssign
+    | MinusAssign
+    | StarAssign
+    | SlashAssign
+    | SlashSlashAssign
+    | PercentAssign
+    | AmpAssign
+    | PipeAssign
+    | CircumflexAssign
+    | LtLtAssign
+    | GtGtAssign => "'" + self.to_string() + "'"
+    _ => self.to_string()
+  }
+}
+
+///|
 pub fn keyword_token(name : String) -> Token? {
   match name {
     "and" => Some(And)

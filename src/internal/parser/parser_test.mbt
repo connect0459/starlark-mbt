@@ -781,8 +781,24 @@ test "annotated assignment is rejected" {
 ///|
 test "starred target in tuple unpacking LHS is rejected" {
   let msg = parse_f_err("a, *b = [1, 2]\n")
-  if !msg.contains("'*' is not allowed as assignment target") {
+  if !msg.contains("got '*', want primary expression") {
     fail("expected starred target rejection, got: \{msg}")
+  }
+}
+
+///|
+test "star in expression position reports want primary expression" {
+  let msg = parse_e_err("[*x]")
+  if !msg.contains("got '*', want primary expression") {
+    fail("expected primary-expression error, got: \{msg}")
+  }
+}
+
+///|
+test "double-star in expression position reports want primary expression" {
+  let msg = parse_e_err("[**x]")
+  if !msg.contains("got '**', want primary expression") {
+    fail("expected primary-expression error, got: \{msg}")
   }
 }
 

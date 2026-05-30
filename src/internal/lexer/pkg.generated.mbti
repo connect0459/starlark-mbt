@@ -113,6 +113,7 @@ pub(all) enum Token {
   With
   Yield
 } derive(Eq)
+pub fn Token::go_string(Self) -> String
 pub fn Token::to_string(Self) -> String
 
 // Type aliases

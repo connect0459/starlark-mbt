@@ -875,10 +875,6 @@ fn Parser::parse_factor(self : Parser) -> @syntax.Expr raise ParseErr {
       let e = self.parse_factor()
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpBitNot, e, p)
     }
-    @lexer.Token::Star =>
-      raise ParseErr(
-        self.syntax_error("'*' is not allowed as assignment target in Starlark"),
-      )
     _ => self.parse_primary()
   }
 }
@@ -1332,7 +1328,9 @@ fn Parser::parse_atom(self : Parser) -> @syntax.Expr raise ParseErr {
     @lexer.Token::LBrace => self.parse_dict_or_set(p)
     _ =>
       raise ParseErr(
-        self.syntax_error("unexpected token \{self.tok.to_string()}"),
+        self.syntax_error(
+          "got \{self.tok.go_string()}, want primary expression",
+        ),
       )
   }
 }

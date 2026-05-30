@@ -12,7 +12,7 @@ test "error format: syntax error includes filename line col and message" {
       inspect(
         e.msg(),
         content=(
-          #|test.star:1:6: unexpected token end of file
+          #|test.star:1:6: got end of file, want primary expression
         ),
       )
     Ok(_) => abort("expected error")
