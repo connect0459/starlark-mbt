@@ -657,7 +657,7 @@ fn Scanner::scan_number(
           ),
         )
       } else if !all_zeros && extra.length() > 0 {
-        return Err(self.make_error(self.current_pos(), "invalid int literal"))
+        return Err(self.make_error(start, "invalid int literal"))
       } else {
         // Just 0 (or 00...0 which equals 0)
         return Ok({ tok: Int(0N), pos: start })

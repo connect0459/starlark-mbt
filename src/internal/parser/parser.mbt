@@ -58,7 +58,7 @@ fn Parser::expect(
   if self.tok != expected {
     raise ParseErr(
       self.syntax_error(
-        "got \{self.tok.to_string()}, want \{expected.to_string()}",
+        "got \{self.tok.go_string()}, want \{expected.go_string()}",
       ),
     )
   }
@@ -75,10 +75,7 @@ fn Parser::expect_ident(
       self.advance()
       (name, p)
     }
-    _ =>
-      raise ParseErr(
-        self.syntax_error("expected identifier, got \{self.tok.to_string()}"),
-      )
+    _ => raise ParseErr(self.syntax_error("not an identifier"))
   }
 }
 
@@ -173,7 +170,7 @@ fn Parser::parse_simple_stmt(
     self.advance()
   } else if self.tok != @lexer.Token::EOF && self.tok != @lexer.Token::Outdent {
     raise ParseErr(
-      self.syntax_error("expected newline, got \{self.tok.to_string()}"),
+      self.syntax_error("got \{self.tok.go_string()}, want newline"),
     )
   }
   stmts
@@ -250,7 +247,11 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
       s
     }
     _ =>
-      raise ParseErr(self.syntax_error("load: first argument must be a string"))
+      raise ParseErr(
+        self.syntax_error(
+          "first operand of load statement must be a string literal",
+        ),
+      )
   }
   let bindings : Array[(String, String)] = []
   while self.tok == @lexer.Token::Comma {
@@ -265,7 +266,14 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
       }
       @lexer.Token::Ident(local_name) => {
         self.advance()
-        self.expect(@lexer.Token::Assign)
+        if self.tok != @lexer.Token::Assign {
+          raise ParseErr(
+            self.syntax_error(
+              "load operand must be \"\{local_name}\" or \{local_name}=\"originalname\"",
+            ),
+          )
+        }
+        self.advance()
         match self.tok {
           @lexer.Token::Str(orig) => {
             self.advance()
@@ -281,7 +289,9 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
       }
       _ =>
         raise ParseErr(
-          self.syntax_error("load: expected string or ident=string"),
+          self.syntax_error(
+            "load operand must be \"name\" or localname=\"name\" (got \{self.tok.to_string()})",
+          ),
         )
     }
   }
@@ -534,10 +544,7 @@ fn Parser::parse_param(self : Parser) -> @syntax.Param raise ParseErr {
         @syntax.Param::ParamIdent(name, p)
       }
     }
-    _ =>
-      raise ParseErr(
-        self.syntax_error("expected parameter, got \{self.tok.to_string()}"),
-      )
+    _ => raise ParseErr(self.syntax_error("not an identifier"))
   }
 }
 
@@ -759,7 +766,7 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
-            self.syntax_error("'not' in comparison must be followed by 'in'"),
+            self.syntax_error("got \{self.tok.go_string()}, want in"),
           )
         }
         @syntax.BinaryOp::OpNotIn
@@ -1247,7 +1254,7 @@ fn Parser::finish_comparison_from(
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
-            self.syntax_error("'not' in comparison must be followed by 'in'"),
+            self.syntax_error("got \{self.tok.go_string()}, want in"),
           )
         }
         @syntax.BinaryOp::OpNotIn
@@ -1474,7 +1481,12 @@ fn Parser::parse_comp_clauses(
         let cond = self.parse_test_no_cond()
         clauses.push(@syntax.CompClause::ClauseIf(cond, pp))
       }
-      _ => break
+      @lexer.Token::RBrack | @lexer.Token::RBrace | @lexer.Token::RParen =>
+        break
+      _ =>
+        raise ParseErr(
+          self.syntax_error("got \{self.tok.go_string()}, want ']', for, or if"),
+        )
     }
   }
   clauses

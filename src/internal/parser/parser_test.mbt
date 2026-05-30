@@ -1000,3 +1000,139 @@ test "load unquoted original name produces correct message" {
     Ok(_) => fail("expected error for unquoted original name")
   }
 }
+
+// --- MISSING-144: parser expect messages use go_string() format ---
+
+///|
+test "parser: expect uses single-quoted punctuation in error message" {
+  // def f : pass → got ':', want '('
+  match @parser.parse_file("test.star", "def f : pass\n") {
+    Err(e) => assert_true(e.msg().contains("got ':', want '('"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: expect uses single-quoted ] in error message" {
+  // x = [1, 2 → got end of file, want ']'
+  match @parser.parse_file("test.star", "x = [1, 2\n") {
+    Err(e) => assert_true(e.msg().contains("want ']'"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: newline expectation uses got-want order" {
+  // print 1 2 → got int literal, want newline
+  match @parser.parse_file("test.star", "print 1 2\n") {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("got int literal") && e.msg().contains("want newline"),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: newline expectation quotes punctuation" {
+  // a = b = 5 → got '=', want newline
+  match @parser.parse_file("test.star", "a = b = 5\n") {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("got '='") && e.msg().contains("want newline"),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
+// --- MISSING-145: 'not an identifier' for keyword in identifier position ---
+
+///|
+test "parser: def with keyword name reports 'not an identifier'" {
+  match @parser.parse_file("test.star", "def pass(): pass\n") {
+    Err(e) => assert_true(e.msg().contains("not an identifier"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: def with keyword param reports 'not an identifier'" {
+  match @parser.parse_file("test.star", "def f(load): pass\n") {
+    Err(e) => assert_true(e.msg().contains("not an identifier"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+// --- MISSING-146: comprehension-clause error includes 'for, or if' ---
+
+///|
+test "parser: comprehension clause error includes alternatives" {
+  // _ = [x for x in a if b else c] → should say want ']', for, or if
+  match @parser.parse_file("test.star", "_ = [x for x in a if b else c]\n") {
+    Err(e) => assert_true(e.msg().contains("for, or if"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+// --- MISSING-147: 'not' not followed by 'in' uses got-want format ---
+
+///|
+test "parser: 'not' not followed by 'in' uses got/want format" {
+  // _ = a + b not c → Go: got identifier, want in
+  match @parser.parse_file("test.star", "_ = a + b not c\n") {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("got identifier") && e.msg().contains("want in"),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
+// --- MISSING-149: invalid int literal at start position ---
+
+///|
+test "scanner: invalid int literal reported at start position" {
+  // 012834 → error at 1:1, not 1:7
+  match @parser.parse_file("foo.star", "012834\n") {
+    Err(e) => assert_eq(e.pos().to_string(), "foo.star:1:1")
+    Ok(_) => fail("expected error")
+  }
+}
+
+// --- MISSING-150: load operand error messages ---
+
+///|
+test "parser: load non-string operand reports correct message" {
+  // load("", 1) → load operand must be "name" or localname="name" (got int literal)
+  match @parser.parse_file("test.star", "load(\"\", 1)\n") {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("load operand must be") &&
+        e.msg().contains("got int literal"),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: load ident without = reports correct message" {
+  // load("a", x) → load operand must be "x" or x="originalname"
+  match @parser.parse_file("test.star", "load(\"a\", x)\n") {
+    Err(e) => assert_true(e.msg().contains("load operand must be"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: load non-string first arg reports correct message" {
+  // load(1, 2) → first operand of load statement must be a string literal
+  match @parser.parse_file("test.star", "load(1, 2)\n") {
+    Err(e) =>
+      assert_true(
+        e
+        .msg()
+        .contains("first operand of load statement must be a string literal"),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
