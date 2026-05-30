@@ -244,6 +244,10 @@ let string_star_src : String =
   #|assert.eq("a\nb\nc".splitlines(True), ["a\n", "b\n", "c"])
   #|assert.eq("a\nb\nc\n".splitlines(), ["a", "b", "c"])
   #|assert.eq("a\nb\nc\n".splitlines(True), ["a\n", "b\n", "c\n"])
+  #|# carriage return is an ordinary character, not a line break (starlark-go)
+  #|assert.eq("a\rb".splitlines(), ["a\rb"])
+  #|assert.eq("a\r\nb".splitlines(), ["a\r", "b"])
+  #|assert.eq("a\r\nb".splitlines(True), ["a\r\n", "b"])
   #|
   #|# str.{,l,r}strip
   #|assert.eq(" \tfoo\n ".strip(), "foo")

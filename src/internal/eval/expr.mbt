@@ -2807,22 +2807,7 @@ fn call_str_method(
       let mut i = 0
       while i < n {
         let c = chars[i]
-        let cv = c.to_int()
-        if cv == '\r'.to_int() {
-          if keepends {
-            buf.write_char(c)
-          }
-          if i + 1 < n && chars[i + 1].to_int() == '\n'.to_int() {
-            i += 1
-            if keepends {
-              buf.write_char(chars[i])
-            }
-          }
-          parts.push(
-            @value.Value::String(@value.StarlarkString::new(buf.to_string())),
-          )
-          buf.reset()
-        } else if cv == '\n'.to_int() {
+        if c.to_int() == '\n'.to_int() {
           if keepends {
             buf.write_char(c)
           }
