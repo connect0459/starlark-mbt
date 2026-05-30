@@ -949,3 +949,35 @@ test "str.islower/isupper detect non-ASCII cased letters" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_istitle_unicode_src : String =
+  #|load("assert.star", "assert")
+  #|# istitle uses Unicode letter categories, matching starlark-go: an ASCII A-Z
+  #|# or titlecase (Lt) letter leads a word; any other uppercase (Lu) letter, even
+  #|# non-ASCII, disqualifies the whole string; lowercase (Ll) must follow a cased
+  #|# letter.
+  #|assert.true("Café Lait".istitle())
+  #|assert.true("Hello World".istitle())
+  #|assert.true("Hello Wörld".istitle())
+  #|assert.true("Wörld Café".istitle())
+  #|assert.true(not "Hello world".istitle())
+  #|# a non-ASCII uppercase (Lu) letter disqualifies the string
+  #|assert.true(not "Été".istitle())
+  #|assert.true(not "Greek: Αβγ".istitle())
+  #|assert.true(not "ΑβγΔ".istitle())
+  #|# titlecase (Lt) digraph leads; uppercase (Lu) digraph disqualifies
+  #|assert.true("ǅenan ǈubović".istitle())
+  #|assert.true(not "Ǆenan Ǉubović".istitle())
+  #|assert.true(not "Ǆ".istitle())
+  #|assert.true("ǅ".istitle())
+  #|# Roman numeral I has a case mapping but is category Nl, not a cased letter
+  #|assert.true(not "Ⅰ".istitle())
+
+///|
+test "str.istitle uses Unicode letter categories" {
+  let errs = run_star_string(string_istitle_unicode_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

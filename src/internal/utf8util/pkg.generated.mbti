@@ -6,7 +6,13 @@ pub fn hex_char(Int) -> Char
 
 pub fn is_cased_rune(Int) -> Bool
 
+pub fn is_lower_letter(Int) -> Bool
+
+pub fn is_title_letter(Int) -> Bool
+
 pub fn is_unicode_printable(Int) -> Bool
+
+pub fn is_upper_letter(Int) -> Bool
 
 pub fn to_lower_rune(Int) -> Int
 

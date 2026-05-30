@@ -2787,22 +2787,21 @@ fn call_str_method(
       for c in s.raw() {
         let n = c.to_int()
         if (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
-          unicode_is_title_codepoint(n) {
+          @utf8util.is_title_letter(n) {
           if prev_cased {
             valid = false
             break
           }
           prev_cased = true
           cased = true
-        } else if (n >= 'a'.to_int() && n <= 'z'.to_int()) ||
-          unicode_is_lower_codepoint_strict(n) {
+        } else if @utf8util.is_lower_letter(n) {
           if !prev_cased {
             valid = false
             break
           }
           prev_cased = true
           cased = true
-        } else if unicode_is_upper_codepoint_strict(n) {
+        } else if @utf8util.is_upper_letter(n) {
           valid = false
           break
         } else {
@@ -3498,28 +3497,6 @@ fn is_whitespace(c : Char) -> Bool {
   n == '\r'.to_int() ||
   n == 0x0B ||
   n == 0x0C
-}
-
-// Unicode title-case letters (Lt category): only U+01C5 ǅ, U+01C8 ǈ, U+01CB ǋ,
-// U+01F2 ǲ are in this category among the digraph block.
-
-///|
-fn unicode_is_title_codepoint(cp : Int) -> Bool {
-  cp == 0x01C5 || cp == 0x01C8 || cp == 0x01CB || cp == 0x01F2
-}
-
-// Uppercase digraph letters (Lu, non-ASCII): Ǆ, Ǉ, Ǌ, Ǳ.
-
-///|
-fn unicode_is_upper_codepoint_strict(cp : Int) -> Bool {
-  cp == 0x01C4 || cp == 0x01C7 || cp == 0x01CA || cp == 0x01F1
-}
-
-// Lowercase digraph letters (Ll, non-ASCII): ǆ, ǉ, ǌ, ǳ.
-
-///|
-fn unicode_is_lower_codepoint_strict(cp : Int) -> Bool {
-  cp == 0x01C6 || cp == 0x01C9 || cp == 0x01CC || cp == 0x01F3
 }
 
 ///|
