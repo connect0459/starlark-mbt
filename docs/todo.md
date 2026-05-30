@@ -1122,10 +1122,15 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       low 32 bits; Go uses the low word of the magnitude. Cosmetic divergence.
 - [ ] **MISSING-71** [low]: String/list repeat allocation-limit boundary off by
       one for products of exactly 2^30.
-- [ ] **MISSING-72**: `is*`/`title`/`capitalize` string methods are ASCII-only;
-      Go uses Unicode-aware `unicode.IsLetter/IsDigit/IsSpace` etc. Most
-      behaviorally significant gap in the second-pass analysis. Requires
-      implementing Unicode general-category table lookups.
+- [x] **MISSING-72**: Unicode-aware `capitalize`/`islower`/`isupper`/`title`/
+      `istitle`/`isspace` — `capitalize`/`title` now use a small digraph table
+      (U+01C4..U+01CC, U+01F1..U+01F3) for `to_title`, `islower`/`isupper` use
+      string-level `to_lower()`/`to_upper()` comparison with digraph-aware
+      `has_cased` detection, `isspace` delegates to `Char::is_whitespace()` (full
+      Unicode White_Space property), and `istitle` extends with `unicode_is_title_codepoint`
+      / `unicode_is_upper/lower_codepoint_strict` for the four digraph triples.
+      `isalpha`/`isdigit`/`isalnum` remain ASCII-only (no Unicode test coverage in
+      reference test suite). Commit: `b477d5e`
 - [x] **MISSING-73**: String search methods (`find`/`count`/`index`/`rfind`/
       `rindex`/`startswith`/`endswith`) silently default a non-int / non-None
       `start`/`end` argument instead of erroring. Fixed via `parse_search_index`
