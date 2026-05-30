@@ -1086,22 +1086,28 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       tie-break (never reversed), independent of `Array::sort_by` stability
       (`eval/expr.mbt`). Commit: `20553a7`
 
-### Deferred public-API gaps (require larger surface/architectural change)
+### Resolved post-release API additions
 
-- [ ] **MISSING-54**: No `Eval`/`EvalOptions` for evaluating arbitrary source as an
-      expression beyond `eval_expr`. Low value — `eval_expr` covers the expression
-      case and `exec_file` covers statements.
-- [ ] **MISSING-55**: No `FileProgram` building a `Program` from an already-parsed
-      `syntax.File`; would require exposing the internal `syntax.File` type through
-      the public façade.
-- [ ] **MISSING-58**: `Universe` is not mutably extensible. The `Universe` type is
-      not wired into execution (the actual extension mechanism is `Predeclared`),
-      so a `Universe::set` would be cosmetic without an evaluator refactor.
-- [ ] **MISSING-60/61/62/63/64**: Intentional/architectural divergences recorded in
-      `.connect0459/bugfix.md` (closed `Value` enum, `\u` in bytes rejected, no
-      bytecode program, `br"..."` permissiveness, future thread-local/Unpacker work).
-- [ ] **MISSING-66**: Bigint/huge-float hashing takes low bits differently from Go;
-      affects only hash bucketing of huge-magnitude keys, not equality. Low impact.
+- [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
+      `eval_expr` delegates to it with default options. Re-exported in public façade.
+- [x] **MISSING-55**: `file_program(file, opts, is_predeclared)` and
+      `source_program_with_file` added; `SyntaxFile` type alias and `parse_file`
+      re-exported in public façade. Enables parse-once-exec-many pattern.
+- [x] **MISSING-58**: `Universe::set(name, value)` added; `exec_file_with_universe`
+      wires a custom universe into both the resolver and eval env.
+- [x] **MISSING-60**: Closed — closed `Value` enum via `ExtVal(CustomValue)` is
+      the confirmed design.
+- [x] **MISSING-61**: `\u`/`\U` accepted in bytes literals; encodes as UTF-8 bytes.
+- [x] **MISSING-63**: `br"..."` now rejected; only `rb"..."` is valid raw-bytes.
+- [x] **MISSING-66**: `hash_float` uses `double_to_bigint` ensuring cross-type
+      hash parity for large integers (e.g. `hash(1e20) == hash(10**20)`).
+
+### Deferred public-API gaps
+
+- [ ] **MISSING-62**: No bytecode `CompiledProgram`/`Program.Write` — tree-walking
+      interpreter only. Tracked as a future major milestone.
+- [ ] **MISSING-64**: Thread-local storage, public `Unpacker`/`UnpackArgs`, separate
+      `FileOptions` entry points — future work.
 
 ---
 
@@ -1114,7 +1120,7 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 - ~~`time` extension library~~ — implemented as `src/lib/time/`; non-UTC timezones via IANA tzdb (native) / static table (wasm/js); native-only DST tests in `time_tz_native_test.mbt`
 - `proto` extension library (`starlark-go/lib/proto`)
 - ~~`starlarkstruct`~~ — implemented as `src/lib/struct/`; `struct()` builtin, `gensym()` callable symbols, `+` merge, `make_struct` API
-- Bytecode compilation / interpreter (currently AST-walking only)
+- Bytecode compilation / interpreter (currently AST-walking only) — MISSING-62
 - Profiling and debugging hooks (`starlark-go/starlark/profile.go`)
 - ~~Big-integer `Int`~~ — implemented; `Value::Int` now uses MoonBit `BigInt` (arbitrary precision)
 - Thread-local storage `Thread.set_local()` / `Thread.local()` for embedder context
