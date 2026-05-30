@@ -1204,9 +1204,12 @@ resolved with the user.
       assignment".
 - [x] **MISSING-97**: Float `**` with a non-integral exponent now computes the real
       power via `@math.pow` (was NaN).
-- [ ] **MISSING-98** [INTENTIONAL]: `**` power operator is a MoonBit extension
-      absent from starlark-go. Kept per `docs/todo.md` evaluator scope; recorded
-      for completeness.
+- [x] **MISSING-98**: `**` power operator removed. It was a MoonBit extension
+      absent from starlark-go (where `**` is kwargs/params syntax only). With no
+      clear use case it was dropped for strict starlark-go parity: `2 ** 10` is
+      now a syntax error. `OpPow` removed from `@syntax.BinaryOp`; `eval_pow`/
+      `float_pow` and the `binary("**")` dispatch removed; the `**` token is
+      retained for `**kwargs`. MISSING-97 (Float `**`) is now moot.
 - [x] **MISSING-99**: Adjacent string-literal concatenation (`"a" "b"`) removed;
       now a syntax error, matching starlark-go (decision: Go parity).
 - [x] **MISSING-100**: Malformed keyword argument (`f(a.b=1)`) → "keyword argument
