@@ -781,3 +781,49 @@ test "str.split/rsplit reject keyword args (MISSING-31)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+// MISSING-73: find/count/index/rfind/rindex/startswith/endswith type-validate
+// start/end arguments instead of silently defaulting on non-int/non-None.
+let string_search_index_type_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "banana".find("a", 1.0), "find: invalid start index: got float, want int")
+  #|assert.fails(lambda: "banana".find("a", 0, []), "find: invalid end index: got list, want int")
+  #|assert.fails(lambda: "banana".count("a", "bad"), "count: invalid start index: got string, want int")
+  #|assert.fails(lambda: "banana".rfind("a", 1.0), "rfind: invalid start index: got float, want int")
+  #|assert.fails(lambda: "banana".rindex("a", 0, True), "rindex: invalid end index: got bool, want int")
+  #|assert.fails(lambda: "banana".index("a", 1.0), "index: invalid start index: got float, want int")
+  #|assert.fails(lambda: "hello".startswith("h", 1.0), "startswith: invalid start index: got float, want int")
+  #|assert.fails(lambda: "hello".endswith("o", 0, "x"), "endswith: invalid end index: got string, want int")
+  #|# None is accepted as a default (no error)
+  #|assert.eq("banana".find("a", None), 1)
+  #|assert.eq("banana".find("a", None, None), 1)
+  #|# valid int args still work
+  #|assert.eq("banana".find("a", 2), 3)
+  #|assert.eq("banana".count("a", 2, 6), 2)
+
+///|
+test "str search methods reject non-int start/end args (MISSING-73)" {
+  let errs = run_star_string(string_search_index_type_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+// MISSING-76 (part 2): rindex first-arg type error needs "rindex:" prefix.
+let string_rindex_argtype_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "abc".rindex(1), "rindex: for parameter 1: got int, want string")
+  #|assert.fails(lambda: "abc".index(1), "index: for parameter 1: got int, want string")
+  #|assert.fails(lambda: "abc".find(1), "find: for parameter 1: got int, want string")
+  #|assert.fails(lambda: "abc".rfind(1), "rfind: for parameter 1: got int, want string")
+  #|assert.fails(lambda: "abc".count(1), "count: for parameter 1: got int, want string")
+
+///|
+test "str.rindex/index/find/rfind/count first-arg type error uses method prefix (MISSING-76 part 2)" {
+  let errs = run_star_string(string_rindex_argtype_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

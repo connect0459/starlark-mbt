@@ -2286,26 +2286,12 @@ fn call_str_method(
     "startswith" => {
       check_positional(ctx, "startswith", pos_args, kw_args, 1, 3)
       let slen = s.byte_len()
-      let start_idx = if pos_args.length() >= 2 {
-        match pos_args[1] {
-          @value.Value::Int(n) => n.to_int()
-          @value.Value::None => 0
-          _ => 0
-        }
-      } else {
-        0
-      }
-      let end_idx = if pos_args.length() >= 3 {
-        match pos_args[2] {
-          @value.Value::Int(n) => n.to_int()
-          @value.Value::None => slen
-          _ => slen
-        }
-      } else {
-        slen
-      }
-      let i = clamp_byte_index(start_idx, slen)
-      let j = clamp_byte_index(end_idx, slen)
+      let i = parse_search_index(
+        ctx, "startswith", pos_args, 1, slen, 0, "start",
+      )
+      let j = parse_search_index(
+        ctx, "startswith", pos_args, 2, slen, slen, "end",
+      )
       let sub = str_byte_slice(s, i, j)
       let check_prefix = fn(prefix : @value.StarlarkString) -> Bool {
         bytes_has_prefix(sub, prefix)
@@ -2344,26 +2330,10 @@ fn call_str_method(
     "endswith" => {
       check_positional(ctx, "endswith", pos_args, kw_args, 1, 3)
       let slen = s.byte_len()
-      let start_idx = if pos_args.length() >= 2 {
-        match pos_args[1] {
-          @value.Value::Int(n) => n.to_int()
-          @value.Value::None => 0
-          _ => 0
-        }
-      } else {
-        0
-      }
-      let end_idx = if pos_args.length() >= 3 {
-        match pos_args[2] {
-          @value.Value::Int(n) => n.to_int()
-          @value.Value::None => slen
-          _ => slen
-        }
-      } else {
-        slen
-      }
-      let i = clamp_byte_index(start_idx, slen)
-      let j = clamp_byte_index(end_idx, slen)
+      let i = parse_search_index(ctx, "endswith", pos_args, 1, slen, 0, "start")
+      let j = parse_search_index(
+        ctx, "endswith", pos_args, 2, slen, slen, "end",
+      )
       let sub = str_byte_slice(s, i, j)
       let check_suffix = fn(suffix : @value.StarlarkString) -> Bool {
         bytes_has_suffix(sub, suffix)
@@ -2401,71 +2371,31 @@ fn call_str_method(
     }
     "find" => {
       check_positional(ctx, "find", pos_args, kw_args, 1, 3)
-      match pos_args[0] {
-        @value.Value::String(sub) => {
-          let slen = s.byte_len()
-          let start = if pos_args.length() >= 2 {
-            match pos_args[1] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => 0
-            }
-          } else {
-            0
-          }
-          let end = if pos_args.length() >= 3 {
-            match pos_args[2] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => slen
-            }
-          } else {
-            slen
-          }
-          let result = if start <= end {
-            bytes_index_in(s, start, end, sub)
-          } else {
-            -1
-          }
-          @value.Value::Int(BigInt::from_int(result))
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "find() argument must be a string"),
-          )
+      let sub = arg_as_string(ctx, "find", pos_args, 0)
+      let slen = s.byte_len()
+      let start = parse_search_index(ctx, "find", pos_args, 1, slen, 0, "start")
+      let end = parse_search_index(ctx, "find", pos_args, 2, slen, slen, "end")
+      let result = if start <= end {
+        bytes_index_in(s, start, end, sub)
+      } else {
+        -1
       }
+      @value.Value::Int(BigInt::from_int(result))
     }
     "count" => {
       check_positional(ctx, "count", pos_args, kw_args, 1, 3)
-      match pos_args[0] {
-        @value.Value::String(sub) => {
-          let slen = s.byte_len()
-          let start = if pos_args.length() >= 2 {
-            match pos_args[1] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => 0
-            }
-          } else {
-            0
-          }
-          let end = if pos_args.length() >= 3 {
-            match pos_args[2] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => slen
-            }
-          } else {
-            slen
-          }
-          let result = if start <= end {
-            bytes_count_in(s, start, end, sub)
-          } else {
-            0
-          }
-          @value.Value::Int(BigInt::from_int(result))
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "count() argument must be a string"),
-          )
+      let sub = arg_as_string(ctx, "count", pos_args, 0)
+      let slen = s.byte_len()
+      let start = parse_search_index(
+        ctx, "count", pos_args, 1, slen, 0, "start",
+      )
+      let end = parse_search_index(ctx, "count", pos_args, 2, slen, slen, "end")
+      let result = if start <= end {
+        bytes_count_in(s, start, end, sub)
+      } else {
+        0
       }
+      @value.Value::Int(BigInt::from_int(result))
     }
     "replace" => {
       check_positional(ctx, "replace", pos_args, kw_args, 2, 3)
@@ -2575,111 +2505,56 @@ fn call_str_method(
     }
     "index" => {
       check_positional(ctx, "index", pos_args, kw_args, 1, 3)
-      match pos_args[0] {
-        @value.Value::String(sub) => {
-          let slen = s.byte_len()
-          let start = if pos_args.length() >= 2 {
-            match pos_args[1] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => 0
-            }
-          } else {
-            0
-          }
-          let end = if pos_args.length() >= 3 {
-            match pos_args[2] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => slen
-            }
-          } else {
-            slen
-          }
-          let result = if start <= end {
-            bytes_index_in(s, start, end, sub)
-          } else {
-            -1
-          }
-          if result < 0 {
-            raise EvalErr(make_eval_error(ctx, "index: substring not found"))
-          }
-          @value.Value::Int(BigInt::from_int(result))
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "index() argument must be a string"),
-          )
+      let sub = arg_as_string(ctx, "index", pos_args, 0)
+      let slen = s.byte_len()
+      let start = parse_search_index(
+        ctx, "index", pos_args, 1, slen, 0, "start",
+      )
+      let end = parse_search_index(ctx, "index", pos_args, 2, slen, slen, "end")
+      let result = if start <= end {
+        bytes_index_in(s, start, end, sub)
+      } else {
+        -1
       }
+      if result < 0 {
+        raise EvalErr(make_eval_error(ctx, "index: substring not found"))
+      }
+      @value.Value::Int(BigInt::from_int(result))
     }
     "rfind" => {
       check_positional(ctx, "rfind", pos_args, kw_args, 1, 3)
-      match pos_args[0] {
-        @value.Value::String(sub) => {
-          let slen = s.byte_len()
-          let start = if pos_args.length() >= 2 {
-            match pos_args[1] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => 0
-            }
-          } else {
-            0
-          }
-          let end = if pos_args.length() >= 3 {
-            match pos_args[2] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => slen
-            }
-          } else {
-            slen
-          }
-          let result = if start <= end {
-            bytes_last_index_in(s, start, end, sub)
-          } else {
-            -1
-          }
-          @value.Value::Int(BigInt::from_int(result))
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "rfind() argument must be a string"),
-          )
+      let sub = arg_as_string(ctx, "rfind", pos_args, 0)
+      let slen = s.byte_len()
+      let start = parse_search_index(
+        ctx, "rfind", pos_args, 1, slen, 0, "start",
+      )
+      let end = parse_search_index(ctx, "rfind", pos_args, 2, slen, slen, "end")
+      let result = if start <= end {
+        bytes_last_index_in(s, start, end, sub)
+      } else {
+        -1
       }
+      @value.Value::Int(BigInt::from_int(result))
     }
     "rindex" => {
       check_positional(ctx, "rindex", pos_args, kw_args, 1, 3)
-      match pos_args[0] {
-        @value.Value::String(sub) => {
-          let slen = s.byte_len()
-          let start = if pos_args.length() >= 2 {
-            match pos_args[1] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => 0
-            }
-          } else {
-            0
-          }
-          let end = if pos_args.length() >= 3 {
-            match pos_args[2] {
-              @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
-              _ => slen
-            }
-          } else {
-            slen
-          }
-          let result = if start <= end {
-            bytes_last_index_in(s, start, end, sub)
-          } else {
-            -1
-          }
-          if result < 0 {
-            raise EvalErr(make_eval_error(ctx, "rindex: substring not found"))
-          }
-          @value.Value::Int(BigInt::from_int(result))
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "rindex() argument must be a string"),
-          )
+      let sub = arg_as_string(ctx, "rindex", pos_args, 0)
+      let slen = s.byte_len()
+      let start = parse_search_index(
+        ctx, "rindex", pos_args, 1, slen, 0, "start",
+      )
+      let end = parse_search_index(
+        ctx, "rindex", pos_args, 2, slen, slen, "end",
+      )
+      let result = if start <= end {
+        bytes_last_index_in(s, start, end, sub)
+      } else {
+        -1
       }
+      if result < 0 {
+        raise EvalErr(make_eval_error(ctx, "rindex: substring not found"))
+      }
+      @value.Value::Int(BigInt::from_int(result))
     }
     "isalpha" => {
       if s.raw().length() == 0 {
@@ -3465,6 +3340,36 @@ fn arg_as_int(
           "\{name}: for parameter \{idx + 1}: got \{@value.type_name(v)}, want int",
         ),
       )
+  }
+}
+
+///|
+// Validate and extract an optional start/end index argument for string search
+// methods. Accepts Int (clamped) or None (default); errors on any other type,
+// matching starlark-go's `indices`/`asIndex` error format.
+fn parse_search_index(
+  ctx : EvalContext,
+  mname : String,
+  args : Array[@value.Value],
+  pos : Int,
+  slen : Int,
+  default_val : Int,
+  kind : String,
+) -> Int raise EvalErr {
+  if args.length() > pos {
+    match args[pos] {
+      @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
+      @value.Value::None => default_val
+      v =>
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "\{mname}: invalid \{kind} index: got \{@value.type_name(v)}, want int",
+          ),
+        )
+    }
+  } else {
+    default_val
   }
 }
 
