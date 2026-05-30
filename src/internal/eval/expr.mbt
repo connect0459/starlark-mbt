@@ -3350,7 +3350,26 @@ fn parse_search_index(
 ) -> Int raise EvalErr {
   if args.length() > pos {
     match args[pos] {
-      @value.Value::Int(n) => clamp_byte_index(n.to_int(), slen)
+      @value.Value::Int(n) => {
+        if n.compare_int64(@int64.MAX_VALUE) > 0 ||
+          n.compare_int64(@int64.MIN_VALUE) < 0 {
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "\{mname}: invalid \{kind} index: \{n} out of range",
+            ),
+          )
+        }
+        let i64 = n.to_int64()
+        let slen64 = slen.to_int64()
+        if i64 >= slen64 {
+          slen
+        } else if i64 < -slen64 {
+          0
+        } else {
+          clamp_byte_index(i64.to_int(), slen)
+        }
+      }
       @value.Value::None => default_val
       v =>
         raise EvalErr(

@@ -42,7 +42,8 @@ test "scan: decodes \\U escape for a supplementary code point" {
 
 ///|
 test "scan: rejects octal escape >= 256" {
-  assert_true(scan("'\\777'").contains("invalid octal escape sequence"))
+  // \\777 is 511 in decimal, > 127 in string mode → non-ASCII (Go checks n > 127 first)
+  assert_true(scan("'\\777'").contains("non-ASCII octal escape"))
 }
 
 ///|
@@ -57,7 +58,8 @@ test "scan: rejects a truncated hex escape (first digit)" {
 
 ///|
 test "scan: rejects a truncated hex escape (second digit)" {
-  assert_true(scan("'\\x4G'").contains("truncated escape sequence"))
+  // \\x4G: first digit valid, second is non-hex visible char → invalid (not truncated)
+  assert_true(scan("'\\x4G'").contains("invalid escape sequence"))
 }
 
 ///|
@@ -91,7 +93,7 @@ test "scan: rejects code points beyond U+10FFFF" {
 
 ///|
 test "scan: rejects surrogate code points" {
-  assert_true(scan("'\\U0000D800'").contains("invalid Unicode surrogate"))
+  assert_true(scan("'\\U0000D800'").contains("invalid Unicode code point"))
 }
 
 ///|
@@ -101,7 +103,8 @@ test "scan: rejects unknown escape sequences" {
 
 ///|
 test "scan: rejects a truncated unicode escape" {
-  assert_true(scan("'\\u00G0'").contains("truncated Unicode escape sequence"))
+  // \\u00G0: reads 0,0 then G (visible non-hex) → invalid escape sequence \u00G
+  assert_true(scan("'\\u00G0'").contains("invalid escape sequence"))
 }
 
 // --- String termination errors ---
@@ -277,12 +280,12 @@ test "scan: br\"...\" is NOT a raw-bytes literal (tokenized as ident + string)" 
 
 ///|
 test "scan: \\uD800 (low surrogate) is rejected in string literal" {
-  assert_true(scan("\"\\uD800\"").contains("invalid Unicode surrogate"))
+  assert_true(scan("\"\\uD800\"").contains("invalid Unicode code point"))
 }
 
 ///|
 test "scan: \\uDFFF (high surrogate) is rejected in string literal" {
-  assert_true(scan("\"\\uDFFF\"").contains("invalid Unicode surrogate"))
+  assert_true(scan("\"\\uDFFF\"").contains("invalid Unicode code point"))
 }
 
 ///|
@@ -292,5 +295,52 @@ test "scan: \\u4E2D (valid BMP) is accepted in string literal" {
 
 ///|
 test "scan: \\uD800 is rejected in bytes literal" {
-  assert_true(scan("b\"\\uD800\"").contains("invalid Unicode surrogate"))
+  assert_true(scan("b\"\\uD800\"").contains("invalid Unicode code point"))
+}
+
+// --- MISSING-143: escape error messages aligned with starlark-go ---
+
+///|
+test "scan: non-ASCII octal error includes sequence and hex encoding" {
+  let msg = scan("\"\\377\"")
+  assert_true(
+    msg.contains(
+      "non-ASCII octal escape \\377 (use \\u00FF for the UTF-8 encoding of U+00FF)",
+    ),
+  )
+}
+
+///|
+test "scan: octal >= 256 fires non-ASCII check first (ordering)" {
+  // \\400 is octal 256 > 127, Go checks n > 127 first → non-ASCII, not invalid
+  let msg = scan("\"\\400\"")
+  assert_true(msg.contains("non-ASCII octal escape \\400"))
+}
+
+///|
+test "scan: \\xfg with invalid second digit is 'invalid escape sequence'" {
+  // Go: invalid (full sequence present but non-hex digit)
+  // MoonBit currently: truncated
+  let msg = scan("\"\\xfg\"")
+  assert_true(msg.contains("invalid escape sequence \\xfg"))
+}
+
+///|
+test "scan: truncated \\u escape includes partial sequence" {
+  let msg = scan("\"\\u100\"")
+  assert_true(msg.contains("truncated escape sequence \\u100"))
+}
+
+///|
+test "scan: surrogate code point error includes U+ hex" {
+  let msg = scan("\"\\udc00\"")
+  assert_true(msg.contains("invalid Unicode code point U+DC00"))
+}
+
+///|
+test "scan: code point out of range includes sequence and max" {
+  let msg = scan("\"\\U00110000\"")
+  assert_true(
+    msg.contains("code point out of range: \\U00110000 (max \\U0010ffff)"),
+  )
 }

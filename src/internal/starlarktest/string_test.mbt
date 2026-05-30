@@ -1003,3 +1003,35 @@ test "iterable-argument builtins use the for-parameter-1 error prefix" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-142: string search-index BigInt handling ---
+
+///|
+test "string.find: large BigInt start clamps to len not wraps" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|# 2^31 fits int64 but overflows int32; should clamp to len=5 → not found
+      #|assert.eq("hello".find("h", 2147483648), -1)
+      #|assert.eq("hello".count("h", 2147483648), 0)
+      #|assert.eq("hello".rfind("h", 0, 2147483648), 0)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "string.find: BigInt exceeding int64 raises out-of-range error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|# 2^63 exceeds int64 range
+      #|assert.fails(lambda: "hello".find("h", 9223372036854775808), "find: invalid start index: 9223372036854775808 out of range")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

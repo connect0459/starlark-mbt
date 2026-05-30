@@ -909,14 +909,21 @@ fn Scanner::decode_escape(
           break
         }
       }
-      if val >= 256 {
-        return Err(self.make_error(str_start, "invalid octal escape sequence"))
-      }
+      // Match starlark-go: check n > 127 FIRST (non-ASCII), then n >= 256 (invalid)
       if !is_bytes && val > 127 {
+        let octal_str = int_to_octal(val)
+        let hex4 = int_to_hex4_upper(val)
         return Err(
           self.make_error(
-            str_start, "non-ASCII octal escape (use \\uXXXX for Unicode)",
+            str_start,
+            "non-ASCII octal escape \\\{octal_str} (use \\u\{hex4} for the UTF-8 encoding of U+\{hex4})",
           ),
+        )
+      }
+      if val >= 256 {
+        let octal3 = int_to_octal3(val)
+        return Err(
+          self.make_error(str_start, "invalid escape sequence \\\{octal3}"),
         )
       }
       buf.push(val.to_byte())
@@ -930,7 +937,22 @@ fn Scanner::decode_escape(
       self.read_byte() |> ignore
       let h2 = self.peek_byte()
       if !is_xdigit_byte(h2) {
-        return Err(self.make_error(str_start, "truncated escape sequence \\x"))
+        // If h2 is a visible non-hex char (not quote/null), it's "invalid \xNN"
+        if h2 != b'\x00' && h2 != b'"' && h2 != b'\'' {
+          self.read_byte() |> ignore
+          return Err(
+            self.make_error(
+              str_start,
+              "invalid escape sequence \\x\{h1.to_int().unsafe_to_char()}\{h2.to_int().unsafe_to_char()}",
+            ),
+          )
+        }
+        return Err(
+          self.make_error(
+            str_start,
+            "truncated escape sequence \\x\{h1.to_int().unsafe_to_char()}",
+          ),
+        )
       }
       self.read_byte() |> ignore
       let val = xdigit_to_int(h1) * 16 + xdigit_to_int(h2)
@@ -942,14 +964,17 @@ fn Scanner::decode_escape(
     0x75 =>
       // Unicode: \uNNNN — accepted in both string and bytes literals.
       // In bytes, the codepoint is encoded as UTF-8 bytes.
-      match self.read_n_hex(str_start, 4) {
+      match self.read_unicode_escape(str_start, "\\u", 4) {
         Err(e) => return Err(e)
         Ok(cp) => {
           let surr_lo = 55296 // 0xD800
           let surr_hi = 57344 // 0xE000
           if cp >= surr_lo && cp < surr_hi {
             return Err(
-              self.make_error(str_start, "invalid Unicode surrogate code point"),
+              self.make_error(
+                str_start,
+                "invalid Unicode code point U+\{int_to_hex4_upper(cp)}",
+              ),
             )
           }
           append_utf8_codepoint(cp, buf)
@@ -957,18 +982,27 @@ fn Scanner::decode_escape(
       }
     0x55 =>
       // Unicode: \UNNNNNNNN — accepted in both string and bytes literals.
-      match self.read_n_hex(str_start, 8) {
+      match self.read_unicode_escape(str_start, "\\U", 8) {
         Err(e) => return Err(e)
         Ok(cp) => {
           let max_cp = 1114111 // 0x10FFFF
           let surr_lo = 55296 // 0xD800
           let surr_hi = 57344 // 0xE000
           if cp > max_cp {
-            return Err(self.make_error(str_start, "code point out of range"))
+            let seq = int_to_hex8_lower(cp)
+            return Err(
+              self.make_error(
+                str_start,
+                "code point out of range: \\U\{seq} (max \\U0010ffff)",
+              ),
+            )
           }
           if cp >= surr_lo && cp < surr_hi {
             return Err(
-              self.make_error(str_start, "invalid Unicode surrogate code point"),
+              self.make_error(
+                str_start,
+                "invalid Unicode code point U+\{int_to_hex4_upper(cp)}",
+              ),
             )
           }
           append_utf8_codepoint(cp, buf)
@@ -986,21 +1020,99 @@ fn Scanner::decode_escape(
 }
 
 ///|
-fn Scanner::read_n_hex(
+// Read count hex digits for a Unicode escape (\uNNNN or \UNNNNNNNN).
+// prefix is the already-consumed prefix ("\\u" or "\\U") for error messages.
+// Distinguishes truncated (not enough chars) from invalid (non-hex char present).
+fn Scanner::read_unicode_escape(
   self : Scanner,
   pos : @errors.Position,
-  n : Int,
+  prefix : String,
+  count : Int,
 ) -> Result[Int, @errors.SyntaxError] {
+  let digits : Array[Char] = []
   let mut result = 0
-  for _ in 0..<n {
+  for _ in 0..<count {
     let b = self.peek_byte()
-    if !is_xdigit_byte(b) {
-      return Err(self.make_error(pos, "truncated Unicode escape sequence"))
+    if is_xdigit_byte(b) {
+      digits.push(b.to_int().unsafe_to_char())
+      result = result * 16 + xdigit_to_int(b)
+      self.read_byte() |> ignore
+    } else {
+      // Peek: is the next char a visible (non-terminator) char?
+      let is_visible = b != b'\x00' && b != b'"' && b != b'\'' && b != b'\n'
+      let partial = String::from_array(digits)
+      if is_visible {
+        // Consume the non-hex char and call it "invalid"
+        self.read_byte() |> ignore
+        let bad = b.to_int().unsafe_to_char()
+        return Err(
+          self.make_error(
+            pos,
+            "invalid escape sequence \{prefix}\{partial}\{bad}",
+          ),
+        )
+      } else {
+        return Err(
+          self.make_error(pos, "truncated escape sequence \{prefix}\{partial}"),
+        )
+      }
     }
-    result = result * 16 + xdigit_to_int(b)
-    self.read_byte() |> ignore
   }
   Ok(result)
+}
+
+///|
+fn int_to_octal(n : Int) -> String {
+  if n == 0 {
+    return "0"
+  }
+  let mut v = n
+  let buf = StringBuilder::new()
+  let mut shift = 1
+  while shift * 8 <= v {
+    shift *= 8
+  }
+  while shift > 0 {
+    buf.write_char((0x30 + v / shift).unsafe_to_char())
+    v = v % shift
+    shift /= 8
+  }
+  buf.to_string()
+}
+
+///|
+fn int_to_octal3(n : Int) -> String {
+  let d2 = n / 64
+  let rem = n % 64
+  let d1 = rem / 8
+  let d0 = rem % 8
+  "\{d2}\{d1}\{d0}"
+}
+
+///|
+fn hex_char_upper(n : Int) -> Char {
+  if n < 10 {
+    (b'0'.to_int() + n).unsafe_to_char()
+  } else {
+    (b'A'.to_int() + n - 10).unsafe_to_char()
+  }
+}
+
+///|
+fn int_to_hex4_upper(n : Int) -> String {
+  let buf = StringBuilder::new()
+  buf.write_char(hex_char_upper((n >> 12) & 0xF))
+  buf.write_char(hex_char_upper((n >> 8) & 0xF))
+  buf.write_char(hex_char_upper((n >> 4) & 0xF))
+  buf.write_char(hex_char_upper(n & 0xF))
+  buf.to_string()
+}
+
+///|
+fn int_to_hex8_lower(n : Int) -> String {
+  let buf = StringBuilder::new()
+  @utf8util.write_hex8(buf, n)
+  buf.to_string()
 }
 
 // --- Byte classification ---
