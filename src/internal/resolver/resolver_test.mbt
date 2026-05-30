@@ -733,3 +733,53 @@ test "resolve: break inside for loop within def is valid (MISSING-77 sanity)" {
   )
   assert_true(result.is_valid())
 }
+
+// --- MISSING-78 + MISSING-82 remaining: load inside loop/conditional/function ---
+
+///|
+test "resolve: load inside def raises 'load statement within a function' (MISSING-82)" {
+  let f = parse_or_fail("def f():\n  load(\"m.star\", \"y\")")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "load statement within a function"))
+}
+
+///|
+test "resolve: load inside top-level for raises 'load statement within a loop' (MISSING-78)" {
+  let f = parse_or_fail("for x in []:\n  load(\"m.star\", \"y\")")
+  let opts = ResolveOptions::default().with_allow_top_level_control(true)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(has_error(result, "load statement within a loop"))
+}
+
+///|
+test "resolve: load inside top-level if raises 'load statement within a conditional' (MISSING-78)" {
+  let f = parse_or_fail("if True:\n  load(\"m.star\", \"y\")")
+  let opts = ResolveOptions::default().with_allow_top_level_control(true)
+  let result = resolve(f, no_predeclared, only_universal, opts)
+  assert_true(has_error(result, "load statement within a conditional"))
+}
+
+///|
+test "resolve: while with allow_while=false raises dialect error (MISSING-82)" {
+  let f = parse_or_fail("while True:\n  pass")
+  let opts = ResolveOptions::default()
+    .with_allow_while(false)
+    .with_allow_top_level_control(true)
+  let result = resolve(f, no_predeclared, only_universal, opts)
+  assert_true(
+    has_error(result, "this Starlark dialect does not support while loops"),
+  )
+}
+
+///|
+test "resolve: load inside function inside if gives 'within a function' not 'conditional' (MISSING-78)" {
+  let f = parse_or_fail("if True:\n  def g():\n    load(\"m.star\", \"y\")")
+  let opts = ResolveOptions::default().with_allow_top_level_control(true)
+  let result = resolve(f, no_predeclared, only_universal, opts)
+  assert_true(has_error(result, "load statement within a function"))
+}

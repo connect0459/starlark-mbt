@@ -36,6 +36,7 @@ pub fn ResolveOptions::with_allow_global_reassign(Self, Bool) -> Self
 pub fn ResolveOptions::with_allow_recursion(Self, Bool) -> Self
 pub fn ResolveOptions::with_allow_set(Self, Bool) -> Self
 pub fn ResolveOptions::with_allow_top_level_control(Self, Bool) -> Self
+pub fn ResolveOptions::with_allow_while(Self, Bool) -> Self
 pub fn ResolveOptions::with_load_binds_globally(Self, Bool) -> Self
 
 pub struct ResolvedFile {

@@ -142,6 +142,14 @@ pub fn ResolveOptions::with_allow_set(
 }
 
 ///|
+pub fn ResolveOptions::with_allow_while(
+  self : ResolveOptions,
+  v : Bool,
+) -> ResolveOptions {
+  { ..self, allow_while: v }
+}
+
+///|
 pub fn ResolveOptions::with_load_binds_globally(
   self : ResolveOptions,
   v : Bool,
@@ -211,6 +219,7 @@ priv struct Resolver {
   // Nesting counters
   mut loops : Int
   mut in_func : Int
+  mut ifstmts : Int
   // Name of the innermost function (for recursion detection)
   mut current_fn_name : String
   // Names imported via load statements (always immutable)
@@ -237,6 +246,7 @@ fn Resolver::new(
     opts,
     loops: 0,
     in_func: 0,
+    ifstmts: 0,
     current_fn_name: "",
     load_names: {},
   }
@@ -558,8 +568,10 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
         self.errorf(pos, "if statement not within a function")
       }
       self.walk_expr(cond)
+      self.ifstmts = self.ifstmts + 1
       self.walk_stmts(then_stmts)
       self.walk_stmts(else_stmts)
+      self.ifstmts = self.ifstmts - 1
     }
     @syntax.Stmt::SFor(target, iter, body, pos) => {
       if self.is_at_module_scope() && !self.opts.allow_top_level_control {
@@ -573,7 +585,9 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       self.loops = old_loops
     }
     @syntax.Stmt::SWhile(cond, body, pos) => {
-      if self.is_at_module_scope() && !self.opts.allow_top_level_control {
+      if !self.opts.allow_while {
+        self.errorf(pos, "this Starlark dialect does not support while loops")
+      } else if self.is_at_module_scope() && !self.opts.allow_top_level_control {
         self.errorf(pos, "while loop not within a function")
       }
       self.walk_expr(cond)
@@ -588,15 +602,18 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       let old_fn = self.current_fn_name
       let old_in_func = self.in_func
       let old_loops = self.loops
+      let old_ifstmts = self.ifstmts
       self.current_fn_name = name
       self.in_func = self.in_func + 1
       self.loops = 0
+      self.ifstmts = 0
       self.walk_params(params, pos)
       self.pre_collect_stmts(body)
       self.walk_stmts(body)
       self.resolve_function_uses(self.env, name)
       let fn_block = self.env
       self.loops = old_loops
+      self.ifstmts = old_ifstmts
       self.in_func = old_in_func
       self.current_fn_name = old_fn
       self.pop_block(saved)
@@ -621,8 +638,12 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       }
     @syntax.Stmt::SPass(_) => ()
     @syntax.Stmt::SLoad(_, names, pos) =>
-      if !self.is_at_module_scope() {
-        self.errorf(pos, "load statement must be at module level")
+      if self.in_func > 0 {
+        self.errorf(pos, "load statement within a function")
+      } else if self.loops > 0 {
+        self.errorf(pos, "load statement within a loop")
+      } else if self.ifstmts > 0 {
+        self.errorf(pos, "load statement within a conditional")
       } else {
         for pair in names {
           let (local_name, original) = pair
@@ -917,13 +938,16 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       let old_fn = self.current_fn_name
       let old_in_func = self.in_func
       let old_loops = self.loops
+      let old_ifstmts = self.ifstmts
       self.current_fn_name = "lambda"
       self.in_func = self.in_func + 1
       self.loops = 0
+      self.ifstmts = 0
       self.walk_params(params, pos)
       self.walk_expr(body)
       self.resolve_function_uses(self.env, "lambda")
       self.loops = old_loops
+      self.ifstmts = old_ifstmts
       self.in_func = old_in_func
       self.current_fn_name = old_fn
       self.pop_block(saved)
