@@ -243,12 +243,10 @@ fn struct_binary(
         Some(Ok(make_struct(other_ctor, merge_entries(other_entries, entries))))
       }
     }
-    _ =>
-      if is_left {
-        Some(Err("struct + \{@value.type_name(other)} not supported"))
-      } else {
-        None
-      }
+    // Non-struct operand is unhandled; returning None lets the evaluator
+    // emit the standard "unknown binary op: ..." message (starlark-go returns
+    // nil, nil here).
+    _ => None
   }
 }
 

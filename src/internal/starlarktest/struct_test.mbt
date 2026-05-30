@@ -146,7 +146,7 @@ test "struct: addition with non-struct fails" {
   let errs = run_struct(
     (
       #|load("assert.star", "assert")
-      #|assert.fails(lambda: struct() + 1, "struct \\+ int")
+      #|assert.fails(lambda: struct() + 1, "unknown binary op: struct \\+ int")
     ),
   )
   if errs.length() != 0 {
