@@ -1286,6 +1286,17 @@ Each behavioral item confirmed empirically; fixed via TDD (Red test first).
       `@value.freeze_value` over each global value from `Module::freeze` (the
       generic `Hashtable` cannot reach it). Now mutating a loaded
       list/dict/set raises a frozen error. Commit: `ef5d9ac`
+- [x] **MISSING-118**: `len(b"...".elems())` returned the byte count; Go's
+      `bytesIterable` is only `Iterable` (not `Indexable`/`Sequence`) so `len()`
+      errors `"object of type 'bytes.elems' has no len()"`. `length_of`
+      (`value/iter.mbt`) now errors for `BytesElems`; `string.elems` stays
+      `Indexable`. Commit: `0a94cf6`
+- [x] **MISSING-119**: Single-element trailing-comma for/comprehension target
+      (`for a, in ...`) bound the whole iterated value instead of unpacking the
+      one-tuple. `parse_expr_list_as_expr` (`parser.mbt`) collapsed a one-element
+      target list to the bare identifier; Go returns a `TupleExpr` whenever a
+      comma was seen. Now always yields an `ETuple` once a comma is consumed.
+      Commit: `a588176`
 
 ### Resolved post-release API additions
 
