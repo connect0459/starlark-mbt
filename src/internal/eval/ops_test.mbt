@@ -485,6 +485,81 @@ test "eval_expr: ExtVal with slice supports slice notation" {
   }
 }
 
+// --- Error message parity with starlark-go ---
+
+///|
+fn op_err(src : String) -> String {
+  match eval_op(src) {
+    Err(e) => e.msg()
+    Ok(_) => ""
+  }
+}
+
+///|
+test "eval_expr: %d on non-number wraps NumberToInt cause like starlark-go" {
+  assert_eq(
+    op_err("\"%d\" % \"x\""),
+    "%d format requires integer: cannot convert string to int",
+  )
+  assert_eq(
+    op_err("\"%x\" % True"),
+    "%x format requires integer: cannot convert bool to int",
+  )
+}
+
+///|
+test "eval_expr: %c out-of-range reports the offending value" {
+  assert_eq(
+    op_err("\"%c\" % 1114112"),
+    "%c format requires a valid Unicode code point, got 1114112",
+  )
+}
+
+///|
+test "eval_expr: %c on non-int non-string reports int-or-string requirement" {
+  assert_eq(
+    op_err("\"%c\" % True"),
+    "%c format requires int or single-character string, not bool",
+  )
+}
+
+///|
+test "eval_expr: unknown conversion verb matches starlark-go" {
+  assert_eq(op_err("\"%z\" % 1"), "unknown conversion %z")
+}
+
+///|
+test "eval_expr: trailing percent reports incomplete or missing argument" {
+  assert_eq(op_err("\"%\" % 5"), "incomplete format")
+  assert_eq(op_err("\"%\" % ()"), "not enough arguments for format string")
+}
+
+///|
+test "eval_expr: unary minus on string matches starlark-go unknown-unary-op" {
+  assert_eq(op_err("-\"x\""), "unknown unary op: - string")
+}
+
+///|
+test "eval_expr: enumerate on non-iterable carries name prefix" {
+  assert_eq(op_err("enumerate(5)"), "enumerate: got int, want iterable")
+}
+
+///|
+test "exec_file: item assignment on tuple matches starlark-go message" {
+  match exec_b("t = (1, 2)\nt[0] = 9") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_eq(e.msg(), "tuple value does not support item assignment")
+  }
+}
+
+///|
+test "exec_file: tuple unpack mismatch uses got/want order" {
+  match exec_b("a, b = 1, 2, 3") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_eq(e.msg(), "too many values to unpack (got 3, want 2)")
+  }
+}
+
 ///|
 test "eval_expr: ExtVal without slice raises error on slice" {
   let cv = @value.CustomValue::new(fn() { "noslice" }, fn() { true }, fn() {

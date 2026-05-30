@@ -1033,13 +1033,24 @@ fn Parser::parse_call_arg(self : Parser) -> @syntax.Arg raise ParseErr {
         let e = self.finish_primary_from_expr(ident_expr)
         let e2 = self.finish_power_from(e, p)
         let full = self.finish_full_expr(e2, p)
+        self.reject_malformed_kwarg()
         @syntax.Arg::ArgPos(full)
       }
     }
     _ => {
       let e = self.parse_test()
+      self.reject_malformed_kwarg()
       @syntax.Arg::ArgPos(e)
     }
+  }
+}
+
+///|
+fn Parser::reject_malformed_kwarg(self : Parser) -> Unit raise ParseErr {
+  if self.tok == @lexer.Token::Assign {
+    raise ParseErr(
+      self.syntax_error("keyword argument must have form name=expr"),
+    )
   }
 }
 

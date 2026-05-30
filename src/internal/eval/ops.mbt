@@ -66,10 +66,7 @@ fn eval_unary(
         @value.Value::Int(_) | @value.Value::Float(_) => v
         _ =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "unary + not supported for '\{@value.type_name(v)}'",
-            ),
+            make_eval_error(ctx, "unknown unary op: + \{@value.type_name(v)}"),
           )
       }
     @syntax.UnaryOp::OpMinus =>
@@ -78,10 +75,7 @@ fn eval_unary(
         @value.Value::Float(f) => @value.Value::Float(-f)
         _ =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "unary - not supported for '\{@value.type_name(v)}'",
-            ),
+            make_eval_error(ctx, "unknown unary op: - \{@value.type_name(v)}"),
           )
       }
     @syntax.UnaryOp::OpBitNot =>
@@ -89,10 +83,7 @@ fn eval_unary(
         @value.Value::Int(n) => @value.Value::Int(-n - 1N)
         _ =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "unary ~ not supported for '\{@value.type_name(v)}'",
-            ),
+            make_eval_error(ctx, "unknown unary op: ~ \{@value.type_name(v)}"),
           )
       }
     @syntax.UnaryOp::OpNot => @value.Value::Bool(!@value.truth(v))
@@ -556,6 +547,22 @@ fn eval_mod(
 }
 
 ///|
+fn percent_to_int(arg : @value.Value) -> Result[BigInt, String] {
+  match arg {
+    @value.Value::Int(n) => Ok(n)
+    @value.Value::Float(f) =>
+      if f.is_inf() {
+        Err("cannot convert float infinity to integer")
+      } else if f.is_nan() {
+        Err("cannot convert float NaN to integer")
+      } else {
+        Ok(@value.double_to_bigint(f))
+      }
+    _ => Err("cannot convert \{@value.type_name(arg)} to int")
+  }
+}
+
+///|
 fn percent_format(
   fmt : String,
   args : @value.Value,
@@ -582,7 +589,12 @@ fn percent_format(
     }
     i += 1
     if i >= n {
-      return Err("incomplete format specifier")
+      // Trailing '%': positional path. starlark-go checks argument
+      // availability before reporting the missing conversion verb.
+      if arg_idx >= arg_list.length() && !is_mapping {
+        return Err("not enough arguments for format string")
+      }
+      return Err("incomplete format")
     }
     if chars[i] == '%' {
       buf.write_char('%')
@@ -634,90 +646,42 @@ fn percent_format(
       's' => buf.write_string(@value.to_str(arg))
       'r' => buf.write_string(@value.repr(arg))
       'd' | 'i' =>
-        match arg {
-          @value.Value::Int(n2) => buf.write_string(n2.to_string())
-          @value.Value::Float(f) => {
-            if f.is_nan() || f.is_inf() {
-              return Err(
-                "%d format requires integer, not \{if f.is_nan() { "nan" } else { "inf" }}",
-              )
-            }
-            buf.write_string(@value.double_to_bigint(f).to_string())
-          }
-          @value.Value::Bool(_) => return Err("cannot convert bool to int")
-          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+        match percent_to_int(arg) {
+          Ok(n2) => buf.write_string(n2.to_string())
+          Err(cause) => return Err("%\{spec} format requires integer: \{cause}")
         }
       'o' =>
-        match arg {
-          @value.Value::Int(n2) =>
+        match percent_to_int(arg) {
+          Ok(n2) =>
             if n2 < 0N {
               buf.write_char('-')
               buf.write_string(int64_to_octal(-n2))
             } else {
               buf.write_string(int64_to_octal(n2))
             }
-          @value.Value::Float(f) => {
-            if f.is_nan() || f.is_inf() {
-              return Err("%o format requires integer")
-            }
-            let n2 = @value.double_to_bigint(f)
-            if n2 < 0N {
-              buf.write_char('-')
-              buf.write_string(int64_to_octal(-n2))
-            } else {
-              buf.write_string(int64_to_octal(n2))
-            }
-          }
-          @value.Value::Bool(_) => return Err("cannot convert bool to int")
-          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+          Err(cause) => return Err("%o format requires integer: \{cause}")
         }
       'x' =>
-        match arg {
-          @value.Value::Int(n2) =>
+        match percent_to_int(arg) {
+          Ok(n2) =>
             if n2 < 0N {
               buf.write_char('-')
               buf.write_string(int64_to_hex(-n2, false))
             } else {
               buf.write_string(int64_to_hex(n2, false))
             }
-          @value.Value::Float(f) => {
-            if f.is_nan() || f.is_inf() {
-              return Err("%x format requires integer")
-            }
-            let n2 = @value.double_to_bigint(f)
-            if n2 < 0N {
-              buf.write_char('-')
-              buf.write_string(int64_to_hex(-n2, false))
-            } else {
-              buf.write_string(int64_to_hex(n2, false))
-            }
-          }
-          @value.Value::Bool(_) => return Err("cannot convert bool to int")
-          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+          Err(cause) => return Err("%x format requires integer: \{cause}")
         }
       'X' =>
-        match arg {
-          @value.Value::Int(n2) =>
+        match percent_to_int(arg) {
+          Ok(n2) =>
             if n2 < 0N {
               buf.write_char('-')
               buf.write_string(int64_to_hex(-n2, true))
             } else {
               buf.write_string(int64_to_hex(n2, true))
             }
-          @value.Value::Float(f) => {
-            if f.is_nan() || f.is_inf() {
-              return Err("%X format requires integer")
-            }
-            let n2 = @value.double_to_bigint(f)
-            if n2 < 0N {
-              buf.write_char('-')
-              buf.write_string(int64_to_hex(-n2, true))
-            } else {
-              buf.write_string(int64_to_hex(n2, true))
-            }
-          }
-          @value.Value::Bool(_) => return Err("cannot convert bool to int")
-          _ => return Err("cannot convert \{@value.type_name(arg)} to int")
+          Err(cause) => return Err("%X format requires integer: \{cause}")
         }
       'e' | 'E' | 'f' | 'g' | 'G' => {
         let f = match arg {
@@ -748,7 +712,9 @@ fn percent_format(
         match arg {
           @value.Value::Int(n2) => {
             if n2 < 0N || n2 > 1114111N {
-              return Err("%c requires a valid Unicode code point")
+              return Err(
+                "%c format requires a valid Unicode code point, got \{n2}",
+              )
             }
             let cp = n2.to_int()
             if cp >= 0xD800 && cp <= 0xDFFF {
@@ -768,9 +734,12 @@ fn percent_format(
             }
             buf.write_string(s2.raw())
           }
-          _ => return Err("%c requires a single-character string")
+          _ =>
+            return Err(
+              "%c format requires int or single-character string, not \{@value.type_name(arg)}",
+            )
         }
-      _ => return Err("unknown format specifier '%\{spec}'")
+      _ => return Err("unknown conversion %\{spec}")
     }
   }
   if arg_idx < arg_list.length() && !is_mapping {
@@ -1441,7 +1410,7 @@ fn set_index(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "'\{@value.type_name(obj)}' object does not support item assignment",
+                      "\{@value.type_name(obj)} value does not support item assignment",
                     ),
                   )
               }
@@ -1459,7 +1428,7 @@ fn set_index(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "'\{@value.type_name(obj)}' object does not support item assignment",
+          "\{@value.type_name(obj)} value does not support item assignment",
         ),
       )
   }

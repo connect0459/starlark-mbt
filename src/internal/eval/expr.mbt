@@ -1623,7 +1623,16 @@ fn builtin_enumerate(
     0N
   }
   let result : Array[@value.Value] = []
-  let it = require_seq(ctx, pos_args[0])
+  let it = match @value.iterate(pos_args[0]) {
+    Ok(it) => it
+    Err(_) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "enumerate: got \{@value.type_name(pos_args[0])}, want iterable",
+        ),
+      )
+  }
   let mut idx = start
   while true {
     match it.next() {

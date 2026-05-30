@@ -682,6 +682,14 @@ test "adjacent string literals are not concatenated" {
   }
 }
 
+///|
+test "malformed keyword argument is rejected" {
+  let msg = parse_e_err("f(a.b=1)")
+  if !msg.contains("keyword argument must have form name=expr") {
+    fail("expected malformed-kwarg error, got: \{msg}")
+  }
+}
+
 // --- Non-associative comparison operators ---
 
 ///|

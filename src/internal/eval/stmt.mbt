@@ -192,14 +192,14 @@ fn assign_to(
         raise EvalErr(
           make_eval_error(
             ctx,
-            "\{pos.to_string()}: too few values to unpack (expected \{elems.length()}, got \{items.length()})",
+            "too few values to unpack (got \{items.length()}, want \{elems.length()})",
           ),
         )
       } else if items.length() > elems.length() {
         raise EvalErr(
           make_eval_error(
             ctx,
-            "\{pos.to_string()}: too many values to unpack (expected \{elems.length()}, got \{items.length()})",
+            "too many values to unpack (got \{items.length()}, want \{elems.length()})",
           ),
         )
       }
