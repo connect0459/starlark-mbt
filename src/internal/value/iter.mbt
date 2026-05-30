@@ -51,7 +51,7 @@ pub fn length_of(v : Value) -> Result[Int, String] {
     Set(s) => Ok(s.length())
     Range(r) => Ok(r.length())
     StringElems(e) => Ok(e.s.byte_len())
-    BytesElems(e) => Ok(e.b.length())
+    BytesElems(_) => Err("object of type 'bytes.elems' has no len()")
     StringCodepoints(_) =>
       Err("object of type 'string.codepoints' has no len()")
     ExtVal(c) => c.get_length()
