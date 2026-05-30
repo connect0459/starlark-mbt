@@ -1334,6 +1334,27 @@ Each behavioral item confirmed empirically; fixed via TDD (Red test first).
       `got "*", want primary expression`. Rejection is correct; message is
       misleading. Grouped with the MISSING-101 cosmetic class (left as-is).
 
+### Sixth-pass gap analysis (MISSING-129..131)
+
+Fresh comparison against starlark-go focused on the call/argument-expansion
+path (`*args`/`**kwargs` splat error handling), which earlier passes did not
+cover. Each fixed via TDD (Red test first).
+
+- [x] **MISSING-129** [MED]: `**kwargs` expansion with a non-string key silently
+      dropped the entry instead of erroring. `eval_args` (`eval/expr.mbt`) now
+      iterates the mapping and raises `"keywords must be strings, not <type>"`
+      for any non-string key (matching `interp.go:330`), checking every key
+      before binding. Commit: `aa87d3b`
+- [x] **MISSING-130** [message]: `*`/`**` splat-operand type errors now match Go's
+      wording. `f(*5)` / `f(*"abc")` → `"argument after * must be iterable, not
+      <type>"`; `f(**5)` → `"argument after ** must be a mapping, not <type>"`
+      (`interp.go:324,358`). The non-iterable `*` path now routes the generic
+      `iterate` failure through the uniform message. Commit: `aa87d3b`
+- [x] **MISSING-131** [message]: calling a non-callable value reported the Python
+      style `"'<type>' object is not callable"`; now `"invalid call of
+      non-function (<type>)"` (`eval.go:1197`) for both the `ExtVal` and generic
+      branches of `call_value` (`eval/expr.mbt`). Commit: `aa87d3b`
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
