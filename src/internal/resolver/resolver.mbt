@@ -789,7 +789,7 @@ fn Resolver::pre_collect_stmts(
 fn Resolver::pre_collect_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
   match stmt {
     @syntax.Stmt::SAssign(lhs, _, _) => self.pre_collect_lhs(lhs)
-    @syntax.Stmt::SAugAssign(_, _, _, _) => ()
+    @syntax.Stmt::SAugAssign(lhs, _, _, _) => self.pre_collect_lhs(lhs)
     @syntax.Stmt::SIf(_, then_body, else_body, _) => {
       self.pre_collect_stmts(then_body)
       self.pre_collect_stmts(else_body)

@@ -164,6 +164,20 @@ test "resolve: reports error for undefined variable in function" {
 }
 
 ///|
+test "resolve: augmented-assigned-only name is visible to a nested closure" {
+  // `n` is bound only by `n += 1` in f; the inner def g closes over it.
+  // It must resolve as local-to-f / free-in-g, not raise "undefined: n".
+  let f = parse_or_fail("def f():\n  def g(): return n\n  n += 1\n  return g")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_false(has_error(result, "undefined: n"))
+}
+
+///|
 test "resolve: undefined suggests did-you-mean for close global name" {
   let f = parse_or_fail("hello = 1\nprint(hollo)")
   let result = resolve(
