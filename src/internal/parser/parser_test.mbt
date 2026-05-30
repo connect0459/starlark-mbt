@@ -930,3 +930,27 @@ test "for-loop with index/attribute targets parses (MISSING-45)" {
     Err(e) => fail("unexpected error: \{e.to_string()}")
   }
 }
+
+// --- MISSING-82: parser error message parity ---
+
+///|
+test "conditional expression without else clause produces correct message (MISSING-82)" {
+  match @parser.parse_expr("test.star", "x if y") {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("conditional expression without else clause"),
+      )
+    Ok(_) => fail("expected error for conditional without else")
+  }
+}
+
+///|
+test "load unquoted original name produces correct message (MISSING-82)" {
+  match @parser.parse_file("test.star", "load(\"m\", x=originalname)\n") {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("original name of loaded symbol must be quoted"),
+      )
+    Ok(_) => fail("expected error for unquoted original name")
+  }
+}

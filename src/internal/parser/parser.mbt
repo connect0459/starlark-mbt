@@ -259,7 +259,11 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
             bindings.push((local_name, orig))
           }
           _ =>
-            raise ParseErr(self.syntax_error("load: expected string after '='"))
+            raise ParseErr(
+              self.syntax_error(
+                "original name of loaded symbol must be quoted: \{local_name}=\"originalname\"",
+              ),
+            )
         }
       }
       _ =>
@@ -620,7 +624,12 @@ pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::If {
     self.advance()
     let cond = self.parse_or_test()
-    self.expect(@lexer.Token::Else)
+    if self.tok != @lexer.Token::Else {
+      raise ParseErr(
+        self.syntax_error("conditional expression without else clause"),
+      )
+    }
+    self.advance()
     let else_e = self.parse_test()
     return @syntax.Expr::ECond(e, cond, else_e, p)
   }
