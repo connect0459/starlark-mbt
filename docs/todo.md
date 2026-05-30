@@ -1311,6 +1311,28 @@ Each behavioral item confirmed empirically; fixed via TDD (Red test first).
       with an exact, sorted L-category range table (`unicode_letters.mbt`, 677
       ranges from the UCD) looked up by binary search in `scanner.mbt`.
       Commit: `6303838`
+- [x] **MISSING-123** [message]: `string.partition`/`rpartition` arity & type
+      errors used Python style; routed through `check_positional`/`arg_as_string`
+      for the nameErr form (`partition: got N arguments, want 1` /
+      `partition: for parameter 1: got int, want string`). Commit: `e9ba873`
+- [x] **MISSING-124** [message]: `string.join` arity & non-iterable errors used
+      Python style; arity via `check_positional`, iterable type via inline
+      `join: for parameter iterable: got int, want iterable`. Commit: `4cfd1dd`
+- [x] **MISSING-125** [message]: set ops `intersection`/`difference`/`issubset`/
+      `issuperset`/`symmetric_difference` arity & non-iterable errors; Go declares
+      min=0 so >1 args → `want at most 1` and non-iterable → `for parameter 1: got
+      int, want iterable`. Extracted shared `set_other_iter` helper. Commit: `eef12c5`
+- [x] **MISSING-126** [message]: `str.format` divergences — unknown conversion
+      uses `%q` double quotes; unmatched-brace gains `format:` prefix; attribute/
+      element syntax errors match Go phrasing and append the field name.
+      Commit: `be9f2d2`
+- [x] **MISSING-127** [message]: non-integer subscript — getIndex form
+      `<type> index: got <type>, want int` for reads; bare `got <type>, want int`
+      for `setIndex` writes (`ops.mbt`). Commit: `172b9a8`
+- [ ] **MISSING-128** [cosmetic, record-only]: `*`/`**` in a non-assignment
+      expression position reports the assignment-target error rather than Go's
+      `got "*", want primary expression`. Rejection is correct; message is
+      misleading. Grouped with the MISSING-101 cosmetic class (left as-is).
 
 ### Resolved post-release API additions
 
