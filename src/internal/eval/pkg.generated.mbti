@@ -3,6 +3,7 @@ package "connect0459/starlark/internal/eval"
 
 import {
   "connect0459/starlark/internal/errors",
+  "connect0459/starlark/internal/syntax",
   "connect0459/starlark/internal/value",
 }
 
@@ -15,13 +16,21 @@ pub fn compare(String, @value.Value, @value.Value) -> Result[Bool, @errors.EvalE
 
 pub fn eval_expr(Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 
+pub fn eval_expr_with_opts(Thread, String, String, Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+
 pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
 pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) -> Result[Module, @errors.EvalError]
 
+pub fn exec_file_with_universe(Thread, String, String, Options, Universe) -> Result[Module, @errors.EvalError]
+
 pub fn exec_repl_chunk(Thread, String, String, @value.StarlarkDict, Options) -> Result[Unit, @errors.EvalError]
 
+pub fn file_program(@syntax.File, Options, (String) -> Bool) -> Result[Program, @errors.EvalError]
+
 pub fn source_program(String, String, Options, (String) -> Bool) -> Result[Program, @errors.EvalError]
+
+pub fn source_program_with_file(String, String, Options, (String) -> Bool) -> Result[(@syntax.File, Program), @errors.EvalError]
 
 pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
 
@@ -115,6 +124,7 @@ pub struct Universe {
 pub fn Universe::empty() -> Self
 pub fn Universe::get(Self, String) -> @value.Value?
 pub fn Universe::has(Self, String) -> Bool
+pub fn Universe::set(Self, String, @value.Value) -> Unit
 pub fn Universe::standard() -> Self
 
 // Type aliases

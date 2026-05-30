@@ -4,6 +4,7 @@ package "connect0459/starlark"
 import {
   "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/eval",
+  "connect0459/starlark/internal/syntax",
   "connect0459/starlark/internal/value",
 }
 
@@ -28,11 +29,17 @@ pub fn equal_depth(@value.Value, @value.Value, Int) -> Result[Bool, @errors.Eval
 
 pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 
+pub fn eval_expr_with_opts(@eval.Thread, String, String, @eval.Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+
 pub fn exec_file(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]
 
 pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]
 
+pub fn exec_file_with_universe(@eval.Thread, String, String, @eval.Options, @eval.Universe) -> Result[@eval.Module, @errors.EvalError]
+
 pub fn exec_repl_chunk(@eval.Thread, String, String, @value.StarlarkDict, @eval.Options) -> Result[Unit, @errors.EvalError]
+
+pub fn file_program(@syntax.File, @eval.Options, (String) -> Bool) -> Result[@eval.Program, @errors.EvalError]
 
 pub fn iterate(@value.Value) -> Result[@value.StarlarkIterator, @errors.EvalError]
 
@@ -44,9 +51,13 @@ pub fn new_custom_value(@value.CustomValue) -> @value.Value
 
 pub fn number_to_int(@value.Value) -> Int64?
 
+pub fn parse_file(String, String) -> Result[@syntax.File, @errors.EvalError]
+
 pub fn repr(@value.Value) -> String
 
 pub fn source_program(String, String, @eval.Options, (String) -> Bool) -> Result[@eval.Program, @errors.EvalError]
+
+pub fn source_program_with_file(String, String, @eval.Options, (String) -> Bool) -> Result[(@syntax.File, @eval.Program), @errors.EvalError]
 
 pub fn starlark_equals(@value.Value, @value.Value) -> Bool
 
@@ -108,6 +119,8 @@ pub using @value {type StarlarkList}
 pub using @value {type StarlarkString}
 
 pub using @errors {type SyntaxError}
+
+pub using @syntax {type File as SyntaxFile}
 
 pub using @eval {type Thread}
 
