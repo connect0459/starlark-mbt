@@ -840,7 +840,7 @@ fn call_builtin(
         }
       }
       if pos_args.length() == 0 {
-        raise EvalErr(make_eval_error(ctx, "int() missing argument"))
+        raise EvalErr(make_eval_error(ctx, "int: missing argument for x"))
       }
       match pos_args[0] {
         @value.Value::String(s) => {
@@ -878,13 +878,13 @@ fn call_builtin(
                   if f.is_nan() {
                     raise EvalErr(
                       make_eval_error(
-                        ctx, "cannot convert float NaN to integer",
+                        ctx, "int: cannot convert float NaN to integer",
                       ),
                     )
                   } else if f.is_inf() {
                     raise EvalErr(
                       make_eval_error(
-                        ctx, "cannot convert float infinity to integer",
+                        ctx, "int: cannot convert float infinity to integer",
                       ),
                     )
                   } else {

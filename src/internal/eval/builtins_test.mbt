@@ -173,6 +173,26 @@ test "exec_file: int rejects an explicit base for a non-string argument" {
 }
 
 ///|
+test "exec_file: int error messages carry the int: name prefix" {
+  match exec_b("int()") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("int: missing argument for x"))
+  }
+  match exec_b("int(float(\"nan\"))") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(e.msg().contains("int: cannot convert float NaN to integer"))
+  }
+  match exec_b("int(float(\"inf\"))") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(
+        e.msg().contains("int: cannot convert float infinity to integer"),
+      )
+  }
+}
+
+///|
 test "exec_file: int converts Bool to integer without TypeError" {
   match exec_b("a = int(True)\nb = int(False)") {
     Ok(m) => {
