@@ -877,7 +877,8 @@ pub fn format_float(f : Double) -> String {
   let sign = if neg { "-" } else { "" }
   let abs_s = if neg { s[1:].to_owned() } else { s }
   if abs_s.contains(".") {
-    // Decimal form.  Only small numbers starting with "0." may need scientific.
+    // Decimal form.  Go's %g switches to scientific when the decimal exponent
+    // is < -4 (small numbers below "0.0001") or >= 6 (magnitude >= 1e6).
     if abs_s.has_prefix("0.") {
       let frac = abs_s[2:].to_owned()
       let leading = float_count_leading_zeros(frac)
@@ -885,6 +886,14 @@ pub fn format_float(f : Double) -> String {
       if leading >= 4 {
         let sig = frac[leading:].to_owned()
         return sign + float_small_to_sci(sig, leading + 1)
+      }
+    } else {
+      let dot = float_find_dot(abs_s)
+      let int_part = abs_s[0:dot].to_owned()
+      // Integer-part length L means decimal exponent L-1; scientific when >= 6.
+      if int_part.length() >= 7 {
+        let frac_part = abs_s[dot + 1:].to_owned()
+        return sign + float_large_frac_to_sci(int_part, frac_part)
       }
     }
     return s
@@ -977,6 +986,40 @@ fn float_int_to_str(abs_s : String) -> String {
   }
   let first = abs_s[0:1].to_owned()
   let rest_sig = abs_s[1:sig_end].to_owned()
+  let mantissa = if rest_sig == "" { first } else { first + "." + rest_sig }
+  let exp_str = if exp < 10 { "0\{exp}" } else { exp.to_string() }
+  mantissa + "e+" + exp_str
+}
+
+// Find the index of '.' in s; returns s.length() if absent.
+
+///|
+fn float_find_dot(s : String) -> Int {
+  let n = s.length()
+  let mut i = 0
+  while i < n {
+    if s[i:i + 1] == "." {
+      return i
+    }
+    i += 1
+  }
+  n
+}
+
+// Build scientific string for a positive decimal-form number whose integer
+// part has 7+ digits (decimal exponent >= 6).  int_part has no decimal point;
+// frac_part is the (possibly empty) fractional tail.
+
+///|
+fn float_large_frac_to_sci(int_part : String, frac_part : String) -> String {
+  let exp = int_part.length() - 1
+  let digits = int_part + frac_part
+  let mut sig_end = digits.length()
+  while sig_end > 1 && digits[sig_end - 1:sig_end] == "0" {
+    sig_end -= 1
+  }
+  let first = digits[0:1].to_owned()
+  let rest_sig = digits[1:sig_end].to_owned()
   let mantissa = if rest_sig == "" { first } else { first + "." + rest_sig }
   let exp_str = if exp < 10 { "0\{exp}" } else { exp.to_string() }
   mantissa + "e+" + exp_str

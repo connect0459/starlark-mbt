@@ -185,6 +185,21 @@ test "Value: repr for Float with decimal point" {
 }
 
 ///|
+test "Value: format_float switches to scientific at magnitude 1e6" {
+  // Go's strconv FormatFloat 'g' uses %e once the decimal exponent reaches 6.
+  assert_eq(format_float(9999999.9), "9.9999999e+06")
+  assert_eq(format_float(1234567.8), "1.2345678e+06")
+  assert_eq(format_float(1200000.5), "1.2000005e+06")
+  assert_eq(format_float(-9999999.9), "-9.9999999e+06")
+}
+
+///|
+test "Value: format_float keeps decimal form below magnitude 1e6" {
+  assert_eq(format_float(123456.7), "123456.7")
+  assert_eq(format_float(100000.0), "100000.0")
+}
+
+///|
 test "Value: repr for Float special values" {
   assert_eq(repr(Value::Float(@double.not_a_number)), "nan")
   assert_eq(repr(Value::Float(@double.infinity)), "+inf")
