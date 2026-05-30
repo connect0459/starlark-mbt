@@ -841,3 +841,21 @@ test "str Unicode case methods (capitalize/islower/isupper/title/istitle)" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_partition_argerr_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "abc".partition(1), "partition: for parameter 1: got int, want string")
+  #|assert.fails(lambda: "abc".partition(), "partition: got 0 arguments, want 1")
+  #|assert.fails(lambda: "abc".partition("a", "b"), "partition: got 2 arguments, want 1")
+  #|assert.fails(lambda: "abc".rpartition(1), "rpartition: for parameter 1: got int, want string")
+  #|assert.fails(lambda: "abc".rpartition(), "rpartition: got 0 arguments, want 1")
+  #|assert.fails(lambda: "abc".rpartition("a", "b"), "rpartition: got 2 arguments, want 1")
+
+///|
+test "str.partition/rpartition arity and type errors use nameErr style" {
+  let errs = run_star_string(string_partition_argerr_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

@@ -2641,71 +2641,49 @@ fn call_str_method(
       @value.Value::String(@value.StarlarkString::new(buf.to_string()))
     }
     "partition" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "partition() takes exactly one argument"),
-        )
+      check_positional(ctx, "partition", pos_args, kw_args, 1, 1)
+      let sep = arg_as_string(ctx, "partition", pos_args, 0)
+      if sep.byte_len() == 0 {
+        raise EvalErr(make_eval_error(ctx, "partition: empty separator"))
       }
-      match pos_args[0] {
-        @value.Value::String(sep) => {
-          if sep.byte_len() == 0 {
-            raise EvalErr(make_eval_error(ctx, "partition: empty separator"))
-          }
-          let idx = bytes_index_in(s, 0, s.byte_len(), sep)
-          if idx < 0 {
-            @value.Value::Tuple([
-              @value.Value::String(s),
-              @value.Value::String(@value.StarlarkString::new("")),
-              @value.Value::String(@value.StarlarkString::new("")),
-            ])
-          } else {
-            let before = str_byte_slice(s, 0, idx)
-            let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
-            @value.Value::Tuple([
-              @value.Value::String(before),
-              @value.Value::String(sep),
-              @value.Value::String(after),
-            ])
-          }
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "partition() argument must be a string"),
-          )
+      let idx = bytes_index_in(s, 0, s.byte_len(), sep)
+      if idx < 0 {
+        @value.Value::Tuple([
+          @value.Value::String(s),
+          @value.Value::String(@value.StarlarkString::new("")),
+          @value.Value::String(@value.StarlarkString::new("")),
+        ])
+      } else {
+        let before = str_byte_slice(s, 0, idx)
+        let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
+        @value.Value::Tuple([
+          @value.Value::String(before),
+          @value.Value::String(sep),
+          @value.Value::String(after),
+        ])
       }
     }
     "rpartition" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "rpartition() takes exactly one argument"),
-        )
+      check_positional(ctx, "rpartition", pos_args, kw_args, 1, 1)
+      let sep = arg_as_string(ctx, "rpartition", pos_args, 0)
+      if sep.byte_len() == 0 {
+        raise EvalErr(make_eval_error(ctx, "rpartition: empty separator"))
       }
-      match pos_args[0] {
-        @value.Value::String(sep) => {
-          if sep.byte_len() == 0 {
-            raise EvalErr(make_eval_error(ctx, "rpartition: empty separator"))
-          }
-          let idx = bytes_last_index_in(s, 0, s.byte_len(), sep)
-          if idx < 0 {
-            @value.Value::Tuple([
-              @value.Value::String(@value.StarlarkString::new("")),
-              @value.Value::String(@value.StarlarkString::new("")),
-              @value.Value::String(s),
-            ])
-          } else {
-            let before = str_byte_slice(s, 0, idx)
-            let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
-            @value.Value::Tuple([
-              @value.Value::String(before),
-              @value.Value::String(sep),
-              @value.Value::String(after),
-            ])
-          }
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "rpartition() argument must be a string"),
-          )
+      let idx = bytes_last_index_in(s, 0, s.byte_len(), sep)
+      if idx < 0 {
+        @value.Value::Tuple([
+          @value.Value::String(@value.StarlarkString::new("")),
+          @value.Value::String(@value.StarlarkString::new("")),
+          @value.Value::String(s),
+        ])
+      } else {
+        let before = str_byte_slice(s, 0, idx)
+        let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
+        @value.Value::Tuple([
+          @value.Value::String(before),
+          @value.Value::String(sep),
+          @value.Value::String(after),
+        ])
       }
     }
     "removeprefix" => {
