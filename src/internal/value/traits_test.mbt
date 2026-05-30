@@ -203,6 +203,21 @@ test "starlark_hash: Float NaN and Inf all produce the same fixed hash" {
 }
 
 ///|
+test "starlark_hash: large negative BigInt uses low 32 bits of magnitude (MISSING-70)" {
+  // For BigInts outside Int64 range, starlark-go hashes via bits[0] (low 64-bit
+  // word of the magnitude). The hash formula reduces to:
+  //   uint32(magnitude_lo64 + 3) = uint32(magnitude_lo32 + 3)
+  // so we only need the low 32 bits of the magnitude.
+  //
+  // Test case: -(2^64 - 1) has magnitude 2^64-1 = 0xFFFFFFFF_FFFFFFFF.
+  //   magnitude mod 2^32 = 0xFFFFFFFF.
+  //   Expected hash = 12582917 * uint32(0xFFFFFFFF + 3) = 12582917 * 2 = 25165834.
+  let mul : UInt = 12582917U
+  let n = -18446744073709551615N // -(2^64 - 1)
+  assert_true(starlark_hash(Value::Int(n)) == Ok(mul * (0xFFFFFFFFU + 3U)))
+}
+
+///|
 test "starlark_hash: Bytes hash equals String hash for same bytes" {
   let s = "abc"
   let bytes = @utf8.encode(s)

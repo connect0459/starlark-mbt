@@ -159,8 +159,26 @@ fn hash_int(n : Int) -> UInt {
 }
 
 ///|
+let min_int64_bigint : BigInt = -9223372036854775808N
+
+///|
+let max_int64_bigint : BigInt = 9223372036854775807N
+
+///|
 fn hash_bigint(n : BigInt) -> UInt {
-  let lo = n.to_int64().to_int().reinterpret_as_uint()
+  // Mirrors starlark-go's Int.Hash():
+  //   small int (int64 range): lo = big.Word(iSmall) = uint64(iSmall)
+  //   big  int (outside int64 range): lo = iBig.Bits()[0] = low word of magnitude
+  // uint32(lo+3) reduces to uint32(lo32+3) regardless of the upper 32 bits,
+  // so we only need the low 32 bits of the appropriate 64-bit word.
+  let lo : UInt = if n >= min_int64_bigint && n <= max_int64_bigint {
+    // Two's-complement low 32 bits, matching uint32(uint64(iSmall)).
+    n.to_int64().to_int().reinterpret_as_uint()
+  } else {
+    // Low 32 bits of the magnitude, matching uint32(iBig.Bits()[0]).
+    let abs_n = if n < 0N { -n } else { n }
+    (abs_n % 4294967296N).to_int().reinterpret_as_uint()
+  }
   int_hash_mult * (lo + 3U)
 }
 
