@@ -2260,9 +2260,17 @@ fn call_str_method(
 ) -> @value.Value raise EvalErr {
   match method_name {
     "upper" =>
-      @value.Value::String(@value.StarlarkString::new(s.raw().to_upper()))
+      @value.Value::String(
+        @value.StarlarkString::new(
+          map_string_runes(s.raw(), @utf8util.to_upper_rune),
+        ),
+      )
     "lower" =>
-      @value.Value::String(@value.StarlarkString::new(s.raw().to_lower()))
+      @value.Value::String(
+        @value.StarlarkString::new(
+          map_string_runes(s.raw(), @utf8util.to_lower_rune),
+        ),
+      )
     "strip" | "lstrip" | "rstrip" => {
       check_positional(ctx, method_name, pos_args, kw_args, 0, 1)
       let chars_opt = if pos_args.length() > 0 {
@@ -2507,10 +2515,10 @@ fn call_str_method(
         for c in raw {
           let cp = c.to_int()
           if is_first {
-            buf.write_char(codepoint_to_title(cp).unsafe_to_char())
+            buf.write_char(@utf8util.to_title_rune(cp).unsafe_to_char())
             is_first = false
           } else {
-            buf.write_char(c.to_ascii_lowercase())
+            buf.write_char(@utf8util.to_lower_rune(cp).unsafe_to_char())
           }
         }
         @value.Value::String(@value.StarlarkString::new(buf.to_string()))
@@ -2656,12 +2664,13 @@ fn call_str_method(
       let mut prev_cased = false
       for c in s.raw() {
         let cp = c.to_int()
-        if prev_cased {
-          buf.write_char(c.to_ascii_lowercase())
+        let mapped = if prev_cased {
+          @utf8util.to_lower_rune(cp)
         } else {
-          buf.write_char(codepoint_to_title(cp).unsafe_to_char())
+          @utf8util.to_title_rune(cp)
         }
-        prev_cased = is_cased_codepoint(cp)
+        buf.write_char(mapped.unsafe_to_char())
+        prev_cased = @utf8util.is_cased_rune(mapped)
       }
       @value.Value::String(@value.StarlarkString::new(buf.to_string()))
     }
@@ -3497,19 +3506,6 @@ fn is_whitespace(c : Char) -> Bool {
   n == 0x0C
 }
 
-// Unicode digraph codepoints with distinct title forms (Lt category subset + their
-// uppercase/lowercase partners).  The digraph ranges are U+01C4..U+01CC (DZ/LJ/NJ)
-// and U+01F1..U+01F3 (DZ variant).  These are the only Unicode characters for which
-// ToTitle != ToUpper, and for which MoonBit's ASCII-only to_upper/to_lower are wrong.
-
-///|
-fn is_cased_codepoint(cp : Int) -> Bool {
-  (cp >= 'a'.to_int() && cp <= 'z'.to_int()) ||
-  (cp >= 'A'.to_int() && cp <= 'Z'.to_int()) ||
-  (cp >= 0x01C4 && cp <= 0x01CC) ||
-  (cp >= 0x01F1 && cp <= 0x01F3)
-}
-
 // Non-ASCII cased digraph characters (used to detect cased chars in islower/isupper
 // when MoonBit's ASCII-only to_lower/to_upper can't distinguish them).
 
@@ -3540,19 +3536,14 @@ fn unicode_is_lower_codepoint_strict(cp : Int) -> Bool {
   cp == 0x01C6 || cp == 0x01C9 || cp == 0x01CC || cp == 0x01F3
 }
 
-// Convert a codepoint to its title-case form.  For the 8 digraph codepoints the
-// title form differs from uppercase; for ASCII lowercase a simple +32 offset
-// suffices; for everything else the codepoint is returned unchanged.
-
 ///|
-fn codepoint_to_title(cp : Int) -> Int {
-  match cp {
-    0x01C4 | 0x01C6 => 0x01C5
-    0x01C7 | 0x01C9 => 0x01C8
-    0x01CA | 0x01CC => 0x01CB
-    0x01F1 | 0x01F3 => 0x01F2
-    _ => if cp >= 'a'.to_int() && cp <= 'z'.to_int() { cp - 32 } else { cp }
+/// Applies a per-rune mapping to every codepoint of a string and rebuilds it.
+fn map_string_runes(raw : String, f : (Int) -> Int) -> String {
+  let buf = StringBuilder::new()
+  for c in raw {
+    buf.write_char(f(c.to_int()).unsafe_to_char())
   }
+  buf.to_string()
 }
 
 ///|

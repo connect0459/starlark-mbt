@@ -4,7 +4,15 @@ package "connect0459/starlark/internal/utf8util"
 // Values
 pub fn hex_char(Int) -> Char
 
+pub fn is_cased_rune(Int) -> Bool
+
 pub fn is_unicode_printable(Int) -> Bool
+
+pub fn to_lower_rune(Int) -> Int
+
+pub fn to_title_rune(Int) -> Int
+
+pub fn to_upper_rune(Int) -> Int
 
 pub fn utf8_decode_rune(Bytes, Int) -> (Int, Int)
 

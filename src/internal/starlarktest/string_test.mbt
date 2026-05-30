@@ -892,3 +892,34 @@ test "str.format reports descriptive error messages" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_unicode_case_mapping_src : String =
+  #|load("assert.star", "assert")
+  #|# upper/lower apply full Unicode simple case mapping (matching starlark-go)
+  #|assert.eq("café".upper(), "CAFÉ")
+  #|assert.eq("CAFÉ".lower(), "café")
+  #|assert.eq("αβγ".upper(), "ΑΒΓ")
+  #|assert.eq("ΑΒΓ".lower(), "αβγ")
+  #|assert.eq("İ".lower(), "i")
+  #|assert.eq("ß".upper(), "ß")
+  #|assert.eq("ǆ".upper(), "Ǆ")
+  #|assert.eq("Ǆ".lower(), "ǆ")
+  #|# title uses titlecase for the first letter of each run of cased letters
+  #|assert.eq("café".title(), "Café")
+  #|assert.eq("αβγ".title(), "Αβγ")
+  #|assert.eq("hello wörld".title(), "Hello Wörld")
+  #|assert.eq("ǆ".title(), "ǅ")
+  #|assert.eq("ǆ ǆ".title(), "ǅ ǅ")
+  #|# capitalize titlecases the first letter, lowercases the rest
+  #|assert.eq("café".capitalize(), "Café")
+  #|assert.eq("ΑΒΓ".capitalize(), "Αβγ")
+  #|assert.eq("ǆ ǆ".capitalize(), "ǅ ǆ")
+
+///|
+test "string upper/lower/title/capitalize apply Unicode case mapping" {
+  let errs = run_star_string(string_unicode_case_mapping_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
