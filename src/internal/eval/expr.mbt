@@ -2706,43 +2706,23 @@ fn call_str_method(
       }
     }
     "removeprefix" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "removeprefix() takes exactly one argument"),
-        )
-      }
-      match pos_args[0] {
-        @value.Value::String(prefix) =>
-          if s.raw().has_prefix(prefix.raw()) {
-            let rest = s.raw()[prefix.raw().length():].to_owned()
-            @value.Value::String(@value.StarlarkString::new(rest))
-          } else {
-            @value.Value::String(s)
-          }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "removeprefix() argument must be a string"),
-          )
+      check_positional(ctx, "removeprefix", pos_args, kw_args, 1, 1)
+      let prefix = arg_as_string(ctx, "removeprefix", pos_args, 0)
+      if s.raw().has_prefix(prefix.raw()) {
+        let rest = s.raw()[prefix.raw().length():].to_owned()
+        @value.Value::String(@value.StarlarkString::new(rest))
+      } else {
+        @value.Value::String(s)
       }
     }
     "removesuffix" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "removesuffix() takes exactly one argument"),
-        )
-      }
-      match pos_args[0] {
-        @value.Value::String(suffix) =>
-          if s.raw().has_suffix(suffix.raw()) {
-            let rest = s.raw()[0:s.raw().length() - suffix.raw().length()].to_owned()
-            @value.Value::String(@value.StarlarkString::new(rest))
-          } else {
-            @value.Value::String(s)
-          }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "removesuffix() argument must be a string"),
-          )
+      check_positional(ctx, "removesuffix", pos_args, kw_args, 1, 1)
+      let suffix = arg_as_string(ctx, "removesuffix", pos_args, 0)
+      if s.raw().has_suffix(suffix.raw()) {
+        let rest = s.raw()[0:s.raw().length() - suffix.raw().length()].to_owned()
+        @value.Value::String(@value.StarlarkString::new(rest))
+      } else {
+        @value.Value::String(s)
       }
     }
     "splitlines" => {

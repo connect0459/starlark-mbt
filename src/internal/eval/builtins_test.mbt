@@ -1135,6 +1135,29 @@ test "exec_file: string.removesuffix removes matching suffix" {
 }
 
 ///|
+test "exec_file: removeprefix/removesuffix messages match starlark-go" {
+  match exec_b("\"abc\".removeprefix()") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(e.msg().contains("removeprefix: got 0 arguments, want 1"))
+  }
+  match exec_b("\"abc\".removeprefix(1)") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(
+        e.msg().contains("removeprefix: for parameter 1: got int, want string"),
+      )
+  }
+  match exec_b("\"abc\".removesuffix(1)") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(
+        e.msg().contains("removesuffix: for parameter 1: got int, want string"),
+      )
+  }
+}
+
+///|
 test "exec_file: string.splitlines splits at newline characters" {
   match exec_b("r = \"a\\nb\\nc\".splitlines()") {
     Ok(m) =>
