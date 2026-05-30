@@ -139,6 +139,9 @@ let math_pow_src : String =
   #|assert.eq(math.pow(1.1, inf), inf)
   #|assert.eq(math.pow(1.1, -inf), 0)
   #|assert.eq(math.pow(2.0, nan), nan)
+  #|# IEEE-754 special case: pow(-1, +-Inf) == 1
+  #|assert.eq(math.pow(-1.0, inf), 1.0)
+  #|assert.eq(math.pow(-1.0, -inf), 1.0)
   #|assert.fails(lambda: math.pow("0", 1.0), "got string, want float or int")
   #|assert.fails(lambda: math.pow(1.0, "0"), "got string, want float or int")
 

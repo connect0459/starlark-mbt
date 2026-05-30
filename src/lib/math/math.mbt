@@ -84,6 +84,14 @@ let lanczos_c : Array[Double] = [
 ]
 
 ///|
+fn float_pow(x : Double, y : Double) -> Double {
+  if x == -1.0 && y.is_inf() {
+    return 1.0
+  }
+  @std_math.pow(x, y)
+}
+
+///|
 fn float_round_starlark(x : Double) -> Double {
   let t = @std_math.trunc(x)
   let frac = x - t
@@ -234,7 +242,7 @@ pub fn math_module() -> @value.Value {
   attrs["gamma"] = make_unary("math.gamma", float_gamma)
   attrs["copysign"] = make_binary("math.copysign", float_copysign)
   attrs["mod"] = make_binary("math.mod", float_mod)
-  attrs["pow"] = make_binary("math.pow", @std_math.pow)
+  attrs["pow"] = make_binary("math.pow", float_pow)
   attrs["remainder"] = make_binary("math.remainder", float_remainder)
   attrs["atan2"] = make_binary("math.atan2", @std_math.atan2)
   attrs["hypot"] = make_binary("math.hypot", @std_math.hypot)
