@@ -3855,7 +3855,7 @@ fn str_format(
           j += 1
         }
         if j >= tlen {
-          raise EvalErr(make_eval_error(ctx, "unmatched '{' in format"))
+          raise EvalErr(make_eval_error(ctx, "format: unmatched '{' in format"))
         }
         let field = template[start:j].to_owned()
         i = j + 1
@@ -3898,14 +3898,16 @@ fn str_format(
         if find_substr(name, ".") >= 0 {
           raise EvalErr(
             make_eval_error(
-              ctx, "syntax x.y is not supported in format strings",
+              ctx,
+              "format: attribute syntax x.y is not supported in replacement fields: \{name}",
             ),
           )
         }
         if find_substr(name, "[") >= 0 {
           raise EvalErr(
             make_eval_error(
-              ctx, "syntax a[i] is not supported in format strings",
+              ctx,
+              "format: element syntax a[i] is not supported in replacement fields: \{name}",
             ),
           )
         }
@@ -3977,11 +3979,9 @@ fn str_format(
         match conv {
           "s" => buf.write_string(@value.to_str(arg))
           "r" => buf.write_string(@value.repr(arg))
-          "" =>
-            raise EvalErr(make_eval_error(ctx, "format: unknown conversion"))
           other =>
             raise EvalErr(
-              make_eval_error(ctx, "format: unknown conversion '\{other}'"),
+              make_eval_error(ctx, "format: unknown conversion \"\{other}\""),
             )
         }
       }

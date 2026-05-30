@@ -876,3 +876,19 @@ test "str.join arity and non-iterable errors use nameErr style" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let string_format_msg_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "{0!q}".format(1), 'format: unknown conversion "q"')
+  #|assert.fails(lambda: "{".format(), "format: unmatched '{' in format")
+  #|assert.fails(lambda: "{a.b}".format(), "format: attribute syntax x.y is not supported in replacement fields: a.b")
+  #|assert.fails(lambda: "{a[0]}".format(), "format: element syntax a[i] is not supported in replacement fields: a[0]")
+
+///|
+test "str.format error messages match starlark-go" {
+  let errs = run_star_string(string_format_msg_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
