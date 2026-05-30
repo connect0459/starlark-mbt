@@ -1404,6 +1404,77 @@ and builtin argument-error wording. Each fixed via TDD (Red test first).
       (ASCII A-Z or Lt leads; any other Lu disqualifies; Ll must follow a cased
       letter). Commit: `af78161`
 
+### Eighth-pass gap analysis (MISSING-136..155)
+
+Fresh four-axis comparison against starlark-go after MISSING-1..135 / BUG-1..34
+closed. Each fixed via TDD (Red test first).
+
+- [x] **MISSING-136** [message + behavioral]: `bind_args` positional-argument-count
+      errors diverged from Go in four ways: singular/plural (1 "argument" vs "arguments"),
+      missing "at most" prefix for optional params, nullary message ("no arguments" vs
+      "0 positional arguments"), and nullary not counting kwargs in total. Fixed in
+      `eval/expr.mbt`: added nullary check, `has_optional_pos` helper for "at most"
+      detection, `pos_arg_count_msg` helper for consistent formatting.
+- [x] **MISSING-137** [behavioral]: list methods silently ignored keyword arguments.
+      Fixed by threading `kw_args` into `call_list_method` and routing
+      `append`/`extend`/`remove`/`insert`/`index`/`clear` through `check_positional`.
+- [x] **MISSING-138** [message]: `list.append`/`list.extend` arity used ad-hoc text
+      ("takes exactly one argument"); now uses nameErr form ("got N arguments, want 1").
+- [x] **MISSING-139** [behavioral]: zero-arg dict/list/set methods ignored excess
+      positional args. Fixed via `check_positional` with min=max=0 for `list.clear`,
+      `dict.keys/values/items/clear/popitem`, `set.clear/pop`.
+- [x] **MISSING-140** [behavioral]: set methods `add`/`discard`/`remove` ignored
+      keyword arguments. `union` silently accepted kwargs. Fixed via `check_positional`
+      for one-arg methods; `union` now emits "does not accept keyword arguments".
+- [x] **MISSING-141** [message]: `min`/`max`/`sorted` accepted a non-callable `key`
+      and failed only at call time. Fixed by validating key is callable before iteration:
+      emits "<name>: for parameter key: got T, want callable".
+- [x] **MISSING-142** [behavioral + message]: string search-index args (`find`/`rfind`/
+      `index`/`rindex`/`count`/`startswith`/`endswith`) used `BigInt::to_int()` (32-bit
+      wraparound) instead of `to_int64()`. Fixed in `parse_search_index`: use int64 range
+      check and raise "METHOD: invalid N index: M out of range" for out-of-int64 BigInts.
+- [x] **MISSING-143** [message + behavioral]: string-escape error messages diverged from
+      Go's `unquote` (`quote.go`). Fixed: octal checks n > 127 before n >= 256; non-ASCII
+      octal message includes sequence and hex encoding; `\x` with valid h1 and visible non-hex
+      h2 gives "invalid" not "truncated"; `\uNNNN`/`\UNNNNNNNN` track partial sequence for
+      truncated vs invalid distinction; surrogate → "invalid Unicode code point U+XXXX";
+      out-of-range → "code point out of range: \UXXXXXXXX (max \U0010ffff)".
+- [x] **MISSING-144** [message]: `Parser::expect`/`expect_ident` and newline paths used
+      `tok.to_string()` instead of `go_string()` (which single-quotes punctuation), and some
+      messages reversed the `got X, want Y` order. Fixed: `expect` uses `go_string()`; newline
+      path changed to "got X, want newline".
+- [x] **MISSING-145** [message]: `not an identifier` cases used "expected identifier, got X"
+      / "expected parameter, got X". Fixed: `expect_ident` and param parser emit "not an
+      identifier" for any non-Ident token.
+- [x] **MISSING-146** [message]: comprehension-clause error dropped the "for, or if"
+      alternatives. Fixed: `parse_comp_clauses` emits "got X, want ']', for, or if" when
+      breaking on an unexpected non-bracket token.
+- [x] **MISSING-147** [message]: `not` not followed by `in` used "'not' in comparison must
+      be followed by 'in'". Fixed: emits "got X, want in" using `go_string()`.
+- [x] **MISSING-149** [position]: `invalid int literal` was reported at the end column
+      instead of the start. Fixed: use `start` position in the `invalid int literal` branch.
+- [x] **MISSING-150** [message]: `load` operand errors used different text than Go's
+      `parse.go`. Fixed: non-string first arg → "first operand of load statement must be
+      a string literal"; non-string operand → "load operand must be \"name\" or
+      localname=\"name\" (got T)"; ident without `=` → "load operand must be \"x\" or
+      x=\"originalname\"".
+- [x] **MISSING-151** [behavioral + message]: math builtins used prefixed names
+      (`math.sqrt`). Fixed: all builtins registered with bare names (`sqrt`, `log`, etc.)
+      so `repr(math.sqrt)` → `"<built-in function sqrt>"`.
+- [x] **MISSING-152** [message]: math arity/type error wording differed from Go.
+      Fixed: arity says "got N arguments, want 1" (no "positional"); type errors include
+      "for parameter N:" prefix via updated `to_float_param`; `math.log` uses "at least 1"
+      / "at most 2" arity messages.
+- [x] **MISSING-153** [behavioral + message]: time builtins used prefixed names
+      (`time.now`, `time.from_timestamp`, etc.). Fixed: all registered with bare names.
+- [x] **MISSING-154** [behavioral + message]: `time.parse_duration` only accepted a string;
+      Go's `Duration.Unpack` also accepts an existing `time.duration` (returns it unchanged).
+      Fixed: check for `time.duration` ExtVal before string; type-mismatch error now uses
+      "parse_duration: for parameter 1: got T, want a duration, string, or int".
+- [x] **MISSING-155** [message]: `time.time()` positional-arg rejection used "time.time:
+      unexpected positional argument" (singular, prefixed name); Go uses "time: unexpected
+      positional arguments". Fixed.
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
