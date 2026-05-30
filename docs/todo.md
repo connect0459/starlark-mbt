@@ -1267,10 +1267,11 @@ extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
 - [x] **MISSING-110**: `struct + non_struct` now returns unhandled (None) so the
       evaluator emits the standard "unknown binary op: struct + T" message,
       matching starlark-go's `Binary` returning nil.
-- [ ] **MISSING-108** [med]: no thread-clock override for `time.now()` (Go's
-      `SetNow`). Needs a public-API decision: `BuiltinCallCtx` does not currently
-      expose the `Thread`/thread-locals, so the clock can't be stubbed per-thread
-      without extending that surface. Deferred pending design agreement.
+- [x] **MISSING-108**: thread-local clock override for `time.now()` (Go's
+      `SetNow`). `BuiltinCallCtx` now exposes `get_local` (wired to the active
+      thread's thread-local store); `time.now()` returns an embedder-provided
+      fixed `time.time` stored under `now_override_key`, else the real clock.
+      Public helpers `time_value(sec, nsec)` and `now_override_key` added.
 
 ### Resolved post-release API additions
 
