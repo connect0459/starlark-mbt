@@ -1249,6 +1249,17 @@ extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
       Go reference-time parser (`parse_go_layout`) instead of discarding it and
       always parsing RFC3339; supports date/time verbs, 12-hour + AM/PM, month
       and weekday names, fractional seconds, and numeric/Z timezone tokens.
+- [x] **MISSING-112**: `list.pop`/`insert`/`remove`/`index` use the nameErr style
+      ("pop: got T, want int", "pop: index -1 out of range: empty list",
+      "insert: got N arguments, want 2", "remove: got N arguments, want 1",
+      "index: invalid start/end index: got T, want int").
+- [x] **MISSING-113**: `int()` error messages carry the `int:` prefix
+      ("int: missing argument for x", "int: cannot convert float NaN/infinity
+      to integer").
+- [x] **MISSING-114**: `chr`/`ord` arity and type messages use the nameErr style;
+      `ord` also rejects keyword arguments and prefixes the codepoint-count error.
+- [x] **MISSING-116**: `removeprefix`/`removesuffix` arity/type messages match
+      starlark-go's UnpackPositionalArgs wording.
 
 ### Resolved post-release API additions
 
