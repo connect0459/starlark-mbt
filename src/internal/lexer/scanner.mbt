@@ -1029,91 +1029,29 @@ fn is_ident_byte(b : Byte) -> Bool {
   is_digit_byte(b) || is_ident_start_byte(b)
 }
 
-// is_unicode_letter_rune returns true if cp is a Unicode letter (L category).
-// MoonBit's String.to_upper/to_lower are ASCII-only, so we use explicit block
-// ranges. Mirrors starlark-go's unicode.IsLetter check in isIdentStart.
-// Covers the major Unicode letter blocks; symbols (U+2190 arrows, etc.) are
-// intentionally excluded so that → cannot start an identifier.
+// is_unicode_letter_rune returns true if cp is a Unicode letter (L category),
+// matching starlark-go's unicode.IsLetter check in isIdentStart. Backed by an
+// exact, sorted range table (`unicode_letter_ranges`) derived from the Unicode
+// Character Database; looked up by binary search.
 
 ///|
 fn is_unicode_letter_rune(cp : Int) -> Bool {
-  // Latin-1 Supplement letters (excluding × U+00D7 and ÷ U+00F7)
-  (cp >= 0x00C0 && cp <= 0x00D6) ||
-  (cp >= 0x00D8 && cp <= 0x00F6) ||
-  (cp >= 0x00F8 && cp <= 0x00FF) ||
-  // Latin Extended-A / Extended-B / IPA Extensions / Spacing Modifiers
-  (cp >= 0x0100 && cp <= 0x02AF) ||
-  // Combining Diacritical Marks (some are Lm): skip – not safe to allow
-  // Greek, Coptic
-  (cp >= 0x0370 && cp <= 0x03FF) ||
-  // Cyrillic + Supplement
-  (cp >= 0x0400 && cp <= 0x052F) ||
-  // Armenian
-  (cp >= 0x0531 && cp <= 0x0587) ||
-  (cp >= 0x0560 && cp <= 0x0588) ||
-  // Hebrew
-  (cp >= 0x05D0 && cp <= 0x05EA) ||
-  (cp >= 0x05EF && cp <= 0x05F4) ||
-  // Arabic
-  (cp >= 0x0620 && cp <= 0x06FF) ||
-  (cp >= 0x0750 && cp <= 0x077F) ||
-  (cp >= 0x08A0 && cp <= 0x08FF) ||
-  // Syriac
-  (cp >= 0x0710 && cp <= 0x072F) ||
-  // Devanagari
-  (cp >= 0x0900 && cp <= 0x097F) ||
-  // Bengali
-  (cp >= 0x0980 && cp <= 0x09FF) ||
-  // Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam
-  (cp >= 0x0A00 && cp <= 0x0D7F) ||
-  // Sinhala
-  (cp >= 0x0D80 && cp <= 0x0DFF) ||
-  // Thai + Lao
-  (cp >= 0x0E00 && cp <= 0x0EFF) ||
-  // Tibetan
-  (cp >= 0x0F00 && cp <= 0x0FFF) ||
-  // Myanmar
-  (cp >= 0x1000 && cp <= 0x109F) ||
-  // Georgian
-  (cp >= 0x10A0 && cp <= 0x10FF) ||
-  // Hangul Jamo
-  (cp >= 0x1100 && cp <= 0x11FF) ||
-  // Ethiopic
-  (cp >= 0x1200 && cp <= 0x137F) ||
-  // Cherokee
-  (cp >= 0x13A0 && cp <= 0x13FF) ||
-  // Unified Canadian Aboriginal Syllabics
-  (cp >= 0x1400 && cp <= 0x167F) ||
-  // Latin Extended Additional
-  (cp >= 0x1E00 && cp <= 0x1EFF) ||
-  // Greek Extended
-  (cp >= 0x1F00 && cp <= 0x1FFF) ||
-  // Arabic Presentation Forms-A/B
-  (cp >= 0xFB50 && cp <= 0xFDFF) ||
-  (cp >= 0xFE70 && cp <= 0xFEFF) ||
-  // Alphabetic Presentation Forms (Latin, Hebrew)
-  (cp >= 0xFB00 && cp <= 0xFB4F) ||
-  // Hangul Compatibility Jamo
-  (cp >= 0x3130 && cp <= 0x318F) ||
-  // Hiragana + Katakana
-  (cp >= 0x3041 && cp <= 0x309F) ||
-  (cp >= 0x30A0 && cp <= 0x30FF) ||
-  // Bopomofo
-  (cp >= 0x3105 && cp <= 0x312F) ||
-  // CJK Radicals / Kangxi Radicals
-  (cp >= 0x2E80 && cp <= 0x2FDF) ||
-  // CJK Unified Ideographs (main block)
-  (cp >= 0x4E00 && cp <= 0x9FFF) ||
-  // CJK Extension A
-  (cp >= 0x3400 && cp <= 0x4DBF) ||
-  // CJK Compatibility Ideographs
-  (cp >= 0xF900 && cp <= 0xFAFF) ||
-  // Korean Hangul syllables
-  (cp >= 0xAC00 && cp <= 0xD7A3) ||
-  (cp >= 0xD7B0 && cp <= 0xD7FF) ||
-  (cp >= 0xA960 && cp <= 0xA97F) ||
-  // Supplementary Multilingual Plane: CJK Extensions B–H and CJK Compat Supp
-  (cp >= 0x20000 && cp <= 0x2FA1F) ||
+  let ranges = unicode_letter_ranges
+  let n = ranges.length() / 2
+  let mut lo = 0
+  let mut hi = n
+  while lo < hi {
+    let mid = (lo + hi) / 2
+    let start = ranges[mid * 2]
+    let end = ranges[mid * 2 + 1]
+    if cp < start {
+      hi = mid
+    } else if cp > end {
+      lo = mid + 1
+    } else {
+      return true
+    }
+  }
   false
 }
 

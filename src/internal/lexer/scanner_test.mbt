@@ -229,6 +229,25 @@ test "scan: non-letter stops identifier" {
 }
 
 ///|
+test "scan: accepts letters missed by block ranges (unicode.IsLetter)" {
+  // µ U+00B5 (Ll), ª U+00AA / º U+00BA (Lo), ꔀ U+A500 (Vai, Lo),
+  // 𐀀 U+10000 (Linear B, Lo) are all Unicode letters Go accepts.
+  assert_eq(scan("µ"), "µ EOF")
+  assert_eq(scan("ª"), "ª EOF")
+  assert_eq(scan("º"), "º EOF")
+  assert_eq(scan("ꔀ"), "ꔀ EOF")
+  assert_eq(scan("𐀀"), "𐀀 EOF")
+}
+
+///|
+test "scan: rejects non-letters accepted by block ranges (unicode.IsLetter)" {
+  // ० U+0966 (Devanagari digit, Nd), ฿ U+0E3F (Thai currency, Sc) are not
+  // letters; Go rejects them as identifier starts.
+  assert_true(scan("०").contains("unexpected input character"))
+  assert_true(scan("฿").contains("unexpected input character"))
+}
+
+///|
 test "scan: mixed tokens on one line" {
   assert_eq(scan("123 \"foo\" hello x.y"), "123 \"foo\" hello x . y EOF")
 }
