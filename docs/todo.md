@@ -1355,6 +1355,22 @@ cover. Each fixed via TDD (Red test first).
       non-function (<type>)"` (`eval.go:1197`) for both the `ExtVal` and generic
       branches of `call_value` (`eval/expr.mbt`). Commit: `aa87d3b`
 
+### Seventh-pass gap analysis (MISSING-132..)
+
+Fresh comparison against starlark-go focused on Unicode-aware string methods
+and builtin argument-error wording. Each fixed via TDD (Red test first).
+
+- [x] **MISSING-132** [behavioral]: `str.upper`/`lower`/`title`/`capitalize`
+      used MoonBit's ASCII-only `String::to_upper`/`to_lower` plus a small
+      digraph table, so non-ASCII letters were never recased
+      (`"café".upper()` → `"CAFé"`, `"αβγ".upper()` → `"αβγ"`). starlark-go
+      uses Go's `unicode.ToUpper`/`ToLower`/`ToTitle` (full simple case
+      mapping). Added `src/internal/utf8util/case_mapping.mbt` carrying the
+      `unicode.CaseRanges` table (328 entries) and Go's per-rune `to()` lookup
+      (including the alternating Upper/Lower sequence delta); routed the four
+      string methods through `to_upper_rune`/`to_lower_rune`/`to_title_rune`.
+      Commit: `afe64a8`
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
