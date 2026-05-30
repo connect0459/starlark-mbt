@@ -1144,8 +1144,11 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       rejected; Go emits "load statement within a loop/conditional". Fixed by
       adding `ifstmts` counter to Resolver; load now emits context-specific
       error. Commit: `70d8e1a`
-- [ ] **MISSING-80**: Undefined-variable error lacks "did you mean" hint;
-      Go appends a spell-check suggestion.
+- [x] **MISSING-80**: Undefined-variable error appends "(did you mean X?)"
+      when a module global is within edit distance of the misspelled name.
+      Function-local candidates are not included (deferred uses lose block
+      context); covers the most common module-level typo case.
+      Commit: `0761989`
 - [ ] **MISSING-81**: Non-ASCII identifier-start accepts any byte ≥ 0x80
       instead of checking `unicode.IsLetter`; `→` tokenizes as an identifier.
 - [x] **MISSING-82** (remaining): `"load statement within a function"` vs
