@@ -1118,8 +1118,10 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 - [ ] **MISSING-69**: `%e`/`%E`/`%f`/`%F` rounding uses half-up; Go uses
       correctly-rounded `strconv.FormatFloat` (round-half-to-even). Last-digit
       divergence for edge cases.
-- [ ] **MISSING-70** [low]: Hash of large negative BigInts uses two's-complement
-      low 32 bits; Go uses the low word of the magnitude. Cosmetic divergence.
+- [x] **MISSING-70**: `hash_bigint` now uses the low 32 bits of the absolute
+      value (magnitude) for BigInts outside the Int64 range, matching
+      starlark-go's `iBig.Bits()[0]` formula. Int64-range values remain
+      unchanged (two's-complement, same as before). Commit: `433beae`
 - [x] **MISSING-71**: String/list/tuple/bytes repeat checks now use multiplication
       (`elem_len * count >= max_alloc`) matching starlark-go's `len*i >= 1<<30`.
       The integer-division form allowed products of exactly 2^30 that Go rejects.
