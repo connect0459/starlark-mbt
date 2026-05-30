@@ -214,7 +214,7 @@ let float_arithmetic_src : String =
   #|
   #|# floats cannot be used as indices
   #|assert.fails(lambda: "abc"[1.0], "indices must be integers")
-  #|assert.fails(lambda: ["A", "B", "C"].insert(1.0, "D"), "must be an integer")
+  #|assert.fails(lambda: ["A", "B", "C"].insert(1.0, "D"), "want int")
   #|assert.fails(lambda: range(3)[1.0], "indices must be integers")
 
 ///|

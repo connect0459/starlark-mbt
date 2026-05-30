@@ -644,6 +644,38 @@ test "exec_file: list.insert places element at given index" {
   }
 }
 
+///|
+test "exec_file: list method error messages match starlark-go nameErr style" {
+  match exec_b("[1, 2].pop(\"x\")") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("pop: got string, want int"))
+  }
+  match exec_b("[].pop()") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(e.msg().contains("pop: index -1 out of range: empty list"))
+  }
+  match exec_b("[1].insert(0)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("insert: got 1 arguments, want 2"))
+  }
+  match exec_b("[1].insert(\"x\", 9)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("insert: got string, want int"))
+  }
+  match exec_b("[1].remove(1, 2)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("remove: got 2 arguments, want 1"))
+  }
+  match exec_b("[1, 2].index(1, \"x\")") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(
+        e.msg().contains("index: invalid start index: got string, want int"),
+      )
+  }
+}
+
 // --- Dict methods ---
 
 ///|

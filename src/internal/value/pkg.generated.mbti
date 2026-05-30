@@ -188,7 +188,7 @@ pub fn StarlarkList::iter(Self) -> Iter[Value]
 pub fn StarlarkList::length(Self) -> Int
 pub fn StarlarkList::new(Array[Value]) -> Self
 pub fn StarlarkList::pop(Self) -> Result[Value?, String]
-pub fn StarlarkList::pop_at(Self, Int) -> Result[Value, String]
+pub fn StarlarkList::pop_at(Self, Int, verb? : String) -> Result[Value, String]
 pub fn StarlarkList::push(Self, Value) -> Result[Unit, String]
 pub fn StarlarkList::reverse(Self) -> Result[Unit, String]
 pub fn StarlarkList::set(Self, Int, Value) -> Result[Unit, String]

@@ -152,8 +152,9 @@ pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
 pub fn StarlarkList::pop_at(
   self : StarlarkList,
   i : Int,
+  verb? : String = "remove from",
 ) -> Result[Value, String] {
-  match self.check_mutable("remove from") {
+  match self.check_mutable(verb) {
     Err(e) => Err(e)
     Ok(_) => Ok(self.items.remove(i))
   }

@@ -2006,33 +2006,27 @@ fn call_list_method(
       @value.Value::None
     }
     "pop" => {
-      if l.is_empty() {
-        raise EvalErr(make_eval_error(ctx, "pop from empty list"))
-      }
-      if pos_args.length() == 0 {
-        match check(ctx, l.pop()) {
-          None => raise EvalErr(make_eval_error(ctx, "pop from empty list"))
-          Some(v) => v
-        }
-      } else {
+      check_positional(ctx, "pop", pos_args, [], 0, 1)
+      let n = l.length()
+      let i = if pos_args.length() == 1 {
         match pos_args[0] {
-          @value.Value::Int(i) => {
-            let j = check(ctx, adjust_index(i, l.length(), "list"))
-            check(ctx, l.pop_at(j))
-          }
-          _ =>
+          @value.Value::Int(b) => b
+          v =>
             raise EvalErr(
-              make_eval_error(ctx, "list.pop() argument must be an integer"),
+              make_eval_error(ctx, "pop: got \{@value.type_name(v)}, want int"),
             )
         }
+      } else {
+        BigInt::from_int(n - 1)
       }
+      let idx = match adjust_index(i, n, "list") {
+        Ok(j) => j
+        Err(msg) => raise EvalErr(make_eval_error(ctx, "pop: " + msg))
+      }
+      check(ctx, l.pop_at(idx, verb="pop from"))
     }
     "remove" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "remove() takes exactly one argument"),
-        )
-      }
+      check_positional(ctx, "remove", pos_args, [], 1, 1)
       let item = pos_args[0]
       let mut found = -1
       for i in 0..<l.length() {
@@ -2048,11 +2042,7 @@ fn call_list_method(
       @value.Value::None
     }
     "insert" => {
-      if pos_args.length() != 2 {
-        raise EvalErr(
-          make_eval_error(ctx, "insert() takes exactly 2 arguments"),
-        )
-      }
+      check_positional(ctx, "insert", pos_args, [], 2, 2)
       match pos_args[0] {
         @value.Value::Int(i) => {
           let len = l.length()
@@ -2070,9 +2060,9 @@ fn call_list_method(
           check(ctx, l.insert(j, pos_args[1])) |> ignore
           @value.Value::None
         }
-        _ =>
+        v =>
           raise EvalErr(
-            make_eval_error(ctx, "insert() first argument must be an integer"),
+            make_eval_error(ctx, "insert: got \{@value.type_name(v)}, want int"),
           )
       }
     }
@@ -2081,19 +2071,7 @@ fn call_list_method(
       @value.Value::None
     }
     "index" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "index: got 0 arguments, want at least 1"),
-        )
-      }
-      if pos_args.length() > 3 {
-        raise EvalErr(
-          make_eval_error(
-            ctx,
-            "index: got \{pos_args.length()} arguments, want at most 3",
-          ),
-        )
-      }
+      check_positional(ctx, "index", pos_args, [], 1, 3)
       let item = pos_args[0]
       let n = l.length()
       let start = if pos_args.length() >= 2 {
@@ -2110,9 +2088,12 @@ fn call_list_method(
             }
           }
           @value.Value::None => 0
-          _ =>
+          v =>
             raise EvalErr(
-              make_eval_error(ctx, "list.index: start must be an integer"),
+              make_eval_error(
+                ctx,
+                "index: invalid start index: got \{@value.type_name(v)}, want int",
+              ),
             )
         }
       } else {
@@ -2132,9 +2113,12 @@ fn call_list_method(
             }
           }
           @value.Value::None => n
-          _ =>
+          v =>
             raise EvalErr(
-              make_eval_error(ctx, "list.index: end must be an integer"),
+              make_eval_error(
+                ctx,
+                "index: invalid end index: got \{@value.type_name(v)}, want int",
+              ),
             )
         }
       } else {
@@ -2505,7 +2489,7 @@ fn call_str_method(
       }
     }
     "index" => {
-      check_positional(ctx, "index", pos_args, kw_args, 1, 3)
+      check_positional(ctx, "index", pos_args, [], 1, 3)
       let sub = arg_as_string(ctx, "index", pos_args, 0)
       let slen = s.byte_len()
       let start = parse_search_index(
