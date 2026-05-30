@@ -115,6 +115,15 @@ test "eval_expr: negative integer exponent raises error" {
   assert_true(eval_op("2 ** -1") is Err(_))
 }
 
+///|
+test "eval_expr: float power with non-integral exponent computes square root" {
+  match eval_op("2.0 ** 0.5") {
+    Ok(@value.Value::Float(f)) =>
+      assert_true((f - 1.4142135623730951).abs() < 1.0e-12)
+    _ => assert_true(false)
+  }
+}
+
 // --- Bitwise operations ---
 
 ///|

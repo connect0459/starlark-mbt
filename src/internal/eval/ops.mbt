@@ -961,37 +961,7 @@ fn eval_pow(
 
 ///|
 fn float_pow(base : Double, exp : Double) -> Double {
-  if exp == 0.0 {
-    return 1.0
-  }
-  if base == 0.0 {
-    return 0.0
-  }
-  if exp == 1.0 {
-    return base
-  }
-  let n = exp.to_int64()
-  if n.to_double() == exp && n >= -63L && n <= 63L {
-    if n >= 0L {
-      let mut r = 1.0
-      let mut b = base
-      let mut e = n
-      while e > 0L {
-        if e.land(1L) != 0L {
-          r = r * b
-        }
-        b = b * b
-        e = e >> 1
-      }
-      r
-    } else {
-      1.0 / float_pow(base, -exp)
-    }
-  } else {
-    let _ = base
-    let _ = exp
-    @double.not_a_number
-  }
+  @math.pow(base, exp)
 }
 
 ///|
