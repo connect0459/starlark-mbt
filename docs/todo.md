@@ -1120,8 +1120,10 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
       divergence for edge cases.
 - [ ] **MISSING-70** [low]: Hash of large negative BigInts uses two's-complement
       low 32 bits; Go uses the low word of the magnitude. Cosmetic divergence.
-- [ ] **MISSING-71** [low]: String/list repeat allocation-limit boundary off by
-      one for products of exactly 2^30.
+- [x] **MISSING-71**: String/list/tuple/bytes repeat checks now use multiplication
+      (`elem_len * count >= max_alloc`) matching starlark-go's `len*i >= 1<<30`.
+      The integer-division form allowed products of exactly 2^30 that Go rejects.
+      Commit: `d0c8187`
 - [x] **MISSING-72**: Unicode-aware `capitalize`/`islower`/`isupper`/`title`/
       `istitle`/`isspace` — `capitalize`/`title` now use a small digraph table
       (U+01C4..U+01CC, U+01F1..U+01F3) for `to_title`, `islower`/`isupper` use
