@@ -2039,7 +2039,15 @@ fn call_list_method(
     "index" => {
       if pos_args.length() < 1 {
         raise EvalErr(
-          make_eval_error(ctx, "index() takes at least one argument"),
+          make_eval_error(ctx, "index: got 0 arguments, want at least 1"),
+        )
+      }
+      if pos_args.length() > 3 {
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "index: got \{pos_args.length()} arguments, want at most 3",
+          ),
         )
       }
       let item = pos_args[0]

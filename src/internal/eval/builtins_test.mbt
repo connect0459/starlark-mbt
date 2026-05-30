@@ -602,6 +602,14 @@ test "exec_file: list.index returns position of first matching element" {
 }
 
 ///|
+test "exec_file: list.index rejects more than three positional args" {
+  match exec_b("i = [1, 2].index(1, 0, 2, 99)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("got 4 arguments, want at most 3"))
+  }
+}
+
+///|
 test "exec_file: list.insert places element at given index" {
   match exec_b("lst = [1, 3]\nlst.insert(1, 2)") {
     Ok(m) =>
