@@ -1260,6 +1260,17 @@ extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
       `ord` also rejects keyword arguments and prefixes the codepoint-count error.
 - [x] **MISSING-116**: `removeprefix`/`removesuffix` arity/type messages match
       starlark-go's UnpackPositionalArgs wording.
+- [x] **MISSING-109**: added the `module(name, **kwargs)` builtin to
+      `src/lib/struct/` (port of starlarkstruct's `MakeModule`): a "module"-typed
+      value with `<module "name">` repr, member attributes, unhashable, frozen
+      transitively. Wired into the `struct.star` load target.
+- [x] **MISSING-110**: `struct + non_struct` now returns unhandled (None) so the
+      evaluator emits the standard "unknown binary op: struct + T" message,
+      matching starlark-go's `Binary` returning nil.
+- [ ] **MISSING-108** [med]: no thread-clock override for `time.now()` (Go's
+      `SetNow`). Needs a public-API decision: `BuiltinCallCtx` does not currently
+      expose the `Thread`/thread-locals, so the clock can't be stubbed per-thread
+      without extending that surface. Deferred pending design agreement.
 
 ### Resolved post-release API additions
 
