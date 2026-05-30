@@ -485,7 +485,7 @@ test "eval_expr: ExtVal with slice supports slice notation" {
   }
 }
 
-// --- Error message parity with starlark-go ---
+// --- Error message format ---
 
 ///|
 fn op_err(src : String) -> String {
@@ -505,7 +505,7 @@ fn op_ok_str(src : String) -> String {
 }
 
 ///|
-test "eval_expr: %f rounds half-to-even on the exact value like starlark-go" {
+test "eval_expr: %f rounds half-to-even on the exact value" {
   // 5e-07 stored as a double is just below 0.0000005, so it rounds DOWN to
   // 0.000000 — the half-up-on-inexact-intermediate algorithm wrongly produced
   // 0.000001.
@@ -531,7 +531,7 @@ test "eval_expr: %e rounds half-to-even and propagates exponent carry" {
 }
 
 ///|
-test "eval_expr: %d on non-number wraps NumberToInt cause like starlark-go" {
+test "eval_expr: %d on non-number wraps the NumberToInt cause" {
   assert_eq(
     op_err("\"%d\" % \"x\""),
     "%d format requires integer: cannot convert string to int",
@@ -559,7 +559,7 @@ test "eval_expr: %c on non-int non-string reports int-or-string requirement" {
 }
 
 ///|
-test "eval_expr: unknown conversion verb matches starlark-go" {
+test "eval_expr: unknown conversion verb reports a descriptive error" {
   assert_eq(op_err("\"%z\" % 1"), "unknown conversion %z")
 }
 
@@ -570,7 +570,7 @@ test "eval_expr: trailing percent reports incomplete or missing argument" {
 }
 
 ///|
-test "eval_expr: unary minus on string matches starlark-go unknown-unary-op" {
+test "eval_expr: unary minus on string reports unknown-unary-op" {
   assert_eq(op_err("-\"x\""), "unknown unary op: - string")
 }
 
@@ -580,7 +580,7 @@ test "eval_expr: enumerate on non-iterable carries name prefix" {
 }
 
 ///|
-test "exec_file: item assignment on tuple matches starlark-go message" {
+test "exec_file: item assignment on tuple reports a descriptive error" {
   match exec_b("t = (1, 2)\nt[0] = 9") {
     Ok(_) => assert_true(false)
     Err(e) => assert_eq(e.msg(), "tuple value does not support item assignment")

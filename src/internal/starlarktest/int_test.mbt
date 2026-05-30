@@ -378,7 +378,7 @@ let int_unsupported_type_src : String =
   #|assert.fails(lambda: int((1, 2)), "int: cannot convert tuple to int")
 
 ///|
-test "int.star: int() error message for unsupported types matches starlark-go" {
+test "int.star: int() reports a descriptive error for unsupported argument types" {
   let errs = run_star_string(int_unsupported_type_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -430,7 +430,7 @@ let div_zero_messages_src : String =
   #|assert.fails(lambda: "abc"[::0], "zero is not a valid slice step")
 
 ///|
-test "division/modulo/slice-step error messages match starlark-go" {
+test "division/modulo/slice-step report descriptive error messages" {
   let errs = run_star_string(div_zero_messages_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -450,7 +450,7 @@ let binary_op_messages_src : String =
   #|assert.fails(lambda: 1 << 600, "shift count too large: 600")
 
 ///|
-test "binary-op and shift error messages match starlark-go" {
+test "binary-op and shift report descriptive error messages" {
   let errs = run_star_string(binary_op_messages_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))

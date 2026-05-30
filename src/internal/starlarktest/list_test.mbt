@@ -331,7 +331,7 @@ test "list += self doubles the list without error" {
 }
 
 ///|
-test "non-integer subscript reports <type> index error like starlark-go" {
+test "non-integer subscript reports a <type> index error" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
@@ -348,7 +348,7 @@ test "non-integer subscript reports <type> index error like starlark-go" {
 }
 
 ///|
-test "non-integer subscript assignment reports got/want int like starlark-go" {
+test "non-integer subscript assignment reports got/want int" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")

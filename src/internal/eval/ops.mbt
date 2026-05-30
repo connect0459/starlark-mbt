@@ -593,8 +593,8 @@ fn percent_format(
     }
     i += 1
     if i >= n {
-      // Trailing '%': positional path. starlark-go checks argument
-      // availability before reporting the missing conversion verb.
+      // Trailing '%': positional path. Argument availability is checked
+      // before reporting the missing conversion verb.
       if arg_idx >= arg_list.length() && !is_mapping {
         return Err("not enough arguments for format string")
       }

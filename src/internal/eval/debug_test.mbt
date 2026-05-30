@@ -1,7 +1,6 @@
 // DebugFrame API tests.
-// Ports TestFrameLocals and TestDebugFrame from starlark-go/starlark/eval_test.go.
 //
-// NOTE: Unlike starlark-go, builtin calls are not pushed onto the call stack,
+// NOTE: builtin calls are not pushed onto the call stack,
 // so frame numbering starts from the innermost *Starlark* function frame.
 // Top-level module frames are also absent. Additionally, our captured_scope
 // includes the entire enclosing scope rather than only referenced free vars,

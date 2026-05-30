@@ -828,7 +828,7 @@ fn call_builtin(
     "int" => {
       // The base argument is captured as a raw value (keyword takes priority
       // over the second positional) so its type is validated only in the
-      // string branch, matching starlark-go's UnpackArgs + AsInt32 ordering.
+      // string branch.
       let base_arg : @value.Value? = {
         let mut found : @value.Value? = None
         for kv in kw_args {
@@ -1401,8 +1401,8 @@ fn builtin_tuple(
 
 ///|
 // Common implementation of the builtin `dict` function and the `dict.update`
-// method, mirroring starlark-go's updateDict. `name` ("dict" or "update")
-// prefixes every error message. Precondition: pos_args.length() <= 1.
+// method. `name` ("dict" or "update") prefixes every error message.
+// Precondition: pos_args.length() <= 1.
 fn update_dict(
   ctx : EvalContext,
   name : String,
@@ -1808,7 +1808,7 @@ fn builtin_sorted(
         let cc = if reverse { -c } else { c }
         // Break ties by original index so the sort is stable regardless of the
         // underlying sort_by's stability; reverse keeps equal-key order (not
-        // reversed), matching starlark-go's sort.Stable.
+        // reversed).
         if cc != 0 {
           cc
         } else {
@@ -2840,8 +2840,8 @@ fn set_iterate_into(
 
 ///|
 // Validate the single optional iterable argument shared by the set operations
-// intersection/difference/symmetric_difference/issubset/issuperset. starlark-go
-// declares these with min=0 and one optional parameter, so >1 args reports
+// intersection/difference/symmetric_difference/issubset/issuperset. These are
+// declared with min=0 and one optional parameter, so >1 args reports
 // "want at most 1" and a non-iterable reports the parameter-named unpack error.
 fn set_other_iter(
   ctx : EvalContext,
@@ -3176,7 +3176,7 @@ fn call_bytes_method(
 
 ///|
 // Validate a builtin/method's positional-argument count and reject keyword
-// arguments, mirroring starlark-go `UnpackPositionalArgs`.
+// arguments.
 fn check_positional(
   ctx : EvalContext,
   name : String,
@@ -3204,7 +3204,7 @@ fn check_positional(
 }
 
 ///|
-// Reject keyword arguments with starlark-go's "X does not accept keyword
+// Reject keyword arguments with the "X does not accept keyword
 // arguments" message (used by builtins that bypass UnpackPositionalArgs).
 fn reject_kwargs(
   ctx : EvalContext,
@@ -3220,7 +3220,7 @@ fn reject_kwargs(
 
 ///|
 // Coerce the `idx`-th (0-based) positional argument to a string, raising the
-// starlark-go unpack error on type mismatch.
+// unpack error on type mismatch.
 fn arg_as_string(
   ctx : EvalContext,
   name : String,
@@ -3241,7 +3241,7 @@ fn arg_as_string(
 
 ///|
 // Coerce the `idx`-th (0-based) positional argument to an int, raising the
-// starlark-go unpack error on type mismatch.
+// unpack error on type mismatch.
 fn arg_as_int(
   ctx : EvalContext,
   name : String,
@@ -3262,8 +3262,7 @@ fn arg_as_int(
 
 ///|
 // Validate and extract an optional start/end index argument for string search
-// methods. Accepts Int (clamped) or None (default); errors on any other type,
-// matching starlark-go's `indices`/`asIndex` error format.
+// methods. Accepts Int (clamped) or None (default); errors on any other type.
 fn parse_search_index(
   ctx : EvalContext,
   mname : String,
@@ -3291,8 +3290,8 @@ fn parse_search_index(
 }
 
 ///|
-// Clamp a Starlark start/end index against a byte length, mirroring
-// starlark-go `indices`: negatives count from the end, then clamp to [0, len].
+// Clamp a Starlark start/end index against a byte length: negatives count from
+// the end, then clamp to [0, len].
 fn clamp_byte_index(idx : Int, blen : Int) -> Int {
   if idx < 0 {
     (blen + idx).max(0)
@@ -4071,7 +4070,7 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
 ///|
 // eval_comp_clauses evaluates comprehension clauses sharing a single comp_env.
 // outer_env: the scope outside the comprehension (used only for the first
-// clause's iterable, matching starlark-go resolve.go semantics).
+// clause's iterable).
 // comp_env: the shared comprehension scope with all for-target names in
 // known_locals so that a target used as its own iterable raises LUnbound.
 fn eval_comp_clauses(

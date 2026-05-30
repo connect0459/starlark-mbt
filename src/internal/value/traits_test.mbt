@@ -204,7 +204,7 @@ test "starlark_hash: Float NaN and Inf all produce the same fixed hash" {
 
 ///|
 test "starlark_hash: large negative BigInt uses low 32 bits of magnitude (MISSING-70)" {
-  // For BigInts outside Int64 range, starlark-go hashes via bits[0] (low 64-bit
+  // For BigInts outside Int64 range, the hash uses bits[0] (low 64-bit
   // word of the magnitude). The hash formula reduces to:
   //   uint32(magnitude_lo64 + 3) = uint32(magnitude_lo32 + 3)
   // so we only need the low 32 bits of the magnitude.

@@ -166,7 +166,7 @@ let max_int64_bigint : BigInt = 9223372036854775807N
 
 ///|
 fn hash_bigint(n : BigInt) -> UInt {
-  // Mirrors starlark-go's Int.Hash():
+  // Integer hash algorithm:
   //   small int (int64 range): lo = big.Word(iSmall) = uint64(iSmall)
   //   big  int (outside int64 range): lo = iBig.Bits()[0] = low word of magnitude
   // uint32(lo+3) reduces to uint32(lo32+3) regardless of the upper 32 bits,
@@ -187,8 +187,8 @@ fn hash_float(f : Double) -> UInt {
   if f.is_nan() || f.is_inf() {
     return float_special_hash
   }
-  // Convert to exact integer value then hash, matching starlark-go's
-  // finiteFloatToInt(f).Hash() — ensures hash(1e20) == hash(10**20).
+  // Convert to exact integer value then hash — ensures
+  // hash(1e20) == hash(10**20).
   hash_bigint(double_to_bigint(f))
 }
 

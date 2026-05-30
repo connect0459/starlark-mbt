@@ -1586,7 +1586,7 @@ fn pow10_int64(n : Int) -> Int64 {
 
 ///|
 // Thread-local key under which an embedder may store a fixed `time.time` value
-// to override `time.now()`, mirroring starlark-go's SetNow. Set it with
+// to override `time.now()`. Set it with
 // `thread.set_local(now_override_key, time_value(sec, nsec))` for reproducible
 // runs; when unset, `time.now()` reads the real system clock.
 pub let now_override_key : String = "time.now"

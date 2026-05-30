@@ -134,7 +134,7 @@ test "str(bytes) with surrogate UTF-8 sequence produces U+FFFD replacements" {
     (
       #|load("assert.star", "assert")
       #|# b"\xED\xB0\x80" is the UTF-8 encoding of surrogate U+DC00.
-      #|# starlark-go's utf8Transcode replaces each byte individually => 3 U+FFFD.
+      #|# UTF-8 transcoding replaces each invalid byte individually => 3 U+FFFD.
       #|assert.eq(str(b"\xED\xB0\x80"), "���")
     ),
   )

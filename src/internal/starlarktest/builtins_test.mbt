@@ -314,7 +314,7 @@ test "sorted is stable for equal keys including reverse" {
 ///|
 let hash_functions_src : String =
   #|load("assert.star", "assert")
-  #|# Builtins can be used as dict keys (starlark-go: hashString(name))
+  #|# Builtins can be used as dict keys (hashed by name)
   #|d = {len: "found"}
   #|assert.eq(d[len], "found")
   #|# User-defined functions can be used as dict keys
@@ -339,13 +339,13 @@ test "functions and builtins are usable as dict and set keys" {
 ///|
 let float_in_range_src : String =
   #|load("assert.star", "assert")
-  #|# starlark-go: NumberToInt truncates toward zero, so 3.7 -> 3, and 3 in range(5) -> True
+  #|# NumberToInt truncates toward zero, so 3.7 -> 3, and 3 in range(5) -> True
   #|assert.true(3.0 in range(5))
   #|assert.true(3.7 in range(5))
   #|assert.true(-1.9 in range(-5, 0))
   #|assert.true(not (5.0 in range(5)))
   #|assert.true(not (5.9 in range(5)))
-  #|# NaN and Inf raise errors in starlark-go (NumberToInt fails)
+  #|# NaN and Inf raise errors (NumberToInt fails)
   #|assert.fails(lambda: float("nan") in range(5), "requires integer")
   #|assert.fails(lambda: float("inf") in range(5), "requires integer")
 

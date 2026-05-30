@@ -537,9 +537,8 @@ pub fn BuiltinCallCtx::new(
 }
 
 ///|
-// Read the active thread's thread-local value for `key`, mirroring
-// starlark-go's Thread.Local. Used by extension builtins (e.g. time.now) that
-// honor an embedder-provided per-thread override.
+// Read the active thread's thread-local value for `key`. Used by extension
+// builtins (e.g. time.now) that honor an embedder-provided per-thread override.
 pub fn BuiltinCallCtx::get_local(self : BuiltinCallCtx, key : String) -> Value? {
   (self.get_local_fn)(key)
 }

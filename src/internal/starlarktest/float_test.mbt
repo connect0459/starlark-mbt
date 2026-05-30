@@ -587,7 +587,7 @@ let float_string_errors_src : String =
   #|assert.fails(lambda: float(""), "float: empty string")
 
 ///|
-test "float(): string error messages match starlark-go" {
+test "float(): reports descriptive error messages for invalid strings" {
   let errs = run_star_string(float_string_errors_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))

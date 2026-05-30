@@ -1,5 +1,4 @@
 // Program API tests.
-// Ports TestRepeatedExec and TestEmptyFilePosition from starlark-go/starlark/eval_test.go.
 
 ///|
 test "Program: source_program parses and resolves without executing" {

@@ -667,7 +667,7 @@ test "resolve: positional argument after *args is rejected" {
   assert_true(r |> has_error("positional argument may not follow *args"))
 }
 
-// --- Error message parity with starlark-go ---
+// --- Error message format ---
 
 ///|
 test "resolve: break outside loop uses 'break not in a loop'" {

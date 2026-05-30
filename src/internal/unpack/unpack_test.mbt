@@ -201,13 +201,13 @@ test "unpack_positional: too many args returns error mentioning fn name" {
   }
 }
 
-// --- unpack_args: optional inference (starlark-go TestUnpackRequiredAfterOptional) ---
+// --- unpack_args: optional inference ---
 
 ///|
 test "unpack_args: param after optional is implicitly optional (positional)" {
   let pos = [@value.Value::Int(1N), @value.Value::Int(2N)]
   let kw : Array[(String, @value.Value)] = []
-  // "z" comes after "y?" — must be implicitly optional per starlark-go semantics
+  // "z" comes after "y?" — must be implicitly optional
   match unpack_args("f", pos, kw, ["x", "y?", "z"]) {
     Ok(r) => {
       assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))

@@ -285,9 +285,8 @@ pub fn Thread::reset_steps(self : Thread) -> Unit {
 }
 
 ///|
-// Sets the execution-step budget without resetting the accumulated step count,
-// matching starlark-go `SetMaxExecutionSteps`. Use `reset_steps` to zero the
-// counter explicitly.
+// Sets the execution-step budget without resetting the accumulated step count.
+// Use `reset_steps` to zero the counter explicitly.
 pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
   self.max_steps = Some(max)
 }

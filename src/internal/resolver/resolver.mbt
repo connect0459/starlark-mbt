@@ -387,8 +387,8 @@ fn Resolver::bind_lhs(
   }
 }
 
-// Names the kind of a non-assignable LHS expression, mirroring starlark-go's
-// lowercased AST type name in "can't assign to <kind>".
+// Names the kind of a non-assignable LHS expression, as the lowercased AST type
+// name in "can't assign to <kind>".
 
 ///|
 fn lhs_kind(e : @syntax.Expr) -> String {
@@ -765,7 +765,7 @@ fn Resolver::walk_params(
     }
   }
   // A bare `*` separates positional from keyword-only parameters; it must be
-  // followed by at least one such parameter (starlark-go resolve.go:905).
+  // followed by at least one such parameter.
   if seen_star && star_is_bare && num_kwonly == 0 {
     self.errorf(star_pos, "bare * must be followed by keyword-only parameters")
   }
@@ -972,8 +972,8 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
 }
 
 // Walk a comprehension with an isolated scope for iteration variables.
-// Per starlark-go resolve.go: the first clause's iterable is resolved in the
-// outer scope; subsequent for-clause targets are bound BEFORE their iterables
+// The first clause's iterable is resolved in the outer scope; subsequent
+// for-clause targets are bound BEFORE their iterables
 // so that a variable used as its own iterable (e.g. `for x in x`) is flagged
 // as "local variable x referenced before assignment".
 

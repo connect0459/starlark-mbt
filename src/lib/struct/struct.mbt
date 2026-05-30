@@ -244,8 +244,7 @@ fn struct_binary(
       }
     }
     // Non-struct operand is unhandled; returning None lets the evaluator
-    // emit the standard "unknown binary op: ..." message (starlark-go returns
-    // nil, nil here).
+    // emit the standard "unknown binary op: ..." message.
     _ => None
   }
 }

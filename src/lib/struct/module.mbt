@@ -1,7 +1,6 @@
 // A module is a named collection of values, typically a suite of functions
 // imported by a load statement. It differs from a struct primarily in that
 // its string representation does not enumerate its fields.
-// Reference: starlark-go/starlarkstruct/module.go
 
 ///|
 fn module_repr(name : String) -> String {

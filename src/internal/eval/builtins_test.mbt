@@ -665,7 +665,7 @@ test "exec_file: list.insert places element at given index" {
 }
 
 ///|
-test "exec_file: list method error messages match starlark-go nameErr style" {
+test "exec_file: list method error messages use nameErr style" {
   match exec_b("[1, 2].pop(\"x\")") {
     Ok(_) => assert_true(false)
     Err(e) => assert_true(e.msg().contains("pop: got string, want int"))
@@ -1135,7 +1135,7 @@ test "exec_file: string.removesuffix removes matching suffix" {
 }
 
 ///|
-test "exec_file: removeprefix/removesuffix messages match starlark-go" {
+test "exec_file: removeprefix/removesuffix report descriptive error messages" {
   match exec_b("\"abc\".removeprefix()") {
     Ok(_) => assert_true(false)
     Err(e) =>
@@ -1411,7 +1411,7 @@ test "exec_file: ord raises error for string with more than one character" {
 }
 
 ///|
-test "exec_file: chr/ord error messages match starlark-go nameErr style" {
+test "exec_file: chr/ord error messages use nameErr style" {
   match exec_b("chr(1, 2)") {
     Ok(_) => assert_true(false)
     Err(e) => assert_true(e.msg().contains("chr: got 2 arguments, want 1"))

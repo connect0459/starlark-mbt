@@ -67,7 +67,7 @@ test "scan: rejects a non-ASCII hex escape in a string" {
 
 ///|
 test "scan: \\u inside bytes literal produces UTF-8 bytes" {
-  // starlark-go accepts \uNNNN in b"..." and encodes the codepoint as UTF-8.
+  // \uNNNN is accepted in b"..." and encodes the codepoint as UTF-8.
   // b"A" = b"A" (U+0041 → 0x41)
   assert_eq(scan("b'\\u0041'"), "b\"A\" EOF")
 }

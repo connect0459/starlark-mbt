@@ -114,9 +114,9 @@ fn Scanner::make_error(
 ///|
 fn Scanner::count_indent(self : Scanner) -> Int {
   // `col` is the tab-expanded indentation width; `src_col` is the number of
-  // source columns (runes) consumed so far. starlark-go advances a tab to the
-  // next stop based on the source column, not the expanded width, so the two
-  // must be tracked separately for mixed space+tab indentation (scan.go:531).
+  // source columns (runes) consumed so far. A tab advances to the next stop
+  // based on the source column, not the expanded width, so the two must be
+  // tracked separately for mixed space+tab indentation.
   let mut col = 0
   let mut src_col = 0
   while true {
@@ -933,7 +933,7 @@ fn Scanner::decode_escape(
     }
     0x75 =>
       // Unicode: \uNNNN — accepted in both string and bytes literals.
-      // In bytes, the codepoint is encoded as UTF-8 bytes, matching starlark-go.
+      // In bytes, the codepoint is encoded as UTF-8 bytes.
       match self.read_n_hex(str_start, 4) {
         Err(e) => return Err(e)
         Ok(cp) => {
@@ -1029,10 +1029,9 @@ fn is_ident_byte(b : Byte) -> Bool {
   is_digit_byte(b) || is_ident_start_byte(b)
 }
 
-// is_unicode_letter_rune returns true if cp is a Unicode letter (L category),
-// matching starlark-go's unicode.IsLetter check in isIdentStart. Backed by an
-// exact, sorted range table (`unicode_letter_ranges`) derived from the Unicode
-// Character Database; looked up by binary search.
+// is_unicode_letter_rune returns true if cp is a Unicode letter (L category).
+// Backed by an exact, sorted range table (`unicode_letter_ranges`) derived from
+// the Unicode Character Database; looked up by binary search.
 
 ///|
 fn is_unicode_letter_rune(cp : Int) -> Bool {
