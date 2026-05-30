@@ -329,3 +329,36 @@ test "list += self doubles the list without error" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "non-integer subscript reports <type> index error like starlark-go" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [10, 20, 30][True], "list index: got bool, want int")
+      #|assert.fails(lambda: (1, 2)[True], "tuple index: got bool, want int")
+      #|assert.fails(lambda: "abc"[True], "string index: got bool, want int")
+      #|assert.fails(lambda: b"abc"[1.0], "bytes index: got float, want int")
+      #|assert.fails(lambda: range(3)[True], "range index: got bool, want int")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "non-integer subscript assignment reports got/want int like starlark-go" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|def f():
+      #|    xs = [1, 2, 3]
+      #|    xs[True] = 9
+      #|assert.fails(f, "got bool, want int")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

@@ -213,9 +213,9 @@ let float_arithmetic_src : String =
   #|assert.fails(lambda: 1 % 0.0, "floating-point modulo by zero")
   #|
   #|# floats cannot be used as indices
-  #|assert.fails(lambda: "abc"[1.0], "indices must be integers")
+  #|assert.fails(lambda: "abc"[1.0], "want int")
   #|assert.fails(lambda: ["A", "B", "C"].insert(1.0, "D"), "want int")
-  #|assert.fails(lambda: range(3)[1.0], "indices must be integers")
+  #|assert.fails(lambda: range(3)[1.0], "got float, want int")
 
 ///|
 test "float.star: arithmetic operations" {

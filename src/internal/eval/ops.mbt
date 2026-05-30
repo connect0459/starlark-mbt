@@ -1325,7 +1325,12 @@ fn eval_index(
           l.get(j)
         }
         _ =>
-          raise EvalErr(make_eval_error(ctx, "list indices must be integers"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "list index: got \{@value.type_name(idx)}, want int",
+            ),
+          )
       }
     @value.Value::Tuple(t) =>
       match idx {
@@ -1334,7 +1339,12 @@ fn eval_index(
           t[j]
         }
         _ =>
-          raise EvalErr(make_eval_error(ctx, "tuple indices must be integers"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "tuple index: got \{@value.type_name(idx)}, want int",
+            ),
+          )
       }
     @value.Value::String(s) =>
       match idx {
@@ -1344,7 +1354,12 @@ fn eval_index(
           @value.Value::String(@value.StarlarkString::from_bytes(one_byte))
         }
         _ =>
-          raise EvalErr(make_eval_error(ctx, "string indices must be integers"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "string index: got \{@value.type_name(idx)}, want int",
+            ),
+          )
       }
     @value.Value::Bytes(b) =>
       match idx {
@@ -1353,7 +1368,12 @@ fn eval_index(
           @value.Value::Bytes(Bytes::from_array([b[j]]))
         }
         _ =>
-          raise EvalErr(make_eval_error(ctx, "bytes indices must be integers"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "bytes index: got \{@value.type_name(idx)}, want int",
+            ),
+          )
       }
     @value.Value::Dict(d) =>
       match check(ctx, d.get(idx)) {
@@ -1370,7 +1390,12 @@ fn eval_index(
           @value.Value::Int(BigInt::from_int64(r.index_at(j)))
         }
         _ =>
-          raise EvalErr(make_eval_error(ctx, "range indices must be integers"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "range index: got \{@value.type_name(idx)}, want int",
+            ),
+          )
       }
     @value.Value::StringElems(e) =>
       match idx {
@@ -1386,7 +1411,10 @@ fn eval_index(
         }
         _ =>
           raise EvalErr(
-            make_eval_error(ctx, "string.elems indices must be integers"),
+            make_eval_error(
+              ctx,
+              "string.elems index: got \{@value.type_name(idx)}, want int",
+            ),
           )
       }
     @value.Value::ExtVal(c) =>
@@ -1406,7 +1434,7 @@ fn eval_index(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "'\{@value.type_name(obj)}' indices must be integers",
+              "\{@value.type_name(obj)} index: got \{@value.type_name(idx)}, want int",
             ),
           )
       }
@@ -1436,7 +1464,9 @@ fn set_index(
           check(ctx, l.set(j, val))
         }
         _ =>
-          raise EvalErr(make_eval_error(ctx, "list indices must be integers"))
+          raise EvalErr(
+            make_eval_error(ctx, "got \{@value.type_name(idx)}, want int"),
+          )
       }
     @value.Value::Dict(d) => check(ctx, d.set(idx, val))
     @value.Value::ExtVal(c) =>
@@ -1467,10 +1497,7 @@ fn set_index(
             }
             _ =>
               raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "'\{@value.type_name(obj)}' indices must be integers",
-                ),
+                make_eval_error(ctx, "got \{@value.type_name(idx)}, want int"),
               )
           }
       }
