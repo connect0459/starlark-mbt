@@ -294,8 +294,7 @@ pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
 
 ///|
 // Sets the print callback on an existing thread. Combined with `set_loader` and
-// `set_max_steps`, this lets a single thread carry all three (starlark-go
-// exposes them as independent mutable fields; MISSING-53).
+// `set_max_steps`, this lets a single thread carry all three.
 pub fn Thread::set_print(
   self : Thread,
   print_fn : (Thread, String) -> Unit,

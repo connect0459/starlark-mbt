@@ -388,14 +388,13 @@ test "float.star: float() and int() conversions" {
 ///|
 let float_whitespace_src : String =
   #|load("assert.star", "assert")
-  #|# float() must not accept surrounding whitespace (BUG-32)
   #|assert.fails(lambda: float("  1.0  "), "invalid float literal")
   #|assert.fails(lambda: float(" 1.0"), "invalid float literal")
   #|assert.fails(lambda: float("1.0 "), "invalid float literal")
   #|assert.fails(lambda: float("\t1.0"), "invalid float literal")
 
 ///|
-test "float.star: float() rejects surrounding whitespace (BUG-32)" {
+test "float.star: float() rejects surrounding whitespace" {
   let errs = run_star_string(float_whitespace_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -478,7 +477,6 @@ test "float.star: string formatting" {
 ///|
 let float_go_fmt_src : String =
   #|load("assert.star", "assert")
-  #|# str()/repr() of floats must match starlark-go behavior (BUG-31)
   #|# Large round numbers with 7+ integer digits -> scientific
   #|assert.eq(str(1e20), "1e+20")
   #|assert.eq(str(1e6), "1e+06")
@@ -496,7 +494,7 @@ let float_go_fmt_src : String =
   #|assert.eq(str(1e-4), "0.0001")
 
 ///|
-test "float.star: str() uses Go-compatible g-format for large/small floats (BUG-31)" {
+test "float.star: str() uses Go-compatible g-format for large/small floats" {
   let errs = run_star_string(float_go_fmt_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -589,7 +587,7 @@ let float_string_errors_src : String =
   #|assert.fails(lambda: float(""), "float: empty string")
 
 ///|
-test "float(): string error messages match starlark-go (BUG-4)" {
+test "float(): string error messages match starlark-go" {
   let errs = run_star_string(float_string_errors_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -599,11 +597,10 @@ test "float(): string error messages match starlark-go (BUG-4)" {
 ///|
 let float_bigint_overflow_src : String =
   #|load("assert.star", "assert")
-  #|# float(huge_bigint) must raise, not silently return +Infinity (BUG-2)
   #|huge = 123 << 500 << 500 << 50
   #|assert.fails(lambda: float(huge), "int too large to convert to float")
   #|assert.fails(lambda: float(-huge), "int too large to convert to float")
-  #|# mixed int+float arithmetic with huge int must raise (MISSING-5)
+  #|# mixed int+float arithmetic with huge int must raise
   #|assert.fails(lambda: (1<<500<<500<<500) + 0.0, "int too large to convert to float")
   #|assert.fails(lambda: 0.0 + (1<<500<<500<<500), "int too large to convert to float")
   #|assert.fails(lambda: (1<<500<<500<<500) - 0.0, "int too large to convert to float")
@@ -618,7 +615,7 @@ let float_bigint_overflow_src : String =
   #|assert.fails(lambda: 1.0 % (1<<500<<500<<500), "int too large to convert to float")
 
 ///|
-test "float(huge_bigint) raises int too large (BUG-2, MISSING-5)" {
+test "float(huge_bigint) raises int too large" {
   let errs = run_star_string(float_bigint_overflow_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -641,7 +638,7 @@ let float_percent_g_src : String =
   #|assert.eq("%g" % negzero, "-0.0")
 
 ///|
-test "float.star: %g format specifier for normal values (MISSING-18)" {
+test "float.star: %g format specifier for normal values" {
   let errs = run_star_string(float_percent_g_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -658,7 +655,7 @@ let float_percent_ef_edge_src : String =
   #|assert.eq("%d" % 1.23e45,   "1229999999999999973814869011019624571608236032")
 
 ///|
-test "float.star: %e/%f with edge-case floats (MISSING-19)" {
+test "float.star: %e/%f with edge-case floats" {
   let errs = run_star_string(float_percent_ef_edge_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -678,7 +675,7 @@ let float_mod_negative_src : String =
   #|assert.eq(-98.0  % 8.0,    6.0)
 
 ///|
-test "float.star: float %% with negative operands (MISSING-20)" {
+test "float.star: float %% with negative operands" {
   let errs = run_star_string(float_mod_negative_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))

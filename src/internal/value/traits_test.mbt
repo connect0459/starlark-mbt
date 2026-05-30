@@ -177,7 +177,7 @@ test "starlark_hash: equal Int and Float produce same hash" {
 }
 
 ///|
-test "starlark_hash: large Float equals large Int hash (MISSING-66)" {
+test "starlark_hash: large Float equals large Int hash" {
   // 1e20 == 10**20 in Starlark so their hashes must match.
   // Old code used f.to_int64() which overflows for 1e20; new code uses
   // double_to_bigint so both sides go through hash_bigint with the same BigInt.

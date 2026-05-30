@@ -66,14 +66,14 @@ test "scan: rejects a non-ASCII hex escape in a string" {
 }
 
 ///|
-test "scan: \\u inside bytes literal produces UTF-8 bytes (MISSING-61)" {
+test "scan: \\u inside bytes literal produces UTF-8 bytes" {
   // starlark-go accepts \uNNNN in b"..." and encodes the codepoint as UTF-8.
   // b"A" = b"A" (U+0041 → 0x41)
   assert_eq(scan("b'\\u0041'"), "b\"A\" EOF")
 }
 
 ///|
-test "scan: \\U inside bytes literal produces UTF-8 bytes (MISSING-61)" {
+test "scan: \\U inside bytes literal produces UTF-8 bytes" {
   // b"\U00000041" = b"A"
   assert_eq(scan("b'\\U00000041'"), "b\"A\" EOF")
 }
@@ -260,7 +260,7 @@ test "scan: a decimal literal too large for Int64 is an int token" {
   assert_eq(scan(rep("9", 23)), rep("9", 23) + " EOF")
 }
 
-// --- Byte-string prefix rules (MISSING-63) ---
+// --- Byte-string prefix rules ---
 
 ///|
 test "scan: rb\"...\" is still a valid raw-bytes literal" {
@@ -273,24 +273,24 @@ test "scan: br\"...\" is NOT a raw-bytes literal (tokenized as ident + string)" 
   assert_eq(scan("br\"foo\""), "br \"foo\" EOF")
 }
 
-// --- Unicode surrogate check in \u escape (MISSING-79) ---
+// --- Unicode surrogate check in \u escape ---
 
 ///|
-test "scan: \\uD800 (low surrogate) is rejected in string literal (MISSING-79)" {
+test "scan: \\uD800 (low surrogate) is rejected in string literal" {
   assert_true(scan("\"\\uD800\"").contains("invalid Unicode surrogate"))
 }
 
 ///|
-test "scan: \\uDFFF (high surrogate) is rejected in string literal (MISSING-79)" {
+test "scan: \\uDFFF (high surrogate) is rejected in string literal" {
   assert_true(scan("\"\\uDFFF\"").contains("invalid Unicode surrogate"))
 }
 
 ///|
-test "scan: \\u4E2D (valid BMP) is accepted in string literal (MISSING-79)" {
+test "scan: \\u4E2D (valid BMP) is accepted in string literal" {
   assert_false(scan("\"\\u4E2D\"").contains("error"))
 }
 
 ///|
-test "scan: \\uD800 is rejected in bytes literal (MISSING-79)" {
+test "scan: \\uD800 is rejected in bytes literal" {
   assert_true(scan("b\"\\uD800\"").contains("invalid Unicode surrogate"))
 }

@@ -323,8 +323,6 @@ test "dict.star: unhashable key and duplicate key error positions (chunked)" {
 }
 
 ///|
-// MISSING-34: dict.update rejects >1 positional arg and reports element index
-// and length in bad-pair errors, matching starlark-go updateDict.
 let dict_update_argcheck_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: {}.update({}, {}), "update: got 2 arguments, want at most 1")
@@ -337,7 +335,7 @@ let dict_update_argcheck_src : String =
   #|assert.eq(d, {1: 2, "x": 3})
 
 ///|
-test "dict.update rejects excess args and reports bad pairs (MISSING-34)" {
+test "dict.update rejects excess args and reports bad pairs" {
   let errs = run_star_string(dict_update_argcheck_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))

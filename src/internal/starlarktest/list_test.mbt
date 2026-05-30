@@ -301,7 +301,7 @@ test "lambda in comprehension if-clause is truthy and filters correctly" {
 }
 
 ///|
-test "list.extend(self) doubles the list without error (BUG-4)" {
+test "list.extend(self) doubles the list without error" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
@@ -316,7 +316,7 @@ test "list.extend(self) doubles the list without error (BUG-4)" {
 }
 
 ///|
-test "list += self doubles the list without error (BUG-4)" {
+test "list += self doubles the list without error" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")

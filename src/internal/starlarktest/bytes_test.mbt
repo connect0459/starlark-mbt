@@ -129,7 +129,7 @@ test "bytes.star: all assertions pass" {
 }
 
 ///|
-test "str(bytes) with surrogate UTF-8 sequence produces U+FFFD replacements (MISSING-4)" {
+test "str(bytes) with surrogate UTF-8 sequence produces U+FFFD replacements" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")

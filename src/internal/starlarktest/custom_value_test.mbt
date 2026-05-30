@@ -240,7 +240,7 @@ test "ExtVal compare_fn: < operator dispatches to compare_fn" {
 }
 
 ///|
-test "ExtVal HasSetKey: x[k]=v dispatches to set_key_fn for arbitrary keys (MISSING-57)" {
+test "ExtVal HasSetKey: x[k]=v dispatches to set_key_fn for arbitrary keys" {
   let backing = @value.StarlarkDict::new()
   let cv = @value.CustomValue::new(fn() { "mymap" }, fn() { true }, fn() {
       "<mymap>"

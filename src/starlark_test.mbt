@@ -1,5 +1,5 @@
 ///|
-test "Universe::set adds a binding visible to executed modules (MISSING-58)" {
+test "Universe::set adds a binding visible to executed modules" {
   let u = @starlark.Universe::standard()
   u.set("MY_CONST", @starlark.Value::Int(42N))
   let t = @starlark.Thread::new("test")
@@ -20,7 +20,7 @@ test "Universe::set adds a binding visible to executed modules (MISSING-58)" {
 }
 
 ///|
-test "eval_expr_with_opts respects allow_set option (MISSING-54)" {
+test "eval_expr_with_opts respects allow_set option" {
   let t = @starlark.Thread::new("test")
   let env = @starlark.StarlarkDict::new()
   // With allow_set=true, {1, 2} parses and evaluates as a Set.
@@ -34,7 +34,7 @@ test "eval_expr_with_opts respects allow_set option (MISSING-54)" {
 }
 
 ///|
-test "parse_file + file_program + Program::init pipeline (MISSING-55)" {
+test "parse_file + file_program + Program::init pipeline" {
   let file = match @starlark.parse_file("<test>", "result = X + 1") {
     Ok(f) => f
     Err(e) => fail(e.msg())
@@ -69,7 +69,7 @@ test "parse_file + file_program + Program::init pipeline (MISSING-55)" {
 }
 
 ///|
-test "source_program_with_file returns both File and Program (MISSING-55)" {
+test "source_program_with_file returns both File and Program" {
   match
     @starlark.source_program_with_file(
       "hello.star",

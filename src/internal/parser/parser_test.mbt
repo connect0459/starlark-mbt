@@ -875,7 +875,7 @@ test "parser: None True False still parse as literal expressions" {
 }
 
 ///|
-test "load with zero imported symbols is rejected (MISSING-43)" {
+test "load with zero imported symbols is rejected" {
   match @parser.parse_file("test.star", "load(\"m\")\n") {
     Err(e) => assert_true(e.msg().contains("must import at least 1 symbol"))
     Ok(_) => fail("expected error for load with no symbols")
@@ -883,7 +883,7 @@ test "load with zero imported symbols is rejected (MISSING-43)" {
 }
 
 ///|
-test "load with at least one symbol parses (MISSING-43)" {
+test "load with at least one symbol parses" {
   match @parser.parse_file("test.star", "load(\"m\", \"a\")\n") {
     Ok(_) => ()
     Err(e) => fail("unexpected error: \{e.to_string()}")
@@ -891,7 +891,7 @@ test "load with at least one symbol parses (MISSING-43)" {
 }
 
 ///|
-test "unparenthesized tuple with trailing comma is rejected (MISSING-44)" {
+test "unparenthesized tuple with trailing comma is rejected" {
   match @parser.parse_file("test.star", "x, = 1,\n") {
     Err(e) =>
       assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
@@ -900,7 +900,7 @@ test "unparenthesized tuple with trailing comma is rejected (MISSING-44)" {
 }
 
 ///|
-test "parenthesized singleton tuple with trailing comma is allowed (MISSING-44)" {
+test "parenthesized singleton tuple with trailing comma is allowed" {
   match @parser.parse_file("test.star", "x = (1,)\n") {
     Ok(_) => ()
     Err(e) => fail("unexpected error: \{e.to_string()}")
@@ -908,7 +908,7 @@ test "parenthesized singleton tuple with trailing comma is allowed (MISSING-44)"
 }
 
 ///|
-test "for-loop target with binary operator is rejected (MISSING-45)" {
+test "for-loop target with binary operator is rejected" {
   match @parser.parse_file("test.star", "for a + b in xs:\n  pass\n") {
     Err(_) => ()
     Ok(_) => fail("expected error for non-primary for-target")
@@ -916,7 +916,7 @@ test "for-loop target with binary operator is rejected (MISSING-45)" {
 }
 
 ///|
-test "comprehension target with binary operator is rejected (MISSING-45)" {
+test "comprehension target with binary operator is rejected" {
   match @parser.parse_expr("test.star", "[x for a + b in xs]") {
     Err(_) => ()
     Ok(_) => fail("expected error for non-primary comprehension target")
@@ -924,17 +924,17 @@ test "comprehension target with binary operator is rejected (MISSING-45)" {
 }
 
 ///|
-test "for-loop with index/attribute targets parses (MISSING-45)" {
+test "for-loop with index/attribute targets parses" {
   match @parser.parse_file("test.star", "for a[0], b.c in xs:\n  pass\n") {
     Ok(_) => ()
     Err(e) => fail("unexpected error: \{e.to_string()}")
   }
 }
 
-// --- MISSING-82: parser error message parity ---
+// --- Parser error message parity ---
 
 ///|
-test "conditional expression without else clause produces correct message (MISSING-82)" {
+test "conditional expression without else clause produces correct message" {
   match @parser.parse_expr("test.star", "x if y") {
     Err(e) =>
       assert_true(
@@ -945,7 +945,7 @@ test "conditional expression without else clause produces correct message (MISSI
 }
 
 ///|
-test "load unquoted original name produces correct message (MISSING-82)" {
+test "load unquoted original name produces correct message" {
   match @parser.parse_file("test.star", "load(\"m\", x=originalname)\n") {
     Err(e) =>
       assert_true(

@@ -389,10 +389,10 @@ test "resolve: accepts call to predeclared 'module' function" {
   assert_true(result.is_valid())
 }
 
-// --- Assignment-target resolution (MISSING-46/47/48) ---
+// --- Assignment-target resolution ---
 
 ///|
-test "resolve: index-target object is resolved as a use (MISSING-46)" {
+test "resolve: index-target object is resolved as a use" {
   let f = parse_or_fail("undef[0] = 1")
   let result = resolve(
     f,
@@ -404,7 +404,7 @@ test "resolve: index-target object is resolved as a use (MISSING-46)" {
 }
 
 ///|
-test "resolve: dot-target object is resolved as a use (MISSING-46)" {
+test "resolve: dot-target object is resolved as a use" {
   let f = parse_or_fail("undef.field = 1")
   let result = resolve(
     f,
@@ -416,7 +416,7 @@ test "resolve: dot-target object is resolved as a use (MISSING-46)" {
 }
 
 ///|
-test "resolve: assignment to a literal is rejected (MISSING-47)" {
+test "resolve: assignment to a literal is rejected" {
   let f = parse_or_fail("1 = x")
   let result = resolve(
     f,
@@ -428,7 +428,7 @@ test "resolve: assignment to a literal is rejected (MISSING-47)" {
 }
 
 ///|
-test "resolve: assignment to a call is rejected (MISSING-47)" {
+test "resolve: assignment to a call is rejected" {
   let f = parse_or_fail("f() = x")
   let result = resolve(
     f,
@@ -440,7 +440,7 @@ test "resolve: assignment to a call is rejected (MISSING-47)" {
 }
 
 ///|
-test "resolve: augmented assignment to tuple LHS is rejected (MISSING-48)" {
+test "resolve: augmented assignment to tuple LHS is rejected" {
   let f = parse_or_fail("a, b += 1")
   let result = resolve(
     f,
@@ -454,7 +454,7 @@ test "resolve: augmented assignment to tuple LHS is rejected (MISSING-48)" {
 }
 
 ///|
-test "resolve: augmented assignment to list LHS is rejected (MISSING-48)" {
+test "resolve: augmented assignment to list LHS is rejected" {
   let f = parse_or_fail("[a, b] += 1")
   let result = resolve(
     f,
@@ -467,10 +467,10 @@ test "resolve: augmented assignment to list LHS is rejected (MISSING-48)" {
   )
 }
 
-// --- Dialect gating (MISSING-51) ---
+// --- Dialect gating ---
 
 ///|
-test "resolve: set literal rejected when allow_set is disabled (MISSING-51)" {
+test "resolve: set literal rejected when allow_set is disabled" {
   let f = parse_or_fail("x = {1, 2, 3}")
   let opts = ResolveOptions::default().with_allow_set(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
@@ -478,7 +478,7 @@ test "resolve: set literal rejected when allow_set is disabled (MISSING-51)" {
 }
 
 ///|
-test "resolve: set comprehension rejected when allow_set is disabled (MISSING-51)" {
+test "resolve: set comprehension rejected when allow_set is disabled" {
   let f = parse_or_fail("x = {e for e in [1, 2]}")
   let opts = ResolveOptions::default().with_allow_set(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
@@ -486,7 +486,7 @@ test "resolve: set comprehension rejected when allow_set is disabled (MISSING-51
 }
 
 ///|
-test "resolve: set literal allowed by default (MISSING-51)" {
+test "resolve: set literal allowed by default" {
   let f = parse_or_fail("x = {1, 2, 3}")
   let result = resolve(
     f,
@@ -497,10 +497,10 @@ test "resolve: set literal allowed by default (MISSING-51)" {
   assert_true(result.is_valid())
 }
 
-// --- load identifier validation (MISSING-52) ---
+// --- load identifier validation ---
 
 ///|
-test "resolve: load with leading-underscore source name is rejected (MISSING-52)" {
+test "resolve: load with leading-underscore source name is rejected" {
   let f = parse_or_fail("load(\"m\", x=\"_priv\")")
   let result = resolve(
     f,
@@ -514,7 +514,7 @@ test "resolve: load with leading-underscore source name is rejected (MISSING-52)
 }
 
 ///|
-test "resolve: load of a bare leading-underscore name is rejected (MISSING-52)" {
+test "resolve: load of a bare leading-underscore name is rejected" {
   let f = parse_or_fail("load(\"m\", \"_x\")")
   let result = resolve(
     f,
@@ -528,7 +528,7 @@ test "resolve: load of a bare leading-underscore name is rejected (MISSING-52)" 
 }
 
 ///|
-test "resolve: load of an exported name with underscore alias is allowed (MISSING-52)" {
+test "resolve: load of an exported name with underscore alias is allowed" {
   let f = parse_or_fail("load(\"m\", _local=\"public\")")
   let result = resolve(
     f,
@@ -539,7 +539,7 @@ test "resolve: load of an exported name with underscore alias is allowed (MISSIN
   assert_true(result.is_valid())
 }
 
-// --- parameter ordering rules (MISSING-50) ---
+// --- parameter ordering rules ---
 
 ///|
 fn resolve_def(src : String) -> ResolvedFile {
@@ -548,13 +548,13 @@ fn resolve_def(src : String) -> ResolvedFile {
 }
 
 ///|
-test "resolve: required parameter after optional is rejected (MISSING-50)" {
+test "resolve: required parameter after optional is rejected" {
   let r = resolve_def("def f(a=1, b): pass")
   assert_true(r |> has_error("required parameter may not follow optional"))
 }
 
 ///|
-test "resolve: bare star must be followed by keyword-only params (MISSING-50)" {
+test "resolve: bare star must be followed by keyword-only params" {
   let r = resolve_def("def f(a, *): pass")
   assert_true(
     r |> has_error("bare * must be followed by keyword-only parameters"),
@@ -562,24 +562,24 @@ test "resolve: bare star must be followed by keyword-only params (MISSING-50)" {
 }
 
 ///|
-test "resolve: bare star followed by keyword-only param is allowed (MISSING-50)" {
+test "resolve: bare star followed by keyword-only param is allowed" {
   let r = resolve_def("def f(a, *, b): pass")
   assert_true(r.is_valid())
 }
 
 ///|
-test "resolve: multiple star parameters are rejected (MISSING-50)" {
+test "resolve: multiple star parameters are rejected" {
   let r = resolve_def("def f(*a, *b): pass")
   assert_true(r |> has_error("multiple * parameters not allowed"))
 }
 
 ///|
-test "resolve: parameter after kwargs is rejected (MISSING-50)" {
+test "resolve: parameter after kwargs is rejected" {
   let r = resolve_def("def f(**kw, a): pass")
   assert_true(r |> has_error("required parameter may not follow **kw"))
 }
 
-// --- call-argument ordering rules (MISSING-49) ---
+// --- call-argument ordering rules ---
 
 ///|
 fn resolve_call(src : String) -> ResolvedFile {
@@ -593,45 +593,45 @@ fn resolve_call(src : String) -> ResolvedFile {
 }
 
 ///|
-test "resolve: positional argument after named is rejected (MISSING-49)" {
+test "resolve: positional argument after named is rejected" {
   let r = resolve_call("f(x=1, a)")
   assert_true(r |> has_error("positional argument may not follow named"))
 }
 
 ///|
-test "resolve: repeated keyword argument is rejected (MISSING-49)" {
+test "resolve: repeated keyword argument is rejected" {
   let r = resolve_call("f(x=1, x=2)")
   assert_true(r |> has_error("keyword argument \"x\" is repeated"))
 }
 
 ///|
-test "resolve: multiple *args are rejected (MISSING-49)" {
+test "resolve: multiple *args are rejected" {
   let r = resolve_call("f(*a, *b)")
   assert_true(r |> has_error("multiple *args not allowed"))
 }
 
 ///|
-test "resolve: multiple **kwargs are rejected (MISSING-49)" {
+test "resolve: multiple **kwargs are rejected" {
   let r = resolve_call("f(**a, **b)")
   assert_true(r |> has_error("multiple **kwargs not allowed"))
 }
 
 ///|
-test "resolve: *args after **kwargs is rejected (MISSING-49)" {
+test "resolve: *args after **kwargs is rejected" {
   let r = resolve_call("f(**a, *b)")
   assert_true(r |> has_error("*args may not follow **kwargs"))
 }
 
 ///|
-test "resolve: positional argument after *args is rejected (MISSING-49)" {
+test "resolve: positional argument after *args is rejected" {
   let r = resolve_call("f(*a, b)")
   assert_true(r |> has_error("positional argument may not follow *args"))
 }
 
-// --- Error message parity with starlark-go (MISSING-82) ---
+// --- Error message parity with starlark-go ---
 
 ///|
-test "resolve: break outside loop uses 'break not in a loop' (MISSING-82)" {
+test "resolve: break outside loop uses 'break not in a loop'" {
   let f = parse_or_fail("break")
   let result = resolve(
     f,
@@ -643,7 +643,7 @@ test "resolve: break outside loop uses 'break not in a loop' (MISSING-82)" {
 }
 
 ///|
-test "resolve: continue outside loop uses 'continue not in a loop' (MISSING-82)" {
+test "resolve: continue outside loop uses 'continue not in a loop'" {
   let f = parse_or_fail("continue")
   let result = resolve(
     f,
@@ -655,7 +655,7 @@ test "resolve: continue outside loop uses 'continue not in a loop' (MISSING-82)"
 }
 
 ///|
-test "resolve: return outside function uses 'return statement not within a function' (MISSING-82)" {
+test "resolve: return outside function uses 'return statement not within a function'" {
   let f = parse_or_fail("return")
   let result = resolve(
     f,
@@ -667,7 +667,7 @@ test "resolve: return outside function uses 'return statement not within a funct
 }
 
 ///|
-test "resolve: top-level if uses 'if statement not within a function' (MISSING-82)" {
+test "resolve: top-level if uses 'if statement not within a function'" {
   let f = parse_or_fail("if True:\n  x = 1")
   let opts = ResolveOptions::default().with_allow_top_level_control(false)
   let result = resolve(f, no_predeclared, only_universal, opts)
@@ -675,7 +675,7 @@ test "resolve: top-level if uses 'if statement not within a function' (MISSING-8
 }
 
 ///|
-test "resolve: top-level for uses 'for loop not within a function' (MISSING-82)" {
+test "resolve: top-level for uses 'for loop not within a function'" {
   let f = parse_or_fail("for x in []:\n  pass")
   let opts = ResolveOptions::default().with_allow_top_level_control(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
@@ -683,7 +683,7 @@ test "resolve: top-level for uses 'for loop not within a function' (MISSING-82)"
 }
 
 ///|
-test "resolve: top-level while uses 'while loop not within a function' (MISSING-82)" {
+test "resolve: top-level while uses 'while loop not within a function'" {
   let f = parse_or_fail("while True:\n  pass")
   let opts = ResolveOptions::default()
     .with_allow_top_level_control(false)
@@ -692,10 +692,10 @@ test "resolve: top-level while uses 'while loop not within a function' (MISSING-
   assert_true(has_error(result, "while loop not within a function"))
 }
 
-// --- MISSING-77: loops counter reset inside nested def ---
+// --- Loops counter reset inside nested def ---
 
 ///|
-test "resolve: break inside nested def within loop raises 'break not in a loop' (MISSING-77)" {
+test "resolve: break inside nested def within loop raises 'break not in a loop'" {
   let f = parse_or_fail(
     "def fun1():\n  for a in [1, 2, 3]:\n    def nested():\n      break",
   )
@@ -709,7 +709,7 @@ test "resolve: break inside nested def within loop raises 'break not in a loop' 
 }
 
 ///|
-test "resolve: continue inside nested def within loop raises 'continue not in a loop' (MISSING-77)" {
+test "resolve: continue inside nested def within loop raises 'continue not in a loop'" {
   let f = parse_or_fail(
     "def fun2():\n  for a in [1, 2, 3]:\n    def nested():\n      continue",
   )
@@ -723,7 +723,7 @@ test "resolve: continue inside nested def within loop raises 'continue not in a 
 }
 
 ///|
-test "resolve: break inside for loop within def is valid (MISSING-77 sanity)" {
+test "resolve: break inside for loop within def is valid" {
   let f = parse_or_fail("def f():\n  for x in []:\n    break")
   let result = resolve(
     f,
@@ -734,10 +734,10 @@ test "resolve: break inside for loop within def is valid (MISSING-77 sanity)" {
   assert_true(result.is_valid())
 }
 
-// --- MISSING-78 + MISSING-82 remaining: load inside loop/conditional/function ---
+// --- load inside loop/conditional/function ---
 
 ///|
-test "resolve: load inside def raises 'load statement within a function' (MISSING-82)" {
+test "resolve: load inside def raises 'load statement within a function'" {
   let f = parse_or_fail("def f():\n  load(\"m.star\", \"y\")")
   let result = resolve(
     f,
@@ -749,7 +749,7 @@ test "resolve: load inside def raises 'load statement within a function' (MISSIN
 }
 
 ///|
-test "resolve: load inside top-level for raises 'load statement within a loop' (MISSING-78)" {
+test "resolve: load inside top-level for raises 'load statement within a loop'" {
   let f = parse_or_fail("for x in []:\n  load(\"m.star\", \"y\")")
   let opts = ResolveOptions::default().with_allow_top_level_control(true)
   let result = resolve(f, no_predeclared, no_universal, opts)
@@ -757,7 +757,7 @@ test "resolve: load inside top-level for raises 'load statement within a loop' (
 }
 
 ///|
-test "resolve: load inside top-level if raises 'load statement within a conditional' (MISSING-78)" {
+test "resolve: load inside top-level if raises 'load statement within a conditional'" {
   let f = parse_or_fail("if True:\n  load(\"m.star\", \"y\")")
   let opts = ResolveOptions::default().with_allow_top_level_control(true)
   let result = resolve(f, no_predeclared, only_universal, opts)
@@ -765,7 +765,7 @@ test "resolve: load inside top-level if raises 'load statement within a conditio
 }
 
 ///|
-test "resolve: while with allow_while=false raises dialect error (MISSING-82)" {
+test "resolve: while with allow_while=false raises dialect error" {
   let f = parse_or_fail("while True:\n  pass")
   let opts = ResolveOptions::default()
     .with_allow_while(false)
@@ -777,7 +777,7 @@ test "resolve: while with allow_while=false raises dialect error (MISSING-82)" {
 }
 
 ///|
-test "resolve: load inside function inside if gives 'within a function' not 'conditional' (MISSING-78)" {
+test "resolve: load inside function inside if gives 'within a function' not 'conditional'" {
   let f = parse_or_fail("if True:\n  def g():\n    load(\"m.star\", \"y\")")
   let opts = ResolveOptions::default().with_allow_top_level_control(true)
   let result = resolve(f, no_predeclared, only_universal, opts)

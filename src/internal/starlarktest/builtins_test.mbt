@@ -228,7 +228,7 @@ let abs_bigint_src : String =
   #|assert.eq(abs(-123 * maxint32), +123 * maxint32)
 
 ///|
-test "builtins.star: abs() on BigInt values (MISSING-16)" {
+test "builtins.star: abs() on BigInt values" {
   let errs = run_star_string(abs_bigint_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -236,8 +236,6 @@ test "builtins.star: abs() on BigInt values (MISSING-16)" {
 }
 
 ///|
-// MISSING-35: enumerate/range report the specific bad parameter and validate
-// arity/keyword arguments instead of silently defaulting non-int args.
 let enumerate_range_argcheck_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: enumerate([1, 2], "x"), "enumerate: for parameter 2: got string, want int")
@@ -251,7 +249,7 @@ let enumerate_range_argcheck_src : String =
   #|assert.eq(enumerate([7, 8], 5), [(5, 7), (6, 8)])
 
 ///|
-test "enumerate/range validate argument types and arity (MISSING-35)" {
+test "enumerate/range validate argument types and arity" {
   let errs = run_star_string(enumerate_range_argcheck_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -259,7 +257,6 @@ test "enumerate/range validate argument types and arity (MISSING-35)" {
 }
 
 ///|
-// MISSING-36: bytes/abs/chr/hash reject keyword arguments, matching starlark-go.
 let builtin_kwarg_rejection_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: bytes("x", k=1), "bytes does not accept keyword arguments")
@@ -268,7 +265,7 @@ let builtin_kwarg_rejection_src : String =
   #|assert.fails(lambda: hash("x", k=1), "hash: unexpected keyword arguments")
 
 ///|
-test "bytes/abs/chr/hash reject keyword arguments (MISSING-36)" {
+test "bytes/abs/chr/hash reject keyword arguments" {
   let errs = run_star_string(builtin_kwarg_rejection_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -276,8 +273,6 @@ test "bytes/abs/chr/hash reject keyword arguments (MISSING-36)" {
 }
 
 ///|
-// MISSING-41: builtin/method error messages use starlark-go's nameErr-prefixed
-// form rather than Python-style "f() ..." text.
 let nameerr_messages_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: min([]), "min: argument is an empty sequence")
@@ -290,7 +285,7 @@ let nameerr_messages_src : String =
   #|assert.fails(lambda: "123".endswith(["3"]), "endswith: got list, want string or tuple of string")
 
 ///|
-test "builtin/method error messages use nameErr prefix (MISSING-41)" {
+test "builtin/method error messages use nameErr prefix" {
   let errs = run_star_string(nameerr_messages_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -298,8 +293,6 @@ test "builtin/method error messages use nameErr prefix (MISSING-41)" {
 }
 
 ///|
-// MISSING-65: sorted must be stable — equal-key elements keep their original
-// relative order, including with reverse=True (starlark-go uses sort.Stable).
 let sorted_stability_src : String =
   #|load("assert.star", "assert")
   #|pairs = [(1, "a"), (1, "b"), (0, "c"), (1, "d"), (0, "e")]
@@ -309,14 +302,14 @@ let sorted_stability_src : String =
   #|assert.eq(rev, [(1, "a"), (1, "b"), (1, "d"), (0, "c"), (0, "e")])
 
 ///|
-test "sorted is stable for equal keys including reverse (MISSING-65)" {
+test "sorted is stable for equal keys including reverse" {
   let errs = run_star_string(sorted_stability_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
 }
 
-// --- MISSING-67: functions and builtins are usable as dict/set keys ---
+// --- Functions and builtins are usable as dict/set keys ---
 
 ///|
 let hash_functions_src : String =
@@ -334,14 +327,14 @@ let hash_functions_src : String =
   #|assert.true(abs in s)
 
 ///|
-test "functions and builtins are usable as dict and set keys (MISSING-67)" {
+test "functions and builtins are usable as dict and set keys" {
   let errs = run_star_string(hash_functions_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
 }
 
-// --- MISSING-68: float in range truncates toward zero ---
+// --- Float in range truncates toward zero ---
 
 ///|
 let float_in_range_src : String =
@@ -357,14 +350,14 @@ let float_in_range_src : String =
   #|assert.fails(lambda: float("inf") in range(5), "requires integer")
 
 ///|
-test "float in range truncates toward zero (MISSING-68)" {
+test "float in range truncates toward zero" {
   let errs = run_star_string(float_in_range_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
 }
 
-// --- MISSING-74: builtins reject keyword arguments ---
+// --- Builtins reject keyword arguments ---
 
 ///|
 let kwarg_rejection_src : String =
@@ -382,14 +375,14 @@ let kwarg_rejection_src : String =
   #|assert.fails(lambda: repr(1, foo=3), "does not accept keyword")
 
 ///|
-test "builtins reject keyword arguments (MISSING-74)" {
+test "builtins reject keyword arguments" {
   let errs = run_star_string(kwarg_rejection_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
 }
 
-// --- MISSING-75: str() with zero arguments errors ---
+// --- str() with zero arguments errors ---
 
 ///|
 let str_zero_args_src : String =
@@ -397,14 +390,14 @@ let str_zero_args_src : String =
   #|assert.fails(lambda: str(), "str.*got 0 arguments")
 
 ///|
-test "str() with zero arguments raises error (MISSING-75)" {
+test "str() with zero arguments raises error" {
   let errs = run_star_string(str_zero_args_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
 }
 
-// --- MISSING-76: string.index / rindex error prefix ---
+// --- string.index / rindex error prefix ---
 
 ///|
 let index_prefix_src : String =
@@ -413,7 +406,7 @@ let index_prefix_src : String =
   #|assert.fails(lambda: "abc".rindex("x"), "rindex: substring not found")
 
 ///|
-test "string.index and rindex not-found error has method name prefix (MISSING-76)" {
+test "string.index and rindex not-found error has method name prefix" {
   let errs = run_star_string(index_prefix_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))

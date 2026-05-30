@@ -166,11 +166,9 @@ let string_star_src : String =
   #|assert.fails(lambda: "}{{".format(1), "single '}' in format")
   #|assert.fails(lambda: "{:>10}".format(1), "format spec features not supported in replacement fields: >10")
   #|assert.fails(lambda: "{0:d}".format(1), "format spec features not supported in replacement fields: d")
-  #|# BUG-23: empty spec after colon is valid
   #|assert.eq("{x:}".format(x=1), "1")
   #|assert.eq("{0:}".format(1), "1")
   #|assert.eq("{:}".format(1), "1")
-  #|# BUG-24: non-empty spec includes spec value in error message
   #|assert.fails(lambda: "{0:5}".format(1), "format spec features not supported in replacement fields: 5")
   #|assert.fails(lambda: "{x!s:>3}".format(x=1), "format spec features not supported in replacement fields: >3")
   #|# str.format edge cases (string.star lines 206-215)
@@ -543,7 +541,7 @@ test "string iterators work correctly for multi-byte Unicode strings" {
 }
 
 ///|
-test "string operations on partial UTF-8 bytes (MISSING-3)" {
+test "string operations on partial UTF-8 bytes" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
@@ -553,7 +551,6 @@ test "string operations on partial UTF-8 bytes (MISSING-3)" {
       #|assert.fails(lambda: ord("😿"[1:]), "string encodes 3 Unicode code points, want 1")
       #|# repr of first byte of a 3-byte sequence (0xe4)
       #|assert.eq(repr("Hello, 世界!"[7]), '"\\xe4"')
-      #|# codepoint_ords on concat with partial bytes (uses raw, stable across BUG-2)
       #|assert.eq(list(("A" + "😿Z"[1:]).codepoint_ords()), [65, 0xFFFD, 0xFFFD, 0xFFFD, 90])
     ),
   )
@@ -563,7 +560,7 @@ test "string operations on partial UTF-8 bytes (MISSING-3)" {
 }
 
 ///|
-test "string concat preserves raw bytes from invalid UTF-8 sequences (BUG-2)" {
+test "string concat preserves raw bytes from invalid UTF-8 sequences" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
@@ -583,7 +580,7 @@ test "string concat preserves raw bytes from invalid UTF-8 sequences (BUG-2)" {
 }
 
 ///|
-test "string repeat preserves raw bytes from invalid UTF-8 sequences (BUG-3)" {
+test "string repeat preserves raw bytes from invalid UTF-8 sequences" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
@@ -606,7 +603,7 @@ let string_method_spellcheck_src : String =
   #|assert.fails(lambda: "".fin, "no .fin field.*did you mean .find")
 
 ///|
-test "string.star: method spell-check for unknown attributes (MISSING-13)" {
+test "string.star: method spell-check for unknown attributes" {
   let errs = run_star_string(string_method_spellcheck_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -621,7 +618,7 @@ let string_percent_c_unicode_src : String =
   #|assert.eq("%c" % "α", "α")
 
 ///|
-test "string.star: %c format with non-ASCII Unicode (MISSING-17)" {
+test "string.star: %c format with non-ASCII Unicode" {
   let errs = run_star_string(string_percent_c_unicode_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -631,14 +628,13 @@ test "string.star: %c format with non-ASCII Unicode (MISSING-17)" {
 ///|
 let string_percent_c_astral_src : String =
   #|load("assert.star", "assert")
-  #|# %c with astral codepoint (UTF-16 surrogate pair in MoonBit) should succeed (BUG-33)
   #|assert.eq("%c" % 0x1D11E, "𝄞")
   #|assert.eq("%c" % "𝄞", "𝄞")
   #|# multi-char strings must still fail
   #|assert.fails(lambda: "%c" % "ab", "requires a single-character string")
 
 ///|
-test "string.star: %c with astral codepoint is accepted (BUG-33)" {
+test "string.star: %c with astral codepoint is accepted" {
   let errs = run_star_string(string_percent_c_astral_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -652,7 +648,7 @@ let string_repeat_overflow_src : String =
   #|assert.fails(lambda: "abc" * (1000000 * 1000000), "repeat count 1000000000000 too large")
 
 ///|
-test "string.star: string * huge_int raises repeat-count-too-large (MISSING-15)" {
+test "string.star: string * huge_int raises repeat-count-too-large" {
   let errs = run_star_string(string_repeat_overflow_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -660,8 +656,6 @@ test "string.star: string * huge_int raises repeat-count-too-large (MISSING-15)"
 }
 
 ///|
-// BUG-29: string search methods must use UTF-8 byte offsets, not UTF-16 char
-// indices. s = "abcЙ😿" has bytes a(0) b(1) c(2) Й(3-4) 😿(5-8), byte_len 9.
 let string_byte_offset_src : String =
   #|load("assert.star", "assert")
   #|s = "abcЙ😿"
@@ -688,7 +682,7 @@ let string_byte_offset_src : String =
   #|assert.true(not s.endswith("Й", 0, 4))
 
 ///|
-test "string search methods use UTF-8 byte offsets (BUG-29)" {
+test "string search methods use UTF-8 byte offsets" {
   let errs = run_star_string(string_byte_offset_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -696,8 +690,6 @@ test "string search methods use UTF-8 byte offsets (BUG-29)" {
 }
 
 ///|
-// MISSING-32: strip/lstrip/rstrip reject non-string chars, extra positional
-// args, and keyword args, matching starlark-go UnpackPositionalArgs.
 let string_strip_argcheck_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: "x".strip(1), "strip: for parameter 1: got int, want string")
@@ -710,7 +702,7 @@ let string_strip_argcheck_src : String =
   #|assert.eq("xxhixx".strip("x"), "hi")
 
 ///|
-test "str.strip rejects non-string and excess args (MISSING-32)" {
+test "str.strip rejects non-string and excess args" {
   let errs = run_star_string(string_strip_argcheck_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -718,7 +710,6 @@ test "str.strip rejects non-string and excess args (MISSING-32)" {
 }
 
 ///|
-// MISSING-33: replace rejects a non-int count and validates arity/kwargs.
 let string_replace_argcheck_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: "banana".replace("a", "o", "bad"), "replace: for parameter 3: got string, want int")
@@ -729,7 +720,7 @@ let string_replace_argcheck_src : String =
   #|assert.eq("banana".replace("a", "o", 2), "bonona")
 
 ///|
-test "str.replace rejects non-int count and excess args (MISSING-33)" {
+test "str.replace rejects non-int count and excess args" {
   let errs = run_star_string(string_replace_argcheck_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -737,8 +728,6 @@ test "str.replace rejects non-int count and excess args (MISSING-33)" {
 }
 
 ///|
-// MISSING-30: find/count/index/rfind/rindex/startswith/endswith reject excess
-// positional args and keyword args instead of silently dropping them.
 let string_search_argcheck_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: "x".find("y", 0, 1, 99), "find: got 4 arguments, want at most 3")
@@ -752,7 +741,7 @@ let string_search_argcheck_src : String =
   #|assert.eq("banana".count("a", 2), 2)
 
 ///|
-test "str search methods reject excess positional/keyword args (MISSING-30)" {
+test "str search methods reject excess positional/keyword args" {
   let errs = run_star_string(string_search_argcheck_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -760,8 +749,6 @@ test "str search methods reject excess positional/keyword args (MISSING-30)" {
 }
 
 ///|
-// MISSING-31: split/rsplit reject keyword args (starlark-go uses positional-only
-// UnpackPositionalArgs) and validate the separator and maxsplit types.
 let string_split_argcheck_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: "a b".split(sep=" "), "split: unexpected keyword arguments")
@@ -775,7 +762,7 @@ let string_split_argcheck_src : String =
   #|assert.eq("a b c".rsplit(" ", 1), ["a b", "c"])
 
 ///|
-test "str.split/rsplit reject keyword args (MISSING-31)" {
+test "str.split/rsplit reject keyword args" {
   let errs = run_star_string(string_split_argcheck_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -783,8 +770,6 @@ test "str.split/rsplit reject keyword args (MISSING-31)" {
 }
 
 ///|
-// MISSING-73: find/count/index/rfind/rindex/startswith/endswith type-validate
-// start/end arguments instead of silently defaulting on non-int/non-None.
 let string_search_index_type_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: "banana".find("a", 1.0), "find: invalid start index: got float, want int")
@@ -803,7 +788,7 @@ let string_search_index_type_src : String =
   #|assert.eq("banana".count("a", 2, 6), 2)
 
 ///|
-test "str search methods reject non-int start/end args (MISSING-73)" {
+test "str search methods reject non-int start/end args" {
   let errs = run_star_string(string_search_index_type_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -811,7 +796,6 @@ test "str search methods reject non-int start/end args (MISSING-73)" {
 }
 
 ///|
-// MISSING-76 (part 2): rindex first-arg type error needs "rindex:" prefix.
 let string_rindex_argtype_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: "abc".rindex(1), "rindex: for parameter 1: got int, want string")
@@ -821,7 +805,7 @@ let string_rindex_argtype_src : String =
   #|assert.fails(lambda: "abc".count(1), "count: for parameter 1: got int, want string")
 
 ///|
-test "str.rindex/index/find/rfind/count first-arg type error uses method prefix (MISSING-76 part 2)" {
+test "str.rindex/index/find/rfind/count first-arg type error uses method prefix" {
   let errs = run_star_string(string_rindex_argtype_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))

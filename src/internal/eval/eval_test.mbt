@@ -758,7 +758,7 @@ test "exec_repl_chunk: returns EvalError on parse or resolve error" {
 }
 
 ///|
-test "exec_file: set literal rejected when allow_set disabled (MISSING-51)" {
+test "exec_file: set literal rejected when allow_set disabled" {
   let t = Thread::new("test")
   let opts = Options::default().with_allow_set(false)
   match exec_file(t, "<test>", "x = {1, 2}", opts) {
@@ -768,7 +768,7 @@ test "exec_file: set literal rejected when allow_set disabled (MISSING-51)" {
 }
 
 ///|
-test "Thread::set_max_steps does not reset the step counter (MISSING-59)" {
+test "Thread::set_max_steps does not reset the step counter" {
   let t = Thread::with_step_budget("test", 1000)
   let _ = exec_file(t, "<test>", "x = 1\ny = 2\nz = x + y", Options::default())
   let before = t.execution_steps()
@@ -778,7 +778,7 @@ test "Thread::set_max_steps does not reset the step counter (MISSING-59)" {
 }
 
 ///|
-test "Thread can combine print, loader, and step budget via setters (MISSING-53)" {
+test "Thread can combine print, loader, and step budget via setters" {
   let msgs : Array[String] = []
   let t = Thread::new("test")
   t.set_print(fn(_thread, msg) { msgs.push(msg) })

@@ -290,7 +290,7 @@ let int_octal_base10_src : String =
   #|assert.fails(lambda: int("-0o123"), "invalid literal.*base 10")
 
 ///|
-test "int.star: int(octal-prefixed string) with base=10 raises (MISSING-14)" {
+test "int.star: int(octal-prefixed string) with base=10 raises" {
   let errs = run_star_string(int_octal_base10_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -305,7 +305,7 @@ let int_large_string_src : String =
   #|assert.eq(int("-100000000000000000000"), -10000000000 * 10000000000)
 
 ///|
-test "int.star: int() parses 20-digit decimal strings as BigInt (MISSING-21)" {
+test "int.star: int() parses 20-digit decimal strings as BigInt" {
   let errs = run_star_string(int_large_string_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -362,7 +362,7 @@ let int_boundary_src : String =
   #|assert.eq((minint32 * 2) >> 1, -0x80000000)
 
 ///|
-test "int.star: BigInt arithmetic boundary tests (MISSING-24)" {
+test "int.star: BigInt arithmetic boundary tests" {
   let errs = run_star_string(int_boundary_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -378,7 +378,7 @@ let int_unsupported_type_src : String =
   #|assert.fails(lambda: int((1, 2)), "int: cannot convert tuple to int")
 
 ///|
-test "int.star: int() error message for unsupported types matches starlark-go (BUG-22)" {
+test "int.star: int() error message for unsupported types matches starlark-go" {
   let errs = run_star_string(int_unsupported_type_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -388,12 +388,11 @@ test "int.star: int() error message for unsupported types matches starlark-go (B
 ///|
 let int_shift_rshift_src : String =
   #|load("assert.star", "assert")
-  #|# right shift by a large count should not error (BUG-30)
   #|assert.eq(1 >> 1000, 0)
   #|assert.eq((-1) >> 1000, -1)
 
 ///|
-test "int.star: right shift with large count returns 0/-1 instead of error (BUG-30)" {
+test "int.star: right shift with large count returns 0/-1 instead of error" {
   let errs = run_star_string(int_shift_rshift_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -403,7 +402,6 @@ test "int.star: right shift with large count returns 0/-1 instead of error (BUG-
 ///|
 let int_base_range_src : String =
   #|load("assert.star", "assert")
-  #|# int() with out-of-range base should error (BUG-34)
   #|assert.fails(lambda: int("a", 1), "int: base must be an integer >= 2 && <= 36")
   #|assert.fails(lambda: int("a", 37), "int: base must be an integer >= 2 && <= 36")
   #|assert.fails(lambda: int("a", -1), "int: base must be an integer >= 2 && <= 36")
@@ -414,7 +412,7 @@ let int_base_range_src : String =
   #|assert.eq(int("1", 2), 1)
 
 ///|
-test "int.star: int() rejects out-of-range base (BUG-34)" {
+test "int.star: int() rejects out-of-range base" {
   let errs = run_star_string(int_base_range_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -422,8 +420,6 @@ test "int.star: int() rejects out-of-range base (BUG-34)" {
 }
 
 ///|
-// MISSING-37/MISSING-40: division/modulo by zero and slice-step messages match
-// starlark-go exactly (distinct text per operator and operand types).
 let div_zero_messages_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: 1 / 0, "floating-point division by zero")
@@ -434,7 +430,7 @@ let div_zero_messages_src : String =
   #|assert.fails(lambda: "abc"[::0], "zero is not a valid slice step")
 
 ///|
-test "division/modulo/slice-step error messages match starlark-go (MISSING-37/40)" {
+test "division/modulo/slice-step error messages match starlark-go" {
   let errs = run_star_string(div_zero_messages_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
@@ -442,9 +438,6 @@ test "division/modulo/slice-step error messages match starlark-go (MISSING-37/40
 }
 
 ///|
-// MISSING-38/MISSING-39: unsupported binary ops use the uniform
-// "unknown binary op: LT OP RT" form, and shift errors carry the count value
-// and fall through to "unknown binary op" on a type mismatch.
 let binary_op_messages_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: 1.0 * "x", "unknown binary op: float * string")
@@ -457,7 +450,7 @@ let binary_op_messages_src : String =
   #|assert.fails(lambda: 1 << 600, "shift count too large: 600")
 
 ///|
-test "binary-op and shift error messages match starlark-go (MISSING-38/39)" {
+test "binary-op and shift error messages match starlark-go" {
   let errs = run_star_string(binary_op_messages_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))

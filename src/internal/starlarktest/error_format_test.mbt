@@ -360,7 +360,7 @@ test "error format: load failure backtrace shows toplevel frame" {
 }
 
 ///|
-test "error format: load failure cause preserves inner backtrace (MISSING-26)" {
+test "error format: load failure cause preserves inner backtrace" {
   let loaded_src =
     #|def f(x):
     #|  return 1 // x
@@ -460,7 +460,7 @@ test "error format: builtin with callback shows builtin frame in traceback" {
 }
 
 ///|
-test "error format: module-level error backtrace includes <toplevel> frame (BUG-3)" {
+test "error format: module-level error backtrace includes <toplevel> frame" {
   let thread = @eval.Thread::new("test")
   let result = @eval.exec_file(
     thread,
@@ -478,7 +478,7 @@ test "error format: module-level error backtrace includes <toplevel> frame (BUG-
 }
 
 ///|
-test "error format: function call from toplevel shows <toplevel> frame (BUG-3)" {
+test "error format: function call from toplevel shows <toplevel> frame" {
   let thread = @eval.Thread::new("test")
   let src =
     #|def g():
@@ -504,7 +504,7 @@ test "error format: function call from toplevel shows <toplevel> frame (BUG-3)" 
 }
 
 ///|
-test "error format: intermediate frame shows call-site within function (BUG-21)" {
+test "error format: intermediate frame shows call-site within function" {
   let thread = @eval.Thread::new("test")
   let src =
     #|def g():
@@ -535,7 +535,7 @@ test "error format: intermediate frame shows call-site within function (BUG-21)"
 }
 
 ///|
-test "error format: deep call chain frames show call positions (BUG-21)" {
+test "error format: deep call chain frames show call positions" {
   let thread = @eval.Thread::new("test")
   let src =
     #|def f(x): return 1//x

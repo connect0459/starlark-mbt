@@ -549,7 +549,7 @@ let assign_comp_scope_chunked : String =
   #|_ = [x for _ in [3] for x in x] ### "local variable x referenced before assignment"
 
 ///|
-test "assign.star line 253: comprehension scope unbound variable (BUG-28)" {
+test "assign.star line 253: comprehension scope unbound variable" {
   let failures = run_chunked_string(assign_comp_scope_chunked)
   if failures.length() != 0 {
     fail(failures.join("\n"))

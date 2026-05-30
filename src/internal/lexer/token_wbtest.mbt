@@ -15,16 +15,13 @@ test "Token::to_string renders the remaining token variants" {
 }
 
 ///|
-// MISSING-42: a tab advances to the next stop based on the source column
-// (rune count), not the accumulated expanded width. For "\t \t": tab→8,
-// space→9, tab→ +(8 - 2%8)=6 → 15. The old accumulated-width logic gave 16.
-test "count_indent expands tabs by source column (MISSING-42)" {
+test "count_indent expands tabs by source column" {
   let sc = Scanner::new("test.star", "\t \tx")
   assert_eq(sc.count_indent(), 15)
 }
 
 ///|
-test "count_indent of eight spaces then a tab is 16 (MISSING-42)" {
+test "count_indent of eight spaces then a tab is 16" {
   let sc = Scanner::new("test.star", "        \tx")
   assert_eq(sc.count_indent(), 16)
 }
