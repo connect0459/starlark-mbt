@@ -1332,10 +1332,13 @@ Each behavioral item confirmed empirically; fixed via TDD (Red test first).
 - [x] **MISSING-127** [message]: non-integer subscript — getIndex form
       `<type> index: got <type>, want int` for reads; bare `got <type>, want int`
       for `setIndex` writes (`ops.mbt`). Commit: `172b9a8`
-- [ ] **MISSING-128** [cosmetic, record-only]: `*`/`**` in a non-assignment
-      expression position reports the assignment-target error rather than Go's
-      `got "*", want primary expression`. Rejection is correct; message is
-      misleading. Grouped with the MISSING-101 cosmetic class (left as-is).
+- [x] **MISSING-128** [message]: `*`/`**` in a non-assignment expression
+      position used to report the assignment-target error regardless of context.
+      Now routed through `parse_atom`'s default error as
+      `got '*'/'**', want primary expression`, matching starlark-go's
+      `parsePrimary` (`parse.go:868`). Added `Token::go_string` to single-quote
+      punctuation tokens like Go's `GoString`. The incomplete-expression case
+      (`x = (`) now also reads `got end of file, want primary expression`.
 
 ### Sixth-pass gap analysis (MISSING-129..131)
 
