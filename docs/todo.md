@@ -1231,9 +1231,20 @@ extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
       paths report "dictionary update sequence element #N has length M, want 2"
       with a `dict:`/`update:` prefix. `dict.popitem` empty error now reads
       "popitem: empty dict".
+- [x] **MISSING-103**: `int(x, base)` validates the base argument's type in the
+      string branch ("int: for base, got T, want int") instead of silently
+      defaulting to base 10; a non-string `x` with any explicit base reports
+      "int: can't convert non-string with explicit base".
 - [x] **MISSING-104**: `dict.get`/`pop`/`setdefault` route through
       `check_positional`, rejecting excess positional args ("got N arguments,
       want at most 2") and keyword args.
+- [x] **MISSING-105**: `format_float` switches a decimal-form value with a
+      7-or-more-digit integer part (decimal exponent >= 6) to scientific
+      notation, matching Go's `strconv.FormatFloat('g')`; e.g.
+      `str(9999999.9)` → `"9.9999999e+06"`.
+- [x] **MISSING-106**: a name bound only by an augmented assignment inside a
+      function is pre-collected as a local, so a nested closure referencing it
+      resolves cleanly instead of raising a false "undefined".
 
 ### Resolved post-release API additions
 
