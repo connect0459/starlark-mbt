@@ -1229,17 +1229,17 @@ fn in_op(
     @value.Value::Range(r) =>
       match needle {
         @value.Value::Int(n) => @value.Value::Bool(r.contains(n.to_int64()))
-        @value.Value::Float(f) =>
+        @value.Value::Float(f) => {
           if f.is_nan() || f.is_inf() {
-            @value.Value::Bool(false)
-          } else {
-            let n = f.to_int64()
-            if n.to_double() != f {
-              @value.Value::Bool(false)
-            } else {
-              @value.Value::Bool(r.contains(n))
-            }
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "'in <range>' requires integer as left operand, not \{@value.type_name(needle)}",
+              ),
+            )
           }
+          @value.Value::Bool(r.contains(f.to_int64()))
+        }
         _ =>
           raise EvalErr(
             make_eval_error(

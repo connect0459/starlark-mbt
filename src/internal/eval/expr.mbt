@@ -770,6 +770,7 @@ fn call_builtin(
       @value.Value::None
     }
     "len" => {
+      reject_kwargs(ctx, "len", kw_args)
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "len() takes exactly one argument"))
       }
@@ -778,7 +779,9 @@ fn call_builtin(
     }
     "str" =>
       if pos_args.length() == 0 {
-        @value.Value::String(@value.StarlarkString::new(""))
+        raise EvalErr(
+          make_eval_error(ctx, "str: got 0 arguments, want exactly 1"),
+        )
       } else if pos_args.length() == 1 {
         match pos_args[0] {
           @value.Value::Bytes(b) =>
@@ -794,12 +797,14 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "str() takes at most one argument"))
       }
     "repr" => {
+      reject_kwargs(ctx, "repr", kw_args)
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "repr() takes exactly one argument"))
       }
       @value.Value::String(@value.StarlarkString::new(@value.repr(pos_args[0])))
     }
     "type" => {
+      reject_kwargs(ctx, "type", kw_args)
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "type() takes exactly one argument"))
       }
@@ -807,7 +812,8 @@ fn call_builtin(
         @value.StarlarkString::new(@value.type_name(pos_args[0])),
       )
     }
-    "bool" =>
+    "bool" => {
+      reject_kwargs(ctx, "bool", kw_args)
       if pos_args.length() == 0 {
         @value.Value::Bool(false)
       } else if pos_args.length() == 1 {
@@ -815,6 +821,7 @@ fn call_builtin(
       } else {
         raise EvalErr(make_eval_error(ctx, "bool() takes at most one argument"))
       }
+    }
     "int" => {
       let base_from_kw = {
         let mut found : Int? = None
@@ -957,10 +964,19 @@ fn call_builtin(
       }
     }
     "range" => builtin_range(ctx, pos_args, kw_args)
-    "list" => builtin_list(ctx, pos_args)
-    "tuple" => builtin_tuple(ctx, pos_args)
+    "list" => {
+      reject_kwargs(ctx, "list", kw_args)
+      builtin_list(ctx, pos_args)
+    }
+    "tuple" => {
+      reject_kwargs(ctx, "tuple", kw_args)
+      builtin_tuple(ctx, pos_args)
+    }
     "dict" => builtin_dict(ctx, pos_args, kw_args)
-    "set" => builtin_set(ctx, pos_args)
+    "set" => {
+      reject_kwargs(ctx, "set", kw_args)
+      builtin_set(ctx, pos_args)
+    }
     "bytes" => {
       reject_kwargs(ctx, "bytes", kw_args)
       builtin_bytes(ctx, pos_args)
@@ -969,10 +985,22 @@ fn call_builtin(
     "max" => builtin_minmax(ctx, pos_args, kw_args, true)
     "enumerate" => builtin_enumerate(ctx, pos_args, kw_args)
     "sorted" => builtin_sorted(ctx, pos_args, kw_args)
-    "reversed" => builtin_reversed(ctx, pos_args)
-    "zip" => builtin_zip(ctx, pos_args)
-    "any" => builtin_any_all(ctx, pos_args, true)
-    "all" => builtin_any_all(ctx, pos_args, false)
+    "reversed" => {
+      reject_kwargs(ctx, "reversed", kw_args)
+      builtin_reversed(ctx, pos_args)
+    }
+    "zip" => {
+      reject_kwargs(ctx, "zip", kw_args)
+      builtin_zip(ctx, pos_args)
+    }
+    "any" => {
+      reject_kwargs(ctx, "any", kw_args)
+      builtin_any_all(ctx, pos_args, true)
+    }
+    "all" => {
+      reject_kwargs(ctx, "all", kw_args)
+      builtin_any_all(ctx, pos_args, false)
+    }
     "hash" => {
       check_positional(ctx, "hash", pos_args, kw_args, 1, 1)
       match pos_args[0] {
@@ -2572,7 +2600,7 @@ fn call_str_method(
             -1
           }
           if result < 0 {
-            raise EvalErr(make_eval_error(ctx, "substring not found"))
+            raise EvalErr(make_eval_error(ctx, "index: substring not found"))
           }
           @value.Value::Int(BigInt::from_int(result))
         }
@@ -2643,7 +2671,7 @@ fn call_str_method(
             -1
           }
           if result < 0 {
-            raise EvalErr(make_eval_error(ctx, "substring not found"))
+            raise EvalErr(make_eval_error(ctx, "rindex: substring not found"))
           }
           @value.Value::Int(BigInt::from_int(result))
         }

@@ -39,8 +39,8 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
     (Dict(x), Dict(y)) => dict_equals(x, y)
     (Set(x), Set(y)) => set_equals(x, y)
     (Range(x), Range(y)) => range_equals(x, y)
-    // Functions use identity: two distinct objects are never equal
-    (Function(_), Function(_)) => false
+    // Functions use identity: only equal if same object
+    (Function(x), Function(y)) => physical_equal(x, y)
     (Builtin(x), Builtin(y)) => x.name == y.name
     // Bound methods use identity: each access creates a new unique object
     (BoundMethod(x), BoundMethod(y)) => x.id == y.id
@@ -206,8 +206,8 @@ pub fn starlark_hash(v : Value) -> Result[UInt, String] {
     Dict(_) => Err("unhashable type: dict")
     Set(_) => Err("unhashable type: set")
     Range(_) => Err("unhashable: range")
-    Function(_) => Err("unhashable type: function")
-    Builtin(_) => Err("unhashable type: builtin_function_or_method")
+    Function(f) => Ok(fnv1a(@utf8.encode(f.name())))
+    Builtin(b) => Ok(fnv1a(@utf8.encode(b.name())))
     BoundMethod(m) => Ok(hash_int(m.id))
     Module(_) => Err("unhashable: module")
     StringElems(_) => Err("unhashable: string.elems")

@@ -315,3 +315,107 @@ test "sorted is stable for equal keys including reverse (MISSING-65)" {
     fail(errs.join("\n"))
   }
 }
+
+// --- MISSING-67: functions and builtins are usable as dict/set keys ---
+
+///|
+let hash_functions_src : String =
+  #|load("assert.star", "assert")
+  #|# Builtins can be used as dict keys (starlark-go: hashString(name))
+  #|d = {len: "found"}
+  #|assert.eq(d[len], "found")
+  #|# User-defined functions can be used as dict keys
+  #|def f(): pass
+  #|d2 = {f: 42}
+  #|assert.eq(d2[f], 42)
+  #|# Builtins can be used in sets
+  #|s = {len, abs}
+  #|assert.true(len in s)
+  #|assert.true(abs in s)
+
+///|
+test "functions and builtins are usable as dict and set keys (MISSING-67)" {
+  let errs = run_star_string(hash_functions_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+// --- MISSING-68: float in range truncates toward zero ---
+
+///|
+let float_in_range_src : String =
+  #|load("assert.star", "assert")
+  #|# starlark-go: NumberToInt truncates toward zero, so 3.7 -> 3, and 3 in range(5) -> True
+  #|assert.true(3.0 in range(5))
+  #|assert.true(3.7 in range(5))
+  #|assert.true(-1.9 in range(-5, 0))
+  #|assert.true(not (5.0 in range(5)))
+  #|assert.true(not (5.9 in range(5)))
+  #|# NaN and Inf raise errors in starlark-go (NumberToInt fails)
+  #|assert.fails(lambda: float("nan") in range(5), "requires integer")
+  #|assert.fails(lambda: float("inf") in range(5), "requires integer")
+
+///|
+test "float in range truncates toward zero (MISSING-68)" {
+  let errs = run_star_string(float_in_range_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+// --- MISSING-74: builtins reject keyword arguments ---
+
+///|
+let kwarg_rejection_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: list([1, 2], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: tuple([1], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: set([1], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: reversed([1], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: zip([1], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: any([True], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: all([True], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: bool(1, foo=3), "does not accept keyword")
+  #|assert.fails(lambda: type(1, foo=3), "does not accept keyword")
+  #|assert.fails(lambda: len([1], foo=3), "does not accept keyword")
+  #|assert.fails(lambda: repr(1, foo=3), "does not accept keyword")
+
+///|
+test "builtins reject keyword arguments (MISSING-74)" {
+  let errs = run_star_string(kwarg_rejection_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+// --- MISSING-75: str() with zero arguments errors ---
+
+///|
+let str_zero_args_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: str(), "str.*got 0 arguments")
+
+///|
+test "str() with zero arguments raises error (MISSING-75)" {
+  let errs = run_star_string(str_zero_args_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+// --- MISSING-76: string.index / rindex error prefix ---
+
+///|
+let index_prefix_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: "abc".index("x"), "index: substring not found")
+  #|assert.fails(lambda: "abc".rindex("x"), "rindex: substring not found")
+
+///|
+test "string.index and rindex not-found error has method name prefix (MISSING-76)" {
+  let errs = run_star_string(index_prefix_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
