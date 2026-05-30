@@ -272,3 +272,23 @@ test "set.star: all assertions pass" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let set_op_argerr_src : String =
+  #|load("assert.star", "assert")
+  #|s = set([1, 2])
+  #|assert.fails(lambda: s.intersection([2], [2, 3]), "intersection: got 2 arguments, want at most 1")
+  #|assert.fails(lambda: s.intersection(5), "intersection: for parameter 1: got int, want iterable")
+  #|assert.fails(lambda: s.difference(5), "difference: for parameter 1: got int, want iterable")
+  #|assert.fails(lambda: s.symmetric_difference(5), "symmetric_difference: for parameter 1: got int, want iterable")
+  #|assert.fails(lambda: s.issubset(5), "issubset: for parameter 1: got int, want iterable")
+  #|assert.fails(lambda: s.issuperset(5), "issuperset: for parameter 1: got int, want iterable")
+  #|assert.fails(lambda: s.difference([1], [2]), "difference: got 2 arguments, want at most 1")
+
+///|
+test "set ops arity and non-iterable errors use nameErr style" {
+  let errs = run_star_string(set_op_argerr_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

@@ -2839,6 +2839,33 @@ fn set_iterate_into(
 }
 
 ///|
+// Validate the single optional iterable argument shared by the set operations
+// intersection/difference/symmetric_difference/issubset/issuperset. starlark-go
+// declares these with min=0 and one optional parameter, so >1 args reports
+// "want at most 1" and a non-iterable reports the parameter-named unpack error.
+fn set_other_iter(
+  ctx : EvalContext,
+  name : String,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+) -> @value.StarlarkIterator raise EvalErr {
+  check_positional(ctx, name, pos_args, kw_args, 0, 1)
+  if pos_args.length() != 1 {
+    raise EvalErr(make_eval_error(ctx, "\{name}: missing argument"))
+  }
+  match @value.iterate(pos_args[0]) {
+    Ok(it) => it
+    Err(_) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "\{name}: for parameter 1: got \{@value.type_name(pos_args[0])}, want iterable",
+        ),
+      )
+  }
+}
+
+///|
 fn call_set_method(
   ctx : EvalContext,
   s : @value.StarlarkSet,
@@ -2918,13 +2945,8 @@ fn call_set_method(
       @value.Value::Set(result)
     }
     "intersection" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "intersection() takes exactly one argument"),
-        )
-      }
       let other_set = @value.StarlarkSet::new()
-      let it = check(ctx, @value.iterate(pos_args[0]))
+      let it = set_other_iter(ctx, "intersection", pos_args, kw_args)
       while true {
         match it.next() {
           None => {
@@ -2944,13 +2966,8 @@ fn call_set_method(
       @value.Value::Set(result)
     }
     "difference" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "difference() takes exactly one argument"),
-        )
-      }
       let other_set = @value.StarlarkSet::new()
-      let it = check(ctx, @value.iterate(pos_args[0]))
+      let it = set_other_iter(ctx, "difference", pos_args, kw_args)
       while true {
         match it.next() {
           None => {
@@ -2970,15 +2987,8 @@ fn call_set_method(
       @value.Value::Set(result)
     }
     "symmetric_difference" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(
-            ctx, "symmetric_difference() takes exactly one argument",
-          ),
-        )
-      }
       let other_items : Array[@value.Value] = []
-      let it = check(ctx, @value.iterate(pos_args[0]))
+      let it = set_other_iter(ctx, "symmetric_difference", pos_args, kw_args)
       while true {
         match it.next() {
           None => {
@@ -3008,13 +3018,8 @@ fn call_set_method(
       @value.Value::Set(result)
     }
     "issubset" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "issubset() takes exactly one argument"),
-        )
-      }
       let other_set = @value.StarlarkSet::new()
-      let it = check(ctx, @value.iterate(pos_args[0]))
+      let it = set_other_iter(ctx, "issubset", pos_args, kw_args)
       while true {
         match it.next() {
           None => {
@@ -3034,13 +3039,8 @@ fn call_set_method(
       @value.Value::Bool(all_in)
     }
     "issuperset" => {
-      if pos_args.length() != 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "issuperset() takes exactly one argument"),
-        )
-      }
       let mut all_in = true
-      let it = check(ctx, @value.iterate(pos_args[0]))
+      let it = set_other_iter(ctx, "issuperset", pos_args, kw_args)
       while true {
         match it.next() {
           None => {
