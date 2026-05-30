@@ -716,6 +716,62 @@ test "exec_file: dict.update merges another dict's entries" {
 }
 
 ///|
+test "exec_file: dict.update accepts a general iterable of two-element pairs" {
+  match exec_b("d = {}\nd.update([range(2)])") {
+    Ok(m) =>
+      match g(m, "d") {
+        Some(@value.Value::Dict(d)) => {
+          assert_eq(d.length(), 1)
+          assert_true(
+            d.get(@value.Value::Int(0N)) == Ok(Some(@value.Value::Int(1N))),
+          )
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: dict.get rejects more than two positional args" {
+  match exec_b("v = {1: 2}.get(1, 2, 3)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("got 3 arguments, want at most 2"))
+  }
+}
+
+///|
+test "exec_file: dict.pop rejects more than two positional args" {
+  match exec_b("v = {1: 2}.pop(1, 2, 3)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("got 3 arguments, want at most 2"))
+  }
+}
+
+///|
+test "exec_file: dict.setdefault rejects more than two positional args" {
+  match exec_b("v = {1: 2}.setdefault(1, 2, 3)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("got 3 arguments, want at most 2"))
+  }
+}
+
+///|
+test "exec_file: dict() reports the offending pair length with a dict prefix" {
+  match exec_b("d = dict([(1, 2, 3)])") {
+    Ok(_) => assert_true(false)
+    Err(e) =>
+      assert_true(
+        e
+        .msg()
+        .contains(
+          "dict: dictionary update sequence element #0 has length 3, want 2",
+        ),
+      )
+  }
+}
+
+///|
 test "exec_file: dict.setdefault inserts key with default when absent" {
   match exec_b("d = {}\nv = d.setdefault(\"x\", 42)") {
     Ok(m) => {

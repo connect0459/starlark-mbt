@@ -1371,105 +1371,114 @@ fn builtin_tuple(
 }
 
 ///|
-fn builtin_dict(
+// Common implementation of the builtin `dict` function and the `dict.update`
+// method, mirroring starlark-go's updateDict. `name` ("dict" or "update")
+// prefixes every error message. Precondition: pos_args.length() <= 1.
+fn update_dict(
   ctx : EvalContext,
+  name : String,
+  d : @value.StarlarkDict,
   pos_args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
-) -> @value.Value raise EvalErr {
-  let d = @value.StarlarkDict::new()
+) -> Unit raise EvalErr {
   if pos_args.length() == 1 {
     match pos_args[0] {
-      @value.Value::Dict(src) => src.each(fn(k, v) { ignore(d.set(k, v)) })
+      @value.Value::Dict(src) => {
+        let pairs : Array[(@value.Value, @value.Value)] = []
+        src.each(fn(k, v) { pairs.push((k, v)) })
+        for pair in pairs {
+          let (k, v) = pair
+          check(ctx, d.set(k, v))
+        }
+      }
       v => {
-        let it = require_seq(ctx, v)
+        let it = match @value.iterate(v) {
+          Ok(i) => i
+          Err(_) =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "\{name}: got \{@value.type_name(v)}, want iterable",
+              ),
+            )
+        }
+        let mut i = 0
         while true {
           match it.next() {
             None => {
               it.done()
               break
             }
-            Some(@value.Value::Tuple(pair)) => {
-              if pair.length() != 2 {
-                it.done()
-                raise EvalErr(
-                  make_eval_error(
-                    ctx, "dict() items must be sequences of length 2",
-                  ),
-                )
-              }
-              check(ctx, d.set(pair[0], pair[1]))
-            }
-            Some(@value.Value::List(pair)) => {
-              if pair.length() != 2 {
-                it.done()
-                raise EvalErr(
-                  make_eval_error(
-                    ctx, "dict() items must be sequences of length 2",
-                  ),
-                )
-              }
-              check(ctx, d.set(pair.get(0), pair.get(1)))
-            }
-            Some(item) =>
-              match @value.iterate(item) {
+            Some(pair) => {
+              let pair_it = match @value.iterate(pair) {
+                Ok(pi) => pi
                 Err(_) => {
                   it.done()
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "dictionary update sequence element is not iterable (\{@value.type_name(item)})",
+                      "\{name}: dictionary update sequence element #\{i} is not iterable (\{@value.type_name(pair)})",
                     ),
                   )
                 }
-                Ok(item_it) => {
-                  let elems : Array[@value.Value] = []
-                  while true {
-                    match item_it.next() {
-                      None => {
-                        item_it.done()
-                        break
-                      }
-                      Some(e) => {
-                        elems.push(e)
-                        if elems.length() > 2 {
-                          item_it.done()
-                          break
-                        }
-                      }
-                    }
+              }
+              let elems : Array[@value.Value] = []
+              while true {
+                match pair_it.next() {
+                  None => {
+                    pair_it.done()
+                    break
                   }
-                  if elems.length() != 2 {
-                    it.done()
-                    raise EvalErr(
-                      make_eval_error(
-                        ctx, "dict() items must be sequences of length 2",
-                      ),
-                    )
-                  }
-                  check(ctx, d.set(elems[0], elems[1]))
+                  Some(e) => elems.push(e)
                 }
               }
+              if elems.length() != 2 {
+                it.done()
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "\{name}: dictionary update sequence element #\{i} has length \{elems.length()}, want 2",
+                  ),
+                )
+              }
+              check(ctx, d.set(elems[0], elems[1]))
+              i = i + 1
+            }
           }
         }
       }
     }
-  } else if pos_args.length() > 1 {
-    raise EvalErr(
-      make_eval_error(ctx, "dict() takes at most one positional argument"),
-    )
   }
   let kw_seen : Array[String] = []
   for kw_pair in kw_args {
     let (kw_name, kw_val) = kw_pair
     if kw_seen.contains(kw_name) {
       raise EvalErr(
-        make_eval_error(ctx, "dict: duplicate keyword arg: \"\{kw_name}\""),
+        make_eval_error(ctx, "\{name}: duplicate keyword arg: \"\{kw_name}\""),
       )
     }
     kw_seen.push(kw_name)
     let key = @value.Value::String(@value.StarlarkString::new(kw_name))
-    ignore(d.set(key, kw_val))
+    check(ctx, d.set(key, kw_val))
   }
+}
+
+///|
+fn builtin_dict(
+  ctx : EvalContext,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+) -> @value.Value raise EvalErr {
+  if pos_args.length() > 1 {
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "dict: got \{pos_args.length()} arguments, want at most 1",
+      ),
+    )
+  }
+  let d = @value.StarlarkDict::new()
+  update_dict(ctx, "dict", d, pos_args, kw_args)
   @value.Value::Dict(d)
 }
 
@@ -2127,14 +2136,7 @@ fn call_dict_method(
 ) -> @value.Value raise EvalErr {
   match method_name {
     "get" => {
-      if !kw_args.is_empty() {
-        raise EvalErr(make_eval_error(ctx, "get: unexpected keyword arguments"))
-      }
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "dict.get() requires at least one argument"),
-        )
-      }
+      check_positional(ctx, "get", pos_args, kw_args, 1, 2)
       let default_val = if pos_args.length() >= 2 {
         pos_args[1]
       } else {
@@ -2160,11 +2162,7 @@ fn call_dict_method(
       @value.Value::List(@value.StarlarkList::new(items))
     }
     "pop" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "dict.pop() requires at least one argument"),
-        )
-      }
+      check_positional(ctx, "pop", pos_args, kw_args, 1, 2)
       let key = pos_args[0]
       match check(ctx, d.get(key)) {
         None =>
@@ -2188,85 +2186,7 @@ fn call_dict_method(
           ),
         )
       }
-      if pos_args.length() == 1 {
-        let src_val = pos_args[0]
-        match src_val {
-          @value.Value::Dict(src) => {
-            let pairs : Array[(@value.Value, @value.Value)] = []
-            src.each(fn(k, v) { pairs.push((k, v)) })
-            for pair in pairs {
-              let (k, v) = pair
-              check(ctx, d.set(k, v))
-            }
-          }
-          _ => {
-            let iter = match @value.iterate(src_val) {
-              Ok(it) => it
-              Err(_) =>
-                raise EvalErr(
-                  make_eval_error(
-                    ctx,
-                    "update: got \{@value.type_name(src_val)}, want iterable",
-                  ),
-                )
-            }
-            let mut i = 0
-            while true {
-              match iter.next() {
-                None => break
-                Some(item) => {
-                  let kv = match item {
-                    @value.Value::Tuple(pair) =>
-                      if pair.length() == 2 {
-                        Some((pair[0], pair[1]))
-                      } else {
-                        iter.done()
-                        raise EvalErr(
-                          make_eval_error(
-                            ctx,
-                            "update: dictionary update sequence element #\{i} has length \{pair.length()}, want 2",
-                          ),
-                        )
-                      }
-                    @value.Value::List(l2) =>
-                      if l2.length() == 2 {
-                        Some((l2.get(0), l2.get(1)))
-                      } else {
-                        iter.done()
-                        raise EvalErr(
-                          make_eval_error(
-                            ctx,
-                            "update: dictionary update sequence element #\{i} has length \{l2.length()}, want 2",
-                          ),
-                        )
-                      }
-                    _ => {
-                      iter.done()
-                      raise EvalErr(
-                        make_eval_error(
-                          ctx,
-                          "update: dictionary update sequence element #\{i} is not iterable (\{@value.type_name(item)})",
-                        ),
-                      )
-                    }
-                  }
-                  match kv {
-                    Some((k, v)) => check(ctx, d.set(k, v))
-                    None => ()
-                  }
-                  i = i + 1
-                }
-              }
-            }
-            iter.done()
-          }
-        }
-      }
-      for kw_pair in kw_args {
-        let (kw_name, kw_val) = kw_pair
-        let key = @value.Value::String(@value.StarlarkString::new(kw_name))
-        check(ctx, d.set(key, kw_val))
-      }
+      update_dict(ctx, "update", d, pos_args, kw_args)
       @value.Value::None
     }
     "clear" => {
@@ -2275,15 +2195,11 @@ fn call_dict_method(
     }
     "popitem" =>
       match check(ctx, d.popitem()) {
-        None => raise EvalErr(make_eval_error(ctx, "empty dict"))
+        None => raise EvalErr(make_eval_error(ctx, "popitem: empty dict"))
         Some((k, v)) => @value.Value::Tuple([k, v])
       }
     "setdefault" => {
-      if pos_args.length() < 1 {
-        raise EvalErr(
-          make_eval_error(ctx, "setdefault() requires a key argument"),
-        )
-      }
+      check_positional(ctx, "setdefault", pos_args, kw_args, 1, 2)
       let key = pos_args[0]
       let default_val = if pos_args.length() >= 2 {
         pos_args[1]
