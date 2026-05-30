@@ -1115,9 +1115,12 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 
 ### Deferred second-pass items (MISSING-69..86)
 
-- [ ] **MISSING-69**: `%e`/`%E`/`%f`/`%F` rounding uses half-up; Go uses
-      correctly-rounded `strconv.FormatFloat` (round-half-to-even). Last-digit
-      divergence for edge cases.
+- [x] **MISSING-69**: `%e`/`%E`/`%f`/`%F` now round the six fractional digits
+      with round-half-to-even on the exact binary value (mantissa*2^exp
+      decomposed and `mantissa * 10^scale` rounded via big-integer division),
+      matching Go's correctly-rounded `strconv.FormatFloat`. Replaces the
+      previous half-up-on-inexact-`frac*1e6`-intermediate algorithm; e.g.
+      `"%f" % 5e-07` → `0.000000` (was `0.000001`). Commit: `da5b01a`
 - [x] **MISSING-70**: `hash_bigint` now uses the low 32 bits of the absolute
       value (magnitude) for BigInts outside the Int64 range, matching
       starlark-go's `iBig.Bits()[0]` formula. Int64-range values remain
@@ -1211,7 +1214,7 @@ resolved with the user.
 - [ ] **MISSING-101** [cosmetic]: A few parser/lexer error *positions* differ from
       Go (messages match). Record-only.
 
-Still deferred from earlier passes: MISSING-69 (%e/%f round-half-to-even),
+All earlier-pass deferrals now closed: MISSING-69 (%e/%f round-half-to-even),
 70 (hash neg bigint), 71 (repeat boundary), 72 (Unicode is*/title/capitalize),
 80 (undefined "did you mean"), 81 (non-ASCII ident `unicode.IsLetter`),
 83 (pre-parsed expr eval entry point).
