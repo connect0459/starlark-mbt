@@ -254,3 +254,16 @@ test "scan: rejects an exponent with no digits" {
 test "scan: a decimal literal too large for Int64 is an int token" {
   assert_eq(scan(rep("9", 23)), rep("9", 23) + " EOF")
 }
+
+// --- Byte-string prefix rules (MISSING-63) ---
+
+///|
+test "scan: rb\"...\" is still a valid raw-bytes literal" {
+  assert_true(scan("rb\"foo\"").contains("EOF"))
+}
+
+///|
+test "scan: br\"...\" is NOT a raw-bytes literal (tokenized as ident + string)" {
+  // Go only accepts rb"..." not br"..."; br"foo" → Ident("br") Str("foo") EOF
+  assert_eq(scan("br\"foo\""), "br \"foo\" EOF")
+}

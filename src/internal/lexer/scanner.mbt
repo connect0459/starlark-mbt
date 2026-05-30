@@ -287,14 +287,6 @@ pub fn Scanner::next_token(
           self.read_byte() |> ignore // consume 'b'
           return self.scan_string(start, true, false)
         }
-        if n1 == b'r' {
-          let n2 = self.peek_byte_ahead(2)
-          if n2 == b'"' || n2 == b'\'' {
-            self.read_byte() |> ignore // 'b'
-            self.read_byte() |> ignore // 'r'
-            return self.scan_string(start, true, true)
-          }
-        }
       }
       let raw_bytes = self.collect_ident_bytes()
       let name = @utf8.decode_lossy(raw_bytes[:])
