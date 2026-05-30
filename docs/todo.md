@@ -1219,6 +1219,22 @@ All earlier-pass deferrals now closed: MISSING-69 (%e/%f round-half-to-even),
 80 (undefined "did you mean"), 81 (non-ASCII ident `unicode.IsLetter`),
 83 (pre-parsed expr eval entry point).
 
+### Fourth-pass gap analysis (MISSING-102..116)
+
+Fresh four-axis comparison against starlark-go plus first comparison of the
+extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
+
+- [x] **MISSING-102** / **MISSING-111** / **MISSING-115**: `dict()` and
+      `dict.update` now share a single `update_dict` helper mirroring
+      starlark-go's `updateDict`. `dict.update` accepts any iterable of
+      two-element pairs (e.g. `range`), not just tuple/list elements; both
+      paths report "dictionary update sequence element #N has length M, want 2"
+      with a `dict:`/`update:` prefix. `dict.popitem` empty error now reads
+      "popitem: empty dict".
+- [x] **MISSING-104**: `dict.get`/`pop`/`setdefault` route through
+      `check_positional`, rejecting excess positional args ("got N arguments,
+      want at most 2") and keyword args.
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
