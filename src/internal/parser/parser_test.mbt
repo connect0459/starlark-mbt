@@ -670,6 +670,18 @@ test "print-as-statement syntax is rejected" {
   }
 }
 
+///|
+test "adjacent string literals are not concatenated" {
+  match @parser.parse_expr("test.star", "\"a\" \"b\"") {
+    Err(_) => ()
+    Ok(_) => fail("expected syntax error for adjacent string literals")
+  }
+  match @parser.parse_file("test.star", "x = \"a\" \"b\"\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected syntax error for adjacent string literals in stmt")
+  }
+}
+
 // --- Non-associative comparison operators ---
 
 ///|

@@ -105,6 +105,12 @@ pub fn parse_expr(
   try {
     let p = Parser::new(filename, source)
     let e = p.parse_test()
+    p.consume_newlines()
+    if p.tok != @lexer.Token::EOF {
+      raise ParseErr(
+        p.syntax_error("got \{p.tok.to_string()}, want end of expression"),
+      )
+    }
     Ok(e)
   } catch {
     ParseErr(e) => Err(e)
@@ -1320,18 +1326,8 @@ fn Parser::parse_atom(self : Parser) -> @syntax.Expr raise ParseErr {
       @syntax.Expr::ELiteral(@syntax.LiteralVal::LitFloat(f), p)
     }
     @lexer.Token::Str(s) => {
-      let mut combined = s
       self.advance()
-      while true {
-        match self.tok {
-          @lexer.Token::Str(s2) => {
-            combined = combined + s2
-            self.advance()
-          }
-          _ => break
-        }
-      }
-      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitString(combined), p)
+      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitString(s), p)
     }
     @lexer.Token::Bytes(b) => {
       self.advance()
