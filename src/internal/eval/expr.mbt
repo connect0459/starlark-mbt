@@ -2794,7 +2794,7 @@ fn call_str_method(
       }
       let mut result = true
       for c in s.raw() {
-        if !c.is_whitespace() {
+        if !is_whitespace(c) {
           result = false
           break
         }
@@ -3646,13 +3646,17 @@ fn find_substr(s : String, sub : String) -> Int {
 
 ///|
 fn is_whitespace(c : Char) -> Bool {
+  // Mirror Go's unicode.IsSpace, which Starlark uses for whitespace-based
+  // split/strip and isspace: ASCII controls + space, the Latin-1 NEL and
+  // no-break space, and the Unicode White_Space code points.
   let n = c.to_int()
-  n == ' '.to_int() ||
-  n == '\t'.to_int() ||
-  n == '\n'.to_int() ||
-  n == '\r'.to_int() ||
-  n == 0x0B ||
-  n == 0x0C
+  match n {
+    0x09 | 0x0A | 0x0B | 0x0C | 0x0D | 0x20 => true
+    0x85 | 0xA0 => true
+    0x1680 => true
+    0x2028 | 0x2029 | 0x202F | 0x205F | 0x3000 => true
+    _ => n >= 0x2000 && n <= 0x200A
+  }
 }
 
 ///|

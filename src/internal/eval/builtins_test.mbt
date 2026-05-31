@@ -2150,3 +2150,31 @@ test "exec_file: splitlines/join report parameter index in type errors" {
     "join: for parameter 1: got int, want iterable",
   )
 }
+
+///|
+test "exec_file: split and strip treat Unicode whitespace as separators" {
+  // U+00A0 (no-break space) is whitespace per Go's unicode.IsSpace.
+  match exec_b("r = \"a\\u00a0b\".split()") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::List(l)) => {
+          assert_eq(l.length(), 2)
+          assert_true(
+            l.get(0) == @value.Value::String(@value.StarlarkString::new("a")),
+          )
+          assert_true(
+            l.get(1) == @value.Value::String(@value.StarlarkString::new("b")),
+          )
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+  match exec_b("r = \"\\u00a0x\\u00a0\".strip()") {
+    Ok(m) =>
+      assert_true(
+        g(m, "r") == Some(@value.Value::String(@value.StarlarkString::new("x"))),
+      )
+    Err(e) => fail(e.to_string())
+  }
+}
