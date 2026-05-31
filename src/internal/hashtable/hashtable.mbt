@@ -226,6 +226,7 @@ fn[K, V] Hashtable::alloc_entry(self : Hashtable[K, V]) -> Int {
 ///|
 fn[K, V] Hashtable::maybe_grow(self : Hashtable[K, V]) -> Unit {
   let cap = self.slots.length()
+  // Grow when live_count / capacity >= 2/3 (i.e., live_count * 3 >= capacity * 2).
   if self.live_count * load_factor_den >= cap * load_factor_num {
     let new_cap = cap * 2
     let new_slots = Array::make(new_cap, empty_idx)

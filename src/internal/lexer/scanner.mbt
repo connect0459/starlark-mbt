@@ -1285,6 +1285,8 @@ fn xdigit_to_int(b : Byte) -> Int {
 ///|
 // UTF-8 encoding: leading-byte masks 0xC0/0xE0/0xF0 mark 2/3/4-byte sequences;
 // 0x80 marks each continuation byte; 0x3F extracts the 6-bit payload per byte.
+// Boundaries: 1-byte [0..0x7F], 2-byte [0x80..0x7FF], 3-byte [0x800..0xFFFF],
+//             4-byte [0x10000..0x10FFFF].
 fn append_utf8_codepoint(cp : Int, buf : Array[Byte]) -> Unit {
   if cp < 0x80 {
     buf.push(cp.to_byte())
