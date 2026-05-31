@@ -15,6 +15,18 @@ pub struct Program {
 /// Parses and resolves `src` as a Starlark file named `filename`, returning
 /// an immutable `Program` on success. `is_predeclared` answers whether a name
 /// is provided by the embedder's predeclared environment.
+///
+/// Parameters:
+///
+/// * `filename` : The name used to identify this source file in error messages
+///   and stack traces.
+/// * `src` : The Starlark source text to parse and resolve.
+/// * `opts` : Evaluation options controlling language features.
+/// * `is_predeclared` : A predicate that returns `true` if a given name is
+///   provided by the embedder's predeclared environment.
+///
+/// Returns a `Program` ready for `init`, or an `EvalError` if parsing or
+/// resolution fails.
 pub fn source_program(
   filename : String,
   src : String,
@@ -30,6 +42,18 @@ pub fn source_program(
 /// Like `source_program` but also returns the parsed `File` AST alongside the
 /// `Program`, useful when the caller needs to inspect load statements before
 /// executing.
+///
+/// Parameters:
+///
+/// * `filename` : The name used to identify this source file in error messages
+///   and stack traces.
+/// * `src` : The Starlark source text to parse and resolve.
+/// * `opts` : Evaluation options controlling language features.
+/// * `is_predeclared` : A predicate that returns `true` if a given name is
+///   provided by the embedder's predeclared environment.
+///
+/// Returns a pair of the parsed `File` AST and the resolved `Program`, or an
+/// `EvalError` if parsing or resolution fails.
 pub fn source_program_with_file(
   filename : String,
   src : String,
@@ -49,6 +73,15 @@ pub fn source_program_with_file(
 ///|
 /// Resolves an already-parsed `File` AST with the given options, returning a
 /// `Program` ready for `init`. Skips lexing and parsing.
+///
+/// Parameters:
+///
+/// * `file` : A previously parsed `File` AST to resolve.
+/// * `opts` : Evaluation options controlling language features.
+/// * `is_predeclared` : A predicate that returns `true` if a given name is
+///   provided by the embedder's predeclared environment.
+///
+/// Returns a resolved `Program`, or an `EvalError` if name resolution fails.
 pub fn file_program(
   file : @syntax.File,
   opts : Options,
@@ -73,12 +106,16 @@ pub fn file_program(
 
 ///|
 /// Returns the source filename recorded in the program.
+///
+/// Returns the filename string that was supplied when the program was created.
 pub fn Program::filename(self : Program) -> String {
   self.file.path()
 }
 
 ///|
 /// Returns the number of `load(...)` statements in the program.
+///
+/// Returns the count of top-level `load` statements found in the parsed file.
 pub fn Program::num_loads(self : Program) -> Int {
   let mut count = 0
   for stmt in self.file.stmts() {
@@ -93,6 +130,15 @@ pub fn Program::num_loads(self : Program) -> Int {
 ///|
 /// Returns the path string and source position of the `i`-th `load` statement.
 /// Returns an empty string and unknown position if `i` is out of range.
+///
+/// Parameters:
+///
+/// * `self` : The program whose load statements are queried.
+/// * `i` : Zero-based index of the load statement to retrieve.
+///
+/// Returns a tuple of the module path string and the source position of that
+/// `load` statement, or an empty string and unknown position if `i` is out of
+/// range.
 pub fn Program::load(self : Program, i : Int) -> (String, @errors.Position) {
   let mut idx = 0
   for stmt in self.file.stmts() {
@@ -113,6 +159,16 @@ pub fn Program::load(self : Program, i : Int) -> (String, @errors.Position) {
 /// Executes the program with the given `predeclared` bindings, returning an
 /// unfrozen `Module`. Unlike `exec_file`, does not freeze the module on return.
 /// May be called multiple times with different `predeclared` dictionaries.
+///
+/// Parameters:
+///
+/// * `self` : The resolved program to execute.
+/// * `thread` : The thread context that carries the call stack and load handler.
+/// * `predeclared` : The set of predeclared name–value bindings visible to the
+///   program during execution.
+///
+/// Returns an unfrozen `Module` whose globals are the top-level bindings
+/// produced by the execution, or an `EvalError` if execution fails.
 pub fn Program::init(
   self : Program,
   thread : Thread,

@@ -92,24 +92,52 @@ pub fn Options::load_binds_globally(self : Options) -> Bool {
 
 ///|
 /// Returns a copy of `self` with `load_binds_globally` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `load_binds_globally` flag.
+///
+/// Returns a new `Options` with the `load_binds_globally` flag set to `v`.
 pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
   { ..self, load_binds_globally: v }
 }
 
 ///|
 /// Returns a copy of `self` with `allow_recursion` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_recursion` flag.
+///
+/// Returns a new `Options` with the `allow_recursion` flag set to `v`.
 pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
   { ..self, allow_recursion: v }
 }
 
 ///|
 /// Returns a copy of `self` with `allow_set` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_set` flag.
+///
+/// Returns a new `Options` with the `allow_set` flag set to `v`.
 pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
   { ..self, allow_set: v }
 }
 
 ///|
 /// Returns a copy of `self` with `allow_global_reassign` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_global_reassign` flag.
+///
+/// Returns a new `Options` with the `allow_global_reassign` flag set to `v`.
 pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
   { ..self, allow_global_reassign: v }
 }
@@ -144,18 +172,38 @@ pub fn Universe::standard() -> Universe {
 
 ///|
 /// Returns the value bound to `name` in the universe, or `None`.
+///
+/// Parameters:
+///
+/// * `self` : The universe to look up in.
+/// * `name` : The predeclared name to retrieve.
+///
+/// Returns `Some(value)` if `name` is present, `None` otherwise.
 pub fn Universe::get(self : Universe, name : String) -> @value.Value? {
   self.bindings.get(name)
 }
 
 ///|
 /// Returns `true` if `name` is present in the universe.
+///
+/// Parameters:
+///
+/// * `self` : The universe to query.
+/// * `name` : The name to test for presence.
+///
+/// Returns `true` if `name` exists in the universe.
 pub fn Universe::has(self : Universe, name : String) -> Bool {
   self.bindings.contains(name)
 }
 
 ///|
 /// Adds or replaces the binding for `name` in the universe.
+///
+/// Parameters:
+///
+/// * `self` : The universe to modify.
+/// * `name` : The predeclared name to bind.
+/// * `value` : The value to associate with `name`.
 pub fn Universe::set(
   self : Universe,
   name : String,
@@ -179,12 +227,24 @@ pub fn Predeclared::new() -> Predeclared {
 
 ///|
 /// Creates a `Predeclared` set wrapping an existing map.
+///
+/// Parameters:
+///
+/// * `m` : The map to wrap; keys are name strings, values are the bindings.
+///
+/// Returns a `Predeclared` backed by `m`.
 pub fn Predeclared::from_map(m : Map[String, @value.Value]) -> Predeclared {
   { bindings: m }
 }
 
 ///|
 /// Adds or replaces the binding for `name`.
+///
+/// Parameters:
+///
+/// * `self` : The predeclared set to modify.
+/// * `name` : The name to bind.
+/// * `v` : The value to associate with `name`.
 pub fn Predeclared::set(
   self : Predeclared,
   name : String,
@@ -195,6 +255,13 @@ pub fn Predeclared::set(
 
 ///|
 /// Returns the value bound to `name`, or `None`.
+///
+/// Parameters:
+///
+/// * `self` : The predeclared set to look up in.
+/// * `name` : The name to retrieve.
+///
+/// Returns `Some(value)` if `name` is present, `None` otherwise.
 pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
   self.bindings.get(name)
 }
@@ -220,6 +287,12 @@ pub struct Thread {
 ///|
 /// Creates a `Thread` with the given name, printing to stdout, no loader,
 /// and the default recursion depth limit.
+///
+/// Parameters:
+///
+/// * `name` : A label for the thread used in diagnostics.
+///
+/// Returns a new `Thread` ready for Starlark execution.
 pub fn Thread::new(name : String) -> Thread {
   {
     name,
@@ -238,6 +311,14 @@ pub fn Thread::new(name : String) -> Thread {
 
 ///|
 /// Creates a `Thread` with a custom print callback.
+///
+/// Parameters:
+///
+/// * `name` : A label for the thread used in diagnostics.
+/// * `print_fn` : Callback invoked for each `print()` call; receives the
+///   active thread and the formatted message string.
+///
+/// Returns a new `Thread` with the given print callback.
 pub fn Thread::with_print(
   name : String,
   print_fn : (Thread, String) -> Unit,
@@ -259,6 +340,14 @@ pub fn Thread::with_print(
 
 ///|
 /// Creates a `Thread` with a load callback for `load()` statements.
+///
+/// Parameters:
+///
+/// * `name` : A label for the thread used in diagnostics.
+/// * `load_fn` : Callback invoked for each `load("path", ...)` statement;
+///   receives the active thread and the module path, returns the loaded module.
+///
+/// Returns a new `Thread` with the given load callback.
 pub fn Thread::with_loader(
   name : String,
   load_fn : (Thread, String) -> Result[Module, @errors.EvalError],
@@ -281,6 +370,14 @@ pub fn Thread::with_loader(
 ///|
 /// Creates a `Thread` with a maximum step budget; execution raises an error
 /// when the budget is exhausted.
+///
+/// Parameters:
+///
+/// * `name` : A label for the thread used in diagnostics.
+/// * `max_steps` : Maximum number of evaluation steps before the execution
+///   is cancelled with an error.
+///
+/// Returns a new `Thread` with the given step budget.
 pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
   {
     name,
@@ -300,6 +397,12 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
 ///|
 /// Stores a thread-local value under `key`. Used by extension libraries (e.g.
 /// `time.now()`) to communicate per-thread state such as clock overrides.
+///
+/// Parameters:
+///
+/// * `self` : The thread to store the value on.
+/// * `key` : The key identifying this thread-local slot.
+/// * `value` : The value to store.
 pub fn Thread::set_local(
   self : Thread,
   key : String,
@@ -310,6 +413,13 @@ pub fn Thread::set_local(
 
 ///|
 /// Retrieves the thread-local value previously stored under `key`, or `None`.
+///
+/// Parameters:
+///
+/// * `self` : The thread to retrieve from.
+/// * `key` : The key identifying the thread-local slot.
+///
+/// Returns `Some(value)` if a value was stored under `key`, `None` otherwise.
 pub fn Thread::get_local(self : Thread, key : String) -> @value.Value? {
   self.locals.get(key)
 }
@@ -318,6 +428,12 @@ pub fn Thread::get_local(self : Thread, key : String) -> @value.Value? {
 /// Marks the thread as cancelled with the given reason. The evaluator checks
 /// this flag at each step and raises an error on the next opportunity. Only
 /// the first call takes effect.
+///
+/// Parameters:
+///
+/// * `self` : The thread to cancel.
+/// * `reason` : A message describing why the thread was cancelled; used in
+///   the raised error.
 pub fn Thread::cancel(self : Thread, reason : String) -> Unit {
   if self.cancel_reason is None {
     self.cancel_reason = Some(reason)
@@ -339,6 +455,11 @@ pub fn Thread::reset_steps(self : Thread) -> Unit {
 ///|
 /// Sets the execution-step budget without resetting the accumulated step
 /// count. Use `reset_steps` to zero the counter explicitly.
+///
+/// Parameters:
+///
+/// * `self` : The thread to update.
+/// * `max` : The new maximum step count.
 pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
   self.max_steps = Some(max)
 }
@@ -346,6 +467,12 @@ pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
 ///|
 /// Replaces the print callback. Combined with `set_loader` and
 /// `set_max_steps`, this lets a single thread carry all three settings.
+///
+/// Parameters:
+///
+/// * `self` : The thread to update.
+/// * `print_fn` : The new print callback; receives the active thread and the
+///   formatted message string.
 pub fn Thread::set_print(
   self : Thread,
   print_fn : (Thread, String) -> Unit,
@@ -355,6 +482,12 @@ pub fn Thread::set_print(
 
 ///|
 /// Replaces the load callback used by `load()` statements.
+///
+/// Parameters:
+///
+/// * `self` : The thread to update.
+/// * `load_fn` : The new load callback; receives the active thread and the
+///   module path, returns the loaded module or an error.
 pub fn Thread::set_loader(
   self : Thread,
   load_fn : (Thread, String) -> Result[Module, @errors.EvalError],
@@ -365,6 +498,11 @@ pub fn Thread::set_loader(
 ///|
 /// Registers a callback invoked when the step budget is exhausted, before
 /// the error is raised.
+///
+/// Parameters:
+///
+/// * `self` : The thread to update.
+/// * `cb` : The callback to invoke when the step budget is exhausted.
 pub fn Thread::set_on_max_steps(self : Thread, cb : (Thread) -> Unit) -> Unit {
   self.on_max_steps = Some(cb)
 }
@@ -379,6 +517,14 @@ pub fn Thread::call_stack_depth(self : Thread) -> Int {
 /// Returns a snapshot of the active Starlark call frame at `depth` steps
 /// from the innermost frame (0 = innermost). Returns `None` if `depth` is
 /// out of range or the frame is not a Starlark function frame.
+///
+/// Parameters:
+///
+/// * `self` : The thread whose debug call stack to inspect.
+/// * `depth` : Distance from the innermost Starlark function frame (0 = innermost).
+///
+/// Returns `Some(frame)` if a Starlark frame exists at that depth, `None`
+/// otherwise.
 pub fn Thread::debug_frame(self : Thread, depth : Int) -> DebugFrame? {
   let idx = self.debug_stack.length() - 1 - depth
   if idx < 0 || idx >= self.debug_stack.length() {
@@ -402,6 +548,13 @@ pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
 ///|
 /// Returns the call frame at `n` steps from the innermost frame (0 =
 /// innermost, 1 = its caller, etc.), or `None` if out of range.
+///
+/// Parameters:
+///
+/// * `self` : The thread whose call stack to inspect.
+/// * `n` : Distance from the innermost frame (0 = innermost).
+///
+/// Returns `Some(frame)` if the index is valid, `None` otherwise.
 pub fn Thread::call_frame(self : Thread, n : Int) -> @errors.CallFrame? {
   let idx = self.call_stack.length() - 1 - n
   if idx < 0 || idx >= self.call_stack.length() {
@@ -452,6 +605,12 @@ pub fn Module::new() -> Module {
 
 ///|
 /// Creates a frozen `Module` pre-populated from `m`.
+///
+/// Parameters:
+///
+/// * `m` : A map of global name strings to their initial values.
+///
+/// Returns a new, frozen `Module` containing the bindings from `m`.
 pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
   let mod = Module::new()
   m.each(fn(name, v) {
@@ -479,6 +638,13 @@ pub fn Module::is_frozen(self : Module) -> Bool {
 
 ///|
 /// Returns the value bound to `name` in the module globals, or `None`.
+///
+/// Parameters:
+///
+/// * `self` : The module to look up in.
+/// * `name` : The global name to retrieve.
+///
+/// Returns `Some(value)` if `name` is present, `None` otherwise.
 pub fn Module::get(self : Module, name : String) -> @value.Value? {
   let key = @value.Value::String(@value.StarlarkString::new(name))
   match self.globals.get(key) {
@@ -576,6 +742,17 @@ fn is_builtin(name : String) -> Bool {
 }
 
 ///|
+/// Invokes a Starlark callable from host code with positional `args` and
+/// keyword `kwargs`.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `func` : The Starlark callable to invoke (function, builtin, or bound method).
+/// * `args` : Positional arguments to pass.
+/// * `kwargs` : Keyword arguments as `(name, value)` pairs.
+///
+/// Returns the call result, or an `EvalError` on failure.
 pub fn call(
   thread : Thread,
   func : @value.Value,
@@ -590,6 +767,18 @@ pub fn call(
 }
 
 ///|
+/// Applies a Starlark binary operator by name to `x` and `y`.
+/// Valid operators: `"+"`, `"-"`, `"*"`, `"/"`, `"//"`, `"%"`,
+/// `"&"`, `"|"`, `"^"`, `"<<"`, `">>"`.
+///
+/// Parameters:
+///
+/// * `op` : The binary operator name.
+/// * `x` : The left-hand operand.
+/// * `y` : The right-hand operand.
+///
+/// Returns the operation result, or an `EvalError` on type mismatch or
+/// arithmetic error.
 pub fn binary(
   op : String,
   x : @value.Value,
@@ -618,6 +807,15 @@ pub fn binary(
 }
 
 ///|
+/// Applies a Starlark unary operator by name to `x`.
+/// Valid operators: `"+"`, `"-"`, `"~"`, `"not"`.
+///
+/// Parameters:
+///
+/// * `op` : The unary operator name.
+/// * `x` : The operand.
+///
+/// Returns the operation result, or an `EvalError` on type mismatch.
 pub fn unary(
   op : String,
   x : @value.Value,
@@ -638,6 +836,16 @@ pub fn unary(
 }
 
 ///|
+/// Applies a Starlark comparison operator by name to `x` and `y`.
+/// Valid operators: `"=="`, `"!="`, `"<"`, `"<="`, `">"`, `">="`.
+///
+/// Parameters:
+///
+/// * `op` : The comparison operator name.
+/// * `x` : The left-hand operand.
+/// * `y` : The right-hand operand.
+///
+/// Returns `Ok(result)` on success, or an `EvalError` on type mismatch.
 pub fn compare(
   op : String,
   x : @value.Value,
@@ -668,6 +876,18 @@ pub fn compare(
 }
 
 ///|
+/// Parses, resolves, and executes a Starlark source file; returns the frozen
+/// module whose globals are the file's top-level bindings.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `filename` : Source file name used in error messages and position info.
+/// * `src` : Starlark source text to execute.
+/// * `opts` : Feature flags controlling which dialect features are active.
+///
+/// Returns the frozen `Module`, or an `EvalError` on parse, resolve, or
+/// runtime failure.
 pub fn exec_file(
   thread : Thread,
   filename : String,
@@ -723,6 +943,19 @@ pub fn exec_file(
 }
 
 ///|
+/// Like `exec_file` but replaces the default built-in universe with
+/// `universe`, allowing the embedder to override or extend predeclared names.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `filename` : Source file name used in error messages and position info.
+/// * `src` : Starlark source text to execute.
+/// * `opts` : Feature flags controlling which dialect features are active.
+/// * `universe` : Custom universe of predeclared bindings to use instead of
+///   the standard built-ins.
+///
+/// Returns the frozen `Module`, or an `EvalError` on failure.
 pub fn exec_file_with_universe(
   thread : Thread,
   filename : String,
@@ -781,6 +1014,18 @@ pub fn exec_file_with_universe(
 }
 
 ///|
+/// Like `exec_file` but injects extra `predeclared` bindings that are visible
+/// to the script but not included in the returned module's globals.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `filename` : Source file name used in error messages and position info.
+/// * `src` : Starlark source text to execute.
+/// * `opts` : Feature flags controlling which dialect features are active.
+/// * `predeclared` : Extra per-execution bindings injected before user globals.
+///
+/// Returns the frozen `Module`, or an `EvalError` on failure.
 pub fn exec_file_with_predeclared(
   thread : Thread,
   filename : String,
@@ -839,6 +1084,18 @@ pub fn exec_file_with_predeclared(
 }
 
 ///|
+/// Executes one REPL chunk: parses `src`, resolves it against `globals`,
+/// evaluates it, and writes any new or updated bindings back into `globals`.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `filename` : Source file name used in error messages and position info.
+/// * `src` : Starlark source chunk to execute (may be statements or an expression).
+/// * `globals` : Mutable dict that persists global bindings across REPL chunks.
+/// * `opts` : Feature flags controlling which dialect features are active.
+///
+/// Returns `Ok(())` on success, or an `EvalError` on failure.
 pub fn exec_repl_chunk(
   thread : Thread,
   filename : String,
@@ -903,6 +1160,17 @@ pub fn exec_repl_chunk(
 }
 
 ///|
+/// Parses and evaluates a single Starlark expression with the default options,
+/// using `env` as the global environment.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `filename` : Source file name used in error messages and position info.
+/// * `src` : Starlark expression source text to evaluate.
+/// * `env` : Global environment dict supplying variable bindings.
+///
+/// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr(
   thread : Thread,
   filename : String,
@@ -913,6 +1181,17 @@ pub fn eval_expr(
 }
 
 ///|
+/// Like `eval_expr` but accepts explicit `opts`.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `filename` : Source file name used in error messages and position info.
+/// * `src` : Starlark expression source text to evaluate.
+/// * `opts` : Feature flags controlling which dialect features are active.
+/// * `env` : Global environment dict supplying variable bindings.
+///
+/// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr_with_opts(
   thread : Thread,
   filename : String,
@@ -937,6 +1216,17 @@ pub fn eval_expr_with_opts(
 }
 
 ///|
+/// Evaluates a pre-parsed expression node under `opts` with the bindings in
+/// `env` as the global environment.
+///
+/// Parameters:
+///
+/// * `thread` : Execution context providing print/load callbacks and step budget.
+/// * `expr` : Pre-parsed expression AST node to evaluate.
+/// * `opts` : Feature flags controlling which dialect features are active.
+/// * `env` : Global environment dict supplying variable bindings.
+///
+/// Returns the evaluated `Value`, or an `EvalError` on runtime failure.
 pub fn eval_parsed_expr(
   thread : Thread,
   expr : @syntax.Expr,

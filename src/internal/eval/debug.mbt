@@ -45,12 +45,18 @@ fn DebugFrame::from_active(af : ActiveCallFrame) -> DebugFrame {
 
 ///|
 /// Returns the callable value (`Function` or `Builtin`) that owns this frame.
+///
+/// Returns the `Value` representing the function or builtin being executed in
+/// this frame.
 pub fn DebugFrame::callable(self : DebugFrame) -> @value.Value {
   self.callable_val
 }
 
 ///|
 /// Returns the number of local variables (parameters + body locals) in this frame.
+///
+/// Returns the total count of named locals, including both function parameters
+/// and variables declared in the function body.
 pub fn DebugFrame::num_locals(self : DebugFrame) -> Int {
   self.all_local_names.length()
 }
@@ -58,6 +64,14 @@ pub fn DebugFrame::num_locals(self : DebugFrame) -> Int {
 ///|
 /// Returns the binding descriptor and current value of the `i`-th local.
 /// The value is `None` if the local has not yet been assigned.
+///
+/// Parameters:
+///
+/// * `self` : The debug frame to inspect.
+/// * `i` : Zero-based index into the frame's local variable list.
+///
+/// Returns a tuple of the `Binding` descriptor (name and declaration position)
+/// and the current value of that local, or `None` if it has not been assigned.
 pub fn DebugFrame::frame_local(
   self : DebugFrame,
   i : Int,
@@ -71,6 +85,14 @@ pub fn DebugFrame::frame_local(
 ///|
 /// Returns the current value of the local variable named `name`, or `None`
 /// if the name is absent or the variable has not yet been assigned.
+///
+/// Parameters:
+///
+/// * `self` : The debug frame to inspect.
+/// * `name` : The name of the local variable to look up.
+///
+/// Returns the current `Value` of the named local, or `None` if the name is
+/// not found or the variable has not yet been assigned.
 pub fn DebugFrame::local_by_name(
   self : DebugFrame,
   name : String,
@@ -80,6 +102,9 @@ pub fn DebugFrame::local_by_name(
 
 ///|
 /// Returns the source position of the current execution point within this frame.
+///
+/// Returns the `Position` indicating where execution is currently paused inside
+/// this call frame.
 pub fn DebugFrame::position(self : DebugFrame) -> @errors.Position {
   ignore(self)
   @errors.Position::new("", 0, 0)
