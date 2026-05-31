@@ -1867,6 +1867,20 @@ comments, and doc-comments on public functions.
       `spell_nearest` explaining `(len+1)/2` as the half-word-length acceptance
       threshold; added comment to `hash_tuple` documenting the Python
       `tuplehash` `len + len` step formula origin.
+- [x] **DRY consolidation (spell-check)** — `spell_fold_chars`,
+      `spell_levenshtein`, and `spell_nearest` were duplicated verbatim in
+      `eval/stmt.mbt` and `resolver/resolver.mbt` (~80 lines each). Moved to
+      `utf8util/spell.mbt` as `pub fn`; added `utf8util` import to
+      `resolver/moon.pkg`; updated all six call sites in eval to
+      `@utf8util.spell_nearest(...)`.
+- [x] **Non-obvious comments (eighth pass)** — `hashtable/hashtable.mbt`
+      `maybe_grow`: added inline comment explaining the rearranged inequality
+      `live_count * 3 >= capacity * 2` is a 2/3 load factor threshold.
+      `lexer/scanner.mbt` `append_utf8_codepoint`: added Boundaries line
+      documenting the four UTF-8 sequence ranges (1/2/3/4-byte).
+      `utf8util/utf8util.mbt` `utf8_decode_rune`: added RFC 3629 comment
+      explaining why the leading-byte bounds are 0xC2/0xF4 (not 0xC0/0xF7)
+      — 0xC0/0xC1 are overlong, 0xF5..0xF7 encode codepoints above U+10FFFF.
 
 ---
 
