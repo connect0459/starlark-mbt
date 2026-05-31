@@ -461,3 +461,24 @@ test "BigInt slice bounds outside int32 range raise out-of-range error" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let list_pop_insert_param_src : String =
+  #|load("assert.star", "assert")
+  #|x = [1, 2, 3]
+  #|# pop with non-int argument uses "for parameter 1:" prefix
+  #|assert.fails(lambda: x.pop("a"), "pop: for parameter 1: got string, want int")
+  #|# insert with non-int index uses "for parameter 1:" prefix
+  #|assert.fails(lambda: x.insert("a", 9), "insert: for parameter 1: got string, want int")
+  #|# pop with BigInt out of int64 range
+  #|assert.fails(lambda: x.pop(99999999999999999999), "pop: for parameter 1: 99999999999999999999 out of range")
+  #|# insert with BigInt out of int64 range silently clamped -> now errors
+  #|assert.fails(lambda: x.insert(99999999999999999999, 9), "insert: for parameter 1: 99999999999999999999 out of range")
+
+///|
+test "list.pop and list.insert use 'for parameter 1:' error prefix" {
+  let errs = run_star_string(list_pop_insert_param_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

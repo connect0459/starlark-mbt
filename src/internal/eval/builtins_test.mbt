@@ -668,7 +668,10 @@ test "exec_file: list.insert places element at given index" {
 test "exec_file: list method error messages use nameErr style" {
   match exec_b("[1, 2].pop(\"x\")") {
     Ok(_) => assert_true(false)
-    Err(e) => assert_true(e.msg().contains("pop: got string, want int"))
+    Err(e) =>
+      assert_true(
+        e.msg().contains("pop: for parameter 1: got string, want int"),
+      )
   }
   match exec_b("[].pop()") {
     Ok(_) => assert_true(false)
@@ -681,7 +684,10 @@ test "exec_file: list method error messages use nameErr style" {
   }
   match exec_b("[1].insert(\"x\", 9)") {
     Ok(_) => assert_true(false)
-    Err(e) => assert_true(e.msg().contains("insert: got string, want int"))
+    Err(e) =>
+      assert_true(
+        e.msg().contains("insert: for parameter 1: got string, want int"),
+      )
   }
   match exec_b("[1].remove(1, 2)") {
     Ok(_) => assert_true(false)

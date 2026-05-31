@@ -2143,10 +2143,24 @@ fn call_list_method(
       let n = l.length()
       let i = if pos_args.length() == 1 {
         match pos_args[0] {
-          @value.Value::Int(b) => b
+          @value.Value::Int(b) => {
+            if b.compare_int64(@int64.MAX_VALUE) > 0 ||
+              b.compare_int64(@int64.MIN_VALUE) < 0 {
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "pop: for parameter 1: \{b} out of range (want value in signed 64-bit range)",
+                ),
+              )
+            }
+            b
+          }
           v =>
             raise EvalErr(
-              make_eval_error(ctx, "pop: got \{@value.type_name(v)}, want int"),
+              make_eval_error(
+                ctx,
+                "pop: for parameter 1: got \{@value.type_name(v)}, want int",
+              ),
             )
         }
       } else {
@@ -2178,6 +2192,15 @@ fn call_list_method(
       check_positional(ctx, "insert", pos_args, kw_args, 2, 2)
       match pos_args[0] {
         @value.Value::Int(i) => {
+          if i.compare_int64(@int64.MAX_VALUE) > 0 ||
+            i.compare_int64(@int64.MIN_VALUE) < 0 {
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "insert: for parameter 1: \{i} out of range (want value in signed 64-bit range)",
+              ),
+            )
+          }
           let len = l.length()
           let j = {
             let len64 = BigInt::from_int(len)
@@ -2195,7 +2218,10 @@ fn call_list_method(
         }
         v =>
           raise EvalErr(
-            make_eval_error(ctx, "insert: got \{@value.type_name(v)}, want int"),
+            make_eval_error(
+              ctx,
+              "insert: for parameter 1: got \{@value.type_name(v)}, want int",
+            ),
           )
       }
     }
