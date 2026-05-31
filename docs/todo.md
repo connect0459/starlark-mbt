@@ -1625,6 +1625,47 @@ Fresh five-area comparison against starlark-go after MISSING-1..180 closed.
       the signed 64-bit range now raises "int value out of range (want signed 64-bit
       value)" instead of silently wrapping. Commit: `84cdb6f`
 
+### Thirteenth-pass gap analysis (MISSING-192..199)
+
+Fresh six-area parallel comparison against starlark-go after MISSING-1..191
+closed (slicing/indexing, string methods, numerics, builtins+arg-binding,
+lexer/parser/resolver, dict/set/list/tuple). Slicing/indexing,
+dict/set/list/tuple, and user-function arg-binding had no divergences.
+Excluded as intentional (feature flags default-on by design): top-level
+`if`/`for`/`while`, `while`, top-level global reassign, custom
+Python-keyword rejection messages. Also excluded: ASCII-only
+`isalpha`/`isdigit`/`isalnum` (MISSING-72); `float("0x1p4")` hex floats.
+
+- [x] **MISSING-192** [message]: `abs()` type error no longer carries the
+      spurious `abs:` prefix; matches Go's bare `got T, want int or float`
+      (`library.go:193`, `testdata/builtins.star:31`).
+- [x] **MISSING-193** [message]: builtins routed through `UnpackPositionalArgs`
+      (`len`, `repr`, `reversed`, `dir`, `all`, `any`, `bool`, `list`, `tuple`,
+      `set`) report arg counts as `<name>: got N arguments, want [at most ]M`
+      via the shared `check_positional` helper, replacing ad-hoc
+      `X() takes ... argument` wording.
+- [x] **MISSING-194** [message]: the same `UnpackPositionalArgs` builtins reject
+      keyword args with `<name>: unexpected keyword arguments`; `dir`, `str`,
+      `bytes`, `chr`, `ord`, `type`, `zip`, `float` keep the `does not accept
+      keyword arguments` form per `library.go`.
+- [x] **MISSING-195** [message]: `str()`/`bytes()` excess-argument errors are
+      now `<name>: got N arguments, want exactly 1` (`library.go:1096`, `:246`).
+- [x] **MISSING-196** [behavioral + message]: `sorted` accepts `iterable` as a
+      keyword (Go uses `UnpackArgs` with a named `iterable` param,
+      `library.go:1024`) and reports `sorted: missing argument for iterable`
+      when absent, replacing the positional-only handling.
+- [x] **MISSING-197** [message + order]: `min`/`max` check for at least one
+      positional argument before processing kwargs (so `min(default=5)` reports
+      the missing positional, `library.go:701`); unexpected keywords emit
+      `<name>: unexpected keyword argument <kw>` (UnpackArgs form).
+- [x] **MISSING-198** [message]: `str.splitlines(non-bool)` and
+      `str.join(non-iterable)` include the `for parameter 1:` segment
+      (`unpack.go:213`), replacing the bare message / parameter name.
+- [x] **MISSING-199** [behavioral]: whitespace-based `split`/`rsplit`/`strip`/
+      `lstrip`/`rstrip` and `isspace` now match Go's `unicode.IsSpace` (NEL,
+      no-break space, U+2000-200A, U+2028/9, U+202F, U+205F, U+3000) instead of
+      ASCII-only, removing the prior split/strip vs isspace inconsistency.
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
