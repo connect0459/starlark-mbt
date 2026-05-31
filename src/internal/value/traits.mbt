@@ -60,13 +60,13 @@ pub fn double_to_bigint(f : Double) -> BigInt {
   // f must be finite and satisfy f == f.trunc() (no fractional part).
   // Handles the full double range via IEEE 754 bit extraction.
   let bits = f.reinterpret_as_uint64()
-  let negative = bits >> 63 != 0UL
-  let biased_exp = ((bits >> 52) & 0x7FFUL).to_int()
-  if biased_exp < 1023 {
+  let negative = bits >> ieee754_sign_shift != 0UL
+  let biased_exp = ((bits >> ieee754_mantissa_bits) & ieee754_exponent_mask).to_int()
+  if biased_exp < ieee754_exponent_bias {
     return 0N
   }
-  let mantissa = (bits & 0x000FFFFFFFFFFFFFUL) | 0x0010000000000000UL
-  let shift = biased_exp - 1023 - 52
+  let mantissa = (bits & ieee754_mantissa_mask) | ieee754_implicit_bit
+  let shift = biased_exp - ieee754_exponent_bias - ieee754_mantissa_bits
   let abs_val = if shift >= 0 {
     BigInt::from_uint64(mantissa) << shift
   } else {
@@ -130,6 +130,45 @@ let tuple_hash_prime : UInt = 1000003U
 ///|
 let tuple_hash_step_base : UInt = 82520U
 
+// Java String.hashCode prime multiplier
+
+///|
+let java_hash_prime : Int = 31
+
+// Unicode replacement character substituted for invalid UTF-8 sequences
+
+///|
+let unicode_replacement_rune : Int = 0xFFFD
+
+// 2^32 — used to extract the low 32 bits of a BigInt magnitude
+
+///|
+let bigint_uint32_modulus : BigInt = 4294967296N
+
+// IEEE 754 double-precision bit layout
+
+///|
+let ieee754_sign_shift : Int = 63
+
+///|
+let ieee754_mantissa_bits : Int = 52
+
+///|
+// 11-bit biased-exponent field mask (bits 52..62)
+let ieee754_exponent_mask : UInt64 = 0x7FFUL
+
+///|
+// Exponent bias: stored_exponent = true_exponent + 1023
+let ieee754_exponent_bias : Int = 1023
+
+///|
+// 52-bit fractional-mantissa mask (bits 0..51)
+let ieee754_mantissa_mask : UInt64 = 0x000FFFFFFFFFFFFFUL
+
+///|
+// Implicit leading 1 in the significand (bit 52)
+let ieee754_implicit_bit : UInt64 = 0x0010000000000000UL
+
 ///|
 fn fnv1a(bytes : Bytes) -> UInt {
   let mut h = fnv_offset_basis
@@ -148,7 +187,8 @@ pub fn java_string_hash(s : StarlarkString) -> Int {
   while pos < b.length() {
     let (cp, n) = @utf8util.utf8_decode_rune(b, pos)
     pos += n
-    h = 31 * h + (if cp < 0 { 0xFFFD } else { cp })
+    h = java_hash_prime * h +
+      (if cp < 0 { unicode_replacement_rune } else { cp })
   }
   h
 }
@@ -177,7 +217,7 @@ fn hash_bigint(n : BigInt) -> UInt {
   } else {
     // Low 32 bits of the magnitude, matching uint32(iBig.Bits()[0]).
     let abs_n = if n < 0N { -n } else { n }
-    (abs_n % 4294967296N).to_int().reinterpret_as_uint()
+    (abs_n % bigint_uint32_modulus).to_int().reinterpret_as_uint()
   }
   int_hash_mult * (lo + 3U)
 }
