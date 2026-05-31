@@ -170,6 +170,33 @@ test "math_module: ceil on NaN raises error" {
 }
 
 ///|
+fn expect_exact_err(
+  r : Result[@value.Value, String],
+  message : String,
+) -> Unit raise Error {
+  match r {
+    Err(msg) => assert_eq(msg, message)
+    Ok(v) => fail("expected Err, got Ok(\{@value.repr(v)})")
+  }
+}
+
+///|
+test "math_module: ceil/floor errors carry no name or parameter prefix" {
+  let m = math_module()
+  let s = @value.Value::String(@value.StarlarkString::new("0"))
+  expect_exact_err(call1(m, "ceil", s), "got string, want float or int")
+  expect_exact_err(call1(m, "floor", s), "got string, want float or int")
+  expect_exact_err(
+    call1(m, "ceil", fv(0.0 / 0.0)),
+    "cannot convert float NaN to integer",
+  )
+  expect_exact_err(
+    call1(m, "floor", fv(1.0 / 0.0)),
+    "cannot convert float infinity to integer",
+  )
+}
+
+///|
 test "math_module: floor on float returns int" {
   let m = math_module()
   expect_int(call1(m, "floor", fv(1.9)), 1L)

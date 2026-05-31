@@ -175,11 +175,11 @@ fn make_log_fn() -> @value.Value {
 }
 
 ///|
-fn float_to_int(name : String, f : Double) -> Result[@value.Value, String] {
+fn float_to_int(f : Double) -> Result[@value.Value, String] {
   if f.is_inf() {
-    Err("\{name}: cannot convert float infinity to integer")
+    Err("cannot convert float infinity to integer")
   } else if f.is_nan() {
-    Err("\{name}: cannot convert float NaN to integer")
+    Err("cannot convert float NaN to integer")
   } else {
     Ok(@value.Value::Int(@value.double_to_bigint(f)))
   }
@@ -193,11 +193,8 @@ fn make_ceil() -> @value.Value {
     }
     match pos_args[0] {
       @value.Value::Int(_) as v => Ok(v)
-      @value.Value::Float(f) => float_to_int("ceil", @std_math.ceil(f))
-      v =>
-        Err(
-          "ceil: for parameter 1: got \{@value.type_name(v)}, want float or int",
-        )
+      @value.Value::Float(f) => float_to_int(@std_math.ceil(f))
+      v => Err("got \{@value.type_name(v)}, want float or int")
     }
   })
 }
@@ -210,11 +207,8 @@ fn make_floor() -> @value.Value {
     }
     match pos_args[0] {
       @value.Value::Int(_) as v => Ok(v)
-      @value.Value::Float(f) => float_to_int("floor", @std_math.floor(f))
-      v =>
-        Err(
-          "floor: for parameter 1: got \{@value.type_name(v)}, want float or int",
-        )
+      @value.Value::Float(f) => float_to_int(@std_math.floor(f))
+      v => Err("got \{@value.type_name(v)}, want float or int")
     }
   })
 }
