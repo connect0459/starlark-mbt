@@ -91,7 +91,7 @@ let bytes_star_src : String =
   #|# bytes in bytes
   #|assert.eq(b"bc" in b"abcd", True)
   #|assert.eq(b"bc" in b"dcab", False)
-  #|assert.fails(lambda: "bc" in b"dcab", "requires bytes or int as left operand, not string")
+  #|assert.fails(lambda: "bc" in b"dcab", "'in bytes' requires bytes or int as left operand, not string")
   #|
   #|# int in bytes
   #|assert.eq(97 in b"abc", True)

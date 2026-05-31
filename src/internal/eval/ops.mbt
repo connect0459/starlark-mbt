@@ -1259,7 +1259,7 @@ fn in_op(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "'in <bytes>' requires bytes or int as left operand, not \{@value.type_name(needle)}",
+              "'in bytes' requires bytes or int as left operand, not \{@value.type_name(needle)}",
             ),
           )
       }
