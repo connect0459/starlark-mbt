@@ -295,6 +295,13 @@ fn encode_dict_val(
 /// Encodes a Starlark value to a compact JSON string.
 /// Supported types: `None`, `Bool`, `Int`, `Float`, `String`, `List`,
 /// `Tuple`, `Dict`, `Range`. Returns `Err` for unhashable or unsupported types.
+///
+/// Parameters:
+///
+/// * `v` : The Starlark value to encode.
+///
+/// Returns `Ok(json_string)` on success, or `Err(message)` if the value
+/// cannot be represented as JSON.
 pub fn encode_to_json(v : @value.Value) -> Result[String, String] {
   let state = EncodeState::new()
   match encode_inner(v, state) {
@@ -660,6 +667,14 @@ fn parse_json_number(
 /// Parses a JSON string into a Starlark value. Numbers become `Int` or `Float`,
 /// objects become `Dict`, arrays become `List`. If parsing fails and `default`
 /// is provided, returns the default; otherwise returns `Err`.
+///
+/// Parameters:
+///
+/// * `s` : The JSON text to parse.
+/// * `default` : An optional fallback value returned when parsing fails.
+///
+/// Returns `Ok(value)` on success, or `Err(message)` if parsing fails and no
+/// default is provided.
 pub fn decode_from_json(
   s : String,
   default : @value.Value?,
@@ -713,6 +728,15 @@ fn validate_json(s : String) -> Result[Unit, String] {
 /// Pretty-prints a JSON string, prefixing each line with `prefix` and
 /// indenting each nesting level with `indent_str`. Returns `Err` if `s`
 /// is not valid JSON.
+///
+/// Parameters:
+///
+/// * `s` : The compact JSON string to pretty-print.
+/// * `prefix` : A string prepended to every output line.
+/// * `indent_str` : The string used for each level of nesting indentation.
+///
+/// Returns `Ok(indented_string)` on success, or `Err(message)` if `s` is
+/// not valid JSON.
 pub fn indent_json(
   s : String,
   prefix : String,
@@ -928,6 +952,8 @@ fn make_indent_fn() -> @value.Value {
 ///|
 /// Returns the `json` Starlark module value, providing `encode`, `decode`,
 /// `encode_indent`, and `indent` as attributes.
+///
+/// Returns the constructed `json` module as a `@value.Value::Module`.
 pub fn json_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["encode"] = make_encode_fn()
