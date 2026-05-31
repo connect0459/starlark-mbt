@@ -22,12 +22,24 @@ pub struct ScannedToken {
 
 ///|
 /// Returns the token kind.
+///
+/// Parameters:
+///
+/// * `self` : The scanned token to inspect.
+///
+/// Returns the `Token` variant representing the kind of this token.
 pub fn ScannedToken::token(self : ScannedToken) -> Token {
   self.tok
 }
 
 ///|
 /// Returns the token's source position.
+///
+/// Parameters:
+///
+/// * `self` : The scanned token to inspect.
+///
+/// Returns the source position where this token begins.
 pub fn ScannedToken::pos(self : ScannedToken) -> @errors.Position {
   self.pos
 }
@@ -50,6 +62,13 @@ pub struct Scanner {
 ///|
 /// Creates a new scanner for the given source string with position tracking
 /// starting at line 1, column 1.
+///
+/// Parameters:
+///
+/// * `filename` : The source file name, used in position/error messages.
+/// * `source` : The UTF-8 source text to scan.
+///
+/// Returns a new `Scanner` ready to produce tokens from `source`.
 pub fn Scanner::new(filename : String, source : String) -> Scanner {
   {
     src: @utf8.encode(source),
@@ -118,6 +137,12 @@ fn Scanner::current_pos(self : Scanner) -> @errors.Position {
 ///|
 /// The scanner's current read position: one column past the last consumed
 /// byte. Mirrors starlark-go's `scanner.pos`, which parser errors point at.
+///
+/// Parameters:
+///
+/// * `self` : The scanner to query.
+///
+/// Returns the current read position in the source.
 pub fn Scanner::position(self : Scanner) -> @errors.Position {
   self.current_pos()
 }
@@ -162,6 +187,13 @@ fn Scanner::count_indent(self : Scanner) -> Int {
 ///|
 /// Returns the next token from the source, or a `SyntaxError` on invalid input.
 /// Manages INDENT/OUTDENT tokens based on indentation changes at line starts.
+///
+/// Parameters:
+///
+/// * `self` : The scanner to advance.
+///
+/// Returns `Ok(ScannedToken)` with the next token, or `Err(SyntaxError)` if
+/// the input is lexically invalid.
 pub fn Scanner::next_token(
   self : Scanner,
 ) -> Result[ScannedToken, @errors.SyntaxError] {

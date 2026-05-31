@@ -102,6 +102,12 @@ pub(all) enum Token {
 
 ///|
 /// Returns a human-readable description of the token (e.g. `"identifier"`, `"+"`).
+///
+/// Parameters:
+///
+/// * `self` : The token to describe.
+///
+/// Returns a short string naming the token kind or its literal spelling.
 pub fn Token::to_string(self : Token) -> String {
   match self {
     Illegal => "illegal token"
@@ -199,6 +205,12 @@ pub fn Token::to_string(self : Token) -> String {
 /// and operator tokens are wrapped in single quotes; identifiers, literals,
 /// keywords, and structural tokens (EOF, newline, indent) are rendered bare.
 /// Used in `got %#v` style error messages to match starlark-go wording.
+///
+/// Parameters:
+///
+/// * `self` : The token to render.
+///
+/// Returns the token's Go-style debug string.
 pub fn Token::go_string(self : Token) -> String {
   match self {
     Plus
@@ -249,6 +261,12 @@ pub fn Token::go_string(self : Token) -> String {
 ///|
 /// Returns the keyword `Token` for the given identifier name, or `None` if
 /// the name is not a Starlark keyword.
+///
+/// Parameters:
+///
+/// * `name` : The identifier string to look up.
+///
+/// Returns `Some(token)` if `name` is a Starlark keyword, `None` otherwise.
 pub fn keyword_token(name : String) -> Token? {
   match name {
     "and" => Some(And)
