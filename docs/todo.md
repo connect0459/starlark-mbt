@@ -1725,6 +1725,26 @@ name quoting across fail/sorted/min/max.
       → `'sorted: unexpected keyword argument "keg" (did you mean key?)'`.
       Source: `unpack.go:159`, `expr.mbt`. Commit: `eb801a9`
 
+### Sixteenth-pass gap analysis (MISSING-210..212)
+
+Fresh comparison after MISSING-1..209 closed. All three items are test-only
+gaps (implementations were already correct). Commit: `190d060`
+
+- [x] **MISSING-210** [test]: `misc.star` lines 79–81 cross-cyclic equality —
+      `cyclic5 == cyclic6` where the two cycles have identical structure but are
+      distinct objects. Added as a new chunk in `misc_cycle_eq_chunked` in
+      `starlarktest/misc_test.mbt`.
+- [x] **MISSING-211** [test]: `StarlarkFunction::param_default(i)` indexed
+      accessor coverage. Added `get_func` helper and seven targeted tests using
+      `param_default(i)` for all eight parameter-list shapes including
+      out-of-bounds (negative and past-end) returning `None`.
+      (`starlarktest/value_api_wbtest.mbt`).
+- [x] **MISSING-212** [test]: `TestPrint` position parity — verified that
+      `thread.call_frame(1)` inside a `with_print` callback returns the exact
+      `file:line:col` of the `print()` call site and the caller's function name.
+      Output matches starlark-go's `eval_test.go:462`.
+      (`starlarktest/error_format_test.mbt`).
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
@@ -1770,9 +1790,8 @@ name quoting across fail/sorted/min/max.
   eval_getattr for Module variant; module.star line 17 now covered
 - ~~Print callback thread context~~ — implemented; `Thread.print_fn` changed from
   `(String) -> Unit` to `(Thread, String) -> Unit`; breaking API change to `with_print`
-- Full `TestPrint` position parity — `<toplevel>` frame with live PC tracking not yet
-  implemented; requires pushing `<toplevel>` at exec_file and updating current position
-  as statements execute (AST walker does not track PC)
+- ~~Full `TestPrint` position parity~~ — implemented and tested; `call_frame(1)` inside
+  print callback returns exact call-site position (MISSING-212)
 
 ---
 
