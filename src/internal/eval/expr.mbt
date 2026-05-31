@@ -1650,6 +1650,14 @@ fn builtin_minmax(
   want_max : Bool,
 ) -> @value.Value raise EvalErr {
   let fn_name = if want_max { "max" } else { "min" }
+  if pos_args.length() == 0 {
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "\{fn_name} requires at least one positional argument",
+      ),
+    )
+  }
   let key_fn : @value.Value? = {
     let mut found : @value.Value? = None
     for kv in kw_args {
@@ -1673,7 +1681,7 @@ fn builtin_minmax(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "function \{fn_name} got an unexpected keyword argument \{kw_name}\{hint}",
+          "\{fn_name}: unexpected keyword argument \{kw_name}\{hint}",
         ),
       )
     }
@@ -1696,14 +1704,6 @@ fn builtin_minmax(
     None => ()
   }
   let items : Array[@value.Value] = []
-  if pos_args.length() == 0 {
-    raise EvalErr(
-      make_eval_error(
-        ctx,
-        "\{fn_name} requires at least one positional argument",
-      ),
-    )
-  }
   if pos_args.length() == 1 {
     let it = match @value.iterate(pos_args[0]) {
       Ok(it) => it

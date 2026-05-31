@@ -2120,3 +2120,21 @@ test "exec_file: sorted with no iterable reports missing argument" {
   assert_eq(emsg("sorted()"), "sorted: missing argument for iterable")
   assert_eq(emsg("sorted(key=len)"), "sorted: missing argument for iterable")
 }
+
+///|
+test "exec_file: min checks positional count before keyword args" {
+  assert_eq(
+    emsg("min(default=5)"),
+    "min requires at least one positional argument",
+  )
+  assert_eq(emsg("max()"), "max requires at least one positional argument")
+}
+
+///|
+test "exec_file: min/max reject unexpected keyword with unpack wording" {
+  assert_eq(
+    emsg("min([1, 2], default=5)"),
+    "min: unexpected keyword argument default",
+  )
+  assert_eq(emsg("max([1, 2], foo=5)"), "max: unexpected keyword argument foo")
+}
