@@ -18,6 +18,9 @@ pub struct StarlarkIterator {
 
 ///|
 /// Advances the iterator and returns the next value, or `None` when exhausted.
+///
+/// Returns `Some(v)` with the next element, or `None` when iteration is
+/// complete.
 pub fn StarlarkIterator::next(self : StarlarkIterator) -> Value? {
   (self.next_fn)()
 }
@@ -34,6 +37,13 @@ pub fn StarlarkIterator::done(self : StarlarkIterator) -> Unit {
 /// Supported types: `List`, `Tuple`, `Bytes`, `Dict` (keys), `Set` (keys),
 /// `Range`, string `elems`/`codepoints`, bytes `elems`, and `ExtVal` with an
 /// `iterate` callback.
+///
+/// Parameters:
+///
+/// * `v` : The Starlark value to iterate over.
+///
+/// Returns `Ok(iterator)` for iterable values, or `Err` with a message like
+/// `"int value is not iterable"` for non-iterable types.
 pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
   match v {
     List(l) => Ok(list_iter(l))
@@ -54,6 +64,13 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
 /// Returns the number of elements in `v` for types that have a length
 /// (`String`, `Bytes`, `List`, `Tuple`, `Dict`, `Set`, `Range`, `StringElems`,
 /// `ExtVal` with a `length` callback). Returns `Err` for all other types.
+///
+/// Parameters:
+///
+/// * `v` : The Starlark value to measure.
+///
+/// Returns `Ok(n)` with the element count, or `Err` with a message like
+/// `"len: value of type int has no len"` for types without a length.
 pub fn length_of(v : Value) -> Result[Int, String] {
   match v {
     String(s) => Ok(s.byte_len())

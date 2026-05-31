@@ -4,6 +4,14 @@ pub impl Eq for Value with fn equal(a, b) -> Bool {
 }
 
 ///|
+/// Returns the Starlark `str(v)` string representation of `v`. Unlike
+/// `repr`, string values are returned without quotes.
+///
+/// Parameters:
+///
+/// * `v` : The value to convert to a string.
+///
+/// Returns the Starlark `str()` representation of `v`.
 pub fn to_str(v : Value) -> String {
   match v {
     None => "None"
@@ -26,6 +34,13 @@ pub fn to_str(v : Value) -> String {
 ///|
 /// Returns `true` if `a == b` under Starlark semantics, including cross-type
 /// `Int`/`Float` equality and NaN inequality.
+///
+/// Parameters:
+///
+/// * `a` : The left-hand side value.
+/// * `b` : The right-hand side value.
+///
+/// Returns `true` when the two values are equal under Starlark semantics.
 pub fn starlark_equals(a : Value, b : Value) -> Bool {
   match (a, b) {
     (None, None) => true
@@ -60,6 +75,12 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
 ///|
 /// Converts a finite `Double` with no fractional part to a `BigInt` via IEEE
 /// 754 bit extraction. The caller must guarantee `f.is_finite() && f == f.trunc()`.
+///
+/// Parameters:
+///
+/// * `f` : A finite double with no fractional part.
+///
+/// Returns the exact integer value of `f` as a `BigInt`.
 pub fn double_to_bigint(f : Double) -> BigInt {
   // f must be finite and satisfy f == f.trunc() (no fractional part).
   // Handles the full double range via IEEE 754 bit extraction.
@@ -186,6 +207,12 @@ fn fnv1a(bytes : Bytes) -> UInt {
 ///|
 /// Computes Java's `String.hashCode` over the UTF-8 bytes of `s`. Used as
 /// the Starlark string hash function to match starlark-go's `hashString`.
+///
+/// Parameters:
+///
+/// * `s` : The Starlark string to hash.
+///
+/// Returns the Java `String.hashCode` of the UTF-8 byte sequence.
 pub fn java_string_hash(s : StarlarkString) -> Int {
   let b = s.bytes
   let mut h : Int = 0
@@ -259,6 +286,13 @@ fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
 /// Computes the Starlark hash of `v`. Returns `Err` for unhashable types
 /// (list, dict, set, range, module). Guarantees `hash(x) == hash(y)` whenever
 /// `x == y` under Starlark semantics, including cross-type `Int`/`Float`.
+///
+/// Parameters:
+///
+/// * `v` : The value to hash.
+///
+/// Returns `Ok(hash)` for hashable values, or `Err` with a message like
+/// `"unhashable type: list"` for unhashable types.
 pub fn starlark_hash(v : Value) -> Result[UInt, String] {
   match v {
     None => Ok(0U)
@@ -339,6 +373,12 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 ///|
 /// Converts a `BigInt` to `Double`, potentially losing precision. Returns
 /// `+Infinity` for values too large to represent.
+///
+/// Parameters:
+///
+/// * `n` : The integer value to convert.
+///
+/// Returns the nearest representable `Double`, or `+Infinity` on overflow.
 pub fn bigint_to_double(n : BigInt) -> Double {
   @string.parse_double(n.to_string()) catch {
     _ => 0.0
@@ -348,6 +388,13 @@ pub fn bigint_to_double(n : BigInt) -> Double {
 ///|
 /// Converts a `BigInt` to `Double`, returning `Err("int too large to convert
 /// to float")` if the result would be infinite.
+///
+/// Parameters:
+///
+/// * `n` : The integer value to convert.
+///
+/// Returns `Ok(f)` with the converted finite `Double`, or
+/// `Err("int too large to convert to float")` when the value overflows.
 pub fn bigint_to_finite_double(n : BigInt) -> Result[Double, String] {
   let f = @string.parse_double(n.to_string()) catch { _ => @double.infinity }
   if f.is_inf() {
@@ -390,6 +437,15 @@ pub let compare_limit : Int = 10
 /// Compares `a` and `b` using Starlark's total ordering, returning a negative
 /// int, zero, or positive int. Returns `Err` for incompatible types. `op` is
 /// the operator string used in the error message.
+///
+/// Parameters:
+///
+/// * `a` : The left-hand side value.
+/// * `b` : The right-hand side value.
+/// * `op` : The comparison operator string used in error messages (default `"<"`).
+///
+/// Returns `Ok(n)` where `n < 0`, `n == 0`, or `n > 0`, or `Err` when the
+/// types cannot be compared.
 pub fn compare_values(
   a : Value,
   b : Value,
@@ -401,6 +457,17 @@ pub fn compare_values(
 ///|
 /// Like `compare_values` but with an explicit recursion-depth cap to guard
 /// against cycles in nested structures.
+///
+/// Parameters:
+///
+/// * `a` : The left-hand side value.
+/// * `b` : The right-hand side value.
+/// * `depth` : Maximum remaining recursion depth; returns `Err` when it
+///   reaches zero.
+/// * `op` : The comparison operator string used in error messages (default `"<"`).
+///
+/// Returns `Ok(n)` where `n < 0`, `n == 0`, or `n > 0`, or `Err` when types
+/// are incompatible or the depth limit is exceeded.
 pub fn compare_values_depth(
   a : Value,
   b : Value,
@@ -444,6 +511,16 @@ pub fn compare_values_depth(
 
 ///|
 /// Like `starlark_equals` but with an explicit recursion-depth cap.
+///
+/// Parameters:
+///
+/// * `a` : The left-hand side value.
+/// * `b` : The right-hand side value.
+/// * `depth` : Maximum remaining recursion depth; returns `Err` when it
+///   reaches zero.
+///
+/// Returns `Ok(true)` when equal, `Ok(false)` when not, or `Err` when the
+/// depth limit is exceeded.
 pub fn starlark_equals_depth(
   a : Value,
   b : Value,
@@ -565,6 +642,10 @@ fn set_equals_depth(
 ///|
 /// Recursively deep-freezes `v` and all values reachable from it (list items,
 /// dict keys/values, set elements, function defaults and closures).
+///
+/// Parameters:
+///
+/// * `v` : The root value to freeze.
 pub fn freeze_value(v : Value) -> Unit {
   freeze_value_inner(v, [])
 }

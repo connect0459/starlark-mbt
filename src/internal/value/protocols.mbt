@@ -145,6 +145,14 @@ pub struct CustomValue {
 /// Creates a `CustomValue` with type-name, truthiness, and repr callbacks.
 /// All optional protocols (hash, equals, attrs, iterate, …) default to absent
 /// and can be added via `with_*` builder methods.
+///
+/// Parameters:
+///
+/// * `type_name_fn` : Callback that returns the Starlark type name string.
+/// * `truth_fn` : Callback that returns the boolean truthiness of the value.
+/// * `repr_fn` : Callback that returns the `repr()` string of the value.
+///
+/// Returns a new `CustomValue` with all optional protocol slots set to absent.
 pub fn CustomValue::new(
   type_name_fn : () -> String,
   truth_fn : () -> Bool,
@@ -178,6 +186,14 @@ pub fn CustomValue::new(
 ///|
 /// Attaches a custom hash function. Invoked by `starlark_hash` for
 /// `Value::ExtVal`. Without this, the value is considered unhashable.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `hash_fn` : Callback that computes and returns a hash code, or `Err`
+///   if the value is unhashable at runtime.
+///
+/// Returns a new `CustomValue` with the hash callback registered.
 pub fn CustomValue::with_hash(
   self : CustomValue,
   hash_fn : () -> Result[UInt, String],
@@ -188,6 +204,13 @@ pub fn CustomValue::with_hash(
 ///|
 /// Attaches a custom equality function. Invoked by `starlark_equals` for
 /// `Value::ExtVal`. Without this, two `ExtVal`s compare unequal by default.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `equals_fn` : Callback that tests equality against another `Value`.
+///
+/// Returns a new `CustomValue` with the equality callback registered.
 pub fn CustomValue::with_equals(
   self : CustomValue,
   equals_fn : (Value) -> Bool,
@@ -198,6 +221,14 @@ pub fn CustomValue::with_equals(
 ///|
 /// Attaches attribute-access and attribute-listing callbacks, enabling
 /// `getattr`, `hasattr`, and `dir` on this value.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `get_attr_fn` : Callback that looks up an attribute by name.
+/// * `attr_names_fn` : Callback that returns all attribute names.
+///
+/// Returns a new `CustomValue` with both attribute callbacks registered.
 pub fn CustomValue::with_attrs(
   self : CustomValue,
   get_attr_fn : (String) -> Result[Value?, String],
@@ -208,6 +239,13 @@ pub fn CustomValue::with_attrs(
 
 ///|
 /// Attaches a field-assignment callback, enabling `x.name = v` on this value.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `set_field_fn` : Callback that assigns a value to a named field.
+///
+/// Returns a new `CustomValue` with the field-assignment callback registered.
 pub fn CustomValue::with_set_field(
   self : CustomValue,
   set_field_fn : (String, Value) -> Result[Unit, String],
@@ -217,6 +255,13 @@ pub fn CustomValue::with_set_field(
 
 ///|
 /// Attaches a membership-test callback, enabling `v in x` on this value.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `contains_fn` : Callback that tests whether a value is a member.
+///
+/// Returns a new `CustomValue` with the membership-test callback registered.
 pub fn CustomValue::with_contains(
   self : CustomValue,
   contains_fn : (Value) -> Result[Bool, String],
@@ -227,6 +272,13 @@ pub fn CustomValue::with_contains(
 ///|
 /// Attaches an iteration callback, enabling `for v in x` and related
 /// built-ins (`list`, `tuple`, `set`, `sorted`, …) on this value.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `iterate_fn` : Callback that creates and returns a `StarlarkIterator`.
+///
+/// Returns a new `CustomValue` with the iteration callback registered.
 pub fn CustomValue::with_iterate(
   self : CustomValue,
   iterate_fn : () -> Result[StarlarkIterator, String],
@@ -236,6 +288,13 @@ pub fn CustomValue::with_iterate(
 
 ///|
 /// Attaches a length callback, enabling `len(x)` on this value.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `length_fn` : Callback that returns the number of elements.
+///
+/// Returns a new `CustomValue` with the length callback registered.
 pub fn CustomValue::with_length(
   self : CustomValue,
   length_fn : () -> Int,
@@ -246,6 +305,13 @@ pub fn CustomValue::with_length(
 ///|
 /// Attaches a freeze callback invoked when this value is frozen transitively
 /// (e.g. when a containing module or dict is frozen).
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `freeze_fn` : Callback invoked when the value is transitively frozen.
+///
+/// Returns a new `CustomValue` with the freeze callback registered.
 pub fn CustomValue::with_freeze(
   self : CustomValue,
   freeze_fn : () -> Unit,
@@ -257,6 +323,14 @@ pub fn CustomValue::with_freeze(
 /// Attaches a binary operator callback for `x op y`. The callback receives
 /// the operator string, the right-hand operand, and `is_left` (whether `x` is
 /// on the left). Return `None` to fall back to the default type-error.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `binary_fn` : Callback invoked with the operator string, the other
+///   operand, and a flag indicating whether this value is the left operand.
+///
+/// Returns a new `CustomValue` with the binary operator callback registered.
 pub fn CustomValue::with_binary(
   self : CustomValue,
   binary_fn : (String, Value, Bool) -> Result[Value, String]?,
@@ -268,6 +342,13 @@ pub fn CustomValue::with_binary(
 /// Attaches a unary operator callback for `op x`. The callback receives the
 /// operator string (`"-"`, `"+"`, `"~"`, `"not"`). Return `None` to fall back
 /// to the default type-error.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `unary_fn` : Callback invoked with the operator string.
+///
+/// Returns a new `CustomValue` with the unary operator callback registered.
 pub fn CustomValue::with_unary(
   self : CustomValue,
   unary_fn : (String) -> Result[Value, String]?,
@@ -279,6 +360,15 @@ pub fn CustomValue::with_unary(
 /// Attaches a total-order comparison callback for `<`, `<=`, `>`, `>=`.
 /// The callback returns a negative int, 0, or positive int (like `compare`).
 /// Return `None` to fall back to the default type-error.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `compare_fn` : Callback that compares this value against another,
+///   returning a negative int, zero, or positive int, or `None` if not
+///   comparable.
+///
+/// Returns a new `CustomValue` with the comparison callback registered.
 pub fn CustomValue::with_compare(
   self : CustomValue,
   compare_fn : (Value) -> Int?,
@@ -288,18 +378,26 @@ pub fn CustomValue::with_compare(
 
 ///|
 /// Invokes the type-name callback, returning the Starlark type name string.
+///
+/// Returns the Starlark type name of this value, as provided by
+/// `type_name_fn`.
 pub fn CustomValue::get_type_name(self : CustomValue) -> String {
   (self.type_name_fn)()
 }
 
 ///|
 /// Invokes the truth callback, returning the Starlark truthiness of this value.
+///
+/// Returns the boolean truthiness of this value, as provided by `truth_fn`.
 pub fn CustomValue::get_truth(self : CustomValue) -> Bool {
   (self.truth_fn)()
 }
 
 ///|
 /// Invokes the repr callback, returning the `repr()` string of this value.
+///
+/// Returns the string representation of this value, as provided by
+/// `repr_fn`.
 pub fn CustomValue::get_repr(self : CustomValue) -> String {
   (self.repr_fn)()
 }
@@ -307,6 +405,9 @@ pub fn CustomValue::get_repr(self : CustomValue) -> String {
 ///|
 /// Invokes the hash callback, or returns `Err("unhashable type: T")` if no
 /// hash callback was registered.
+///
+/// Returns `Ok(hash)` if a hash callback was registered, or
+/// `Err("unhashable type: T")` otherwise.
 pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
   match self.hash_fn {
     Some(f) => f()
@@ -317,6 +418,14 @@ pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
 ///|
 /// Invokes the equality callback against `other`, or returns `false` if no
 /// callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to test equality for.
+/// * `other` : The value to compare against.
+///
+/// Returns `true` if the equality callback returns `true`, or `false` if no
+/// callback was registered or the callback returns `false`.
 pub fn CustomValue::get_equals(self : CustomValue, other : Value) -> Bool {
   match self.equals_fn {
     Some(f) => f(other)
@@ -327,6 +436,14 @@ pub fn CustomValue::get_equals(self : CustomValue, other : Value) -> Bool {
 ///|
 /// Invokes the attribute callback for `name`, or returns `Ok(None)` if no
 /// callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to look up an attribute on.
+/// * `name` : The attribute name to look up.
+///
+/// Returns `Ok(Some(v))` if the attribute exists, `Ok(None)` if not found or
+/// no callback was registered, or `Err` if the callback signals an error.
 pub fn CustomValue::get_attr(
   self : CustomValue,
   name : String,
@@ -340,6 +457,9 @@ pub fn CustomValue::get_attr(
 ///|
 /// Invokes the attribute-listing callback, or returns `None` if no callback
 /// was registered. The result is used by `dir()`.
+///
+/// Returns `Some(names)` if an attribute-listing callback was registered, or
+/// `None` otherwise.
 pub fn CustomValue::get_attr_names(self : CustomValue) -> Array[String]? {
   match self.attr_names_fn {
     Some(f) => Some(f())
@@ -350,6 +470,15 @@ pub fn CustomValue::get_attr_names(self : CustomValue) -> Array[String]? {
 ///|
 /// Invokes the field-assignment callback for `name = v`, or returns
 /// `Err("cannot set field on T")` if no callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to assign a field on.
+/// * `name` : The name of the field to assign.
+/// * `v` : The value to assign.
+///
+/// Returns `Ok(())` on success, or `Err` if no callback was registered or
+/// the callback signals an error.
 pub fn CustomValue::get_set_field(
   self : CustomValue,
   name : String,
@@ -364,6 +493,15 @@ pub fn CustomValue::get_set_field(
 ///|
 /// Invokes the membership-test callback for `v`, or returns `None` if no
 /// callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to test membership on.
+/// * `v` : The value to test for membership.
+///
+/// Returns `Some(Ok(true))` if `v` is a member, `Some(Ok(false))` if not,
+/// `Some(Err(...))` if the callback signals an error, or `None` if no
+/// callback was registered.
 pub fn CustomValue::get_contains(
   self : CustomValue,
   v : Value,
@@ -377,6 +515,9 @@ pub fn CustomValue::get_contains(
 ///|
 /// Invokes the iteration callback, or returns
 /// `Err("'T' object is not iterable")` if no callback was registered.
+///
+/// Returns `Ok(iterator)` if an iteration callback was registered, or
+/// `Err("'T' object is not iterable")` otherwise.
 pub fn CustomValue::get_iterate(
   self : CustomValue,
 ) -> Result[StarlarkIterator, String] {
@@ -389,6 +530,9 @@ pub fn CustomValue::get_iterate(
 ///|
 /// Invokes the length callback, or returns
 /// `Err("len: value of type T has no len")` if no callback was registered.
+///
+/// Returns `Ok(n)` if a length callback was registered, or
+/// `Err("len: value of type T has no len")` otherwise.
 pub fn CustomValue::get_length(self : CustomValue) -> Result[Int, String] {
   match self.length_fn {
     Some(f) => Ok(f())
@@ -408,6 +552,17 @@ pub fn CustomValue::do_freeze(self : CustomValue) -> Unit {
 ///|
 /// Invokes the binary operator callback, or returns `None` if no callback
 /// was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value on which the operator is applied.
+/// * `op` : The operator string (e.g. `"+"`, `"-"`, `"*"`, `"in"`).
+/// * `rhs` : The right-hand operand.
+/// * `is_left` : `true` if this value is the left operand; `false` if right.
+///
+/// Returns `Some(Ok(v))` if the callback produces a result,
+/// `Some(Err(msg))` if it signals an error, or `None` if no callback was
+/// registered or the callback declines.
 pub fn CustomValue::get_binary(
   self : CustomValue,
   op : String,
@@ -423,6 +578,15 @@ pub fn CustomValue::get_binary(
 ///|
 /// Invokes the unary operator callback, or returns `None` if no callback
 /// was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value on which the operator is applied.
+/// * `op` : The operator string (e.g. `"-"`, `"+"`, `"~"`, `"not"`).
+///
+/// Returns `Some(Ok(v))` if the callback produces a result,
+/// `Some(Err(msg))` if it signals an error, or `None` if no callback was
+/// registered or the callback declines.
 pub fn CustomValue::get_unary(
   self : CustomValue,
   op : String,
@@ -436,6 +600,15 @@ pub fn CustomValue::get_unary(
 ///|
 /// Invokes the comparison callback against `other`, or returns `None` if no
 /// callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to compare.
+/// * `other` : The value to compare against.
+///
+/// Returns `Some(n)` where `n` is negative, zero, or positive to indicate
+/// ordering, or `None` if no callback was registered or the values are not
+/// comparable.
 pub fn CustomValue::get_compare(self : CustomValue, other : Value) -> Int? {
   match self.compare_fn {
     Some(f) => f(other)
@@ -446,6 +619,15 @@ pub fn CustomValue::get_compare(self : CustomValue, other : Value) -> Int? {
 ///|
 /// Attaches an integer-index read callback, enabling `x[i]` where `i` is an
 /// integer. For arbitrary-key indexing, use `with_set_key`.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `get_index_fn` : Callback that returns the element at a given integer
+///   index.
+///
+/// Returns a new `CustomValue` with the integer-index read callback
+/// registered.
 pub fn CustomValue::with_get_index(
   self : CustomValue,
   get_index_fn : (Int) -> Result[Value, String],
@@ -456,6 +638,14 @@ pub fn CustomValue::with_get_index(
 ///|
 /// Invokes the integer-index read callback for `i`, or returns `Err` if no
 /// callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to index into.
+/// * `i` : The integer index to read.
+///
+/// Returns `Ok(v)` if the callback returns a value, or `Err` if no callback
+/// was registered or the callback signals an error.
 pub fn CustomValue::get_index(
   self : CustomValue,
   i : Int,
@@ -469,6 +659,14 @@ pub fn CustomValue::get_index(
 ///|
 /// Attaches an integer-index write callback, enabling `x[i] = v` where `i`
 /// is an integer.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `set_index_fn` : Callback that assigns a value at a given integer index.
+///
+/// Returns a new `CustomValue` with the integer-index write callback
+/// registered.
 pub fn CustomValue::with_set_index(
   self : CustomValue,
   set_index_fn : (Int, Value) -> Result[Unit, String],
@@ -479,6 +677,15 @@ pub fn CustomValue::with_set_index(
 ///|
 /// Invokes the integer-index write callback for `x[i] = v`, or returns
 /// `None` if no callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to write an index on.
+/// * `i` : The integer index to assign.
+/// * `v` : The value to assign at that index.
+///
+/// Returns `Some(Ok(()))` on success, `Some(Err(msg))` if the callback
+/// signals an error, or `None` if no callback was registered.
 pub fn CustomValue::do_set_index(
   self : CustomValue,
   i : Int,
@@ -493,6 +700,15 @@ pub fn CustomValue::do_set_index(
 ///|
 /// Attaches a mapping-key write callback for `x[k] = v`, where `k` is any
 /// hashable Starlark value (not restricted to an integer index).
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `set_key_fn` : Callback that assigns a value at an arbitrary hashable
+///   key.
+///
+/// Returns a new `CustomValue` with the mapping-key write callback
+/// registered.
 pub fn CustomValue::with_set_key(
   self : CustomValue,
   set_key_fn : (Value, Value) -> Result[Unit, String],
@@ -503,6 +719,15 @@ pub fn CustomValue::with_set_key(
 ///|
 /// Invokes the mapping-key write callback for `x[k] = v`, or returns `None`
 /// if no callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to write a key on.
+/// * `k` : The key to assign.
+/// * `v` : The value to assign at that key.
+///
+/// Returns `Some(Ok(()))` on success, `Some(Err(msg))` if the callback
+/// signals an error, or `None` if no callback was registered.
 pub fn CustomValue::do_set_key(
   self : CustomValue,
   k : Value,
@@ -516,6 +741,14 @@ pub fn CustomValue::do_set_key(
 
 ///|
 /// Attaches a slice callback, enabling `x[start:stop:step]` on this value.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `slice_fn` : Callback that computes a slice given start, stop, and step
+///   indices.
+///
+/// Returns a new `CustomValue` with the slice callback registered.
 pub fn CustomValue::with_slice(
   self : CustomValue,
   slice_fn : (Int, Int, Int) -> Result[Value, String],
@@ -526,6 +759,16 @@ pub fn CustomValue::with_slice(
 ///|
 /// Invokes the slice callback for `x[start:stop:step]`, or returns `None`
 /// if no callback was registered.
+///
+/// Parameters:
+///
+/// * `self` : The custom value to slice.
+/// * `start` : The normalised start index of the slice.
+/// * `stop` : The normalised stop index of the slice.
+/// * `step` : The normalised step of the slice (non-zero).
+///
+/// Returns `Some(Ok(v))` with the sliced value, `Some(Err(msg))` if the
+/// callback signals an error, or `None` if no callback was registered.
 pub fn CustomValue::do_slice(
   self : CustomValue,
   start : Int,
@@ -541,6 +784,13 @@ pub fn CustomValue::do_slice(
 ///|
 /// Attaches an items callback that yields `(key, value)` pairs, enabling
 /// dict-like iteration over this mapping value.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `items_fn` : Callback that returns all key-value pairs as an array.
+///
+/// Returns a new `CustomValue` with the items callback registered.
 pub fn CustomValue::with_items(
   self : CustomValue,
   items_fn : () -> Result[Array[(Value, Value)], String],
@@ -551,6 +801,9 @@ pub fn CustomValue::with_items(
 ///|
 /// Invokes the items callback, returning `(key, value)` pairs, or `None`
 /// if no callback was registered.
+///
+/// Returns `Some(Ok(pairs))` with all key-value pairs, `Some(Err(msg))` if
+/// the callback signals an error, or `None` if no callback was registered.
 pub fn CustomValue::get_items(
   self : CustomValue,
 ) -> Result[Array[(Value, Value)], String]? {
@@ -562,6 +815,14 @@ pub fn CustomValue::get_items(
 
 ///|
 /// Attaches a call callback, making this value callable from Starlark.
+///
+/// Parameters:
+///
+/// * `self` : The `CustomValue` to extend.
+/// * `call_fn` : Callback invoked with positional arguments and keyword
+///   arguments when the value is called.
+///
+/// Returns a new `CustomValue` with the call callback registered.
 pub fn CustomValue::with_call(
   self : CustomValue,
   call_fn : (Array[Value], Array[(String, Value)]) -> Result[Value, String],
@@ -572,6 +833,15 @@ pub fn CustomValue::with_call(
 ///|
 /// Invokes the call callback with `pos_args` and `kw_args`, or returns `None`
 /// if no callback was registered (value is not callable).
+///
+/// Parameters:
+///
+/// * `self` : The custom value to call.
+/// * `pos_args` : Positional arguments passed to the call.
+/// * `kw_args` : Keyword arguments passed to the call, as name-value pairs.
+///
+/// Returns `Some(Ok(v))` with the call result, `Some(Err(msg))` if the
+/// callback signals an error, or `None` if no call callback was registered.
 pub fn CustomValue::do_call(
   self : CustomValue,
   pos_args : Array[Value],

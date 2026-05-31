@@ -9,6 +9,12 @@ pub struct StarlarkString {
 
 ///|
 /// Creates a `StarlarkString` from a MoonBit `String`, encoding it to UTF-8.
+///
+/// Parameters:
+///
+/// * `raw` : The MoonBit `String` to encode.
+///
+/// Returns a new `StarlarkString` backed by the UTF-8 encoding of `raw`.
 pub fn StarlarkString::new(raw : String) -> StarlarkString {
   let bytes = @utf8.encode(raw)
   { raw, bytes }
@@ -17,6 +23,13 @@ pub fn StarlarkString::new(raw : String) -> StarlarkString {
 ///|
 /// Creates a `StarlarkString` from a raw UTF-8 byte sequence. Invalid bytes
 /// are replaced with U+FFFD.
+///
+/// Parameters:
+///
+/// * `bytes` : The raw UTF-8 byte sequence to wrap.
+///
+/// Returns a new `StarlarkString` decoded from `bytes`, replacing any invalid
+/// sequences with U+FFFD.
 pub fn StarlarkString::from_bytes(bytes : Bytes) -> StarlarkString {
   let raw = @utf8.decode_lossy(bytes[:])
   { raw, bytes }
@@ -24,18 +37,34 @@ pub fn StarlarkString::from_bytes(bytes : Bytes) -> StarlarkString {
 
 ///|
 /// Returns the number of UTF-8 bytes in the string (the Starlark `len()`).
+///
+/// Returns the byte length of the underlying UTF-8 encoding.
 pub fn StarlarkString::byte_len(self : StarlarkString) -> Int {
   self.bytes.length()
 }
 
 ///|
 /// Returns the byte at UTF-8 offset `i`.
+///
+/// Parameters:
+///
+/// * `self` : The string to index into.
+/// * `i` : The zero-based UTF-8 byte offset.
+///
+/// Returns the byte value at offset `i`.
 pub fn StarlarkString::byte_at(self : StarlarkString, i : Int) -> Byte {
   self.bytes[i]
 }
 
 ///|
 /// Returns `true` if `self` and `other` contain the same bytes.
+///
+/// Parameters:
+///
+/// * `self` : The first string to compare.
+/// * `other` : The second string to compare.
+///
+/// Returns `true` if both strings have identical UTF-8 byte content.
 pub fn StarlarkString::equals(
   self : StarlarkString,
   other : StarlarkString,
@@ -45,6 +74,8 @@ pub fn StarlarkString::equals(
 
 ///|
 /// Returns the underlying UTF-8 `Bytes` array.
+///
+/// Returns the pre-computed UTF-8 `Bytes` backing this string.
 pub fn StarlarkString::to_bytes(self : StarlarkString) -> Bytes {
   self.bytes
 }
@@ -52,6 +83,8 @@ pub fn StarlarkString::to_bytes(self : StarlarkString) -> Bytes {
 ///|
 /// Returns the MoonBit `String` (UTF-16 internally) that was used to create
 /// this `StarlarkString`.
+///
+/// Returns the original MoonBit `String` value.
 pub fn StarlarkString::raw(self : StarlarkString) -> String {
   self.raw
 }
@@ -67,12 +100,20 @@ pub struct StarlarkList {
 
 ///|
 /// Creates a new, unfrozen `StarlarkList` wrapping `items`.
+///
+/// Parameters:
+///
+/// * `items` : The initial array of `Value` elements.
+///
+/// Returns a new mutable `StarlarkList` containing `items`.
 pub fn StarlarkList::new(items : Array[Value]) -> StarlarkList {
   { items, frozen: false, itercount: 0 }
 }
 
 ///|
 /// Returns `true` if the list has been frozen.
+///
+/// Returns `true` when the list is immutable; `false` otherwise.
 pub fn StarlarkList::is_frozen(self : StarlarkList) -> Bool {
   self.frozen
 }
@@ -86,6 +127,15 @@ pub fn StarlarkList::freeze(self : StarlarkList) -> Unit {
 ///|
 /// Returns `Ok(())` if the list can be mutated, otherwise `Err` with a
 /// descriptive message using `verb` (e.g. `"append to"`, `"clear"`).
+///
+/// Parameters:
+///
+/// * `self` : The list to check.
+/// * `verb` : A short phrase describing the attempted operation, used in the
+///   error message (e.g. `"append to"`, `"clear"`).
+///
+/// Returns `Ok(())` if mutation is allowed, or `Err` with a descriptive
+/// message if the list is frozen or has active iterators.
 pub fn StarlarkList::check_mutable(
   self : StarlarkList,
   verb : String,
@@ -101,36 +151,56 @@ pub fn StarlarkList::check_mutable(
 
 ///|
 /// Returns the number of elements in the list.
+///
+/// Returns the element count.
 pub fn StarlarkList::length(self : StarlarkList) -> Int {
   self.items.length()
 }
 
 ///|
 /// Returns `true` if the list contains no elements.
+///
+/// Returns `true` when the list has zero elements.
 pub fn StarlarkList::is_empty(self : StarlarkList) -> Bool {
   self.items.is_empty()
 }
 
 ///|
 /// Returns the element at index `i` (unchecked).
+///
+/// Parameters:
+///
+/// * `self` : The list to index into.
+/// * `i` : The zero-based index of the element to retrieve.
+///
+/// Returns the `Value` at index `i`.
 pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value {
   self.items[i]
 }
 
 ///|
 /// Returns a lazy iterator over the list elements.
+///
+/// Returns an `Iter[Value]` that yields each element in order.
 pub fn StarlarkList::iter(self : StarlarkList) -> Iter[Value] {
   self.items.iter()
 }
 
 ///|
 /// Returns a lazy iterator over the list elements (alias for `iter`).
+///
+/// Returns an `Iter[Value]` that yields each element in order.
 pub fn StarlarkList::to_iter(self : StarlarkList) -> Iter[Value] {
   self.items.iter()
 }
 
 ///|
 /// Calls `f(index, value)` for each element.
+///
+/// Parameters:
+///
+/// * `self` : The list to iterate over.
+/// * `f` : A callback receiving the zero-based index and the element value.
 pub fn StarlarkList::eachi(
   self : StarlarkList,
   f : (Int, Value) -> Unit,
@@ -141,6 +211,13 @@ pub fn StarlarkList::eachi(
 ///|
 /// Returns `true` if `self` and `other` share the same underlying array
 /// (identity, not equality). Used to detect self-extend operations.
+///
+/// Parameters:
+///
+/// * `self` : The first list.
+/// * `other` : The second list to compare against.
+///
+/// Returns `true` if both lists share the same backing `Array` instance.
 pub fn StarlarkList::is_same_storage(
   self : StarlarkList,
   other : StarlarkList,
@@ -150,12 +227,22 @@ pub fn StarlarkList::is_same_storage(
 
 ///|
 /// Returns a copy of the underlying items array.
+///
+/// Returns a shallow copy of the internal `Array[Value]`.
 pub fn StarlarkList::copy_items(self : StarlarkList) -> Array[Value] {
   self.items.copy()
 }
 
 ///|
 /// Appends `v` to the end of the list. Fails if the list is frozen or being
+/// iterated.
+///
+/// Parameters:
+///
+/// * `self` : The list to append to.
+/// * `v` : The value to append.
+///
+/// Returns `Ok(())` on success, or `Err` if the list is frozen or being
 /// iterated.
 pub fn StarlarkList::push(
   self : StarlarkList,
@@ -173,6 +260,9 @@ pub fn StarlarkList::push(
 ///|
 /// Removes and returns the last element, or `None` if the list is empty.
 /// Fails if the list is frozen or being iterated.
+///
+/// Returns `Ok(Some(v))` with the removed element, `Ok(None)` if the list
+/// was empty, or `Err` if the list is frozen or being iterated.
 pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
   match self.check_mutable("pop from") {
     Err(e) => Err(e)
@@ -182,6 +272,15 @@ pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
 
 ///|
 /// Removes and returns the element at index `i`. Fails if the list is frozen
+/// or being iterated.
+///
+/// Parameters:
+///
+/// * `self` : The list to remove from.
+/// * `i` : The zero-based index of the element to remove.
+/// * `verb` : Optional verb used in the error message (default `"remove from"`).
+///
+/// Returns `Ok(v)` with the removed element, or `Err` if the list is frozen
 /// or being iterated.
 pub fn StarlarkList::pop_at(
   self : StarlarkList,
@@ -197,6 +296,15 @@ pub fn StarlarkList::pop_at(
 ///|
 /// Inserts `v` at index `i`, shifting subsequent elements right. Fails if
 /// the list is frozen or being iterated.
+///
+/// Parameters:
+///
+/// * `self` : The list to insert into.
+/// * `i` : The zero-based index at which to insert.
+/// * `v` : The value to insert.
+///
+/// Returns `Ok(())` on success, or `Err` if the list is frozen or being
+/// iterated.
 pub fn StarlarkList::insert(
   self : StarlarkList,
   i : Int,
@@ -214,6 +322,15 @@ pub fn StarlarkList::insert(
 ///|
 /// Replaces the element at index `i` with `v`. Fails if the list is frozen
 /// or being iterated.
+///
+/// Parameters:
+///
+/// * `self` : The list to update.
+/// * `i` : The zero-based index of the element to replace.
+/// * `v` : The new value to store at index `i`.
+///
+/// Returns `Ok(())` on success, or `Err` if the list is frozen or being
+/// iterated.
 pub fn StarlarkList::set(
   self : StarlarkList,
   i : Int,
@@ -230,6 +347,9 @@ pub fn StarlarkList::set(
 
 ///|
 /// Removes all elements. Fails if the list is frozen or being iterated.
+///
+/// Returns `Ok(())` on success, or `Err` if the list is frozen or being
+/// iterated.
 pub fn StarlarkList::clear(self : StarlarkList) -> Result[Unit, String] {
   match self.check_mutable("clear") {
     Err(e) => Err(e)
@@ -242,6 +362,14 @@ pub fn StarlarkList::clear(self : StarlarkList) -> Result[Unit, String] {
 
 ///|
 /// Sorts the list in place using `cmp`. Fails if the list is frozen or being
+/// iterated.
+///
+/// Parameters:
+///
+/// * `self` : The list to sort.
+/// * `cmp` : A comparator returning a negative int, zero, or positive int.
+///
+/// Returns `Ok(())` on success, or `Err` if the list is frozen or being
 /// iterated.
 pub fn StarlarkList::sort_by(
   self : StarlarkList,
@@ -258,6 +386,9 @@ pub fn StarlarkList::sort_by(
 
 ///|
 /// Reverses the list in place. Fails if the list is frozen or being iterated.
+///
+/// Returns `Ok(())` on success, or `Err` if the list is frozen or being
+/// iterated.
 pub fn StarlarkList::reverse(self : StarlarkList) -> Result[Unit, String] {
   match self.check_mutable("reverse") {
     Err(e) => Err(e)
@@ -286,6 +417,14 @@ pub struct StarlarkRange {
 
 ///|
 /// Creates a `StarlarkRange` with the given start, stop, and step.
+///
+/// Parameters:
+///
+/// * `start` : The first value of the range (inclusive).
+/// * `stop` : The exclusive upper (or lower) bound of the range.
+/// * `step` : The increment between consecutive values; must not be zero.
+///
+/// Returns a new `StarlarkRange` representing the arithmetic sequence.
 pub fn StarlarkRange::new(
   start : Int64,
   stop : Int64,
@@ -296,24 +435,32 @@ pub fn StarlarkRange::new(
 
 ///|
 /// Returns the start of the range.
+///
+/// Returns the inclusive start value of the range.
 pub fn StarlarkRange::start(self : StarlarkRange) -> Int64 {
   self.start
 }
 
 ///|
 /// Returns the stop (exclusive end) of the range.
+///
+/// Returns the exclusive stop value of the range.
 pub fn StarlarkRange::stop(self : StarlarkRange) -> Int64 {
   self.stop
 }
 
 ///|
 /// Returns the step of the range.
+///
+/// Returns the increment between consecutive elements.
 pub fn StarlarkRange::step(self : StarlarkRange) -> Int64 {
   self.step
 }
 
 ///|
 /// Returns the number of elements in the range.
+///
+/// Returns the count of integers produced by iterating the range.
 pub fn StarlarkRange::length(self : StarlarkRange) -> Int {
   if self.step > 0L {
     if self.stop > self.start {
@@ -329,12 +476,26 @@ pub fn StarlarkRange::length(self : StarlarkRange) -> Int {
 
 ///|
 /// Returns the value at position `i` within the range.
+///
+/// Parameters:
+///
+/// * `self` : The range to index into.
+/// * `i` : The zero-based position within the range.
+///
+/// Returns the arithmetic value at position `i` (i.e. `start + step * i`).
 pub fn StarlarkRange::index_at(self : StarlarkRange, i : Int) -> Int64 {
   self.start + self.step * i.to_int64()
 }
 
 ///|
 /// Returns `true` if `n` is a member of the range.
+///
+/// Parameters:
+///
+/// * `self` : The range to test membership against.
+/// * `n` : The integer value to look up.
+///
+/// Returns `true` if `n` lies within the range bounds and aligns to the step.
 pub fn StarlarkRange::contains(self : StarlarkRange, n : Int64) -> Bool {
   if self.step > 0L {
     n >= self.start && n < self.stop && (n - self.start) % self.step == 0L
@@ -357,6 +518,20 @@ pub struct StarlarkFunction {
 }
 
 ///|
+/// Creates a new `StarlarkFunction` from its constituent parts.
+///
+/// Parameters:
+///
+/// * `name` : The function's declared name.
+/// * `params` : The parsed parameter list.
+/// * `body` : The list of statements forming the function body.
+/// * `defaults` : Default values aligned to the parameter list (`None` for
+///   parameters without a default).
+/// * `captured_scope` : The closure scope as a list of
+///   `(bindings, insertion-order-keys)` pairs.
+/// * `pos` : Source position of the `def` statement.
+///
+/// Returns a new `StarlarkFunction` with no module-globals binding.
 pub fn StarlarkFunction::new(
   name : String,
   params : Array[@syntax.Param],
@@ -369,16 +544,25 @@ pub fn StarlarkFunction::new(
 }
 
 ///|
+/// Returns the declared name of the function.
+///
+/// Returns the function's name string.
 pub fn StarlarkFunction::name(self : StarlarkFunction) -> String {
   self.name
 }
 
 ///|
+/// Returns the source position of the function's `def` statement.
+///
+/// Returns the `@errors.Position` where this function was defined.
 pub fn StarlarkFunction::position(self : StarlarkFunction) -> @errors.Position {
   self.pos
 }
 
 ///|
+/// Returns the parsed parameter list of the function.
+///
+/// Returns an array of `@syntax.Param` values describing each parameter.
 pub fn StarlarkFunction::params(
   self : StarlarkFunction,
 ) -> Array[@syntax.Param] {
@@ -386,16 +570,27 @@ pub fn StarlarkFunction::params(
 }
 
 ///|
+/// Returns the list of statements forming the function body.
+///
+/// Returns the function body as an array of `@syntax.Stmt`.
 pub fn StarlarkFunction::body(self : StarlarkFunction) -> Array[@syntax.Stmt] {
   self.body
 }
 
 ///|
+/// Returns the default value array aligned to the parameter list.
+///
+/// Returns an array of `Value?`, where `None` indicates no default for that
+/// parameter position.
 pub fn StarlarkFunction::defaults(self : StarlarkFunction) -> Array[Value?] {
   self.defaults
 }
 
 ///|
+/// Returns the captured closure scope of the function.
+///
+/// Returns the list of `(bindings, insertion-order-keys)` pairs representing
+/// all enclosing scopes captured at definition time.
 pub fn StarlarkFunction::captured_scope(
   self : StarlarkFunction,
 ) -> Array[(Map[String, Value], Array[String])] {
@@ -403,6 +598,15 @@ pub fn StarlarkFunction::captured_scope(
 }
 
 ///|
+/// Returns a copy of the function with module-level globals bound to `g`.
+///
+/// Parameters:
+///
+/// * `self` : The function to update.
+/// * `g` : The module-level globals map to associate with this function.
+///
+/// Returns a new `StarlarkFunction` identical to `self` but with
+/// `module_globals` set to `Some(g)`.
 pub fn StarlarkFunction::with_module_globals(
   self : StarlarkFunction,
   g : Map[String, Value],
@@ -411,6 +615,10 @@ pub fn StarlarkFunction::with_module_globals(
 }
 
 ///|
+/// Returns the module-level globals map, or an empty map if none is bound.
+///
+/// Returns the associated `Map[String, Value]`, or `{}` when no module
+/// globals have been set.
 pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] {
   match self.module_globals {
     Some(g) => g
@@ -419,6 +627,10 @@ pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] 
 }
 
 ///|
+/// Returns the module that defined this function, if module globals are bound.
+///
+/// Returns `Some(module)` when module globals have been associated via
+/// `with_module_globals`, or `None` otherwise.
 pub fn StarlarkFunction::defining_module(
   self : StarlarkFunction,
 ) -> StarlarkModule? {
@@ -429,6 +641,10 @@ pub fn StarlarkFunction::defining_module(
 }
 
 ///|
+/// Returns the docstring of the function, or an empty string if absent.
+///
+/// Returns the string literal from the first statement of the body when it
+/// is a bare string expression; otherwise `""`.
 pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
   match self.body {
     [
@@ -442,6 +658,9 @@ pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
 }
 
 ///|
+/// Returns `true` if the function accepts a variadic positional parameter (`*args`).
+///
+/// Returns `true` when any parameter is `ParamStarIdent`.
 pub fn StarlarkFunction::has_varargs(self : StarlarkFunction) -> Bool {
   for p in self.params {
     if p is @syntax.Param::ParamStarIdent(_, _) {
@@ -452,6 +671,9 @@ pub fn StarlarkFunction::has_varargs(self : StarlarkFunction) -> Bool {
 }
 
 ///|
+/// Returns `true` if the function accepts a variadic keyword parameter (`**kwargs`).
+///
+/// Returns `true` when any parameter is `ParamKwIdent`.
 pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
   for p in self.params {
     if p is @syntax.Param::ParamKwIdent(_, _) {
@@ -462,6 +684,10 @@ pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
 }
 
 ///|
+/// Returns the number of named parameters (excludes bare `*` separators).
+///
+/// Returns the count of parameters that bind to a name (positional, default,
+/// `*args`, and `**kwargs`), excluding bare `ParamStarBare` separators.
 pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
   let mut count = 0
   for p in self.params {
@@ -474,6 +700,10 @@ pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
 }
 
 ///|
+/// Returns the number of keyword-only parameters (those appearing after `*`).
+///
+/// Returns the count of `ParamIdent` and `ParamDefault` parameters that
+/// follow a `ParamStarBare` or `ParamStarIdent` separator.
 pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int {
   let mut after_star = false
   let mut count = 0
@@ -492,6 +722,15 @@ pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int {
 }
 
 ///|
+/// Returns the name and source position of the `i`-th named parameter.
+///
+/// Parameters:
+///
+/// * `self` : The function to query.
+/// * `i` : The zero-based index among named parameters (same count as
+///   `num_params`).
+///
+/// Returns a `(name, position)` tuple. Aborts if `i` is out of range.
 pub fn StarlarkFunction::param(
   self : StarlarkFunction,
   i : Int,
@@ -530,6 +769,15 @@ pub fn StarlarkFunction::param(
 }
 
 ///|
+/// Returns the default value for parameter at position `i`, or `None`.
+///
+/// Parameters:
+///
+/// * `self` : The function to query.
+/// * `i` : The zero-based parameter index into the defaults array.
+///
+/// Returns `Some(v)` if a default exists at position `i`, or `None` if `i`
+/// is out of range or the parameter has no default.
 pub fn StarlarkFunction::param_default(
   self : StarlarkFunction,
   i : Int,
@@ -541,6 +789,9 @@ pub fn StarlarkFunction::param_default(
 }
 
 ///|
+/// Returns the total number of captured free variables across all closure scopes.
+///
+/// Returns the sum of binding counts across all captured-scope layers.
 pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
   let mut total = 0
   for scope in self.captured_scope {
@@ -550,6 +801,14 @@ pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
 }
 
 ///|
+/// Returns the `i`-th captured free variable as a `(name, value)` pair.
+///
+/// Parameters:
+///
+/// * `self` : The function to query.
+/// * `i` : The zero-based index across all captured-scope layers.
+///
+/// Returns `Some((name, value))` if index `i` exists, or `None` if out of range.
 pub fn StarlarkFunction::free_var(
   self : StarlarkFunction,
   i : Int,
@@ -580,6 +839,17 @@ pub struct BuiltinCallCtx {
 }
 
 ///|
+/// Creates a `BuiltinCallCtx` with the given call dispatcher and optional
+/// thread-local lookup function.
+///
+/// Parameters:
+///
+/// * `call` : The function used to invoke a Starlark callable; receives the
+///   callee, positional args, and keyword args.
+/// * `get_local` : An optional function to read per-thread overrides by key
+///   (defaults to always returning `None`).
+///
+/// Returns a new `BuiltinCallCtx`.
 pub fn BuiltinCallCtx::new(
   call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String],
   get_local? : (String) -> Value? = fn(_) { None },
@@ -590,11 +860,28 @@ pub fn BuiltinCallCtx::new(
 ///|
 /// Reads the active thread's thread-local value for `key`. Used by extension
 /// builtins (e.g. `time.now`) that honor an embedder-provided per-thread override.
+///
+/// Parameters:
+///
+/// * `self` : The call context.
+/// * `key` : The key to look up in the per-thread override store.
+///
+/// Returns `Some(v)` if the embedder has set a value for `key`, or `None`.
 pub fn BuiltinCallCtx::get_local(self : BuiltinCallCtx, key : String) -> Value? {
   (self.get_local_fn)(key)
 }
 
 ///|
+/// Invokes a Starlark callable through this context's call dispatcher.
+///
+/// Parameters:
+///
+/// * `self` : The call context.
+/// * `callee` : The Starlark value to call.
+/// * `args` : Positional arguments.
+/// * `kwargs` : Keyword arguments as `(name, value)` pairs.
+///
+/// Returns `Ok(result)` on success, or `Err` with an error message.
 pub fn BuiltinCallCtx::invoke(
   self : BuiltinCallCtx,
   callee : Value,
@@ -615,21 +902,44 @@ pub struct StarlarkBuiltinFunc {
 }
 
 ///|
+/// Creates a dispatch-only `StarlarkBuiltinFunc` with the given name and no
+/// inline body. Calls are handled externally by pattern-matching on the name.
+///
+/// Parameters:
+///
+/// * `name` : The name to associate with this builtin function.
+///
+/// Returns a `StarlarkBuiltinFunc` with `body` set to `None`.
 pub fn StarlarkBuiltinFunc::dispatch(name : String) -> StarlarkBuiltinFunc {
   { name, body: None, recv: None }
 }
 
 ///|
+/// Returns the name of the builtin function.
+///
+/// Returns the function's name string.
 pub fn StarlarkBuiltinFunc::name(self : StarlarkBuiltinFunc) -> String {
   self.name
 }
 
 ///|
+/// Returns the bound receiver of this builtin, or `None` if unbound.
+///
+/// Returns `Some(recv)` when the builtin was created via `bind_receiver`,
+/// or `None` for a free function.
 pub fn StarlarkBuiltinFunc::receiver(self : StarlarkBuiltinFunc) -> Value? {
   self.recv
 }
 
 ///|
+/// Returns a copy of this builtin with `recv` bound as its receiver.
+///
+/// Parameters:
+///
+/// * `self` : The builtin function to bind.
+/// * `recv` : The receiver value to bind (typically the owning object).
+///
+/// Returns a new `StarlarkBuiltinFunc` with `recv` set.
 pub fn StarlarkBuiltinFunc::bind_receiver(
   self : StarlarkBuiltinFunc,
   recv : Value,
@@ -638,6 +948,18 @@ pub fn StarlarkBuiltinFunc::bind_receiver(
 }
 
 ///|
+/// Calls the inline body of this builtin, if one was provided.
+///
+/// Parameters:
+///
+/// * `self` : The builtin function to call.
+/// * `ctx` : The call context providing the call dispatcher and thread-local
+///   lookup.
+/// * `pos_args` : Positional arguments.
+/// * `kw_args` : Keyword arguments as `(name, value)` pairs.
+///
+/// Returns `Some(Ok(v))` or `Some(Err(msg))` when a body is present, or
+/// `None` for dispatch-only builtins.
 pub fn StarlarkBuiltinFunc::call_body(
   self : StarlarkBuiltinFunc,
   ctx : BuiltinCallCtx,
@@ -661,6 +983,15 @@ pub struct StarlarkBoundMethod {
 }
 
 ///|
+/// Creates a new `StarlarkBoundMethod` binding `method_name` to `recv`,
+/// assigning a globally unique identity id.
+///
+/// Parameters:
+///
+/// * `recv` : The receiver value that the method is bound to.
+/// * `method_name` : The name of the method.
+///
+/// Returns a new `StarlarkBoundMethod` with a unique `id`.
 pub fn StarlarkBoundMethod::new(
   recv : Value,
   method_name : String,
@@ -671,11 +1002,18 @@ pub fn StarlarkBoundMethod::new(
 }
 
 ///|
+/// Returns the receiver value this method is bound to.
+///
+/// Returns the `Value` that was passed as `recv` when this bound method was
+/// created.
 pub fn StarlarkBoundMethod::recv(self : StarlarkBoundMethod) -> Value {
   self.recv
 }
 
 ///|
+/// Returns the name of the method this object is bound to.
+///
+/// Returns the method name string.
 pub fn StarlarkBoundMethod::method_name(self : StarlarkBoundMethod) -> String {
   self.method_name
 }
@@ -687,6 +1025,14 @@ pub struct StarlarkModule {
 }
 
 ///|
+/// Creates a new `StarlarkModule` with the given name and attribute map.
+///
+/// Parameters:
+///
+/// * `name` : The module's name (typically its filename or import path).
+/// * `attrs` : The module-level exported bindings.
+///
+/// Returns a new `StarlarkModule`.
 pub fn StarlarkModule::new(
   name : String,
   attrs : Map[String, Value],
@@ -695,16 +1041,30 @@ pub fn StarlarkModule::new(
 }
 
 ///|
+/// Returns the name of the module.
+///
+/// Returns the module's name string.
 pub fn StarlarkModule::name(self : StarlarkModule) -> String {
   self.name
 }
 
 ///|
+/// Looks up an attribute by name in the module.
+///
+/// Parameters:
+///
+/// * `self` : The module to query.
+/// * `key` : The attribute name to look up.
+///
+/// Returns `Some(v)` if the attribute exists, or `None`.
 pub fn StarlarkModule::get(self : StarlarkModule, key : String) -> Value? {
   self.attrs.get(key)
 }
 
 ///|
+/// Returns the list of all attribute names exported by the module.
+///
+/// Returns an array of attribute name strings.
 pub fn StarlarkModule::attr_names(self : StarlarkModule) -> Array[String] {
   self.attrs.keys().collect()
 }
@@ -716,6 +1076,15 @@ pub struct StarlarkStringElems {
 }
 
 ///|
+/// Creates a `StarlarkStringElems` view over a string.
+///
+/// Parameters:
+///
+/// * `s` : The source string to iterate over.
+/// * `ords` : When `true`, the iterator yields integer byte values; when
+///   `false`, it yields single-byte `StarlarkString` values.
+///
+/// Returns a new `StarlarkStringElems`.
 pub fn StarlarkStringElems::new(
   s : StarlarkString,
   ords : Bool,
@@ -724,6 +1093,9 @@ pub fn StarlarkStringElems::new(
 }
 
 ///|
+/// Returns the source string this view was created from.
+///
+/// Returns the underlying `StarlarkString`.
 pub fn StarlarkStringElems::source_string(
   self : StarlarkStringElems,
 ) -> StarlarkString {
@@ -731,6 +1103,10 @@ pub fn StarlarkStringElems::source_string(
 }
 
 ///|
+/// Returns `true` if this view yields integer byte ordinals rather than
+/// single-byte strings.
+///
+/// Returns the `ords` flag set at construction time.
 pub fn StarlarkStringElems::is_ords(self : StarlarkStringElems) -> Bool {
   self.ords
 }
@@ -742,6 +1118,15 @@ pub struct StarlarkStringCodepoints {
 }
 
 ///|
+/// Creates a `StarlarkStringCodepoints` view over a string.
+///
+/// Parameters:
+///
+/// * `s` : The source string to iterate over.
+/// * `ords` : When `true`, the iterator yields integer codepoint values;
+///   when `false`, it yields single-codepoint `StarlarkString` values.
+///
+/// Returns a new `StarlarkStringCodepoints`.
 pub fn StarlarkStringCodepoints::new(
   s : StarlarkString,
   ords : Bool,
@@ -750,6 +1135,9 @@ pub fn StarlarkStringCodepoints::new(
 }
 
 ///|
+/// Returns the source string this codepoints view was created from.
+///
+/// Returns the underlying `StarlarkString`.
 pub fn StarlarkStringCodepoints::source_string(
   self : StarlarkStringCodepoints,
 ) -> StarlarkString {
@@ -757,6 +1145,10 @@ pub fn StarlarkStringCodepoints::source_string(
 }
 
 ///|
+/// Returns `true` if this view yields integer codepoint ordinals rather than
+/// single-codepoint strings.
+///
+/// Returns the `ords` flag set at construction time.
 pub fn StarlarkStringCodepoints::is_ords(
   self : StarlarkStringCodepoints,
 ) -> Bool {
@@ -769,11 +1161,21 @@ pub struct StarlarkBytesElems {
 }
 
 ///|
+/// Creates a `StarlarkBytesElems` view over a raw byte sequence.
+///
+/// Parameters:
+///
+/// * `b` : The raw bytes to iterate over.
+///
+/// Returns a new `StarlarkBytesElems` wrapping `b`.
 pub fn StarlarkBytesElems::new(b : Bytes) -> StarlarkBytesElems {
   { b, }
 }
 
 ///|
+/// Returns the raw bytes backing this view.
+///
+/// Returns the underlying `Bytes` array.
 pub fn StarlarkBytesElems::raw_bytes(self : StarlarkBytesElems) -> Bytes {
   self.b
 }
@@ -805,30 +1207,54 @@ pub(all) enum Value {
 
 ///|
 /// Creates a `Value::String` from a MoonBit `String`.
+///
+/// Parameters:
+///
+/// * `s` : The MoonBit `String` to wrap.
+///
+/// Returns a `Value::String` backed by a new `StarlarkString`.
 pub fn Value::of_string(s : String) -> Value {
   String(StarlarkString::new(s))
 }
 
 ///|
 /// Creates a `Value::List` wrapping a new `StarlarkList`.
+///
+/// Parameters:
+///
+/// * `items` : The initial array of `Value` elements.
+///
+/// Returns a `Value::List` containing `items`.
 pub fn Value::new_list(items : Array[Value]) -> Value {
   List(StarlarkList::new(items))
 }
 
 ///|
 /// Creates an empty `Value::Dict`.
+///
+/// Returns a new empty `Value::Dict`.
 pub fn Value::new_dict() -> Value {
   Dict(StarlarkDict::new())
 }
 
 ///|
 /// Creates an empty `Value::Set`.
+///
+/// Returns a new empty `Value::Set`.
 pub fn Value::new_set() -> Value {
   Set(StarlarkSet::new())
 }
 
 ///|
 /// Creates a `Value::Builtin` with the given name and callable body.
+///
+/// Parameters:
+///
+/// * `name` : The name of the builtin function.
+/// * `body` : The implementation closure receiving the call context, positional
+///   args, and keyword args.
+///
+/// Returns a `Value::Builtin` that dispatches through `body`.
 pub fn Value::new_builtin(
   name : String,
   body : (BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
@@ -841,6 +1267,12 @@ pub fn Value::new_builtin(
 
 ///|
 /// Returns the Starlark `type()` string for `v` (e.g. `"int"`, `"list"`).
+///
+/// Parameters:
+///
+/// * `v` : The value whose type name to retrieve.
+///
+/// Returns the Starlark type name string.
 pub fn type_name(v : Value) -> String {
   match v {
     None => "NoneType"
@@ -866,6 +1298,14 @@ pub fn type_name(v : Value) -> String {
 }
 
 ///|
+/// Returns the Starlark truth value of `v` (equivalent to `bool(v)`).
+///
+/// Parameters:
+///
+/// * `v` : The value to evaluate.
+///
+/// Returns `false` for `None`, `False`, zero numbers, empty strings/bytes/
+/// collections, and zero-length ranges; `true` for everything else.
 pub fn truth(v : Value) -> Bool {
   match v {
     None => false
@@ -891,6 +1331,14 @@ pub fn truth(v : Value) -> Bool {
 ///|
 /// Integer floor division flooring toward −∞ (sign of the remainder equals
 /// the sign of the divisor), matching Starlark's `//` operator.
+///
+/// Parameters:
+///
+/// * `a` : The dividend.
+/// * `b` : The divisor.
+///
+/// Returns `Ok(q)` where `q` is the floor-division result, or
+/// `Err("floored division by zero")` when `b` is zero.
 pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   if b.is_zero() {
     return Err("floored division by zero")
@@ -908,6 +1356,14 @@ pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
 ///|
 /// Integer modulo whose sign matches the divisor, matching Starlark's `%`
 /// operator.
+///
+/// Parameters:
+///
+/// * `a` : The dividend.
+/// * `b` : The divisor.
+///
+/// Returns `Ok(r)` where `r` has the same sign as `b`, or
+/// `Err("integer modulo by zero")` when `b` is zero.
 pub fn starlark_mod(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   if b.is_zero() {
     return Err("integer modulo by zero")
@@ -930,6 +1386,12 @@ fn is_neg_zero(f : Double) -> Bool {
 /// Formats a `Double` as a Starlark float literal, matching starlark-go's
 /// `strconv.FormatFloat('g')` output: scientific notation for very large or
 /// very small values, decimal otherwise. Handles ±inf, nan, and −0.0.
+///
+/// Parameters:
+///
+/// * `f` : The double-precision float to format.
+///
+/// Returns the Starlark string representation of `f`.
 pub fn format_float(f : Double) -> String {
   if f.is_nan() {
     return "nan"
@@ -1202,6 +1664,12 @@ fn repr_bytes_val(b : Bytes) -> String {
 ///|
 /// Returns the Starlark `repr(v)` string. Detects cyclic list/dict references
 /// and replaces them with `[...]` / `{...}`.
+///
+/// Parameters:
+///
+/// * `v` : The value to represent.
+///
+/// Returns the Starlark `repr()` string for `v`.
 pub fn repr(v : Value) -> String {
   repr_inner(v, [], [])
 }
