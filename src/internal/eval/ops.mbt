@@ -6,7 +6,7 @@ fn adjust_index(
 ) -> Result[Int, String] {
   // Go's AsInt32: fail if value doesn't fit int32 range.
   // Produces "<type> index: N out of range" (no range bounds).
-  if i > 2147483647N || i < -2147483648N {
+  if i > max_int32 || i < min_int32 {
     return Err("\{type_name} index: \{i} out of range")
   }
   let len = BigInt::from_int(length)
@@ -310,14 +310,45 @@ fn eval_mul(
   }
 }
 
+// Int32 range: Go's AsInt32 bounds used for slice/index range checks.
+
 ///|
 let max_int32 : BigInt = 2147483647N
+
+///|
+let min_int32 : BigInt = -2147483648N
+
+// Maximum allocation size matching starlark-go's `len*i >= 1<<30` check.
 
 ///|
 let max_alloc : Int = 1073741824
 
 ///|
 let max_byte_val : BigInt = 255N
+
+// Starlark shift-count limits (matching starlark-go's shl/shr behaviour).
+// Left shifts beyond max_lshift_bits would cause unbounded BigInt growth.
+// Right shifts beyond max_rshift_bits always produce 0 or -1, so clamp to
+// avoid BigInt.to_int() overflow.
+
+///|
+let max_lshift_bits : BigInt = 512N
+
+///|
+let max_rshift_bits : BigInt = 1_000_000N
+
+// Unicode codepoint bounds used for %c format validation.
+
+///|
+let unicode_max_cp_bigint : BigInt = 0x10FFFFN
+
+///|
+// Inclusive lower bound of the Unicode surrogate block (U+D800..U+DFFF).
+let unicode_surr_first : Int = 0xD800
+
+///|
+// Inclusive upper bound of the Unicode surrogate block (U+D800..U+DFFF).
+let unicode_surr_last : Int = 0xDFFF
 
 ///|
 fn repeat_string(
@@ -718,13 +749,13 @@ fn percent_format(
       'c' =>
         match arg {
           @value.Value::Int(n2) => {
-            if n2 < 0N || n2 > 1114111N {
+            if n2 < 0N || n2 > unicode_max_cp_bigint {
               return Err(
                 "%c format requires a valid Unicode code point, got \{n2}",
               )
             }
             let cp = n2.to_int()
-            if cp >= 0xD800 && cp <= 0xDFFF {
+            if cp >= unicode_surr_first && cp <= unicode_surr_last {
               buf.write_char('\u{FFFD}')
             } else {
               buf.write_char(cp.unsafe_to_char())
@@ -831,11 +862,15 @@ fn pad_bigint(n : BigInt, width : Int) -> String {
 ///|
 fn decompose_double(abs_f : Double) -> (BigInt, Int) {
   let bits = abs_f.reinterpret_as_uint64()
+  // 52 = mantissa bits; 0x7FF = 11-bit biased-exponent mask (bits 52..62)
   let biased = ((bits >> 52) & 0x7FFUL).to_int()
+  // 52-bit fractional mantissa (bits 0..51)
   let frac = bits & 0x000FFFFFFFFFFFFFUL
   if biased == 0 {
+    // Subnormal: true exponent = 1 - 1023 - 52 = -1074
     (BigInt::from_uint64(frac), -1074)
   } else {
+    // Normal: prepend implicit leading 1 (bit 52); true exponent = biased - 1023 - 52 = biased - 1075
     (BigInt::from_uint64(frac | 0x0010000000000000UL), biased - 1075)
   }
 }
@@ -1053,7 +1088,7 @@ fn eval_shift(
       }
       match dir {
         "lshift" => {
-          if b >= 512N {
+          if b >= max_lshift_bits {
             raise EvalErr(make_eval_error(ctx, "shift count too large: \{b}"))
           }
           @value.Value::Int(a << b.to_int())
@@ -1061,7 +1096,11 @@ fn eval_shift(
         _ => {
           // Right shift: no upper cap; BigInt >> large_count = 0 (positive) or -1 (negative).
           // Clamp b to a safe int range to avoid to_int() overflow.
-          let shift = if b > 1000000N { 1000000 } else { b.to_int() }
+          let shift = if b > max_rshift_bits {
+            max_rshift_bits.to_int()
+          } else {
+            b.to_int()
+          }
           @value.Value::Int(a >> shift)
         }
       }

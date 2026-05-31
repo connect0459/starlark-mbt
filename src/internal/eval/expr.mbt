@@ -137,7 +137,7 @@ fn eval_expr_node(
       let step = match step_val {
         @value.Value::None => None
         @value.Value::Int(n) =>
-          if n > 2147483647N || n < -2147483648N {
+          if n > max_int32 || n < min_int32 {
             raise EvalErr(
               make_eval_error(ctx, "invalid slice step: \{n} out of range"),
             )
@@ -155,7 +155,7 @@ fn eval_expr_node(
       let lo = match lo_val {
         @value.Value::None => None
         @value.Value::Int(n) =>
-          if n > 2147483647N || n < -2147483648N {
+          if n > max_int32 || n < min_int32 {
             raise EvalErr(
               make_eval_error(ctx, "invalid start index: \{n} out of range"),
             )
@@ -173,7 +173,7 @@ fn eval_expr_node(
       let hi = match hi_val {
         @value.Value::None => None
         @value.Value::Int(n) =>
-          if n > 2147483647N || n < -2147483648N {
+          if n > max_int32 || n < min_int32 {
             raise EvalErr(
               make_eval_error(ctx, "invalid end index: \{n} out of range"),
             )
