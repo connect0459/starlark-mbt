@@ -588,3 +588,44 @@ test "error format: deep call chain frames show call positions" {
     Ok(_) => abort("expected error")
   }
 }
+
+///|
+test "error format: load with no loader gives 'not implemented' message" {
+  let thread = @eval.Thread::new("test")
+  let src =
+    #|load('foo.star', 'x')
+  let result = @eval.exec_file(
+    thread,
+    "root.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      assert_true(e.msg().contains("load not implemented by this application"))
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: load name-not-found error has no position prefix in message" {
+  let thread = @eval.Thread::with_loader("test", fn(_thread, _path) {
+    Ok(@eval.Module::new())
+  })
+  let src =
+    #|load('m.star', 'missing_name')
+  let result = @eval.exec_file(
+    thread,
+    "root.star",
+    src,
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      let msg = e.msg()
+      assert_true(msg.contains("load: name missing_name not found in module"))
+      assert_true(!msg.has_prefix("root.star:"))
+    }
+    Ok(_) => abort("expected error")
+  }
+}

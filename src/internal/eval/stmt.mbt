@@ -141,8 +141,8 @@ fn exec_stmt(
       }
     @syntax.Stmt::SBreak(_) => Signal::SigBreak
     @syntax.Stmt::SContinue(_) => Signal::SigContinue
-    @syntax.Stmt::SLoad(path, bindings, pos) =>
-      exec_load(ctx, env, path, bindings, pos)
+    @syntax.Stmt::SLoad(path, bindings, _) =>
+      exec_load(ctx, env, path, bindings)
   }
 }
 
@@ -375,12 +375,11 @@ fn exec_load(
   env : EvalEnv,
   path : String,
   bindings : Array[(String, String, @errors.Position)],
-  pos : @errors.Position,
 ) -> Signal raise EvalErr {
   match ctx.thread.load_fn {
     None =>
       raise EvalErr(
-        make_eval_error(ctx, "\{pos.to_string()}: load is not supported"),
+        make_eval_error(ctx, "load not implemented by this application"),
       )
     Some(loader) => {
       let loaded = match loader(ctx.thread, path) {
@@ -424,7 +423,7 @@ fn exec_load(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "\{pos.to_string()}: load: name \{export_name} not found in module \{path}\{hint}",
+                "load: name \{export_name} not found in module \{path}\{hint}",
               ),
             )
           }
