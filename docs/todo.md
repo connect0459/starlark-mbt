@@ -1949,6 +1949,21 @@ comments, and doc-comments on public functions.
       IEEE 754 Annex F rather than the oscillating mathematical limit (a naive
       call yields NaN). A scan of the json/struct/time/utf8util extension files
       found them already well-commented.
+- [x] **DRY consolidation (fourteenth pass)** — `value/iter.mbt`: the
+      drain-an-iterator-into-an-array loop (`next`/`done`/`break`/`push`) was
+      repeated verbatim at five builtin sites (`list`, `tuple`, `sorted`,
+      `reversed`, set `symmetric_difference`); extracted
+      `StarlarkIterator::collect()` so the cleanup contract (always call `done`)
+      lives once. `eval/ops.mbt`: the negative-zero detection
+      `f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)` was duplicated in
+      `format_float_e`/`format_float_f`; extracted `signbit`.
+- [x] **Non-obvious comments (eleventh pass)** — `eval/ops.mbt`: documented the
+      `signbit` divide-by-zero trick (`1.0 / -0.0 = -inf`) and why
+      `float_floor_mod` adds the divisor back when remainder and divisor differ
+      in sign (`%` truncates toward zero; floor-mod must carry the divisor's
+      sign). A scan of the resolver local-scope walk and the conditional-expr
+      evaluator found them already self-documenting (the file-block stop is
+      commented; `ECond` destructures to `then_e`/`cond_e`/`else_e`).
 
 ---
 
