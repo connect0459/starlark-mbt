@@ -1612,6 +1612,13 @@ pub let now_override_key : String = "time.now"
 ///|
 /// Creates a `time.time` Starlark value from a Unix second/nanosecond pair.
 /// Primarily used to construct clock-override values for `now_override_key`.
+///
+/// Parameters:
+///
+/// * `sec` : Unix timestamp in whole seconds (seconds since the Unix epoch).
+/// * `nsec` : Nanoseconds offset within the second (0..999_999_999).
+///
+/// Returns a `time.time` Starlark value representing the given instant.
 pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
   make_time(sec, nsec)
 }
@@ -1924,6 +1931,8 @@ fn make_is_valid_timezone_fn() -> @value.Value {
 /// Returns the `time` Starlark module value, providing `now`,
 /// `from_timestamp`, `parse_time`, `parse_duration`, and the
 /// `duration` constructor as attributes.
+///
+/// Returns the constructed `time` module as a `@value.Value::Module`.
 pub fn time_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["now"] = make_now_fn()
