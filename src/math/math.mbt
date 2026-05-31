@@ -230,6 +230,8 @@ fn make_floor() -> @value.Value {
 /// `pi`, and the functions `ceil`, `floor`, `round`, `fabs`, `exp`, `sqrt`,
 /// `log`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `pow`, and
 /// `trunc` as attributes.
+///
+/// Returns the constructed `math` module as a `@value.Value::Module`.
 pub fn math_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["e"] = @value.Value::Float(2.718281828459045)
