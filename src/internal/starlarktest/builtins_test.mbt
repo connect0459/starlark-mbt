@@ -491,3 +491,29 @@ test "sorted: non-callable key raises error before iteration" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "print: non-string sep raises type error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: print(1, 2, sep=3), 'print: for parameter "sep": got int, want string')
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "print: unknown keyword argument raises error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: print(1, end="\n"), 'print: unexpected keyword argument "end"')
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

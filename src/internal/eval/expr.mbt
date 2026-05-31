@@ -834,12 +834,26 @@ fn call_builtin(
       let sep = {
         let mut found = " "
         for kv in kw_args {
-          match kv {
-            ("sep", @value.Value::String(s)) => {
-              found = s.raw()
-              break
-            }
-            _ => ()
+          let (k, v) = kv
+          match k {
+            "sep" =>
+              match v {
+                @value.Value::String(s) => found = s.raw()
+                _ =>
+                  raise EvalErr(
+                    make_eval_error(
+                      ctx,
+                      "print: for parameter \"\{k}\": got \{@value.type_name(v)}, want string",
+                    ),
+                  )
+              }
+            other =>
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "print: unexpected keyword argument \"\{other}\"",
+                ),
+              )
           }
         }
         found
