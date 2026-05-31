@@ -1898,6 +1898,15 @@ comments, and doc-comments on public functions.
       in `float_copysign`. `hashtable/hashtable.mbt` `slot_of`: documented that
       `h & (cap - 1)` substitutes for `h % cap` only under the power-of-two
       capacity invariant. `repl/repl.mbt`: documented the `_` last-value binding.
+- [x] **Magic number + DRY (tenth pass)** — `eval/expr.mbt` `chr()`: the
+      out-of-range guard hard-coded `BigInt::from_int(0x10ffff)` while the same
+      `eval` package already defines `unicode_max_cp_bigint` for the `%c` format
+      path; reuse the constant. `json/json.mbt`: named the surrogate-pair decode
+      magic numbers (`high_surrogate_lo/hi`, `low_surrogate_lo/hi`,
+      `supplementary_plane_base`, `surrogate_high_scale`, `json_replacement_rune`)
+      so the recombination formula reads as the UTF-16 algorithm; extracted
+      `write_indent_line` to dedupe the newline+prefix+indent sequence repeated
+      at three `indent_json` call sites.
 
 ---
 
