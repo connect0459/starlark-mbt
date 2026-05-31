@@ -1881,6 +1881,23 @@ comments, and doc-comments on public functions.
       `utf8util/utf8util.mbt` `utf8_decode_rune`: added RFC 3629 comment
       explaining why the leading-byte bounds are 0xC2/0xF4 (not 0xC0/0xF7)
       — 0xC0/0xC1 are overlong, 0xF5..0xF7 encode codepoints above U+10FFFF.
+- [x] **Magic number + DRY (extension/util pass)** — `time/time.mbt`
+      `fmt_go_layout`: the numeric-offset branch used bare `3600`/`60` while its
+      sibling already used `secs_per_hour`/`secs_per_minute`; both branches
+      duplicated the sign+hh+mm writing logic — extracted `write_tz_offset`.
+      `math/math.mbt` `float_gamma`: named `gamma_factorial_max` (21.0) and
+      `lanczos_g` (7.0), tied the coefficient loop to `lanczos_c.length()`
+      instead of a literal `9`, replaced the `7.5` t-offset with
+      `lanczos_g + 0.5`. `repl/repl.mbt` `eval_input`: collapsed the two
+      identical `exec_repl_chunk` branches into a single guarded path.
+- [x] **Non-obvious comments (ninth pass)** — `time/time.mbt` `fmt_go_layout`:
+      documented the Go reference-time mnemonics ("Mon Jan 2 15:04:05 MST 2006")
+      so the layout-token matching and length advances are no longer opaque.
+      `math/math.mbt`: documented the Lanczos g=7/n=9 coefficient set, the
+      reflection formula, and the `1.0 / y < 0.0` negative-zero detection trick
+      in `float_copysign`. `hashtable/hashtable.mbt` `slot_of`: documented that
+      `h & (cap - 1)` substitutes for `h % cap` only under the power-of-two
+      capacity invariant. `repl/repl.mbt`: documented the `_` last-value binding.
 
 ---
 
