@@ -1918,6 +1918,19 @@ comments, and doc-comments on public functions.
       `value/protocols.mbt`, `value/iter.mbt`, `unpack/unpack.mbt`,
       `eval/env.mbt`, `eval/stmt.mbt`, `parser/parser.mbt`) found no remaining
       bare magic numbers.
+- [x] **DRY consolidation (twelfth pass)** — `hashtable/hashtable.mbt`: the
+      two-message frozen/itercount guard was repeated verbatim in `clear`,
+      `pop_first`, `insert`, and `delete` (only the verb phrase varied);
+      extracted `Hashtable::check_mutable(verb)` so the wording lives in one
+      place, mirroring the existing `StarlarkList::check_mutable` precedent.
+      `eval/expr.mbt`: extracted `clamp_slice_index` for the identical
+      negative-index normalize + `[0, n]` clamp used by `list.index`'s start
+      and end parameters, and `match_affix` for the string-or-tuple-of-strings
+      matching shared verbatim by `startswith`/`endswith` (differing only in the
+      name prefix and the prefix/suffix check). The iterator byte→Int expressions
+      in `value/iter.mbt` were inspected and left as-is: the per-type cursor
+      closures are only superficially similar, so a shared helper would not be a
+      true semantic match.
 
 ---
 
