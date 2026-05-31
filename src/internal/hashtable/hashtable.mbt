@@ -113,17 +113,32 @@ pub fn[K, V] Hashtable::freeze(self : Hashtable[K, V]) -> Unit {
 }
 
 ///|
+// Returns `Err` when the table may not be mutated — either it is frozen or it
+// is currently being iterated. `verb` names the attempted operation
+// ("insert into", "delete from", "clear") so the message matches starlark-go.
+fn[K, V] Hashtable::check_mutable(
+  self : Hashtable[K, V],
+  verb : String,
+) -> Result[Unit, String] {
+  if self.frozen {
+    return Err("cannot \{verb} frozen hash table")
+  }
+  if self.itercount > 0 {
+    return Err("cannot \{verb} hash table during iteration")
+  }
+  Ok(())
+}
+
+///|
 /// Removes all entries and resets to `initial_capacity`. Fails if frozen or
 /// being iterated.
 ///
 /// Returns `Ok(())` on success, or `Err` if the table is frozen or being
 /// iterated.
 pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
-  if self.frozen {
-    return Err("cannot clear frozen hash table")
-  }
-  if self.itercount > 0 {
-    return Err("cannot clear hash table during iteration")
+  match self.check_mutable("clear") {
+    Err(e) => return Err(e)
+    Ok(_) => ()
   }
   self.slots = Array::make(initial_capacity, empty_idx)
   self.entries = []
@@ -143,11 +158,9 @@ pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
 pub fn[K, V] Hashtable::pop_first(
   self : Hashtable[K, V],
 ) -> Result[(K, V)?, String] {
-  if self.frozen {
-    return Err("cannot delete from frozen hash table")
-  }
-  if self.itercount > 0 {
-    return Err("cannot delete from hash table during iteration")
+  match self.check_mutable("delete from") {
+    Err(e) => return Err(e)
+    Ok(_) => ()
   }
   if self.head == empty_idx {
     return Ok(None)
@@ -278,11 +291,9 @@ pub fn[K, V] Hashtable::insert(
   key : K,
   value : V,
 ) -> Result[Unit, String] {
-  if self.frozen {
-    return Err("cannot insert into frozen hash table")
-  }
-  if self.itercount > 0 {
-    return Err("cannot insert into hash table during iteration")
+  match self.check_mutable("insert into") {
+    Err(e) => return Err(e)
+    Ok(_) => ()
   }
   let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)
@@ -384,11 +395,9 @@ pub fn[K, V] Hashtable::delete(
   self : Hashtable[K, V],
   key : K,
 ) -> Result[Bool, String] {
-  if self.frozen {
-    return Err("cannot delete from frozen hash table")
-  }
-  if self.itercount > 0 {
-    return Err("cannot delete from hash table during iteration")
+  match self.check_mutable("delete from") {
+    Err(e) => return Err(e)
+    Ok(_) => ()
   }
   let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)
