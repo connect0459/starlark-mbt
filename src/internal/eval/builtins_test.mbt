@@ -2138,3 +2138,15 @@ test "exec_file: min/max reject unexpected keyword with unpack wording" {
   )
   assert_eq(emsg("max([1, 2], foo=5)"), "max: unexpected keyword argument foo")
 }
+
+///|
+test "exec_file: splitlines/join report parameter index in type errors" {
+  assert_eq(
+    emsg("\"hi\".splitlines(1)"),
+    "splitlines: for parameter 1: got int, want bool",
+  )
+  assert_eq(
+    emsg("\",\".join(5)"),
+    "join: for parameter 1: got int, want iterable",
+  )
+}

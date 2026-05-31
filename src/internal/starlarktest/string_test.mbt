@@ -865,7 +865,7 @@ let string_join_argerr_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: ",".join(), "join: got 0 arguments, want 1")
   #|assert.fails(lambda: ",".join([1], [2]), "join: got 2 arguments, want 1")
-  #|assert.fails(lambda: ",".join(5), "join: for parameter iterable: got int, want iterable")
+  #|assert.fails(lambda: ",".join(5), "join: for parameter 1: got int, want iterable")
   #|# element-type error already carries the prefix
   #|assert.fails(lambda: ",".join([1]), "join: in list, want string, got int")
 

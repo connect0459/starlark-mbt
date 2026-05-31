@@ -2619,7 +2619,7 @@ fn call_str_method(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "join: for parameter iterable: got \{@value.type_name(pos_args[0])}, want iterable",
+              "join: for parameter 1: got \{@value.type_name(pos_args[0])}, want iterable",
             ),
           )
       }
@@ -2890,7 +2890,7 @@ fn call_str_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "splitlines: got \{@value.type_name(pos_args[0])}, want bool",
+                "splitlines: for parameter 1: got \{@value.type_name(pos_args[0])}, want bool",
               ),
             )
         }
