@@ -91,6 +91,13 @@ fn Parser::consume_newlines(self : Parser) -> Unit raise ParseErr {
 ///|
 /// Parses a complete Starlark source file and returns its AST,
 /// or a `SyntaxError` if the source is ill-formed.
+///
+/// Parameters:
+///
+/// * `filename` : The source file name, recorded in all position values.
+/// * `source` : The UTF-8 source text to parse.
+///
+/// Returns `Ok(File)` with the parsed AST, or `Err(SyntaxError)` if parsing fails.
 pub fn parse_file(
   filename : String,
   source : String,
@@ -106,6 +113,14 @@ pub fn parse_file(
 ///|
 /// Parses a single Starlark expression and returns it, or a `SyntaxError`
 /// if the source is ill-formed or contains more than one expression.
+///
+/// Parameters:
+///
+/// * `filename` : The source file name, recorded in all position values.
+/// * `source` : The UTF-8 source text containing exactly one expression.
+///
+/// Returns `Ok(Expr)` with the parsed expression, or `Err(SyntaxError)` if
+/// parsing fails or trailing tokens remain after the expression.
 pub fn parse_expr(
   filename : String,
   source : String,
@@ -646,6 +661,12 @@ fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
 ///|
 /// Parses a single Starlark "test" expression (the outermost expression
 /// precedence level, covering lambda, if-expr, and binary/unary operators).
+///
+/// Parameters:
+///
+/// * `self` : The parser whose token stream is consumed.
+///
+/// Returns the parsed `Expr` node.
 pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::Lambda {
     return self.parse_lambda_expr()
