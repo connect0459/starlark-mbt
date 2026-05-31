@@ -199,6 +199,9 @@ fn normalize_hash(h : UInt) -> UInt {
 }
 
 ///|
+// `h & (cap - 1)` is equivalent to `h % cap` only because capacity is always a
+// power of two (starts at `initial_capacity`, doubled by `maybe_grow`), so
+// `cap - 1` is an all-ones bit mask.
 fn slot_of(h : UInt, cap : Int) -> Int {
   (h & (cap - 1).reinterpret_as_uint()).reinterpret_as_int()
 }
