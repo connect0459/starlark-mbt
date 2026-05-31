@@ -1856,6 +1856,17 @@ comments, and doc-comments on public functions.
       `parse_int_base`; added one-line comment to `append_utf8_codepoint`
       explaining the leading-byte masks (0xC0/0xE0/0xF0), continuation-byte
       marker (0x80), and 6-bit payload mask (0x3F).
+- [x] **Magic number extraction (seventh pass)** — `eval/ops.mbt`: extracted
+      `printf_float_precision = 6` (C printf `%.6e`/`%.6f` decimal places)
+      replacing bare `6`/`7` literals in `format_float_e` and `format_float_f`;
+      added comment explaining `[10^p, 10^(p+1))` normalization range.
+      `eval/stmt.mbt` and `resolver/resolver.mbt`: extracted ASCII constants
+      (`ascii_upper_a`, `ascii_upper_z`, `ascii_case_shift`, `ascii_underscore`)
+      for the `spell_fold_chars` helper, replacing bare 65/90/32/95 literals.
+- [x] **Non-obvious comments (additional pass)** — added comment to
+      `spell_nearest` explaining `(len+1)/2` as the half-word-length acceptance
+      threshold; added comment to `hash_tuple` documenting the Python
+      `tuplehash` `len + len` step formula origin.
 
 ---
 
