@@ -166,7 +166,7 @@ test "module: missing member raises an error" {
     (
       #|load("assert.star", "assert")
       #|m = module("m", a = 1)
-      #|assert.fails(lambda: m.b, "module has no attribute 'b'")
+      #|assert.fails(lambda: m.b, "module has no .b field or method")
     ),
   )
   if errs.length() != 0 {

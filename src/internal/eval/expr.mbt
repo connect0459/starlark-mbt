@@ -336,7 +336,7 @@ fn eval_getattr(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "\{@value.type_name(obj)} has no attribute '\{attr}'",
+              "\{@value.type_name(obj)} has no .\{attr} field or method",
             ),
           )
         Err(e) => raise EvalErr(make_eval_error(ctx, e))
