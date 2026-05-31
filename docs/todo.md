@@ -1931,6 +1931,24 @@ comments, and doc-comments on public functions.
       in `value/iter.mbt` were inspected and left as-is: the per-type cursor
       closures are only superficially similar, so a shared helper would not be a
       true semantic match.
+- [x] **DRY consolidation (thirteenth pass)** — `eval/expr.mbt`: the slice
+      bound decoding in `ESlice` ran the identical None/Int-range/type-error
+      match three times (start/end/step), differing only in the diagnostic
+      label; extracted `slice_int_arg(ctx, v, label)`. `dir()` carried verbatim
+      copies of the String/List/Dict/Set/Bytes method-name lists already held by
+      `builtin_type_methods`, so a method added to one path would silently
+      desync `dir()` from `getattr`/`hasattr` validation; `dir()` now reuses
+      `builtin_type_methods` and the duplicated module/ext-value name-sort
+      closure became `sort_starlark_names`. `eval/ops.mbt`: `repeat_string`/
+      `repeat_list`/`repeat_tuple`/`repeat_bytes` shared the same non-positive
+      short-circuit + int32-range cap + `elem_len*count` allocation guard (and
+      its two error strings); extracted `checked_repeat_count`, which returns a
+      0 count for the empty case so the existing loop yields the empty result.
+- [x] **Non-obvious comments (tenth pass)** — `math/math.mbt` `float_pow`:
+      documented that the `pow(-1, ±Inf) == 1` guard follows Go's `math.Pow` /
+      IEEE 754 Annex F rather than the oscillating mathematical limit (a naive
+      call yields NaN). A scan of the json/struct/time/utf8util extension files
+      found them already well-commented.
 
 ---
 
