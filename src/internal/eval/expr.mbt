@@ -1095,7 +1095,7 @@ fn call_builtin(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "abs: got \{@value.type_name(v)}, want int or float",
+              "got \{@value.type_name(v)}, want int or float",
             ),
           )
       }

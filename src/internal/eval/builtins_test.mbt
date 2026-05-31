@@ -11,6 +11,15 @@ fn g(m : Module, name : String) -> @value.Value? {
   m.get(name)
 }
 
+///|
+// Run `src` and return the raw error message, or "<ok>" if it succeeded.
+fn emsg(src : String) -> String {
+  match exec_b(src) {
+    Ok(_) => "<ok>"
+    Err(e) => e.msg()
+  }
+}
+
 // --- range ---
 
 ///|
@@ -2038,4 +2047,11 @@ test "exec_file: str.splitlines on empty string returns empty list" {
       }
     Err(e) => fail(e.to_string())
   }
+}
+
+// --- builtin argument-validation error wording (starlark-go parity) ---
+
+///|
+test "exec_file: abs reports type error without a name prefix" {
+  assert_eq(emsg("abs(\"0\")"), "got string, want int or float")
 }
