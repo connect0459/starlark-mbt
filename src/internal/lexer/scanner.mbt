@@ -14,22 +14,27 @@ let unicode_surr_hi : Int = 0xE000
 let unicode_max_codepoint : Int = 0x10FFFF
 
 ///|
+/// A token produced by the scanner, paired with its source position.
 pub struct ScannedToken {
   priv tok : Token
   priv pos : @errors.Position
 }
 
 ///|
+/// Returns the token kind.
 pub fn ScannedToken::token(self : ScannedToken) -> Token {
   self.tok
 }
 
 ///|
+/// Returns the token's source position.
 pub fn ScannedToken::pos(self : ScannedToken) -> @errors.Position {
   self.pos
 }
 
 ///|
+/// A UTF-8 source scanner that converts Starlark source text into a sequence
+/// of `ScannedToken` values, tracking indentation and bracket depth.
 pub struct Scanner {
   priv src : Bytes
   priv filename : String
@@ -43,6 +48,8 @@ pub struct Scanner {
 }
 
 ///|
+/// Creates a new scanner for the given source string with position tracking
+/// starting at line 1, column 1.
 pub fn Scanner::new(filename : String, source : String) -> Scanner {
   {
     src: @utf8.encode(source),
@@ -153,6 +160,8 @@ fn Scanner::count_indent(self : Scanner) -> Int {
 }
 
 ///|
+/// Returns the next token from the source, or a `SyntaxError` on invalid input.
+/// Manages INDENT/OUTDENT tokens based on indentation changes at line starts.
 pub fn Scanner::next_token(
   self : Scanner,
 ) -> Result[ScannedToken, @errors.SyntaxError] {

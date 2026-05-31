@@ -89,6 +89,8 @@ fn Parser::consume_newlines(self : Parser) -> Unit raise ParseErr {
 // ---- Public API ----
 
 ///|
+/// Parses a complete Starlark source file and returns its AST,
+/// or a `SyntaxError` if the source is ill-formed.
 pub fn parse_file(
   filename : String,
   source : String,
@@ -102,6 +104,8 @@ pub fn parse_file(
 }
 
 ///|
+/// Parses a single Starlark expression and returns it, or a `SyntaxError`
+/// if the source is ill-formed or contains more than one expression.
 pub fn parse_expr(
   filename : String,
   source : String,
@@ -640,6 +644,8 @@ fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
 }
 
 ///|
+/// Parses a single Starlark "test" expression (the outermost expression
+/// precedence level, covering lambda, if-expr, and binary/unary operators).
 pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::Lambda {
     return self.parse_lambda_expr()

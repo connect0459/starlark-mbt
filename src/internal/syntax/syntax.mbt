@@ -122,27 +122,32 @@ pub(all) enum Stmt {
 }
 
 ///|
+/// A parsed Starlark source file: its filename and top-level statement list.
 pub struct File {
   priv path : String
   priv stmts : Array[Stmt]
 }
 
 ///|
+/// Constructs a `File` with the given source path and top-level statement list.
 pub fn File::new(path : String, stmts : Array[Stmt]) -> File {
   { path, stmts }
 }
 
 ///|
+/// Returns the source file path.
 pub fn File::path(self : File) -> String {
   self.path
 }
 
 ///|
+/// Returns the top-level statement list.
 pub fn File::stmts(self : File) -> Array[Stmt] {
   self.stmts
 }
 
 ///|
+/// Returns the source position of an expression node.
 pub fn expr_pos(e : Expr) -> @errors.Position {
   match e {
     EIdent(_, p) => p
@@ -166,6 +171,7 @@ pub fn expr_pos(e : Expr) -> @errors.Position {
 }
 
 ///|
+/// Returns the source position of a statement node.
 pub fn stmt_pos(s : Stmt) -> @errors.Position {
   match s {
     SExpr(e) => expr_pos(e)

@@ -15,6 +15,7 @@ pub(all) enum Scope {
 }
 
 ///|
+/// A name binding: the identifier, its source position, and its resolved scope.
 pub struct Binding {
   priv name : String
   priv pos : @errors.Position
@@ -22,21 +23,26 @@ pub struct Binding {
 }
 
 ///|
+/// Returns the bound identifier name.
 pub fn Binding::name(self : Binding) -> String {
   self.name
 }
 
 ///|
+/// Returns the source position of the binding site.
 pub fn Binding::pos(self : Binding) -> @errors.Position {
   self.pos
 }
 
 ///|
+/// Returns the resolved scope classification of this binding.
 pub fn Binding::scope(self : Binding) -> Scope {
   self.scope
 }
 
 ///|
+/// Feature flags controlling which Starlark dialect extensions are accepted
+/// during name resolution. All flags default to `true` (extensions enabled).
 pub struct ResolveOptions {
   priv allow_set : Bool
   priv allow_recursion : Bool
@@ -50,6 +56,7 @@ pub struct ResolveOptions {
 }
 
 ///|
+/// Returns the default option set with all extensions enabled.
 pub fn ResolveOptions::default() -> ResolveOptions {
   {
     allow_set: true,
@@ -65,51 +72,62 @@ pub fn ResolveOptions::default() -> ResolveOptions {
 }
 
 ///|
+/// Returns whether set literals and comprehensions are accepted.
 pub fn ResolveOptions::allow_set(self : ResolveOptions) -> Bool {
   self.allow_set
 }
 
 ///|
+/// Returns whether recursive function calls are accepted.
 pub fn ResolveOptions::allow_recursion(self : ResolveOptions) -> Bool {
   self.allow_recursion
 }
 
 ///|
+/// Returns whether lambda expressions are accepted.
 pub fn ResolveOptions::allow_lambda(self : ResolveOptions) -> Bool {
   self.allow_lambda
 }
 
 ///|
+/// Returns whether `while` loops are accepted.
 pub fn ResolveOptions::allow_while(self : ResolveOptions) -> Bool {
   self.allow_while
 }
 
 ///|
+/// Returns whether `bytes` literals are accepted.
 pub fn ResolveOptions::allow_bytes(self : ResolveOptions) -> Bool {
   self.allow_bytes
 }
 
 ///|
+/// Returns whether floating-point literals and operations are accepted.
 pub fn ResolveOptions::allow_float(self : ResolveOptions) -> Bool {
   self.allow_float
 }
 
 ///|
+/// Returns whether module-level variable reassignment is accepted.
 pub fn ResolveOptions::allow_global_reassign(self : ResolveOptions) -> Bool {
   self.allow_global_reassign
 }
 
 ///|
+/// Returns whether top-level `if`/`for`/`while` statements are accepted.
 pub fn ResolveOptions::allow_top_level_control(self : ResolveOptions) -> Bool {
   self.allow_top_level_control
 }
 
 ///|
+/// Returns whether `load`-imported names are bound in the global (module)
+/// scope rather than file-local scope.
 pub fn ResolveOptions::load_binds_globally(self : ResolveOptions) -> Bool {
   self.load_binds_globally
 }
 
 ///|
+/// Returns a copy with `allow_global_reassign` set to `v`.
 pub fn ResolveOptions::with_allow_global_reassign(
   self : ResolveOptions,
   v : Bool,
@@ -118,6 +136,7 @@ pub fn ResolveOptions::with_allow_global_reassign(
 }
 
 ///|
+/// Returns a copy with `allow_top_level_control` set to `v`.
 pub fn ResolveOptions::with_allow_top_level_control(
   self : ResolveOptions,
   v : Bool,
@@ -126,6 +145,7 @@ pub fn ResolveOptions::with_allow_top_level_control(
 }
 
 ///|
+/// Returns a copy with `allow_recursion` set to `v`.
 pub fn ResolveOptions::with_allow_recursion(
   self : ResolveOptions,
   v : Bool,
@@ -134,6 +154,7 @@ pub fn ResolveOptions::with_allow_recursion(
 }
 
 ///|
+/// Returns a copy with `allow_set` set to `v`.
 pub fn ResolveOptions::with_allow_set(
   self : ResolveOptions,
   v : Bool,
@@ -142,6 +163,7 @@ pub fn ResolveOptions::with_allow_set(
 }
 
 ///|
+/// Returns a copy with `allow_while` set to `v`.
 pub fn ResolveOptions::with_allow_while(
   self : ResolveOptions,
   v : Bool,
@@ -150,6 +172,7 @@ pub fn ResolveOptions::with_allow_while(
 }
 
 ///|
+/// Returns a copy with `load_binds_globally` set to `v`.
 pub fn ResolveOptions::with_load_binds_globally(
   self : ResolveOptions,
   v : Bool,
@@ -158,6 +181,8 @@ pub fn ResolveOptions::with_load_binds_globally(
 }
 
 ///|
+/// The output of name resolution: global bindings, file-local bindings, and
+/// any resolution errors.
 pub struct ResolvedFile {
   priv globals : Array[Binding]
   priv locals : Array[Binding]
@@ -165,21 +190,26 @@ pub struct ResolvedFile {
 }
 
 ///|
+/// Reports whether resolution produced no errors.
 pub fn ResolvedFile::is_valid(self : ResolvedFile) -> Bool {
   self.errors.is_empty()
 }
 
 ///|
+/// Returns the list of resolution errors.
 pub fn ResolvedFile::errors(self : ResolvedFile) -> Array[@errors.ResolveError] {
   self.errors
 }
 
 ///|
+/// Returns the list of module-level global bindings.
 pub fn ResolvedFile::globals(self : ResolvedFile) -> Array[Binding] {
   self.globals
 }
 
 ///|
+/// Returns the list of file-local bindings (load-imported names when not
+/// `load_binds_globally`).
 pub fn ResolvedFile::locals(self : ResolvedFile) -> Array[Binding] {
   self.locals
 }
@@ -1100,6 +1130,8 @@ fn spell_nearest(x : String, candidates : Array[String]) -> String {
 // --- Public API ---
 
 ///|
+/// Resolves names in a parsed Starlark file and returns the collected global
+/// and file-local bindings together with any resolution errors.
 pub fn resolve(
   file : @syntax.File,
   is_predeclared : (String) -> Bool,

@@ -101,6 +101,7 @@ pub(all) enum Token {
 } derive(Eq)
 
 ///|
+/// Returns a human-readable description of the token (e.g. `"identifier"`, `"+"`).
 pub fn Token::to_string(self : Token) -> String {
   match self {
     Illegal => "illegal token"
@@ -246,6 +247,8 @@ pub fn Token::go_string(self : Token) -> String {
 }
 
 ///|
+/// Returns the keyword `Token` for the given identifier name, or `None` if
+/// the name is not a Starlark keyword.
 pub fn keyword_token(name : String) -> Token? {
   match name {
     "and" => Some(And)

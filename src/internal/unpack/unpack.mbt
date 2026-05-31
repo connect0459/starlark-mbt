@@ -20,19 +20,18 @@ fn parse_param_spec(s : String) -> ParamInfo {
   }
 }
 
-// unpack_args extracts positional and keyword arguments into a result array
-// whose indices correspond to the entries in `param_specs`.
-//
-// Each entry in `param_specs` is one of:
-//   "name"   - required parameter
-//   "name?"  - optional parameter (None when absent)
-//   "name??" - optional; if the caller passes None, treat it as absent
-//
-// Returns Ok(Array[Value?]) where result[i] is Some(v) when the parameter was
-// provided, or None when an optional parameter was not supplied.
-// Returns Err with a descriptive message on any mismatch.
-
 ///|
+/// Extracts positional and keyword arguments into a result array whose indices
+/// correspond to the entries in `param_specs`.
+///
+/// Each entry in `param_specs` is one of:
+/// - `"name"` — required parameter
+/// - `"name?"` — optional parameter (`None` when absent)
+/// - `"name??"` — optional; if the caller passes `None`, treat it as absent
+///
+/// Returns `Ok(Array[Value?])` where `result[i]` is `Some(v)` when the
+/// parameter was provided, or `None` when an optional parameter was absent.
+/// Returns `Err` with a descriptive message on any mismatch.
 pub fn unpack_args(
   fn_name : String,
   pos_args : Array[@value.Value],
@@ -97,11 +96,11 @@ pub fn unpack_args(
   Ok(result)
 }
 
-// unpack_positional extracts positional-only arguments.
-// Rejects keyword arguments. Requires between `min` and `max` positional args.
-// Returns Ok(Array[Value?]) of length `max`; slots beyond the actual count are None.
-
 ///|
+/// Extracts positional-only arguments, rejecting keyword arguments.
+/// Requires between `min` and `max` positional args.
+/// Returns `Ok(Array[Value?])` of length `max`; slots beyond the actual count
+/// are `None`.
 pub fn unpack_positional(
   fn_name : String,
   pos_args : Array[@value.Value],

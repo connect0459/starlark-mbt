@@ -1,4 +1,6 @@
 ///|
+/// A tagged union of every AST node kind, used as the argument to the visitor
+/// function passed to `walk_file`/`walk_stmt`/`walk_expr`.
 pub(all) enum Node {
   NFile(File)
   NStmt(Stmt)
@@ -9,6 +11,9 @@ pub(all) enum Node {
 }
 
 ///|
+/// Performs a depth-first walk of a parsed Starlark file, calling `f` before
+/// descending into each node. If `f` returns `false`, the subtree is skipped.
+/// `f(None)` is called after the last child of every parent.
 pub fn walk_file(file : File, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NFile(file))) {
     f(None) |> ignore
@@ -21,6 +26,7 @@ pub fn walk_file(file : File, f : (Node?) -> Bool) -> Unit {
 }
 
 ///|
+/// Performs a depth-first walk of a statement and all its sub-expressions.
 pub fn walk_stmt(stmt : Stmt, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NStmt(stmt))) {
     f(None) |> ignore
@@ -78,6 +84,7 @@ pub fn walk_stmt(stmt : Stmt, f : (Node?) -> Bool) -> Unit {
 }
 
 ///|
+/// Performs a depth-first walk of an expression and all its sub-expressions.
 pub fn walk_expr(expr : Expr, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NExpr(expr))) {
     f(None) |> ignore

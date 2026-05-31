@@ -1,4 +1,5 @@
 ///|
+/// Returns the lowercase hexadecimal character for a nibble value (0–15).
 pub fn hex_char(n : Int) -> Char {
   if n < 10 {
     ('0'.to_int() + n).unsafe_to_char()
@@ -8,12 +9,14 @@ pub fn hex_char(n : Int) -> Char {
 }
 
 ///|
+/// Appends a 2-digit lowercase hex representation of n to buf.
 pub fn write_hex2(buf : StringBuilder, n : Int) -> Unit {
   buf.write_char(hex_char((n >> 4) & 0xF))
   buf.write_char(hex_char(n & 0xF))
 }
 
 ///|
+/// Appends a 4-digit lowercase hex representation of n to buf.
 pub fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
   buf.write_char(hex_char((n >> 12) & 0xF))
   buf.write_char(hex_char((n >> 8) & 0xF))
@@ -22,6 +25,7 @@ pub fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
 }
 
 ///|
+/// Appends an 8-digit lowercase hex representation of n to buf.
 pub fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
   buf.write_char(hex_char((n >> 28) & 0xF))
   buf.write_char(hex_char((n >> 24) & 0xF))
@@ -34,6 +38,8 @@ pub fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
 }
 
 ///|
+/// Decodes a single UTF-8 rune from `b` starting at `pos`.
+/// Returns `(rune, byte_width)`. Returns `(-1, 1)` for invalid or truncated sequences.
 pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
   let b0 = b[pos].to_int()
   if b0 < 0x80 {
@@ -77,6 +83,8 @@ pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
 }
 
 ///|
+/// Reports whether a Unicode codepoint is printable, matching Go's
+/// `strconv.IsPrint`. Used by `repr` to decide whether to emit `\xNN` escapes.
 pub fn is_unicode_printable(r : Int) -> Bool {
   if r < 0x20 || r == 0x7F {
     return false
