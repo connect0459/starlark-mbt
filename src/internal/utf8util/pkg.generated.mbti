@@ -14,6 +14,12 @@ pub fn is_unicode_printable(Int) -> Bool
 
 pub fn is_upper_letter(Int) -> Bool
 
+pub fn spell_fold_chars(String) -> Array[Int]
+
+pub fn spell_levenshtein(Array[Int], Array[Int], Int) -> Int
+
+pub fn spell_nearest(String, Array[String]) -> String
+
 pub fn to_lower_rune(Int) -> Int
 
 pub fn to_title_rune(Int) -> Int

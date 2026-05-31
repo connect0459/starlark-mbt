@@ -300,90 +300,6 @@ fn eval_aug_val(
   }
 }
 
-// Spell-check ASCII constants (fold to lowercase, skip underscore).
-
-///|
-let ascii_upper_a : Int = 0x41 // 'A'
-
-///|
-let ascii_upper_z : Int = 0x5A // 'Z'
-
-///|
-let ascii_case_shift : Int = 32 // uppercase-to-lowercase offset
-
-///|
-let ascii_underscore : Int = 0x5F // '_'
-
-///|
-fn spell_fold_chars(s : String) -> Array[Int] {
-  let arr : Array[Int] = []
-  for ch in s {
-    let c = ch.to_int()
-    if c == ascii_underscore {
-      // skip '_'
-    } else if c >= ascii_upper_a && c <= ascii_upper_z {
-      arr.push(c + ascii_case_shift)
-    } else {
-      arr.push(c)
-    }
-  }
-  arr
-}
-
-///|
-fn spell_levenshtein(x : Array[Int], y : Array[Int], max_dist : Int) -> Int {
-  let (xs, ys) = if x.length() <= y.length() { (x, y) } else { (y, x) }
-  let xl = xs.length()
-  let yl = ys.length()
-  let diff = yl - xl
-  if diff > max_dist {
-    return diff
-  }
-  let row = Array::make(yl + 1, 0)
-  for i in 0..<(yl + 1) {
-    row[i] = i
-  }
-  for i in 1..<(xl + 1) {
-    row[0] = i
-    let mut best = i
-    let mut prev = i - 1
-    for j in 1..<(yl + 1) {
-      let sub = if xs[i - 1] != ys[j - 1] { 1 } else { 0 }
-      let a = prev + sub
-      let b = 1 + row[j - 1]
-      let c = 1 + row[j]
-      let k = if a <= b && a <= c { a } else if b <= c { b } else { c }
-      prev = row[j]
-      row[j] = k
-      if k < best {
-        best = k
-      }
-    }
-    if best > max_dist {
-      return best
-    }
-  }
-  row[yl]
-}
-
-///|
-fn spell_nearest(x : String, candidates : Array[String]) -> String {
-  let fx = spell_fold_chars(x)
-  // Accept suggestions within half the input length (rounded up).
-  let max_dist = (fx.length() + 1) / 2
-  let mut best = ""
-  let mut best_d = max_dist
-  for c in candidates {
-    let fc = spell_fold_chars(c)
-    let d = spell_levenshtein(fx, fc, best_d)
-    if d < best_d {
-      best_d = d
-      best = c
-    }
-  }
-  best
-}
-
 ///|
 fn exec_load(
   ctx : EvalContext,
@@ -429,7 +345,7 @@ fn exec_load(
                 _ => ()
               }
             })
-            let suggestion = spell_nearest(export_name, candidates)
+            let suggestion = @utf8util.spell_nearest(export_name, candidates)
             let hint = if suggestion == "" {
               ""
             } else {

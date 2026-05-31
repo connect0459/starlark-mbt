@@ -318,7 +318,7 @@ fn eval_getattr(
               @value.StarlarkBoundMethod::new(obj, attr),
             )
           } else {
-            let hint = match spell_nearest(attr, ms) {
+            let hint = match @utf8util.spell_nearest(attr, ms) {
               "" => ""
               s => " (did you mean .\{s}?)"
             }
@@ -338,7 +338,7 @@ fn eval_getattr(
         Some(v) => v
         None => {
           let candidates = m.attr_names()
-          let hint = match spell_nearest(attr, candidates) {
+          let hint = match @utf8util.spell_nearest(attr, candidates) {
             "" => ""
             s => " (did you mean .\{s}?)"
           }
@@ -797,7 +797,7 @@ fn bind_args(
         _ => ()
       }
     }
-    let hint = match spell_nearest(first_key, valid_names) {
+    let hint = match @utf8util.spell_nearest(first_key, valid_names) {
       "" => ""
       s => " (did you mean \{s}?)"
     }
@@ -1688,7 +1688,7 @@ fn builtin_minmax(
   for kv in kw_args {
     let (kw_name, _) = kv
     if kw_name != "key" {
-      let hint = match spell_nearest(kw_name, ["key"]) {
+      let hint = match @utf8util.spell_nearest(kw_name, ["key"]) {
         "" => ""
         s => " (did you mean \{s}?)"
       }
@@ -1886,7 +1886,8 @@ fn builtin_sorted(
         reverse_from_kwarg = true
       }
       other => {
-        let hint = match spell_nearest(other, ["key", "reverse", "iterable"]) {
+        let hint = match
+          @utf8util.spell_nearest(other, ["key", "reverse", "iterable"]) {
           "" => ""
           s => " (did you mean \{s}?)"
         }

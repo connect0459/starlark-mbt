@@ -7,4 +7,5 @@ import {
 import {
   "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/syntax",
+  "connect0459/starlark/internal/utf8util",
 }
