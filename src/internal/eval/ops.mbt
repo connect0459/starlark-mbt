@@ -991,8 +991,8 @@ fn eval_bitwise(
           rs.each(fn(v) { ignore(result.add(v)) })
         }
         "land" =>
-          ls.each(fn(v) {
-            match rs.contains(v) {
+          rs.each(fn(v) {
+            match ls.contains(v) {
               Ok(true) => ignore(result.add(v))
               _ => ()
             }

@@ -294,6 +294,22 @@ test "set ops arity and non-iterable errors use nameErr style" {
 }
 
 ///|
+let set_intersection_order_src : String =
+  #|load("assert.star", "assert")
+  #|# intersection emits elements in the OTHER operand's iteration order
+  #|assert.eq(list({1, 2, 3, 4}.intersection([4, 3, 2])), [4, 3, 2])
+  #|# the & operator emits elements in the RHS operand's iteration order
+  #|assert.eq(list({1, 2, 3} & {3, 2, 4}), [3, 2])
+
+///|
+test "set intersection yields the other operand's order" {
+  let errs = run_star_string(set_intersection_order_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "set.clear rejects excess positional arguments" {
   let errs = run_star_string(
     (

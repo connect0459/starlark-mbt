@@ -3060,7 +3060,7 @@ fn call_set_method(
       @value.Value::Set(result)
     }
     "intersection" => {
-      let other_set = @value.StarlarkSet::new()
+      let result = @value.StarlarkSet::new()
       let it = set_other_iter(ctx, "intersection", pos_args, kw_args)
       while true {
         match it.next() {
@@ -3068,16 +3068,13 @@ fn call_set_method(
             it.done()
             break
           }
-          Some(v) => ignore(other_set.add(v))
+          Some(v) =>
+            match s.contains(v) {
+              Ok(true) => ignore(result.add(v))
+              _ => ()
+            }
         }
       }
-      let result = @value.StarlarkSet::new()
-      s.each(fn(v) {
-        match other_set.contains(v) {
-          Ok(true) => ignore(result.add(v))
-          _ => ()
-        }
-      })
       @value.Value::Set(result)
     }
     "difference" => {
