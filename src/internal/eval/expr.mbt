@@ -12,6 +12,19 @@ fn eval_literal(lit : @syntax.LiteralVal) -> @value.Value {
 }
 
 ///|
+fn eval_exprs(
+  ctx : EvalContext,
+  env : EvalEnv,
+  elems : Array[@syntax.Expr],
+) -> Array[@value.Value] raise EvalErr {
+  let items : Array[@value.Value] = []
+  for e in elems {
+    items.push(eval_expr_node(ctx, env, e))
+  }
+  items
+}
+
+///|
 fn eval_expr_node(
   ctx : EvalContext,
   env : EvalEnv,
@@ -77,20 +90,10 @@ fn eval_expr_node(
         eval_expr_node(ctx, env, else_e)
       }
     }
-    @syntax.Expr::EList(elems, _) => {
-      let items : Array[@value.Value] = []
-      for e in elems {
-        items.push(eval_expr_node(ctx, env, e))
-      }
-      @value.Value::List(@value.StarlarkList::new(items))
-    }
-    @syntax.Expr::ETuple(elems, _) => {
-      let items : Array[@value.Value] = []
-      for e in elems {
-        items.push(eval_expr_node(ctx, env, e))
-      }
-      @value.Value::Tuple(items)
-    }
+    @syntax.Expr::EList(elems, _) =>
+      @value.Value::List(@value.StarlarkList::new(eval_exprs(ctx, env, elems)))
+    @syntax.Expr::ETuple(elems, _) =>
+      @value.Value::Tuple(eval_exprs(ctx, env, elems))
     @syntax.Expr::EDict(pairs, _) => {
       let d = @value.StarlarkDict::new()
       for pair in pairs {
