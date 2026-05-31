@@ -1822,46 +1822,14 @@ comments, and doc-comments on public functions.
       `utf8util/case_mapping.mbt` (`ascii_upper_a/z`, `ascii_lower_a/z`, `ascii_max`,
       `ascii_case_shift`) replacing bare hex literals in the ASCII fast-paths of
       `to_upper/lower/title_rune`.
-- [ ] **Doc-comments fourth pass (Parameters:/Returns)** — all 24 public files have
-      summary-only `///` doc-comments; none include `Parameters:` / `Returns` sections
-      matching the MoonBit core library convention. Add per-parameter and return-value
-      descriptions to every `pub fn` that has a non-trivial signature. Files in priority
-      order (public API first, then internal):
-
-  Public facade & core execution:
-  - [ ] `src/starlark.mbt` — 39 pub declarations (23 complex)
-  - [ ] `src/internal/eval/eval.mbt` — 69 pub declarations (30 complex)
-  - [ ] `src/internal/eval/program.mbt` — 8 pub declarations
-  - [ ] `src/internal/eval/debug.mbt` — 6 pub declarations
-
-  Value layer:
-  - [ ] `src/internal/value/value.mbt` — 98 pub declarations (52 complex)
-  - [ ] `src/internal/value/traits.mbt` — 12 pub declarations
-  - [ ] `src/internal/value/iter.mbt` — 5 pub declarations
-  - [ ] `src/internal/value/dict_set.mbt` — 31 pub declarations (20 complex)
-  - [ ] `src/internal/value/protocols.mbt` — 52 pub declarations (46 complex)
-
-  Infrastructure:
-  - [ ] `src/internal/errors/errors.mbt` — 48 pub declarations (21 complex)
-  - [ ] `src/internal/hashtable/hashtable.mbt` — 1 pub declaration
-  - [ ] `src/internal/unpack/unpack.mbt` — 2 pub declarations
-  - [ ] `src/internal/utf8util/utf8util.mbt` — 6 pub declarations
-
-  Frontend (lexer / parser / resolver):
-  - [ ] `src/internal/lexer/lexer.mbt` — 3 pub declarations
-  - [ ] `src/internal/lexer/scanner.mbt` — 7 pub declarations
-  - [ ] `src/internal/syntax/syntax.mbt` — 6 pub declarations
-  - [ ] `src/internal/syntax/walker.mbt` — 3 pub declarations
-  - [ ] `src/internal/parser/parser.mbt` — 3 pub declarations
-  - [ ] `src/internal/resolver/resolver.mbt` — 27 pub declarations
-
-  Extension libraries:
-  - [ ] `src/repl/repl.mbt` — (covered in second pass summary; verify completeness)
-  - [ ] `src/json/json.mbt` — 4 pub declarations
-  - [ ] `src/math/math.mbt` — 1 pub declaration
-  - [ ] `src/time/time.mbt` — 2 pub declarations
-  - [ ] `src/struct/struct.mbt` — 3 pub declarations
-  - [ ] `src/struct/module.mbt` — 2 pub declarations
+- [x] **Doc-comments fourth pass (Parameters:/Returns)** — added `Parameters:` and
+      `Returns` sections to all 437 pub declarations across all 24 public files,
+      following the MoonBit core library convention. Complex multi-param functions
+      got full `Parameters:` blocks; self-only accessors got `Returns` only;
+      bare `///|` functions also received summary text. Committed per package
+      (15 commits): `starlark`, `eval`, `errors`, `hashtable`, `value`, `unpack`,
+      `utf8util`, `lexer`, `syntax`, `parser`, `resolver`, `repl`, `json`, `math`,
+      `time`, `struct`.
 
 ---
 
