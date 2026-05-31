@@ -25,6 +25,14 @@ fn module_get_attr(
 /// Members are stored sorted by name. Supports attribute access and
 /// `dir()`; does not support hashing or `+` merge. Freeze propagates
 /// transitively.
+///
+/// Parameters:
+///
+/// * `name` : The display name of the module, shown in its string
+///   representation.
+/// * `members` : The attribute name/value pairs exported by the module.
+///
+/// Returns a `@value.Value::ExtVal` representing the constructed module.
 pub fn make_module(
   name : String,
   members : Array[(String, @value.Value)],
@@ -55,6 +63,8 @@ pub fn make_module(
 /// Returns the `module()` Starlark builtin function. Takes exactly one
 /// positional string argument (the module name) and keyword arguments
 /// that become the module's member attributes.
+///
+/// Returns the `module` builtin as a callable `@value.Value`.
 pub fn module_builtin() -> @value.Value {
   @value.Value::new_builtin("module", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 {
