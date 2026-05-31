@@ -24,18 +24,36 @@ pub struct Binding {
 
 ///|
 /// Returns the bound identifier name.
+///
+/// Parameters:
+///
+/// * `self` : The binding to inspect.
+///
+/// Returns the identifier string that this binding names.
 pub fn Binding::name(self : Binding) -> String {
   self.name
 }
 
 ///|
 /// Returns the source position of the binding site.
+///
+/// Parameters:
+///
+/// * `self` : The binding to inspect.
+///
+/// Returns the source position where this name was bound.
 pub fn Binding::pos(self : Binding) -> @errors.Position {
   self.pos
 }
 
 ///|
 /// Returns the resolved scope classification of this binding.
+///
+/// Parameters:
+///
+/// * `self` : The binding to inspect.
+///
+/// Returns the `Scope` variant describing how this name was resolved.
 pub fn Binding::scope(self : Binding) -> Scope {
   self.scope
 }
@@ -57,6 +75,9 @@ pub struct ResolveOptions {
 
 ///|
 /// Returns the default option set with all extensions enabled.
+///
+/// Returns a `ResolveOptions` with every dialect extension flag set to `true`
+/// and `load_binds_globally` set to `false`.
 pub fn ResolveOptions::default() -> ResolveOptions {
   {
     allow_set: true,
@@ -73,48 +94,96 @@ pub fn ResolveOptions::default() -> ResolveOptions {
 
 ///|
 /// Returns whether set literals and comprehensions are accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if set expressions are enabled.
 pub fn ResolveOptions::allow_set(self : ResolveOptions) -> Bool {
   self.allow_set
 }
 
 ///|
 /// Returns whether recursive function calls are accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if recursive calls are enabled.
 pub fn ResolveOptions::allow_recursion(self : ResolveOptions) -> Bool {
   self.allow_recursion
 }
 
 ///|
 /// Returns whether lambda expressions are accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if lambda expressions are enabled.
 pub fn ResolveOptions::allow_lambda(self : ResolveOptions) -> Bool {
   self.allow_lambda
 }
 
 ///|
 /// Returns whether `while` loops are accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if `while` loops are enabled.
 pub fn ResolveOptions::allow_while(self : ResolveOptions) -> Bool {
   self.allow_while
 }
 
 ///|
 /// Returns whether `bytes` literals are accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if bytes literals are enabled.
 pub fn ResolveOptions::allow_bytes(self : ResolveOptions) -> Bool {
   self.allow_bytes
 }
 
 ///|
 /// Returns whether floating-point literals and operations are accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if floating-point is enabled.
 pub fn ResolveOptions::allow_float(self : ResolveOptions) -> Bool {
   self.allow_float
 }
 
 ///|
 /// Returns whether module-level variable reassignment is accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if global variable reassignment is allowed.
 pub fn ResolveOptions::allow_global_reassign(self : ResolveOptions) -> Bool {
   self.allow_global_reassign
 }
 
 ///|
 /// Returns whether top-level `if`/`for`/`while` statements are accepted.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if top-level control-flow statements are allowed.
 pub fn ResolveOptions::allow_top_level_control(self : ResolveOptions) -> Bool {
   self.allow_top_level_control
 }
@@ -122,12 +191,25 @@ pub fn ResolveOptions::allow_top_level_control(self : ResolveOptions) -> Bool {
 ///|
 /// Returns whether `load`-imported names are bound in the global (module)
 /// scope rather than file-local scope.
+///
+/// Parameters:
+///
+/// * `self` : The options to inspect.
+///
+/// Returns `true` if load names are placed in the global scope.
 pub fn ResolveOptions::load_binds_globally(self : ResolveOptions) -> Bool {
   self.load_binds_globally
 }
 
 ///|
 /// Returns a copy with `allow_global_reassign` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The base options to copy from.
+/// * `v` : The new value for the `allow_global_reassign` flag.
+///
+/// Returns a new `ResolveOptions` with only `allow_global_reassign` changed.
 pub fn ResolveOptions::with_allow_global_reassign(
   self : ResolveOptions,
   v : Bool,
@@ -137,6 +219,13 @@ pub fn ResolveOptions::with_allow_global_reassign(
 
 ///|
 /// Returns a copy with `allow_top_level_control` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The base options to copy from.
+/// * `v` : The new value for the `allow_top_level_control` flag.
+///
+/// Returns a new `ResolveOptions` with only `allow_top_level_control` changed.
 pub fn ResolveOptions::with_allow_top_level_control(
   self : ResolveOptions,
   v : Bool,
@@ -146,6 +235,13 @@ pub fn ResolveOptions::with_allow_top_level_control(
 
 ///|
 /// Returns a copy with `allow_recursion` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The base options to copy from.
+/// * `v` : The new value for the `allow_recursion` flag.
+///
+/// Returns a new `ResolveOptions` with only `allow_recursion` changed.
 pub fn ResolveOptions::with_allow_recursion(
   self : ResolveOptions,
   v : Bool,
@@ -155,6 +251,13 @@ pub fn ResolveOptions::with_allow_recursion(
 
 ///|
 /// Returns a copy with `allow_set` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The base options to copy from.
+/// * `v` : The new value for the `allow_set` flag.
+///
+/// Returns a new `ResolveOptions` with only `allow_set` changed.
 pub fn ResolveOptions::with_allow_set(
   self : ResolveOptions,
   v : Bool,
@@ -164,6 +267,13 @@ pub fn ResolveOptions::with_allow_set(
 
 ///|
 /// Returns a copy with `allow_while` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The base options to copy from.
+/// * `v` : The new value for the `allow_while` flag.
+///
+/// Returns a new `ResolveOptions` with only `allow_while` changed.
 pub fn ResolveOptions::with_allow_while(
   self : ResolveOptions,
   v : Bool,
@@ -173,6 +283,13 @@ pub fn ResolveOptions::with_allow_while(
 
 ///|
 /// Returns a copy with `load_binds_globally` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The base options to copy from.
+/// * `v` : The new value for the `load_binds_globally` flag.
+///
+/// Returns a new `ResolveOptions` with only `load_binds_globally` changed.
 pub fn ResolveOptions::with_load_binds_globally(
   self : ResolveOptions,
   v : Bool,
@@ -191,18 +308,36 @@ pub struct ResolvedFile {
 
 ///|
 /// Reports whether resolution produced no errors.
+///
+/// Parameters:
+///
+/// * `self` : The resolution result to inspect.
+///
+/// Returns `true` if there are no resolution errors.
 pub fn ResolvedFile::is_valid(self : ResolvedFile) -> Bool {
   self.errors.is_empty()
 }
 
 ///|
 /// Returns the list of resolution errors.
+///
+/// Parameters:
+///
+/// * `self` : The resolution result to inspect.
+///
+/// Returns the array of `ResolveError` values collected during name resolution.
 pub fn ResolvedFile::errors(self : ResolvedFile) -> Array[@errors.ResolveError] {
   self.errors
 }
 
 ///|
 /// Returns the list of module-level global bindings.
+///
+/// Parameters:
+///
+/// * `self` : The resolution result to inspect.
+///
+/// Returns the array of `Binding` values for module-level globals.
 pub fn ResolvedFile::globals(self : ResolvedFile) -> Array[Binding] {
   self.globals
 }
@@ -210,6 +345,12 @@ pub fn ResolvedFile::globals(self : ResolvedFile) -> Array[Binding] {
 ///|
 /// Returns the list of file-local bindings (load-imported names when not
 /// `load_binds_globally`).
+///
+/// Parameters:
+///
+/// * `self` : The resolution result to inspect.
+///
+/// Returns the array of file-local `Binding` values.
 pub fn ResolvedFile::locals(self : ResolvedFile) -> Array[Binding] {
   self.locals
 }
@@ -1132,6 +1273,18 @@ fn spell_nearest(x : String, candidates : Array[String]) -> String {
 ///|
 /// Resolves names in a parsed Starlark file and returns the collected global
 /// and file-local bindings together with any resolution errors.
+///
+/// Parameters:
+///
+/// * `file` : The parsed `File` AST to resolve.
+/// * `is_predeclared` : Callback that returns `true` if a name is predeclared
+///   (dialect-specific built-in, not in the universal set).
+/// * `is_universal` : Callback that returns `true` if a name is a universal
+///   built-in (e.g., `len`, `range`).
+/// * `opts` : Dialect feature flags controlling which extensions are accepted.
+///
+/// Returns a `ResolvedFile` containing the global bindings, file-local
+/// bindings, and any accumulated resolution errors.
 pub fn resolve(
   file : @syntax.File,
   is_predeclared : (String) -> Bool,
