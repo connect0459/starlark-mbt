@@ -7,17 +7,13 @@ flags and **enabled by default**.
 
 ## Phase 0: Project Setup ✅
 
-### Submodule: bazelbuild/starlark ✅
+### Submodule: bazelbuild/starlark ✅ (removed)
 
-- [x] Add `bazelbuild/starlark` as a shallow git submodule at `testdata/bazelbuild-starlark/`
-      (url: <https://github.com/bazelbuild/starlark>, shallow = true)
-- [x] Update `.github/workflows/ci.yml` to sparse-clone only `test_suite/testdata/`
-      instead of the WPT step. Path in repo: `testdata/bazelbuild-starlark/test_suite/testdata/`
-- [x] Verified: `test_suite/testdata/go/` contains 11 official spec compliance tests:
-      `assign.star`, `bool.star`, `builtins.star`, `control.star`, `dict.star`,
-      `function.star`, `int.star`, `list.star`, `misc.star`, `string.star`, `tuple.star`
-- Phase 7 starlarktest harness will reference these via
-  `testdata/bazelbuild-starlark/test_suite/testdata/go/*.star` on native target.
+- [x] Added `bazelbuild/starlark` as a shallow git submodule at `testdata/bazelbuild-starlark/`
+      during Phase 0 for reference; all 11 official spec compliance test cases have since been
+      ported as inline MoonBit string literals in `src/internal/starlarktest/*_test.mbt`.
+- [x] Submodule removed (no runtime file I/O; CI sparse-clone step also removed);
+      `justfile` `setup` target simplified to `moon update` only.
 
 - [x] Migrate to `src/` directory structure (urllib.mbt pattern)
 - [x] Update `moon.mod` with `options(source: "src")`
