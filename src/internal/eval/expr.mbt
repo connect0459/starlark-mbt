@@ -3934,7 +3934,9 @@ fn str_format(
         while j < tlen && template[j] != '}' {
           if template[j] == '{' {
             raise EvalErr(
-              make_eval_error(ctx, "nested replacement fields not supported"),
+              make_eval_error(
+                ctx, "format: nested replacement fields not supported",
+              ),
             )
           }
           j += 1
@@ -4014,50 +4016,63 @@ fn str_format(
           auto_idx += 1
           v
         } else {
-          let mut is_digit = true
+          let mut is_digit = name.length() > 0
           for k in 0..<name.length() {
             if name[k] < '0' || name[k] > '9' {
               is_digit = false
               break
             }
           }
-          if is_digit && name.length() > 0 {
-            if auto_mode {
-              raise EvalErr(
-                make_eval_error(
-                  ctx, "format: cannot switch from automatic field numbering to manual field specification",
-                ),
-              )
+          // A field name made entirely of digits is a positional index only
+          // when it fits in a machine int; an overflowing all-digit name
+          // falls through to the keyword path (matches Go's decimal()).
+          let index : Int? = if is_digit {
+            match parse_int_str(name, 10) {
+              Ok(n) =>
+                if n.compare_int64(@int64.MAX_VALUE) <= 0 &&
+                  n.compare_int64(@int64.MIN_VALUE) >= 0 {
+                  Some(n.to_int64().to_int())
+                } else {
+                  None
+                }
+              Err(_) => None
             }
-            manual_mode = true
-            let n = match parse_int_str(name, 10) {
-              Ok(n) => n.to_int()
-              Err(_) =>
-                raise EvalErr(
-                  make_eval_error(ctx, "format: invalid field index '\{name}'"),
-                )
-            }
-            if n >= args.length() {
-              raise EvalErr(
-                make_eval_error(ctx, "format: tuple index out of range"),
-              )
-            }
-            args[n]
           } else {
-            let mut found : @value.Value? = None
-            for kv in kw_args {
-              let (k, v) = kv
-              if k == name {
-                found = Some(v)
-                break
-              }
-            }
-            match found {
-              None =>
+            None
+          }
+          match index {
+            Some(n) => {
+              if auto_mode {
                 raise EvalErr(
-                  make_eval_error(ctx, "format: keyword \{name} not found"),
+                  make_eval_error(
+                    ctx, "format: cannot switch from automatic field numbering to manual field specification",
+                  ),
                 )
-              Some(v) => v
+              }
+              manual_mode = true
+              if n >= args.length() {
+                raise EvalErr(
+                  make_eval_error(ctx, "format: tuple index out of range"),
+                )
+              }
+              args[n]
+            }
+            None => {
+              let mut found : @value.Value? = None
+              for kv in kw_args {
+                let (k, v) = kv
+                if k == name {
+                  found = Some(v)
+                  break
+                }
+              }
+              match found {
+                None =>
+                  raise EvalErr(
+                    make_eval_error(ctx, "format: keyword \{name} not found"),
+                  )
+                Some(v) => v
+              }
             }
           }
         }

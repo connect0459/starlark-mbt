@@ -884,6 +884,9 @@ let string_format_msg_src : String =
   #|assert.fails(lambda: "{".format(), "format: unmatched '{' in format")
   #|assert.fails(lambda: "{a.b}".format(), "format: attribute syntax x.y is not supported in replacement fields: a.b")
   #|assert.fails(lambda: "{a[0]}".format(), "format: element syntax a[i] is not supported in replacement fields: a[0]")
+  #|assert.fails(lambda: "{a{b}".format(), "format: nested replacement fields not supported")
+  #|# an all-digit field name overflowing int range is a keyword, not an index
+  #|assert.fails(lambda: "{99999999999999999999}".format(1), "format: keyword 99999999999999999999 not found")
 
 ///|
 test "str.format reports descriptive error messages" {
