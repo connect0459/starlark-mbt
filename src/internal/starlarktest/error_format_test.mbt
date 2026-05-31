@@ -62,6 +62,27 @@ test "error format: type error in binary op" {
 }
 
 ///|
+test "error format: sequence-assignment of a non-iterable has no position prefix" {
+  let thread = @eval.Thread::new("test")
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    "a, b = 5",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      inspect(
+        e.msg(),
+        content=(
+          #|got int in sequence assignment
+        ),
+      )
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
 test "error format: integer division by zero" {
   let thread = @eval.Thread::new("test")
   let result = @eval.exec_file(

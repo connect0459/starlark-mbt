@@ -173,7 +173,7 @@ fn assign_to(
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "\{pos.to_string()}: got \{@value.type_name(value)} in sequence assignment",
+                  "got \{@value.type_name(value)} in sequence assignment",
                 ),
               )
           }
