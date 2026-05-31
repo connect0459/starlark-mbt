@@ -1479,9 +1479,7 @@ closed. Each fixed via TDD (Red test first).
 
 Fresh comparison against starlark-go covering slicing/indexing semantics,
 `repr`/`str` escape tables, comparison-operator error wording, and the
-json/struct extension libraries. Each fixed via TDD (Red test first). Four
-items (156/157/162/164) remain deferred and are still tracked in
-`.connect0459/bugfix.md`.
+json/struct extension libraries. Each fixed via TDD (Red test first).
 
 - [x] **MISSING-158** [message]: non-int slice index/step errors now read
       "invalid start/end index: got T, want int" and "invalid slice step: got T,
@@ -1501,10 +1499,28 @@ items (156/157/162/164) remain deferred and are still tracked in
       "<". Threaded an `op` label through `compare_values`/`compare_values_depth`/
       `slice_cmp_depth` (`value/traits.mbt`); `eval_cmp` (`eval/ops.mbt`) derives
       the operator from the comparison direction. Matches `value.go:1529,1573`.
+- [x] **MISSING-156** [message]: BigInt subscript index now produces the
+      conversion-error format `"<type> index: N out of range"` when the value
+      exceeds int32 range (matching Go's `AsInt32` path via `eval.go:697`).
+      Added int32 range check in `adjust_index` (`eval/ops.mbt`).
+- [x] **MISSING-157** [behavioral + message]: BigInt slice bounds and step
+      outside int32 range now raise `"invalid start/end index: N out of range"`
+      / `"invalid slice step: N out of range"` instead of silently truncating.
+      Added int32 guards in slice parsing in `eval/expr.mbt`.
+- [x] **MISSING-162** [message]: `is_unicode_printable` extended to exclude
+      C1 controls (U+0080-U+009F), NBSP (U+00A0), private-use BMP (U+E000-U+F8FF),
+      noncharacters (FDD0-FDEF, FFFE, FFFF), and supplemental private-use planes
+      (U+F0000+), matching Go's `strconv.IsPrint` for repr escaping.
+- [x] **MISSING-148** [behavioral]: unbalanced closing brackets `)`, `]`, `}`
+      at scanner depth 0 now produce `"unexpected '<c>'"` error, matching
+      starlark-go `scan.go:728-729`.
+- [x] **MISSING-164** [message]: `json.decode` now reports the actual consumed
+      offset for parse errors instead of always 0. All parse functions carry
+      `(Int, String)` errors; `decode_from_json` uses the offset from failures.
+      Matches starlark-go `json.go:543`.
 - [x] **MISSING-165** [message]: `json.decode` now parses an object key as a
       value and reports "got T for object key, want string" for a non-string key,
       matching `json.go:461-463` (was a generic unexpected-character error).
-      (Offset still reported as 0 — see deferred MISSING-164.)
 - [x] **MISSING-166** [behavioral]: `json.encode` escapes the DEL byte (0x7f) as
       `\x7f` via the AppendQuote path instead of writing it raw (`json.go:101-110`).
 - [x] **MISSING-167** [message]: dot access on a custom value (e.g. `module()`)
