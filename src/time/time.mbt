@@ -477,6 +477,18 @@ fn write_pad2(buf : StringBuilder, n : Int) -> Unit {
 }
 
 ///|
+fn write_tz_offset(buf : StringBuilder, tz_offset : Int) -> Unit {
+  let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
+  if tz_offset >= 0 {
+    buf.write_char('+')
+  } else {
+    buf.write_char('-')
+  }
+  write_pad2(buf, abs_off / secs_per_hour)
+  write_pad2(buf, abs_off % secs_per_hour / secs_per_minute)
+}
+
+///|
 fn fmt_time_at_zone(
   sec : Int64,
   nsec : Int,
@@ -599,6 +611,11 @@ fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
 }
 
 ///|
+// Render a time against a Go reference-time layout. Go encodes each field as a
+// fixed mnemonic drawn from the reference instant "Mon Jan 2 15:04:05 MST 2006"
+// (01/02 03:04:05PM '06 -0700): e.g. "2006" = 4-digit year, "January"/"Jan" =
+// full/abbrev month, "Monday"/"Mon" = weekday, "15" = 24-hour, "-0700"/"Z0700"
+// = numeric zone. Each branch advances `i` by the matched mnemonic's length.
 fn fmt_go_layout(
   year : Int,
   month : Int,
@@ -738,14 +755,7 @@ fn fmt_go_layout(
       lchars[i + 2] == '7' &&
       lchars[i + 3] == '0' &&
       lchars[i + 4] == '0' {
-      let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
-      if tz_offset >= 0 {
-        buf.write_char('+')
-      } else {
-        buf.write_char('-')
-      }
-      write_pad2(buf, abs_off / secs_per_hour)
-      write_pad2(buf, abs_off % secs_per_hour / secs_per_minute)
+      write_tz_offset(buf, tz_offset)
       i += 5
     } else if c == 'Z' &&
       i + 4 < n &&
@@ -756,14 +766,7 @@ fn fmt_go_layout(
       if tz_offset == 0 {
         buf.write_char('Z')
       } else {
-        let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
-        if tz_offset >= 0 {
-          buf.write_char('+')
-        } else {
-          buf.write_char('-')
-        }
-        write_pad2(buf, abs_off / 3600)
-        write_pad2(buf, abs_off % 3600 / 60)
+        write_tz_offset(buf, tz_offset)
       }
       i += 5
     } else {
