@@ -1807,6 +1807,21 @@ comments, and doc-comments on public functions.
       `math/math.mbt` (math_module), `time/time.mbt` (now_override_key + time_value +
       time_module), `struct/struct.mbt` (4 public declarations),
       `struct/module.mbt` (make_module + module_builtin).
+- [x] **Doc-comments on public functions (third pass)** — internal implementation
+      packages covered: `value/value.mbt` (fix // → /// for BuiltinCallCtx::get_local),
+      `unpack/unpack.mbt` (unpack_args + unpack_positional), `utf8util/utf8util.mbt`
+      (hex_char, write_hex2/4/8, utf8_decode_rune, is_unicode_printable),
+      `std_math/std_math.mbt` (all 21 math wrapper functions), `lexer/lexer.mbt`
+      (Token::to_string, keyword_token), `lexer/scanner.mbt` (ScannedToken struct/
+      accessors, Scanner struct/new/next_token), `syntax/syntax.mbt` (File struct/new/
+      path/stmts, expr_pos, stmt_pos), `syntax/walker.mbt` (Node enum, walk_file/stmt/
+      expr), `parser/parser.mbt` (parse_file, parse_expr, Parser::parse_test),
+      `resolver/resolver.mbt` (Binding + accessors, ResolveOptions struct + 9 getters +
+      6 builders, ResolvedFile + accessors, resolve).
+- [x] **Magic number extraction (third pass)** — ASCII codepoint constants in
+      `utf8util/case_mapping.mbt` (`ascii_upper_a/z`, `ascii_lower_a/z`, `ascii_max`,
+      `ascii_case_shift`) replacing bare hex literals in the ASCII fast-paths of
+      `to_upper/lower/title_rune`.
 
 ---
 
