@@ -2089,3 +2089,12 @@ test "exec_file: positional builtins reject keyword args with unpack wording" {
 test "exec_file: dir keeps the does-not-accept-keyword-arguments wording" {
   assert_eq(emsg("dir(x=1)"), "dir does not accept keyword arguments")
 }
+
+///|
+test "exec_file: str and bytes report excess args as want exactly 1" {
+  assert_eq(emsg("str(1, 2)"), "str: got 2 arguments, want exactly 1")
+  assert_eq(
+    emsg("bytes(\"a\", \"b\")"),
+    "bytes: got 2 arguments, want exactly 1",
+  )
+}

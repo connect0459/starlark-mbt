@@ -882,7 +882,12 @@ fn call_builtin(
             @value.Value::String(@value.StarlarkString::new(@value.to_str(v)))
         }
       } else {
-        raise EvalErr(make_eval_error(ctx, "str() takes at most one argument"))
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "str: got \{pos_args.length()} arguments, want exactly 1",
+          ),
+        )
       }
     "repr" => {
       check_positional(ctx, "repr", pos_args, kw_args, 1, 1)
@@ -3232,7 +3237,12 @@ fn builtin_bytes(
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
   if pos_args.length() != 1 {
-    raise EvalErr(make_eval_error(ctx, "bytes() takes exactly one argument"))
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "bytes: got \{pos_args.length()} arguments, want exactly 1",
+      ),
+    )
   }
   match pos_args[0] {
     @value.Value::Bytes(b) => @value.Value::Bytes(b)
