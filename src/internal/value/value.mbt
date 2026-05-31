@@ -1,32 +1,41 @@
 ///|
+/// An immutable Starlark string backed by a pre-computed UTF-8 `Bytes` array.
+/// All length, indexing, and hashing operations use the byte array so that
+/// `s[i]` returns the i-th byte, matching starlark-go semantics.
 pub struct StarlarkString {
   priv raw : String
   priv bytes : Bytes
 }
 
 ///|
+/// Creates a `StarlarkString` from a MoonBit `String`, encoding it to UTF-8.
 pub fn StarlarkString::new(raw : String) -> StarlarkString {
   let bytes = @utf8.encode(raw)
   { raw, bytes }
 }
 
 ///|
+/// Creates a `StarlarkString` from a raw UTF-8 byte sequence. Invalid bytes
+/// are replaced with U+FFFD.
 pub fn StarlarkString::from_bytes(bytes : Bytes) -> StarlarkString {
   let raw = @utf8.decode_lossy(bytes[:])
   { raw, bytes }
 }
 
 ///|
+/// Returns the number of UTF-8 bytes in the string (the Starlark `len()`).
 pub fn StarlarkString::byte_len(self : StarlarkString) -> Int {
   self.bytes.length()
 }
 
 ///|
+/// Returns the byte at UTF-8 offset `i`.
 pub fn StarlarkString::byte_at(self : StarlarkString, i : Int) -> Byte {
   self.bytes[i]
 }
 
 ///|
+/// Returns `true` if `self` and `other` contain the same bytes.
 pub fn StarlarkString::equals(
   self : StarlarkString,
   other : StarlarkString,
@@ -35,16 +44,21 @@ pub fn StarlarkString::equals(
 }
 
 ///|
+/// Returns the underlying UTF-8 `Bytes` array.
 pub fn StarlarkString::to_bytes(self : StarlarkString) -> Bytes {
   self.bytes
 }
 
 ///|
+/// Returns the MoonBit `String` (UTF-16 internally) that was used to create
+/// this `StarlarkString`.
 pub fn StarlarkString::raw(self : StarlarkString) -> String {
   self.raw
 }
 
 ///|
+/// A mutable, ordered sequence of Starlark values. Mutation is rejected when
+/// the list is frozen or has active iterators.
 pub struct StarlarkList {
   priv mut items : Array[Value]
   priv mut frozen : Bool
@@ -52,21 +66,26 @@ pub struct StarlarkList {
 }
 
 ///|
+/// Creates a new, unfrozen `StarlarkList` wrapping `items`.
 pub fn StarlarkList::new(items : Array[Value]) -> StarlarkList {
   { items, frozen: false, itercount: 0 }
 }
 
 ///|
+/// Returns `true` if the list has been frozen.
 pub fn StarlarkList::is_frozen(self : StarlarkList) -> Bool {
   self.frozen
 }
 
 ///|
+/// Marks the list as frozen; subsequent mutation attempts raise an error.
 pub fn StarlarkList::freeze(self : StarlarkList) -> Unit {
   self.frozen = true
 }
 
 ///|
+/// Returns `Ok(())` if the list can be mutated, otherwise `Err` with a
+/// descriptive message using `verb` (e.g. `"append to"`, `"clear"`).
 pub fn StarlarkList::check_mutable(
   self : StarlarkList,
   verb : String,
@@ -81,31 +100,37 @@ pub fn StarlarkList::check_mutable(
 }
 
 ///|
+/// Returns the number of elements in the list.
 pub fn StarlarkList::length(self : StarlarkList) -> Int {
   self.items.length()
 }
 
 ///|
+/// Returns `true` if the list contains no elements.
 pub fn StarlarkList::is_empty(self : StarlarkList) -> Bool {
   self.items.is_empty()
 }
 
 ///|
+/// Returns the element at index `i` (unchecked).
 pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value {
   self.items[i]
 }
 
 ///|
+/// Returns a lazy iterator over the list elements.
 pub fn StarlarkList::iter(self : StarlarkList) -> Iter[Value] {
   self.items.iter()
 }
 
 ///|
+/// Returns a lazy iterator over the list elements (alias for `iter`).
 pub fn StarlarkList::to_iter(self : StarlarkList) -> Iter[Value] {
   self.items.iter()
 }
 
 ///|
+/// Calls `f(index, value)` for each element.
 pub fn StarlarkList::eachi(
   self : StarlarkList,
   f : (Int, Value) -> Unit,
@@ -114,6 +139,8 @@ pub fn StarlarkList::eachi(
 }
 
 ///|
+/// Returns `true` if `self` and `other` share the same underlying array
+/// (identity, not equality). Used to detect self-extend operations.
 pub fn StarlarkList::is_same_storage(
   self : StarlarkList,
   other : StarlarkList,
@@ -122,11 +149,14 @@ pub fn StarlarkList::is_same_storage(
 }
 
 ///|
+/// Returns a copy of the underlying items array.
 pub fn StarlarkList::copy_items(self : StarlarkList) -> Array[Value] {
   self.items.copy()
 }
 
 ///|
+/// Appends `v` to the end of the list. Fails if the list is frozen or being
+/// iterated.
 pub fn StarlarkList::push(
   self : StarlarkList,
   v : Value,
@@ -141,6 +171,8 @@ pub fn StarlarkList::push(
 }
 
 ///|
+/// Removes and returns the last element, or `None` if the list is empty.
+/// Fails if the list is frozen or being iterated.
 pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
   match self.check_mutable("pop from") {
     Err(e) => Err(e)
@@ -149,6 +181,8 @@ pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
 }
 
 ///|
+/// Removes and returns the element at index `i`. Fails if the list is frozen
+/// or being iterated.
 pub fn StarlarkList::pop_at(
   self : StarlarkList,
   i : Int,
@@ -161,6 +195,8 @@ pub fn StarlarkList::pop_at(
 }
 
 ///|
+/// Inserts `v` at index `i`, shifting subsequent elements right. Fails if
+/// the list is frozen or being iterated.
 pub fn StarlarkList::insert(
   self : StarlarkList,
   i : Int,
@@ -176,6 +212,8 @@ pub fn StarlarkList::insert(
 }
 
 ///|
+/// Replaces the element at index `i` with `v`. Fails if the list is frozen
+/// or being iterated.
 pub fn StarlarkList::set(
   self : StarlarkList,
   i : Int,
@@ -191,6 +229,7 @@ pub fn StarlarkList::set(
 }
 
 ///|
+/// Removes all elements. Fails if the list is frozen or being iterated.
 pub fn StarlarkList::clear(self : StarlarkList) -> Result[Unit, String] {
   match self.check_mutable("clear") {
     Err(e) => Err(e)
@@ -202,6 +241,8 @@ pub fn StarlarkList::clear(self : StarlarkList) -> Result[Unit, String] {
 }
 
 ///|
+/// Sorts the list in place using `cmp`. Fails if the list is frozen or being
+/// iterated.
 pub fn StarlarkList::sort_by(
   self : StarlarkList,
   cmp : (Value, Value) -> Int,
@@ -216,6 +257,7 @@ pub fn StarlarkList::sort_by(
 }
 
 ///|
+/// Reverses the list in place. Fails if the list is frozen or being iterated.
 pub fn StarlarkList::reverse(self : StarlarkList) -> Result[Unit, String] {
   match self.check_mutable("reverse") {
     Err(e) => Err(e)
@@ -234,6 +276,8 @@ pub fn StarlarkList::reverse(self : StarlarkList) -> Result[Unit, String] {
 }
 
 ///|
+/// A lazy, immutable arithmetic sequence returned by `range()`. Not a list;
+/// supports membership testing and indexing without materialising all elements.
 pub struct StarlarkRange {
   priv start : Int64
   priv stop : Int64
@@ -241,6 +285,7 @@ pub struct StarlarkRange {
 }
 
 ///|
+/// Creates a `StarlarkRange` with the given start, stop, and step.
 pub fn StarlarkRange::new(
   start : Int64,
   stop : Int64,
@@ -250,21 +295,25 @@ pub fn StarlarkRange::new(
 }
 
 ///|
+/// Returns the start of the range.
 pub fn StarlarkRange::start(self : StarlarkRange) -> Int64 {
   self.start
 }
 
 ///|
+/// Returns the stop (exclusive end) of the range.
 pub fn StarlarkRange::stop(self : StarlarkRange) -> Int64 {
   self.stop
 }
 
 ///|
+/// Returns the step of the range.
 pub fn StarlarkRange::step(self : StarlarkRange) -> Int64 {
   self.step
 }
 
 ///|
+/// Returns the number of elements in the range.
 pub fn StarlarkRange::length(self : StarlarkRange) -> Int {
   if self.step > 0L {
     if self.stop > self.start {
@@ -279,11 +328,13 @@ pub fn StarlarkRange::length(self : StarlarkRange) -> Int {
 }
 
 ///|
+/// Returns the value at position `i` within the range.
 pub fn StarlarkRange::index_at(self : StarlarkRange, i : Int) -> Int64 {
   self.start + self.step * i.to_int64()
 }
 
 ///|
+/// Returns `true` if `n` is a member of the range.
 pub fn StarlarkRange::contains(self : StarlarkRange, n : Int64) -> Bool {
   if self.step > 0L {
     n >= self.start && n < self.stop && (n - self.start) % self.step == 0L
@@ -728,6 +779,8 @@ pub fn StarlarkBytesElems::raw_bytes(self : StarlarkBytesElems) -> Bytes {
 }
 
 ///|
+/// The Starlark value sum type. Covers all built-in types plus embedder
+/// extensions via `ExtVal`.
 pub(all) enum Value {
   None
   Bool(Bool)
@@ -751,26 +804,31 @@ pub(all) enum Value {
 }
 
 ///|
+/// Creates a `Value::String` from a MoonBit `String`.
 pub fn Value::of_string(s : String) -> Value {
   String(StarlarkString::new(s))
 }
 
 ///|
+/// Creates a `Value::List` wrapping a new `StarlarkList`.
 pub fn Value::new_list(items : Array[Value]) -> Value {
   List(StarlarkList::new(items))
 }
 
 ///|
+/// Creates an empty `Value::Dict`.
 pub fn Value::new_dict() -> Value {
   Dict(StarlarkDict::new())
 }
 
 ///|
+/// Creates an empty `Value::Set`.
 pub fn Value::new_set() -> Value {
   Set(StarlarkSet::new())
 }
 
 ///|
+/// Creates a `Value::Builtin` with the given name and callable body.
 pub fn Value::new_builtin(
   name : String,
   body : (BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
@@ -782,6 +840,7 @@ pub fn Value::new_builtin(
 }
 
 ///|
+/// Returns the Starlark `type()` string for `v` (e.g. `"int"`, `"list"`).
 pub fn type_name(v : Value) -> String {
   match v {
     None => "NoneType"
@@ -830,6 +889,8 @@ pub fn truth(v : Value) -> Bool {
 }
 
 ///|
+/// Integer floor division flooring toward −∞ (sign of the remainder equals
+/// the sign of the divisor), matching Starlark's `//` operator.
 pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   if b.is_zero() {
     return Err("floored division by zero")
@@ -845,6 +906,8 @@ pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
 }
 
 ///|
+/// Integer modulo whose sign matches the divisor, matching Starlark's `%`
+/// operator.
 pub fn starlark_mod(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   if b.is_zero() {
     return Err("integer modulo by zero")
@@ -864,6 +927,9 @@ fn is_neg_zero(f : Double) -> Bool {
 }
 
 ///|
+/// Formats a `Double` as a Starlark float literal, matching starlark-go's
+/// `strconv.FormatFloat('g')` output: scientific notation for very large or
+/// very small values, decimal otherwise. Handles ±inf, nan, and −0.0.
 pub fn format_float(f : Double) -> String {
   if f.is_nan() {
     return "nan"
@@ -1134,6 +1200,8 @@ fn repr_bytes_val(b : Bytes) -> String {
 }
 
 ///|
+/// Returns the Starlark `repr(v)` string. Detects cyclic list/dict references
+/// and replaces them with `[...]` / `{...}`.
 pub fn repr(v : Value) -> String {
   repr_inner(v, [], [])
 }
