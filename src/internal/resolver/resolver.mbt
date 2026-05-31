@@ -3,6 +3,13 @@
 // predeclared/universal, validates scoping rules, and returns a list of
 // errors together with collected global and file-local bindings.
 
+// Starlark (and starlark-go) cap positional and keyword argument counts at 255
+// per call site to match the bytecode instruction encoding in the reference
+// implementation, even though this interpreter is AST-walking.
+
+///|
+let max_call_args : Int = 255
+
 ///|
 pub(all) enum Scope {
   Undefined
@@ -1094,14 +1101,17 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
           }
         }
       }
-      if n_pos >= 256 {
+      if n_pos > max_call_args {
         self.errorf(
           call_pos,
-          "\{n_pos} positional arguments in call, limit is 255",
+          "\{n_pos} positional arguments in call, limit is \{max_call_args}",
         )
       }
-      if n_kw >= 256 {
-        self.errorf(call_pos, "\{n_kw} keyword arguments in call, limit is 255")
+      if n_kw > max_call_args {
+        self.errorf(
+          call_pos,
+          "\{n_kw} keyword arguments in call, limit is \{max_call_args}",
+        )
       }
     }
     @syntax.Expr::EList(elems, _) =>

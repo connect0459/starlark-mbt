@@ -41,6 +41,11 @@ fn struct_repr(
   buf.to_string()
 }
 
+// Hash algorithm for starlark structs, ported from starlark-go's
+// starlarkstruct package. The three constants and the `3 * name_hash` mixing
+// factor are the original Go literals; they were chosen for good avalanche
+// behaviour and are not derived from a published hash family.
+
 ///|
 let struct_hash_seed : UInt = 8731U
 

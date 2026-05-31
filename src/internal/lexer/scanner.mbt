@@ -13,6 +13,17 @@ let unicode_surr_hi : Int = 0xE000
 ///|
 let unicode_max_codepoint : Int = 0x10FFFF
 
+// Octal/hex escape validation thresholds (starlark-go quote.go semantics).
+// The non-ASCII check (> max_ascii) must precede the invalid-range check
+// (>= max_byte_exclusive) because starlark-go reports a different error for
+// non-ASCII string escapes vs. out-of-range byte values.
+
+///|
+let max_ascii : Int = 127
+
+///|
+let max_byte_exclusive : Int = 256
+
 ///|
 /// A token produced by the scanner, paired with its source position.
 pub struct ScannedToken {
@@ -966,8 +977,8 @@ fn Scanner::decode_escape(
           break
         }
       }
-      // Match starlark-go: check n > 127 FIRST (non-ASCII), then n >= 256 (invalid)
-      if !is_bytes && val > 127 {
+      // Match starlark-go: check n > max_ascii FIRST (non-ASCII), then n >= max_byte_exclusive (invalid)
+      if !is_bytes && val > max_ascii {
         let octal_str = int_to_octal(val)
         let hex4 = int_to_hex4_upper(val)
         return Err(
@@ -977,7 +988,7 @@ fn Scanner::decode_escape(
           ),
         )
       }
-      if val >= 256 {
+      if val >= max_byte_exclusive {
         let octal3 = int_to_octal3(val)
         return Err(
           self.make_error(str_start, "invalid escape sequence \\\{octal3}"),
@@ -1040,7 +1051,7 @@ fn Scanner::decode_escape(
       }
       self.read_byte() |> ignore
       let val = xdigit_to_int(h1) * 16 + xdigit_to_int(h2)
-      if !is_bytes && val > 127 {
+      if !is_bytes && val > max_ascii {
         return Err(self.make_error(str_start, "non-ASCII hex escape"))
       }
       buf.push(val.to_byte())
