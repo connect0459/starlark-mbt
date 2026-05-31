@@ -1124,3 +1124,15 @@ test "parser: load non-string first arg reports correct message" {
     Ok(_) => fail("expected error")
   }
 }
+
+///|
+test "parser: bare * followed by non-comma token reports 'want ,'" {
+  // def f(a, *-b, c): pass -> ":1:11: got '-', want ','"
+  match @parser.parse_file("test.star", "def f(a, *-b, c): pass\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("want ','"))
+      assert_true(!e.msg().contains("want ')'"))
+    }
+    Ok(_) => fail("expected error")
+  }
+}

@@ -511,6 +511,13 @@ fn Parser::parse_params(self : Parser) -> Array[@syntax.Param] raise ParseErr {
         self.syntax_error("type annotations are not allowed in Starlark"),
       )
     }
+    // After each parameter, the next token must be ',' or ')'.
+    // Anything else (e.g. a non-comma after a bare '*') should say
+    // "want ','" to match starlark-go parse.go's unconditional
+    // consume(COMMA) loop.
+    if self.tok != @lexer.Token::Comma && self.tok != @lexer.Token::RParen {
+      raise ParseErr(self.syntax_error("want ','"))
+    }
   }
   params
 }
