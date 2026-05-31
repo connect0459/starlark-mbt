@@ -469,3 +469,25 @@ test "binary-op and shift report descriptive error messages" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let int_kwarg_src : String =
+  #|load("assert.star", "assert")
+  #|# x can be passed as a keyword argument
+  #|assert.eq(int(x="10", base=16), 16)
+  #|assert.eq(int(x="ff", base=16), 255)
+  #|assert.eq(int(x=42), 42)
+  #|# unknown keyword argument
+  #|assert.fails(lambda: int(5, foo=2), "int: unexpected keyword argument foo")
+  #|# too many positional arguments
+  #|assert.fails(lambda: int("5", 2, 3), "int: got 3 arguments, want at most 2")
+  #|# duplicate value for x
+  #|assert.fails(lambda: int("5", x=2), "int: got multiple values for keyword argument x")
+
+///|
+test "int: accepts x as keyword argument and validates args" {
+  let errs = run_star_string(int_kwarg_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

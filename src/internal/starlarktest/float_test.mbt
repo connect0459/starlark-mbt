@@ -681,3 +681,20 @@ test "float.star: float %% with negative operands" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+let float_kwarg_src : String =
+  #|load("assert.star", "assert")
+  #|# float rejects all keyword arguments
+  #|assert.fails(lambda: float(x=1), "float does not accept keyword arguments")
+  #|assert.fails(lambda: float(1, foo=3), "float does not accept keyword arguments")
+  #|# arity error uses "got N arguments, wants 1" format
+  #|assert.fails(lambda: float(1, 2), "float got 2 arguments, wants 1")
+
+///|
+test "float: rejects keyword arguments and reports correct arity error" {
+  let errs = run_star_string(float_kwarg_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

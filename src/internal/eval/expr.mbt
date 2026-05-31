@@ -914,26 +914,49 @@ fn call_builtin(
       }
     }
     "int" => {
-      // The base argument is captured as a raw value (keyword takes priority
-      // over the second positional) so its type is validated only in the
-      // string branch.
-      let base_arg : @value.Value? = {
-        let mut found : @value.Value? = None
-        for kv in kw_args {
-          if kv.0 == "base" {
-            found = Some(kv.1)
-            break
+      if pos_args.length() > 2 {
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "int: got \{pos_args.length()} arguments, want at most 2",
+          ),
+        )
+      }
+      let mut x_from_kw : @value.Value? = None
+      let mut base_from_kw : @value.Value? = None
+      for kv in kw_args {
+        match kv.0 {
+          "x" => {
+            if pos_args.length() >= 1 {
+              raise EvalErr(
+                make_eval_error(
+                  ctx, "int: got multiple values for keyword argument x",
+                ),
+              )
+            }
+            x_from_kw = Some(kv.1)
           }
-        }
-        match found {
-          Some(_) => found
-          None => if pos_args.length() >= 2 { Some(pos_args[1]) } else { None }
+          "base" => base_from_kw = Some(kv.1)
+          name =>
+            raise EvalErr(
+              make_eval_error(ctx, "int: unexpected keyword argument \{name}"),
+            )
         }
       }
-      if pos_args.length() == 0 {
-        raise EvalErr(make_eval_error(ctx, "int: missing argument for x"))
+      let x_val = match x_from_kw {
+        Some(v) => v
+        None =>
+          if pos_args.length() >= 1 {
+            pos_args[0]
+          } else {
+            raise EvalErr(make_eval_error(ctx, "int: missing argument for x"))
+          }
       }
-      match pos_args[0] {
+      let base_arg : @value.Value? = match base_from_kw {
+        Some(v) => Some(v)
+        None => if pos_args.length() >= 2 { Some(pos_args[1]) } else { None }
+      }
+      match x_val {
         @value.Value::String(s) => {
           let base = match base_arg {
             None => 10
@@ -997,10 +1020,23 @@ fn call_builtin(
           }
       }
     }
-    "float" =>
+    "float" => {
+      if kw_args.length() > 0 {
+        raise EvalErr(
+          make_eval_error(ctx, "float does not accept keyword arguments"),
+        )
+      }
+      if pos_args.length() > 1 {
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "float got \{pos_args.length()} arguments, wants 1",
+          ),
+        )
+      }
       if pos_args.length() == 0 {
         @value.Value::Float(0.0)
-      } else if pos_args.length() == 1 {
+      } else {
         match pos_args[0] {
           @value.Value::Float(f) => @value.Value::Float(f)
           @value.Value::Int(n) =>
@@ -1048,11 +1084,8 @@ fn call_builtin(
               ),
             )
         }
-      } else {
-        raise EvalErr(
-          make_eval_error(ctx, "float() takes at most one argument"),
-        )
       }
+    }
     "abs" => {
       check_positional(ctx, "abs", pos_args, kw_args, 1, 1)
       match pos_args[0] {
