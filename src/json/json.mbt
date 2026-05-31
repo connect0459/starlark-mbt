@@ -12,6 +12,35 @@ fn is_printable_ascii(bytes : Bytes) -> Bool {
 }
 
 ///|
+// UTF-16 surrogate-pair decoding bounds (used by JSON `\uXXXX` escapes).
+// A code point above the BMP is encoded as a high surrogate in
+// [0xD800, 0xDBFF] followed by a low surrogate in [0xDC00, 0xDFFF].
+let high_surrogate_lo : Int = 0xD800
+
+///|
+let high_surrogate_hi : Int = 0xDBFF
+
+///|
+let low_surrogate_lo : Int = 0xDC00
+
+///|
+let low_surrogate_hi : Int = 0xDFFF
+
+///|
+// First code point of the supplementary planes (U+10000); the base added
+// back when recombining a surrogate pair.
+let supplementary_plane_base : Int = 0x10000
+
+///|
+// Each surrogate half contributes 10 bits, so the high half is scaled by
+// 2^10 = 0x400 when recombining.
+let surrogate_high_scale : Int = 0x400
+
+///|
+// U+FFFD REPLACEMENT CHARACTER, substituted for malformed surrogate escapes.
+let json_replacement_rune : Int = 0xFFFD
+
+///|
 // Quotes a printable-ASCII string the way Go's `strconv.AppendQuote` does:
 // only `"`, `\`, and the DEL byte (0x7f) are escaped; everything else is
 // written verbatim.
@@ -396,19 +425,21 @@ fn parse_json_string(
             return Err((i, "invalid \\u escape"))
           }
           i = next_i
-          let cp_out = if code >= 0xD800 && code <= 0xDBFF {
+          let cp_out = if code >= high_surrogate_lo && code <= high_surrogate_hi {
             if i + 1 < len &&
               chars[i].to_int() == '\\'.to_int() &&
               chars[i + 1].to_int() == 'u'.to_int() {
               let (lo, next_i2) = parse_hex4_at(chars, i + 2)
-              if lo >= 0xDC00 && lo <= 0xDFFF {
+              if lo >= low_surrogate_lo && lo <= low_surrogate_hi {
                 i = next_i2
-                0x10000 + (code - 0xD800) * 0x400 + (lo - 0xDC00)
+                supplementary_plane_base +
+                (code - high_surrogate_lo) * surrogate_high_scale +
+                (lo - low_surrogate_lo)
               } else {
-                0xFFFD
+                json_replacement_rune
               }
             } else {
-              0xFFFD
+              json_replacement_rune
             }
           } else {
             code
@@ -737,6 +768,23 @@ fn validate_json(s : String) -> Result[Unit, String] {
 ///
 /// Returns `Ok(indented_string)` on success, or `Err(message)` if `s` is
 /// not valid JSON.
+// Starts a fresh pretty-printed line: a newline, the global `prefix`, then
+// `depth` copies of `indent_str`. Shared by the `{`/`[`, `}`/`]`, and `,`
+// branches of `indent_json`.
+fn write_indent_line(
+  buf : StringBuilder,
+  prefix : String,
+  indent_str : String,
+  depth : Int,
+) -> Unit {
+  buf.write_char('\n')
+  buf.write_string(prefix)
+  for _ in 0..<depth {
+    buf.write_string(indent_str)
+  }
+}
+
+///|
 pub fn indent_json(
   s : String,
   prefix : String,
@@ -783,27 +831,15 @@ pub fn indent_json(
           i = ni + 1
           continue
         }
-        buf.write_char('\n')
-        buf.write_string(prefix)
-        for _ in 0..<depth {
-          buf.write_string(indent_str)
-        }
+        write_indent_line(buf, prefix, indent_str, depth)
       } else if c == '}' || c == ']' {
         depth -= 1
-        buf.write_char('\n')
-        buf.write_string(prefix)
-        for _ in 0..<depth {
-          buf.write_string(indent_str)
-        }
+        write_indent_line(buf, prefix, indent_str, depth)
         buf.write_char(c)
         i += 1
       } else if c == ',' {
         buf.write_char(',')
-        buf.write_char('\n')
-        buf.write_string(prefix)
-        for _ in 0..<depth {
-          buf.write_string(indent_str)
-        }
+        write_indent_line(buf, prefix, indent_str, depth)
         i += 1
       } else if c == ':' {
         buf.write_string(": ")
