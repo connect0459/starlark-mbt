@@ -1907,6 +1907,17 @@ comments, and doc-comments on public functions.
       so the recombination formula reads as the UTF-16 algorithm; extracted
       `write_indent_line` to dedupe the newline+prefix+indent sequence repeated
       at three `indent_json` call sites.
+- [x] **DRY + non-obvious comments (eleventh pass)** — `eval/expr.mbt`: the
+      `EList` and `ETuple` match arms ran the identical evaluate-each-element
+      loop, differing only in the final constructor; extracted `eval_exprs`
+      so both arms reduce to one line. `utf8util/utf8util.mbt` `utf8_decode_rune`:
+      documented the rune reassembly arithmetic (leading byte keeps 7-len payload
+      bits shifted by 6*(len-1); each continuation fills the next-lower 6-bit slot,
+      18→12→6→0) — previously only the byte-range validation was commented.
+      A broad scan of the less-audited files (`value/dict_set.mbt`,
+      `value/protocols.mbt`, `value/iter.mbt`, `unpack/unpack.mbt`,
+      `eval/env.mbt`, `eval/stmt.mbt`, `parser/parser.mbt`) found no remaining
+      bare magic numbers.
 
 ---
 
