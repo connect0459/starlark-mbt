@@ -1838,6 +1838,15 @@ comments, and doc-comments on public functions.
       `unicode_max_cp_bigint` (U+10FFFF), `unicode_surr_first`/`unicode_surr_last`
       (U+D800..U+DFFF) for `%c` format validation; added inline comments to
       `decompose_double` explaining each IEEE 754 bit-layout constant.
+- [x] **Magic number extraction (fifth pass)** — `resolver/resolver.mbt`:
+      extracted `max_call_args = 255` (starlark-go bytecode cap) replacing bare
+      `256` in two call-arity checks and embedding the limit value in the error
+      message via the constant. `lexer/scanner.mbt`: extracted `max_ascii = 127`
+      and `max_byte_exclusive = 256` for octal/hex escape validation; added comment
+      explaining why the non-ASCII check must precede the invalid-range check.
+      `struct/struct.mbt`: added comment documenting origin of hash constants
+      (8731/9839/7349 and `3 * name_hash` factor ported from starlark-go's
+      starlarkstruct without modification).
 
 ---
 
