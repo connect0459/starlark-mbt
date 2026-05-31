@@ -1,56 +1,95 @@
 ///|
-fn json_quote_string(s : @value.StarlarkString) -> String {
-  let buf = StringBuilder::new()
+// Reports whether every byte is printable ASCII (0x20..0x7f). Matches
+// starlark-go's `isPrintableASCII` (`b >= 0x20 && b < 0x80`).
+fn is_printable_ascii(bytes : Bytes) -> Bool {
+  for i in 0..<bytes.length() {
+    let b = bytes[i].to_int()
+    if b < 0x20 || b >= 0x80 {
+      return false
+    }
+  }
+  true
+}
+
+///|
+// Quotes a printable-ASCII string the way Go's `strconv.AppendQuote` does:
+// only `"`, `\`, and the DEL byte (0x7f) are escaped; everything else is
+// written verbatim.
+fn quote_printable_ascii(bytes : Bytes, buf : StringBuilder) -> Unit {
   buf.write_char('"')
-  let bytes = s.to_bytes()
+  for i in 0..<bytes.length() {
+    let b = bytes[i].to_int()
+    if b == 0x22 {
+      buf.write_string("\\\"")
+    } else if b == 0x5C {
+      buf.write_string("\\\\")
+    } else if b == 0x7F {
+      buf.write_string("\\x7f")
+    } else {
+      buf.write_char(b.unsafe_to_char())
+    }
+  }
+  buf.write_char('"')
+}
+
+///|
+// Quotes a string the way Go's `encoding/json.Marshal` does: valid multi-byte
+// runes are emitted as raw UTF-8, invalid bytes become U+FFFD, `<`/`>`/`&` and
+// U+2028/U+2029 are escaped for HTML/JS safety, and control bytes use the
+// `\n`/`\r`/`\t` shortcuts or `\u00XX`.
+fn marshal_string(bytes : Bytes, buf : StringBuilder) -> Unit {
+  buf.write_char('"')
   let len = bytes.length()
   let mut i = 0
   while i < len {
     let b0 = bytes[i].to_int()
-    if b0 < 0x20 {
+    if b0 < 0x80 {
       match b0 {
-        0x08 => buf.write_string("\\b")
-        0x09 => buf.write_string("\\t")
+        0x22 => buf.write_string("\\\"")
+        0x5C => buf.write_string("\\\\")
         0x0A => buf.write_string("\\n")
-        0x0C => buf.write_string("\\f")
         0x0D => buf.write_string("\\r")
-        _ => {
-          buf.write_string("\\u00")
-          buf.write_char(@utf8util.hex_char((b0 >> 4) & 0xF))
-          buf.write_char(@utf8util.hex_char(b0 & 0xF))
-        }
+        0x09 => buf.write_string("\\t")
+        0x3C => buf.write_string("\\u003c")
+        0x3E => buf.write_string("\\u003e")
+        0x26 => buf.write_string("\\u0026")
+        _ =>
+          if b0 < 0x20 {
+            buf.write_string("\\u00")
+            buf.write_char(@utf8util.hex_char((b0 >> 4) & 0xF))
+            buf.write_char(@utf8util.hex_char(b0 & 0xF))
+          } else {
+            buf.write_char(b0.unsafe_to_char())
+          }
       }
-      i += 1
-    } else if b0 == 0x22 {
-      buf.write_string("\\\"")
-      i += 1
-    } else if b0 == 0x5C {
-      buf.write_string("\\\\")
-      i += 1
-    } else if b0 < 0x80 {
-      buf.write_char(b0.unsafe_to_char())
       i += 1
     } else {
       let (r, width) = @utf8util.utf8_decode_rune(bytes, i)
       if r < 0 {
         buf.write_string("\\ufffd")
         i += 1
-      } else if r < 0x10000 {
+      } else if r == 0x2028 || r == 0x2029 {
         buf.write_string("\\u")
         @utf8util.write_hex4(buf, r)
         i += width
       } else {
-        let hi = 0xD800 + (r - 0x10000) / 0x400
-        let lo = 0xDC00 + (r - 0x10000) % 0x400
-        buf.write_string("\\u")
-        @utf8util.write_hex4(buf, hi)
-        buf.write_string("\\u")
-        @utf8util.write_hex4(buf, lo)
+        buf.write_char(r.unsafe_to_char())
         i += width
       }
     }
   }
   buf.write_char('"')
+}
+
+///|
+fn json_quote_string(s : @value.StarlarkString) -> String {
+  let buf = StringBuilder::new()
+  let bytes = s.to_bytes()
+  if is_printable_ascii(bytes) {
+    quote_printable_ascii(bytes, buf)
+  } else {
+    marshal_string(bytes, buf)
+  }
   buf.to_string()
 }
 
@@ -513,12 +552,16 @@ fn parse_json_object(
     if j >= len {
       return Err("unexpected end of file")
     }
-    if chars[j] != '"' {
-      return Err("unexpected character '\{chars[j]}'")
-    }
-    match parse_json_string(chars, j) {
+    match parse_json_value(chars, j) {
       Err(e) => return Err(e)
-      Ok((key_raw, next_j)) => {
+      Ok((key, next_j)) => {
+        match key {
+          @value.Value::String(_) => ()
+          _ =>
+            return Err(
+              "got \{@value.type_name(key)} for object key, want string",
+            )
+        }
         j = skip_ws(chars, next_j)
         if j >= len {
           return Err("unexpected end of file")
@@ -530,7 +573,6 @@ fn parse_json_object(
         match parse_json_value(chars, j) {
           Err(e) => return Err(e)
           Ok((val, next_j2)) => {
-            let key = @value.Value::String(@value.StarlarkString::new(key_raw))
             let _ = dict.set(key, val)
             j = skip_ws(chars, next_j2)
             if j >= len {
