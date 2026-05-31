@@ -137,60 +137,9 @@ fn eval_expr_node(
         None => @value.Value::None
         Some(ex) => eval_expr_node(ctx, env, ex)
       }
-      let step = match step_val {
-        @value.Value::None => None
-        @value.Value::Int(n) =>
-          if n > max_int32 || n < min_int32 {
-            raise EvalErr(
-              make_eval_error(ctx, "invalid slice step: \{n} out of range"),
-            )
-          } else {
-            Some(n.to_int())
-          }
-        _ =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "invalid slice step: got \{@value.type_name(step_val)}, want int",
-            ),
-          )
-      }
-      let lo = match lo_val {
-        @value.Value::None => None
-        @value.Value::Int(n) =>
-          if n > max_int32 || n < min_int32 {
-            raise EvalErr(
-              make_eval_error(ctx, "invalid start index: \{n} out of range"),
-            )
-          } else {
-            Some(n.to_int())
-          }
-        _ =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "invalid start index: got \{@value.type_name(lo_val)}, want int",
-            ),
-          )
-      }
-      let hi = match hi_val {
-        @value.Value::None => None
-        @value.Value::Int(n) =>
-          if n > max_int32 || n < min_int32 {
-            raise EvalErr(
-              make_eval_error(ctx, "invalid end index: \{n} out of range"),
-            )
-          } else {
-            Some(n.to_int())
-          }
-        _ =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "invalid end index: got \{@value.type_name(hi_val)}, want int",
-            ),
-          )
-      }
+      let step = slice_int_arg(ctx, step_val, "slice step")
+      let lo = slice_int_arg(ctx, lo_val, "start index")
+      let hi = slice_int_arg(ctx, hi_val, "end index")
       eval_slice(ctx, obj, lo, hi, step)
     }
     @syntax.Expr::EDot(obj_expr, attr, pos) => {
@@ -269,6 +218,35 @@ fn eval_defaults(
     }
   }
   defaults
+}
+
+///|
+/// Decodes a single slice bound (start/end/step) to an int32-range `Int`.
+/// `None` propagates the omitted-bound default; an out-of-range or non-int
+/// value raises with `label` ("slice step" / "start index" / "end index").
+fn slice_int_arg(
+  ctx : EvalContext,
+  v : @value.Value,
+  label : String,
+) -> Int? raise EvalErr {
+  match v {
+    @value.Value::None => None
+    @value.Value::Int(n) =>
+      if n > max_int32 || n < min_int32 {
+        raise EvalErr(
+          make_eval_error(ctx, "invalid \{label}: \{n} out of range"),
+        )
+      } else {
+        Some(n.to_int())
+      }
+    _ =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "invalid \{label}: got \{@value.type_name(v)}, want int",
+        ),
+      )
+  }
 }
 
 ///|
