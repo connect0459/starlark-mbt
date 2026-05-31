@@ -839,3 +839,20 @@ test "math: type error includes 'for parameter 1:' prefix" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "math: unary/binary builtins reject keyword args with 'unexpected keyword arguments'" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("math.star", "math")
+      #|assert.fails(lambda: math.sqrt(x=4.0), "sqrt: unexpected keyword arguments")
+      #|assert.fails(lambda: math.pow(x=2.0, y=3.0), "pow: unexpected keyword arguments")
+      #|assert.fails(lambda: math.ceil(x=1.5), "ceil: unexpected keyword arguments")
+      #|assert.fails(lambda: math.floor(x=1.5), "floor: unexpected keyword arguments")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

@@ -17,7 +17,10 @@ fn to_float_param(
 ///|
 fn make_unary(name : String, f : (Double) -> Double) -> @value.Value {
   @value.Value::new_builtin(name, fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("\{name}: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err("\{name}: got \{pos_args.length()} arguments, want 1")
     }
     to_float_param(name, 1, pos_args[0]).map(fn(x) { @value.Value::Float(f(x)) })
@@ -27,7 +30,10 @@ fn make_unary(name : String, f : (Double) -> Double) -> @value.Value {
 ///|
 fn make_binary(name : String, f : (Double, Double) -> Double) -> @value.Value {
   @value.Value::new_builtin(name, fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 2 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("\{name}: unexpected keyword arguments")
+    }
+    if pos_args.length() != 2 {
       return Err("\{name}: got \{pos_args.length()} arguments, want 2")
     }
     match
@@ -188,7 +194,10 @@ fn float_to_int(f : Double) -> Result[@value.Value, String] {
 ///|
 fn make_ceil() -> @value.Value {
   @value.Value::new_builtin("ceil", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("ceil: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err("ceil: got \{pos_args.length()} arguments, want 1")
     }
     match pos_args[0] {
@@ -202,7 +211,10 @@ fn make_ceil() -> @value.Value {
 ///|
 fn make_floor() -> @value.Value {
   @value.Value::new_builtin("floor", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("floor: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err("floor: got \{pos_args.length()} arguments, want 1")
     }
     match pos_args[0] {
