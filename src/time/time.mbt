@@ -14,6 +14,12 @@ let ns_per_minute : Int64 = 60_000_000_000L
 let ns_per_hour : Int64 = 3_600_000_000_000L
 
 ///|
+let secs_per_hour : Int = 3600
+
+///|
+let secs_per_minute : Int = 60
+
+///|
 fn extract_duration_ns(v : @value.Value) -> Int64? {
   match v {
     @value.Value::ExtVal(c) =>
@@ -256,9 +262,11 @@ fn fmt_duration(ns : Int64) -> String {
   } else {
     let total_sec = abs_ns / ns_per_second
     let ns_frac = abs_ns % ns_per_second
-    let hours = total_sec / 3600L
-    let minutes = total_sec % 3600L / 60L
-    let secs = total_sec % 60L
+    let hours = total_sec / secs_per_hour.to_int64()
+    let minutes = total_sec %
+      secs_per_hour.to_int64() /
+      secs_per_minute.to_int64()
+    let secs = total_sec % secs_per_minute.to_int64()
     if hours > 0L {
       buf.write_string(hours.to_string())
       buf.write_char('h')
@@ -505,13 +513,13 @@ fn fmt_time_at_zone(
   let off = dt.offset().seconds()
   if off >= 0 {
     buf.write_char('+')
-    write_pad2(buf, off / 3600)
-    write_pad2(buf, off % 3600 / 60)
+    write_pad2(buf, off / secs_per_hour)
+    write_pad2(buf, off % secs_per_hour / secs_per_minute)
   } else {
     let abs = -off
     buf.write_char('-')
-    write_pad2(buf, abs / 3600)
-    write_pad2(buf, abs % 3600 / 60)
+    write_pad2(buf, abs / secs_per_hour)
+    write_pad2(buf, abs % secs_per_hour / secs_per_minute)
   }
   buf.write_char(' ')
   buf.write_string(tz_name)
@@ -736,8 +744,8 @@ fn fmt_go_layout(
       } else {
         buf.write_char('-')
       }
-      write_pad2(buf, abs_off / 3600)
-      write_pad2(buf, abs_off % 3600 / 60)
+      write_pad2(buf, abs_off / secs_per_hour)
+      write_pad2(buf, abs_off % secs_per_hour / secs_per_minute)
       i += 5
     } else if c == 'Z' &&
       i + 4 < n &&
@@ -1125,7 +1133,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
       Some(v) => v
       None => return Err("time: invalid timezone in \"\{s}\"")
     }
-    sign * (tz_hour * 3600 + tz_minute * 60)
+    sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute)
   } else {
     return Err("time: invalid timezone in \"\{s}\"")
   }
@@ -1278,7 +1286,7 @@ fn parse_go_layout(
         match read_fixed_digits(vc, j2, 2) {
           None => false
           Some((mm, k)) => {
-            tz_offset = Some(sign * (hh * 3600 + mm * 60))
+            tz_offset = Some(sign * (hh * secs_per_hour + mm * secs_per_minute))
             vi = k
             true
           }

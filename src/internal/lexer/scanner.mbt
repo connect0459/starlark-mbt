@@ -5,6 +5,15 @@
 let tab_width : Int = 8
 
 ///|
+let unicode_surr_lo : Int = 0xD800
+
+///|
+let unicode_surr_hi : Int = 0xE000
+
+///|
+let unicode_max_codepoint : Int = 0x10FFFF
+
+///|
 pub struct ScannedToken {
   priv tok : Token
   priv pos : @errors.Position
@@ -1001,9 +1010,7 @@ fn Scanner::decode_escape(
       match self.read_unicode_escape(str_start, "\\u", 4) {
         Err(e) => return Err(e)
         Ok(cp) => {
-          let surr_lo = 55296 // 0xD800
-          let surr_hi = 57344 // 0xE000
-          if cp >= surr_lo && cp < surr_hi {
+          if cp >= unicode_surr_lo && cp < unicode_surr_hi {
             return Err(
               self.make_error(
                 str_start,
@@ -1019,10 +1026,7 @@ fn Scanner::decode_escape(
       match self.read_unicode_escape(str_start, "\\U", 8) {
         Err(e) => return Err(e)
         Ok(cp) => {
-          let max_cp = 1114111 // 0x10FFFF
-          let surr_lo = 55296 // 0xD800
-          let surr_hi = 57344 // 0xE000
-          if cp > max_cp {
+          if cp > unicode_max_codepoint {
             let seq = int_to_hex8_lower(cp)
             return Err(
               self.make_error(
@@ -1031,7 +1035,7 @@ fn Scanner::decode_escape(
               ),
             )
           }
-          if cp >= surr_lo && cp < surr_hi {
+          if cp >= unicode_surr_lo && cp < unicode_surr_hi {
             return Err(
               self.make_error(
                 str_start,

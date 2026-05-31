@@ -42,9 +42,18 @@ fn struct_repr(
 }
 
 ///|
+let struct_hash_seed : UInt = 8731U
+
+///|
+let struct_hash_mult_init : UInt = 9839U
+
+///|
+let struct_hash_mult_step : UInt = 7349U
+
+///|
 fn struct_hash(entries : Array[(String, @value.Value)]) -> Result[UInt, String] {
-  let mut x : UInt = 8731U
-  let mut m : UInt = 9839U
+  let mut x : UInt = struct_hash_seed
+  let mut m : UInt = struct_hash_mult_init
   for e in entries {
     match
       @value.starlark_hash(
@@ -57,7 +66,7 @@ fn struct_hash(entries : Array[(String, @value.Value)]) -> Result[UInt, String] 
           Err(msg) => return Err(msg)
           Ok(vh) => {
             x = x ^ (vh * m)
-            m = m + 7349U
+            m = m + struct_hash_mult_step
           }
         }
       }
