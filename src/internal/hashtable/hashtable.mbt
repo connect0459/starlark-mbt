@@ -58,6 +58,16 @@ pub struct Hashtable[K, V] {
 ///|
 /// Creates an empty `Hashtable` with the given hash/equality functions and
 /// zero values used to initialise recycled entry slots.
+///
+/// Parameters:
+///
+/// * `hash_fn` : Function that computes a hash for a key, returning `Err` if
+///   the key is not hashable.
+/// * `eq_fn` : Function that tests two keys for equality.
+/// * `zero_key` : Placeholder key used to initialise recycled entry slots.
+/// * `zero_val` : Placeholder value used to initialise recycled entry slots.
+///
+/// Returns a new empty `Hashtable`.
 pub fn[K, V] Hashtable::new(
   hash_fn : (K) -> Result[UInt, String],
   eq_fn : (K, K) -> Bool,
@@ -82,12 +92,16 @@ pub fn[K, V] Hashtable::new(
 
 ///|
 /// Returns the number of live entries.
+///
+/// Returns the live entry count as an `Int`.
 pub fn[K, V] Hashtable::length(self : Hashtable[K, V]) -> Int {
   self.live_count
 }
 
 ///|
 /// Returns `true` if the table has been frozen.
+///
+/// Returns `true` when the table is frozen, `false` otherwise.
 pub fn[K, V] Hashtable::is_frozen(self : Hashtable[K, V]) -> Bool {
   self.frozen
 }
@@ -101,6 +115,9 @@ pub fn[K, V] Hashtable::freeze(self : Hashtable[K, V]) -> Unit {
 ///|
 /// Removes all entries and resets to `initial_capacity`. Fails if frozen or
 /// being iterated.
+///
+/// Returns `Ok(())` on success, or `Err` if the table is frozen or being
+/// iterated.
 pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
   if self.frozen {
     return Err("cannot clear frozen hash table")
@@ -120,6 +137,9 @@ pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
 ///|
 /// Removes and returns the first (oldest) entry in insertion order, or `None`
 /// if empty. Fails if the table is frozen or being iterated.
+///
+/// Returns `Ok(Some((key, value)))` for the removed entry, `Ok(None)` if the
+/// table is empty, or `Err` if the table is frozen or being iterated.
 pub fn[K, V] Hashtable::pop_first(
   self : Hashtable[K, V],
 ) -> Result[(K, V)?, String] {
@@ -241,6 +261,14 @@ pub fn[K, V] Hashtable::iter_end(self : Hashtable[K, V]) -> Unit {
 ///|
 /// Inserts or replaces the entry for `key`. Fails if the table is frozen or
 /// being iterated, or if `hash_fn(key)` returns an error.
+///
+/// Parameters:
+///
+/// * `self` : The hash table to insert into.
+/// * `key` : The key to insert or update.
+/// * `value` : The value to associate with the key.
+///
+/// Returns `Ok(())` on success, or `Err` if the operation is not permitted.
 pub fn[K, V] Hashtable::insert(
   self : Hashtable[K, V],
   key : K,
@@ -288,6 +316,14 @@ pub fn[K, V] Hashtable::insert(
 ///|
 /// Returns `Ok(Some(v))` if `key` is present, `Ok(None)` if absent, or
 /// `Err` if hashing fails.
+///
+/// Parameters:
+///
+/// * `self` : The hash table to search.
+/// * `key` : The key to look up.
+///
+/// Returns `Ok(Some(value))` if found, `Ok(None)` if absent, or `Err` if
+/// hashing the key fails.
 pub fn[K, V] Hashtable::lookup(
   self : Hashtable[K, V],
   key : K,
@@ -310,6 +346,14 @@ pub fn[K, V] Hashtable::lookup(
 ///|
 /// Returns `Ok(true)` if `key` is present, `Ok(false)` if absent, or
 /// `Err` if hashing fails.
+///
+/// Parameters:
+///
+/// * `self` : The hash table to search.
+/// * `key` : The key to test for membership.
+///
+/// Returns `Ok(true)` if the key exists, `Ok(false)` if absent, or `Err` if
+/// hashing the key fails.
 pub fn[K, V] Hashtable::contains(
   self : Hashtable[K, V],
   key : K,
@@ -324,6 +368,14 @@ pub fn[K, V] Hashtable::contains(
 ///|
 /// Removes `key` from the table. Returns `Ok(true)` if the key was present,
 /// `Ok(false)` if absent. Fails if the table is frozen or being iterated.
+///
+/// Parameters:
+///
+/// * `self` : The hash table to remove from.
+/// * `key` : The key to delete.
+///
+/// Returns `Ok(true)` if the key was found and removed, `Ok(false)` if absent,
+/// or `Err` if the table is frozen or being iterated.
 pub fn[K, V] Hashtable::delete(
   self : Hashtable[K, V],
   key : K,
@@ -375,6 +427,11 @@ pub fn[K, V] Hashtable::delete(
 
 ///|
 /// Calls `f(key)` for each key in insertion order.
+///
+/// Parameters:
+///
+/// * `self` : The hash table to iterate over.
+/// * `f` : The function to call with each key.
 pub fn[K, V] Hashtable::each_key(
   self : Hashtable[K, V],
   f : (K) -> Unit,
@@ -388,6 +445,11 @@ pub fn[K, V] Hashtable::each_key(
 
 ///|
 /// Calls `f(key, value)` for each entry in insertion order.
+///
+/// Parameters:
+///
+/// * `self` : The hash table to iterate over.
+/// * `f` : The function to call with each key-value pair.
 pub fn[K, V] Hashtable::each(
   self : Hashtable[K, V],
   f : (K, V) -> Unit,
