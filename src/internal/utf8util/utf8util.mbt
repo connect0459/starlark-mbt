@@ -73,6 +73,9 @@ pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
   //   3-byte: 0xE0..0xEF (start bits: 1110xxxx)
   //   4-byte: 0xF0..0xF4 (0xF5..0xF7 encode > U+10FFFF; start bits: 11110xxx)
   // Continuation bytes: 0x80..0xBF (10xxxxxx); payload mask: 0x3F (6 bits).
+  // Reassembly: the leading byte keeps 7-len payload bits (mask 0x1F/0x0F/0x07
+  // for 2/3/4-byte forms) shifted left by 6*(len-1); each later continuation
+  // byte fills the next-lower 6-bit slot, so shifts step down 18→12→6→0.
   let b0 = b[pos].to_int()
   if b0 < 0x80 {
     return (b0, 1)
