@@ -1255,7 +1255,7 @@ fn call_builtin(
                 "chr: Unicode code point \{n} out of range (<0)",
               ),
             )
-          } else if n > BigInt::from_int(0x10ffff) {
+          } else if n > unicode_max_cp_bigint {
             raise EvalErr(
               make_eval_error(
                 ctx,
