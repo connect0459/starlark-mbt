@@ -1475,6 +1475,51 @@ closed. Each fixed via TDD (Red test first).
       unexpected positional argument" (singular, prefixed name); Go uses "time: unexpected
       positional arguments". Fixed.
 
+### Ninth-pass gap analysis (MISSING-156..167)
+
+Fresh comparison against starlark-go covering slicing/indexing semantics,
+`repr`/`str` escape tables, comparison-operator error wording, and the
+json/struct extension libraries. Each fixed via TDD (Red test first). Four
+items (156/157/162/164) remain deferred and are still tracked in
+`.connect0459/bugfix.md`.
+
+- [x] **MISSING-158** [message]: non-int slice index/step errors now read
+      "invalid start/end index: got T, want int" and "invalid slice step: got T,
+      want int" (was "slice indices must be integers" / "slice step must be an
+      integer"), matching `eval.go:1265,1330,1341`. Fixed in `eval/expr.mbt`.
+- [x] **MISSING-159** [message]: the unhandled-index fallback now names both
+      operand types — "unhandled index operation int[int]" (was "unhandled index
+      operation: int"), matching `eval.go:707`. Fixed in `eval/ops.mbt`.
+- [x] **MISSING-160** [message]: non-sliceable operand now reports "invalid slice
+      operand bool" (was "'bool' object is not sliceable"), matching
+      `eval.go:1256`. Fixed in `eval/ops.mbt` (three sites).
+- [x] **MISSING-161** [message]: `repr` emits named escapes `\a`/`\b`/`\f`/`\v`
+      for 0x07/0x08/0x0c/0x0b instead of `\xNN`, matching `quote.go:271-285`.
+      Affects string and bytes repr (shared `repr_bytes_inner`).
+- [x] **MISSING-163** [message]: ordered-comparison type errors now carry the
+      actual operator ("int <= string not implemented", etc.) instead of always
+      "<". Threaded an `op` label through `compare_values`/`compare_values_depth`/
+      `slice_cmp_depth` (`value/traits.mbt`); `eval_cmp` (`eval/ops.mbt`) derives
+      the operator from the comparison direction. Matches `value.go:1529,1573`.
+- [x] **MISSING-165** [message]: `json.decode` now parses an object key as a
+      value and reports "got T for object key, want string" for a non-string key,
+      matching `json.go:461-463` (was a generic unexpected-character error).
+      (Offset still reported as 0 — see deferred MISSING-164.)
+- [x] **MISSING-166** [behavioral]: `json.encode` escapes the DEL byte (0x7f) as
+      `\x7f` via the AppendQuote path instead of writing it raw (`json.go:101-110`).
+- [x] **MISSING-167** [message]: dot access on a custom value (e.g. `module()`)
+      whose `get_attr` returns no value now reports "T has no .x field or method"
+      (was "T has no attribute 'x'"), matching `eval.go:649`. Fixed in
+      `eval/expr.mbt` ExtVal branch.
+- [x] **json non-ASCII encoding** (was `bugfix.md` M.5): `json.encode` now mirrors
+      starlark-go's two-branch quoting — printable-ASCII strings use a
+      `strconv.AppendQuote` emulation, while any string with a control or
+      non-ASCII byte uses an `encoding/json.Marshal` emulation that emits raw
+      UTF-8, replaces invalid bytes with U+FFFD, escapes `<`/`>`/`&` and
+      U+2028/U+2029, and uses `\n`/`\r`/`\t` shortcuts. Previously all non-ASCII
+      was escaped as `\uXXXX`. (Reverses the earlier Phase 7.5 "non-ASCII via
+      `\uXXXX`" choice, per user decision to prefer Go parity.)
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
