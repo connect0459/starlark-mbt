@@ -59,6 +59,8 @@ fn float_abs(x : Double) -> Double {
 ///|
 fn float_copysign(x : Double, y : Double) -> Double {
   let abs_x = float_abs(x)
+  // `1.0 / y < 0.0` distinguishes -0.0 from +0.0: dividing by -0.0 yields
+  // -inf, by +0.0 yields +inf, so the sign bit is recovered when y == 0.0.
   if y < 0.0 || (y == 0.0 && 1.0 / y < 0.0) {
     -abs_x
   } else {
@@ -90,11 +92,21 @@ fn float_remainder(x : Double, y : Double) -> Double {
 let sqrt_2pi : Double = 2.5066282746310002
 
 ///|
+// Lanczos approximation coefficients for the g=7, n=9 parameter set; paired
+// with `lanczos_g` below. See float_gamma.
 let lanczos_c : Array[Double] = [
   0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
   -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
   1.5056327351493116e-7,
 ]
+
+///|
+let lanczos_g : Double = 7.0
+
+///|
+// Largest positive integer argument handled by the exact factorial fast path
+// (gamma(n) == (n-1)!); above this the Lanczos approximation is used.
+let gamma_factorial_max : Double = 21.0
 
 ///|
 fn float_pow(x : Double, y : Double) -> Double {
@@ -125,7 +137,7 @@ fn float_gamma(x : Double) -> Double {
   if x < 0.0 && x == @std_math.floor(x) {
     return 0.0 / 0.0
   }
-  if x > 0.0 && x == @std_math.floor(x) && x <= 21.0 {
+  if x > 0.0 && x == @std_math.floor(x) && x <= gamma_factorial_max {
     let n = x.to_int64()
     let mut r = 1.0
     let mut k = 2L
@@ -136,14 +148,16 @@ fn float_gamma(x : Double) -> Double {
     return r
   }
   if x < 0.5 {
+    // Reflection formula: gamma(x) = pi / (sin(pi*x) * gamma(1-x)).
     @std_math.PI / (@std_math.sin(@std_math.PI * x) * float_gamma(1.0 - x))
   } else {
     let z = x - 1.0
     let mut a = lanczos_c[0]
-    for i in 1..<9 {
+    for i in 1..<lanczos_c.length() {
       a += lanczos_c[i] / (z + i.to_double())
     }
-    let t = z + 7.5
+    // t = z + g + 0.5 per the Lanczos approximation.
+    let t = z + lanczos_g + 0.5
     sqrt_2pi * @std_math.pow(t, z + 0.5) * @std_math.exp(-t) * a
   }
 }
