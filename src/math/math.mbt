@@ -226,6 +226,10 @@ fn make_floor() -> @value.Value {
 }
 
 ///|
+/// Returns the `math` Starlark module value, providing the constants `e` and
+/// `pi`, and the functions `ceil`, `floor`, `round`, `fabs`, `exp`, `sqrt`,
+/// `log`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `pow`, and
+/// `trunc` as attributes.
 pub fn math_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["e"] = @value.Value::Float(2.718281828459045)

@@ -3,12 +3,18 @@
 // A Program can be Init'd multiple times with different predeclared values.
 
 ///|
+/// A parsed and resolved Starlark source file. Execute via `init`; parsing and
+/// resolution costs are paid once. A `Program` may be `init`'d multiple times
+/// with different `predeclared` dictionaries.
 pub struct Program {
   priv file : @syntax.File
   priv opts : Options
 }
 
 ///|
+/// Parses and resolves `src` as a Starlark file named `filename`, returning
+/// an immutable `Program` on success. `is_predeclared` answers whether a name
+/// is provided by the embedder's predeclared environment.
 pub fn source_program(
   filename : String,
   src : String,
@@ -21,6 +27,9 @@ pub fn source_program(
 }
 
 ///|
+/// Like `source_program` but also returns the parsed `File` AST alongside the
+/// `Program`, useful when the caller needs to inspect load statements before
+/// executing.
 pub fn source_program_with_file(
   filename : String,
   src : String,
@@ -38,6 +47,8 @@ pub fn source_program_with_file(
 }
 
 ///|
+/// Resolves an already-parsed `File` AST with the given options, returning a
+/// `Program` ready for `init`. Skips lexing and parsing.
 pub fn file_program(
   file : @syntax.File,
   opts : Options,
@@ -61,11 +72,13 @@ pub fn file_program(
 }
 
 ///|
+/// Returns the source filename recorded in the program.
 pub fn Program::filename(self : Program) -> String {
   self.file.path()
 }
 
 ///|
+/// Returns the number of `load(...)` statements in the program.
 pub fn Program::num_loads(self : Program) -> Int {
   let mut count = 0
   for stmt in self.file.stmts() {
@@ -78,6 +91,8 @@ pub fn Program::num_loads(self : Program) -> Int {
 }
 
 ///|
+/// Returns the path string and source position of the `i`-th `load` statement.
+/// Returns an empty string and unknown position if `i` is out of range.
 pub fn Program::load(self : Program, i : Int) -> (String, @errors.Position) {
   let mut idx = 0
   for stmt in self.file.stmts() {
@@ -95,6 +110,9 @@ pub fn Program::load(self : Program, i : Int) -> (String, @errors.Position) {
 }
 
 ///|
+/// Executes the program with the given `predeclared` bindings, returning an
+/// unfrozen `Module`. Unlike `exec_file`, does not freeze the module on return.
+/// May be called multiple times with different `predeclared` dictionaries.
 pub fn Program::init(
   self : Program,
   thread : Thread,

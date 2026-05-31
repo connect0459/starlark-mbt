@@ -1,4 +1,5 @@
 ///|
+/// The result of evaluating a single REPL input line.
 pub enum ReplOutput {
   Value(String)
   Empty
@@ -15,6 +16,10 @@ pub impl Show for ReplOutput with fn output(self, logger) {
 }
 
 ///|
+/// Evaluates a single REPL input string in the given `globals` environment.
+/// A bare expression is evaluated and its repr returned as `Value(_)`;
+/// statements produce `Empty` on success; syntax/eval errors produce
+/// `EvalError(_)`.
 pub fn eval_input(
   thread : @eval.Thread,
   globals : @value.StarlarkDict,
@@ -70,11 +75,15 @@ pub fn eval_input(
 }
 
 ///|
+/// Formats an `EvalError` as a human-readable string for REPL display.
 pub fn format_error(err : @errors.EvalError) -> String {
   err.msg()
 }
 
 ///|
+/// Returns a load function that resolves load paths relative to `base_dir`
+/// and caches previously loaded modules. Nested loads are handled recursively
+/// with their own cache; cycle detection uses a sentinel error.
 pub fn make_load(
   base_dir : String,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
@@ -113,6 +122,8 @@ fn dir_of(path : String) -> String {
 }
 
 ///|
+/// Runs an interactive REPL loop, reading input from stdin and printing
+/// results. Exits when stdin is closed.
 pub fn run(thread : @eval.Thread, globals : @value.StarlarkDict) -> Unit {
   while true {
     match read_line(">>> ") {

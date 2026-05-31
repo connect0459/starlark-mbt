@@ -26,6 +26,8 @@ fn collect_all_local_names(
 }
 
 ///|
+/// A snapshot of a single Starlark call frame for debugger inspection.
+/// Obtained via `Thread::debug_frame(depth)`.
 pub struct DebugFrame {
   priv callable_val : @value.Value
   priv all_local_names : Array[String]
@@ -42,16 +44,20 @@ fn DebugFrame::from_active(af : ActiveCallFrame) -> DebugFrame {
 }
 
 ///|
+/// Returns the callable value (`Function` or `Builtin`) that owns this frame.
 pub fn DebugFrame::callable(self : DebugFrame) -> @value.Value {
   self.callable_val
 }
 
 ///|
+/// Returns the number of local variables (parameters + body locals) in this frame.
 pub fn DebugFrame::num_locals(self : DebugFrame) -> Int {
   self.all_local_names.length()
 }
 
 ///|
+/// Returns the binding descriptor and current value of the `i`-th local.
+/// The value is `None` if the local has not yet been assigned.
 pub fn DebugFrame::frame_local(
   self : DebugFrame,
   i : Int,
@@ -63,6 +69,8 @@ pub fn DebugFrame::frame_local(
 }
 
 ///|
+/// Returns the current value of the local variable named `name`, or `None`
+/// if the name is absent or the variable has not yet been assigned.
 pub fn DebugFrame::local_by_name(
   self : DebugFrame,
   name : String,
@@ -71,6 +79,7 @@ pub fn DebugFrame::local_by_name(
 }
 
 ///|
+/// Returns the source position of the current execution point within this frame.
 pub fn DebugFrame::position(self : DebugFrame) -> @errors.Position {
   ignore(self)
   @errors.Position::new("", 0, 0)

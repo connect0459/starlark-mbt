@@ -1603,15 +1603,15 @@ fn pow10_int64(n : Int) -> Int64 {
 }
 
 ///|
-// Thread-local key under which an embedder may store a fixed `time.time` value
-// to override `time.now()`. Set it with
-// `thread.set_local(now_override_key, time_value(sec, nsec))` for reproducible
-// runs; when unset, `time.now()` reads the real system clock.
+/// Thread-local storage key for overriding the `time.now()` clock in tests.
+/// Store a fixed `time.time` value via
+/// `thread.set_local(now_override_key, time_value(sec, nsec))`; when unset,
+/// `time.now()` reads the real system clock.
 pub let now_override_key : String = "time.now"
 
 ///|
-// Construct a `time.time` value from a Unix second/nanosecond pair, for use as
-// a clock override (see now_override_key).
+/// Creates a `time.time` Starlark value from a Unix second/nanosecond pair.
+/// Primarily used to construct clock-override values for `now_override_key`.
 pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
   make_time(sec, nsec)
 }
@@ -1921,6 +1921,9 @@ fn make_is_valid_timezone_fn() -> @value.Value {
 }
 
 ///|
+/// Returns the `time` Starlark module value, providing `now`,
+/// `from_timestamp`, `parse_time`, `parse_duration`, and the
+/// `duration` constructor as attributes.
 pub fn time_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["now"] = make_now_fn()

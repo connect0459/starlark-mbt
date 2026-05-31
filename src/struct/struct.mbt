@@ -259,6 +259,9 @@ fn struct_binary(
 }
 
 ///|
+/// Creates a struct `ExtVal` from a constructor value and field key-value pairs.
+/// Fields are stored sorted by name. The struct supports attribute access,
+/// equality, hashing, and `+` merge. Freeze propagates transitively.
 pub fn make_struct(
   ctor : @value.Value,
   entries : Array[(String, @value.Value)],
@@ -291,11 +294,15 @@ pub fn make_struct(
 }
 
 ///|
+/// The default struct constructor string, `"struct"`, used when no explicit
+/// constructor is specified.
 pub let default_ctor : @value.Value = @value.Value::String(
   @value.StarlarkString::new("struct"),
 )
 
 ///|
+/// Returns the `struct()` Starlark builtin function. Accepts keyword arguments
+/// only; each keyword becomes a field. Rejects positional arguments.
 pub fn struct_builtin() -> @value.Value {
   @value.Value::new_builtin("struct", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() > 0 {
@@ -306,6 +313,8 @@ pub fn struct_builtin() -> @value.Value {
 }
 
 ///|
+/// Returns the `gensym()` Starlark builtin function, which creates a unique
+/// callable symbol. An optional `name=` keyword argument sets its display name.
 pub fn gensym_builtin() -> @value.Value {
   @value.Value::new_builtin("gensym", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() > 0 {

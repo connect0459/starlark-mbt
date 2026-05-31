@@ -8,22 +8,32 @@ priv struct IterCursor {
 }
 
 ///|
+/// A forward-only cursor over a Starlark sequence or mapping.
+/// Call `next()` to advance; call `done()` when iteration is finished,
+/// even on early exit, to release any frozen-state hold on the container.
 pub struct StarlarkIterator {
   priv next_fn : () -> Value?
   priv done_fn : () -> Unit
 }
 
 ///|
+/// Advances the iterator and returns the next value, or `None` when exhausted.
 pub fn StarlarkIterator::next(self : StarlarkIterator) -> Value? {
   (self.next_fn)()
 }
 
 ///|
+/// Signals that iteration is complete, releasing any frozen-state hold on the
+/// container. Must be called even on early exit (e.g. `break`).
 pub fn StarlarkIterator::done(self : StarlarkIterator) -> Unit {
   (self.done_fn)()
 }
 
 ///|
+/// Returns a `StarlarkIterator` over `v`. Returns `Err` if `v` is not iterable.
+/// Supported types: `List`, `Tuple`, `Bytes`, `Dict` (keys), `Set` (keys),
+/// `Range`, string `elems`/`codepoints`, bytes `elems`, and `ExtVal` with an
+/// `iterate` callback.
 pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
   match v {
     List(l) => Ok(list_iter(l))
@@ -41,6 +51,9 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
 }
 
 ///|
+/// Returns the number of elements in `v` for types that have a length
+/// (`String`, `Bytes`, `List`, `Tuple`, `Dict`, `Set`, `Range`, `StringElems`,
+/// `ExtVal` with a `length` callback). Returns `Err` for all other types.
 pub fn length_of(v : Value) -> Result[Int, String] {
   match v {
     String(s) => Ok(s.byte_len())
