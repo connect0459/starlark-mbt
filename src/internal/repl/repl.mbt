@@ -38,34 +38,20 @@ pub fn eval_input(
     Err(e) => return EvalError(e.to_string())
   }
   let stmts = file.stmts()
-  if stmts.length() == 1 {
-    match stmts[0] {
-      @syntax.Stmt::SExpr(expr_node) => {
-        ignore(expr_node)
-        match @eval.eval_expr(thread, "<repl>", input, globals) {
-          Ok(v) =>
-            if v is @value.Value::None {
-              Empty
-            } else {
-              let key = @value.Value::String(@value.StarlarkString::new("_"))
-              globals.set(key, v) |> ignore
-              Value(@value.repr(v))
-            }
-          Err(e) => EvalError(e.msg())
+  // Only a lone bare expression is echoed back; anything else (multiple
+  // statements, or a single non-expression statement) runs as a chunk.
+  if stmts.length() == 1 && stmts[0] is @syntax.Stmt::SExpr(_) {
+    match @eval.eval_expr(thread, "<repl>", input, globals) {
+      Ok(v) =>
+        if v is @value.Value::None {
+          Empty
+        } else {
+          // Bind the last expression's value to `_`, matching the Python REPL.
+          let key = @value.Value::String(@value.StarlarkString::new("_"))
+          globals.set(key, v) |> ignore
+          Value(@value.repr(v))
         }
-      }
-      _ =>
-        match
-          @eval.exec_repl_chunk(
-            thread,
-            "<repl>",
-            input,
-            globals,
-            @eval.Options::default(),
-          ) {
-          Ok(_) => Empty
-          Err(e) => EvalError(e.msg())
-        }
+      Err(e) => EvalError(e.msg())
     }
   } else {
     match
