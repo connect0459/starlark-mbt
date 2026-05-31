@@ -13,8 +13,10 @@ All optional features (`set`, `lambda`, `while`, `bytes`, `float`, recursion) ar
 | Package | Description |
 | :--- | :--- |
 | `connect0459/starlark` | Core interpreter: `Thread`, `exec_file`, `eval_expr` |
-| `connect0459/starlark/lib/json` | JSON encode / decode extension |
-| `connect0459/starlark/lib/math` | Math functions extension (mirrors Python's `math` module) |
+| `connect0459/starlark/json` | JSON encode / decode extension |
+| `connect0459/starlark/math` | Math functions extension (mirrors Python's `math` module) |
+| `connect0459/starlark/struct` | `struct`, `module`, and `gensym` extension (starlarkstruct) |
+| `connect0459/starlark/time` | Time and duration extension (starlarktime) |
 
 ## Installation
 
@@ -22,11 +24,16 @@ All optional features (`set`, `lambda`, `while`, `bytes`, `float`, recursion) ar
 moon add connect0459/starlark
 ```
 
-Then declare the packages you need in your `moon.pkg`:
+Then declare the packages you need in your `moon.pkg` (add extension packages as needed):
 
 ```text
 import {
   "connect0459/starlark",
+  // optional extensions:
+  // "connect0459/starlark/json",
+  // "connect0459/starlark/math",
+  // "connect0459/starlark/struct",
+  // "connect0459/starlark/time",
 }
 ```
 
@@ -140,43 +147,36 @@ test {
 }
 ```
 
-### JSON extension
+### Extension packages
+
+Each extension is injected as a predeclared binding. Add its import to your `moon.pkg` first.
 
 ```moonbit
 test {
-  let json_mod = @json.json_module()
-  let predeclared = @starlark.Predeclared::from_map({ "json": json_mod })
+  let predeclared = @starlark.Predeclared::from_map({
+    "json": @json.json_module(),
+    "math": @math.math_module(),
+    "struct": @struct.struct_builtin(),
+    "time": @time.time_module(),
+  })
   let thread = @starlark.Thread::new("main")
   let src =
-    #|data = json.decode('{"answer": 42}')
-    #|answer = data["answer"]
+    #|payload = json.encode({"pi": math.floor(math.pi * 1000)})
   match @starlark.exec_file_with_predeclared(
-    thread, "data.star", src, @starlark.Options::default(), predeclared,
+    thread, "ext.star", src, @starlark.Options::default(), predeclared,
   ) {
     Ok(m) =>
-      assert_true(@starlark.module_get(m, "answer") is Some(@starlark.Value::Int(42L)))
+      match @starlark.module_get(m, "payload") {
+        Some(@starlark.Value::String(s)) => assert_eq(s.raw(), "{\"pi\": 3141}")
+        _ => fail!("expected string")
+      }
     Err(e) => fail!(e.to_string())
   }
 }
 ```
 
-### Math extension
-
-```moonbit
-test {
-  let math_mod = @math.math_module()
-  let predeclared = @starlark.Predeclared::from_map({ "math": math_mod })
-  let thread = @starlark.Thread::new("main")
-  let src = "r = math.floor(math.sqrt(2.0) * 1000)"
-  match @starlark.exec_file_with_predeclared(
-    thread, "calc.star", src, @starlark.Options::default(), predeclared,
-  ) {
-    Ok(m) =>
-      assert_true(@starlark.module_get(m, "r") is Some(@starlark.Value::Int(1414L)))
-    Err(e) => fail!(e.to_string())
-  }
-}
-```
+For full API details of each extension, see the
+[API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api.md).
 
 ### Calling Starlark functions from host code
 
@@ -211,7 +211,7 @@ test {
 
 ## Documentation
 
-- [API Reference](docs/api.md) — Full API reference for all packages
+- [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api.md) — Full API reference for all packages
 
 ## License
 
