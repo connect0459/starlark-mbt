@@ -130,24 +130,49 @@ pub struct File {
 
 ///|
 /// Constructs a `File` with the given source path and top-level statement list.
+///
+/// Parameters:
+///
+/// * `path` : The source file path recorded in the AST.
+/// * `stmts` : The top-level statements parsed from the file.
+///
+/// Returns a new `File` AST node.
 pub fn File::new(path : String, stmts : Array[Stmt]) -> File {
   { path, stmts }
 }
 
 ///|
 /// Returns the source file path.
+///
+/// Parameters:
+///
+/// * `self` : The file node to inspect.
+///
+/// Returns the path string recorded in this `File`.
 pub fn File::path(self : File) -> String {
   self.path
 }
 
 ///|
 /// Returns the top-level statement list.
+///
+/// Parameters:
+///
+/// * `self` : The file node to inspect.
+///
+/// Returns the array of top-level `Stmt` nodes in this file.
 pub fn File::stmts(self : File) -> Array[Stmt] {
   self.stmts
 }
 
 ///|
 /// Returns the source position of an expression node.
+///
+/// Parameters:
+///
+/// * `e` : The expression node to inspect.
+///
+/// Returns the `Position` stored in the expression's position slot.
 pub fn expr_pos(e : Expr) -> @errors.Position {
   match e {
     EIdent(_, p) => p
@@ -172,6 +197,12 @@ pub fn expr_pos(e : Expr) -> @errors.Position {
 
 ///|
 /// Returns the source position of a statement node.
+///
+/// Parameters:
+///
+/// * `s` : The statement node to inspect.
+///
+/// Returns the `Position` stored in the statement's position slot.
 pub fn stmt_pos(s : Stmt) -> @errors.Position {
   match s {
     SExpr(e) => expr_pos(e)
