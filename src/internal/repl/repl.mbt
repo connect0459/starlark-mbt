@@ -20,6 +20,14 @@ pub impl Show for ReplOutput with fn output(self, logger) {
 /// A bare expression is evaluated and its repr returned as `Value(_)`;
 /// statements produce `Empty` on success; syntax/eval errors produce
 /// `EvalError(_)`.
+///
+/// Parameters:
+///
+/// * `thread` : The evaluation thread providing the execution context.
+/// * `globals` : The global variable dictionary for the REPL session.
+/// * `input` : The raw source text entered by the user.
+///
+/// Returns the evaluation result as a `ReplOutput` variant.
 pub fn eval_input(
   thread : @eval.Thread,
   globals : @value.StarlarkDict,
@@ -76,6 +84,12 @@ pub fn eval_input(
 
 ///|
 /// Formats an `EvalError` as a human-readable string for REPL display.
+///
+/// Parameters:
+///
+/// * `err` : The evaluation error to format.
+///
+/// Returns the error's human-readable message string.
 pub fn format_error(err : @errors.EvalError) -> String {
   err.msg()
 }
@@ -84,6 +98,13 @@ pub fn format_error(err : @errors.EvalError) -> String {
 /// Returns a load function that resolves load paths relative to `base_dir`
 /// and caches previously loaded modules. Nested loads are handled recursively
 /// with their own cache; cycle detection uses a sentinel error.
+///
+/// Parameters:
+///
+/// * `base_dir` : The filesystem directory used as the resolution root for
+///   relative load paths.
+///
+/// Returns a load handler compatible with `@eval.Thread::with_loader`.
 pub fn make_load(
   base_dir : String,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
@@ -124,6 +145,11 @@ fn dir_of(path : String) -> String {
 ///|
 /// Runs an interactive REPL loop, reading input from stdin and printing
 /// results. Exits when stdin is closed.
+///
+/// Parameters:
+///
+/// * `thread` : The evaluation thread used for all input evaluation.
+/// * `globals` : The global variable dictionary shared across all REPL inputs.
 pub fn run(thread : @eval.Thread, globals : @value.StarlarkDict) -> Unit {
   while true {
     match read_line(">>> ") {
