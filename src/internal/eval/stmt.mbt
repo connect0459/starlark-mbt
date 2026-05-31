@@ -300,15 +300,29 @@ fn eval_aug_val(
   }
 }
 
+// Spell-check ASCII constants (fold to lowercase, skip underscore).
+
+///|
+let ascii_upper_a : Int = 0x41 // 'A'
+
+///|
+let ascii_upper_z : Int = 0x5A // 'Z'
+
+///|
+let ascii_case_shift : Int = 32 // uppercase-to-lowercase offset
+
+///|
+let ascii_underscore : Int = 0x5F // '_'
+
 ///|
 fn spell_fold_chars(s : String) -> Array[Int] {
   let arr : Array[Int] = []
   for ch in s {
     let c = ch.to_int()
-    if c == 95 {
+    if c == ascii_underscore {
       // skip '_'
-    } else if c >= 65 && c <= 90 {
-      arr.push(c + 32)
+    } else if c >= ascii_upper_a && c <= ascii_upper_z {
+      arr.push(c + ascii_case_shift)
     } else {
       arr.push(c)
     }
@@ -355,6 +369,7 @@ fn spell_levenshtein(x : Array[Int], y : Array[Int], max_dist : Int) -> Int {
 ///|
 fn spell_nearest(x : String, candidates : Array[String]) -> String {
   let fx = spell_fold_chars(x)
+  // Accept suggestions within half the input length (rounded up).
   let max_dist = (fx.length() + 1) / 2
   let mut best = ""
   let mut best_d = max_dist

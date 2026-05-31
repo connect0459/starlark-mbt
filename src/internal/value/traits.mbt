@@ -269,6 +269,8 @@ fn hash_float(f : Double) -> UInt {
 fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
   let mut x : UInt = tuple_hash_init
   let mut mult : UInt = tuple_hash_prime
+  // Python's tuplehash step: mult += 82520 + len + len per element.
+  // The "len + len" form is a direct port of CPython's uint arithmetic.
   let n = (t.length() + t.length()).reinterpret_as_uint()
   for elem in t {
     match starlark_hash(elem) {

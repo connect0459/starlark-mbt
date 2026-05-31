@@ -350,6 +350,11 @@ let unicode_surr_first : Int = 0xD800
 // Inclusive upper bound of the Unicode surrogate block (U+D800..U+DFFF).
 let unicode_surr_last : Int = 0xDFFF
 
+// Decimal places for %e/%f printf format (matching C printf "%.6e"/"%.6f").
+
+///|
+let printf_float_precision : Int = 6
+
 ///|
 fn repeat_string(
   s : @value.StarlarkString,
@@ -935,21 +940,23 @@ fn format_float_e(f : Double, upper : Bool) -> String {
   if abs_f == 0.0 {
     return "\{sign_str}0.000000\{e_char}+00"
   }
-  let lo = pow10_big(6)
-  let hi = pow10_big(7)
+  // Normalize to [10^p, 10^(p+1)) to produce exactly p+1 significant digits
+  // (1 before the decimal point, p = printf_float_precision after it).
+  let lo = pow10_big(printf_float_precision)
+  let hi = pow10_big(printf_float_precision + 1)
   let mut exp = @math.log10(abs_f).floor().to_int()
-  let mut n = round_scaled(abs_f, 6 - exp)
+  let mut n = round_scaled(abs_f, printf_float_precision - exp)
   while n < lo {
     exp = exp - 1
-    n = round_scaled(abs_f, 6 - exp)
+    n = round_scaled(abs_f, printf_float_precision - exp)
   }
   while n >= hi {
     exp = exp + 1
-    n = round_scaled(abs_f, 6 - exp)
+    n = round_scaled(abs_f, printf_float_precision - exp)
   }
   let digits = n.to_string()
   let int_digit = digits[0:1].to_owned()
-  let frac_str = digits[1:7].to_owned()
+  let frac_str = digits[1:printf_float_precision + 1].to_owned()
   let exp_sign = if exp >= 0 { "+" } else { "-" }
   let exp_abs = if exp >= 0 { exp } else { -exp }
   let exp_str = if exp_abs < 10 { "0\{exp_abs}" } else { exp_abs.to_string() }
@@ -970,10 +977,10 @@ fn format_float_f(f : Double) -> String {
   let is_neg = f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
   let sign_str = if is_neg { "-" } else { "" }
   let abs_f = if f < 0.0 { -f } else { f }
-  let n = round_scaled(abs_f, 6)
-  let scale = pow10_big(6)
+  let n = round_scaled(abs_f, printf_float_precision)
+  let scale = pow10_big(printf_float_precision)
   let int_str = (n / scale).to_string()
-  let frac_str = pad_bigint(n % scale, 6)
+  let frac_str = pad_bigint(n % scale, printf_float_precision)
   "\{sign_str}\{int_str}.\{frac_str}"
 }
 
