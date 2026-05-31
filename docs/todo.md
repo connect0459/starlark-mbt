@@ -1777,20 +1777,36 @@ comments, and doc-comments on public functions.
 
 - [x] **Immutable First audit** — mutable containers (List, Dict, Set) and runtime
       state (Thread, Module.freeze) are all spec-justified mutations; no violations found.
-- [x] **Magic number extraction** — IEEE 754 bit-layout constants (`ieee754_sign_shift`,
-      `ieee754_mantissa_bits`, `ieee754_exponent_mask`, `ieee754_exponent_bias`,
-      `ieee754_mantissa_mask`, `ieee754_implicit_bit`); Java hashCode prime
-      (`java_hash_prime = 31`); Unicode replacement rune (`unicode_replacement_rune =
-      0xFFFD`); 2^32 modulus (`bigint_uint32_modulus`) — all named in `traits.mbt`.
+- [x] **Magic number extraction (first pass)** — IEEE 754 bit-layout constants
+      (`ieee754_sign_shift`, `ieee754_mantissa_bits`, `ieee754_exponent_mask`,
+      `ieee754_exponent_bias`, `ieee754_mantissa_mask`, `ieee754_implicit_bit`); Java
+      hashCode prime (`java_hash_prime = 31`); Unicode replacement rune
+      (`unicode_replacement_rune = 0xFFFD`); 2^32 modulus (`bigint_uint32_modulus`) —
+      all named in `traits.mbt`.
+- [x] **Magic number extraction (second pass)** — Unicode surrogate bounds and
+      max-codepoint in `lexer/scanner.mbt` extracted to module-level constants
+      (`unicode_surr_lo`, `unicode_surr_hi`, `unicode_max_codepoint`); struct rolling-hash
+      seed and primes in `struct/struct.mbt` named (`struct_hash_seed`,
+      `struct_hash_mult_init`, `struct_hash_mult_step`); seconds-per-hour/minute in
+      `time/time.mbt` replaced by `secs_per_hour` / `secs_per_minute`.
 - [x] **Non-obvious comments** — `hash_zero_sentinel` design (0 reserved as deleted-entry
       marker) and `normalize_hash` invariant documented in `hashtable.mbt`.
-- [x] **Doc-comments on public functions** — `///` descriptions added to all `pub fn` and
-      `pub struct` in `src/starlark.mbt`, `src/internal/errors/errors.mbt`,
+- [x] **Doc-comments on public functions (first pass)** — `///` descriptions added to all
+      `pub fn` and `pub struct` in `src/starlark.mbt`, `src/internal/errors/errors.mbt`,
       `src/internal/eval/eval.mbt` (Thread, Module, Options, Universe, Predeclared),
       `src/internal/value/value.mbt` (Value, StarlarkString, StarlarkList, StarlarkRange,
       floor_div, starlark_mod, format_float, repr), `src/internal/value/traits.mbt`
       (starlark_hash, starlark_equals, compare_values, freeze_value, double_to_bigint, etc.),
       and `src/internal/hashtable/hashtable.mbt` (Hashtable struct and all public methods).
+- [x] **Doc-comments on public functions (second pass)** — remaining packages covered:
+      `eval/program.mbt` (Program + 8 methods), `eval/debug.mbt` (DebugFrame + 5 methods),
+      `value/iter.mbt` (StarlarkIterator + iterate + length_of), `value/dict_set.mbt`
+      (StarlarkDict 17 methods + StarlarkSet 14 methods), `value/protocols.mbt`
+      (CustomValue::new + 17 with_* builders + 21 get_*/do_* dispatchers),
+      `repl/repl.mbt` (ReplOutput + 4 functions), `json/json.mbt` (4 public functions),
+      `math/math.mbt` (math_module), `time/time.mbt` (now_override_key + time_value +
+      time_module), `struct/struct.mbt` (4 public declarations),
+      `struct/module.mbt` (make_module + module_builtin).
 
 ---
 
