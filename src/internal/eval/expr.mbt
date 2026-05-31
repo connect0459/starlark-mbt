@@ -861,10 +861,7 @@ fn call_builtin(
       @value.Value::None
     }
     "len" => {
-      reject_kwargs(ctx, "len", kw_args)
-      if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "len() takes exactly one argument"))
-      }
+      check_positional(ctx, "len", pos_args, kw_args, 1, 1)
       let n = check(ctx, @value.length_of(pos_args[0]))
       @value.Value::Int(BigInt::from_int(n))
     }
@@ -888,10 +885,7 @@ fn call_builtin(
         raise EvalErr(make_eval_error(ctx, "str() takes at most one argument"))
       }
     "repr" => {
-      reject_kwargs(ctx, "repr", kw_args)
-      if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "repr() takes exactly one argument"))
-      }
+      check_positional(ctx, "repr", pos_args, kw_args, 1, 1)
       @value.Value::String(@value.StarlarkString::new(@value.repr(pos_args[0])))
     }
     "type" => {
@@ -904,13 +898,11 @@ fn call_builtin(
       )
     }
     "bool" => {
-      reject_kwargs(ctx, "bool", kw_args)
+      check_positional(ctx, "bool", pos_args, kw_args, 0, 1)
       if pos_args.length() == 0 {
         @value.Value::Bool(false)
-      } else if pos_args.length() == 1 {
-        @value.Value::Bool(@value.truth(pos_args[0]))
       } else {
-        raise EvalErr(make_eval_error(ctx, "bool() takes at most one argument"))
+        @value.Value::Bool(@value.truth(pos_args[0]))
       }
     }
     "int" => {
@@ -1102,16 +1094,16 @@ fn call_builtin(
     }
     "range" => builtin_range(ctx, pos_args, kw_args)
     "list" => {
-      reject_kwargs(ctx, "list", kw_args)
+      check_positional(ctx, "list", pos_args, kw_args, 0, 1)
       builtin_list(ctx, pos_args)
     }
     "tuple" => {
-      reject_kwargs(ctx, "tuple", kw_args)
+      check_positional(ctx, "tuple", pos_args, kw_args, 0, 1)
       builtin_tuple(ctx, pos_args)
     }
     "dict" => builtin_dict(ctx, pos_args, kw_args)
     "set" => {
-      reject_kwargs(ctx, "set", kw_args)
+      check_positional(ctx, "set", pos_args, kw_args, 0, 1)
       builtin_set(ctx, pos_args)
     }
     "bytes" => {
@@ -1123,7 +1115,7 @@ fn call_builtin(
     "enumerate" => builtin_enumerate(ctx, pos_args, kw_args)
     "sorted" => builtin_sorted(ctx, pos_args, kw_args)
     "reversed" => {
-      reject_kwargs(ctx, "reversed", kw_args)
+      check_positional(ctx, "reversed", pos_args, kw_args, 1, 1)
       builtin_reversed(ctx, pos_args)
     }
     "zip" => {
@@ -1131,11 +1123,11 @@ fn call_builtin(
       builtin_zip(ctx, pos_args)
     }
     "any" => {
-      reject_kwargs(ctx, "any", kw_args)
+      check_positional(ctx, "any", pos_args, kw_args, 1, 1)
       builtin_any_all(ctx, pos_args, true)
     }
     "all" => {
-      reject_kwargs(ctx, "all", kw_args)
+      check_positional(ctx, "all", pos_args, kw_args, 1, 1)
       builtin_any_all(ctx, pos_args, false)
     }
     "hash" => {
@@ -1159,8 +1151,14 @@ fn call_builtin(
       }
     }
     "dir" => {
+      reject_kwargs(ctx, "dir", kw_args)
       if pos_args.length() != 1 {
-        raise EvalErr(make_eval_error(ctx, "dir() takes exactly one argument"))
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "dir: got \{pos_args.length()} arguments, want 1",
+          ),
+        )
       }
       let names : Array[String] = match pos_args[0] {
         @value.Value::String(_) =>
@@ -1448,9 +1446,6 @@ fn builtin_list(
   if pos_args.length() == 0 {
     return @value.Value::List(@value.StarlarkList::new([]))
   }
-  if pos_args.length() != 1 {
-    raise EvalErr(make_eval_error(ctx, "list() takes at most one argument"))
-  }
   match pos_args[0] {
     @value.Value::List(l) => {
       let items : Array[@value.Value] = []
@@ -1483,9 +1478,6 @@ fn builtin_tuple(
 ) -> @value.Value raise EvalErr {
   if pos_args.length() == 0 {
     return @value.Value::Tuple([])
-  }
-  if pos_args.length() != 1 {
-    raise EvalErr(make_eval_error(ctx, "tuple() takes at most one argument"))
   }
   let items : Array[@value.Value] = []
   let it = require_seq(ctx, "tuple", pos_args[0])
@@ -1621,14 +1613,6 @@ fn builtin_set(
   let s = @value.StarlarkSet::new()
   if pos_args.length() == 0 {
     return @value.Value::Set(s)
-  }
-  if pos_args.length() != 1 {
-    raise EvalErr(
-      make_eval_error(
-        ctx,
-        "set: got \{pos_args.length()} arguments, want at most 1",
-      ),
-    )
   }
   let iterable = pos_args[0]
   let it = match @value.iterate(iterable) {
@@ -1967,9 +1951,6 @@ fn builtin_reversed(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
-  if pos_args.length() != 1 {
-    raise EvalErr(make_eval_error(ctx, "reversed() takes exactly one argument"))
-  }
   let items : Array[@value.Value] = []
   let it = require_seq(ctx, "reversed", pos_args[0])
   while true {
@@ -2044,9 +2025,6 @@ fn builtin_any_all(
   pos_args : Array[@value.Value],
   any_mode : Bool,
 ) -> @value.Value raise EvalErr {
-  if pos_args.length() != 1 {
-    raise EvalErr(make_eval_error(ctx, "any/all() takes exactly one argument"))
-  }
   let it = require_seq(ctx, if any_mode { "any" } else { "all" }, pos_args[0])
   let mut result = !any_mode
   while true {

@@ -402,17 +402,17 @@ test "float in range truncates toward zero" {
 ///|
 let kwarg_rejection_src : String =
   #|load("assert.star", "assert")
-  #|assert.fails(lambda: list([1, 2], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: tuple([1], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: set([1], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: reversed([1], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: zip([1], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: any([True], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: all([True], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: bool(1, foo=3), "does not accept keyword")
-  #|assert.fails(lambda: type(1, foo=3), "does not accept keyword")
-  #|assert.fails(lambda: len([1], foo=3), "does not accept keyword")
-  #|assert.fails(lambda: repr(1, foo=3), "does not accept keyword")
+  #|assert.fails(lambda: list([1, 2], foo=3), "list: unexpected keyword arguments")
+  #|assert.fails(lambda: tuple([1], foo=3), "tuple: unexpected keyword arguments")
+  #|assert.fails(lambda: set([1], foo=3), "set: unexpected keyword arguments")
+  #|assert.fails(lambda: reversed([1], foo=3), "reversed: unexpected keyword arguments")
+  #|assert.fails(lambda: zip([1], foo=3), "zip does not accept keyword arguments")
+  #|assert.fails(lambda: any([True], foo=3), "any: unexpected keyword arguments")
+  #|assert.fails(lambda: all([True], foo=3), "all: unexpected keyword arguments")
+  #|assert.fails(lambda: bool(1, foo=3), "bool: unexpected keyword arguments")
+  #|assert.fails(lambda: type(1, foo=3), "type does not accept keyword arguments")
+  #|assert.fails(lambda: len([1], foo=3), "len: unexpected keyword arguments")
+  #|assert.fails(lambda: repr(1, foo=3), "repr: unexpected keyword arguments")
 
 ///|
 test "builtins reject keyword arguments" {

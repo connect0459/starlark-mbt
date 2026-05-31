@@ -2055,3 +2055,37 @@ test "exec_file: str.splitlines on empty string returns empty list" {
 test "exec_file: abs reports type error without a name prefix" {
   assert_eq(emsg("abs(\"0\")"), "got string, want int or float")
 }
+
+///|
+test "exec_file: positional builtins report arg-count like UnpackPositionalArgs" {
+  assert_eq(emsg("len()"), "len: got 0 arguments, want 1")
+  assert_eq(emsg("len(1, 2)"), "len: got 2 arguments, want 1")
+  assert_eq(emsg("repr(1, 2)"), "repr: got 2 arguments, want 1")
+  assert_eq(emsg("reversed(1, 2)"), "reversed: got 2 arguments, want 1")
+  assert_eq(emsg("dir()"), "dir: got 0 arguments, want 1")
+  assert_eq(emsg("dir(1, 2)"), "dir: got 2 arguments, want 1")
+  assert_eq(emsg("all([1], [2])"), "all: got 2 arguments, want 1")
+  assert_eq(emsg("any([1], [2])"), "any: got 2 arguments, want 1")
+  assert_eq(emsg("bool(1, 2)"), "bool: got 2 arguments, want at most 1")
+  assert_eq(emsg("list(1, 2)"), "list: got 2 arguments, want at most 1")
+  assert_eq(emsg("tuple(1, 2)"), "tuple: got 2 arguments, want at most 1")
+  assert_eq(emsg("set(1, 2)"), "set: got 2 arguments, want at most 1")
+}
+
+///|
+test "exec_file: positional builtins reject keyword args with unpack wording" {
+  assert_eq(emsg("len(foo=1)"), "len: unexpected keyword arguments")
+  assert_eq(emsg("repr(x=1)"), "repr: unexpected keyword arguments")
+  assert_eq(emsg("reversed(x=1)"), "reversed: unexpected keyword arguments")
+  assert_eq(emsg("all(x=1)"), "all: unexpected keyword arguments")
+  assert_eq(emsg("any(x=1)"), "any: unexpected keyword arguments")
+  assert_eq(emsg("bool(x=1)"), "bool: unexpected keyword arguments")
+  assert_eq(emsg("list(x=1)"), "list: unexpected keyword arguments")
+  assert_eq(emsg("tuple(x=1)"), "tuple: unexpected keyword arguments")
+  assert_eq(emsg("set(x=1)"), "set: unexpected keyword arguments")
+}
+
+///|
+test "exec_file: dir keeps the does-not-accept-keyword-arguments wording" {
+  assert_eq(emsg("dir(x=1)"), "dir does not accept keyword arguments")
+}
