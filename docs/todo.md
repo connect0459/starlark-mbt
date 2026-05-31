@@ -1611,10 +1611,12 @@ Fresh five-area comparison against starlark-go after MISSING-1..180 closed.
       now reports "want ','" instead of "want ')'". Added check inside the param loop
       that the next token is `,` or `)`, mirroring Go's unconditional consume(COMMA)
       loop. Source: `parser/parser.mbt`. Commit: `f051940`
-- [ ] **MISSING-189** [position]: `load` per-symbol errors (empty identifier,
-      leading-underscore) reported at load-keyword position instead of each symbol's
-      position. Requires AST change to thread per-symbol positions through `SLoad`.
-      Deferred — larger fix.
+- [x] **MISSING-189** [position]: `load` per-symbol errors (empty identifier,
+      leading-underscore) now reported at each symbol's position instead of the
+      load-keyword position. `SLoad` binding tuples extended from `(local, original)`
+      to `(local, original, sym_pos)`; parser captures `self.pos` before consuming
+      each symbol token; resolver uses `sym_pos` for the two per-symbol error sites.
+      Matches starlark-go `resolve.go:584,588` (`from.NamePos`). Commit: `113a6ed`
 - [x] **MISSING-190** [message]: `math` unary/binary builtins (`make_unary`,
       `make_binary`, `make_ceil`, `make_floor`) now check `kw_args.length() != 0`
       first and return "NAME: unexpected keyword arguments", matching Go's
