@@ -105,21 +105,8 @@ fn format_nonfinite(f : Double) -> String {
 }
 
 ///|
-fn is_neg_zero(f : Double) -> Bool {
-  f == 0.0 && 1.0 / f == @double.neg_infinity
-}
-
-///|
 fn format_float_json(f : Double) -> String {
-  if is_neg_zero(f) {
-    return "-0.0"
-  }
-  let s = f.to_string()
-  if s.contains(".") || s.contains("e") || s.contains("E") {
-    s
-  } else {
-    s + ".0"
-  }
+  @value.format_float(f)
 }
 
 ///|
@@ -694,6 +681,29 @@ pub fn decode_from_json(
 }
 
 ///|
+// Verify that `s` holds exactly one well-formed JSON value with no trailing
+// data, mirroring the strict validation Go's encoding/json.Indent performs.
+fn validate_json(s : String) -> Result[Unit, String] {
+  let chars = s.to_array()
+  match parse_json_value(chars, 0) {
+    Err((offset, _)) =>
+      if offset < chars.length() {
+        Err("invalid character '\{chars[offset]}' in JSON")
+      } else {
+        Err("invalid character at end of JSON input")
+      }
+    Ok((_, next_i)) => {
+      let rest = skip_ws(chars, next_i)
+      if rest < chars.length() {
+        Err("invalid character '\{chars[rest]}' after top-level value")
+      } else {
+        Ok(())
+      }
+    }
+  }
+}
+
+///|
 pub fn indent_json(
   s : String,
   prefix : String,
@@ -814,8 +824,14 @@ fn make_encode_indent_fn() -> @value.Value {
       match (k, v) {
         ("prefix", @value.Value::String(s)) => pfx = s.raw()
         ("indent", @value.Value::String(s)) => ind = s.raw()
-        ("prefix" | "indent", _) =>
-          return Err("json.encode_indent: prefix and indent must be strings")
+        ("prefix", _) =>
+          return Err(
+            "json.encode_indent: for parameter prefix: got \{@value.type_name(v)}, want string",
+          )
+        ("indent", _) =>
+          return Err(
+            "json.encode_indent: for parameter indent: got \{@value.type_name(v)}, want string",
+          )
         _ => return Err("json.encode_indent: unexpected keyword argument \{k}")
       }
     }
@@ -879,10 +895,20 @@ fn make_indent_fn() -> @value.Value {
       match (k, v) {
         ("prefix", @value.Value::String(sv)) => pfx = sv.raw()
         ("indent", @value.Value::String(sv)) => ind = sv.raw()
-        ("prefix" | "indent", _) =>
-          return Err("json.indent: prefix and indent must be strings")
+        ("prefix", _) =>
+          return Err(
+            "json.indent: for parameter prefix: got \{@value.type_name(v)}, want string",
+          )
+        ("indent", _) =>
+          return Err(
+            "json.indent: for parameter indent: got \{@value.type_name(v)}, want string",
+          )
         _ => return Err("json.indent: unexpected keyword argument \{k}")
       }
+    }
+    match validate_json(s) {
+      Err(msg) => return Err("json.indent: \{msg}")
+      Ok(_) => ()
     }
     indent_json(s, pfx, ind).map(fn(result) {
       @value.Value::String(@value.StarlarkString::new(result))

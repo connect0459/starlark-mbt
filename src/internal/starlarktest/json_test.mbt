@@ -27,6 +27,42 @@ test "json.star: encode basic values" {
 }
 
 ///|
+let json_encode_float_format_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|# json.encode formats floats with Go's shortest-'g', not Double.to_string
+  #|assert.eq(json.encode(1234567.0), "1.234567e+06")
+  #|assert.eq(json.encode(1e-7), "1e-07")
+  #|assert.eq(json.encode(-0.0), "-0.0")
+  #|assert.eq(json.encode(100.0), "100.0")
+
+///|
+test "json.star: encode formats floats with Go shortest-g" {
+  let errs = run_star_string(json_encode_float_format_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+let json_indent_validates_src : String =
+  #|load("assert.star", "assert")
+  #|load("json.star", "json")
+  #|# json.indent and encode_indent validate their JSON / argument types
+  #|assert.fails(lambda: json.indent('{"a" 1}'), "json.indent")
+  #|assert.fails(lambda: json.indent('truex'), "json.indent")
+  #|assert.fails(lambda: json.encode_indent(1, prefix = 5), "json.encode_indent: for parameter prefix: got int, want string")
+  #|assert.fails(lambda: json.indent("{}", indent = 5), "json.indent: for parameter indent: got int, want string")
+
+///|
+test "json.star: indent validates input and argument types" {
+  let errs = run_star_string(json_indent_validates_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let json_encode_errors_src : String =
   #|load("assert.star", "assert")
   #|load("json.star", "json")
