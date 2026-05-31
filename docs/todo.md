@@ -54,7 +54,11 @@ are not part of the published API.
   MoonBit tests; embeds `assert.star` as a `const` string; not part of the
   public API (internal only). Created in Phase 6 before porting `.star` files.
 - `src/cmd/` — CLI entry point (renamed from `src/main/` in Phase 8)
-- `src/repl/` — public REPL library (eval_input, run, make_load)
+- `src/internal/repl/` — REPL implementation (internal to CLI; embedders use `exec_repl_chunk` from the façade)
+- `src/json/` — `starlarkjson` extension (was `src/lib/json/`)
+- `src/math/` — `math` extension (was `src/lib/math/`)
+- `src/struct/` — `starlarkstruct` extension (was `src/lib/struct/`)
+- `src/time/` — `time` extension (was `src/lib/time/`)
 
 Sub-packages may be added or split when any file exceeds ~600 LOC.
 
@@ -627,7 +631,7 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [x] `json.indent(string, prefix=, indent=)` — pretty-print JSON; empty containers inline
 - [x] Error reporting via descriptive string messages (starlark-go json also uses string errors,
       not Position-based; source Position not applicable for this extension)
-- [x] Lives as a separate package: `src/lib/json/` (importable, not auto-injected; moved from `src/json/`)
+- [x] Lives as a separate package: `src/json/` (importable, not auto-injected; was `src/lib/json/`)
 - [x] Reference: `starlark-go/lib/json/json.go`
 
 ---
