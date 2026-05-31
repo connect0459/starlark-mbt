@@ -320,12 +320,13 @@ fn parse_int64_str(s : String) -> Int64? {
 fn parse_duration_number(
   num_str : String,
   scale : Int64,
+  orig : String,
 ) -> Result[Int64, String] {
   match num_str.find(".") {
     None =>
       match parse_int64_str(num_str) {
         Some(n) => Ok(n * scale)
-        None => Err("time: invalid duration number \"\{num_str}\"")
+        None => Err("time: invalid duration \"\{orig}\"")
       }
     Some(dot_pos) => {
       let int_part = num_str[0:dot_pos].to_owned()
@@ -335,7 +336,7 @@ fn parse_duration_number(
       } else {
         match parse_int64_str(int_part) {
           Some(n) => n
-          None => return Err("time: invalid duration number \"\{num_str}\"")
+          None => return Err("time: invalid duration \"\{orig}\"")
         }
       }
       let int_ns = int_val * scale
@@ -347,7 +348,7 @@ fn parse_duration_number(
         let mut frac_scale = scale
         for c in chars {
           if c < '0' || c > '9' {
-            return Err("time: invalid duration number \"\{num_str}\"")
+            return Err("time: invalid duration \"\{orig}\"")
           }
           frac_scale = frac_scale / 10L
           if frac_scale > 0L {
@@ -365,11 +366,12 @@ fn parse_duration_number(
 ///|
 fn parse_duration_component(
   s : String,
+  orig : String,
 ) -> Result[(String, String, String), String] {
   let chars = s.to_array()
   let len = chars.length()
   if len == 0 {
-    return Err("time: invalid duration component \"\"")
+    return Err("time: invalid duration \"\{orig}\"")
   }
   let mut i = 0
   let num_buf = StringBuilder::new()
@@ -379,7 +381,7 @@ fn parse_duration_component(
   }
   let num_str = num_buf.to_string()
   if num_str.is_empty() {
-    return Err("time: invalid duration component \"\{s}\"")
+    return Err("time: invalid duration \"\{orig}\"")
   }
   let unit_buf = StringBuilder::new()
   while i < len {
@@ -393,7 +395,7 @@ fn parse_duration_component(
   }
   let unit_str = unit_buf.to_string()
   if unit_str.is_empty() {
-    return Err("time: missing unit in duration \"\{s}\"")
+    return Err("time: missing unit in duration \"\{orig}\"")
   }
   let remaining = s[i:].to_owned()
   Ok((num_str, unit_str, remaining))
@@ -418,7 +420,7 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
   }
   let mut total_ns : Int64 = 0L
   while !rest.is_empty() {
-    match parse_duration_component(rest) {
+    match parse_duration_component(rest, orig) {
       Err(e) => return Err(e)
       Ok((num_str, unit_str, remaining)) => {
         let scale : Int64 = match unit_str {
@@ -433,7 +435,7 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
               "time: unknown unit \"\{unit_str}\" in duration \"\{orig}\"",
             )
         }
-        match parse_duration_number(num_str, scale) {
+        match parse_duration_number(num_str, scale, orig) {
           Err(e) => return Err(e)
           Ok(ns_val) => {
             total_ns = total_ns + ns_val

@@ -146,6 +146,24 @@ test "time module: duration arithmetic" {
 }
 
 ///|
+test "time module: parse_duration errors use the full original string" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.parse_duration("abc"), 'time: invalid duration "abc"')
+      #|assert.fails(lambda: time.parse_duration("1h_bad"), 'time: invalid duration "1h_bad"')
+      #|assert.fails(lambda: time.parse_duration("1.2.3s"), 'time: invalid duration "1.2.3s"')
+      #|assert.fails(lambda: time.parse_duration("10"), 'time: missing unit in duration "10"')
+      #|assert.fails(lambda: time.parse_duration("1q"), 'time: unknown unit "q" in duration "1q"')
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: duration attributes" {
   let errs = run_star_string(
     (
