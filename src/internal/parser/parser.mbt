@@ -253,7 +253,7 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
         ),
       )
   }
-  let bindings : Array[(String, String)] = []
+  let bindings : Array[(String, String, @errors.Position)] = []
   while self.tok == @lexer.Token::Comma {
     self.advance()
     if self.tok == @lexer.Token::RParen {
@@ -261,10 +261,12 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
     }
     match self.tok {
       @lexer.Token::Str(orig) => {
+        let sym_pos = self.pos
         self.advance()
-        bindings.push((orig, orig))
+        bindings.push((orig, orig, sym_pos))
       }
       @lexer.Token::Ident(local_name) => {
+        let sym_pos = self.pos
         self.advance()
         if self.tok != @lexer.Token::Assign {
           raise ParseErr(
@@ -277,7 +279,7 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
         match self.tok {
           @lexer.Token::Str(orig) => {
             self.advance()
-            bindings.push((local_name, orig))
+            bindings.push((local_name, orig, sym_pos))
           }
           _ =>
             raise ParseErr(

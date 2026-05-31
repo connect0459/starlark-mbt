@@ -652,14 +652,14 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
         self.errorf(pos, "load statement within a conditional")
       } else {
         for pair in names {
-          let (local_name, original) = pair
+          let (local_name, original, sym_pos) = pair
           if original.is_empty() {
-            self.errorf(pos, "load: empty identifier")
+            self.errorf(sym_pos, "load: empty identifier")
             continue
           }
           if original.has_prefix("_") {
             self.errorf(
-              pos,
+              sym_pos,
               "load: names with leading underscores are not exported: \{original}",
             )
           }

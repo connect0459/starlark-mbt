@@ -555,3 +555,51 @@ test "assign.star line 253: comprehension scope unbound variable" {
     fail(failures.join("\n"))
   }
 }
+
+///|
+test "load: per-symbol errors reported at symbol position, not load keyword" {
+  let thread = @eval.Thread::new("test")
+  // Source: load("foo", "")
+  // "load" at col 1, "" at col 13 → error should say :1:13:
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    (
+      #|load("foo", "")
+    ),
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      assert_true(e.msg().contains("load: empty identifier"))
+      assert_true(e.msg().contains("test.star:1:13:"))
+    }
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "load: leading-underscore error reported at symbol position, not load keyword" {
+  let thread = @eval.Thread::new("test")
+  // Source: load("foo", "_priv")
+  // "_priv" at col 13 → error should say :1:13:
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    (
+      #|load("foo", "_priv")
+    ),
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      assert_true(
+        e
+        .msg()
+        .contains("load: names with leading underscores are not exported"),
+      )
+      assert_true(e.msg().contains("test.star:1:13:"))
+    }
+    Ok(_) => abort("expected error")
+  }
+}

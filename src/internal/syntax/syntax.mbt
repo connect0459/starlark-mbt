@@ -118,7 +118,7 @@ pub(all) enum Stmt {
   SBreak(@errors.Position)
   SContinue(@errors.Position)
   SPass(@errors.Position)
-  SLoad(String, Array[(String, String)], @errors.Position)
+  SLoad(String, Array[(String, String, @errors.Position)], @errors.Position)
 }
 
 ///|

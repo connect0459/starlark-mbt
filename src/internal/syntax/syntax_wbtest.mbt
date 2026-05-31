@@ -142,7 +142,7 @@ test "walk visits every statement kind" {
     SBreak(p()),
     SContinue(p()),
     SPass(p()),
-    SLoad("m", [("local", "remote")], p()),
+    SLoad("m", [("local", "remote", p())], p()),
   ]
   let file = File::new("t.star", stmts)
   let names = collect_idents(file)

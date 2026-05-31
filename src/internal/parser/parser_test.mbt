@@ -586,7 +586,7 @@ test "load statement with single binding" {
   match f.stmts()[0] {
     SLoad("mod.star", bindings, _) => {
       assert_eq(bindings.length(), 1)
-      let (bind_name, original) = bindings[0]
+      let (bind_name, original, _pos) = bindings[0]
       assert_eq(bind_name, "sym")
       assert_eq(original, "sym")
     }
@@ -599,7 +599,7 @@ test "load statement with aliased binding" {
   let f = parse_f("load(\"mod.star\", alias=\"sym\")\n")
   match f.stmts()[0] {
     SLoad("mod.star", bindings, _) => {
-      let (bind_name, original) = bindings[0]
+      let (bind_name, original, _pos) = bindings[0]
       assert_eq(bind_name, "alias")
       assert_eq(original, "sym")
     }

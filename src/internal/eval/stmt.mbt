@@ -374,7 +374,7 @@ fn exec_load(
   ctx : EvalContext,
   env : EvalEnv,
   path : String,
-  bindings : Array[(String, String)],
+  bindings : Array[(String, String, @errors.Position)],
   pos : @errors.Position,
 ) -> Signal raise EvalErr {
   match ctx.thread.load_fn {
@@ -400,7 +400,7 @@ fn exec_load(
         }
       }
       for pair in bindings {
-        let (local_name, export_name) = pair
+        let (local_name, export_name, _) = pair
         let key = @value.Value::String(@value.StarlarkString::new(export_name))
         match loaded.globals.get(key) {
           Ok(Some(v)) => {
