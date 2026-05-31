@@ -25,6 +25,10 @@ let max_ascii : Int = 127
 let max_byte_exclusive : Int = 256
 
 ///|
+// ASCII codepoint of '0'; used as the base for digit↔value conversions.
+let ascii_digit_zero : Int = 0x30
+
+///|
 /// A token produced by the scanner, paired with its source position.
 pub struct ScannedToken {
   priv tok : Token
@@ -968,10 +972,10 @@ fn Scanner::decode_escape(
       }
     0x30 | 0x31 | 0x32 | 0x33 | 0x34 | 0x35 | 0x36 | 0x37 => {
       // Octal: \NNN (up to 3 digits)
-      let mut val = n - 0x30
+      let mut val = n - ascii_digit_zero
       for _ in 0..<2 {
         if is_odigit_byte(self.peek_byte()) {
-          val = val * 8 + (self.peek_byte().to_int() - 0x30)
+          val = val * 8 + (self.peek_byte().to_int() - ascii_digit_zero)
           self.read_byte() |> ignore
         } else {
           break
@@ -1163,7 +1167,7 @@ fn int_to_octal(n : Int) -> String {
     shift *= 8
   }
   while shift > 0 {
-    buf.write_char((0x30 + v / shift).unsafe_to_char())
+    buf.write_char((ascii_digit_zero + v / shift).unsafe_to_char())
     v = v % shift
     shift /= 8
   }
@@ -1268,7 +1272,7 @@ fn is_unicode_letter_rune(cp : Int) -> Bool {
 fn xdigit_to_int(b : Byte) -> Int {
   let n = b.to_int()
   if n >= 0x30 && n <= 0x39 {
-    n - 0x30
+    n - ascii_digit_zero
   } else if n >= 0x61 && n <= 0x66 {
     n - 0x61 + 10
   } else {
@@ -1279,6 +1283,8 @@ fn xdigit_to_int(b : Byte) -> Int {
 // --- UTF-8 encoder for Unicode codepoints ---
 
 ///|
+// UTF-8 encoding: leading-byte masks 0xC0/0xE0/0xF0 mark 2/3/4-byte sequences;
+// 0x80 marks each continuation byte; 0x3F extracts the 6-bit payload per byte.
 fn append_utf8_codepoint(cp : Int, buf : Array[Byte]) -> Unit {
   if cp < 0x80 {
     buf.push(cp.to_byte())
@@ -1334,7 +1340,7 @@ fn parse_int_base(s : String, base : Int) -> Result[BigInt, String] {
   }
   let bytes = @utf8.encode(s)
   for i in 0..<bytes.length() {
-    let d = bytes[i].to_int() - 0x30
+    let d = bytes[i].to_int() - ascii_digit_zero
     if d < 0 || d >= base {
       return Err("invalid digit for base \{base}")
     }

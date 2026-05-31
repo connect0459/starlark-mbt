@@ -1563,6 +1563,20 @@ fn float_large_frac_to_sci(int_part : String, frac_part : String) -> String {
   mantissa + "e+" + exp_str
 }
 
+// ASCII byte boundaries used in repr output (matching starlark-go's quote.go).
+
+///|
+// First printable ASCII byte (U+0020 SPACE), inclusive lower bound.
+let ascii_space : Int = 0x20
+
+///|
+// DEL byte (0x7F); not printable — emitted as \x7f in repr, not verbatim.
+let ascii_del : Int = 0x7F
+
+///|
+// First byte of a UTF-8 multi-byte sequence (U+0080 and above).
+let utf8_multibyte_lo : Int = 0x80
+
 ///|
 fn write_unicode_escape(r : Int, buf : StringBuilder) -> Unit {
   if r < 0x10000 {
@@ -1618,10 +1632,10 @@ fn repr_bytes_inner(b : Bytes, buf : StringBuilder, quote_char : Char) -> Unit {
           buf.write_char('\\')
           buf.write_char(quote_char)
           i += 1
-        } else if n >= 0x20 && n < 0x7F {
+        } else if n >= ascii_space && n < ascii_del {
           buf.write_char(n.unsafe_to_char())
           i += 1
-        } else if n >= 0x80 {
+        } else if n >= utf8_multibyte_lo {
           let (r, width) = @utf8util.utf8_decode_rune(b, i)
           if r >= 0 && @utf8util.is_unicode_printable(r) {
             buf.write_char(r.unsafe_to_char())
