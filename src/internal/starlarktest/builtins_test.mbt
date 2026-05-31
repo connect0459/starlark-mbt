@@ -186,6 +186,23 @@ test "builtins.star: all assertions pass" {
 }
 
 ///|
+let len_type_errors_src : String =
+  #|load("assert.star", "assert")
+  #|assert.fails(lambda: len(1), "len: value of type int has no len")
+  #|assert.fails(lambda: len(True), "len: value of type bool has no len")
+  #|assert.fails(lambda: len(None), "len: value of type NoneType has no len")
+  #|assert.fails(lambda: len(b"abc".elems()), "len: value of type bytes.elems has no len")
+  #|assert.fails(lambda: len("ab".codepoints()), "len: value of type string.codepoints has no len")
+
+///|
+test "len() rejects non-sized values with the starlark-go message" {
+  let errs = run_star_string(len_type_errors_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let hash_type_errors_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: hash(True), "hash: got bool, want string or bytes")

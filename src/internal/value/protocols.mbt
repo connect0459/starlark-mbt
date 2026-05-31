@@ -348,7 +348,7 @@ pub fn CustomValue::get_iterate(
 pub fn CustomValue::get_length(self : CustomValue) -> Result[Int, String] {
   match self.length_fn {
     Some(f) => Ok(f())
-    None => Err("object of type '\{(self.type_name_fn)()}' has no len()")
+    None => Err("len: value of type \{(self.type_name_fn)()} has no len")
   }
 }
 

@@ -163,7 +163,7 @@ test "len(bytes.elems()) errors because bytes.elems is not Indexable" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
-      #|assert.fails(lambda: len(b"abc".elems()), "object of type 'bytes.elems' has no len")
+      #|assert.fails(lambda: len(b"abc".elems()), "len: value of type bytes.elems has no len")
       #|# string.elems IS indexable, so len works there
       #|assert.eq(len("abc".elems()), 3)
     ),
