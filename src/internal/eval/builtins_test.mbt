@@ -2098,3 +2098,25 @@ test "exec_file: str and bytes report excess args as want exactly 1" {
     "bytes: got 2 arguments, want exactly 1",
   )
 }
+
+///|
+test "exec_file: sorted accepts iterable passed by keyword" {
+  match exec_b("r = sorted(iterable=[3, 1, 2])") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::List(l)) => {
+          assert_eq(l.length(), 3)
+          assert_true(l.get(0) == @value.Value::Int(1N))
+          assert_true(l.get(2) == @value.Value::Int(3N))
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: sorted with no iterable reports missing argument" {
+  assert_eq(emsg("sorted()"), "sorted: missing argument for iterable")
+  assert_eq(emsg("sorted(key=len)"), "sorted: missing argument for iterable")
+}

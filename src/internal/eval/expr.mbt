@@ -1801,11 +1801,6 @@ fn builtin_sorted(
   pos_args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
-  if pos_args.length() < 1 {
-    raise EvalErr(
-      make_eval_error(ctx, "sorted() requires at least one argument"),
-    )
-  }
   if pos_args.length() > 3 {
     raise EvalErr(
       make_eval_error(
@@ -1814,7 +1809,14 @@ fn builtin_sorted(
       ),
     )
   }
-  // Python's sorted permits key and reverse to be positional, thus so do we.
+  // Python's sorted permits iterable, key, and reverse to be positional or
+  // keyword, thus so do we.
+  let mut iterable_val : @value.Value? = if pos_args.length() >= 1 {
+    Some(pos_args[0])
+  } else {
+    None
+  }
+  let mut iterable_set = pos_args.length() >= 1
   let mut key_fn : @value.Value? = if pos_args.length() >= 2 {
     Some(pos_args[1])
   } else {
@@ -1829,6 +1831,17 @@ fn builtin_sorted(
   let mut reverse_set = pos_args.length() >= 3
   for kv in kw_args {
     match kv.0 {
+      "iterable" => {
+        if iterable_set {
+          raise EvalErr(
+            make_eval_error(
+              ctx, "sorted: got multiple values for keyword argument iterable",
+            ),
+          )
+        }
+        iterable_val = Some(kv.1)
+        iterable_set = true
+      }
       "key" => {
         if key_set {
           raise EvalErr(
@@ -1856,6 +1869,13 @@ fn builtin_sorted(
           make_eval_error(ctx, "sorted: unexpected keyword argument \{other}"),
         )
     }
+  }
+  let iterable = match iterable_val {
+    Some(v) => v
+    None =>
+      raise EvalErr(
+        make_eval_error(ctx, "sorted: missing argument for iterable"),
+      )
   }
   let reverse = match reverse_arg {
     None => false
@@ -1886,13 +1906,13 @@ fn builtin_sorted(
     None => ()
   }
   let items : Array[@value.Value] = []
-  let it = match @value.iterate(pos_args[0]) {
+  let it = match @value.iterate(iterable) {
     Ok(it) => it
     Err(_) =>
       raise EvalErr(
         make_eval_error(
           ctx,
-          "sorted: for parameter iterable: got \{@value.type_name(pos_args[0])}, want iterable",
+          "sorted: for parameter iterable: got \{@value.type_name(iterable)}, want iterable",
         ),
       )
   }
