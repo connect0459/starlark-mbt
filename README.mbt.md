@@ -59,6 +59,10 @@ the [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/a
 
 - [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api.md) — Full API reference for all packages
 
+## Contributing
+
+See [CONTRIBUTING.md](https://github.com/connect0459/starlark-mbt/blob/main/CONTRIBUTING.md).
+
 ## License
 
 Apache-2.0
