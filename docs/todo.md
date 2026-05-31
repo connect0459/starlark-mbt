@@ -1847,6 +1847,15 @@ comments, and doc-comments on public functions.
       `struct/struct.mbt`: added comment documenting origin of hash constants
       (8731/9839/7349 and `3 * name_hash` factor ported from starlark-go's
       starlarkstruct without modification).
+- [x] **Magic number extraction (sixth pass)** — `value/value.mbt`: extracted
+      `ascii_space` (0x20), `ascii_del` (0x7F), and `utf8_multibyte_lo` (0x80)
+      as named constants replacing bare hex literals in `repr_bytes_inner` (the
+      printable-ASCII range bounds and the UTF-8 multi-byte threshold).
+      `lexer/scanner.mbt`: extracted `ascii_digit_zero` (0x30) replacing bare
+      `0x30` in `decode_escape`, `int_to_octal`, `xdigit_to_int`, and
+      `parse_int_base`; added one-line comment to `append_utf8_codepoint`
+      explaining the leading-byte masks (0xC0/0xE0/0xF0), continuation-byte
+      marker (0x80), and 6-bit payload mask (0x3F).
 
 ---
 
