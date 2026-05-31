@@ -520,3 +520,17 @@ test "time.parse_duration: type error uses Go format" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "time: duration * BigInt outside int64 range raises out-of-range error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.second * 10000000000000000000, "out of range")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

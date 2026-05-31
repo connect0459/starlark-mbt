@@ -178,7 +178,15 @@ fn duration_binary(
       }
     "*" =>
       match rhs {
-        @value.Value::Int(i) => Some(Ok(make_duration(ns * i.to_int64())))
+        @value.Value::Int(i) => {
+          let max_int64 = 9223372036854775807L
+          let min_int64 = -9223372036854775808L
+          if i.compare_int64(max_int64) > 0 || i.compare_int64(min_int64) < 0 {
+            Some(Err("int value out of range (want signed 64-bit value)"))
+          } else {
+            Some(Ok(make_duration(ns * i.to_int64())))
+          }
+        }
         _ => None
       }
     _ => None
