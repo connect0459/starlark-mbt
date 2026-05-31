@@ -71,3 +71,64 @@ test "supplemental private-use U+F0000 and U+10FFFF are escaped in repr" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "lexer: \\U out-of-range error uses offending value in both slots" {
+  let thread = @eval.Thread::new("test")
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    (
+      #|x = "\U00110000"
+    ),
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) =>
+      assert_true(
+        e
+        .msg()
+        .contains("code point out of range: \\U00110000 (max \\U00110000)"),
+      )
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "lexer: \\x with non-hex first char reports 'invalid escape', not 'truncated'" {
+  let thread = @eval.Thread::new("test")
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    (
+      #|x = "\x-0"
+    ),
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => assert_true(e.msg().contains("invalid escape sequence \\x-0"))
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "lexer: escape errors in b-prefixed literals report opening-quote column" {
+  let thread = @eval.Thread::new("test")
+  // Source: `x = b"\400"` — `b` at col 5, opening `"` at col 6.
+  // Old behavior reported col 5 (prefix char); fix reports col 6 (opening quote).
+  let result = @eval.exec_file(
+    thread,
+    "test.star",
+    (
+      #|x = b"\400"
+    ),
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => {
+      assert_true(e.msg().contains("invalid escape sequence"))
+      assert_true(e.msg().contains("test.star:1:6:"))
+    }
+    Ok(_) => abort("expected error")
+  }
+}

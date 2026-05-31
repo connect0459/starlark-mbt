@@ -52,8 +52,9 @@ test "scan: rejects non-ASCII octal escape in a string" {
 }
 
 ///|
-test "scan: rejects a truncated hex escape (first digit)" {
-  assert_true(scan("'\\xG'").contains("truncated escape sequence"))
+test "scan: rejects a hex escape with a non-hex first digit" {
+  // h1 is visible but not hex — reports "invalid", not "truncated"
+  assert_true(scan("'\\xG'").contains("invalid escape sequence"))
 }
 
 ///|
@@ -336,10 +337,10 @@ test "scan: surrogate code point error includes U+ hex" {
 }
 
 ///|
-test "scan: code point out of range includes sequence and max" {
+test "scan: code point out of range includes offending value in both slots" {
   let msg = scan("\"\\U00110000\"")
   assert_true(
-    msg.contains("code point out of range: \\U00110000 (max \\U0010ffff)"),
+    msg.contains("code point out of range: \\U00110000 (max \\U00110000)"),
   )
 }
 

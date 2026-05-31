@@ -732,6 +732,11 @@ fn Scanner::scan_string(
   is_bytes : Bool,
   is_raw : Bool,
 ) -> Result[ScannedToken, @errors.SyntaxError] {
+  // Capture the position of the opening quote, not the prefix character
+  // (b, r, br, etc.). Escape-sequence errors are reported here, matching
+  // starlark-go scan.go which sets `start := sc.pos` after consuming the
+  // prefix but before consuming the quote.
+  let quote_start = self.current_pos()
   let quote = self.peek_byte()
   let triple = self.peek_byte_ahead(1) == quote &&
     self.peek_byte_ahead(2) == quote
@@ -742,12 +747,12 @@ fn Scanner::scan_string(
   }
   let buf : Array[Byte] = []
   if triple {
-    match self.scan_string_triple(start, quote, is_bytes, is_raw, buf) {
+    match self.scan_string_triple(quote_start, quote, is_bytes, is_raw, buf) {
       Err(e) => return Err(e)
       Ok(_) => ()
     }
   } else {
-    match self.scan_string_single(start, quote, is_bytes, is_raw, buf) {
+    match self.scan_string_single(quote_start, quote, is_bytes, is_raw, buf) {
       Err(e) => return Err(e)
       Ok(_) => ()
     }
@@ -931,16 +936,24 @@ fn Scanner::decode_escape(
       buf.push(val.to_byte())
     }
     0x78 => {
-      // Hex: \xNN (exactly 2 digits)
+      // Hex: \xNN (exactly 2 digits).
+      // "truncated" only when a required digit slot is occupied by EOF or a
+      // string delimiter; any other character (including non-hex punctuation)
+      // is "invalid", matching starlark-go quote.go:198-203.
+      fn is_str_end(b : Byte) -> Bool {
+        b == b'\x00' || b == b'"' || b == b'\'' || b == b'\n'
+      }
+
       let h1 = self.peek_byte()
       if !is_xdigit_byte(h1) {
-        return Err(self.make_error(str_start, "truncated escape sequence \\x"))
-      }
-      self.read_byte() |> ignore
-      let h2 = self.peek_byte()
-      if !is_xdigit_byte(h2) {
-        // If h2 is a visible non-hex char (not quote/null), it's "invalid \xNN"
-        if h2 != b'\x00' && h2 != b'"' && h2 != b'\'' {
+        if is_str_end(h1) {
+          return Err(
+            self.make_error(str_start, "truncated escape sequence \\x"),
+          )
+        }
+        self.read_byte() |> ignore
+        let h2 = self.peek_byte()
+        if !is_str_end(h2) {
           self.read_byte() |> ignore
           return Err(
             self.make_error(
@@ -952,7 +965,26 @@ fn Scanner::decode_escape(
         return Err(
           self.make_error(
             str_start,
-            "truncated escape sequence \\x\{h1.to_int().unsafe_to_char()}",
+            "invalid escape sequence \\x\{h1.to_int().unsafe_to_char()}",
+          ),
+        )
+      }
+      self.read_byte() |> ignore
+      let h2 = self.peek_byte()
+      if !is_xdigit_byte(h2) {
+        if is_str_end(h2) {
+          return Err(
+            self.make_error(
+              str_start,
+              "truncated escape sequence \\x\{h1.to_int().unsafe_to_char()}",
+            ),
+          )
+        }
+        self.read_byte() |> ignore
+        return Err(
+          self.make_error(
+            str_start,
+            "invalid escape sequence \\x\{h1.to_int().unsafe_to_char()}\{h2.to_int().unsafe_to_char()}",
           ),
         )
       }
@@ -995,7 +1027,7 @@ fn Scanner::decode_escape(
             return Err(
               self.make_error(
                 str_start,
-                "code point out of range: \\U\{seq} (max \\U0010ffff)",
+                "code point out of range: \\U\{seq} (max \\U\{seq})",
               ),
             )
           }
