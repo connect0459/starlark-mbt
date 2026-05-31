@@ -334,8 +334,12 @@ fn int_float_cmp(n : BigInt, f : Double) -> Int {
 pub let compare_limit : Int = 10
 
 ///|
-pub fn compare_values(a : Value, b : Value) -> Result[Int, String] {
-  compare_values_depth(a, b, compare_limit)
+pub fn compare_values(
+  a : Value,
+  b : Value,
+  op? : String = "<",
+) -> Result[Int, String] {
+  compare_values_depth(a, b, compare_limit, op~)
 }
 
 ///|
@@ -343,6 +347,7 @@ pub fn compare_values_depth(
   a : Value,
   b : Value,
   depth : Int,
+  op? : String = "<",
 ) -> Result[Int, String] {
   if depth < 1 {
     return Err("comparison exceeded maximum recursion depth")
@@ -360,21 +365,22 @@ pub fn compare_values_depth(
     (Float(x), Float(y)) => Ok(float_cmp(x, y))
     (String(x), String(y)) => Ok(bytes_lex_cmp(x.bytes, y.bytes))
     (Bytes(x), Bytes(y)) => Ok(bytes_lex_cmp(x, y))
-    (Tuple(x), Tuple(y)) => slice_cmp_depth(x[:], y[:], depth - 1)
-    (List(x), List(y)) => slice_cmp_depth(x.items[:], y.items[:], depth - 1)
+    (Tuple(x), Tuple(y)) => slice_cmp_depth(x[:], y[:], depth - 1, op~)
+    (List(x), List(y)) =>
+      slice_cmp_depth(x.items[:], y.items[:], depth - 1, op~)
     (Int(n), Float(f)) => Ok(int_float_cmp(n, f))
     (Float(f), Int(n)) => Ok(-int_float_cmp(n, f))
     (ExtVal(ac), _) =>
       match ac.get_compare(b) {
         Some(c) => Ok(c)
-        None => Err("\{type_name(a)} < \{type_name(b)} not implemented")
+        None => Err("\{type_name(a)} \{op} \{type_name(b)} not implemented")
       }
     (_, ExtVal(rc)) =>
       match rc.get_compare(a) {
         Some(c) => Ok(-c)
-        None => Err("\{type_name(a)} < \{type_name(b)} not implemented")
+        None => Err("\{type_name(a)} \{op} \{type_name(b)} not implemented")
       }
-    _ => Err("\{type_name(a)} < \{type_name(b)} not implemented")
+    _ => Err("\{type_name(a)} \{op} \{type_name(b)} not implemented")
   }
 }
 
@@ -437,10 +443,11 @@ fn slice_cmp_depth(
   a : ArrayView[Value],
   b : ArrayView[Value],
   depth : Int,
+  op? : String = "<",
 ) -> Result[Int, String] {
   let len = if a.length() < b.length() { a.length() } else { b.length() }
   for i in 0..<len {
-    match compare_values_depth(a[i], b[i], depth) {
+    match compare_values_depth(a[i], b[i], depth, op~) {
       Err(e) => return Err(e)
       Ok(c) => if c != 0 { return Ok(c) }
     }

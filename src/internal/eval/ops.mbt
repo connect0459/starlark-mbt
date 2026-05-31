@@ -1116,7 +1116,18 @@ fn eval_cmp(
       @value.Value::Bool(result)
     }
     _ => {
-      let c = check(ctx, @value.compare_values(lv, rv))
+      let op = if strict_sign > 0 {
+        if strict {
+          ">"
+        } else {
+          ">="
+        }
+      } else if strict {
+        "<"
+      } else {
+        "<="
+      }
+      let c = check(ctx, @value.compare_values(lv, rv, op~))
       let result = if strict {
         if strict_sign > 0 {
           c > 0
@@ -1401,7 +1412,7 @@ fn eval_index(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unhandled index operation: \{@value.type_name(obj)}",
+          "unhandled index operation \{@value.type_name(obj)}[\{@value.type_name(idx)}]",
         ),
       )
   }
@@ -1587,17 +1598,14 @@ fn eval_slice(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "'\{@value.type_name(obj)}' object is not sliceable",
+              "invalid slice operand \{@value.type_name(obj)}",
             ),
           )
       }
     }
     _ =>
       raise EvalErr(
-        make_eval_error(
-          ctx,
-          "'\{@value.type_name(obj)}' object is not sliceable",
-        ),
+        make_eval_error(ctx, "invalid slice operand \{@value.type_name(obj)}"),
       )
   }
 }

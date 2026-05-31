@@ -138,19 +138,34 @@ fn eval_expr_node(
         @value.Value::None => None
         @value.Value::Int(n) => Some(n.to_int())
         _ =>
-          raise EvalErr(make_eval_error(ctx, "slice step must be an integer"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "invalid slice step: got \{@value.type_name(step_val)}, want int",
+            ),
+          )
       }
       let lo = match lo_val {
         @value.Value::None => None
         @value.Value::Int(n) => Some(n.to_int())
         _ =>
-          raise EvalErr(make_eval_error(ctx, "slice indices must be integers"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "invalid start index: got \{@value.type_name(lo_val)}, want int",
+            ),
+          )
       }
       let hi = match hi_val {
         @value.Value::None => None
         @value.Value::Int(n) => Some(n.to_int())
         _ =>
-          raise EvalErr(make_eval_error(ctx, "slice indices must be integers"))
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "invalid end index: got \{@value.type_name(hi_val)}, want int",
+            ),
+          )
       }
       eval_slice(ctx, obj, lo, hi, step)
     }

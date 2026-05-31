@@ -102,9 +102,9 @@ let string_star_src : String =
   #|assert.eq("banana"[4::-2], "nnb")
   #|assert.eq("banana"[::-1], "ananab")
   #|assert.eq("banana"[None:None:-2], "aaa")
-  #|assert.fails(lambda: "banana"[1.0::], "slice indices must be integers")
-  #|assert.fails(lambda: "banana"[:"":], "slice indices must be integers")
-  #|assert.fails(lambda: "banana"[:"":True], "slice step must be an integer")
+  #|assert.fails(lambda: "banana"[1.0::], "invalid start index: got float, want int")
+  #|assert.fails(lambda: "banana"[:"":], "invalid end index: got string, want int")
+  #|assert.fails(lambda: "banana"[:"":True], "invalid slice step: got bool, want int")
   #|
   #|# in, not in
   #|assert.true("oo" in "food")
