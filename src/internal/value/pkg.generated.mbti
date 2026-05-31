@@ -169,6 +169,7 @@ pub fn StarlarkFunction::with_module_globals(Self, Map[String, Value]) -> Self
 pub struct StarlarkIterator {
   // private fields
 }
+pub fn StarlarkIterator::collect(Self) -> Array[Value]
 pub fn StarlarkIterator::done(Self) -> Unit
 pub fn StarlarkIterator::next(Self) -> Value?
 

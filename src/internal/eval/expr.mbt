@@ -1435,18 +1435,8 @@ fn builtin_list(
       @value.Value::List(@value.StarlarkList::new(items))
     }
     v => {
-      let items : Array[@value.Value] = []
       let it = require_seq(ctx, "list", v)
-      while true {
-        match it.next() {
-          None => {
-            it.done()
-            break
-          }
-          Some(item) => items.push(item)
-        }
-      }
-      @value.Value::List(@value.StarlarkList::new(items))
+      @value.Value::List(@value.StarlarkList::new(it.collect()))
     }
   }
 }
@@ -1459,18 +1449,8 @@ fn builtin_tuple(
   if pos_args.length() == 0 {
     return @value.Value::Tuple([])
   }
-  let items : Array[@value.Value] = []
   let it = require_seq(ctx, "tuple", pos_args[0])
-  while true {
-    match it.next() {
-      None => {
-        it.done()
-        break
-      }
-      Some(item) => items.push(item)
-    }
-  }
-  @value.Value::Tuple(items)
+  @value.Value::Tuple(it.collect())
 }
 
 ///|
@@ -1870,7 +1850,6 @@ fn builtin_sorted(
   }
   // starlark-go order: check iterable type first, then key, then reverse.
   // Kwarg names are quoted in error messages; positional names are not.
-  let items : Array[@value.Value] = []
   let it = match @value.iterate(iterable) {
     Ok(it) => it
     Err(_) => {
@@ -1883,15 +1862,7 @@ fn builtin_sorted(
       )
     }
   }
-  while true {
-    match it.next() {
-      None => {
-        it.done()
-        break
-      }
-      Some(v) => items.push(v)
-    }
-  }
+  let items = it.collect()
   match key_fn {
     Some(f) =>
       match f {
@@ -1975,17 +1946,8 @@ fn builtin_reversed(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
-  let items : Array[@value.Value] = []
   let it = require_seq(ctx, "reversed", pos_args[0])
-  while true {
-    match it.next() {
-      None => {
-        it.done()
-        break
-      }
-      Some(v) => items.push(v)
-    }
-  }
+  let items = it.collect()
   let n = items.length()
   let rev : Array[@value.Value] = Array::make(n, @value.Value::None)
   for i in 0..<n {
@@ -3058,17 +3020,8 @@ fn call_set_method(
       @value.Value::Set(result)
     }
     "symmetric_difference" => {
-      let other_items : Array[@value.Value] = []
       let it = set_other_iter(ctx, "symmetric_difference", pos_args, kw_args)
-      while true {
-        match it.next() {
-          None => {
-            it.done()
-            break
-          }
-          Some(v) => other_items.push(v)
-        }
-      }
+      let other_items = it.collect()
       let other_set = @value.StarlarkSet::new()
       for v in other_items {
         ignore(other_set.add(v))

@@ -33,6 +33,24 @@ pub fn StarlarkIterator::done(self : StarlarkIterator) -> Unit {
 }
 
 ///|
+/// Drains the iterator into a fresh array, calling `done()` once exhausted.
+///
+/// Returns every remaining element in iteration order.
+pub fn StarlarkIterator::collect(self : StarlarkIterator) -> Array[Value] {
+  let items : Array[Value] = []
+  while true {
+    match self.next() {
+      None => {
+        self.done()
+        break
+      }
+      Some(v) => items.push(v)
+    }
+  }
+  items
+}
+
+///|
 /// Returns a `StarlarkIterator` over `v`. Returns `Err` if `v` is not iterable.
 /// Supported types: `List`, `Tuple`, `Bytes`, `Dict` (keys), `Set` (keys),
 /// `Range`, string `elems`/`codepoints`, bytes `elems`, and `ExtVal` with an
