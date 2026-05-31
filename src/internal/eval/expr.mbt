@@ -1303,55 +1303,33 @@ fn call_builtin(
       raise EvalErr(make_eval_error(ctx, "fail: \{body}"))
     }
     "hasattr" => {
-      if pos_args.length() != 2 {
-        raise EvalErr(
-          make_eval_error(ctx, "hasattr() takes exactly 2 arguments"),
-        )
+      check_positional(ctx, "hasattr", pos_args, kw_args, 2, 2)
+      let s = arg_as_string(ctx, "hasattr", pos_args, 1)
+      let dummy_pos = @errors.Position::new("<hasattr>", 0, 0)
+      let found = try {
+        ignore(eval_getattr(ctx, pos_args[0], s.raw(), dummy_pos))
+        true
+      } catch {
+        EvalErr(_) => false
       }
-      match pos_args[1] {
-        @value.Value::String(s) => {
-          let dummy_pos = @errors.Position::new("<hasattr>", 0, 0)
-          let found = try {
-            ignore(eval_getattr(ctx, pos_args[0], s.raw(), dummy_pos))
-            true
-          } catch {
-            EvalErr(_) => false
-          }
-          @value.Value::Bool(found)
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "hasattr() attribute name must be a string"),
-          )
-      }
+      @value.Value::Bool(found)
     }
     "getattr" => {
-      if pos_args.length() < 2 {
-        raise EvalErr(
-          make_eval_error(ctx, "getattr() requires at least 2 arguments"),
-        )
-      }
-      match pos_args[1] {
-        @value.Value::String(s) => {
-          let dummy_pos = @errors.Position::new("<getattr>", 0, 0)
-          eval_getattr(ctx, pos_args[0], s.raw(), dummy_pos) catch {
-            EvalErr(_) =>
-              if pos_args.length() >= 3 {
-                pos_args[2]
-              } else {
-                raise EvalErr(
-                  make_eval_error(
-                    ctx,
-                    "getattr: \{@value.type_name(pos_args[0])} has no .\{s.raw()} field or method",
-                  ),
-                )
-              }
+      check_positional(ctx, "getattr", pos_args, kw_args, 2, 3)
+      let s = arg_as_string(ctx, "getattr", pos_args, 1)
+      let dummy_pos = @errors.Position::new("<getattr>", 0, 0)
+      eval_getattr(ctx, pos_args[0], s.raw(), dummy_pos) catch {
+        EvalErr(_) =>
+          if pos_args.length() >= 3 {
+            pos_args[2]
+          } else {
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "getattr: \{@value.type_name(pos_args[0])} has no .\{s.raw()} field or method",
+              ),
+            )
           }
-        }
-        _ =>
-          raise EvalErr(
-            make_eval_error(ctx, "getattr() attribute name must be a string"),
-          )
       }
     }
     "module" => builtin_module(ctx, pos_args, kw_args)

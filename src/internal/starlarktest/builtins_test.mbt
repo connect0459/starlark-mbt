@@ -186,6 +186,29 @@ test "builtins.star: all assertions pass" {
 }
 
 ///|
+let getattr_hasattr_argerr_src : String =
+  #|load("assert.star", "assert")
+  #|# arity: getattr accepts 2..3 positional args, hasattr exactly 2
+  #|assert.fails(lambda: getattr(1, "real", 9, 99), "getattr: got 4 arguments, want at most 3")
+  #|assert.fails(lambda: getattr(1), "getattr: got 1 arguments, want at least 2")
+  #|assert.fails(lambda: hasattr(1, "a", "b"), "hasattr: got 3 arguments, want 2")
+  #|assert.fails(lambda: hasattr(1), "hasattr: got 1 arguments, want 2")
+  #|# attribute name must be a string
+  #|assert.fails(lambda: getattr(1, 2), "getattr: for parameter 2: got int, want string")
+  #|assert.fails(lambda: hasattr(1, 2), "hasattr: for parameter 2: got int, want string")
+  #|# keyword arguments are rejected
+  #|assert.fails(lambda: getattr(1, "real", default=9), "getattr: unexpected keyword arguments")
+  #|assert.fails(lambda: hasattr([], "append", x=1), "hasattr: unexpected keyword arguments")
+
+///|
+test "getattr/hasattr validate arity and argument types" {
+  let errs = run_star_string(getattr_hasattr_argerr_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let len_type_errors_src : String =
   #|load("assert.star", "assert")
   #|assert.fails(lambda: len(1), "len: value of type int has no len")
