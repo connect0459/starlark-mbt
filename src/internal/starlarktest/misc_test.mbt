@@ -179,6 +179,13 @@ let misc_cycle_eq_chunked : String =
   #|cyclic5 = [0, {"x": 1}]
   #|cyclic5[1]["x"] = cyclic5
   #|assert.fails(lambda: cyclic5 == cyclic5, "maximum recursion")
+  #|---
+  #|load("assert.star", "assert")
+  #|cyclic5 = [0, {"x": 1}]
+  #|cyclic5[1]["x"] = cyclic5
+  #|cyclic6 = [0, {"x": 1}]
+  #|cyclic6[1]["x"] = cyclic6
+  #|assert.fails(lambda: cyclic5 == cyclic6, "maximum recursion")
 
 ///|
 test "misc.star: cyclic data structures raise maximum recursion on equality/comparison" {

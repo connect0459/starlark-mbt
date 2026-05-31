@@ -629,3 +629,30 @@ test "error format: load name-not-found error has no position prefix in message"
     Ok(_) => abort("expected error")
   }
 }
+
+///|
+test "Thread.with_print: callback receives caller position and name via call_frame(1)" {
+  let buf : Array[String] = []
+  let src =
+    #|
+    #|print("hello")
+    #|def f(): print("hello", "world", sep=", ")
+    #|f()
+  let thread = @eval.Thread::with_print("test", fn(thread, msg) {
+    match thread.call_frame(1) {
+      Some(frame) =>
+        buf.push("\{frame.pos().to_string()}: \{frame.name()}: \{msg}\n")
+      None => ()
+    }
+  })
+  let result = @eval.exec_file(
+    thread,
+    "foo.star",
+    src,
+    @eval.Options::default(),
+  )
+  assert_true(result is Ok(_))
+  let got = buf.join("")
+  let want = "foo.star:2:6: <toplevel>: hello\nfoo.star:3:15: f: hello, world\n"
+  assert_eq(got, want)
+}

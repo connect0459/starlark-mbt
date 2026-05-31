@@ -1,12 +1,21 @@
 // Whitebox tests for value-level API semantics.
 // Verifies that StarlarkFunction.defaults is populated correctly for
-// each of the eight canonical parameter-list shapes.
+// each of the eight canonical parameter-list shapes, and that
+// StarlarkFunction.param_default(i) provides correct indexed access.
 
 ///|
 fn get_func_defaults(m : @eval.Module, name : String) -> Array[@value.Value?] {
   match m.get(name) {
     Some(@value.Value::Function(f)) => f.defaults()
     _ => []
+  }
+}
+
+///|
+fn get_func(m : @eval.Module, name : String) -> @value.StarlarkFunction? {
+  match m.get(name) {
+    Some(@value.Value::Function(f)) => Some(f)
+    _ => None
   }
 }
 
@@ -140,4 +149,85 @@ test "param defaults: with_varargs_kwonly_kwargs full shape" {
   assert_true(d[4] is None)
   assert_true(d[5] is Some(@value.Value::String(_)))
   assert_true(d[6] is None)
+}
+
+///|
+test "param_default: out-of-bounds indices return None" {
+  let m = exec_param_module()
+  let f = get_func(m, "all_required").unwrap()
+  assert_true(f.param_default(-1) is None)
+  assert_true(f.param_default(3) is None)
+  assert_true(f.param_default(100) is None)
+}
+
+///|
+test "param_default: all_required returns None for each index" {
+  let m = exec_param_module()
+  let f = get_func(m, "all_required").unwrap()
+  assert_true(f.param_default(0) is None)
+  assert_true(f.param_default(1) is None)
+  assert_true(f.param_default(2) is None)
+}
+
+///|
+test "param_default: all_opt returns Some for each valid index" {
+  let m = exec_param_module()
+  let f = get_func(m, "all_opt").unwrap()
+  match f.param_default(0) {
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "a")
+    _ => fail("expected Some(String(\"a\")) at index 0")
+  }
+  assert_true(f.param_default(1) is Some(@value.Value::None))
+  match f.param_default(2) {
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "")
+    _ => fail("expected Some(String(\"\")) at index 2")
+  }
+}
+
+///|
+test "param_default: with_varargs has None for *args slot" {
+  let m = exec_param_module()
+  let f = get_func(m, "with_varargs").unwrap()
+  assert_true(f.param_default(0) is None)
+  assert_true(f.param_default(1) is Some(@value.Value::String(_)))
+  assert_true(f.param_default(2) is None)
+}
+
+///|
+test "param_default: with_kwargs has None for **kwargs slot" {
+  let m = exec_param_module()
+  let f = get_func(m, "with_kwargs").unwrap()
+  assert_true(f.param_default(0) is None)
+  assert_true(f.param_default(1) is Some(@value.Value::String(_)))
+  assert_true(f.param_default(2) is Some(@value.Value::String(_)))
+  assert_true(f.param_default(3) is None)
+}
+
+///|
+test "param_default: mix_required_opt has None then Some at correct positions" {
+  let m = exec_param_module()
+  let f = get_func(m, "mix_required_opt").unwrap()
+  assert_true(f.param_default(0) is None)
+  assert_true(f.param_default(1) is None)
+  match f.param_default(2) {
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "c")
+    _ => fail("expected Some(String(\"c\")) at index 2")
+  }
+  match f.param_default(3) {
+    Some(@value.Value::String(s)) => assert_eq(s.raw(), "d")
+    _ => fail("expected Some(String(\"d\")) at index 3")
+  }
+}
+
+///|
+test "param_default: with_varargs_kwonly_kwargs full shape via indexed access" {
+  let m = exec_param_module()
+  let f = get_func(m, "with_varargs_kwonly_kwargs").unwrap()
+  assert_true(f.param_default(0) is None)
+  assert_true(f.param_default(1) is Some(@value.Value::String(_)))
+  assert_true(f.param_default(2) is None)
+  assert_true(f.param_default(3) is Some(@value.Value::String(_)))
+  assert_true(f.param_default(4) is None)
+  assert_true(f.param_default(5) is Some(@value.Value::String(_)))
+  assert_true(f.param_default(6) is None)
 }
