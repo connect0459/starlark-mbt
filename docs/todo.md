@@ -1666,6 +1666,33 @@ Python-keyword rejection messages. Also excluded: ASCII-only
       no-break space, U+2000-200A, U+2028/9, U+202F, U+205F, U+3000) instead of
       ASCII-only, removing the prior split/strip vs isspace inconsistency.
 
+### Fourteenth-pass gap analysis (MISSING-200..204)
+
+Fresh five-area comparison against starlark-go after MISSING-1..199 closed.
+Focused on resolver messages, bytes operator, load errors, and function frame positions.
+
+- [x] **MISSING-200** [message]: Reassigning a load-imported name via regular
+      assignment now emits `"cannot reassign local x declared at pos"` (matching
+      starlark-go's `bind.Scope == Local` for file-local load bindings) instead of
+      the MoonBit-specific "cannot reassign name 'x' imported from a load statement".
+      With `LoadBindsGlobally=true`, falls through to the "global" variant.
+      Commit: `f2a53ca`
+- [x] **MISSING-201** [message]: Re-importing a name via a second `load` statement
+      now emits `"cannot reassign top-level x"` (matching `resolve.go:598` and the
+      "Global is a misnomer for toplevel" comment) instead of "cannot reassign global x".
+      With `LoadBindsGlobally=true`, produces "cannot reassign global x declared at pos".
+      Commit: `f2a53ca`
+- [x] **MISSING-202** [message]: `'in bytes'` operator type error removed the spurious
+      angle brackets — was `"'in <bytes>' requires bytes or int..."`, now
+      `"'in bytes' requires bytes or int..."` matching `value.go:1700`. Commit: `92e6dc4`
+- [x] **MISSING-203** [message]: Load "name not found" error no longer embeds a
+      redundant position prefix in the message string — was `"{pos}: load: name X not
+      found in module Y"`, now `"load: name X not found in module Y"`, matching
+      `interp.go:588`. Position appears once via the EvalError call stack. Commit: `d967404`
+- [x] **MISSING-204** [message]: "load not implemented" error now reads
+      `"load not implemented by this application"` (matching `interp.go:569`)
+      instead of `"{pos}: load is not supported"`. Commit: `d967404`
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
