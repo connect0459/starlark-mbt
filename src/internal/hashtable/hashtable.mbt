@@ -36,6 +36,10 @@ priv struct HEntry[K, V] {
 }
 
 ///|
+/// An insertion-ordered hash table used by `StarlarkDict` and `StarlarkSet`.
+/// Uses open-addressing per slot and a doubly-linked list to preserve
+/// insertion order. Deleted entries are recycled through a free list.
+/// Mutation is rejected when the table is frozen or has active iterators.
 pub struct Hashtable[K, V] {
   priv mut slots : Array[Int]
   priv mut entries : Array[HEntry[K, V]]
@@ -52,6 +56,8 @@ pub struct Hashtable[K, V] {
 }
 
 ///|
+/// Creates an empty `Hashtable` with the given hash/equality functions and
+/// zero values used to initialise recycled entry slots.
 pub fn[K, V] Hashtable::new(
   hash_fn : (K) -> Result[UInt, String],
   eq_fn : (K, K) -> Bool,
@@ -75,21 +81,26 @@ pub fn[K, V] Hashtable::new(
 }
 
 ///|
+/// Returns the number of live entries.
 pub fn[K, V] Hashtable::length(self : Hashtable[K, V]) -> Int {
   self.live_count
 }
 
 ///|
+/// Returns `true` if the table has been frozen.
 pub fn[K, V] Hashtable::is_frozen(self : Hashtable[K, V]) -> Bool {
   self.frozen
 }
 
 ///|
+/// Marks the table as frozen; subsequent mutation attempts return `Err`.
 pub fn[K, V] Hashtable::freeze(self : Hashtable[K, V]) -> Unit {
   self.frozen = true
 }
 
 ///|
+/// Removes all entries and resets to `initial_capacity`. Fails if frozen or
+/// being iterated.
 pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
   if self.frozen {
     return Err("cannot clear frozen hash table")
@@ -107,6 +118,8 @@ pub fn[K, V] Hashtable::clear(self : Hashtable[K, V]) -> Result[Unit, String] {
 }
 
 ///|
+/// Removes and returns the first (oldest) entry in insertion order, or `None`
+/// if empty. Fails if the table is frozen or being iterated.
 pub fn[K, V] Hashtable::pop_first(
   self : Hashtable[K, V],
 ) -> Result[(K, V)?, String] {
@@ -208,6 +221,8 @@ fn[K, V] Hashtable::maybe_grow(self : Hashtable[K, V]) -> Unit {
 }
 
 ///|
+/// Marks the start of an iteration. Unfrozen tables increment the iterator
+/// count, preventing mutation until `iter_end` is called.
 pub fn[K, V] Hashtable::iter_begin(self : Hashtable[K, V]) -> Unit {
   if !self.frozen {
     self.itercount += 1
@@ -215,6 +230,8 @@ pub fn[K, V] Hashtable::iter_begin(self : Hashtable[K, V]) -> Unit {
 }
 
 ///|
+/// Marks the end of an iteration, decrementing the iterator count. Must be
+/// called even if iteration exits early.
 pub fn[K, V] Hashtable::iter_end(self : Hashtable[K, V]) -> Unit {
   if !self.frozen && self.itercount > 0 {
     self.itercount -= 1
@@ -222,6 +239,8 @@ pub fn[K, V] Hashtable::iter_end(self : Hashtable[K, V]) -> Unit {
 }
 
 ///|
+/// Inserts or replaces the entry for `key`. Fails if the table is frozen or
+/// being iterated, or if `hash_fn(key)` returns an error.
 pub fn[K, V] Hashtable::insert(
   self : Hashtable[K, V],
   key : K,
@@ -267,6 +286,8 @@ pub fn[K, V] Hashtable::insert(
 }
 
 ///|
+/// Returns `Ok(Some(v))` if `key` is present, `Ok(None)` if absent, or
+/// `Err` if hashing fails.
 pub fn[K, V] Hashtable::lookup(
   self : Hashtable[K, V],
   key : K,
@@ -287,6 +308,8 @@ pub fn[K, V] Hashtable::lookup(
 }
 
 ///|
+/// Returns `Ok(true)` if `key` is present, `Ok(false)` if absent, or
+/// `Err` if hashing fails.
 pub fn[K, V] Hashtable::contains(
   self : Hashtable[K, V],
   key : K,
@@ -299,6 +322,8 @@ pub fn[K, V] Hashtable::contains(
 }
 
 ///|
+/// Removes `key` from the table. Returns `Ok(true)` if the key was present,
+/// `Ok(false)` if absent. Fails if the table is frozen or being iterated.
 pub fn[K, V] Hashtable::delete(
   self : Hashtable[K, V],
   key : K,
@@ -349,6 +374,7 @@ pub fn[K, V] Hashtable::delete(
 }
 
 ///|
+/// Calls `f(key)` for each key in insertion order.
 pub fn[K, V] Hashtable::each_key(
   self : Hashtable[K, V],
   f : (K) -> Unit,
@@ -361,6 +387,7 @@ pub fn[K, V] Hashtable::each_key(
 }
 
 ///|
+/// Calls `f(key, value)` for each entry in insertion order.
 pub fn[K, V] Hashtable::each(
   self : Hashtable[K, V],
   f : (K, V) -> Unit,
