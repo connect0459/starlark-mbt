@@ -1536,6 +1536,45 @@ json/struct extension libraries. Each fixed via TDD (Red test first).
       was escaped as `\uXXXX`. (Reverses the earlier Phase 7.5 "non-ASCII via
       `\uXXXX`" choice, per user decision to prefer Go parity.)
 
+### Eleventh-pass gap analysis (MISSING-168..180)
+
+Fresh five-area parallel comparison against starlark-go after MISSING-1..167 /
+BUG-1..34 closed. Each fixed via TDD (Red test first).
+
+- [x] **MISSING-168** [behavioral]: set intersection (`&` and `.intersection()`)
+      now iterates the other/RHS operand and keeps elements present in the
+      receiver, so the result follows the other operand's order (e.g.
+      `{1,2,3} & {3,2,4}` → `set([3, 2])`), matching `value.go`/`eval.go`.
+- [x] **MISSING-169** [behavioral]: `int(string)` no longer trims surrounding
+      whitespace (`int(" 10")` raises), matching Go's `big.Int.SetString`.
+- [x] **MISSING-170** [message]: `int()` invalid-literal error now carries the
+      `int:` name prefix (`int: invalid literal with base 10: xyz`).
+- [x] **MISSING-171** [message]: `len()` on a non-sized value reports
+      `len: value of type T has no len` instead of the CPython form; covers the
+      generic, bytes.elems, string.codepoints, and custom-value paths.
+- [x] **MISSING-172** [behavioral]: an all-digit `str.format` field name that
+      overflows the int range is treated as a keyword (`keyword N not found`)
+      rather than a tuple index, matching Go's `decimal()`.
+- [x] **MISSING-173** [message]: nested-replacement-field error now carries the
+      `format:` prefix.
+- [x] **MISSING-174** [behavioral + message]: `getattr` (2..3 args) and `hasattr`
+      (exactly 2) route through `check_positional`/`arg_as_string`, rejecting
+      excess args, keyword args, and non-string attribute names with the
+      UnpackPositionalArgs wording.
+- [x] **MISSING-175** [message]: unpacking a non-iterable reports
+      `got T in sequence assignment` with no inline position prefix.
+- [x] **MISSING-176** [behavioral]: `json.encode` formats floats via the shared
+      Go-faithful `format_float` (`1234567.0` → `1.234567e+06`, `1e-7` → `1e-07`).
+- [x] **MISSING-177** [message]: `math.ceil`/`floor` errors drop the name and
+      `for parameter 1:` prefix (Go unpacks them into a plain Value).
+- [x] **MISSING-178** [behavioral]: `json.indent`/`encode_indent` validate their
+      input and reject malformed JSON instead of silently reformatting.
+- [x] **MISSING-179** [message]: `time.parse_duration` reports
+      `time: invalid duration "<orig>"` with the full original string instead of
+      the invented `invalid duration component`/`number` stems.
+- [x] **MISSING-180** [message]: `json.indent`/`encode_indent` report a non-string
+      `prefix`/`indent` with `for parameter X: got T, want string`.
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
