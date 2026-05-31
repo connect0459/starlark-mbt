@@ -951,7 +951,10 @@ fn call_builtin(
               make_eval_error(ctx, "int: base must be an integer >= 2 && <= 36"),
             )
           }
-          let n = check(ctx, parse_int_str(s.raw(), base))
+          let n = match parse_int_str(s.raw(), base) {
+            Ok(n) => n
+            Err(msg) => raise EvalErr(make_eval_error(ctx, "int: " + msg))
+          }
           @value.Value::Int(n)
         }
         other =>
@@ -4084,7 +4087,6 @@ fn str_format(
 
 ///|
 fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
-  let s = s.trim().to_owned()
   if s.length() == 0 {
     return Err("invalid literal with base \{base}: \{s}")
   }

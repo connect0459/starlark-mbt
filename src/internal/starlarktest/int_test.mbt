@@ -294,6 +294,24 @@ test "int.star: int(octal-prefixed string) with base=10 raises" {
 }
 
 ///|
+let int_string_strict_src : String =
+  #|load("assert.star", "assert")
+  #|# int(string) does not trim surrounding whitespace (matches Go big.Int.SetString)
+  #|assert.fails(lambda: int(" 10"), "int: invalid literal with base 10:  10")
+  #|assert.fails(lambda: int("10 "), "int: invalid literal with base 10: 10 ")
+  #|assert.fails(lambda: int("1 0"), "int: invalid literal with base 10: 1 0")
+  #|# invalid-literal error carries the "int:" name prefix
+  #|assert.fails(lambda: int("xyz"), "int: invalid literal with base 10: xyz")
+
+///|
+test "int.star: int(string) is whitespace-strict and prefixes errors with int:" {
+  let errs = run_star_string(int_string_strict_src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 let int_large_string_src : String =
   #|load("assert.star", "assert")
   #|# int() from very large decimal strings (int.star lines 104-105)
