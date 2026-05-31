@@ -2,6 +2,8 @@
 let default_max_recursion_depth : Int = 100
 
 ///|
+/// Feature-flag set controlling which optional Starlark dialect features are
+/// enabled. All flags default to `true` unless otherwise noted.
 pub struct Options {
   priv allow_set : Bool
   priv allow_recursion : Bool
@@ -15,6 +17,7 @@ pub struct Options {
 }
 
 ///|
+/// Returns the default `Options` with all feature flags enabled.
 pub fn Options::default() -> Options {
   {
     allow_set: true,
@@ -30,81 +33,104 @@ pub fn Options::default() -> Options {
 }
 
 ///|
+/// Returns `true` if set literals and set comprehensions are allowed.
 pub fn Options::allow_set(self : Options) -> Bool {
   self.allow_set
 }
 
 ///|
+/// Returns `true` if recursive function calls are allowed at runtime.
 pub fn Options::allow_recursion(self : Options) -> Bool {
   self.allow_recursion
 }
 
 ///|
+/// Returns `true` if `lambda` expressions are allowed.
 pub fn Options::allow_lambda(self : Options) -> Bool {
   self.allow_lambda
 }
 
 ///|
+/// Returns `true` if `while` loops are allowed.
 pub fn Options::allow_while(self : Options) -> Bool {
   self.allow_while
 }
 
 ///|
+/// Returns `true` if `bytes` literals and the `bytes()` builtin are allowed.
 pub fn Options::allow_bytes(self : Options) -> Bool {
   self.allow_bytes
 }
 
 ///|
+/// Returns `true` if floating-point literals and `float` arithmetic are
+/// allowed.
 pub fn Options::allow_float(self : Options) -> Bool {
   self.allow_float
 }
 
 ///|
+/// Returns `true` if module-level globals may be reassigned after their
+/// initial binding.
 pub fn Options::allow_global_reassign(self : Options) -> Bool {
   self.allow_global_reassign
 }
 
 ///|
+/// Returns `true` if `if`, `for`, and `while` statements are allowed at
+/// the module (top) level.
 pub fn Options::allow_top_level_control(self : Options) -> Bool {
   self.allow_top_level_control
 }
 
 ///|
+/// Returns `true` if `load`-imported names are bound at module (global) scope
+/// rather than file-local scope.
 pub fn Options::load_binds_globally(self : Options) -> Bool {
   self.load_binds_globally
 }
 
 ///|
+/// Returns a copy of `self` with `load_binds_globally` set to `v`.
 pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
   { ..self, load_binds_globally: v }
 }
 
 ///|
+/// Returns a copy of `self` with `allow_recursion` set to `v`.
 pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
   { ..self, allow_recursion: v }
 }
 
 ///|
+/// Returns a copy of `self` with `allow_set` set to `v`.
 pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
   { ..self, allow_set: v }
 }
 
 ///|
+/// Returns a copy of `self` with `allow_global_reassign` set to `v`.
 pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
   { ..self, allow_global_reassign: v }
 }
 
 ///|
+/// The set of predeclared built-in bindings shared across all modules.
+/// `Universe::standard()` provides the default Starlark built-ins; embedders
+/// may extend it with `set()`.
 pub struct Universe {
   priv bindings : Map[String, @value.Value]
 }
 
 ///|
+/// Creates an empty `Universe` with no predeclared names.
 pub fn Universe::empty() -> Universe {
   { bindings: {} }
 }
 
 ///|
+/// Creates a `Universe` pre-populated with all standard Starlark built-ins
+/// (`None`, `True`, `False`, `print`, `range`, etc.).
 pub fn Universe::standard() -> Universe {
   let m : Map[String, @value.Value] = {}
   m["None"] = @value.Value::None
@@ -117,16 +143,19 @@ pub fn Universe::standard() -> Universe {
 }
 
 ///|
+/// Returns the value bound to `name` in the universe, or `None`.
 pub fn Universe::get(self : Universe, name : String) -> @value.Value? {
   self.bindings.get(name)
 }
 
 ///|
+/// Returns `true` if `name` is present in the universe.
 pub fn Universe::has(self : Universe, name : String) -> Bool {
   self.bindings.contains(name)
 }
 
 ///|
+/// Adds or replaces the binding for `name` in the universe.
 pub fn Universe::set(
   self : Universe,
   name : String,
@@ -136,21 +165,26 @@ pub fn Universe::set(
 }
 
 ///|
+/// Per-execution extra bindings injected before user globals. Visible to
+/// both the resolver and evaluator but not exported in the resulting Module.
 pub struct Predeclared {
   priv bindings : Map[String, @value.Value]
 }
 
 ///|
+/// Creates an empty `Predeclared` set.
 pub fn Predeclared::new() -> Predeclared {
   { bindings: {} }
 }
 
 ///|
+/// Creates a `Predeclared` set wrapping an existing map.
 pub fn Predeclared::from_map(m : Map[String, @value.Value]) -> Predeclared {
   { bindings: m }
 }
 
 ///|
+/// Adds or replaces the binding for `name`.
 pub fn Predeclared::set(
   self : Predeclared,
   name : String,
@@ -160,11 +194,15 @@ pub fn Predeclared::set(
 }
 
 ///|
+/// Returns the value bound to `name`, or `None`.
 pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
   self.bindings.get(name)
 }
 
 ///|
+/// Execution context for a single Starlark evaluation. Carries the print
+/// and load callbacks, call stack, recursion limit, step budget, and
+/// cancellation state. A `Thread` is not safe for concurrent use.
 pub struct Thread {
   priv name : String
   priv mut print_fn : (Thread, String) -> Unit
@@ -180,6 +218,8 @@ pub struct Thread {
 }
 
 ///|
+/// Creates a `Thread` with the given name, printing to stdout, no loader,
+/// and the default recursion depth limit.
 pub fn Thread::new(name : String) -> Thread {
   {
     name,
@@ -197,6 +237,7 @@ pub fn Thread::new(name : String) -> Thread {
 }
 
 ///|
+/// Creates a `Thread` with a custom print callback.
 pub fn Thread::with_print(
   name : String,
   print_fn : (Thread, String) -> Unit,
@@ -217,6 +258,7 @@ pub fn Thread::with_print(
 }
 
 ///|
+/// Creates a `Thread` with a load callback for `load()` statements.
 pub fn Thread::with_loader(
   name : String,
   load_fn : (Thread, String) -> Result[Module, @errors.EvalError],
@@ -237,6 +279,8 @@ pub fn Thread::with_loader(
 }
 
 ///|
+/// Creates a `Thread` with a maximum step budget; execution raises an error
+/// when the budget is exhausted.
 pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
   {
     name,
@@ -254,6 +298,8 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
 }
 
 ///|
+/// Stores a thread-local value under `key`. Used by extension libraries (e.g.
+/// `time.now()`) to communicate per-thread state such as clock overrides.
 pub fn Thread::set_local(
   self : Thread,
   key : String,
@@ -263,11 +309,15 @@ pub fn Thread::set_local(
 }
 
 ///|
+/// Retrieves the thread-local value previously stored under `key`, or `None`.
 pub fn Thread::get_local(self : Thread, key : String) -> @value.Value? {
   self.locals.get(key)
 }
 
 ///|
+/// Marks the thread as cancelled with the given reason. The evaluator checks
+/// this flag at each step and raises an error on the next opportunity. Only
+/// the first call takes effect.
 pub fn Thread::cancel(self : Thread, reason : String) -> Unit {
   if self.cancel_reason is None {
     self.cancel_reason = Some(reason)
@@ -275,25 +325,27 @@ pub fn Thread::cancel(self : Thread, reason : String) -> Unit {
 }
 
 ///|
+/// Clears a previous cancellation, allowing execution to resume.
 pub fn Thread::uncancel(self : Thread) -> Unit {
   self.cancel_reason = None
 }
 
 ///|
+/// Resets the accumulated step counter to zero without changing the budget.
 pub fn Thread::reset_steps(self : Thread) -> Unit {
   self.steps = 0
 }
 
 ///|
-// Sets the execution-step budget without resetting the accumulated step count.
-// Use `reset_steps` to zero the counter explicitly.
+/// Sets the execution-step budget without resetting the accumulated step
+/// count. Use `reset_steps` to zero the counter explicitly.
 pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
   self.max_steps = Some(max)
 }
 
 ///|
-// Sets the print callback on an existing thread. Combined with `set_loader` and
-// `set_max_steps`, this lets a single thread carry all three.
+/// Replaces the print callback. Combined with `set_loader` and
+/// `set_max_steps`, this lets a single thread carry all three settings.
 pub fn Thread::set_print(
   self : Thread,
   print_fn : (Thread, String) -> Unit,
@@ -302,7 +354,7 @@ pub fn Thread::set_print(
 }
 
 ///|
-// Sets the load callback on an existing thread.
+/// Replaces the load callback used by `load()` statements.
 pub fn Thread::set_loader(
   self : Thread,
   load_fn : (Thread, String) -> Result[Module, @errors.EvalError],
@@ -311,16 +363,22 @@ pub fn Thread::set_loader(
 }
 
 ///|
+/// Registers a callback invoked when the step budget is exhausted, before
+/// the error is raised.
 pub fn Thread::set_on_max_steps(self : Thread, cb : (Thread) -> Unit) -> Unit {
   self.on_max_steps = Some(cb)
 }
 
 ///|
+/// Returns the current call-stack depth (number of active Starlark frames).
 pub fn Thread::call_stack_depth(self : Thread) -> Int {
   self.call_stack.length()
 }
 
 ///|
+/// Returns a snapshot of the active Starlark call frame at `depth` steps
+/// from the innermost frame (0 = innermost). Returns `None` if `depth` is
+/// out of range or the frame is not a Starlark function frame.
 pub fn Thread::debug_frame(self : Thread, depth : Int) -> DebugFrame? {
   let idx = self.debug_stack.length() - 1 - depth
   if idx < 0 || idx >= self.debug_stack.length() {
@@ -330,16 +388,20 @@ pub fn Thread::debug_frame(self : Thread, depth : Int) -> DebugFrame? {
 }
 
 ///|
+/// Returns a snapshot of the current call stack (outermost frame first).
 pub fn Thread::call_stack(self : Thread) -> @errors.CallStack {
   @errors.CallStack::new(self.call_stack.copy())
 }
 
 ///|
+/// Returns a copy of the raw call-frame array (outermost first).
 pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
   self.call_stack.copy()
 }
 
 ///|
+/// Returns the call frame at `n` steps from the innermost frame (0 =
+/// innermost, 1 = its caller, etc.), or `None` if out of range.
 pub fn Thread::call_frame(self : Thread, n : Int) -> @errors.CallFrame? {
   let idx = self.call_stack.length() - 1 - n
   if idx < 0 || idx >= self.call_stack.length() {
@@ -349,26 +411,33 @@ pub fn Thread::call_frame(self : Thread, n : Int) -> @errors.CallFrame? {
 }
 
 ///|
+/// Returns the total number of evaluation steps executed on this thread.
 pub fn Thread::execution_steps(self : Thread) -> Int {
   self.steps
 }
 
 ///|
+/// Returns the name the thread was created with.
 pub fn Thread::name(self : Thread) -> String {
   self.name
 }
 
 ///|
+/// Returns the maximum call-stack depth before a recursion-limit error is
+/// raised.
 pub fn Thread::max_recursion_depth(self : Thread) -> Int {
   self.max_recursion_depth
 }
 
 ///|
+/// Returns the current step budget, or `None` if no budget was set.
 pub fn Thread::max_steps(self : Thread) -> Int? {
   self.max_steps
 }
 
 ///|
+/// The result of executing a Starlark file: a frozen mapping of global names
+/// to their values, plus any injected predeclared bindings.
 pub struct Module {
   priv globals : @value.StarlarkDict
   priv mut frozen : Bool
@@ -376,11 +445,13 @@ pub struct Module {
 }
 
 ///|
+/// Creates an empty, unfrozen `Module`.
 pub fn Module::new() -> Module {
   { globals: @value.StarlarkDict::new(), frozen: false, predeclared: {} }
 }
 
 ///|
+/// Creates a frozen `Module` pre-populated from `m`.
 pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
   let mod = Module::new()
   m.each(fn(name, v) {
@@ -392,6 +463,8 @@ pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
 }
 
 ///|
+/// Freezes the module: marks the globals dict and all contained values as
+/// immutable so they can safely be shared across threads.
 pub fn Module::freeze(self : Module) -> Unit {
   self.frozen = true
   self.globals.freeze()
@@ -399,11 +472,13 @@ pub fn Module::freeze(self : Module) -> Unit {
 }
 
 ///|
+/// Returns `true` if this module has been frozen.
 pub fn Module::is_frozen(self : Module) -> Bool {
   self.frozen
 }
 
 ///|
+/// Returns the value bound to `name` in the module globals, or `None`.
 pub fn Module::get(self : Module, name : String) -> @value.Value? {
   let key = @value.Value::String(@value.StarlarkString::new(name))
   match self.globals.get(key) {
@@ -413,11 +488,14 @@ pub fn Module::get(self : Module, name : String) -> @value.Value? {
 }
 
 ///|
+/// Returns the number of exported globals in the module.
 pub fn Module::globals_count(self : Module) -> Int {
   self.globals.length()
 }
 
 ///|
+/// Returns the module globals as a plain `Map[String, Value]`, in insertion
+/// order.
 pub fn Module::globals_map(self : Module) -> Map[String, @value.Value] {
   let result : Map[String, @value.Value] = {}
   self.globals.each(fn(k, v) {
@@ -430,6 +508,8 @@ pub fn Module::globals_map(self : Module) -> Map[String, @value.Value] {
 }
 
 ///|
+/// Returns the predeclared bindings that were injected before execution, as
+/// a plain map.
 pub fn Module::predeclared_map(self : Module) -> Map[String, @value.Value] {
   self.predeclared
 }
