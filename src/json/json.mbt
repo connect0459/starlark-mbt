@@ -756,18 +756,6 @@ fn validate_json(s : String) -> Result[Unit, String] {
 }
 
 ///|
-/// Pretty-prints a JSON string, prefixing each line with `prefix` and
-/// indenting each nesting level with `indent_str`. Returns `Err` if `s`
-/// is not valid JSON.
-///
-/// Parameters:
-///
-/// * `s` : The compact JSON string to pretty-print.
-/// * `prefix` : A string prepended to every output line.
-/// * `indent_str` : The string used for each level of nesting indentation.
-///
-/// Returns `Ok(indented_string)` on success, or `Err(message)` if `s` is
-/// not valid JSON.
 // Starts a fresh pretty-printed line: a newline, the global `prefix`, then
 // `depth` copies of `indent_str`. Shared by the `{`/`[`, `}`/`]`, and `,`
 // branches of `indent_json`.
@@ -785,6 +773,18 @@ fn write_indent_line(
 }
 
 ///|
+/// Pretty-prints a JSON string, prefixing each line with `prefix` and
+/// indenting each nesting level with `indent_str`. Returns `Err` if `s`
+/// is not valid JSON.
+///
+/// Parameters:
+///
+/// * `s` : The compact JSON string to pretty-print.
+/// * `prefix` : A string prepended to every output line.
+/// * `indent_str` : The string used for each level of nesting indentation.
+///
+/// Returns `Ok(indented_string)` on success, or `Err(message)` if `s` is
+/// not valid JSON.
 pub fn indent_json(
   s : String,
   prefix : String,
