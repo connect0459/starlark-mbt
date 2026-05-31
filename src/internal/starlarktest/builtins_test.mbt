@@ -493,6 +493,20 @@ test "sorted: non-callable key raises error before iteration" {
 }
 
 ///|
+test "sorted: iterable type error reported before key and reverse errors" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: sorted(1, 2), "sorted: for parameter iterable: got int, want iterable")
+      #|assert.fails(lambda: sorted(1, 2, 3), "sorted: for parameter iterable: got int, want iterable")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "print: non-string sep raises type error" {
   let errs = run_star_string(
     (

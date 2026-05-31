@@ -1891,34 +1891,7 @@ fn builtin_sorted(
         make_eval_error(ctx, "sorted: missing argument for iterable"),
       )
   }
-  let reverse = match reverse_arg {
-    None => false
-    Some(@value.Value::Bool(b)) => b
-    Some(v) =>
-      raise EvalErr(
-        make_eval_error(
-          ctx,
-          "sorted: for parameter reverse: got \{@value.type_name(v)}, want bool",
-        ),
-      )
-  }
-  match key_fn {
-    Some(f) =>
-      match f {
-        @value.Value::Function(_)
-        | @value.Value::Builtin(_)
-        | @value.Value::BoundMethod(_)
-        | @value.Value::ExtVal(_) => ()
-        v =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "sorted: for parameter key: got \{@value.type_name(v)}, want callable",
-            ),
-          )
-      }
-    None => ()
-  }
+  // starlark-go order: check iterable type first, then key, then reverse.
   let items : Array[@value.Value] = []
   let it = match @value.iterate(iterable) {
     Ok(it) => it
@@ -1938,6 +1911,34 @@ fn builtin_sorted(
       }
       Some(v) => items.push(v)
     }
+  }
+  match key_fn {
+    Some(f) =>
+      match f {
+        @value.Value::Function(_)
+        | @value.Value::Builtin(_)
+        | @value.Value::BoundMethod(_)
+        | @value.Value::ExtVal(_) => ()
+        v =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "sorted: for parameter key: got \{@value.type_name(v)}, want callable",
+            ),
+          )
+      }
+    None => ()
+  }
+  let reverse = match reverse_arg {
+    None => false
+    Some(@value.Value::Bool(b)) => b
+    Some(v) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "sorted: for parameter reverse: got \{@value.type_name(v)}, want bool",
+        ),
+      )
   }
   let keys : Array[@value.Value] = match key_fn {
     None => items
