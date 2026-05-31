@@ -9,6 +9,10 @@
 ///|
 let empty_idx : Int = -1
 
+// Hash 0 is reserved as the "deleted entry" marker in the entries array.
+// Any key that actually hashes to 0 is remapped to this sentinel so it
+// can never be confused with a recycled slot.
+
 ///|
 let hash_zero_sentinel : UInt = 1U
 
@@ -148,6 +152,9 @@ pub fn[K, V] Hashtable::pop_first(
   self.live_count -= 1
   Ok(Some((key, val)))
 }
+
+// Maps a raw hash to a stored hash, replacing 0 with the sentinel value
+// so that stored 0U always means "deleted entry" in the entries array.
 
 ///|
 fn normalize_hash(h : UInt) -> UInt {
