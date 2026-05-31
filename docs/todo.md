@@ -1830,6 +1830,14 @@ comments, and doc-comments on public functions.
       (15 commits): `starlark`, `eval`, `errors`, `hashtable`, `value`, `unpack`,
       `utf8util`, `lexer`, `syntax`, `parser`, `resolver`, `repl`, `json`, `math`,
       `time`, `struct`.
+- [x] **Magic number extraction (fourth pass)** — `eval/ops.mbt` and `eval/expr.mbt`:
+      added `min_int32` alongside `max_int32`; replaced bare `2147483647N`/`-2147483648N`
+      literals in `adjust_index` and slice-bound checks; added comment to `max_alloc`
+      (= `1<<30`, starlark-go cap); extracted `max_lshift_bits` (512) and
+      `max_rshift_bits` (1_000_000) with explaining comments; extracted
+      `unicode_max_cp_bigint` (U+10FFFF), `unicode_surr_first`/`unicode_surr_last`
+      (U+D800..U+DFFF) for `%c` format validation; added inline comments to
+      `decompose_double` explaining each IEEE 754 bit-layout constant.
 
 ---
 
