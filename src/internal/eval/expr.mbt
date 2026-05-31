@@ -1330,7 +1330,7 @@ fn call_builtin(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "fail: for parameter sep: got \{@value.type_name(v)}, want string",
+                      "fail: for parameter \"sep\": got \{@value.type_name(v)}, want string",
                     ),
                   )
               }
@@ -1338,7 +1338,7 @@ fn call_builtin(
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "fail: unexpected keyword argument \{other}",
+                  "fail: unexpected keyword argument \"\{other}\"",
                 ),
               )
           }
@@ -1695,7 +1695,7 @@ fn builtin_minmax(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{fn_name}: unexpected keyword argument \{kw_name}\{hint}",
+          "\{fn_name}: unexpected keyword argument \"\{kw_name}\"\{hint}",
         ),
       )
     }
@@ -1711,7 +1711,7 @@ fn builtin_minmax(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "\{fn_name}: for parameter key: got \{@value.type_name(v)}, want callable",
+              "\{fn_name}: for parameter \"key\": got \{@value.type_name(v)}, want callable",
             ),
           )
       }
@@ -1824,25 +1824,29 @@ fn builtin_sorted(
     )
   }
   // Python's sorted permits iterable, key, and reverse to be positional or
-  // keyword, thus so do we.
+  // keyword, thus so do we. Track whether each was bound via kwarg so error
+  // messages can quote kwargs names (starlark-go UnpackArgs parity).
   let mut iterable_val : @value.Value? = if pos_args.length() >= 1 {
     Some(pos_args[0])
   } else {
     None
   }
   let mut iterable_set = pos_args.length() >= 1
+  let mut iterable_from_kwarg = false
   let mut key_fn : @value.Value? = if pos_args.length() >= 2 {
     Some(pos_args[1])
   } else {
     None
   }
   let mut key_set = pos_args.length() >= 2
+  let mut key_from_kwarg = false
   let mut reverse_arg : @value.Value? = if pos_args.length() >= 3 {
     Some(pos_args[2])
   } else {
     None
   }
   let mut reverse_set = pos_args.length() >= 3
+  let mut reverse_from_kwarg = false
   for kv in kw_args {
     match kv.0 {
       "iterable" => {
@@ -1855,6 +1859,7 @@ fn builtin_sorted(
         }
         iterable_val = Some(kv.1)
         iterable_set = true
+        iterable_from_kwarg = true
       }
       "key" => {
         if key_set {
@@ -1866,6 +1871,7 @@ fn builtin_sorted(
         }
         key_fn = Some(kv.1)
         key_set = true
+        key_from_kwarg = true
       }
       "reverse" => {
         if reverse_set {
@@ -1877,11 +1883,20 @@ fn builtin_sorted(
         }
         reverse_arg = Some(kv.1)
         reverse_set = true
+        reverse_from_kwarg = true
       }
-      other =>
+      other => {
+        let hint = match spell_nearest(other, ["key", "reverse", "iterable"]) {
+          "" => ""
+          s => " (did you mean \{s}?)"
+        }
         raise EvalErr(
-          make_eval_error(ctx, "sorted: unexpected keyword argument \{other}"),
+          make_eval_error(
+            ctx,
+            "sorted: unexpected keyword argument \"\{other}\"\{hint}",
+          ),
         )
+      }
     }
   }
   let iterable = match iterable_val {
@@ -1892,16 +1907,19 @@ fn builtin_sorted(
       )
   }
   // starlark-go order: check iterable type first, then key, then reverse.
+  // Kwarg names are quoted in error messages; positional names are not.
   let items : Array[@value.Value] = []
   let it = match @value.iterate(iterable) {
     Ok(it) => it
-    Err(_) =>
+    Err(_) => {
+      let pname = if iterable_from_kwarg { "\"iterable\"" } else { "iterable" }
       raise EvalErr(
         make_eval_error(
           ctx,
-          "sorted: for parameter iterable: got \{@value.type_name(iterable)}, want iterable",
+          "sorted: for parameter \{pname}: got \{@value.type_name(iterable)}, want iterable",
         ),
       )
+    }
   }
   while true {
     match it.next() {
@@ -1919,26 +1937,30 @@ fn builtin_sorted(
         | @value.Value::Builtin(_)
         | @value.Value::BoundMethod(_)
         | @value.Value::ExtVal(_) => ()
-        v =>
+        v => {
+          let pname = if key_from_kwarg { "\"key\"" } else { "key" }
           raise EvalErr(
             make_eval_error(
               ctx,
-              "sorted: for parameter key: got \{@value.type_name(v)}, want callable",
+              "sorted: for parameter \{pname}: got \{@value.type_name(v)}, want callable",
             ),
           )
+        }
       }
     None => ()
   }
   let reverse = match reverse_arg {
     None => false
     Some(@value.Value::Bool(b)) => b
-    Some(v) =>
+    Some(v) => {
+      let pname = if reverse_from_kwarg { "\"reverse\"" } else { "reverse" }
       raise EvalErr(
         make_eval_error(
           ctx,
-          "sorted: for parameter reverse: got \{@value.type_name(v)}, want bool",
+          "sorted: for parameter \{pname}: got \{@value.type_name(v)}, want bool",
         ),
       )
+    }
   }
   let keys : Array[@value.Value] = match key_fn {
     None => items

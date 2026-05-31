@@ -1746,7 +1746,9 @@ test "exec_file: sorted rejects non-bool reverse" {
   match exec_b("r = sorted([1, 2], reverse=1)") {
     Ok(_) => assert_true(false)
     Err(e) =>
-      assert_true(e.msg().contains("for parameter reverse: got int, want bool"))
+      assert_true(
+        e.msg().contains("for parameter \"reverse\": got int, want bool"),
+      )
   }
 }
 
@@ -2134,9 +2136,12 @@ test "exec_file: min checks positional count before keyword args" {
 test "exec_file: min/max reject unexpected keyword with unpack wording" {
   assert_eq(
     emsg("min([1, 2], default=5)"),
-    "min: unexpected keyword argument default",
+    "min: unexpected keyword argument \"default\"",
   )
-  assert_eq(emsg("max([1, 2], foo=5)"), "max: unexpected keyword argument foo")
+  assert_eq(
+    emsg("max([1, 2], foo=5)"),
+    "max: unexpected keyword argument \"foo\"",
+  )
 }
 
 ///|

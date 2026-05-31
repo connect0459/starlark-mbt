@@ -174,8 +174,8 @@ let builtins_star_src : String =
   #|
   #|# fail with sep
   #|assert.fails(lambda: fail(1, 2, 3, sep="/"), "1/2/3")
-  #|assert.fails(lambda: fail("msg", x=1), "unexpected keyword argument x")
-  #|assert.fails(lambda: fail("msg", sep=1), "for parameter sep: got int, want string")
+  #|assert.fails(lambda: fail("msg", x=1), 'unexpected keyword argument "x"')
+  #|assert.fails(lambda: fail("msg", sep=1), 'for parameter "sep": got int, want string')
 
 ///|
 test "builtins.star: all assertions pass" {
@@ -458,7 +458,7 @@ test "max: non-callable key raises error before iteration" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
-      #|assert.fails(lambda: max(1, 2, key="x"), "max: for parameter key: got string, want callable")
+      #|assert.fails(lambda: max(1, 2, key="x"), 'max: for parameter "key": got string, want callable')
     ),
   )
   if errs.length() != 0 {
@@ -471,7 +471,7 @@ test "min: non-callable key raises error before iteration" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
-      #|assert.fails(lambda: min(1, 2, key=3), "min: for parameter key: got int, want callable")
+      #|assert.fails(lambda: min(1, 2, key=3), 'min: for parameter "key": got int, want callable')
     ),
   )
   if errs.length() != 0 {
@@ -484,7 +484,40 @@ test "sorted: non-callable key raises error before iteration" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
-      #|assert.fails(lambda: sorted([1, 2], key="x"), "sorted: for parameter key: got string, want callable")
+      #|assert.fails(lambda: sorted([1, 2], key="x"), 'sorted: for parameter "key": got string, want callable')
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "kwarg names are double-quoted in error messages for fail/sorted/min/max" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: fail(sep=None), 'fail: for parameter "sep": got NoneType, want string')
+      #|assert.fails(lambda: fail(foo=1), 'fail: unexpected keyword argument "foo"')
+      #|assert.fails(lambda: sorted([], key=1), 'sorted: for parameter "key": got int, want callable')
+      #|assert.fails(lambda: sorted([], reverse=1), 'sorted: for parameter "reverse": got int, want bool')
+      #|assert.fails(lambda: sorted(iterable=1), 'sorted: for parameter "iterable": got int, want iterable')
+      #|assert.fails(lambda: min(1, key=1), 'min: for parameter "key": got int, want callable')
+      #|assert.fails(lambda: max(1, key=1), 'max: for parameter "key": got int, want callable')
+      #|assert.fails(lambda: min(1, keg=1), 'min: unexpected keyword argument "keg"')
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "sorted: unknown kwarg includes did-you-mean hint" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: sorted([], keg=1), 'sorted: unexpected keyword argument "keg" (did you mean key?)')
     ),
   )
   if errs.length() != 0 {
