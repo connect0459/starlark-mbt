@@ -1575,6 +1575,54 @@ BUG-1..34 closed. Each fixed via TDD (Red test first).
 - [x] **MISSING-180** [message]: `json.indent`/`encode_indent` report a non-string
       `prefix`/`indent` with `for parameter X: got T, want string`.
 
+### Twelfth-pass gap analysis (MISSING-181..191)
+
+Fresh five-area comparison against starlark-go after MISSING-1..180 closed.
+
+- [x] **MISSING-181** [behavioral + message]: `int()` builtin now accepts `x`
+      as a keyword argument, rejects unknown kwargs ("int: unexpected keyword
+      argument NAME"), rejects >2 positional args ("int: got N arguments, want
+      at most 2"), and detects duplicate values for `x` ("int: got multiple
+      values for keyword argument x"). Source: `eval/expr.mbt`. Commit: `bae53ba`
+- [x] **MISSING-182** [behavioral + message]: `float()` builtin now rejects all
+      keyword arguments with "float does not accept keyword arguments" (not silently
+      ignored) and reports the arity error as "float got N arguments, wants 1" (not
+      "float() takes at most one argument"). Commit: `bae53ba`
+- [x] **MISSING-183** [message]: `list.pop` and `list.insert` with a non-int
+      argument now include "for parameter 1:" prefix: "pop: for parameter 1: got
+      T, want int" / "insert: for parameter 1: got T, want int". Commit: `638146c`
+- [x] **MISSING-184** [behavioral + message]: `list.insert` / `list.pop` with a
+      BigInt index outside the signed 64-bit range now raise "for parameter 1: N
+      out of range (want value in signed 64-bit range)" instead of silently clamping
+      (insert) or reporting a misleading index-range error (pop). Commit: `638146c`
+- [x] **MISSING-185** [message]: `\U` code-point-out-of-range error now feeds the
+      offending value into both slots of the message ("code point out of range:
+      \\U00110000 (max \\U00110000)"), matching Go's format where both %s and %08x
+      receive the same value n. Commit: `557f5ec`
+- [x] **MISSING-186** [message]: `\x` followed by two present-but-non-hex chars
+      now reports "invalid escape sequence \xNN" (not "truncated"). "truncated" is
+      reserved for when a required digit slot is occupied by EOF or a string
+      delimiter. Commit: `557f5ec`
+- [x] **MISSING-187** [position]: escape-sequence errors inside prefixed string/bytes
+      literals (`b"..."`, `r"..."`) are now reported at the opening-quote column
+      rather than the prefix-character column, matching Go's `sc.pos` capture after
+      consuming the prefix. Commit: `557f5ec`
+- [x] **MISSING-188** [message]: a bare `*` parameter followed by a non-comma token
+      now reports "want ','" instead of "want ')'". Added check inside the param loop
+      that the next token is `,` or `)`, mirroring Go's unconditional consume(COMMA)
+      loop. Source: `parser/parser.mbt`. Commit: `f051940`
+- [ ] **MISSING-189** [position]: `load` per-symbol errors (empty identifier,
+      leading-underscore) reported at load-keyword position instead of each symbol's
+      position. Requires AST change to thread per-symbol positions through `SLoad`.
+      Deferred — larger fix.
+- [x] **MISSING-190** [message]: `math` unary/binary builtins (`make_unary`,
+      `make_binary`, `make_ceil`, `make_floor`) now check `kw_args.length() != 0`
+      first and return "NAME: unexpected keyword arguments", matching Go's
+      `UnpackPositionalArgs` kwargs-before-arity check. Commit: `1565b69`
+- [x] **MISSING-191** [behavioral]: `time.duration * int` with a multiplier outside
+      the signed 64-bit range now raises "int value out of range (want signed 64-bit
+      value)" instead of silently wrapping. Commit: `84cdb6f`
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
