@@ -328,9 +328,11 @@ pub fn Scanner::next_token(
 
     // Closing brackets.
     if c == b')' || c == b']' || c == b'}' {
-      if self.depth > 0 {
-        self.depth -= 1
+      if self.depth == 0 {
+        let ch = if c == b')' { ")" } else if c == b']' { "]" } else { "}" }
+        return Err(self.make_error(start, "unexpected '\{ch}'"))
       }
+      self.depth -= 1
       self.read_byte() |> ignore
       let tok = if c == b')' {
         RParen

@@ -342,3 +342,25 @@ test "scan: code point out of range includes sequence and max" {
     msg.contains("code point out of range: \\U00110000 (max \\U0010ffff)"),
   )
 }
+
+// --- Unbalanced closing bracket at depth 0 ---
+
+///|
+test "scan: unexpected ')' at depth 0" {
+  assert_true(scan(")").contains("unexpected ')'"))
+}
+
+///|
+test "scan: unexpected ']' at depth 0" {
+  assert_true(scan("]").contains("unexpected ']'"))
+}
+
+///|
+test "scan: unexpected '}' at depth 0" {
+  assert_true(scan("}").contains("unexpected '}'"))
+}
+
+///|
+test "scan: unbalanced ')' after expression" {
+  assert_true(scan("a = max(range(10)))").contains("unexpected ')'"))
+}
