@@ -110,6 +110,8 @@ let gamma_factorial_max : Double = 21.0
 
 ///|
 fn float_pow(x : Double, y : Double) -> Double {
+  // Go's math.Pow defines pow(-1, ±Inf) == 1 (C99 / IEEE 754 Annex F),
+  // whereas a naive implementation yields NaN for the oscillating limit.
   if x == -1.0 && y.is_inf() {
     return 1.0
   }
