@@ -2280,17 +2280,7 @@ fn call_list_method(
       let n = l.length()
       let start = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::Int(i) => {
-            let s = i.to_int()
-            let j = if s < 0 { s + n } else { s }
-            if j < 0 {
-              0
-            } else if j > n {
-              n
-            } else {
-              j
-            }
-          }
+          @value.Value::Int(i) => clamp_slice_index(i.to_int(), n)
           @value.Value::None => 0
           v =>
             raise EvalErr(
@@ -2305,17 +2295,7 @@ fn call_list_method(
       }
       let end = if pos_args.length() >= 3 {
         match pos_args[2] {
-          @value.Value::Int(i) => {
-            let e = i.to_int()
-            let j = if e < 0 { e + n } else { e }
-            if j < 0 {
-              0
-            } else if j > n {
-              n
-            } else {
-              j
-            }
-          }
+          @value.Value::Int(i) => clamp_slice_index(i.to_int(), n)
           @value.Value::None => n
           v =>
             raise EvalErr(
@@ -2490,39 +2470,9 @@ fn call_str_method(
         ctx, "startswith", pos_args, 2, slen, slen, "end",
       )
       let sub = str_byte_slice(s, i, j)
-      let check_prefix = fn(prefix : @value.StarlarkString) -> Bool {
-        bytes_has_prefix(sub, prefix)
-      }
-      match pos_args[0] {
-        @value.Value::String(prefix) => @value.Value::Bool(check_prefix(prefix))
-        @value.Value::Tuple(t) => {
-          let mut found = false
-          for idx, item in t {
-            match item {
-              @value.Value::String(p) =>
-                if check_prefix(p) {
-                  found = true
-                  break
-                }
-              v =>
-                raise EvalErr(
-                  make_eval_error(
-                    ctx,
-                    "startswith: want string, got \{@value.type_name(v)}, for element \{idx}",
-                  ),
-                )
-            }
-          }
-          @value.Value::Bool(found)
-        }
-        v =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "startswith: got \{@value.type_name(v)}, want string or tuple of string",
-            ),
-          )
-      }
+      match_affix(ctx, "startswith", pos_args[0], fn(p) {
+        bytes_has_prefix(sub, p)
+      })
     }
     "endswith" => {
       check_positional(ctx, "endswith", pos_args, kw_args, 1, 3)
@@ -2532,39 +2482,9 @@ fn call_str_method(
         ctx, "endswith", pos_args, 2, slen, slen, "end",
       )
       let sub = str_byte_slice(s, i, j)
-      let check_suffix = fn(suffix : @value.StarlarkString) -> Bool {
-        bytes_has_suffix(sub, suffix)
-      }
-      match pos_args[0] {
-        @value.Value::String(suffix) => @value.Value::Bool(check_suffix(suffix))
-        @value.Value::Tuple(t) => {
-          let mut found = false
-          for idx, item in t {
-            match item {
-              @value.Value::String(p) =>
-                if check_suffix(p) {
-                  found = true
-                  break
-                }
-              v =>
-                raise EvalErr(
-                  make_eval_error(
-                    ctx,
-                    "endswith: want string, got \{@value.type_name(v)}, for element \{idx}",
-                  ),
-                )
-            }
-          }
-          @value.Value::Bool(found)
-        }
-        v =>
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "endswith: got \{@value.type_name(v)}, want string or tuple of string",
-            ),
-          )
-      }
+      match_affix(ctx, "endswith", pos_args[0], fn(p) {
+        bytes_has_suffix(sub, p)
+      })
     }
     "find" => {
       check_positional(ctx, "find", pos_args, kw_args, 1, 3)
@@ -3375,6 +3295,62 @@ fn call_bytes_method(
 ///|
 // Validate a builtin/method's positional-argument count and reject keyword
 // arguments.
+// Normalize a possibly-negative index against length `n` and clamp it into
+// `[0, n]`, the half-open bound used by `list.index`'s start/end parameters.
+fn clamp_slice_index(raw : Int, n : Int) -> Int {
+  let j = if raw < 0 { raw + n } else { raw }
+  if j < 0 {
+    0
+  } else if j > n {
+    n
+  } else {
+    j
+  }
+}
+
+///|
+// Shared body for `startswith`/`endswith`: `arg` is either a single string or a
+// tuple of strings; returns true when `check` holds for the single string or
+// any tuple element. `name` prefixes the type-error messages.
+fn match_affix(
+  ctx : EvalContext,
+  name : String,
+  arg : @value.Value,
+  check : (@value.StarlarkString) -> Bool,
+) -> @value.Value raise EvalErr {
+  match arg {
+    @value.Value::String(p) => @value.Value::Bool(check(p))
+    @value.Value::Tuple(t) => {
+      let mut found = false
+      for idx, item in t {
+        match item {
+          @value.Value::String(p) =>
+            if check(p) {
+              found = true
+              break
+            }
+          v =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "\{name}: want string, got \{@value.type_name(v)}, for element \{idx}",
+              ),
+            )
+        }
+      }
+      @value.Value::Bool(found)
+    }
+    v =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "\{name}: got \{@value.type_name(v)}, want string or tuple of string",
+        ),
+      )
+  }
+}
+
+///|
 fn check_positional(
   ctx : EvalContext,
   name : String,
