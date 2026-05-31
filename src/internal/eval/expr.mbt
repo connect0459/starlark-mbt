@@ -250,6 +250,25 @@ fn slice_int_arg(
 }
 
 ///|
+/// Sorts attribute names by Starlark string ordering. Used by `dir()` for
+/// modules and custom values, whose declaration order is otherwise arbitrary.
+fn sort_starlark_names(names : Array[String]) -> Array[String] {
+  names.sort_by(fn(a, b) {
+    let av = @value.Value::String(@value.StarlarkString::new(a))
+    let bv = @value.Value::String(@value.StarlarkString::new(b))
+    match @value.compare_values(av, bv) {
+      Ok(c) => c
+      Err(_) => 0
+    }
+  })
+  names
+}
+
+///|
+/// The method names available on each built-in type, in `dir()` order.
+/// Single source of truth shared by attribute-access validation (`getattr`,
+/// `hasattr`) and the `dir()` builtin. Returns `None` for types with no
+/// methods.
 fn builtin_type_methods(v : @value.Value) -> Array[String]? {
   match v {
     @value.Value::String(_) =>
@@ -1160,57 +1179,18 @@ fn call_builtin(
           ),
         )
       }
-      let names : Array[String] = match pos_args[0] {
-        @value.Value::String(_) =>
-          [
-            "capitalize", "codepoint_ords", "codepoints", "count", "elem_ords", "elems",
-            "endswith", "find", "format", "index", "isalnum", "isalpha", "isdigit",
-            "islower", "isspace", "istitle", "isupper", "join", "lower", "lstrip",
-            "partition", "removeprefix", "removesuffix", "replace", "rfind", "rindex",
-            "rpartition", "rsplit", "rstrip", "split", "splitlines", "startswith",
-            "strip", "title", "upper",
-          ]
-        @value.Value::List(_) =>
-          ["append", "clear", "extend", "index", "insert", "pop", "remove"]
-        @value.Value::Dict(_) =>
-          [
-            "clear", "get", "items", "keys", "pop", "popitem", "setdefault", "update",
-            "values",
-          ]
-        @value.Value::Set(_) =>
-          [
-            "add", "clear", "difference", "discard", "intersection", "issubset",
-            "issuperset", "pop", "remove", "symmetric_difference", "union", "update",
-          ]
-        @value.Value::Bytes(_) => ["elems"]
-        @value.Value::Module(m) => {
-          let keys : Array[String] = m.attr_names()
-          keys.sort_by(fn(a, b) {
-            let av = @value.Value::String(@value.StarlarkString::new(a))
-            let bv = @value.Value::String(@value.StarlarkString::new(b))
-            match @value.compare_values(av, bv) {
-              Ok(c) => c
-              Err(_) => 0
-            }
-          })
-          keys
-        }
-        @value.Value::ExtVal(c) =>
-          match c.get_attr_names() {
-            Some(names) => {
-              names.sort_by(fn(a, b) {
-                let av = @value.Value::String(@value.StarlarkString::new(a))
-                let bv = @value.Value::String(@value.StarlarkString::new(b))
-                match @value.compare_values(av, bv) {
-                  Ok(cmp) => cmp
-                  Err(_) => 0
-                }
-              })
-              names
-            }
-            None => []
+      let names : Array[String] = match builtin_type_methods(pos_args[0]) {
+        Some(ms) => ms
+        None =>
+          match pos_args[0] {
+            @value.Value::Module(m) => sort_starlark_names(m.attr_names())
+            @value.Value::ExtVal(c) =>
+              match c.get_attr_names() {
+                Some(names) => sort_starlark_names(names)
+                None => []
+              }
+            _ => []
           }
-        _ => []
       }
       let items = names.map(fn(n) {
         @value.Value::String(@value.StarlarkString::new(n))
