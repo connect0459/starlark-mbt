@@ -356,21 +356,34 @@ let unicode_surr_last : Int = 0xDFFF
 let printf_float_precision : Int = 6
 
 ///|
-fn repeat_string(
-  s : @value.StarlarkString,
-  n : BigInt,
-) -> Result[@value.StarlarkString, String] {
+/// Validates the count for a sequence repeat (`seq * n`). Returns the resolved
+/// element count, treating a non-positive `n` as 0 (empty result); errors when
+/// the count exceeds int32 range or `elem_len * count` would exceed the
+/// allocation cap.
+fn checked_repeat_count(n : BigInt, elem_len : Int) -> Result[Int, String] {
   if n <= 0N {
-    return Ok(@value.StarlarkString::new(""))
+    return Ok(0)
   }
   if n > max_int32 {
     return Err("repeat count \{n} too large")
   }
   let count = n.to_int()
+  if elem_len > 0 &&
+    elem_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
+    return Err("excessive repeat (\{elem_len} * \{count} elements)")
+  }
+  Ok(count)
+}
+
+///|
+fn repeat_string(
+  s : @value.StarlarkString,
+  n : BigInt,
+) -> Result[@value.StarlarkString, String] {
   let byte_len = s.byte_len()
-  if byte_len > 0 &&
-    byte_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
-    return Err("excessive repeat (\{byte_len} * \{count} elements)")
+  let count = match checked_repeat_count(n, byte_len) {
+    Ok(c) => c
+    Err(e) => return Err(e)
   }
   let original_bytes = s.to_bytes()
   let all_bytes : Array[Byte] = []
@@ -387,17 +400,9 @@ fn repeat_list(
   l : @value.StarlarkList,
   n : BigInt,
 ) -> Result[@value.StarlarkList, String] {
-  if n <= 0N {
-    return Ok(@value.StarlarkList::new([]))
-  }
-  if n > max_int32 {
-    return Err("repeat count \{n} too large")
-  }
-  let count = n.to_int()
-  let elem_len = l.length()
-  if elem_len > 0 &&
-    elem_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
-    return Err("excessive repeat (\{elem_len} * \{count} elements)")
+  let count = match checked_repeat_count(n, l.length()) {
+    Ok(c) => c
+    Err(e) => return Err(e)
   }
   let items : Array[@value.Value] = []
   for _ in 0..<count {
@@ -413,17 +418,9 @@ fn repeat_tuple(
   t : Array[@value.Value],
   n : BigInt,
 ) -> Result[Array[@value.Value], String] {
-  if n <= 0N {
-    return Ok([])
-  }
-  if n > max_int32 {
-    return Err("repeat count \{n} too large")
-  }
-  let count = n.to_int()
-  let elem_len = t.length()
-  if elem_len > 0 &&
-    elem_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
-    return Err("excessive repeat (\{elem_len} * \{count} elements)")
+  let count = match checked_repeat_count(n, t.length()) {
+    Ok(c) => c
+    Err(e) => return Err(e)
   }
   let items : Array[@value.Value] = []
   for _ in 0..<count {
@@ -436,17 +433,10 @@ fn repeat_tuple(
 
 ///|
 fn repeat_bytes(b : Bytes, n : BigInt) -> Result[Bytes, String] {
-  if n <= 0N {
-    return Ok(Bytes::from_array([]))
-  }
-  if n > max_int32 {
-    return Err("repeat count \{n} too large")
-  }
-  let count = n.to_int()
   let byte_len = b.length()
-  if byte_len > 0 &&
-    byte_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
-    return Err("excessive repeat (\{byte_len} * \{count} elements)")
+  let count = match checked_repeat_count(n, byte_len) {
+    Ok(c) => c
+    Err(e) => return Err(e)
   }
   let items : Array[Byte] = []
   for _ in 0..<count {
