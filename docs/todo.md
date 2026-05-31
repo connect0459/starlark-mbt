@@ -1770,6 +1770,30 @@ gaps (implementations were already correct). Commit: `190d060`
 
 ---
 
+## Post-Release Code Quality Pass
+
+Quality audit pass covering Immutable First, magic numbers, non-obvious
+comments, and doc-comments on public functions.
+
+- [x] **Immutable First audit** — mutable containers (List, Dict, Set) and runtime
+      state (Thread, Module.freeze) are all spec-justified mutations; no violations found.
+- [x] **Magic number extraction** — IEEE 754 bit-layout constants (`ieee754_sign_shift`,
+      `ieee754_mantissa_bits`, `ieee754_exponent_mask`, `ieee754_exponent_bias`,
+      `ieee754_mantissa_mask`, `ieee754_implicit_bit`); Java hashCode prime
+      (`java_hash_prime = 31`); Unicode replacement rune (`unicode_replacement_rune =
+      0xFFFD`); 2^32 modulus (`bigint_uint32_modulus`) — all named in `traits.mbt`.
+- [x] **Non-obvious comments** — `hash_zero_sentinel` design (0 reserved as deleted-entry
+      marker) and `normalize_hash` invariant documented in `hashtable.mbt`.
+- [x] **Doc-comments on public functions** — `///` descriptions added to all `pub fn` and
+      `pub struct` in `src/starlark.mbt`, `src/internal/errors/errors.mbt`,
+      `src/internal/eval/eval.mbt` (Thread, Module, Options, Universe, Predeclared),
+      `src/internal/value/value.mbt` (Value, StarlarkString, StarlarkList, StarlarkRange,
+      floor_div, starlark_mod, format_float, repr), `src/internal/value/traits.mbt`
+      (starlark_hash, starlark_equals, compare_values, freeze_value, double_to_bigint, etc.),
+      and `src/internal/hashtable/hashtable.mbt` (Hashtable struct and all public methods).
+
+---
+
 ## Future work (out of initial release scope)
 
 - Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
