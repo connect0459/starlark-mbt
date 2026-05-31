@@ -68,6 +68,11 @@ pub fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
 ///
 /// Returns `(rune, byte_width)`. Returns `(-1, 1)` for invalid or truncated sequences.
 pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
+  // RFC 3629 valid leading byte ranges:
+  //   2-byte: 0xC2..0xDF (0xC0/0xC1 are overlong; start bits: 110xxxxx)
+  //   3-byte: 0xE0..0xEF (start bits: 1110xxxx)
+  //   4-byte: 0xF0..0xF4 (0xF5..0xF7 encode > U+10FFFF; start bits: 11110xxx)
+  // Continuation bytes: 0x80..0xBF (10xxxxxx); payload mask: 0x3F (6 bits).
   let b0 = b[pos].to_int()
   if b0 < 0x80 {
     return (b0, 1)
