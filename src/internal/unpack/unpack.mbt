@@ -29,6 +29,13 @@ fn parse_param_spec(s : String) -> ParamInfo {
 /// - `"name?"` — optional parameter (`None` when absent)
 /// - `"name??"` — optional; if the caller passes `None`, treat it as absent
 ///
+/// Parameters:
+///
+/// * `fn_name` : Name of the built-in function, used in error messages.
+/// * `pos_args` : Positional arguments passed by the caller.
+/// * `kw_args` : Keyword arguments passed by the caller, as `(name, value)` pairs.
+/// * `param_specs` : Parameter specification strings describing each accepted parameter.
+///
 /// Returns `Ok(Array[Value?])` where `result[i]` is `Some(v)` when the
 /// parameter was provided, or `None` when an optional parameter was absent.
 /// Returns `Err` with a descriptive message on any mismatch.
@@ -99,6 +106,15 @@ pub fn unpack_args(
 ///|
 /// Extracts positional-only arguments, rejecting keyword arguments.
 /// Requires between `min` and `max` positional args.
+///
+/// Parameters:
+///
+/// * `fn_name` : Name of the built-in function, used in error messages.
+/// * `pos_args` : Positional arguments passed by the caller.
+/// * `kw_args` : Keyword arguments passed by the caller; any non-empty list is rejected.
+/// * `min` : Minimum number of positional arguments required.
+/// * `max` : Maximum number of positional arguments accepted.
+///
 /// Returns `Ok(Array[Value?])` of length `max`; slots beyond the actual count
 /// are `None`.
 pub fn unpack_positional(
