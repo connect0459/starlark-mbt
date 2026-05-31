@@ -5,6 +5,24 @@
 ///|
 let upper_lower_sentinel : Int = 0x110000
 
+///|
+let ascii_upper_a : Int = 0x41
+
+///|
+let ascii_upper_z : Int = 0x5A
+
+///|
+let ascii_lower_a : Int = 0x61
+
+///|
+let ascii_lower_z : Int = 0x7A
+
+///|
+let ascii_max : Int = 0x7F
+
+///|
+let ascii_case_shift : Int = 32
+
 // Auto-generated from Go stdlib unicode.CaseRanges. Do not edit by hand.
 // Each tuple: (lo, hi, delta_upper, delta_lower, delta_title).
 // delta == upper_lower_sentinel (0x110000) means alternating Upper/Lower sequence.
@@ -371,9 +389,9 @@ fn case_to(which : Int, r : Int) -> Int {
 ///|
 /// Unicode simple uppercase mapping of a single rune (Go `unicode.ToUpper`).
 pub fn to_upper_rune(r : Int) -> Int {
-  if r <= 0x7F {
-    if r >= 0x61 && r <= 0x7A {
-      r - 32
+  if r <= ascii_max {
+    if r >= ascii_lower_a && r <= ascii_lower_z {
+      r - ascii_case_shift
     } else {
       r
     }
@@ -385,9 +403,9 @@ pub fn to_upper_rune(r : Int) -> Int {
 ///|
 /// Unicode simple lowercase mapping of a single rune (Go `unicode.ToLower`).
 pub fn to_lower_rune(r : Int) -> Int {
-  if r <= 0x7F {
-    if r >= 0x41 && r <= 0x5A {
-      r + 32
+  if r <= ascii_max {
+    if r >= ascii_upper_a && r <= ascii_upper_z {
+      r + ascii_case_shift
     } else {
       r
     }
@@ -399,9 +417,9 @@ pub fn to_lower_rune(r : Int) -> Int {
 ///|
 /// Unicode simple titlecase mapping of a single rune (Go `unicode.ToTitle`).
 pub fn to_title_rune(r : Int) -> Int {
-  if r <= 0x7F {
-    if r >= 0x61 && r <= 0x7A {
-      r - 32
+  if r <= ascii_max {
+    if r >= ascii_lower_a && r <= ascii_lower_z {
+      r - ascii_case_shift
     } else {
       r
     }
