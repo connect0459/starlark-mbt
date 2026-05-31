@@ -292,13 +292,13 @@ fn Resolver::bind_global(
 ) -> Unit {
   if self.globals.contains(name) {
     if !self.opts.allow_global_reassign {
-      if self.load_names.contains(name) {
+      let prev = self.globals[name]
+      if self.load_names.contains(name) && !self.opts.load_binds_globally {
         self.errorf(
           pos,
-          "cannot reassign name '\{name}' imported from a load statement",
+          "cannot reassign local \{name} declared at \{prev.pos.to_string()}",
         )
       } else {
-        let prev = self.globals[name]
         self.errorf(
           pos,
           "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
@@ -325,7 +325,15 @@ fn Resolver::bind_load(
 ) -> Unit {
   if self.globals.contains(name) {
     if !self.opts.allow_global_reassign {
-      self.errorf(pos, "cannot reassign global \{name}")
+      if self.opts.load_binds_globally {
+        let prev = self.globals[name]
+        self.errorf(
+          pos,
+          "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
+        )
+      } else {
+        self.errorf(pos, "cannot reassign top-level \{name}")
+      }
     }
   } else {
     let idx = self.module_globals.length()
@@ -550,10 +558,18 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
         match lhs {
           @syntax.Expr::EIdent(name, _) =>
             if self.load_names.contains(name) {
-              self.errorf(
-                pos,
-                "cannot reassign name '\{name}' imported from a load statement",
-              )
+              let prev = self.globals[name]
+              if !self.opts.load_binds_globally {
+                self.errorf(
+                  pos,
+                  "cannot reassign local \{name} declared at \{prev.pos.to_string()}",
+                )
+              } else {
+                self.errorf(
+                  pos,
+                  "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
+                )
+              }
             } else if self.globals.contains(name) {
               let prev = self.globals[name]
               self.errorf(

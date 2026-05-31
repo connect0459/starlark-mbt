@@ -336,9 +336,7 @@ test "resolve: rejects reassignment of load-imported name when global_reassign i
   let f = parse_or_fail("load('m', 'x')\nx = 1")
   let opts = ResolveOptions::default().with_allow_global_reassign(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
-  assert_true(
-    has_error(result, "cannot reassign name 'x' imported from a load statement"),
-  )
+  assert_true(has_error(result, "cannot reassign local x"))
 }
 
 ///|
@@ -354,9 +352,7 @@ test "resolve: augmented assignment to load-imported name rejected when global_r
   let f = parse_or_fail("load('m', 'x')\nx += 1")
   let opts = ResolveOptions::default().with_allow_global_reassign(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
-  assert_true(
-    has_error(result, "cannot reassign name 'x' imported from a load statement"),
-  )
+  assert_true(has_error(result, "cannot reassign local x"))
 }
 
 ///|
@@ -364,9 +360,35 @@ test "resolve: load with alias rejects reassignment of alias when global_reassig
   let f = parse_or_fail("load('m', y='x')\ny = 1")
   let opts = ResolveOptions::default().with_allow_global_reassign(false)
   let result = resolve(f, no_predeclared, no_universal, opts)
-  assert_true(
-    has_error(result, "cannot reassign name 'y' imported from a load statement"),
-  )
+  assert_true(has_error(result, "cannot reassign local y"))
+}
+
+///|
+test "resolve: second load of same name gives cannot-reassign-top-level message" {
+  let f = parse_or_fail("load('m', 'x')\nload('m', 'x')")
+  let opts = ResolveOptions::default().with_allow_global_reassign(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(has_error(result, "cannot reassign top-level x"))
+}
+
+///|
+test "resolve: second load with load_binds_globally gives cannot-reassign-global message" {
+  let f = parse_or_fail("load('m', 'x')\nload('m', 'x')")
+  let opts = ResolveOptions::default()
+    .with_allow_global_reassign(false)
+    .with_load_binds_globally(true)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(has_error(result, "cannot reassign global x"))
+}
+
+///|
+test "resolve: assignment to load-imported name with load_binds_globally gives cannot-reassign-global message" {
+  let f = parse_or_fail("load('m', 'x')\nx = 1")
+  let opts = ResolveOptions::default()
+    .with_allow_global_reassign(false)
+    .with_load_binds_globally(true)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(has_error(result, "cannot reassign global x"))
 }
 
 // --- Recursion ---
