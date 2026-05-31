@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "connect0459/starlark/lib/math"
+package "connect0459/starlark/math"
 
 import {
   "connect0459/starlark/internal/value",
