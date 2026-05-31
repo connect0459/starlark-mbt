@@ -344,7 +344,7 @@ fn parse_hex4_at(chars : Array[Char], i : Int) -> (Int, Int) {
 fn parse_json_string(
   chars : Array[Char],
   start : Int,
-) -> Result[(String, Int), String] {
+) -> Result[(String, Int), (Int, String)] {
   let len = chars.length()
   let buf = StringBuilder::new()
   let mut i = start + 1
@@ -356,7 +356,7 @@ fn parse_json_string(
     } else if cp == '\\'.to_int() {
       i += 1
       if i >= len {
-        return Err("unclosed string literal")
+        return Err((i, "unclosed string literal"))
       }
       let esc = chars[i]
       match esc {
@@ -396,7 +396,7 @@ fn parse_json_string(
           i += 1
           let (code, next_i) = parse_hex4_at(chars, i)
           if code < 0 {
-            return Err("invalid \\u escape")
+            return Err((i, "invalid \\u escape"))
           }
           i = next_i
           let cp_out = if code >= 0xD800 && code <= 0xDBFF {
@@ -418,16 +418,16 @@ fn parse_json_string(
           }
           buf.write_char(cp_out.unsafe_to_char())
         }
-        _ => return Err("invalid escape sequence `\\\{esc}` in string")
+        _ => return Err((i, "invalid escape sequence `\\\{esc}` in string"))
       }
     } else if cp < 0x20 {
-      return Err("invalid control character in string")
+      return Err((i, "invalid control character in string"))
     } else {
       buf.write_char(c)
       i += 1
     }
   }
-  Err("unclosed string literal")
+  Err((i, "unclosed string literal"))
 }
 
 ///|
@@ -466,11 +466,11 @@ fn starts_with_at(chars : Array[Char], pos : Int, prefix : String) -> Bool {
 fn parse_json_value(
   chars : Array[Char],
   i : Int,
-) -> Result[(@value.Value, Int), String] {
+) -> Result[(@value.Value, Int), (Int, String)] {
   let i = skip_ws(chars, i)
   let len = chars.length()
   if i >= len {
-    return Err("unexpected end of file")
+    return Err((i, "unexpected end of file"))
   }
   let c = chars[i]
   if c == '"' {
@@ -493,7 +493,7 @@ fn parse_json_value(
     (c.to_int() >= '0'.to_int() && c.to_int() <= '9'.to_int()) {
     parse_json_number(chars, i)
   } else {
-    Err("unexpected character '\{c}'")
+    Err((i, "unexpected character '\{c}'"))
   }
 }
 
@@ -501,7 +501,7 @@ fn parse_json_value(
 fn parse_json_array(
   chars : Array[Char],
   i : Int,
-) -> Result[(@value.Value, Int), String] {
+) -> Result[(@value.Value, Int), (Int, String)] {
   let len = chars.length()
   let elems : Array[@value.Value] = []
   let mut j = skip_ws(chars, i + 1)
@@ -515,7 +515,7 @@ fn parse_json_array(
         elems.push(v)
         j = skip_ws(chars, next_j)
         if j >= len {
-          return Err("unexpected end of file")
+          return Err((j, "unexpected end of file"))
         }
         let c = chars[j]
         if c == ']' {
@@ -525,22 +525,22 @@ fn parse_json_array(
         } else if c == ',' {
           j = skip_ws(chars, j + 1)
           if j < len && chars[j] == ']' {
-            return Err("unexpected character '\{chars[j]}'")
+            return Err((j, "unexpected character '\{chars[j]}'"))
           }
         } else {
-          return Err("got '\{c}', want ',' or ']'")
+          return Err((j, "got '\{c}', want ',' or ']'"))
         }
       }
     }
   }
-  Err("unexpected end of file")
+  Err((j, "unexpected end of file"))
 }
 
 ///|
 fn parse_json_object(
   chars : Array[Char],
   i : Int,
-) -> Result[(@value.Value, Int), String] {
+) -> Result[(@value.Value, Int), (Int, String)] {
   let len = chars.length()
   let dict = @value.StarlarkDict::new()
   let mut j = skip_ws(chars, i + 1)
@@ -550,7 +550,7 @@ fn parse_json_object(
   while true {
     j = skip_ws(chars, j)
     if j >= len {
-      return Err("unexpected end of file")
+      return Err((j, "unexpected end of file"))
     }
     match parse_json_value(chars, j) {
       Err(e) => return Err(e)
@@ -559,15 +559,18 @@ fn parse_json_object(
           @value.Value::String(_) => ()
           _ =>
             return Err(
-              "got \{@value.type_name(key)} for object key, want string",
+              (
+                next_j,
+                "got \{@value.type_name(key)} for object key, want string",
+              ),
             )
         }
         j = skip_ws(chars, next_j)
         if j >= len {
-          return Err("unexpected end of file")
+          return Err((j, "unexpected end of file"))
         }
         if chars[j] != ':' {
-          return Err("after object key, got '\{chars[j]}', want ':' ")
+          return Err((j, "after object key, got '\{chars[j]}', want ':' "))
         }
         j += 1
         match parse_json_value(chars, j) {
@@ -576,7 +579,7 @@ fn parse_json_object(
             let _ = dict.set(key, val)
             j = skip_ws(chars, next_j2)
             if j >= len {
-              return Err("unexpected end of file")
+              return Err((j, "unexpected end of file"))
             }
             let c = chars[j]
             if c == '}' {
@@ -584,24 +587,24 @@ fn parse_json_object(
             } else if c == ',' {
               j = skip_ws(chars, j + 1)
               if j < len && chars[j] == '}' {
-                return Err("unexpected character '\{chars[j]}'")
+                return Err((j, "unexpected character '\{chars[j]}'"))
               }
             } else {
-              return Err("in object, got '\{c}', want ',' or '}'")
+              return Err((j, "in object, got '\{c}', want ',' or '}'"))
             }
           }
         }
       }
     }
   }
-  Err("unexpected end of file")
+  Err((j, "unexpected end of file"))
 }
 
 ///|
 fn parse_json_number(
   chars : Array[Char],
   i : Int,
-) -> Result[(@value.Value, Int), String] {
+) -> Result[(@value.Value, Int), (Int, String)] {
   let len = chars.length()
   let mut j = i
   let mut is_float = false
@@ -626,17 +629,17 @@ fn parse_json_number(
   let digits_start = if chars[i] == '-' { 1 } else { 0 }
   let first_digit_idx = i + digits_start
   if first_digit_idx >= j {
-    return Err("invalid number: \{num_str}")
+    return Err((i, "invalid number: \{num_str}"))
   }
   let first_digit = chars[first_digit_idx]
   if first_digit == '0' &&
     first_digit_idx + 1 < j &&
     is_digit_char(chars[first_digit_idx + 1]) {
-    return Err("invalid number: \{num_str}")
+    return Err((i, "invalid number: \{num_str}"))
   }
   if is_float {
     let f = @string.parse_double(num_str) catch {
-      _ => return Err("invalid number: \{num_str}")
+      _ => return Err((i, "invalid number: \{num_str}"))
     }
     Ok((@value.Value::Float(f), j))
   } else {
@@ -647,11 +650,11 @@ fn parse_json_number(
     }
     for c in digits.iter() {
       if c < '0' || c > '9' {
-        return Err("invalid number: \{num_str}")
+        return Err((i, "invalid number: \{num_str}"))
       }
     }
     if digits.length() == 0 {
-      return Err("invalid number: \{num_str}")
+      return Err((i, "invalid number: \{num_str}"))
     }
     let abs_n = BigInt::from_string(digits.to_owned())
     let n = if num_str.length() > 0 && num_str[0] == '-' {
@@ -670,10 +673,10 @@ pub fn decode_from_json(
 ) -> Result[@value.Value, String] {
   let chars = s.to_array()
   match parse_json_value(chars, 0) {
-    Err(e) =>
+    Err((offset, msg)) =>
       match default {
         Some(d) => Ok(d)
-        None => Err("json.decode: at offset 0, \{e}")
+        None => Err("json.decode: at offset \{offset}, \{msg}")
       }
     Ok((v, next_i)) => {
       let rest = skip_ws(chars, next_i)
