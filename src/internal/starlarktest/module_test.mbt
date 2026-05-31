@@ -93,3 +93,19 @@ test "module.star: missing field with similar name includes 'did you mean' hint"
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "dot-assign to non-module value omits 'value' suffix in error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|x = [1, 2, 3]
+      #|def tryit():
+      #|    x.foo = 1
+      #|assert.fails(tryit, "can't assign to .foo field of list$")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}

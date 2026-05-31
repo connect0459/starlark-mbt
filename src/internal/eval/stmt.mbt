@@ -223,7 +223,7 @@ fn assign_to(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "can't assign to .\{attr} field of \{@value.type_name(obj)} value",
+              "can't assign to .\{attr} field of \{@value.type_name(obj)}",
             ),
           )
       }
