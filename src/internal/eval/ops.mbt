@@ -4,6 +4,11 @@ fn adjust_index(
   length : Int,
   type_name : String,
 ) -> Result[Int, String] {
+  // Go's AsInt32: fail if value doesn't fit int32 range.
+  // Produces "<type> index: N out of range" (no range bounds).
+  if i > 2147483647N || i < -2147483648N {
+    return Err("\{type_name} index: \{i} out of range")
+  }
   let len = BigInt::from_int(length)
   let j = if i < 0N { i + len } else { i }
   if j < 0N || j >= len {

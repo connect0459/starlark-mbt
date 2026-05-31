@@ -429,3 +429,35 @@ test "list.clear rejects excess positional arguments" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "BigInt subscript index error uses conversion format, not range bounds" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [1,2,3][10000000000], "list index: 10000000000 out of range")
+      #|assert.fails(lambda: (1,2,3)[10000000000], "tuple index: 10000000000 out of range")
+      #|assert.fails(lambda: "abc"[10000000000], "string index: 10000000000 out of range")
+      #|assert.fails(lambda: b"abc"[10000000000], "bytes index: 10000000000 out of range")
+      #|assert.fails(lambda: range(10)[10000000000], "range index: 10000000000 out of range")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "BigInt slice bounds outside int32 range raise out-of-range error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|assert.fails(lambda: [1,2,3,4,5][4294967296:], "invalid start index: 4294967296 out of range")
+      #|assert.fails(lambda: [1,2,3,4,5][:4294967296], "invalid end index: 4294967296 out of range")
+      #|assert.fails(lambda: [1,2,3,4,5][::10000000000], "invalid slice step: 10000000000 out of range")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
