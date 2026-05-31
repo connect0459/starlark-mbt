@@ -533,11 +533,19 @@ fn eval_floor_div(
 ///|
 fn float_floor_mod(a : Double, b : Double) -> Double {
   let r = a % b
+  // `%` truncates toward zero; floor-mod's result must carry the divisor's
+  // sign, so when remainder and divisor disagree in sign add one divisor back.
   if r != 0.0 && (r < 0.0) != (b < 0.0) {
     r + b
   } else {
     r
   }
+}
+
+///|
+fn signbit(f : Double) -> Bool {
+  // Distinguishes -0.0 from +0.0: 1.0 / -0.0 is -inf (< 0), 1.0 / +0.0 is +inf.
+  f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
 }
 
 ///|
@@ -924,7 +932,7 @@ fn format_float_e(f : Double, upper : Bool) -> String {
     return "-inf"
   }
   let e_char = if upper { "E" } else { "e" }
-  let is_neg = f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
+  let is_neg = signbit(f)
   let sign_str = if is_neg { "-" } else { "" }
   let abs_f = if f < 0.0 { -f } else { f }
   if abs_f == 0.0 {
@@ -964,7 +972,7 @@ fn format_float_f(f : Double) -> String {
   if f == @double.neg_infinity {
     return "-inf"
   }
-  let is_neg = f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
+  let is_neg = signbit(f)
   let sign_str = if is_neg { "-" } else { "" }
   let abs_f = if f < 0.0 { -f } else { f }
   let n = round_scaled(abs_f, printf_float_precision)
