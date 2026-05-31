@@ -1069,6 +1069,22 @@ fn repr_bytes_inner(b : Bytes, buf : StringBuilder, quote_char : Char) -> Unit {
         buf.write_string("\\t")
         i += 1
       }
+      0x07 => {
+        buf.write_string("\\a")
+        i += 1
+      }
+      0x08 => {
+        buf.write_string("\\b")
+        i += 1
+      }
+      0x0C => {
+        buf.write_string("\\f")
+        i += 1
+      }
+      0x0B => {
+        buf.write_string("\\v")
+        i += 1
+      }
       n =>
         if n.unsafe_to_char() == quote_char {
           buf.write_char('\\')
