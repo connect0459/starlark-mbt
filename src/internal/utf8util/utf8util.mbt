@@ -84,15 +84,23 @@ pub fn is_unicode_printable(r : Int) -> Bool {
   if r < 0x80 {
     return true
   }
+  // C1 controls (Cc)
+  if r <= 0x9F {
+    return false
+  }
+  // NBSP and other Zs space separators (not printable in Go's strconv.IsPrint)
+  if r == 0xA0 {
+    return false
+  }
+  // soft hyphen
   if r == 0xAD {
     return false
   }
+  // line and paragraph separators
   if r >= 0x2028 && r <= 0x2029 {
     return false
   }
-  if r >= 0xFFF9 && r <= 0xFFFB {
-    return false
-  }
+  // zero-width and directional format chars
   if r >= 0x200B && r <= 0x200F {
     return false
   }
@@ -105,7 +113,28 @@ pub fn is_unicode_printable(r : Int) -> Bool {
   if r >= 0x2066 && r <= 0x206F {
     return false
   }
+  // BOM
   if r == 0xFEFF {
+    return false
+  }
+  // misc special chars (interlinear annotation, etc.)
+  if r >= 0xFFF9 && r <= 0xFFFB {
+    return false
+  }
+  // noncharacters U+FFFE, U+FFFF
+  if r == 0xFFFE || r == 0xFFFF {
+    return false
+  }
+  // private-use area (BMP)
+  if r >= 0xE000 && r <= 0xF8FF {
+    return false
+  }
+  // noncharacters FDD0-FDEF
+  if r >= 0xFDD0 && r <= 0xFDEF {
+    return false
+  }
+  // supplemental private-use areas and high noncharacters
+  if r >= 0xF0000 {
     return false
   }
   true
