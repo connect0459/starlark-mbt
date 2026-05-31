@@ -1693,6 +1693,38 @@ Focused on resolver messages, bytes operator, load errors, and function frame po
       `"load not implemented by this application"` (matching `interp.go:569`)
       instead of `"{pos}: load is not supported"`. Commit: `d967404`
 
+### Fifteenth-pass gap analysis (MISSING-205..209)
+
+Fresh comparison after MISSING-1..204 closed. Focused on dot-assignment error
+wording, print kwarg validation, sorted argument-validation order, and kwarg
+name quoting across fail/sorted/min/max.
+
+- [x] **MISSING-205** [message]: `"can't assign to .X field of TYPE"` no longer
+      appends `value` for non-module types — was `"can't assign to .foo field of
+      list value"`, now `"can't assign to .foo field of list"`, matching
+      `eval.go:677`. Source: `stmt.mbt:226`. Commit: `dc4ac49`
+- [x] **MISSING-206** [behavioral + message]: `print` now validates kwargs.
+      `print(sep=3)` raises `'print: for parameter "sep": got int, want string'`;
+      `print(end="\n")` raises `'print: unexpected keyword argument "end"'`,
+      matching starlark-go's `UnpackArgs("print", nil, kwargs, "sep?", &sep)`.
+      Source: `library.go:800`, `expr.mbt`. Commit: `4bf9a7e`
+- [x] **MISSING-207** [behavioral]: `sorted` now validates iterable type before
+      key and reverse. `sorted(1, 2)` reports `"sorted: for parameter iterable:
+      got int, want iterable"` (was `"for parameter key: got int, want callable"`);
+      `sorted(1, 2, 3)` similarly reports the iterable error first. Matches
+      starlark-go's `UnpackArgs` positional-order processing. Commit: `3b16649`
+- [x] **MISSING-208** [message]: Kwarg parameter names are now double-quoted in
+      error messages for `fail`, `sorted`, `min`, and `max`, matching starlark-go's
+      `UnpackArgs` which formats kwarg names as Starlark `String` values (repr).
+      `fail(sep=None)` → `'fail: for parameter "sep": ...'`; `fail(foo=1)` →
+      `'fail: unexpected keyword argument "foo"'`; sorted/min/max similarly.
+      Positional parameter names remain unquoted. Source: `unpack.go:148,153`,
+      `expr.mbt`. Commit: `eb801a9`
+- [x] **MISSING-209** [message]: `sorted` unexpected kwarg now includes the
+      "did you mean?" spell-check hint (parity with `min`/`max`). `sorted([], keg=1)`
+      → `'sorted: unexpected keyword argument "keg" (did you mean key?)'`.
+      Source: `unpack.go:159`, `expr.mbt`. Commit: `eb801a9`
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
