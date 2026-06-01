@@ -2,10 +2,10 @@ import {
   "connect0459/starlark/internal/errors",
   "connect0459/starlark/internal/value",
   "connect0459/starlark/internal/eval",
-  "connect0459/starlark/json",
-  "connect0459/starlark/math",
-  "connect0459/starlark/time",
-  "connect0459/starlark/struct",
+  "connect0459/starlark/lib/json",
+  "connect0459/starlark/lib/math",
+  "connect0459/starlark/lib/time",
+  "connect0459/starlark/lib/struct",
   "moonbitlang/core/bench",
 }
 
