@@ -2032,55 +2032,55 @@ Each package is moved independently. Commit each move separately.
 
 #### `src/json/` → `src/lib/json/`
 
-- [ ] Create `src/lib/` directory
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/json/` into `src/lib/json/`
-- [ ] Update every `moon.pkg` that imports `"json"` → `"lib/json"`
+- [x] Create `src/lib/` directory
+- [x] Move all `.mbt` + `moon.pkg` files from `src/json/` into `src/lib/json/`
+- [x] Update every `moon.pkg` that imports `"json"` → `"lib/json"`
       (find with: `grep -r '"json"' src/ --include='moon.pkg'`)
-- [ ] Delete the now-empty `src/json/` directory
-- [ ] `moon check && moon test` — all tests pass
-- [ ] Commit: `refactor(json): move src/json to src/lib/json`
+- [x] Delete the now-empty `src/json/` directory
+- [x] `moon check && moon test` — all tests pass
+- [x] Commit: `refactor(json): move src/json to src/lib/json`
 
 #### `src/math/` → `src/lib/math/`
 
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/math/` into `src/lib/math/`
-- [ ] Update every `moon.pkg` that imports `"math"` → `"lib/math"`
-- [ ] Delete the now-empty `src/math/` directory
-- [ ] `moon check && moon test`
-- [ ] Commit: `refactor(math): move src/math to src/lib/math`
+- [x] Move all `.mbt` + `moon.pkg` files from `src/math/` into `src/lib/math/`
+- [x] Update every `moon.pkg` that imports `"math"` → `"lib/math"`
+- [x] Delete the now-empty `src/math/` directory
+- [x] `moon check && moon test`
+- [x] Commit: `refactor(math): move src/math to src/lib/math`
 
 #### `src/struct/` → `src/lib/struct/`
 
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/struct/` into `src/lib/struct/`
-- [ ] Update every `moon.pkg` that imports `"struct"` → `"lib/struct"`
-- [ ] Delete the now-empty `src/struct/` directory
-- [ ] `moon check && moon test`
-- [ ] Commit: `refactor(struct): move src/struct to src/lib/struct`
+- [x] Move all `.mbt` + `moon.pkg` files from `src/struct/` into `src/lib/struct/`
+- [x] Update every `moon.pkg` that imports `"struct"` → `"lib/struct"`
+- [x] Delete the now-empty `src/struct/` directory
+- [x] `moon check && moon test`
+- [x] Commit: `refactor(struct): move src/struct to src/lib/struct`
 
 #### `src/time/` → `src/lib/time/`
 
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/time/` into `src/lib/time/`
-- [ ] Update every `moon.pkg` that imports `"time"` → `"lib/time"`
-- [ ] Delete the now-empty `src/time/` directory
-- [ ] `moon check && moon test`
-- [ ] Commit: `refactor(time): move src/time to src/lib/time`
+- [x] Move all `.mbt` + `moon.pkg` files from `src/time/` into `src/lib/time/`
+- [x] Update every `moon.pkg` that imports `"time"` → `"lib/time"`
+- [x] Delete the now-empty `src/time/` directory
+- [x] `moon check && moon test`
+- [x] Commit: `refactor(time): move src/time to src/lib/time`
 
 #### R1 post-move cleanup
 
-- [ ] `docs/api.md` — package overview table: update four rows
+- [x] `docs/api.md` — package overview table: update four rows
       `connect0459/starlark/json` → `connect0459/starlark/lib/json`
       (same for `math`, `struct`, `time`)
-- [ ] `docs/api.md` — `## starlark/json package` section: update header title,
+- [x] `docs/api.md` — `## starlark/json package` section: update header title,
       `moon.pkg` example path (`"connect0459/starlark/lib/json"`),
       and `@json` alias note
-- [ ] `docs/api.md` — same for `## starlark/math`, `## starlark/struct`,
+- [x] `docs/api.md` — same for `## starlark/math`, `## starlark/struct`,
       `## starlark/time` sections
-- [ ] `docs/api.md` — `CustomValue` section: update `src/struct/` and `src/time/`
+- [x] `docs/api.md` — `CustomValue` section: update `src/struct/` and `src/time/`
       cross-references to `src/lib/struct/` and `src/lib/time/`
-- [ ] `README.mbt.md` — package table (four rows): update mooncakes paths
+- [x] `README.mbt.md` — package table (four rows): update mooncakes paths
       `connect0459/starlark/json` → `connect0459/starlark/lib/json` etc.
-- [ ] `README.mbt.md` — `moon.mod` example block: update import path strings
-- [ ] Update Phase 0 package layout table in this file to reflect new paths
-- [ ] `moon info` — verify `.mbti` diff for `src/` is empty (no public API change)
+- [x] `README.mbt.md` — `moon.mod` example block: update import path strings
+- [x] Update Phase 0 package layout table in this file to reflect new paths
+- [x] `moon info` — verify `.mbti` diff for `src/` is empty (no public API change)
 
 ---
 
@@ -2095,57 +2095,57 @@ Commit each package promotion separately; run the full test suite after each.
 
 #### `src/internal/errors/` → `src/errors/`
 
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/errors/` to `src/errors/`
-- [ ] Update every `moon.pkg` `import` entry that references `"internal/errors"` → `"errors"`
+- [x] Move all `.mbt` + `moon.pkg` files from `src/internal/errors/` to `src/errors/`
+- [x] Update every `moon.pkg` `import` entry that references `"internal/errors"` → `"errors"`
       (find with: `grep -r '"internal/errors"' src/ --include='moon.pkg'`)
-- [ ] Update all `@internal/errors.*` / `@errors.*` qualified names in `src/internal/*` sources
-- [ ] Update `src/starlark.mbt` type aliases: `@internal/errors.X` → `@errors.X`
-- [ ] Delete the now-empty `src/internal/errors/` directory
-- [ ] `moon check && moon test`
-- [ ] `moon info` — `.mbti` diff for `src/` must be empty
-- [ ] Commit: `refactor(errors): promote src/internal/errors to src/errors`
+- [x] Update all `@internal/errors.*` / `@errors.*` qualified names in `src/internal/*` sources
+- [x] Update `src/starlark.mbt` type aliases: `@internal/errors.X` → `@errors.X`
+- [x] Delete the now-empty `src/internal/errors/` directory
+- [x] `moon check && moon test`
+- [x] `moon info` — `.mbti` diff for `src/` must be empty
+- [x] Commit: `refactor(errors): promote src/internal/errors to src/errors`
 
 #### `src/internal/value/` → `src/value/`
 
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/value/` to `src/value/`
-- [ ] Update every `moon.pkg` import: `"internal/value"` → `"value"`
-- [ ] Update all qualified names in `src/internal/*` sources
-- [ ] Update `src/starlark.mbt` type aliases
-- [ ] Delete the now-empty `src/internal/value/` directory
-- [ ] `moon check && moon test`
-- [ ] `moon info` — `.mbti` diff for `src/` must be empty
-- [ ] Commit: `refactor(value): promote src/internal/value to src/value`
+- [x] Move all `.mbt` + `moon.pkg` files from `src/internal/value/` to `src/value/`
+- [x] Update every `moon.pkg` import: `"internal/value"` → `"value"`
+- [x] Update all qualified names in `src/internal/*` sources
+- [x] Update `src/starlark.mbt` type aliases
+- [x] Delete the now-empty `src/internal/value/` directory
+- [x] `moon check && moon test`
+- [x] `moon info` — `.mbti` diff for `src/` must be empty
+- [x] Commit: `refactor(value): promote src/internal/value to src/value`
 
 #### `src/internal/eval/` → `src/eval/`
 
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/eval/` to `src/eval/`
-- [ ] Update every `moon.pkg` import: `"internal/eval"` → `"eval"`
-- [ ] Update all qualified names in `src/internal/*` sources
-- [ ] Update `src/starlark.mbt` type aliases
-- [ ] Delete the now-empty `src/internal/eval/` directory
-- [ ] `moon check && moon test`
-- [ ] `moon info` — `.mbti` diff must be empty (wrapper removal is Phase R3)
-- [ ] Commit: `refactor(eval): promote src/internal/eval to src/eval`
+- [x] Move all `.mbt` + `moon.pkg` files from `src/internal/eval/` to `src/eval/`
+- [x] Update every `moon.pkg` import: `"internal/eval"` → `"eval"`
+- [x] Update all qualified names in `src/internal/*` sources
+- [x] Update `src/starlark.mbt` type aliases
+- [x] Delete the now-empty `src/internal/eval/` directory
+- [x] `moon check && moon test`
+- [x] `moon info` — `.mbti` diff must be empty (wrapper removal is Phase R3)
+- [x] Commit: `refactor(eval): promote src/internal/eval to src/eval`
 
 #### R2 post-promotion cleanup
 
-- [ ] Verify `src/internal/` now contains only truly-internal packages:
+- [x] Verify `src/internal/` now contains only truly-internal packages:
       `hashtable/`, `lexer/`, `parser/`, `resolver/`, `repl/`,
       `starlarktest/`, `std_math/`, `syntax/`, `unpack/`, `utf8util/`
-- [ ] `docs/api.md` — opening paragraph: update `src/internal/*` description to
+- [x] `docs/api.md` — opening paragraph: update `src/internal/*` description to
       note that `src/errors/`, `src/value/`, `src/eval/` are now public packages
-- [ ] `docs/api.md` — `StarlarkList` / `StarlarkDict` / `StarlarkSet` sections:
+- [x] `docs/api.md` — `StarlarkList` / `StarlarkDict` / `StarlarkSet` sections:
       remove any "access through the `Value` enum or methods; do not import
       the internal package" notes (direct import is now valid)
-- [ ] `docs/api.md` — façade function list: remove or mark deprecated any
+- [x] `docs/api.md` — façade function list: remove or mark deprecated any
       wrapper functions that were eliminated (e.g. `new_thread_with_loader`);
       add a note that `Thread::with_loader` etc. are now directly callable
-- [ ] `README.mbt.md` — quick-start section: update `@starlark.` usage examples
+- [x] `README.mbt.md` — quick-start section: update `@starlark.` usage examples
       if any now prefer direct package imports (e.g. `@eval.Thread::new`)
-- [ ] `src/starlark.mbt` doc-comment header: update the "Packages" section if
+- [x] `src/starlark.mbt` doc-comment header: update the "Packages" section if
       it lists internal package paths
-- [ ] Update Phase 0 package layout table in this file
-- [ ] Final `moon check && moon test && moon info`
+- [x] Update Phase 0 package layout table in this file
+- [x] Final `moon check && moon test && moon info`
 
 ---
 
@@ -2185,13 +2185,19 @@ parity, multi-step convenience).
 
 **Steps:**
 
-- [ ] Delete each wrapper listed in the "Remove" table from `src/starlark.mbt`
-- [ ] Update `src/starlark_test.mbt` / `src/starlark_wbtest.mbt`: replace calls
+- [x] Delete each wrapper listed in the "Remove" table from `src/starlark.mbt`
+- [x] Update `src/starlark_test.mbt` / `src/starlark_wbtest.mbt`: replace calls
       to removed wrappers with direct type method calls
-- [ ] Update example files under `examples/`: switch to direct method calls
-- [ ] `moon check && moon test`
-- [ ] `moon info` — `.mbti` diff shows only removed functions (no type-level changes)
-- [ ] Commit: `refactor: remove redundant facade wrappers after internal promotion`
+- [x] Update example files under `examples/`: switch to direct method calls
+- [x] `moon check && moon test`
+- [x] `moon info` — `.mbti` diff shows only removed functions (no type-level changes)
+- [x] Commit: `refactor: remove redundant facade wrappers after internal promotion`
+
+**Implementation note**: `repr`, `to_str`, `type_name`, `truth`, and `starlark_equals`
+were free functions (not methods), so `v.repr()` dot syntax did not work from external
+callers (E4015). As a prerequisite, these five functions were converted from
+`pub fn repr(v : Value)` to `pub fn Value::repr(v : Value)` method form and all ~185
+internal call sites updated before removing the facade wrappers.
 
 ---
 
