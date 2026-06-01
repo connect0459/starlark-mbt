@@ -2011,6 +2011,190 @@ comments, and doc-comments on public functions.
 
 ---
 
+## Architecture Refactoring
+
+Resolve the `internal/` visibility mismatch and align the package layout
+with starlark-go's convention. Three sequential phases (each phase maps to
+one commit group):
+
+1. **Phase R1** — Move stdlib extension packages under `src/lib/`
+   (matches starlark-go's `lib/json`, `lib/math`, etc.; do this first because
+   the moves are self-contained and remove confusing naming before the
+   harder internal-promotion work begins).
+2. **Phase R2** — Promote public-API packages out of `src/internal/` to `src/`
+   so external callers can reach constructors and methods without E4037.
+3. **Phase R3** — Wrapper cleanup: remove façade functions that became
+   redundant after R2; keep only wrappers with real semantic value.
+
+### Phase R1: Move stdlib extensions to `src/lib/`
+
+Each package is moved independently. Commit each move separately.
+
+#### `src/json/` → `src/lib/json/`
+
+- [ ] Create `src/lib/` directory
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/json/` into `src/lib/json/`
+- [ ] Update every `moon.pkg` that imports `"json"` → `"lib/json"`
+      (find with: `grep -r '"json"' src/ --include='moon.pkg'`)
+- [ ] Delete the now-empty `src/json/` directory
+- [ ] `moon check && moon test` — all tests pass
+- [ ] Commit: `refactor(json): move src/json to src/lib/json`
+
+#### `src/math/` → `src/lib/math/`
+
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/math/` into `src/lib/math/`
+- [ ] Update every `moon.pkg` that imports `"math"` → `"lib/math"`
+- [ ] Delete the now-empty `src/math/` directory
+- [ ] `moon check && moon test`
+- [ ] Commit: `refactor(math): move src/math to src/lib/math`
+
+#### `src/struct/` → `src/lib/struct/`
+
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/struct/` into `src/lib/struct/`
+- [ ] Update every `moon.pkg` that imports `"struct"` → `"lib/struct"`
+- [ ] Delete the now-empty `src/struct/` directory
+- [ ] `moon check && moon test`
+- [ ] Commit: `refactor(struct): move src/struct to src/lib/struct`
+
+#### `src/time/` → `src/lib/time/`
+
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/time/` into `src/lib/time/`
+- [ ] Update every `moon.pkg` that imports `"time"` → `"lib/time"`
+- [ ] Delete the now-empty `src/time/` directory
+- [ ] `moon check && moon test`
+- [ ] Commit: `refactor(time): move src/time to src/lib/time`
+
+#### R1 post-move cleanup
+
+- [ ] `docs/api.md` — package overview table: update four rows
+      `connect0459/starlark/json` → `connect0459/starlark/lib/json`
+      (same for `math`, `struct`, `time`)
+- [ ] `docs/api.md` — `## starlark/json package` section: update header title,
+      `moon.pkg` example path (`"connect0459/starlark/lib/json"`),
+      and `@json` alias note
+- [ ] `docs/api.md` — same for `## starlark/math`, `## starlark/struct`,
+      `## starlark/time` sections
+- [ ] `docs/api.md` — `CustomValue` section: update `src/struct/` and `src/time/`
+      cross-references to `src/lib/struct/` and `src/lib/time/`
+- [ ] `README.mbt.md` — package table (four rows): update mooncakes paths
+      `connect0459/starlark/json` → `connect0459/starlark/lib/json` etc.
+- [ ] `README.mbt.md` — `moon.mod` example block: update import path strings
+- [ ] Update Phase 0 package layout table in this file to reflect new paths
+- [ ] `moon info` — verify `.mbti` diff for `src/` is empty (no public API change)
+
+---
+
+### Phase R2: Promote public-API packages from `src/internal/`
+
+Move the three packages whose types form the embedder-facing API out of
+`internal/` so external callers can use constructors and methods directly
+without wrapper functions in the façade.
+
+**Order**: `errors/` first (fewest dependents) → `value/` → `eval/`.
+Commit each package promotion separately; run the full test suite after each.
+
+#### `src/internal/errors/` → `src/errors/`
+
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/errors/` to `src/errors/`
+- [ ] Update every `moon.pkg` `import` entry that references `"internal/errors"` → `"errors"`
+      (find with: `grep -r '"internal/errors"' src/ --include='moon.pkg'`)
+- [ ] Update all `@internal/errors.*` / `@errors.*` qualified names in `src/internal/*` sources
+- [ ] Update `src/starlark.mbt` type aliases: `@internal/errors.X` → `@errors.X`
+- [ ] Delete the now-empty `src/internal/errors/` directory
+- [ ] `moon check && moon test`
+- [ ] `moon info` — `.mbti` diff for `src/` must be empty
+- [ ] Commit: `refactor(errors): promote src/internal/errors to src/errors`
+
+#### `src/internal/value/` → `src/value/`
+
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/value/` to `src/value/`
+- [ ] Update every `moon.pkg` import: `"internal/value"` → `"value"`
+- [ ] Update all qualified names in `src/internal/*` sources
+- [ ] Update `src/starlark.mbt` type aliases
+- [ ] Delete the now-empty `src/internal/value/` directory
+- [ ] `moon check && moon test`
+- [ ] `moon info` — `.mbti` diff for `src/` must be empty
+- [ ] Commit: `refactor(value): promote src/internal/value to src/value`
+
+#### `src/internal/eval/` → `src/eval/`
+
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/eval/` to `src/eval/`
+- [ ] Update every `moon.pkg` import: `"internal/eval"` → `"eval"`
+- [ ] Update all qualified names in `src/internal/*` sources
+- [ ] Update `src/starlark.mbt` type aliases
+- [ ] Delete the now-empty `src/internal/eval/` directory
+- [ ] `moon check && moon test`
+- [ ] `moon info` — `.mbti` diff must be empty (wrapper removal is Phase R3)
+- [ ] Commit: `refactor(eval): promote src/internal/eval to src/eval`
+
+#### R2 post-promotion cleanup
+
+- [ ] Verify `src/internal/` now contains only truly-internal packages:
+      `hashtable/`, `lexer/`, `parser/`, `resolver/`, `repl/`,
+      `starlarktest/`, `std_math/`, `syntax/`, `unpack/`, `utf8util/`
+- [ ] `docs/api.md` — opening paragraph: update `src/internal/*` description to
+      note that `src/errors/`, `src/value/`, `src/eval/` are now public packages
+- [ ] `docs/api.md` — `StarlarkList` / `StarlarkDict` / `StarlarkSet` sections:
+      remove any "access through the `Value` enum or methods; do not import
+      the internal package" notes (direct import is now valid)
+- [ ] `docs/api.md` — façade function list: remove or mark deprecated any
+      wrapper functions that were eliminated (e.g. `new_thread_with_loader`);
+      add a note that `Thread::with_loader` etc. are now directly callable
+- [ ] `README.mbt.md` — quick-start section: update `@starlark.` usage examples
+      if any now prefer direct package imports (e.g. `@eval.Thread::new`)
+- [ ] `src/starlark.mbt` doc-comment header: update the "Packages" section if
+      it lists internal package paths
+- [ ] Update Phase 0 package layout table in this file
+- [ ] Final `moon check && moon test && moon info`
+
+---
+
+### Phase R3: Wrapper cleanup in `src/starlark.mbt`
+
+Remove façade functions that became pure E4037 workarounds after R2. Keep
+only those with genuine semantic value (main entry points, starlark-go API
+parity, multi-step convenience).
+
+**Remove** (redundant after R2; callers use the type directly):
+
+| Wrapper | Replacement |
+| :--- | :--- |
+| `new_thread(name)` | `Thread::new(name)` |
+| `default_options()` | `Options::default()` |
+| `error_message(e)` | `e.msg()` |
+| `new_custom_value(cv)` | `Value::ExtVal(cv)` |
+| `module_get(m, k)` | `m.get(k)` |
+| `repr(v)` | `v.repr()` |
+| `to_str(v)` | `v.to_str()` |
+| `type_name(v)` | `v.type_name()` |
+| `truth(v)` | `v.truth()` |
+| `starlark_equals(a, b)` | `a.starlark_equals(b)` |
+
+**Keep** (real semantic value beyond E4037):
+
+- `new_thread_with_loader` — convenience for the common loader-callback pattern
+- `exec_file`, `eval_expr`, `exec_repl_chunk` — primary embedding entry points
+- `exec_file_with_universe`, `exec_file_with_predeclared` — entry-point variants
+- `parse_file`, `parse_expr`, `eval_parsed_expr` — program API
+- `source_program`, `source_program_with_file`, `file_program` — program API
+- `call` — host-side Starlark callable invocation
+- `equal`, `binary`, `unary`, `compare` — operator dispatch (starlark-go parity)
+- `number_to_int`, `as_float`, `as_string` — type coercion helpers (starlark-go parity)
+- `len_of`, `iterate` — sequence protocol helpers (starlark-go parity)
+- `StringDict::*` — defined here, not wrappers
+
+**Steps:**
+
+- [ ] Delete each wrapper listed in the "Remove" table from `src/starlark.mbt`
+- [ ] Update `src/starlark_test.mbt` / `src/starlark_wbtest.mbt`: replace calls
+      to removed wrappers with direct type method calls
+- [ ] Update example files under `examples/`: switch to direct method calls
+- [ ] `moon check && moon test`
+- [ ] `moon info` — `.mbti` diff shows only removed functions (no type-level changes)
+- [ ] Commit: `refactor: remove redundant facade wrappers after internal promotion`
+
+---
+
 ## Future work (out of initial release scope)
 
 - Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
