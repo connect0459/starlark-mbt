@@ -1761,6 +1761,17 @@ gaps (implementations were already correct). Commit: `190d060`
 - [x] **MISSING-66**: `hash_float` uses `double_to_bigint` ensuring cross-type
       hash parity for large integers (e.g. `hash(1e20) == hash(10**20)`).
 
+### Post-R3 API quality pass
+
+- [x] Remove `StarlarkList::to_iter` (exact duplicate of `iter`)
+- [x] Remove `StarlarkDict::to_keys` (unused; just `keys().iter()`)
+- [x] Fix `equal()` to delegate to `equal_depth(a, b, compare_limit)` so
+      cyclic structures return `Err` instead of potentially stack-overflowing,
+      matching starlark-go `Equal` semantics
+- [x] Add `Options::with_allow_lambda`, `with_allow_while`, `with_allow_bytes`,
+      `with_allow_float`, `with_allow_top_level_control` — completing the
+      fluent-setter API for all nine dialect flags
+
 ### Deferred public-API gaps
 
 - [ ] **MISSING-62**: No bytecode `CompiledProgram`/`Program.Write` — tree-walking
