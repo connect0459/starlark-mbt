@@ -1118,6 +1118,8 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
       Some(v) => v
       None => return Err("time: invalid fractional seconds in \"\{s}\"")
     }
+    // Normalize the fractional digits to nanoseconds (9 digits): drop excess
+    // precision when more than 9 were given, pad with trailing zeros otherwise.
     let ns = if frac_len >= 9 {
       frac_val / pow10_int64(frac_len - 9)
     } else {

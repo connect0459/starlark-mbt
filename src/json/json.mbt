@@ -432,6 +432,9 @@ fn parse_json_string(
               let (lo, next_i2) = parse_hex4_at(chars, i + 2)
               if lo >= low_surrogate_lo && lo <= low_surrogate_hi {
                 i = next_i2
+                // Recombine the UTF-16 surrogate pair: the high surrogate
+                // carries the upper 10 bits, the low surrogate the lower 10,
+                // offset back onto the supplementary plane (U+10000+).
                 supplementary_plane_base +
                 (code - high_surrogate_lo) * surrogate_high_scale +
                 (lo - low_surrogate_lo)
