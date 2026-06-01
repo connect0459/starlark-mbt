@@ -109,6 +109,8 @@ fn int_float_eq(n : BigInt, f : Double) -> Bool {
   if f.is_nan() || f.is_inf() {
     return false
   }
+  // An int can equal a float only when the float has no fractional part;
+  // trunc() strips the fraction, so `f != f.trunc()` means one was present.
   if f != f.trunc() {
     return false
   }

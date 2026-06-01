@@ -402,6 +402,8 @@ fn parse_duration_component(
   let unit_buf = StringBuilder::new()
   while i < len {
     let c = chars[i]
+    // Accept both the MICRO SIGN (U+00B5) and GREEK SMALL LETTER MU (U+03BC),
+    // which render identically; Go's time.ParseDuration treats either as "us".
     if (c >= 'a' && c <= 'z') || c == 'µ' || c == 'μ' {
       unit_buf.write_char(c)
       i += 1

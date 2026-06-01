@@ -343,6 +343,8 @@ pub fn Scanner::next_token(
         c.to_int() >= 0x80 &&
         ({
           let (cp, _) = @utf8util.utf8_decode_rune(self.src, self.off)
+          // utf8_decode_rune yields a non-positive rune on a malformed
+          // sequence, so `cp > 0` also rejects invalid UTF-8.
           cp > 0 && is_unicode_letter_rune(cp)
         })
       )

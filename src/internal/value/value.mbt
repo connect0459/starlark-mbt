@@ -1346,6 +1346,8 @@ pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   let q = a / b
   let r = a % b
   let zero = 0N
+  // `/` truncates toward zero; when the remainder and divisor disagree in
+  // sign the true floor is one less than the truncated quotient.
   if r != zero && (r < zero) != (b < zero) {
     Ok(q - 1N)
   } else {
@@ -1370,6 +1372,8 @@ pub fn starlark_mod(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   }
   let r = a % b
   let zero = 0N
+  // `%` truncates toward zero; add the divisor back when their signs disagree
+  // so the result carries the divisor's sign (Starlark/Python modulo).
   if r != zero && (r < zero) != (b < zero) {
     Ok(r + b)
   } else {
@@ -1379,6 +1383,8 @@ pub fn starlark_mod(a : BigInt, b : BigInt) -> Result[BigInt, String] {
 
 ///|
 fn is_neg_zero(f : Double) -> Bool {
+  // -0.0 and +0.0 compare equal, so inspect the IEEE 754 sign bit directly:
+  // -0.0 has the sign bit set, giving a negative integer bit pattern.
   f == 0.0 && f.reinterpret_as_int64() < 0L
 }
 

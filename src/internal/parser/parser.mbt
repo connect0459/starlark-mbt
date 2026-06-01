@@ -11,6 +11,9 @@ struct Parser {
   scanner : @lexer.Scanner
   mut tok : @lexer.Token
   mut pos : @errors.Position
+  // Set while parsing a for/comprehension loop-variable list so the `in`
+  // keyword that terminates the target is not consumed as an `in` comparison
+  // operator inside the target expression.
   mut no_in : Bool
 }
 
