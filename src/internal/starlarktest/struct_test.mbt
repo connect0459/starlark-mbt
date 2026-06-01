@@ -339,7 +339,7 @@ test "struct: hash is consistent for equal structs" {
       ("b", @value.Value::String(@value.StarlarkString::new("x"))),
     ],
   )
-  assert_true(@value.starlark_equals(s1, s2))
+  assert_true(s1.starlark_equals(s2))
   let h1 = @value.starlark_hash(s1)
   let h2 = @value.starlark_hash(s2)
   match (h1, h2) {

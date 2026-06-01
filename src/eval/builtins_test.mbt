@@ -1952,7 +1952,7 @@ test "exec_file: module() creates a named module with attributes" {
     Ok(m) =>
       match g(m, "m") {
         Some(@value.Value::Module(mod)) => {
-          assert_eq(@value.type_name(@value.Value::Module(mod)), "module")
+          assert_eq(@value.Value::Module(mod).type_name(), "module")
           assert_eq(mod.name(), "mymod")
         }
         _ => assert_true(false)

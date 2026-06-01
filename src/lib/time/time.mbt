@@ -1797,7 +1797,7 @@ fn make_parse_duration_fn() -> @value.Value {
           Some(_) => Ok(v)
           None =>
             Err(
-              "parse_duration: for parameter 1: got \{@value.type_name(v)}, want a duration, string, or int",
+              "parse_duration: for parameter 1: got \{v.type_name()}, want a duration, string, or int",
             )
         }
       @value.Value::String(s) =>
@@ -1807,7 +1807,7 @@ fn make_parse_duration_fn() -> @value.Value {
         }
       v =>
         Err(
-          "parse_duration: for parameter 1: got \{@value.type_name(v)}, want a duration, string, or int",
+          "parse_duration: for parameter 1: got \{v.type_name()}, want a duration, string, or int",
         )
     }
   })

@@ -1,94 +1,92 @@
 ///|
 test "to_str: String returns raw unquoted value" {
-  assert_eq(to_str(Value::String(StarlarkString::new("hello"))), "hello")
-  assert_eq(to_str(Value::String(StarlarkString::new(""))), "")
+  assert_eq(Value::String(StarlarkString::new("hello")).to_str(), "hello")
+  assert_eq(Value::String(StarlarkString::new("")).to_str(), "")
   // str() does NOT escape — raw bytes are returned as-is
   assert_eq(
-    to_str(Value::String(StarlarkString::new("say \"hi\""))),
+    Value::String(StarlarkString::new("say \"hi\"")).to_str(),
     "say \"hi\"",
   )
 }
 
 ///|
 test "to_str: None returns None" {
-  assert_eq(to_str(Value::None), "None")
+  assert_eq(Value::None.to_str(), "None")
 }
 
 ///|
 test "to_str: Bool returns True or False" {
-  assert_eq(to_str(Value::Bool(true)), "True")
-  assert_eq(to_str(Value::Bool(false)), "False")
+  assert_eq(Value::Bool(true).to_str(), "True")
+  assert_eq(Value::Bool(false).to_str(), "False")
 }
 
 ///|
 test "to_str: Int returns decimal string" {
-  assert_eq(to_str(Value::Int(0N)), "0")
-  assert_eq(to_str(Value::Int(42N)), "42")
-  assert_eq(to_str(Value::Int(-1N)), "-1")
+  assert_eq(Value::Int(0N).to_str(), "0")
+  assert_eq(Value::Int(42N).to_str(), "42")
+  assert_eq(Value::Int(-1N).to_str(), "-1")
 }
 
 ///|
 test "to_str: Float returns formatted float same as repr" {
-  assert_eq(to_str(Value::Float(1.0)), "1.0")
-  assert_eq(to_str(Value::Float(1.5)), "1.5")
+  assert_eq(Value::Float(1.0).to_str(), "1.0")
+  assert_eq(Value::Float(1.5).to_str(), "1.5")
 }
 
 ///|
 test "to_str: Bytes returns b-quoted repr" {
-  assert_eq(to_str(Value::Bytes(Bytes::new(0))), "b\"\"")
+  assert_eq(Value::Bytes(Bytes::new(0)).to_str(), "b\"\"")
 }
 
 ///|
 test "to_str: List and Tuple same as repr" {
-  assert_eq(to_str(Value::List(StarlarkList::new([]))), "[]")
-  assert_eq(to_str(Value::Tuple([])), "()")
-  assert_eq(to_str(Value::Tuple([Value::Int(1N)])), "(1,)")
+  assert_eq(Value::List(StarlarkList::new([])).to_str(), "[]")
+  assert_eq(Value::Tuple([]).to_str(), "()")
+  assert_eq(Value::Tuple([Value::Int(1N)]).to_str(), "(1,)")
 }
 
 // --- starlark_equals ---
 
 ///|
 test "starlark_equals: None equals None" {
-  assert_true(starlark_equals(Value::None, Value::None))
+  assert_true(Value::None.starlark_equals(Value::None))
 }
 
 ///|
 test "starlark_equals: Bool equal when same" {
-  assert_true(starlark_equals(Value::Bool(true), Value::Bool(true)))
-  assert_true(starlark_equals(Value::Bool(false), Value::Bool(false)))
-  assert_false(starlark_equals(Value::Bool(true), Value::Bool(false)))
+  assert_true(Value::Bool(true).starlark_equals(Value::Bool(true)))
+  assert_true(Value::Bool(false).starlark_equals(Value::Bool(false)))
+  assert_false(Value::Bool(true).starlark_equals(Value::Bool(false)))
 }
 
 ///|
 test "starlark_equals: Int equal when same value" {
-  assert_true(starlark_equals(Value::Int(42N), Value::Int(42N)))
-  assert_false(starlark_equals(Value::Int(42N), Value::Int(43N)))
-  assert_true(starlark_equals(Value::Int(-1N), Value::Int(-1N)))
+  assert_true(Value::Int(42N).starlark_equals(Value::Int(42N)))
+  assert_false(Value::Int(42N).starlark_equals(Value::Int(43N)))
+  assert_true(Value::Int(-1N).starlark_equals(Value::Int(-1N)))
 }
 
 ///|
 test "starlark_equals: Float equal when same finite value" {
-  assert_true(starlark_equals(Value::Float(1.0), Value::Float(1.0)))
-  assert_false(starlark_equals(Value::Float(1.0), Value::Float(2.0)))
+  assert_true(Value::Float(1.0).starlark_equals(Value::Float(1.0)))
+  assert_false(Value::Float(1.0).starlark_equals(Value::Float(2.0)))
 }
 
 ///|
 test "starlark_equals: Float NaN is equal to itself" {
   let nan = @double.not_a_number
-  assert_true(starlark_equals(Value::Float(nan), Value::Float(nan)))
+  assert_true(Value::Float(nan).starlark_equals(Value::Float(nan)))
 }
 
 ///|
 test "starlark_equals: String equal when same bytes" {
   assert_true(
-    starlark_equals(
-      Value::String(StarlarkString::new("hello")),
+    Value::String(StarlarkString::new("hello")).starlark_equals(
       Value::String(StarlarkString::new("hello")),
     ),
   )
   assert_false(
-    starlark_equals(
-      Value::String(StarlarkString::new("hello")),
+    Value::String(StarlarkString::new("hello")).starlark_equals(
       Value::String(StarlarkString::new("world")),
     ),
   )
@@ -99,8 +97,8 @@ test "starlark_equals: Bytes equal when same content" {
   let a = @utf8.encode("abc")
   let b = @utf8.encode("abc")
   let c = @utf8.encode("xyz")
-  assert_true(starlark_equals(Value::Bytes(a), Value::Bytes(b)))
-  assert_false(starlark_equals(Value::Bytes(a), Value::Bytes(c)))
+  assert_true(Value::Bytes(a).starlark_equals(Value::Bytes(b)))
+  assert_false(Value::Bytes(a).starlark_equals(Value::Bytes(c)))
 }
 
 ///|
@@ -112,9 +110,9 @@ test "starlark_equals: List equal when same length and elements" {
   let b = mk([Value::Int(1N), Value::Int(2N)])
   let c = mk([Value::Int(1N), Value::Int(3N)])
   let d = mk([Value::Int(1N)])
-  assert_true(starlark_equals(a, b))
-  assert_false(starlark_equals(a, c))
-  assert_false(starlark_equals(a, d))
+  assert_true(a.starlark_equals(b))
+  assert_false(a.starlark_equals(c))
+  assert_false(a.starlark_equals(d))
 }
 
 ///|
@@ -122,26 +120,26 @@ test "starlark_equals: Tuple equal when same length and elements" {
   let a = Value::Tuple([Value::Int(1N), Value::Int(2N)])
   let b = Value::Tuple([Value::Int(1N), Value::Int(2N)])
   let c = Value::Tuple([Value::Int(1N), Value::Int(3N)])
-  assert_true(starlark_equals(a, b))
-  assert_false(starlark_equals(a, c))
+  assert_true(a.starlark_equals(b))
+  assert_false(a.starlark_equals(c))
 }
 
 ///|
 test "starlark_equals: Int equals Float when numerically equal" {
-  assert_true(starlark_equals(Value::Int(1N), Value::Float(1.0)))
-  assert_true(starlark_equals(Value::Float(1.0), Value::Int(1N)))
-  assert_false(starlark_equals(Value::Int(1N), Value::Float(1.5)))
+  assert_true(Value::Int(1N).starlark_equals(Value::Float(1.0)))
+  assert_true(Value::Float(1.0).starlark_equals(Value::Int(1N)))
+  assert_false(Value::Int(1N).starlark_equals(Value::Float(1.5)))
   assert_false(
-    starlark_equals(Value::Int(1N), Value::Float(@double.not_a_number)),
+    Value::Int(1N).starlark_equals(Value::Float(@double.not_a_number)),
   )
-  assert_false(starlark_equals(Value::Int(1N), Value::Float(@double.infinity)))
+  assert_false(Value::Int(1N).starlark_equals(Value::Float(@double.infinity)))
 }
 
 ///|
 test "starlark_equals: different non-numeric types are unequal" {
-  assert_false(starlark_equals(Value::None, Value::Bool(false)))
-  assert_false(starlark_equals(Value::Int(1N), Value::Bool(true)))
-  assert_false(starlark_equals(Value::Int(0N), Value::None))
+  assert_false(Value::None.starlark_equals(Value::Bool(false)))
+  assert_false(Value::Int(1N).starlark_equals(Value::Bool(true)))
+  assert_false(Value::Int(0N).starlark_equals(Value::None))
 }
 
 // --- starlark_hash ---
@@ -368,5 +366,5 @@ test "starlark_hash: module is unhashable" {
 ///|
 test "to_str: module returns repr" {
   let m = StarlarkModule::new("assert", {})
-  assert_eq(to_str(Value::Module(m)), "<module \"assert\">")
+  assert_eq(Value::Module(m).to_str(), "<module \"assert\">")
 }

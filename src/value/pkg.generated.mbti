@@ -32,21 +32,11 @@ pub fn java_string_hash(StarlarkString) -> Int
 
 pub fn length_of(Value) -> Result[Int, String]
 
-pub fn repr(Value) -> String
-
-pub fn starlark_equals(Value, Value) -> Bool
-
 pub fn starlark_equals_depth(Value, Value, Int) -> Result[Bool, String]
 
 pub fn starlark_hash(Value) -> Result[UInt, String]
 
 pub fn starlark_mod(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
-
-pub fn to_str(Value) -> String
-
-pub fn truth(Value) -> Bool
-
-pub fn type_name(Value) -> String
 
 // Errors
 
@@ -284,6 +274,11 @@ pub fn Value::new_dict() -> Self
 pub fn Value::new_list(Array[Self]) -> Self
 pub fn Value::new_set() -> Self
 pub fn Value::of_string(String) -> Self
+pub fn Value::repr(Self) -> String
+pub fn Value::starlark_equals(Self, Self) -> Bool
+pub fn Value::to_str(Self) -> String
+pub fn Value::truth(Self) -> Bool
+pub fn Value::type_name(Self) -> String
 pub impl Eq for Value
 
 // Type aliases

@@ -1,5 +1,5 @@
 fn main {
-  let thread = @starlark.new_thread("main")
+  let thread = @starlark.Thread::new("main")
   let src =
     #|def fib(n):
     #|    if n <= 1:
@@ -8,9 +8,9 @@ fn main {
     #|
     #|result = fib(15)
     #|sequence = [fib(i) for i in range(10)]
-  match @starlark.exec_file(thread, "fibonacci.star", src, @starlark.default_options()) {
+  match @starlark.exec_file(thread, "fibonacci.star", src, @starlark.Options::default()) {
     Ok(m) => {
-      match @starlark.module_get(m, "result") {
+      match m.get("result") {
         Some(v) =>
           match @starlark.number_to_int(v) {
             Some(n) => println("fib(15) = \{n}")
@@ -18,11 +18,11 @@ fn main {
           }
         None => ()
       }
-      match @starlark.module_get(m, "sequence") {
-        Some(v) => println("sequence = \{@starlark.repr(v)}")
+      match m.get("sequence") {
+        Some(v) => println("sequence = \{v.repr()}")
         None => ()
       }
     }
-    Err(e) => println(@starlark.error_message(e))
+    Err(e) => println(e.msg())
   }
 }

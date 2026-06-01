@@ -70,7 +70,7 @@ fn eval_unary(
         @value.Value::Int(_) | @value.Value::Float(_) => v
         _ =>
           raise EvalErr(
-            make_eval_error(ctx, "unknown unary op: + \{@value.type_name(v)}"),
+            make_eval_error(ctx, "unknown unary op: + \{v.type_name()}"),
           )
       }
     @syntax.UnaryOp::OpMinus =>
@@ -79,7 +79,7 @@ fn eval_unary(
         @value.Value::Float(f) => @value.Value::Float(-f)
         _ =>
           raise EvalErr(
-            make_eval_error(ctx, "unknown unary op: - \{@value.type_name(v)}"),
+            make_eval_error(ctx, "unknown unary op: - \{v.type_name()}"),
           )
       }
     @syntax.UnaryOp::OpBitNot =>
@@ -87,10 +87,10 @@ fn eval_unary(
         @value.Value::Int(n) => @value.Value::Int(-n - 1N)
         _ =>
           raise EvalErr(
-            make_eval_error(ctx, "unknown unary op: ~ \{@value.type_name(v)}"),
+            make_eval_error(ctx, "unknown unary op: ~ \{v.type_name()}"),
           )
       }
-    @syntax.UnaryOp::OpNot => @value.Value::Bool(!@value.truth(v))
+    @syntax.UnaryOp::OpNot => @value.Value::Bool(!v.truth())
   }
 }
 
@@ -228,7 +228,7 @@ fn eval_add(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} + \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} + \{rv.type_name()}",
         ),
       )
   }
@@ -263,7 +263,7 @@ fn eval_arith_sub(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} - \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} - \{rv.type_name()}",
         ),
       )
   }
@@ -304,7 +304,7 @@ fn eval_mul(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} * \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} * \{rv.type_name()}",
         ),
       )
   }
@@ -486,7 +486,7 @@ fn eval_div(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} / \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} / \{rv.type_name()}",
         ),
       )
   }
@@ -524,7 +524,7 @@ fn eval_floor_div(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} // \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} // \{rv.type_name()}",
         ),
       )
   }
@@ -581,7 +581,7 @@ fn eval_mod(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} % \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} % \{rv.type_name()}",
         ),
       )
   }
@@ -599,7 +599,7 @@ fn percent_to_int(arg : @value.Value) -> Result[BigInt, String] {
       } else {
         Ok(@value.double_to_bigint(f))
       }
-    _ => Err("cannot convert \{@value.type_name(arg)} to int")
+    _ => Err("cannot convert \{arg.type_name()} to int")
   }
 }
 
@@ -684,8 +684,8 @@ fn percent_format(
     }
     let arg = arg_val
     match spec {
-      's' => buf.write_string(@value.to_str(arg))
-      'r' => buf.write_string(@value.repr(arg))
+      's' => buf.write_string(arg.to_str())
+      'r' => buf.write_string(arg.repr())
       'd' | 'i' =>
         match percent_to_int(arg) {
           Ok(n2) => buf.write_string(n2.to_string())
@@ -729,9 +729,7 @@ fn percent_format(
           @value.Value::Float(f) => f
           @value.Value::Int(n2) => @value.bigint_to_double(n2)
           _ =>
-            return Err(
-              "%\{spec} format requires float, not \{@value.type_name(arg)}",
-            )
+            return Err("%\{spec} format requires float, not \{arg.type_name()}")
         }
         let s2 = match spec {
           'e' => format_float_e(f, false)
@@ -777,7 +775,7 @@ fn percent_format(
           }
           _ =>
             return Err(
-              "%c format requires int or single-character string, not \{@value.type_name(arg)}",
+              "%c format requires int or single-character string, not \{arg.type_name()}",
             )
         }
       _ => return Err("unknown conversion %\{spec}")
@@ -1018,10 +1016,7 @@ fn eval_bitwise(
     }
     (@value.Value::Dict(_), _) if op == "lor" =>
       raise EvalErr(
-        make_eval_error(
-          ctx,
-          "unknown binary op: dict | \{@value.type_name(rv)}",
-        ),
+        make_eval_error(ctx, "unknown binary op: dict | \{rv.type_name()}"),
       )
     (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = @value.StarlarkSet::new()
@@ -1058,21 +1053,21 @@ fn eval_bitwise(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: set \{op_char} \{@value.type_name(rv)}",
+          "unknown binary op: set \{op_char} \{rv.type_name()}",
         ),
       )
     (_, @value.Value::Set(_)) =>
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} \{op_char} set",
+          "unknown binary op: \{lv.type_name()} \{op_char} set",
         ),
       )
     _ =>
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} \{op_char} \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} \{op_char} \{rv.type_name()}",
         ),
       )
   }
@@ -1115,7 +1110,7 @@ fn eval_shift(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(lv)} \{op_sym} \{@value.type_name(rv)}",
+          "unknown binary op: \{lv.type_name()} \{op_sym} \{rv.type_name()}",
         ),
       )
     }
@@ -1203,7 +1198,7 @@ fn in_op(
   match haystack {
     @value.Value::List(l) => {
       for item in l.iter() {
-        if @value.starlark_equals(needle, item) {
+        if needle.starlark_equals(item) {
           return @value.Value::Bool(true)
         }
       }
@@ -1211,7 +1206,7 @@ fn in_op(
     }
     @value.Value::Tuple(t) => {
       for item in t {
-        if @value.starlark_equals(needle, item) {
+        if needle.starlark_equals(item) {
           return @value.Value::Bool(true)
         }
       }
@@ -1230,7 +1225,7 @@ fn in_op(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "'in <string>' requires string as left operand, not \{@value.type_name(needle)}",
+              "'in <string>' requires string as left operand, not \{needle.type_name()}",
             ),
           )
       }
@@ -1242,7 +1237,7 @@ fn in_op(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "'in <range>' requires integer as left operand, not \{@value.type_name(needle)}",
+                "'in <range>' requires integer as left operand, not \{needle.type_name()}",
               ),
             )
           }
@@ -1252,7 +1247,7 @@ fn in_op(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "'in <range>' requires integer as left operand, not \{@value.type_name(needle)}",
+              "'in <range>' requires integer as left operand, not \{needle.type_name()}",
             ),
           )
       }
@@ -1303,7 +1298,7 @@ fn in_op(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "'in bytes' requires bytes or int as left operand, not \{@value.type_name(needle)}",
+              "'in bytes' requires bytes or int as left operand, not \{needle.type_name()}",
             ),
           )
       }
@@ -1315,7 +1310,7 @@ fn in_op(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "argument of type '\{@value.type_name(haystack)}' is not iterable",
+              "argument of type '\{haystack.type_name()}' is not iterable",
             ),
           )
       }
@@ -1323,7 +1318,7 @@ fn in_op(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unknown binary op: \{@value.type_name(needle)} in \{@value.type_name(haystack)}",
+          "unknown binary op: \{needle.type_name()} in \{haystack.type_name()}",
         ),
       )
   }
@@ -1345,10 +1340,7 @@ fn eval_index(
         }
         _ =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "list index: got \{@value.type_name(idx)}, want int",
-            ),
+            make_eval_error(ctx, "list index: got \{idx.type_name()}, want int"),
           )
       }
     @value.Value::Tuple(t) =>
@@ -1361,7 +1353,7 @@ fn eval_index(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "tuple index: got \{@value.type_name(idx)}, want int",
+              "tuple index: got \{idx.type_name()}, want int",
             ),
           )
       }
@@ -1376,7 +1368,7 @@ fn eval_index(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "string index: got \{@value.type_name(idx)}, want int",
+              "string index: got \{idx.type_name()}, want int",
             ),
           )
       }
@@ -1390,16 +1382,14 @@ fn eval_index(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "bytes index: got \{@value.type_name(idx)}, want int",
+              "bytes index: got \{idx.type_name()}, want int",
             ),
           )
       }
     @value.Value::Dict(d) =>
       match check(ctx, d.get(idx)) {
         None =>
-          raise EvalErr(
-            make_eval_error(ctx, "key \{@value.repr(idx)} not in dict"),
-          )
+          raise EvalErr(make_eval_error(ctx, "key \{idx.repr()} not in dict"))
         Some(v) => v
       }
     @value.Value::Range(r) =>
@@ -1412,7 +1402,7 @@ fn eval_index(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "range index: got \{@value.type_name(idx)}, want int",
+              "range index: got \{idx.type_name()}, want int",
             ),
           )
       }
@@ -1432,7 +1422,7 @@ fn eval_index(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "string.elems index: got \{@value.type_name(idx)}, want int",
+              "string.elems index: got \{idx.type_name()}, want int",
             ),
           )
       }
@@ -1443,7 +1433,7 @@ fn eval_index(
             Ok(n) => n
             Err(e) => raise EvalErr(make_eval_error(ctx, e))
           }
-          let j = check(ctx, adjust_index(i, len, @value.type_name(obj)))
+          let j = check(ctx, adjust_index(i, len, obj.type_name()))
           match c.get_index(j) {
             Ok(v) => v
             Err(e) => raise EvalErr(make_eval_error(ctx, e))
@@ -1453,7 +1443,7 @@ fn eval_index(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "\{@value.type_name(obj)} index: got \{@value.type_name(idx)}, want int",
+              "\{obj.type_name()} index: got \{idx.type_name()}, want int",
             ),
           )
       }
@@ -1461,7 +1451,7 @@ fn eval_index(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "unhandled index operation \{@value.type_name(obj)}[\{@value.type_name(idx)}]",
+          "unhandled index operation \{obj.type_name()}[\{idx.type_name()}]",
         ),
       )
   }
@@ -1484,7 +1474,7 @@ fn set_index(
         }
         _ =>
           raise EvalErr(
-            make_eval_error(ctx, "got \{@value.type_name(idx)}, want int"),
+            make_eval_error(ctx, "got \{idx.type_name()}, want int"),
           )
       }
     @value.Value::Dict(d) => check(ctx, d.set(idx, val))
@@ -1501,7 +1491,7 @@ fn set_index(
                 Ok(n) => n
                 Err(e) => raise EvalErr(make_eval_error(ctx, e))
               }
-              let j = check(ctx, adjust_index(i, len, @value.type_name(obj)))
+              let j = check(ctx, adjust_index(i, len, obj.type_name()))
               match c.do_set_index(j, val) {
                 Some(Ok(_)) => ()
                 Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
@@ -1509,14 +1499,14 @@ fn set_index(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "\{@value.type_name(obj)} value does not support item assignment",
+                      "\{obj.type_name()} value does not support item assignment",
                     ),
                   )
               }
             }
             _ =>
               raise EvalErr(
-                make_eval_error(ctx, "got \{@value.type_name(idx)}, want int"),
+                make_eval_error(ctx, "got \{idx.type_name()}, want int"),
               )
           }
       }
@@ -1524,7 +1514,7 @@ fn set_index(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{@value.type_name(obj)} value does not support item assignment",
+          "\{obj.type_name()} value does not support item assignment",
         ),
       )
   }
@@ -1645,16 +1635,13 @@ fn eval_slice(
         Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
         None =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "invalid slice operand \{@value.type_name(obj)}",
-            ),
+            make_eval_error(ctx, "invalid slice operand \{obj.type_name()}"),
           )
       }
     }
     _ =>
       raise EvalErr(
-        make_eval_error(ctx, "invalid slice operand \{@value.type_name(obj)}"),
+        make_eval_error(ctx, "invalid slice operand \{obj.type_name()}"),
       )
   }
 }

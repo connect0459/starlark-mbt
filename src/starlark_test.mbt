@@ -1,12 +1,12 @@
 ///|
 test "new_thread creates a Thread usable with exec_file" {
-  let t = @starlark.new_thread("hello")
+  let t = @starlark.Thread::new("hello")
   assert_eq(t.name(), "hello")
 }
 
 ///|
 test "default_options returns Options with all feature flags enabled" {
-  let opts = @starlark.default_options()
+  let opts = @starlark.Options::default()
   assert_eq(opts.allow_set(), true)
   assert_eq(opts.allow_recursion(), true)
   assert_eq(opts.allow_float(), true)
@@ -23,8 +23,8 @@ test "new_thread_with_loader resolves load() calls via callback" {
     _t : @starlark.Thread,
     _path : String,
   ) -> Result[@starlark.Module, @starlark.EvalError] {
-    let lt = @starlark.new_thread("loader")
-    @starlark.exec_file(lt, "lib.star", lib_src, @starlark.default_options())
+    let lt = @starlark.Thread::new("loader")
+    @starlark.exec_file(lt, "lib.star", lib_src, @starlark.Options::default())
   }
   let thread = @starlark.new_thread_with_loader("main", loader)
   match
@@ -32,10 +32,10 @@ test "new_thread_with_loader resolves load() calls via callback" {
       thread,
       "main.star",
       main_src,
-      @starlark.default_options(),
+      @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "result") {
+      match m.get("result") {
         Some(v) =>
           match @starlark.number_to_int(v) {
             Some(n) => assert_eq(n, 42L)
@@ -43,16 +43,16 @@ test "new_thread_with_loader resolves load() calls via callback" {
           }
         None => assert_true(false)
       }
-    Err(e) => fail(@starlark.error_message(e))
+    Err(e) => fail(e.msg())
   }
 }
 
 ///|
 test "error_message extracts the message from an EvalError" {
-  let t = @starlark.new_thread("test")
+  let t = @starlark.Thread::new("test")
   match
-    @starlark.exec_file(t, "<test>", "x = 1 // 0", @starlark.default_options()) {
-    Err(e) => assert_true(@starlark.error_message(e).contains("zero"))
+    @starlark.exec_file(t, "<test>", "x = 1 // 0", @starlark.Options::default()) {
+    Err(e) => assert_true(e.msg().contains("zero"))
     Ok(_) => assert_true(false)
   }
 }
@@ -70,10 +70,7 @@ test "Universe::set adds a binding visible to executed modules" {
       @starlark.Options::default(),
       u,
     ) {
-    Ok(m) =>
-      assert_true(
-        @starlark.module_get(m, "result") == Some(@starlark.Value::Int(43N)),
-      )
+    Ok(m) => assert_true(m.get("result") == Some(@starlark.Value::Int(43N)))
     Err(e) => fail(e.msg())
   }
 }
@@ -87,7 +84,7 @@ test "eval_expr_with_opts respects allow_set option" {
   match
     @starlark.eval_expr_with_opts(t, "<test>", "{1, 2}", opts_with_set, env) {
     Ok(@starlark.Value::Set(_)) => ()
-    Ok(v) => fail("expected Set, got \{@starlark.type_name(v)}")
+    Ok(v) => fail("expected Set, got \{v.type_name()}")
     Err(e) => fail(e.msg())
   }
 }
@@ -109,20 +106,14 @@ test "parse_file + file_program + Program::init pipeline" {
   pd1.set("X", @starlark.Value::Int(10N))
   let t1 = @starlark.Thread::new("test")
   match prog.init(t1, pd1) {
-    Ok(m) =>
-      assert_true(
-        @starlark.module_get(m, "result") == Some(@starlark.Value::Int(11N)),
-      )
+    Ok(m) => assert_true(m.get("result") == Some(@starlark.Value::Int(11N)))
     Err(e) => fail(e.msg())
   }
   let pd2 = @starlark.Predeclared::new()
   pd2.set("X", @starlark.Value::Int(99N))
   let t2 = @starlark.Thread::new("test")
   match prog.init(t2, pd2) {
-    Ok(m) =>
-      assert_true(
-        @starlark.module_get(m, "result") == Some(@starlark.Value::Int(100N)),
-      )
+    Ok(m) => assert_true(m.get("result") == Some(@starlark.Value::Int(100N)))
     Err(e) => fail(e.msg())
   }
 }
@@ -186,10 +177,7 @@ test "exec_file runs a simple script and exposes globals" {
   let t = @starlark.Thread::new("test")
   match
     @starlark.exec_file(t, "<test>", "x = 1 + 2", @starlark.Options::default()) {
-    Ok(m) =>
-      assert_true(
-        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(3N)),
-      )
+    Ok(m) => assert_true(m.get("x") is Some(@starlark.Value::Int(3N)))
     Err(_) => assert_true(false)
   }
 }
@@ -243,10 +231,7 @@ test "exec_file_with_predeclared injects host bindings" {
       @starlark.Options::default(),
       predeclared,
     ) {
-    Ok(m) =>
-      assert_true(
-        @starlark.module_get(m, "x") is Some(@starlark.Value::Int(43N)),
-      )
+    Ok(m) => assert_true(m.get("x") is Some(@starlark.Value::Int(43N)))
     Err(_) => assert_true(false)
   }
 }
@@ -271,7 +256,7 @@ test "module_get returns None for undefined globals" {
   let t = @starlark.Thread::new("test")
   match
     @starlark.exec_file(t, "<test>", "x = 1", @starlark.Options::default()) {
-    Ok(m) => assert_true(@starlark.module_get(m, "y") is None)
+    Ok(m) => assert_true(m.get("y") is None)
     Err(_) => assert_true(false)
   }
 }
@@ -451,7 +436,7 @@ test "call invokes a Starlark function from the host" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "add") {
+      match m.get("add") {
         Some(fn_val) =>
           match
             @starlark.call(
@@ -592,7 +577,7 @@ test "StarlarkFunction::num_params counts positional parameters" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => assert_eq(f.num_params(), 3)
         _ => assert_true(false)
       }
@@ -611,7 +596,7 @@ test "StarlarkFunction::has_varargs detects star-args parameter" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => {
           assert_true(f.has_varargs())
           assert_false(f.has_kwargs())
@@ -633,7 +618,7 @@ test "StarlarkFunction::has_kwargs detects double-star parameter" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => {
           assert_false(f.has_varargs())
           assert_true(f.has_kwargs())
@@ -655,7 +640,7 @@ test "StarlarkFunction::num_kwonly_params counts keyword-only params" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) =>
           assert_eq(f.num_kwonly_params(), 2)
         _ => assert_true(false)
@@ -675,7 +660,7 @@ test "StarlarkFunction::param returns name and position by index" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => {
           let (name0, _pos0) = f.param(0)
           let (name1, _pos1) = f.param(1)
@@ -699,7 +684,7 @@ test "StarlarkFunction::doc returns first string literal as docstring" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => assert_eq(f.doc(), "the doc")
         _ => assert_true(false)
       }
@@ -718,7 +703,7 @@ test "StarlarkFunction::position returns def site position" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => {
           let pos = f.position()
           assert_eq(pos.filename(), "<test>")
@@ -818,7 +803,7 @@ test "StarlarkFunction::free_var returns name from captured scope" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) =>
           assert_true(f.num_free_vars() >= 1)
         _ => assert_true(false)
@@ -838,7 +823,7 @@ test "StarlarkFunction::free_var returns binding from captured scope" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => {
           let n = f.num_free_vars()
           assert_true(n >= 1)
@@ -865,7 +850,7 @@ test "StarlarkFunction::globals returns module global variables" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) => {
           let g = f.globals()
           assert_true(g.contains("X"))
@@ -914,7 +899,7 @@ test "StarlarkFunction::module returns the defining module" {
       @starlark.Options::default(),
     ) {
     Ok(m) =>
-      match @starlark.module_get(m, "f") {
+      match m.get("f") {
         Some(@starlark.Value::Function(f)) =>
           match f.defining_module() {
             Some(mod_ref) => {

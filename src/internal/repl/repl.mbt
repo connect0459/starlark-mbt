@@ -49,7 +49,7 @@ pub fn eval_input(
           // Bind the last expression's value to `_`, matching the Python REPL.
           let key = @value.Value::String(@value.StarlarkString::new("_"))
           globals.set(key, v) |> ignore
-          Value(@value.repr(v))
+          Value(v.repr())
         }
       Err(e) => EvalError(e.msg())
     }

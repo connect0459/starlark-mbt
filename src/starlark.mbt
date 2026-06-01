@@ -63,8 +63,8 @@ pub type CustomValue = @value.CustomValue
 /// The callback receives the current thread and the load path string, and
 /// must return the loaded `Module` or an `EvalError`.
 ///
-/// This is a convenience wrapper for `Thread::with_loader` that can be
-/// called from external modules without importing the internal `eval` package.
+/// Convenience wrapper for `Thread::with_loader` for the common
+/// loader-callback pattern.
 ///
 /// Parameters:
 ///
@@ -77,59 +77,6 @@ pub fn new_thread_with_loader(
   loader : (Thread, String) -> Result[Module, EvalError],
 ) -> Thread {
   @eval.Thread::with_loader(name, loader)
-}
-
-///|
-/// Creates a new `Thread` with the given name.
-///
-/// This is a convenience wrapper for `Thread::new` that can be called from
-/// external modules without importing the internal `eval` package.
-///
-/// Parameters:
-///
-/// * `name` : A label used in call-stack traces and error messages.
-///
-/// Returns a new `Thread` ready for execution.
-pub fn new_thread(name : String) -> Thread {
-  @eval.Thread::new(name)
-}
-
-///|
-/// Returns a `Options` value with all feature flags set to `true`.
-///
-/// This is a convenience wrapper for `Options::default` that can be called
-/// from external modules without importing the internal `eval` package.
-///
-/// Returns the default `Options`.
-pub fn default_options() -> Options {
-  @eval.Options::default()
-}
-
-///|
-/// Returns the human-readable error message from an `EvalError`.
-///
-/// This is a convenience wrapper for `EvalError::msg` that can be called from
-/// external modules without importing the internal `errors` package.
-///
-/// Parameters:
-///
-/// * `e` : The evaluation error to extract the message from.
-///
-/// Returns the error message string.
-pub fn error_message(e : EvalError) -> String {
-  e.msg()
-}
-
-///|
-/// Wraps a `CustomValue` in the `Value` sum type.
-///
-/// Parameters:
-///
-/// * `cv` : The custom value to wrap.
-///
-/// Returns a `Value::ExtVal` containing `cv`.
-pub fn new_custom_value(cv : CustomValue) -> Value {
-  @value.Value::ExtVal(cv)
 }
 
 ///|
@@ -442,85 +389,6 @@ pub fn exec_repl_chunk(
 }
 
 ///|
-/// Returns the value bound to `name` in the module's global namespace, or
-/// `None` if the name is not present.
-///
-/// Parameters:
-///
-/// * `m` : The module to look up in.
-/// * `name` : The global name to retrieve.
-///
-/// Returns the bound `Value`, or `None` if the name is absent.
-pub fn module_get(m : Module, name : String) -> Value? {
-  m.get(name)
-}
-
-///|
-/// Returns the Starlark `repr(v)` string — a quoted, round-trip-safe
-/// representation.
-///
-/// Parameters:
-///
-/// * `v` : The Starlark value to represent.
-///
-/// Returns the `repr` string of `v`.
-pub fn repr(v : Value) -> String {
-  @value.repr(v)
-}
-
-///|
-/// Returns the Starlark `str(v)` string — unquoted for strings, `repr` for
-/// everything else.
-///
-/// Parameters:
-///
-/// * `v` : The Starlark value to convert to a string.
-///
-/// Returns the `str` string of `v`.
-pub fn to_str(v : Value) -> String {
-  @value.to_str(v)
-}
-
-///|
-/// Returns the Starlark `type(v)` string (e.g. `"int"`, `"list"`).
-///
-/// Parameters:
-///
-/// * `v` : The Starlark value whose type name to retrieve.
-///
-/// Returns the type name string.
-pub fn type_name(v : Value) -> String {
-  @value.type_name(v)
-}
-
-///|
-/// Returns the boolean truth value of `v`, as used by `if`, `while`, `and`,
-/// and `or` expressions.
-///
-/// Parameters:
-///
-/// * `v` : The Starlark value to test for truthiness.
-///
-/// Returns `true` if `v` is truthy, `false` otherwise.
-pub fn truth(v : Value) -> Bool {
-  @value.truth(v)
-}
-
-///|
-/// Returns `true` if `a == b` under Starlark semantics, including cross-type
-/// `Int`/`Float` comparison and NaN inequality.
-///
-/// Parameters:
-///
-/// * `a` : The left-hand value.
-/// * `b` : The right-hand value.
-///
-/// Returns `true` if `a` and `b` are equal under Starlark semantics.
-pub fn starlark_equals(a : Value, b : Value) -> Bool {
-  @value.starlark_equals(a, b)
-}
-
-///|
 /// Wraps `starlark_equals` in a `Result`; always succeeds.
 ///
 /// Parameters:
@@ -530,7 +398,7 @@ pub fn starlark_equals(a : Value, b : Value) -> Bool {
 ///
 /// Returns `Ok(true)` if `a == b`, `Ok(false)` otherwise.
 pub fn equal(a : Value, b : Value) -> Result[Bool, EvalError] {
-  Ok(@value.starlark_equals(a, b))
+  Ok(a.starlark_equals(b))
 }
 
 ///|

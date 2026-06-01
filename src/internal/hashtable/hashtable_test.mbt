@@ -4,7 +4,7 @@
 fn new_dict() -> Hashtable[@value.Value, @value.Value] {
   Hashtable::new(
     @value.starlark_hash,
-    @value.starlark_equals,
+    fn(a, b) { a.starlark_equals(b) },
     @value.Value::None,
     @value.Value::None,
   )
@@ -89,9 +89,9 @@ test "Hashtable: insertion order preserved during iteration" {
   let collected : Array[@value.Value] = []
   ht.each_key(fn(k) { collected.push(k) })
   assert_eq(collected.length(), 3)
-  assert_true(@value.starlark_equals(collected[0], keys[0]))
-  assert_true(@value.starlark_equals(collected[1], keys[1]))
-  assert_true(@value.starlark_equals(collected[2], keys[2]))
+  assert_true(collected[0].starlark_equals(keys[0]))
+  assert_true(collected[1].starlark_equals(keys[1]))
+  assert_true(collected[2].starlark_equals(keys[2]))
 }
 
 ///|
@@ -107,8 +107,8 @@ test "Hashtable: insertion order maintained after delete" {
   let collected : Array[@value.Value] = []
   ht.each_key(fn(k) { collected.push(k) })
   assert_eq(collected.length(), 2)
-  assert_true(@value.starlark_equals(collected[0], k0))
-  assert_true(@value.starlark_equals(collected[1], k2))
+  assert_true(collected[0].starlark_equals(k0))
+  assert_true(collected[1].starlark_equals(k2))
 }
 
 ///|

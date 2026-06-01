@@ -79,7 +79,7 @@ fn expect_float(
       if !approx(f, expected) {
         fail("expected \{expected}, got \{f}")
       }
-    Ok(v) => fail("expected Float, got \{@value.type_name(v)}")
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
     Err(e) => fail("expected Ok, got Err(\{e})")
   }
 }
@@ -94,7 +94,7 @@ fn expect_int(
       if i != BigInt::from_int64(expected) {
         fail("expected \{expected}, got \{i}")
       }
-    Ok(v) => fail("expected Int, got \{@value.type_name(v)}")
+    Ok(v) => fail("expected Int, got \{v.type_name()}")
     Err(e) => fail("expected Ok, got Err(\{e})")
   }
 }
@@ -109,7 +109,7 @@ fn expect_err(
       if !msg.contains(substring) {
         fail("expected error containing '\{substring}', got '\{msg}'")
       }
-    Ok(v) => fail("expected Err, got Ok(\{@value.repr(v)})")
+    Ok(v) => fail("expected Err, got Ok(\{v.repr()})")
   }
 }
 
@@ -176,7 +176,7 @@ fn expect_exact_err(
 ) -> Unit raise Error {
   match r {
     Err(msg) => assert_eq(msg, message)
-    Ok(v) => fail("expected Err, got Ok(\{@value.repr(v)})")
+    Ok(v) => fail("expected Err, got Ok(\{v.repr()})")
   }
 }
 
@@ -287,7 +287,7 @@ test "math_module: log base=0 computes without error" {
   // ln(x)/ln(0) = ln(x)/(-inf) = 0.0
   match call2(m, "log", fv(2.0), fv(0.0)) {
     Ok(@value.Value::Float(_)) => ()
-    Ok(v) => fail("expected Float, got \{@value.type_name(v)}")
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
     Err(e) => fail("expected Ok, got Err(\{e})")
   }
 }

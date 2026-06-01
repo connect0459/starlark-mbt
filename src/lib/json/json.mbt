@@ -209,9 +209,9 @@ fn encode_inner(
     @value.Value::ExtVal(c) =>
       match c.get_attr_names() {
         Some(names) => encode_ext_val_as_object(c, names, state)
-        None => Err("cannot encode \{@value.type_name(v)} as JSON")
+        None => Err("cannot encode \{v.type_name()} as JSON")
       }
-    _ => Err("cannot encode \{@value.type_name(v)} as JSON")
+    _ => Err("cannot encode \{v.type_name()} as JSON")
   }
 }
 
@@ -292,7 +292,7 @@ fn encode_dict_val(
     }
     match k {
       @value.Value::String(s) => pairs.push((s.raw(), v))
-      _ => first_err = Some("dict has \{@value.type_name(k)} key, want string")
+      _ => first_err = Some("dict has \{k.type_name()} key, want string")
     }
   })
   if first_err is Some(e) {
@@ -590,10 +590,7 @@ fn parse_json_object(
           @value.Value::String(_) => ()
           _ =>
             return Err(
-              (
-                next_j,
-                "got \{@value.type_name(key)} for object key, want string",
-              ),
+              (next_j, "got \{key.type_name()} for object key, want string"),
             )
         }
         j = skip_ws(chars, next_j)
@@ -898,11 +895,11 @@ fn make_encode_indent_fn() -> @value.Value {
         ("indent", @value.Value::String(s)) => ind = s.raw()
         ("prefix", _) =>
           return Err(
-            "json.encode_indent: for parameter prefix: got \{@value.type_name(v)}, want string",
+            "json.encode_indent: for parameter prefix: got \{v.type_name()}, want string",
           )
         ("indent", _) =>
           return Err(
-            "json.encode_indent: for parameter indent: got \{@value.type_name(v)}, want string",
+            "json.encode_indent: for parameter indent: got \{v.type_name()}, want string",
           )
         _ => return Err("json.encode_indent: unexpected keyword argument \{k}")
       }
@@ -969,11 +966,11 @@ fn make_indent_fn() -> @value.Value {
         ("indent", @value.Value::String(sv)) => ind = sv.raw()
         ("prefix", _) =>
           return Err(
-            "json.indent: for parameter prefix: got \{@value.type_name(v)}, want string",
+            "json.indent: for parameter prefix: got \{v.type_name()}, want string",
           )
         ("indent", _) =>
           return Err(
-            "json.indent: for parameter indent: got \{@value.type_name(v)}, want string",
+            "json.indent: for parameter indent: got \{v.type_name()}, want string",
           )
         _ => return Err("json.indent: unexpected keyword argument \{k}")
       }

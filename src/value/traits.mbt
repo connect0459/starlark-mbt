@@ -1,6 +1,6 @@
 ///|
 pub impl Eq for Value with fn equal(a, b) -> Bool {
-  starlark_equals(a, b)
+  a.starlark_equals(b)
 }
 
 ///|
@@ -12,7 +12,7 @@ pub impl Eq for Value with fn equal(a, b) -> Bool {
 /// * `v` : The value to convert to a string.
 ///
 /// Returns the Starlark `str()` representation of `v`.
-pub fn to_str(v : Value) -> String {
+pub fn Value::to_str(v : Value) -> String {
   match v {
     None => "None"
     Bool(true) => "True"
@@ -25,8 +25,8 @@ pub fn to_str(v : Value) -> String {
     Tuple(t) => repr_tuple(t)
     Dict(d) => repr_inner(Dict(d), [], [])
     Set(s) => repr_inner(Set(s), [], [])
-    Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) => repr(v)
-    StringElems(_) | StringCodepoints(_) | BytesElems(_) => repr(v)
+    Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) => v.repr()
+    StringElems(_) | StringCodepoints(_) | BytesElems(_) => v.repr()
     ExtVal(c) => c.get_repr()
   }
 }
@@ -41,7 +41,7 @@ pub fn to_str(v : Value) -> String {
 /// * `b` : The right-hand side value.
 ///
 /// Returns `true` when the two values are equal under Starlark semantics.
-pub fn starlark_equals(a : Value, b : Value) -> Bool {
+pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
   match (a, b) {
     (None, None) => true
     (Bool(x), Bool(y)) => x == y
@@ -123,7 +123,7 @@ fn slice_equals(a : ArrayView[Value], b : ArrayView[Value]) -> Bool {
     return false
   }
   for i in 0..<a.length() {
-    if starlark_equals(a[i], b[i]) == false {
+    if a[i].starlark_equals(b[i]) == false {
       return false
     }
   }
@@ -502,14 +502,14 @@ pub fn compare_values_depth(
     (ExtVal(ac), _) =>
       match ac.get_compare(b) {
         Some(c) => Ok(c)
-        None => Err("\{type_name(a)} \{op} \{type_name(b)} not implemented")
+        None => Err("\{a.type_name()} \{op} \{b.type_name()} not implemented")
       }
     (_, ExtVal(rc)) =>
       match rc.get_compare(a) {
         Some(c) => Ok(-c)
-        None => Err("\{type_name(a)} \{op} \{type_name(b)} not implemented")
+        None => Err("\{a.type_name()} \{op} \{b.type_name()} not implemented")
       }
-    _ => Err("\{type_name(a)} \{op} \{type_name(b)} not implemented")
+    _ => Err("\{a.type_name()} \{op} \{b.type_name()} not implemented")
   }
 }
 
@@ -733,7 +733,7 @@ fn dict_equals(a : StarlarkDict, b : StarlarkDict) -> Bool {
   a.each(fn(k, v) {
     if ok {
       match b.get(k) {
-        Ok(Some(bv)) => if starlark_equals(v, bv) == false { ok = false }
+        Ok(Some(bv)) => if v.starlark_equals(bv) == false { ok = false }
         _ => ok = false
       }
     }

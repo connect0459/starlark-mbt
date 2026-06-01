@@ -62,9 +62,9 @@ fn assert_decode(
   match decode_from_json(json_str, None) {
     Err(e) => fail("decode \{json_str} failed: \{e}")
     Ok(v) =>
-      if !@value.starlark_equals(v, expected) {
+      if !v.starlark_equals(expected) {
         fail(
-          "decode \{json_str}: \{msg}: got \{@value.repr(v)}, want \{@value.repr(expected)}",
+          "decode \{json_str}: \{msg}: got \{v.repr()}, want \{expected.repr()}",
         )
       }
   }
@@ -196,7 +196,7 @@ test "decode negative zero float" {
           if !(f == -0.0 && 1.0 / f == @double.neg_infinity) {
             fail("expected -0.0, got \{f}")
           }
-        _ => fail("expected Float, got \{@value.repr(v)}")
+        _ => fail("expected Float, got \{v.repr()}")
       }
   }
 }
@@ -226,8 +226,8 @@ test "decode array" {
 test "decode with default on invalid input" {
   match decode_from_json("{bad json", Some(str_val("fallback"))) {
     Ok(v) =>
-      if !@value.starlark_equals(v, str_val("fallback")) {
-        fail("expected fallback, got \{@value.repr(v)}")
+      if !v.starlark_equals(str_val("fallback")) {
+        fail("expected fallback, got \{v.repr()}")
       }
     Err(e) => fail("expected default, got error: \{e}")
   }
@@ -355,14 +355,12 @@ test "encode then decode round-trips values" {
       Ok(json_str) =>
         match decode_from_json(json_str, None) {
           Ok(decoded) =>
-            if !@value.starlark_equals(v, decoded) {
-              fail(
-                "round-trip failed for \{@value.repr(v)}: got \{@value.repr(decoded)}",
-              )
+            if !v.starlark_equals(decoded) {
+              fail("round-trip failed for \{v.repr()}: got \{decoded.repr()}")
             }
-          Err(e) => fail("decode failed for \{@value.repr(v)}: \{e}")
+          Err(e) => fail("decode failed for \{v.repr()}: \{e}")
         }
-      Err(e) => fail("encode failed for \{@value.repr(v)}: \{e}")
+      Err(e) => fail("encode failed for \{v.repr()}: \{e}")
     }
   }
 }

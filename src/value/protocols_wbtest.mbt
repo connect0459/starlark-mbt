@@ -7,7 +7,7 @@ struct SimpleMap {
 impl Mapping for SimpleMap with fn mapping_get(self, key) {
   for kv in self.data {
     let (k, v) = kv
-    if starlark_equals(k, key) {
+    if k.starlark_equals(key) {
       return Ok(Some(v))
     }
   }
@@ -234,7 +234,7 @@ test "CustomValue: contains delegates to contains_fn" {
       v,
     ) {
       for item in items {
-        if starlark_equals(item, v) {
+        if item.starlark_equals(v) {
           return Ok(true)
         }
       }
@@ -249,21 +249,21 @@ test "CustomValue: contains delegates to contains_fn" {
 test "Value::ExtVal type_name" {
   let cv = CustomValue::new(fn() { "my_type" }, fn() { true }, fn() { "<obj>" })
   let v = Value::ExtVal(cv)
-  assert_eq(type_name(v), "my_type")
+  assert_eq(v.type_name(), "my_type")
 }
 
 ///|
 test "Value::ExtVal truth" {
   let cv_true = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
   let cv_false = CustomValue::new(fn() { "f" }, fn() { false }, fn() { "" })
-  assert_eq(truth(Value::ExtVal(cv_true)), true)
-  assert_eq(truth(Value::ExtVal(cv_false)), false)
+  assert_eq(Value::ExtVal(cv_true).truth(), true)
+  assert_eq(Value::ExtVal(cv_false).truth(), false)
 }
 
 ///|
 test "Value::ExtVal repr" {
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "<custom>" })
-  assert_eq(repr(Value::ExtVal(cv)), "<custom>")
+  assert_eq(Value::ExtVal(cv).repr(), "<custom>")
 }
 
 ///|

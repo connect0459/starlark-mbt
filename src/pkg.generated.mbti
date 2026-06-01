@@ -23,13 +23,9 @@ pub fn compare_depth(String, @value.Value, @value.Value, Int) -> Result[Bool, @e
 
 pub let compare_limit : Int
 
-pub fn default_options() -> @eval.Options
-
 pub fn equal(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
 pub fn equal_depth(@value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]
-
-pub fn error_message(@errors.EvalError) -> String
 
 pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 
@@ -51,12 +47,6 @@ pub fn iterate(@value.Value) -> Result[@value.StarlarkIterator, @errors.EvalErro
 
 pub fn len_of(@value.Value) -> Int
 
-pub fn module_get(@eval.Module, String) -> @value.Value?
-
-pub fn new_custom_value(@value.CustomValue) -> @value.Value
-
-pub fn new_thread(String) -> @eval.Thread
-
 pub fn new_thread_with_loader(String, (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError]) -> @eval.Thread
 
 pub fn number_to_int(@value.Value) -> Int64?
@@ -65,19 +55,9 @@ pub fn parse_expr(String, String) -> Result[@syntax.Expr, @errors.EvalError]
 
 pub fn parse_file(String, String) -> Result[@syntax.File, @errors.EvalError]
 
-pub fn repr(@value.Value) -> String
-
 pub fn source_program(String, String, @eval.Options, (String) -> Bool) -> Result[@eval.Program, @errors.EvalError]
 
 pub fn source_program_with_file(String, String, @eval.Options, (String) -> Bool) -> Result[(@syntax.File, @eval.Program), @errors.EvalError]
-
-pub fn starlark_equals(@value.Value, @value.Value) -> Bool
-
-pub fn to_str(@value.Value) -> String
-
-pub fn truth(@value.Value) -> Bool
-
-pub fn type_name(@value.Value) -> String
 
 pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
 

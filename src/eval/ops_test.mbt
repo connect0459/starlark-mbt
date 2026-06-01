@@ -347,7 +347,7 @@ test "eval_expr: modulo sign follows divisor not dividend" {
 fn make_ext_seq(items : Array[@value.Value]) -> @value.Value {
   @value.Value::ExtVal(
     @value.CustomValue::new(fn() { "myseq" }, fn() { true }, fn() {
-      let parts = items.map(fn(v) { @value.repr(v) }).join(", ")
+      let parts = items.map(fn(v) { v.repr() }).join(", ")
       "myseq([\{parts}])"
     })
     .with_length(fn() { items.length() })
@@ -461,7 +461,7 @@ test "eval_expr: ExtVal with slice supports slice notation" {
   ])
   match eval_with_env("s[1:3]", [("s", seq)]) {
     Ok(@value.Value::Tuple(t)) => assert_eq(t.length(), 2)
-    Ok(other) => fail("expected Tuple, got \{@value.repr(other)}")
+    Ok(other) => fail("expected Tuple, got \{other.repr()}")
     Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
@@ -480,7 +480,7 @@ fn op_err(src : String) -> String {
 fn op_ok_str(src : String) -> String {
   match eval_op(src) {
     Ok(@value.Value::String(s)) => s.raw()
-    Ok(other) => "non-string: \{@value.repr(other)}"
+    Ok(other) => "non-string: \{other.repr()}"
     Err(e) => "error: \{e.msg()}"
   }
 }

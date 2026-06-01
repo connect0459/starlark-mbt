@@ -17,7 +17,7 @@ fn parse_uint_str(s : String) -> Int? {
 fn ctor_display(ctor : @value.Value) -> String {
   match ctor {
     @value.Value::String(s) => s.raw()
-    _ => @value.to_str(ctor)
+    _ => ctor.to_str()
   }
 }
 
@@ -35,7 +35,7 @@ fn struct_repr(
     }
     buf.write_string(e.0)
     buf.write_string(" = ")
-    buf.write_string(@value.repr(e.1))
+    buf.write_string(e.1.repr())
   }
   buf.write_char(')')
   buf.to_string()
@@ -183,7 +183,7 @@ fn struct_equals(
         Ok(Some(v)) => v
         _ => return false
       }
-      if !@value.starlark_equals(ctor, other_ctor) {
+      if !ctor.starlark_equals(other_ctor) {
         return false
       }
       let other_n = match c.get_attr("__n") {
@@ -205,7 +205,7 @@ fn struct_equals(
           Ok(Some(v)) => v
           _ => return false
         }
-        if !@value.starlark_equals(entries[i].1, other_val) {
+        if !entries[i].1.starlark_equals(other_val) {
           return false
         }
       }
@@ -237,7 +237,7 @@ fn struct_binary(
         None => return Some(Err("struct: cannot add, could not read entries"))
       }
       if is_left {
-        if !@value.starlark_equals(ctor, other_ctor) {
+        if !ctor.starlark_equals(other_ctor) {
           let lname = ctor_display(ctor)
           let rname = ctor_display(other_ctor)
           return Some(
@@ -248,7 +248,7 @@ fn struct_binary(
         }
         Some(Ok(make_struct(ctor, merge_entries(entries, other_entries))))
       } else {
-        if !@value.starlark_equals(other_ctor, ctor) {
+        if !other_ctor.starlark_equals(ctor) {
           let lname = ctor_display(other_ctor)
           let rname = ctor_display(ctor)
           return Some(

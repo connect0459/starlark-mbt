@@ -45,7 +45,7 @@ test "Program: repeated exec with different predeclared values" {
       Ok(m) =>
         match m.get("y") {
           None => fail("x=42: missing y")
-          Some(v) => assert_eq(@value.repr(v), "84")
+          Some(v) => assert_eq(v.repr(), "84")
         }
     }
   }
@@ -57,7 +57,7 @@ test "Program: repeated exec with different predeclared values" {
     Ok(m) =>
       match m.get("y") {
         None => fail("x=mur: missing y")
-        Some(v) => assert_eq(@value.repr(v), "\"murmur\"")
+        Some(v) => assert_eq(v.repr(), "\"murmur\"")
       }
   }
 }

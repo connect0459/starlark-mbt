@@ -1273,7 +1273,7 @@ pub fn Value::new_builtin(
 /// * `v` : The value whose type name to retrieve.
 ///
 /// Returns the Starlark type name string.
-pub fn type_name(v : Value) -> String {
+pub fn Value::type_name(v : Value) -> String {
   match v {
     None => "NoneType"
     Bool(_) => "bool"
@@ -1306,7 +1306,7 @@ pub fn type_name(v : Value) -> String {
 ///
 /// Returns `false` for `None`, `False`, zero numbers, empty strings/bytes/
 /// collections, and zero-length ranges; `true` for everything else.
-pub fn truth(v : Value) -> Bool {
+pub fn Value::truth(v : Value) -> Bool {
   match v {
     None => false
     Bool(b) => b
@@ -1690,7 +1690,7 @@ fn repr_bytes_val(b : Bytes) -> String {
 /// * `v` : The value to represent.
 ///
 /// Returns the Starlark `repr()` string for `v`.
-pub fn repr(v : Value) -> String {
+pub fn Value::repr(v : Value) -> String {
   repr_inner(v, [], [])
 }
 
@@ -1716,7 +1716,7 @@ fn repr_inner(
     Function(f) => "<function \{f.name}>"
     Builtin(f) => "<built-in function \{f.name}>"
     BoundMethod(m) =>
-      "<built-in method \{m.method_name} of \{type_name(m.recv)} value>"
+      "<built-in method \{m.method_name} of \{m.recv.type_name()} value>"
     Module(m) => "<module \"\{m.name}\">"
     StringElems(e) => {
       let suffix = if e.ords { "elem_ords()" } else { "elems()" }
@@ -1828,7 +1828,7 @@ fn repr_tuple_inner(
 
 ///|
 fn repr_tuple(t : Array[Value]) -> String {
-  repr_tuple_with(t, repr)
+  repr_tuple_with(t, fn(v) { v.repr() })
 }
 
 ///|

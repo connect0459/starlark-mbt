@@ -25,7 +25,7 @@ test "DebugFrame: trace captures param values across nested Starlark frames" {
                 let (_, v_opt) = fr.frame_local(p_idx)
                 match v_opt {
                   None => parts.push("\{pname}=<unbound>")
-                  Some(v) => parts.push("\{pname}=\{@value.repr(v)}")
+                  Some(v) => parts.push("\{pname}=\{v.repr()}")
                 }
               }
               lines.push("\{fn_.name()}(\{parts.join(", ")})")
@@ -128,7 +128,7 @@ test "DebugFrame: env builtin builds dict of own locals in calling Starlark fram
       // (inner2 is not yet assigned; unassigned locals are skipped)
       // Keys appear in all_local_names order (params first, then body vars).
       let want = "{\"q\": 2, \"inner\": 4}"
-      assert_eq(@value.repr(env_dict), want)
+      assert_eq(env_dict.repr(), want)
     }
   }
 }

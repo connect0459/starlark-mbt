@@ -9,7 +9,7 @@ fn to_float_param(
     @value.Value::Int(i) => Ok(@value.bigint_to_double(i))
     _ =>
       Err(
-        "\{name}: for parameter \{param_idx}: got \{@value.type_name(v)}, want float or int",
+        "\{name}: for parameter \{param_idx}: got \{v.type_name()}, want float or int",
       )
   }
 }
@@ -219,7 +219,7 @@ fn make_rounding(name : String, round : (Double) -> Double) -> @value.Value {
     match pos_args[0] {
       @value.Value::Int(_) as v => Ok(v)
       @value.Value::Float(f) => float_to_int(round(f))
-      v => Err("got \{@value.type_name(v)}, want float or int")
+      v => Err("got \{v.type_name()}, want float or int")
     }
   })
 }

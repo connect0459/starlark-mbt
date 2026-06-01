@@ -80,37 +80,37 @@ test "StarlarkRange: does not contain value outside range" {
 ///|
 test "Value: type_name for Range is range" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_eq(type_name(Value::Range(r)), "range")
+  assert_eq(Value::Range(r).type_name(), "range")
 }
 
 ///|
 test "Value: repr for range(10) shows compact form" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_eq(repr(Value::Range(r)), "range(10)")
+  assert_eq(Value::Range(r).repr(), "range(10)")
 }
 
 ///|
 test "Value: repr for range(1, 10) shows start and stop" {
   let r = StarlarkRange::new(1L, 10L, 1L)
-  assert_eq(repr(Value::Range(r)), "range(1, 10)")
+  assert_eq(Value::Range(r).repr(), "range(1, 10)")
 }
 
 ///|
 test "Value: repr for range(0, 10, 2) shows step when not 1" {
   let r = StarlarkRange::new(0L, 10L, 2L)
-  assert_eq(repr(Value::Range(r)), "range(0, 10, 2)")
+  assert_eq(Value::Range(r).repr(), "range(0, 10, 2)")
 }
 
 ///|
 test "Value: truth for non-empty range is true" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_true(truth(Value::Range(r)))
+  assert_true(Value::Range(r).truth())
 }
 
 ///|
 test "Value: truth for empty range is false" {
   let r = StarlarkRange::new(5L, 3L, 1L)
-  assert_false(truth(Value::Range(r)))
+  assert_false(Value::Range(r).truth())
 }
 
 // --- StarlarkFunction ---
@@ -125,7 +125,7 @@ test "Value: type_name for user-defined function is function" {
     [],
     @errors.Position::new("", 0, 0),
   )
-  assert_eq(type_name(Value::Function(f)), "function")
+  assert_eq(Value::Function(f).type_name(), "function")
 }
 
 ///|
@@ -138,7 +138,7 @@ test "Value: repr for function shows name in angle brackets" {
     [],
     @errors.Position::new("", 0, 0),
   )
-  assert_eq(repr(Value::Function(f)), "<function my_func>")
+  assert_eq(Value::Function(f).repr(), "<function my_func>")
 }
 
 ///|
@@ -151,7 +151,7 @@ test "Value: truth for function is always true" {
     [],
     @errors.Position::new("", 0, 0),
   )
-  assert_true(truth(Value::Function(f)))
+  assert_true(Value::Function(f).truth())
 }
 
 // --- StarlarkBuiltinFunc ---
@@ -159,19 +159,19 @@ test "Value: truth for function is always true" {
 ///|
 test "Value: type_name for builtin function is builtin_function_or_method" {
   let f = StarlarkBuiltinFunc::dispatch("len")
-  assert_eq(type_name(Value::Builtin(f)), "builtin_function_or_method")
+  assert_eq(Value::Builtin(f).type_name(), "builtin_function_or_method")
 }
 
 ///|
 test "Value: repr for builtin function shows name" {
   let f = StarlarkBuiltinFunc::dispatch("len")
-  assert_eq(repr(Value::Builtin(f)), "<built-in function len>")
+  assert_eq(Value::Builtin(f).repr(), "<built-in function len>")
 }
 
 ///|
 test "Value: truth for builtin function is always true" {
   let f = StarlarkBuiltinFunc::dispatch("len")
-  assert_true(truth(Value::Builtin(f)))
+  assert_true(Value::Builtin(f).truth())
 }
 
 // --- StarlarkBoundMethod ---
@@ -180,7 +180,7 @@ test "Value: truth for builtin function is always true" {
 test "Value: type_name for bound method is builtin_function_or_method" {
   let recv = Value::String(StarlarkString::new("hello"))
   let m = StarlarkBoundMethod::new(recv, "upper")
-  assert_eq(type_name(Value::BoundMethod(m)), "builtin_function_or_method")
+  assert_eq(Value::BoundMethod(m).type_name(), "builtin_function_or_method")
 }
 
 ///|
@@ -188,7 +188,7 @@ test "Value: repr for bound method shows receiver type and method name" {
   let recv = Value::String(StarlarkString::new("hello"))
   let m = StarlarkBoundMethod::new(recv, "upper")
   assert_eq(
-    repr(Value::BoundMethod(m)),
+    Value::BoundMethod(m).repr(),
     "<built-in method upper of string value>",
   )
 }
@@ -197,7 +197,7 @@ test "Value: repr for bound method shows receiver type and method name" {
 test "Value: truth for bound method is always true" {
   let recv = Value::None
   let m = StarlarkBoundMethod::new(recv, "something")
-  assert_true(truth(Value::BoundMethod(m)))
+  assert_true(Value::BoundMethod(m).truth())
 }
 
 // --- freeze semantics ---

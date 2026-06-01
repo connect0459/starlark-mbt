@@ -17,15 +17,15 @@ fn main {
   ) -> Result[@starlark.Module, @starlark.EvalError] {
     match modules.get(path) {
       Some(src) => {
-        let lt = @starlark.new_thread("load:\{path}")
-        @starlark.exec_file(lt, path, src, @starlark.default_options())
+        let lt = @starlark.Thread::new("load:\{path}")
+        @starlark.exec_file(lt, path, src, @starlark.Options::default())
       }
       None =>
         @starlark.exec_file(
-          @starlark.new_thread("err"),
+          @starlark.Thread::new("err"),
           path,
           "raise_error = 1 // 0",
-          @starlark.default_options(),
+          @starlark.Options::default(),
         )
     }
   }
@@ -42,13 +42,13 @@ fn main {
     #|    lambda s: s.lower(),
     #|    lambda s: s.replace(",", ""),
     #|)
-  match @starlark.exec_file(thread, "main.star", src, @starlark.default_options()) {
+  match @starlark.exec_file(thread, "main.star", src, @starlark.Options::default()) {
     Ok(m) => {
-      match @starlark.module_get(m, "clamped") {
-        Some(v) => println("clamped = \{@starlark.repr(v)}")
+      match m.get("clamped") {
+        Some(v) => println("clamped = \{v.repr()}")
         None => ()
       }
-      match @starlark.module_get(m, "result") {
+      match m.get("result") {
         Some(v) => {
           let (s, _) = @starlark.as_string(v)
           println("pipeline result = \{s}")
@@ -56,6 +56,6 @@ fn main {
         None => ()
       }
     }
-    Err(e) => println(@starlark.error_message(e))
+    Err(e) => println(e.msg())
   }
 }

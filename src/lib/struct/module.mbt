@@ -4,7 +4,7 @@
 
 ///|
 fn module_repr(name : String) -> String {
-  "<module \{@value.repr(@value.Value::String(@value.StarlarkString::new(name)))}>"
+  "<module \{(@value.Value::String(@value.StarlarkString::new(name))).repr()}>"
 }
 
 ///|
@@ -73,9 +73,7 @@ pub fn module_builtin() -> @value.Value {
     let name = match pos_args[0] {
       @value.Value::String(s) => s.raw()
       v =>
-        return Err(
-          "module: for parameter 1: got \{@value.type_name(v)}, want string",
-        )
+        return Err("module: for parameter 1: got \{v.type_name()}, want string")
     }
     Ok(make_module(name, kw_args))
   })

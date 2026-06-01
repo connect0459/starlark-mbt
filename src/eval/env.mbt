@@ -193,7 +193,7 @@ fn require_seq(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{name}: for parameter 1: got \{@value.type_name(v)}, want iterable",
+          "\{name}: for parameter 1: got \{v.type_name()}, want iterable",
         ),
       )
   }

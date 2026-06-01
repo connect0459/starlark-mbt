@@ -63,7 +63,7 @@ fn eval_expr_node(
     }
     @syntax.Expr::EBinary(l, @syntax.BinaryOp::OpAnd, r, _) => {
       let lv = eval_expr_node(ctx, env, l)
-      if !@value.truth(lv) {
+      if !lv.truth() {
         lv
       } else {
         eval_expr_node(ctx, env, r)
@@ -71,7 +71,7 @@ fn eval_expr_node(
     }
     @syntax.Expr::EBinary(l, @syntax.BinaryOp::OpOr, r, _) => {
       let lv = eval_expr_node(ctx, env, l)
-      if @value.truth(lv) {
+      if lv.truth() {
         lv
       } else {
         eval_expr_node(ctx, env, r)
@@ -84,7 +84,7 @@ fn eval_expr_node(
     }
     @syntax.Expr::ECond(then_e, cond_e, else_e, _) => {
       let cv = eval_expr_node(ctx, env, cond_e)
-      if @value.truth(cv) {
+      if cv.truth() {
         eval_expr_node(ctx, env, then_e)
       } else {
         eval_expr_node(ctx, env, else_e)
@@ -102,9 +102,7 @@ fn eval_expr_node(
         let v = eval_expr_node(ctx, env, v_expr)
         match check(ctx, d.get(k)) {
           Some(_) =>
-            raise EvalErr(
-              make_eval_error(ctx, "duplicate key: \{@value.repr(k)}"),
-            )
+            raise EvalErr(make_eval_error(ctx, "duplicate key: \{k.repr()}"))
           None => check(ctx, d.set(k, v))
         }
       }
@@ -241,10 +239,7 @@ fn slice_int_arg(
       }
     _ =>
       raise EvalErr(
-        make_eval_error(
-          ctx,
-          "invalid \{label}: got \{@value.type_name(v)}, want int",
-        ),
+        make_eval_error(ctx, "invalid \{label}: got \{v.type_name()}, want int"),
       )
   }
 }
@@ -325,7 +320,7 @@ fn eval_getattr(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "\{@value.type_name(obj)} has no .\{attr} field or method\{hint}",
+                "\{obj.type_name()} has no .\{attr} field or method\{hint}",
               ),
             )
           }
@@ -357,17 +352,14 @@ fn eval_getattr(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "\{@value.type_name(obj)} has no .\{attr} field or method",
+              "\{obj.type_name()} has no .\{attr} field or method",
             ),
           )
         Err(e) => raise EvalErr(make_eval_error(ctx, e))
       }
     _ =>
       raise EvalErr(
-        make_eval_error(
-          ctx,
-          "\{@value.type_name(obj)} has no attribute '\{attr}'",
-        ),
+        make_eval_error(ctx, "\{obj.type_name()} has no attribute '\{attr}'"),
       )
   }
 }
@@ -406,7 +398,7 @@ fn eval_args(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "argument after * must be iterable, not \{@value.type_name(v)}",
+                "argument after * must be iterable, not \{v.type_name()}",
               ),
             )
         }
@@ -432,7 +424,7 @@ fn eval_args(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "keywords must be strings, not \{@value.type_name(k)}",
+                      "keywords must be strings, not \{k.type_name()}",
                     ),
                   )
               }
@@ -441,7 +433,7 @@ fn eval_args(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "argument after ** must be a mapping, not \{@value.type_name(v)}",
+                "argument after ** must be a mapping, not \{v.type_name()}",
               ),
             )
         }
@@ -536,7 +528,7 @@ fn call_value(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "invalid call of non-function (\{@value.type_name(func_val)})",
+          "invalid call of non-function (\{func_val.type_name()})",
         ),
       )
   }
@@ -843,7 +835,7 @@ fn call_builtin(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "print: for parameter \"\{k}\": got \{@value.type_name(v)}, want string",
+                      "print: for parameter \"\{k}\": got \{v.type_name()}, want string",
                     ),
                   )
               }
@@ -868,7 +860,7 @@ fn call_builtin(
         match arg {
           @value.Value::Bytes(b) =>
             buf.write_string(@value.StarlarkString::from_bytes(b).raw())
-          _ => buf.write_string(@value.to_str(arg))
+          _ => buf.write_string(arg.to_str())
         }
       }
       (ctx.thread.print_fn)(ctx.thread, buf.to_string())
@@ -892,8 +884,7 @@ fn call_builtin(
                 @value.StarlarkString::from_bytes(b).raw(),
               ),
             )
-          v =>
-            @value.Value::String(@value.StarlarkString::new(@value.to_str(v)))
+          v => @value.Value::String(@value.StarlarkString::new(v.to_str()))
         }
       } else {
         raise EvalErr(
@@ -905,23 +896,21 @@ fn call_builtin(
       }
     "repr" => {
       check_positional(ctx, "repr", pos_args, kw_args, 1, 1)
-      @value.Value::String(@value.StarlarkString::new(@value.repr(pos_args[0])))
+      @value.Value::String(@value.StarlarkString::new(pos_args[0].repr()))
     }
     "type" => {
       reject_kwargs(ctx, "type", kw_args)
       if pos_args.length() != 1 {
         raise EvalErr(make_eval_error(ctx, "type() takes exactly one argument"))
       }
-      @value.Value::String(
-        @value.StarlarkString::new(@value.type_name(pos_args[0])),
-      )
+      @value.Value::String(@value.StarlarkString::new(pos_args[0].type_name()))
     }
     "bool" => {
       check_positional(ctx, "bool", pos_args, kw_args, 0, 1)
       if pos_args.length() == 0 {
         @value.Value::Bool(false)
       } else {
-        @value.Value::Bool(@value.truth(pos_args[0]))
+        @value.Value::Bool(pos_args[0].truth())
       }
     }
     "int" => {
@@ -976,7 +965,7 @@ fn call_builtin(
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "int: for base, got \{@value.type_name(v)}, want int",
+                  "int: for base, got \{v.type_name()}, want int",
                 ),
               )
           }
@@ -1024,7 +1013,7 @@ fn call_builtin(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "int: cannot convert \{@value.type_name(v)} to int",
+                      "int: cannot convert \{v.type_name()} to int",
                     ),
                   )
               }
@@ -1091,7 +1080,7 @@ fn call_builtin(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "float got \{@value.type_name(v)}, want number or string",
+                "float got \{v.type_name()}, want number or string",
               ),
             )
         }
@@ -1104,10 +1093,7 @@ fn call_builtin(
         @value.Value::Float(f) => @value.Value::Float(f.abs())
         v =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "got \{@value.type_name(v)}, want int or float",
-            ),
+            make_eval_error(ctx, "got \{v.type_name()}, want int or float"),
           )
       }
     }
@@ -1164,7 +1150,7 @@ fn call_builtin(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "hash: got \{@value.type_name(v)}, want string or bytes",
+              "hash: got \{v.type_name()}, want string or bytes",
             ),
           )
       }
@@ -1231,7 +1217,7 @@ fn call_builtin(
         }
         v =>
           raise EvalErr(
-            make_eval_error(ctx, "chr: got \{@value.type_name(v)}, want int"),
+            make_eval_error(ctx, "chr: got \{v.type_name()}, want int"),
           )
       }
     }
@@ -1273,7 +1259,7 @@ fn call_builtin(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "ord: got \{@value.type_name(v)}, want string or bytes",
+              "ord: got \{v.type_name()}, want string or bytes",
             ),
           )
       }
@@ -1291,7 +1277,7 @@ fn call_builtin(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "fail: for parameter \"sep\": got \{@value.type_name(v)}, want string",
+                      "fail: for parameter \"sep\": got \{v.type_name()}, want string",
                     ),
                   )
               }
@@ -1307,7 +1293,7 @@ fn call_builtin(
         s
       }
       let body = if pos_args.length() > 0 {
-        pos_args.map(@value.to_str).join(sep)
+        pos_args.map(fn(v) { v.to_str() }).join(sep)
       } else {
         ""
       }
@@ -1337,7 +1323,7 @@ fn call_builtin(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "getattr: \{@value.type_name(pos_args[0])} has no .\{s.raw()} field or method",
+                "getattr: \{pos_args[0].type_name()} has no .\{s.raw()} field or method",
               ),
             )
           }
@@ -1412,7 +1398,7 @@ fn builtin_range(
         raise EvalErr(
           make_eval_error(
             ctx,
-            "range: for parameter \{i + 1}: got \{@value.type_name(v)}, want int",
+            "range: for parameter \{i + 1}: got \{v.type_name()}, want int",
           ),
         )
     }
@@ -1491,7 +1477,7 @@ fn update_dict(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "\{name}: got \{@value.type_name(v)}, want iterable",
+                "\{name}: got \{v.type_name()}, want iterable",
               ),
             )
         }
@@ -1510,7 +1496,7 @@ fn update_dict(
                   raise EvalErr(
                     make_eval_error(
                       ctx,
-                      "\{name}: dictionary update sequence element #\{i} is not iterable (\{@value.type_name(pair)})",
+                      "\{name}: dictionary update sequence element #\{i} is not iterable (\{pair.type_name()})",
                     ),
                   )
                 }
@@ -1590,7 +1576,7 @@ fn builtin_set(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "set: for parameter 1: got \{@value.type_name(iterable)}, want iterable",
+          "set: for parameter 1: got \{iterable.type_name()}, want iterable",
         ),
       )
     Ok(it) => it
@@ -1662,7 +1648,7 @@ fn builtin_minmax(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "\{fn_name}: for parameter \"key\": got \{@value.type_name(v)}, want callable",
+              "\{fn_name}: for parameter \"key\": got \{v.type_name()}, want callable",
             ),
           )
       }
@@ -1676,7 +1662,7 @@ fn builtin_minmax(
         raise EvalErr(
           make_eval_error(
             ctx,
-            "\{fn_name}: \{@value.type_name(pos_args[0])} value is not iterable",
+            "\{fn_name}: \{pos_args[0].type_name()} value is not iterable",
           ),
         )
     }
@@ -1740,7 +1726,7 @@ fn builtin_enumerate(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "enumerate: for parameter 1: got \{@value.type_name(pos_args[0])}, want iterable",
+          "enumerate: for parameter 1: got \{pos_args[0].type_name()}, want iterable",
         ),
       )
   }
@@ -1867,7 +1853,7 @@ fn builtin_sorted(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "sorted: for parameter \{pname}: got \{@value.type_name(iterable)}, want iterable",
+          "sorted: for parameter \{pname}: got \{iterable.type_name()}, want iterable",
         ),
       )
     }
@@ -1885,7 +1871,7 @@ fn builtin_sorted(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "sorted: for parameter \{pname}: got \{@value.type_name(v)}, want callable",
+              "sorted: for parameter \{pname}: got \{v.type_name()}, want callable",
             ),
           )
         }
@@ -1900,7 +1886,7 @@ fn builtin_sorted(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "sorted: for parameter \{pname}: got \{@value.type_name(v)}, want bool",
+          "sorted: for parameter \{pname}: got \{v.type_name()}, want bool",
         ),
       )
     }
@@ -1984,7 +1970,7 @@ fn builtin_zip(
         raise EvalErr(
           make_eval_error(
             ctx,
-            "zip: argument #\{i + 1} is not iterable: \{@value.type_name(arg)}",
+            "zip: argument #\{i + 1} is not iterable: \{arg.type_name()}",
           ),
         )
       }
@@ -2030,7 +2016,7 @@ fn builtin_any_all(
         break
       }
       Some(v) => {
-        let t = @value.truth(v)
+        let t = v.truth()
         if any_mode && t {
           it.done()
           result = true
@@ -2069,7 +2055,7 @@ fn call_method(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "'\{@value.type_name(recv)}' has no method '\{method_name}'",
+          "'\{recv.type_name()}' has no method '\{method_name}'",
         ),
       )
   }
@@ -2129,7 +2115,7 @@ fn call_list_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "pop: for parameter 1: got \{@value.type_name(v)}, want int",
+                "pop: for parameter 1: got \{v.type_name()}, want int",
               ),
             )
         }
@@ -2147,7 +2133,7 @@ fn call_list_method(
       let item = pos_args[0]
       let mut found = -1
       for i in 0..<l.length() {
-        if @value.starlark_equals(l.get(i), item) {
+        if l.get(i).starlark_equals(item) {
           found = i
           break
         }
@@ -2186,7 +2172,7 @@ fn call_list_method(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "insert: for parameter 1: got \{@value.type_name(v)}, want int",
+              "insert: for parameter 1: got \{v.type_name()}, want int",
             ),
           )
       }
@@ -2208,7 +2194,7 @@ fn call_list_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "index: invalid start index: got \{@value.type_name(v)}, want int",
+                "index: invalid start index: got \{v.type_name()}, want int",
               ),
             )
         }
@@ -2223,7 +2209,7 @@ fn call_list_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "index: invalid end index: got \{@value.type_name(v)}, want int",
+                "index: invalid end index: got \{v.type_name()}, want int",
               ),
             )
         }
@@ -2231,7 +2217,7 @@ fn call_list_method(
         n
       }
       for i in start..<end {
-        if @value.starlark_equals(l.get(i), item) {
+        if l.get(i).starlark_equals(item) {
           return @value.Value::Int(BigInt::from_int(i))
         }
       }
@@ -2469,7 +2455,7 @@ fn call_str_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "split: got \{@value.type_name(v)} for separator, want string",
+                "split: got \{v.type_name()} for separator, want string",
               ),
             )
         }
@@ -2502,7 +2488,7 @@ fn call_str_method(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "join: for parameter 1: got \{@value.type_name(pos_args[0])}, want iterable",
+              "join: for parameter 1: got \{pos_args[0].type_name()}, want iterable",
             ),
           )
       }
@@ -2518,7 +2504,7 @@ fn call_str_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "join: in list, want string, got \{@value.type_name(v)}",
+                "join: in list, want string, got \{v.type_name()}",
               ),
             )
           }
@@ -2692,7 +2678,7 @@ fn call_str_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "splitlines: for parameter 1: got \{@value.type_name(pos_args[0])}, want bool",
+                "splitlines: for parameter 1: got \{pos_args[0].type_name()}, want bool",
               ),
             )
         }
@@ -2788,7 +2774,7 @@ fn set_iterate_into(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{method_nm}: argument #\{arg_idx} is not iterable: \{@value.type_name(arg)}",
+          "\{method_nm}: argument #\{arg_idx} is not iterable: \{arg.type_name()}",
         ),
       )
     Ok(it) => it
@@ -2829,7 +2815,7 @@ fn set_other_iter(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{name}: for parameter 1: got \{@value.type_name(pos_args[0])}, want iterable",
+          "\{name}: for parameter 1: got \{pos_args[0].type_name()}, want iterable",
         ),
       )
   }
@@ -3018,7 +3004,7 @@ fn call_set_method(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "update: argument #\{i + 1} is not iterable: \{@value.type_name(arg)}",
+                "update: argument #\{i + 1} is not iterable: \{arg.type_name()}",
               ),
             )
           Ok(it) => it
@@ -3066,7 +3052,7 @@ fn builtin_bytes(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "bytes: got \{@value.type_name(other)}, want string, bytes, or iterable of ints",
+              "bytes: got \{other.type_name()}, want string, bytes, or iterable of ints",
             ),
           )
         Ok(it) => it
@@ -3097,7 +3083,7 @@ fn builtin_bytes(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "bytes: at index \{idx}, got \{@value.type_name(v)}, want int",
+                "bytes: at index \{idx}, got \{v.type_name()}, want int",
               ),
             )
           }
@@ -3165,7 +3151,7 @@ fn match_affix(
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "\{name}: want string, got \{@value.type_name(v)}, for element \{idx}",
+                "\{name}: want string, got \{v.type_name()}, for element \{idx}",
               ),
             )
         }
@@ -3176,7 +3162,7 @@ fn match_affix(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{name}: got \{@value.type_name(v)}, want string or tuple of string",
+          "\{name}: got \{v.type_name()}, want string or tuple of string",
         ),
       )
   }
@@ -3239,7 +3225,7 @@ fn arg_as_string(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{name}: for parameter \{idx + 1}: got \{@value.type_name(v)}, want string",
+          "\{name}: for parameter \{idx + 1}: got \{v.type_name()}, want string",
         ),
       )
   }
@@ -3260,7 +3246,7 @@ fn arg_as_int(
       raise EvalErr(
         make_eval_error(
           ctx,
-          "\{name}: for parameter \{idx + 1}: got \{@value.type_name(v)}, want int",
+          "\{name}: for parameter \{idx + 1}: got \{v.type_name()}, want int",
         ),
       )
   }
@@ -3301,7 +3287,7 @@ fn parse_search_index(
         raise EvalErr(
           make_eval_error(
             ctx,
-            "\{mname}: invalid \{kind} index: got \{@value.type_name(v)}, want int",
+            "\{mname}: invalid \{kind} index: got \{v.type_name()}, want int",
           ),
         )
     }
@@ -4028,8 +4014,8 @@ fn str_format(
           }
         }
         match conv {
-          "s" => buf.write_string(@value.to_str(arg))
-          "r" => buf.write_string(@value.repr(arg))
+          "s" => buf.write_string(arg.to_str())
+          "r" => buf.write_string(arg.repr())
           other =>
             raise EvalErr(
               make_eval_error(ctx, "format: unknown conversion \"\{other}\""),
@@ -4171,7 +4157,7 @@ fn eval_comp_clauses(
     }
     @syntax.CompClause::ClauseIf(cond_expr, _) => {
       let cond_val = eval_expr_node(ctx, comp_env, cond_expr)
-      if @value.truth(cond_val) {
+      if cond_val.truth() {
         eval_comp_clauses(ctx, outer_env, comp_env, clauses, idx + 1, body_fn)
       }
     }

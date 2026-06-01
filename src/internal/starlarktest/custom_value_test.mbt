@@ -13,7 +13,7 @@ test "ExtVal Container: `in` operator works on custom container" {
     match items {
       @value.Value::List(l) => {
         for item in l.iter() {
-          if @value.starlark_equals(item, v) {
+          if item.starlark_equals(v) {
             return Ok(true)
           }
         }

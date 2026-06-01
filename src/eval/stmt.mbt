@@ -57,7 +57,7 @@ fn exec_stmt(
     }
     @syntax.Stmt::SIf(cond, then_body, else_body, _) => {
       let cv = eval_expr_node(ctx, env, cond)
-      if @value.truth(cv) {
+      if cv.truth() {
         exec_stmts(ctx, env, then_body)
       } else {
         exec_stmts(ctx, env, else_body)
@@ -104,7 +104,7 @@ fn exec_stmt(
       let mut result : Signal = Signal::SigNormal
       while true {
         let cv = eval_expr_node(ctx, env, cond)
-        if !@value.truth(cv) {
+        if !cv.truth() {
           break
         }
         match exec_stmts(ctx, env, body) {
@@ -173,7 +173,7 @@ fn assign_to(
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "got \{@value.type_name(value)} in sequence assignment",
+                  "got \{value.type_name()} in sequence assignment",
                 ),
               )
           }
@@ -223,7 +223,7 @@ fn assign_to(
           raise EvalErr(
             make_eval_error(
               ctx,
-              "can't assign to .\{attr} field of \{@value.type_name(obj)}",
+              "can't assign to .\{attr} field of \{obj.type_name()}",
             ),
           )
       }
@@ -287,10 +287,7 @@ fn eval_aug_val(
         }
         _ =>
           raise EvalErr(
-            make_eval_error(
-              ctx,
-              "unknown binary op: dict | \{@value.type_name(rv)}",
-            ),
+            make_eval_error(ctx, "unknown binary op: dict | \{rv.type_name()}"),
           )
       }
     _ => {

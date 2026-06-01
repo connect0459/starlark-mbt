@@ -1,5 +1,5 @@
 fn main {
-  let thread = @starlark.new_thread("main")
+  let thread = @starlark.Thread::new("main")
   let src =
     #|words = ["starlark", "moonbit", "interpreter"]
     #|joined = ", ".join(words)
@@ -7,27 +7,27 @@ fn main {
     #|csv = "alice,30,engineer"
     #|parts = csv.split(",")
     #|formatted = "name={} age={} role={}".format(*parts)
-  match @starlark.exec_file(thread, "string_fmt.star", src, @starlark.default_options()) {
+  match @starlark.exec_file(thread, "string_fmt.star", src, @starlark.Options::default()) {
     Ok(m) => {
-      match @starlark.module_get(m, "joined") {
+      match m.get("joined") {
         Some(v) => {
           let (s, _) = @starlark.as_string(v)
           println("joined = \{s}")
         }
         None => ()
       }
-      match @starlark.module_get(m, "upper_first") {
+      match m.get("upper_first") {
         Some(v) => {
           let (s, _) = @starlark.as_string(v)
           println("upper_first = \{s}")
         }
         None => ()
       }
-      match @starlark.module_get(m, "parts") {
-        Some(v) => println("parts = \{@starlark.repr(v)}")
+      match m.get("parts") {
+        Some(v) => println("parts = \{v.repr()}")
         None => ()
       }
-      match @starlark.module_get(m, "formatted") {
+      match m.get("formatted") {
         Some(v) => {
           let (s, _) = @starlark.as_string(v)
           println("formatted = \{s}")
@@ -35,6 +35,6 @@ fn main {
         None => ()
       }
     }
-    Err(e) => println(@starlark.error_message(e))
+    Err(e) => println(e.msg())
   }
 }

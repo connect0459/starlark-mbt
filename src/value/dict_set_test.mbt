@@ -51,24 +51,24 @@ test "StarlarkDict: unhashable key (list) returns error" {
 
 ///|
 test "StarlarkDict: truth empty is false" {
-  assert_false(truth(Value::Dict(StarlarkDict::new())))
+  assert_false(Value::Dict(StarlarkDict::new()).truth())
 }
 
 ///|
 test "StarlarkDict: truth nonempty is true" {
   let d = StarlarkDict::new()
   d.set(Value::Int(1N), Value::None) |> ignore
-  assert_true(truth(Value::Dict(d)))
+  assert_true(Value::Dict(d).truth())
 }
 
 ///|
 test "StarlarkDict: type_name is dict" {
-  assert_eq(type_name(Value::Dict(StarlarkDict::new())), "dict")
+  assert_eq(Value::Dict(StarlarkDict::new()).type_name(), "dict")
 }
 
 ///|
 test "StarlarkDict: repr empty is {}" {
-  assert_eq(repr(Value::Dict(StarlarkDict::new())), "{}")
+  assert_eq(Value::Dict(StarlarkDict::new()).repr(), "{}")
 }
 
 ///|
@@ -76,7 +76,7 @@ test "StarlarkDict: repr preserves insertion order" {
   let d = StarlarkDict::new()
   d.set(Value::String(StarlarkString::new("a")), Value::Int(1N)) |> ignore
   d.set(Value::String(StarlarkString::new("b")), Value::Int(2N)) |> ignore
-  assert_eq(repr(Value::Dict(d)), "{\"a\": 1, \"b\": 2}")
+  assert_eq(Value::Dict(d).repr(), "{\"a\": 1, \"b\": 2}")
 }
 
 ///|
@@ -85,7 +85,7 @@ test "StarlarkDict: starlark_equals same content" {
   d1.set(Value::Int(1N), Value::Int(10N)) |> ignore
   let d2 = StarlarkDict::new()
   d2.set(Value::Int(1N), Value::Int(10N)) |> ignore
-  assert_true(starlark_equals(Value::Dict(d1), Value::Dict(d2)))
+  assert_true(Value::Dict(d1).starlark_equals(Value::Dict(d2)))
 }
 
 ///|
@@ -94,7 +94,7 @@ test "StarlarkDict: starlark_equals different values" {
   d1.set(Value::Int(1N), Value::Int(10N)) |> ignore
   let d2 = StarlarkDict::new()
   d2.set(Value::Int(1N), Value::Int(99N)) |> ignore
-  assert_false(starlark_equals(Value::Dict(d1), Value::Dict(d2)))
+  assert_false(Value::Dict(d1).starlark_equals(Value::Dict(d2)))
 }
 
 ///|
@@ -102,7 +102,7 @@ test "StarlarkDict: starlark_equals different lengths" {
   let d1 = StarlarkDict::new()
   d1.set(Value::Int(1N), Value::None) |> ignore
   let d2 = StarlarkDict::new()
-  assert_false(starlark_equals(Value::Dict(d1), Value::Dict(d2)))
+  assert_false(Value::Dict(d1).starlark_equals(Value::Dict(d2)))
 }
 
 ///|
@@ -176,31 +176,31 @@ test "StarlarkSet: unhashable element returns error" {
 
 ///|
 test "StarlarkSet: truth empty is false" {
-  assert_false(truth(Value::Set(StarlarkSet::new())))
+  assert_false(Value::Set(StarlarkSet::new()).truth())
 }
 
 ///|
 test "StarlarkSet: truth nonempty is true" {
   let s = StarlarkSet::new()
   s.add(Value::Int(1N)) |> ignore
-  assert_true(truth(Value::Set(s)))
+  assert_true(Value::Set(s).truth())
 }
 
 ///|
 test "StarlarkSet: type_name is set" {
-  assert_eq(type_name(Value::Set(StarlarkSet::new())), "set")
+  assert_eq(Value::Set(StarlarkSet::new()).type_name(), "set")
 }
 
 ///|
 test "StarlarkSet: repr empty is set([])" {
-  assert_eq(repr(Value::Set(StarlarkSet::new())), "set([])")
+  assert_eq(Value::Set(StarlarkSet::new()).repr(), "set([])")
 }
 
 ///|
 test "StarlarkSet: repr nonempty uses set([...]) notation" {
   let s = StarlarkSet::new()
   s.add(Value::Int(1N)) |> ignore
-  assert_eq(repr(Value::Set(s)), "set([1])")
+  assert_eq(Value::Set(s).repr(), "set([1])")
 }
 
 ///|
@@ -211,7 +211,7 @@ test "StarlarkSet: starlark_equals same elements" {
   let s2 = StarlarkSet::new()
   s2.add(Value::Int(2N)) |> ignore
   s2.add(Value::Int(1N)) |> ignore
-  assert_true(starlark_equals(Value::Set(s1), Value::Set(s2)))
+  assert_true(Value::Set(s1).starlark_equals(Value::Set(s2)))
 }
 
 ///|
@@ -220,7 +220,7 @@ test "StarlarkSet: starlark_equals different elements" {
   s1.add(Value::Int(1N)) |> ignore
   let s2 = StarlarkSet::new()
   s2.add(Value::Int(2N)) |> ignore
-  assert_false(starlark_equals(Value::Set(s1), Value::Set(s2)))
+  assert_false(Value::Set(s1).starlark_equals(Value::Set(s2)))
 }
 
 ///|

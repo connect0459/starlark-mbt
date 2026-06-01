@@ -4,7 +4,7 @@
 fn val_eq(a : @value.Value?, b : @value.Value?) -> Bool {
   match (a, b) {
     (None, None) => true
-    (Some(x), Some(y)) => @value.starlark_equals(x, y)
+    (Some(x), Some(y)) => x.starlark_equals(y)
     _ => false
   }
 }

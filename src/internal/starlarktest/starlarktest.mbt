@@ -4,7 +4,7 @@ fn make_error_fn(errors : Array[String]) -> @value.Value {
     if pos_args.length() != 1 {
       return Err("error: got \{pos_args.length()} arguments, want 1")
     }
-    errors.push(@value.to_str(pos_args[0]))
+    errors.push(pos_args[0].to_str())
     Ok(@value.Value::None)
   })
 }
@@ -41,9 +41,9 @@ fn assert_float_eq(x : @value.Value, y : @value.Value) -> Bool {
       if x is @value.Value::Float(_) || y is @value.Value::Float(_) {
         floateq(xf, yf)
       } else {
-        @value.starlark_equals(x, y)
+        x.starlark_equals(y)
       }
-    _ => @value.starlark_equals(x, y)
+    _ => x.starlark_equals(y)
   }
 }
 
@@ -56,7 +56,7 @@ fn make_eq_fn(errors : Array[String]) -> @value.Value {
     let x = pos_args[0]
     let y = pos_args[1]
     if !assert_float_eq(x, y) {
-      errors.push("\{@value.repr(x)} != \{@value.repr(y)}")
+      errors.push("\{x.repr()} != \{y.repr()}")
     }
     Ok(@value.Value::None)
   })
@@ -70,8 +70,8 @@ fn make_ne_fn(errors : Array[String]) -> @value.Value {
     }
     let x = pos_args[0]
     let y = pos_args[1]
-    if @value.starlark_equals(x, y) {
-      errors.push("\{@value.repr(x)} == \{@value.repr(y)}")
+    if x.starlark_equals(y) {
+      errors.push("\{x.repr()} == \{y.repr()}")
     }
     Ok(@value.Value::None)
   })
@@ -89,16 +89,16 @@ fn make_true_fn(errors : Array[String]) -> @value.Value {
       let mut found = "assertion failed"
       for kv in kw_args {
         if kv.0 == "msg" {
-          found = @value.to_str(kv.1)
+          found = kv.1.to_str()
           break
         }
       }
       if pos_args.length() >= 2 {
-        found = @value.to_str(pos_args[1])
+        found = pos_args[1].to_str()
       }
       found
     }
-    if !@value.truth(cond) {
+    if !cond.truth() {
       errors.push(msg)
     }
     Ok(@value.Value::None)
@@ -116,9 +116,7 @@ fn make_lt_fn(errors : Array[String]) -> @value.Value {
     match @value.compare_values(x, y) {
       Ok(ord) =>
         if ord >= 0 {
-          errors.push(
-            "\{@value.to_str(x)} is not less than \{@value.to_str(y)}",
-          )
+          errors.push("\{x.to_str()} is not less than \{y.to_str()}")
         }
       Err(msg) => return Err(msg)
     }
@@ -139,10 +137,8 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
     let container = pos_args[0]
     let item = pos_args[1]
     let found = match container {
-      @value.Value::List(l) =>
-        l.iter().any(fn(v) { @value.starlark_equals(v, item) })
-      @value.Value::Tuple(t) =>
-        t.iter().any(fn(v) { @value.starlark_equals(v, item) })
+      @value.Value::List(l) => l.iter().any(fn(v) { v.starlark_equals(item) })
+      @value.Value::Tuple(t) => t.iter().any(fn(v) { v.starlark_equals(item) })
       @value.Value::String(s) =>
         match item {
           @value.Value::String(n) => s.raw().contains(n.raw())
@@ -165,13 +161,11 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
         }
       _ =>
         return Err(
-          "argument of type '\{@value.type_name(container)}' is not iterable",
+          "argument of type '\{container.type_name()}' is not iterable",
         )
     }
     if !found {
-      errors.push(
-        "\{@value.to_str(container)} does not contain \{@value.to_str(item)}",
-      )
+      errors.push("\{container.to_str()} does not contain \{item.to_str()}")
     }
     Ok(@value.Value::None)
   })
