@@ -1986,6 +1986,28 @@ comments, and doc-comments on public functions.
       flag (suppresses `in` inside loop-variable targets). `lexer/scanner.mbt`
       noted that a non-positive `utf8_decode_rune` result doubles as the
       invalid-UTF-8 rejection.
+- [x] **DRY consolidation (sixteenth pass)** — extended the audit to the
+      less-churned extension files. `math/math.mbt`: `make_ceil`/`make_floor`
+      were identical except for the `@std_math` function and the builtin name;
+      extracted `make_rounding(name, round)` (kept distinct from `make_unary`
+      because the rounding builtins pass `Int` through unchanged and route
+      `Float` through `float_to_int`, and intentionally omit the name prefix on
+      the type error per MISSING-177). `time/time.mbt`: `duration_hash` and
+      `time_hash` both folded a 64-bit value into a 32-bit hash via the same
+      high/low XOR; extracted `hash_int64_fold`. Skipped the cross-package
+      `parse_uint_str` (struct, `Int`) / `parse_int64_str` (time, `Int64`)
+      digit-accumulator pair: a shared helper would couple two unrelated
+      extension packages for a superficial match across differing numeric types.
+- [x] **Non-obvious comments (thirteenth pass)** — `json/json.mbt`: documented
+      the UTF-16 surrogate-pair recombination formula (high 10 bits + low 10
+      bits offset onto the supplementary plane). `struct/struct.mbt`
+      `merge_entries`: documented that the merge relies on MoonBit's sorted
+      `Map` for right-operand-wins collision handling and sorted-name output.
+      `time/time.mbt`: documented the fractional-seconds-to-nanoseconds
+      normalization (divide to drop excess precision vs multiply to pad). The
+      `hash_int64_fold` helper above also carries the XOR-fold rationale.
+      Verified the resolver file-block scope-stop and the parser `no_in` flag
+      were already commented in earlier passes.
 
 ---
 
