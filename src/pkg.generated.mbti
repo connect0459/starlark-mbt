@@ -57,6 +57,8 @@ pub fn new_custom_value(@value.CustomValue) -> @value.Value
 
 pub fn new_thread(String) -> @eval.Thread
 
+pub fn new_thread_with_loader(String, (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError]) -> @eval.Thread
+
 pub fn number_to_int(@value.Value) -> Int64?
 
 pub fn parse_expr(String, String) -> Result[@syntax.Expr, @errors.EvalError]

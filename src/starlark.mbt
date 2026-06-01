@@ -57,6 +57,29 @@ pub type StarlarkIterator = @value.StarlarkIterator
 pub type CustomValue = @value.CustomValue
 
 ///|
+/// Creates a new `Thread` with the given name and a `loader` callback that
+/// handles `load()` statements encountered during execution.
+///
+/// The callback receives the current thread and the load path string, and
+/// must return the loaded `Module` or an `EvalError`.
+///
+/// This is a convenience wrapper for `Thread::with_loader` that can be
+/// called from external modules without importing the internal `eval` package.
+///
+/// Parameters:
+///
+/// * `name` : A label used in call-stack traces and error messages.
+/// * `loader` : Callback invoked for each `load()` statement.
+///
+/// Returns a new `Thread` that delegates `load()` to `loader`.
+pub fn new_thread_with_loader(
+  name : String,
+  loader : (Thread, String) -> Result[Module, EvalError],
+) -> Thread {
+  @eval.Thread::with_loader(name, loader)
+}
+
+///|
 /// Creates a new `Thread` with the given name.
 ///
 /// This is a convenience wrapper for `Thread::new` that can be called from

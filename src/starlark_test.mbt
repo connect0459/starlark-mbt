@@ -13,6 +13,41 @@ test "default_options returns Options with all feature flags enabled" {
 }
 
 ///|
+test "new_thread_with_loader resolves load() calls via callback" {
+  let lib_src =
+    #|def double(x): return x * 2
+  let main_src =
+    #|load("lib.star", "double")
+    #|result = double(21)
+  let loader = fn(
+    _t : @starlark.Thread,
+    _path : String,
+  ) -> Result[@starlark.Module, @starlark.EvalError] {
+    let lt = @starlark.new_thread("loader")
+    @starlark.exec_file(lt, "lib.star", lib_src, @starlark.default_options())
+  }
+  let thread = @starlark.new_thread_with_loader("main", loader)
+  match
+    @starlark.exec_file(
+      thread,
+      "main.star",
+      main_src,
+      @starlark.default_options(),
+    ) {
+    Ok(m) =>
+      match @starlark.module_get(m, "result") {
+        Some(v) =>
+          match @starlark.number_to_int(v) {
+            Some(n) => assert_eq(n, 42L)
+            None => assert_true(false)
+          }
+        None => assert_true(false)
+      }
+    Err(e) => fail(@starlark.error_message(e))
+  }
+}
+
+///|
 test "error_message extracts the message from an EvalError" {
   let t = @starlark.new_thread("test")
   match
