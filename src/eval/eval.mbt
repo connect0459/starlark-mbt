@@ -143,6 +143,74 @@ pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
 }
 
 ///|
+/// Returns a copy of `self` with `allow_lambda` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_lambda` flag.
+///
+/// Returns a new `Options` with the `allow_lambda` flag set to `v`.
+pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
+  { ..self, allow_lambda: v }
+}
+
+///|
+/// Returns a copy of `self` with `allow_while` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_while` flag.
+///
+/// Returns a new `Options` with the `allow_while` flag set to `v`.
+pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
+  { ..self, allow_while: v }
+}
+
+///|
+/// Returns a copy of `self` with `allow_bytes` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_bytes` flag.
+///
+/// Returns a new `Options` with the `allow_bytes` flag set to `v`.
+pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
+  { ..self, allow_bytes: v }
+}
+
+///|
+/// Returns a copy of `self` with `allow_float` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_float` flag.
+///
+/// Returns a new `Options` with the `allow_float` flag set to `v`.
+pub fn Options::with_allow_float(self : Options, v : Bool) -> Options {
+  { ..self, allow_float: v }
+}
+
+///|
+/// Returns a copy of `self` with `allow_top_level_control` set to `v`.
+///
+/// Parameters:
+///
+/// * `self` : The options to copy.
+/// * `v` : The new value for the `allow_top_level_control` flag.
+///
+/// Returns a new `Options` with the `allow_top_level_control` flag set to `v`.
+pub fn Options::with_allow_top_level_control(
+  self : Options,
+  v : Bool,
+) -> Options {
+  { ..self, allow_top_level_control: v }
+}
+
+///|
 /// The set of predeclared built-in bindings shared across all modules.
 /// `Universe::standard()` provides the default Starlark built-ins; embedders
 /// may extend it with `set()`.

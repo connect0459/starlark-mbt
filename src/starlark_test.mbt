@@ -13,6 +13,41 @@ test "default_options returns Options with all feature flags enabled" {
 }
 
 ///|
+test "Options::with_allow_bytes toggles the allow_bytes flag" {
+  let opts = @starlark.Options::default().with_allow_bytes(false)
+  assert_eq(opts.allow_bytes(), false)
+  assert_eq(opts.allow_float(), true)
+}
+
+///|
+test "Options::with_allow_float toggles the allow_float flag" {
+  let opts = @starlark.Options::default().with_allow_float(false)
+  assert_eq(opts.allow_float(), false)
+  assert_eq(opts.allow_bytes(), true)
+}
+
+///|
+test "Options::with_allow_lambda toggles the allow_lambda flag" {
+  let opts = @starlark.Options::default().with_allow_lambda(false)
+  assert_eq(opts.allow_lambda(), false)
+  assert_eq(opts.allow_while(), true)
+}
+
+///|
+test "Options::with_allow_while toggles the allow_while flag" {
+  let opts = @starlark.Options::default().with_allow_while(false)
+  assert_eq(opts.allow_while(), false)
+  assert_eq(opts.allow_lambda(), true)
+}
+
+///|
+test "Options::with_allow_top_level_control toggles the flag" {
+  let opts = @starlark.Options::default().with_allow_top_level_control(false)
+  assert_eq(opts.allow_top_level_control(), false)
+  assert_eq(opts.allow_while(), true)
+}
+
+///|
 test "new_thread_with_loader resolves load() calls via callback" {
   let lib_src =
     #|def double(x): return x * 2

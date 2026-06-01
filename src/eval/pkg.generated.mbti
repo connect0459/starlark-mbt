@@ -73,8 +73,13 @@ pub fn Options::allow_top_level_control(Self) -> Bool
 pub fn Options::allow_while(Self) -> Bool
 pub fn Options::default() -> Self
 pub fn Options::load_binds_globally(Self) -> Bool
+pub fn Options::with_allow_bytes(Self, Bool) -> Self
+pub fn Options::with_allow_float(Self, Bool) -> Self
+pub fn Options::with_allow_lambda(Self, Bool) -> Self
 pub fn Options::with_allow_recursion(Self, Bool) -> Self
 pub fn Options::with_allow_set(Self, Bool) -> Self
+pub fn Options::with_allow_top_level_control(Self, Bool) -> Self
+pub fn Options::with_allow_while(Self, Bool) -> Self
 pub fn Options::with_global_reassign(Self, Bool) -> Self
 pub fn Options::with_load_binds_globally(Self, Bool) -> Self
 
