@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "connect0459/starlark/internal/eval"
+package "connect0459/starlark/eval"
 
 import {
   "connect0459/starlark/errors",

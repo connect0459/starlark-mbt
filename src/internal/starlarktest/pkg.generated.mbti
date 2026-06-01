@@ -2,7 +2,7 @@
 package "connect0459/starlark/internal/starlarktest"
 
 import {
-  "connect0459/starlark/internal/eval",
+  "connect0459/starlark/eval",
 }
 
 // Values
