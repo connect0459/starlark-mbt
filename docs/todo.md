@@ -1964,6 +1964,28 @@ comments, and doc-comments on public functions.
       sign). A scan of the resolver local-scope walk and the conditional-expr
       evaluator found them already self-documenting (the file-block stop is
       commented; `ECond` destructures to `then_e`/`cond_e`/`else_e`).
+- [x] **DRY consolidation (fifteenth pass)** — `eval/expr.mbt`: three
+      verbatim-repeated patterns collapsed. `check_int64_range(ctx, b, msg)`
+      replaces the signed-64-bit bound guard duplicated at four sites (`range`,
+      `list.pop`, `list.insert`, and the bytes/string search-index decode);
+      only the diagnostic message varied. `all_chars_satisfy(s, pred)` backs
+      `isalpha`/`isdigit`/`isalnum`/`isspace`, which shared the
+      empty-string-false-then-every-character predicate loop. `partition_string`
+      backs `str.partition`/`rpartition`, whose separator-found branch
+      (before/sep/after slice) was identical and differed only in search
+      direction and which slot holds the whole string when the separator is
+      absent. NO `.mbti` change (behavior-only).
+- [x] **Non-obvious comments (twelfth pass)** — explained six implementation
+      details: `value/value.mbt` `is_neg_zero` reads the IEEE 754 sign bit
+      because `-0.0 == +0.0`; `floor_div`/`starlark_mod` adjust the truncated
+      quotient/remainder when operand signs disagree (BigInt counterparts of the
+      already-commented `eval/ops.mbt` float helper). `value/traits.mbt`
+      `int_float_eq` uses `f != f.trunc()` as the has-fractional-part test.
+      `time/time.mbt` duration parsing accepts both U+00B5 (MICRO SIGN) and
+      U+03BC (GREEK SMALL LETTER MU). `parser/parser.mbt` documented the `no_in`
+      flag (suppresses `in` inside loop-variable targets). `lexer/scanner.mbt`
+      noted that a non-positive `utf8_decode_rune` result doubles as the
+      invalid-UTF-8 rejection.
 
 ---
 
