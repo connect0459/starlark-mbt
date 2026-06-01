@@ -1,6 +1,6 @@
 import {
   "moonbitlang/x/time" @x_time,
-  "connect0459/starlark/internal/value",
+  "connect0459/starlark/value",
 }
 
 options(

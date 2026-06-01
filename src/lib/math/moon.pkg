@@ -1,4 +1,4 @@
 import {
   "connect0459/starlark/internal/std_math",
-  "connect0459/starlark/internal/value",
+  "connect0459/starlark/value",
 }

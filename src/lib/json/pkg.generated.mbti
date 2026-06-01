@@ -2,7 +2,7 @@
 package "connect0459/starlark/lib/json"
 
 import {
-  "connect0459/starlark/internal/value",
+  "connect0459/starlark/value",
 }
 
 // Values
