@@ -53,10 +53,18 @@ fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
 }
 
 ///|
+/// Folds a 64-bit value into a 32-bit hash by XOR-ing its high and low halves,
+/// so both word boundaries contribute to the result (a bare truncation would
+/// drop the high 32 bits entirely).
+fn hash_int64_fold(v : Int64) -> UInt {
+  let lo = v.to_int().reinterpret_as_uint()
+  let hi = (v >> 32).to_int().reinterpret_as_uint()
+  lo ^ hi
+}
+
+///|
 fn duration_hash(ns : Int64) -> Result[UInt, String] {
-  let lo = ns.to_int().reinterpret_as_uint()
-  let hi = (ns >> 32).to_int().reinterpret_as_uint()
-  Ok(lo ^ hi)
+  Ok(hash_int64_fold(ns))
 }
 
 ///|
@@ -782,9 +790,7 @@ fn fmt_go_layout(
 ///|
 fn time_hash(sec : Int64, nsec : Int) -> Result[UInt, String] {
   let unix_nano = sec * ns_per_second + nsec.to_int64()
-  let lo = unix_nano.to_int().reinterpret_as_uint()
-  let hi = (unix_nano >> 32).to_int().reinterpret_as_uint()
-  Ok(lo ^ hi)
+  Ok(hash_int64_fold(unix_nano))
 }
 
 ///|

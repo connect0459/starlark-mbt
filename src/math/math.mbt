@@ -208,34 +208,17 @@ fn float_to_int(f : Double) -> Result[@value.Value, String] {
 }
 
 ///|
-fn make_ceil() -> @value.Value {
-  @value.Value::new_builtin("ceil", fn(_ctx, pos_args, kw_args) {
+fn make_rounding(name : String, round : (Double) -> Double) -> @value.Value {
+  @value.Value::new_builtin(name, fn(_ctx, pos_args, kw_args) {
     if kw_args.length() != 0 {
-      return Err("ceil: unexpected keyword arguments")
+      return Err("\{name}: unexpected keyword arguments")
     }
     if pos_args.length() != 1 {
-      return Err("ceil: got \{pos_args.length()} arguments, want 1")
+      return Err("\{name}: got \{pos_args.length()} arguments, want 1")
     }
     match pos_args[0] {
       @value.Value::Int(_) as v => Ok(v)
-      @value.Value::Float(f) => float_to_int(@std_math.ceil(f))
-      v => Err("got \{@value.type_name(v)}, want float or int")
-    }
-  })
-}
-
-///|
-fn make_floor() -> @value.Value {
-  @value.Value::new_builtin("floor", fn(_ctx, pos_args, kw_args) {
-    if kw_args.length() != 0 {
-      return Err("floor: unexpected keyword arguments")
-    }
-    if pos_args.length() != 1 {
-      return Err("floor: got \{pos_args.length()} arguments, want 1")
-    }
-    match pos_args[0] {
-      @value.Value::Int(_) as v => Ok(v)
-      @value.Value::Float(f) => float_to_int(@std_math.floor(f))
+      @value.Value::Float(f) => float_to_int(round(f))
       v => Err("got \{@value.type_name(v)}, want float or int")
     }
   })
@@ -252,8 +235,8 @@ pub fn math_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["e"] = @value.Value::Float(2.718281828459045)
   attrs["pi"] = @value.Value::Float(@std_math.PI)
-  attrs["ceil"] = make_ceil()
-  attrs["floor"] = make_floor()
+  attrs["ceil"] = make_rounding("ceil", @std_math.ceil)
+  attrs["floor"] = make_rounding("floor", @std_math.floor)
   attrs["round"] = make_unary("round", float_round_starlark)
   attrs["fabs"] = make_unary("fabs", float_abs)
   attrs["exp"] = make_unary("exp", @std_math.exp)
