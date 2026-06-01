@@ -57,6 +57,47 @@ pub type StarlarkIterator = @value.StarlarkIterator
 pub type CustomValue = @value.CustomValue
 
 ///|
+/// Creates a new `Thread` with the given name.
+///
+/// This is a convenience wrapper for `Thread::new` that can be called from
+/// external modules without importing the internal `eval` package.
+///
+/// Parameters:
+///
+/// * `name` : A label used in call-stack traces and error messages.
+///
+/// Returns a new `Thread` ready for execution.
+pub fn new_thread(name : String) -> Thread {
+  @eval.Thread::new(name)
+}
+
+///|
+/// Returns a `Options` value with all feature flags set to `true`.
+///
+/// This is a convenience wrapper for `Options::default` that can be called
+/// from external modules without importing the internal `eval` package.
+///
+/// Returns the default `Options`.
+pub fn default_options() -> Options {
+  @eval.Options::default()
+}
+
+///|
+/// Returns the human-readable error message from an `EvalError`.
+///
+/// This is a convenience wrapper for `EvalError::msg` that can be called from
+/// external modules without importing the internal `errors` package.
+///
+/// Parameters:
+///
+/// * `e` : The evaluation error to extract the message from.
+///
+/// Returns the error message string.
+pub fn error_message(e : EvalError) -> String {
+  e.msg()
+}
+
+///|
 /// Wraps a `CustomValue` in the `Value` sum type.
 ///
 /// Parameters:

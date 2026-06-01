@@ -23,9 +23,13 @@ pub fn compare_depth(String, @value.Value, @value.Value, Int) -> Result[Bool, @e
 
 pub let compare_limit : Int
 
+pub fn default_options() -> @eval.Options
+
 pub fn equal(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
 pub fn equal_depth(@value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]
+
+pub fn error_message(@errors.EvalError) -> String
 
 pub fn eval_expr(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
 
@@ -50,6 +54,8 @@ pub fn len_of(@value.Value) -> Int
 pub fn module_get(@eval.Module, String) -> @value.Value?
 
 pub fn new_custom_value(@value.CustomValue) -> @value.Value
+
+pub fn new_thread(String) -> @eval.Thread
 
 pub fn number_to_int(@value.Value) -> Int64?
 

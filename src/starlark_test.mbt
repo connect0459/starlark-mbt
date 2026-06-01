@@ -1,4 +1,28 @@
 ///|
+test "new_thread creates a Thread usable with exec_file" {
+  let t = @starlark.new_thread("hello")
+  assert_eq(t.name(), "hello")
+}
+
+///|
+test "default_options returns Options with all feature flags enabled" {
+  let opts = @starlark.default_options()
+  assert_eq(opts.allow_set(), true)
+  assert_eq(opts.allow_recursion(), true)
+  assert_eq(opts.allow_float(), true)
+}
+
+///|
+test "error_message extracts the message from an EvalError" {
+  let t = @starlark.new_thread("test")
+  match
+    @starlark.exec_file(t, "<test>", "x = 1 // 0", @starlark.default_options()) {
+    Err(e) => assert_true(@starlark.error_message(e).contains("zero"))
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
 test "Universe::set adds a binding visible to executed modules" {
   let u = @starlark.Universe::standard()
   u.set("MY_CONST", @starlark.Value::Int(42N))
