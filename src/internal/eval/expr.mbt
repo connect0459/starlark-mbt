@@ -1375,16 +1375,26 @@ fn builtin_module(
 }
 
 ///|
-fn range_arg_to_int64(ctx : EvalContext, b : BigInt) -> Int64 raise EvalErr {
+/// Raises an out-of-range `EvalError` when `b` does not fit in a signed 64-bit
+/// integer; `msg` carries the full caller-specific diagnostic.
+fn check_int64_range(
+  ctx : EvalContext,
+  b : BigInt,
+  msg : String,
+) -> Unit raise EvalErr {
   if b.compare_int64(@int64.MAX_VALUE) > 0 ||
     b.compare_int64(@int64.MIN_VALUE) < 0 {
-    raise EvalErr(
-      make_eval_error(
-        ctx,
-        "\{b} out of range (want value in signed 64-bit range)",
-      ),
-    )
+    raise EvalErr(make_eval_error(ctx, msg))
   }
+}
+
+///|
+fn range_arg_to_int64(ctx : EvalContext, b : BigInt) -> Int64 raise EvalErr {
+  check_int64_range(
+    ctx,
+    b,
+    "\{b} out of range (want value in signed 64-bit range)",
+  )
   b.to_int64()
 }
 
@@ -2108,15 +2118,11 @@ fn call_list_method(
       let i = if pos_args.length() == 1 {
         match pos_args[0] {
           @value.Value::Int(b) => {
-            if b.compare_int64(@int64.MAX_VALUE) > 0 ||
-              b.compare_int64(@int64.MIN_VALUE) < 0 {
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "pop: for parameter 1: \{b} out of range (want value in signed 64-bit range)",
-                ),
-              )
-            }
+            check_int64_range(
+              ctx,
+              b,
+              "pop: for parameter 1: \{b} out of range (want value in signed 64-bit range)",
+            )
             b
           }
           v =>
@@ -2156,15 +2162,11 @@ fn call_list_method(
       check_positional(ctx, "insert", pos_args, kw_args, 2, 2)
       match pos_args[0] {
         @value.Value::Int(i) => {
-          if i.compare_int64(@int64.MAX_VALUE) > 0 ||
-            i.compare_int64(@int64.MIN_VALUE) < 0 {
-            raise EvalErr(
-              make_eval_error(
-                ctx,
-                "insert: for parameter 1: \{i} out of range (want value in signed 64-bit range)",
-              ),
-            )
-          }
+          check_int64_range(
+            ctx,
+            i,
+            "insert: for parameter 1: \{i} out of range (want value in signed 64-bit range)",
+          )
           let len = l.length()
           let j = {
             let len64 = BigInt::from_int(len)
@@ -2606,51 +2608,24 @@ fn call_str_method(
       }
       @value.Value::Int(BigInt::from_int(result))
     }
-    "isalpha" => {
-      if s.raw().length() == 0 {
-        return @value.Value::Bool(false)
-      }
-      let mut result = true
-      for c in s.raw().to_array() {
+    "isalpha" =>
+      all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        if !((n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
-          (n >= 'a'.to_int() && n <= 'z'.to_int())) {
-          result = false
-          break
-        }
-      }
-      @value.Value::Bool(result)
-    }
-    "isdigit" => {
-      if s.raw().length() == 0 {
-        return @value.Value::Bool(false)
-      }
-      let mut result = true
-      for c in s.raw().to_array() {
+        (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
+        (n >= 'a'.to_int() && n <= 'z'.to_int())
+      })
+    "isdigit" =>
+      all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        if n < '0'.to_int() || n > '9'.to_int() {
-          result = false
-          break
-        }
-      }
-      @value.Value::Bool(result)
-    }
-    "isalnum" => {
-      if s.raw().length() == 0 {
-        return @value.Value::Bool(false)
-      }
-      let mut result = true
-      for c in s.raw().to_array() {
+        n >= '0'.to_int() && n <= '9'.to_int()
+      })
+    "isalnum" =>
+      all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        if !((n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
-          (n >= 'a'.to_int() && n <= 'z'.to_int()) ||
-          (n >= '0'.to_int() && n <= '9'.to_int())) {
-          result = false
-          break
-        }
-      }
-      @value.Value::Bool(result)
-    }
+        (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
+        (n >= 'a'.to_int() && n <= 'z'.to_int()) ||
+        (n >= '0'.to_int() && n <= '9'.to_int())
+      })
     "islower" => {
       let raw = s.raw()
       let has_cased = raw
@@ -2669,19 +2644,7 @@ fn call_str_method(
         has_cased && raw == map_string_runes(raw, @utf8util.to_upper_rune),
       )
     }
-    "isspace" => {
-      if s.raw().length() == 0 {
-        return @value.Value::Bool(false)
-      }
-      let mut result = true
-      for c in s.raw() {
-        if !is_whitespace(c) {
-          result = false
-          break
-        }
-      }
-      @value.Value::Bool(result)
-    }
+    "isspace" => all_chars_satisfy(s, is_whitespace)
     "title" => {
       let buf = StringBuilder::new()
       let mut prev_cased = false
@@ -2697,52 +2660,10 @@ fn call_str_method(
       }
       @value.Value::String(@value.StarlarkString::new(buf.to_string()))
     }
-    "partition" => {
-      check_positional(ctx, "partition", pos_args, kw_args, 1, 1)
-      let sep = arg_as_string(ctx, "partition", pos_args, 0)
-      if sep.byte_len() == 0 {
-        raise EvalErr(make_eval_error(ctx, "partition: empty separator"))
-      }
-      let idx = bytes_index_in(s, 0, s.byte_len(), sep)
-      if idx < 0 {
-        @value.Value::Tuple([
-          @value.Value::String(s),
-          @value.Value::String(@value.StarlarkString::new("")),
-          @value.Value::String(@value.StarlarkString::new("")),
-        ])
-      } else {
-        let before = str_byte_slice(s, 0, idx)
-        let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
-        @value.Value::Tuple([
-          @value.Value::String(before),
-          @value.Value::String(sep),
-          @value.Value::String(after),
-        ])
-      }
-    }
-    "rpartition" => {
-      check_positional(ctx, "rpartition", pos_args, kw_args, 1, 1)
-      let sep = arg_as_string(ctx, "rpartition", pos_args, 0)
-      if sep.byte_len() == 0 {
-        raise EvalErr(make_eval_error(ctx, "rpartition: empty separator"))
-      }
-      let idx = bytes_last_index_in(s, 0, s.byte_len(), sep)
-      if idx < 0 {
-        @value.Value::Tuple([
-          @value.Value::String(@value.StarlarkString::new("")),
-          @value.Value::String(@value.StarlarkString::new("")),
-          @value.Value::String(s),
-        ])
-      } else {
-        let before = str_byte_slice(s, 0, idx)
-        let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
-        @value.Value::Tuple([
-          @value.Value::String(before),
-          @value.Value::String(sep),
-          @value.Value::String(after),
-        ])
-      }
-    }
+    "partition" =>
+      partition_string(ctx, "partition", s, pos_args, kw_args, find_last=false)
+    "rpartition" =>
+      partition_string(ctx, "rpartition", s, pos_args, kw_args, find_last=true)
     "removeprefix" => {
       check_positional(ctx, "removeprefix", pos_args, kw_args, 1, 1)
       let prefix = arg_as_string(ctx, "removeprefix", pos_args, 0)
@@ -3360,15 +3281,11 @@ fn parse_search_index(
   if args.length() > pos {
     match args[pos] {
       @value.Value::Int(n) => {
-        if n.compare_int64(@int64.MAX_VALUE) > 0 ||
-          n.compare_int64(@int64.MIN_VALUE) < 0 {
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "\{mname}: invalid \{kind} index: \{n} out of range",
-            ),
-          )
-        }
+        check_int64_range(
+          ctx,
+          n,
+          "\{mname}: invalid \{kind} index: \{n} out of range",
+        )
         let i64 = n.to_int64()
         let slen64 = slen.to_int64()
         if i64 >= slen64 {
@@ -3570,6 +3487,66 @@ fn find_substr(s : String, sub : String) -> Int {
     }
   }
   -1
+}
+
+///|
+/// Returns `Bool(true)` when `s` is non-empty and every character satisfies
+/// `pred`. The empty string is always `Bool(false)`, matching the Starlark/
+/// Python `str` classification predicates (`isalpha`, `isdigit`, ...).
+fn all_chars_satisfy(
+  s : @value.StarlarkString,
+  pred : (Char) -> Bool,
+) -> @value.Value {
+  if s.raw().length() == 0 {
+    return @value.Value::Bool(false)
+  }
+  for c in s.raw() {
+    if !pred(c) {
+      return @value.Value::Bool(false)
+    }
+  }
+  @value.Value::Bool(true)
+}
+
+///|
+/// Shared implementation of `str.partition` / `str.rpartition`. Splits `s` on
+/// the first (`find_last=false`) or last (`find_last=true`) occurrence of the
+/// separator. When the separator is absent the original string occupies the
+/// first slot for `partition` and the last slot for `rpartition`.
+fn partition_string(
+  ctx : EvalContext,
+  mname : String,
+  s : @value.StarlarkString,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+  find_last~ : Bool,
+) -> @value.Value raise EvalErr {
+  check_positional(ctx, mname, pos_args, kw_args, 1, 1)
+  let sep = arg_as_string(ctx, mname, pos_args, 0)
+  if sep.byte_len() == 0 {
+    raise EvalErr(make_eval_error(ctx, mname + ": empty separator"))
+  }
+  let idx = if find_last {
+    bytes_last_index_in(s, 0, s.byte_len(), sep)
+  } else {
+    bytes_index_in(s, 0, s.byte_len(), sep)
+  }
+  let empty = @value.Value::String(@value.StarlarkString::new(""))
+  if idx < 0 {
+    if find_last {
+      @value.Value::Tuple([empty, empty, @value.Value::String(s)])
+    } else {
+      @value.Value::Tuple([@value.Value::String(s), empty, empty])
+    }
+  } else {
+    let before = str_byte_slice(s, 0, idx)
+    let after = str_byte_slice(s, idx + sep.byte_len(), s.byte_len())
+    @value.Value::Tuple([
+      @value.Value::String(before),
+      @value.Value::String(sep),
+      @value.Value::String(after),
+    ])
+  }
 }
 
 ///|
