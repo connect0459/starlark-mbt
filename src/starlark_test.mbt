@@ -527,6 +527,18 @@ test "compare_limit constant equals 10" {
 }
 
 ///|
+test "equal returns Err when nesting exceeds compare_limit" {
+  let mut inner = @starlark.Value::Int(0N)
+  for _ in 0..<(@starlark.compare_limit + 2) {
+    inner = @starlark.Value::List(@starlark.StarlarkList::new([inner]))
+  }
+  match @starlark.equal(inner, inner) {
+    Err(_) => ()
+    Ok(_) => fail("expected depth limit error")
+  }
+}
+
+///|
 test "equal_depth with depth 0 returns recursion error" {
   let a = @starlark.Value::List(@starlark.StarlarkList::new([]))
   let b = @starlark.Value::List(@starlark.StarlarkList::new([]))

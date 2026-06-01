@@ -263,18 +263,6 @@ test "StarlarkDict::to_entries yields all key-value pairs" {
 }
 
 ///|
-test "StarlarkDict::to_keys yields all keys" {
-  let d = StarlarkDict::new()
-  d.set(Value::String(StarlarkString::new("x")), Value::Int(10N)) |> ignore
-  d.set(Value::String(StarlarkString::new("y")), Value::Int(20N)) |> ignore
-  let keys : Array[Value] = []
-  for k in d.to_keys() {
-    keys.push(k)
-  }
-  assert_eq(keys.length(), 2)
-}
-
-///|
 test "StarlarkDict::to_entries preserves insertion order" {
   let d = StarlarkDict::new()
   d.set(Value::Int(3N), Value::String(StarlarkString::new("three"))) |> ignore

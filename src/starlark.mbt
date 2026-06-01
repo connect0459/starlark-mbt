@@ -389,16 +389,19 @@ pub fn exec_repl_chunk(
 }
 
 ///|
-/// Wraps `starlark_equals` in a `Result`; always succeeds.
+/// Compares two Starlark values for equality, respecting the recursion-depth
+/// cap defined by `compare_limit`. Returns `Err` when the depth limit is
+/// exceeded (cyclic structure).
 ///
 /// Parameters:
 ///
 /// * `a` : The left-hand value.
 /// * `b` : The right-hand value.
 ///
-/// Returns `Ok(true)` if `a == b`, `Ok(false)` otherwise.
+/// Returns `Ok(true)` if `a == b`, `Ok(false)` if not, or `Err` when the
+/// depth limit is exceeded (cyclic structure).
 pub fn equal(a : Value, b : Value) -> Result[Bool, EvalError] {
-  Ok(a.starlark_equals(b))
+  equal_depth(a, b, @value.compare_limit)
 }
 
 ///|

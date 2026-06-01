@@ -166,14 +166,6 @@ pub fn StarlarkDict::to_entries(self : StarlarkDict) -> Iter[(Value, Value)] {
 }
 
 ///|
-/// Returns an `Iter` over all keys in insertion order.
-///
-/// Returns a lazy iterator over keys in insertion order.
-pub fn StarlarkDict::to_keys(self : StarlarkDict) -> Iter[Value] {
-  self.keys().iter()
-}
-
-///|
 /// Removes all entries. Returns `Err` if the dict is frozen or under active
 /// iteration.
 ///

@@ -131,7 +131,6 @@ pub fn StarlarkDict::new() -> Self
 pub fn StarlarkDict::popitem(Self) -> Result[(Value, Value)?, String]
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
 pub fn StarlarkDict::to_entries(Self) -> Iter[(Value, Value)]
-pub fn StarlarkDict::to_keys(Self) -> Iter[Value]
 
 pub struct StarlarkFunction {
   // private fields
@@ -185,7 +184,6 @@ pub fn StarlarkList::push(Self, Value) -> Result[Unit, String]
 pub fn StarlarkList::reverse(Self) -> Result[Unit, String]
 pub fn StarlarkList::set(Self, Int, Value) -> Result[Unit, String]
 pub fn StarlarkList::sort_by(Self, (Value, Value) -> Int) -> Result[Unit, String]
-pub fn StarlarkList::to_iter(Self) -> Iter[Value]
 
 pub struct StarlarkModule {
   // private fields

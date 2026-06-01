@@ -187,14 +187,6 @@ pub fn StarlarkList::iter(self : StarlarkList) -> Iter[Value] {
 }
 
 ///|
-/// Returns a lazy iterator over the list elements (alias for `iter`).
-///
-/// Returns an `Iter[Value]` that yields each element in order.
-pub fn StarlarkList::to_iter(self : StarlarkList) -> Iter[Value] {
-  self.items.iter()
-}
-
-///|
 /// Calls `f(index, value)` for each element.
 ///
 /// Parameters:
