@@ -2,7 +2,7 @@
 package "connect0459/starlark/internal/value"
 
 import {
-  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/errors",
   "connect0459/starlark/internal/syntax",
   "moonbitlang/core/bigint",
 }

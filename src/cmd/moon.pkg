@@ -2,7 +2,7 @@ import {
   "moonbitlang/x/sys",
   "moonbitlang/x/fs",
   "moonbitlang/x/path",
-  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/errors",
   "connect0459/starlark/internal/eval",
   "connect0459/starlark/internal/value",
   "connect0459/starlark/internal/repl",

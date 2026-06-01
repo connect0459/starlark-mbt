@@ -1,5 +1,5 @@
 import {
-  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/errors",
   "connect0459/starlark/internal/lexer",
   "connect0459/starlark/internal/syntax",
 }

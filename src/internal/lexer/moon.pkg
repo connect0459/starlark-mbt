@@ -3,6 +3,6 @@ import {
   "moonbitlang/core/double",
   "moonbitlang/core/math",
   "moonbitlang/core/string",
-  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/errors",
   "connect0459/starlark/internal/utf8util",
 }

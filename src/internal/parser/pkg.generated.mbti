@@ -2,7 +2,7 @@
 package "connect0459/starlark/internal/parser"
 
 import {
-  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/errors",
   "connect0459/starlark/internal/syntax",
 }
 

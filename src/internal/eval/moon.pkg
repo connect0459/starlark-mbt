@@ -3,7 +3,7 @@ import {
   "moonbitlang/core/int64",
   "moonbitlang/core/math",
   "moonbitlang/core/string",
-  "connect0459/starlark/internal/errors",
+  "connect0459/starlark/errors",
   "connect0459/starlark/internal/value",
   "connect0459/starlark/internal/syntax",
   "connect0459/starlark/internal/parser",
