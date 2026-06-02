@@ -1771,6 +1771,14 @@ gaps (implementations were already correct). Commit: `190d060`
 - [x] Add `Options::with_allow_lambda`, `with_allow_while`, `with_allow_bytes`,
       `with_allow_float`, `with_allow_top_level_control` — completing the
       fluent-setter API for all nine dialect flags
+- [x] Restrict `StarlarkDict::iter_begin/iter_end`, `StarlarkSet::iter_begin/iter_end`,
+      `StarlarkDict::is_same_storage`, `StarlarkList::is_same_storage` to package
+      scope — all were called only within `src/value/`; `lib/json` cycle detection
+      for lists now uses `physical_equal` directly.
+- [x] Replace `Module::globals_map/predeclared_map` (raw map leakage) with
+      `Module::global_names() -> Array[String]` and
+      `Module::predeclared_names() -> Array[String]`; embedders enumerate names
+      then call `get()` per name.
 
 ### Deferred public-API gaps
 
