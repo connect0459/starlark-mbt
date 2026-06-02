@@ -1794,6 +1794,16 @@ gaps (implementations were already correct). Commit: `190d060`
       `StarlarkList::iter`); add `Value::of_int(Int64)` and `Value::of_float(Double)`
       convenience constructors alongside `Value::of_string`; remove labeled optional
       `verb?` from `StarlarkList::pop_at` (now a plain positional `String`).
+- [x] **HasSetField wired** — `CustomValue::with_set_field` hooks are now
+      dispatched in `eval/stmt.mbt` for `EDot` assignment on `ExtVal`;
+      `get_set_field` return type changed from `Result[Unit, String]` to
+      `Result[Unit, String]?` (consistent with other optional-capability
+      dispatchers). Previously the hook was never invoked.
+- [x] **`Options::with_global_reassign` renamed** → `with_allow_global_reassign`
+      to match the `allow_global_reassign` getter and all other `with_allow_*`
+      fluent setters.
+- [x] **`StringDict` extended** — added `delete(key) -> Bool`,
+      `each((String, Value) -> Unit)`, and `values() -> Array[Value]`.
 - [ ] **Remaining `#internal` visibility** — `java_string_hash`, `starlark_equals_depth`,
       `bigint_to_*`, `floor_div`, `starlark_mod`, `check_mutable`, `copy_items`,
       `pop_at`, `BuiltinCallCtx::new`, `StarlarkBuiltinFunc::dispatch/call_body`,
