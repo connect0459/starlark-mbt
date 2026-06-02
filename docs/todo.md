@@ -1858,12 +1858,35 @@ gaps (implementations were already correct). Commit: `190d060`
       dict iteration yields keys) and `Module::predeclared_count` (counterpart to
       `globals_count`, alongside the existing `predeclared_names`). Additive.
 
-### Deferred public-API gaps
+### Program serialization & embedder-unpack pass (MISSING-62 / MISSING-64)
 
-- [ ] **MISSING-62**: No bytecode `CompiledProgram`/`Program.Write` — tree-walking
-      interpreter only. Tracked as a future major milestone.
-- [ ] **MISSING-64**: Thread-local storage, public `Unpacker`/`UnpackArgs`, separate
-      `FileOptions` entry points — future work.
+- [x] **MISSING-62**: `Program::write() -> Bytes` and
+      `compiled_program(Bytes) -> Result[Program, EvalError]` added (re-exported
+      via the facade). Delivers starlark-go's parse-once / load-many capability.
+      As a **tree-walking** interpreter the serialized form is the resolved AST
+      plus the program's `Options`, encoded as a versioned, magic-tagged
+      (`"smbt"`, version 1) binary in `src/eval/serial.mbt` — **intentionally not
+      byte-compatible** with starlark-go's bytecode `Program.Write`. The decoder
+      trusts the input was produced by `write` from a valid program and skips
+      re-resolution (which would require the original `is_predeclared`).
+      Positions are reconstructed from the file path (affects only error text).
+      Round-trip tests cover the full AST incl. comprehensions, lambdas, slices,
+      `load`, and bigint/float/bytes literals.
+- [x] **MISSING-64 (Unpacker)**: `Unpacker` protocol (`pub(open) trait` in
+      `value/protocols.mbt`) + `unpack_args_with` dispatching each matched
+      argument to a custom target, mirroring starlark-go's `UnpackArgs`. The
+      `unpack` package (was unused under `internal/`) is now exposed publicly:
+      `unpack_args`/`unpack_positional`/`unpack_args_with` re-exported via the
+      facade. (Closes the stale claim that these were already public.)
+- [x] **MISSING-64 (FileOptions)**: resolved by `Program::options() -> Options`.
+      A `Program` already bundles an immutable, per-file `Options` set (it
+      survives serialization), which is exactly the role starlark-go's
+      `syntax.FileOptions` plays — per-file dialect config instead of global
+      flags. A separate `FileOptions` type was deliberately **not** added: it
+      would duplicate `Options`, and `syntax.File` cannot depend on
+      `eval.Options` (layer boundary), so `Program` is the correct owner.
+- [ ] **MISSING-64 (thread-local)**: already implemented earlier
+      (`Thread::set_local`/`get_local`). No work remaining.
 
 ---
 

@@ -45,6 +45,25 @@ The packages `eval`, `value`, `errors`, and `syntax` are public sub-packages; im
 | `source_program` | `(String, String, @eval.Options, (String)->Bool) -> Result[@eval.Program, @errors.EvalError]` | Parse and resolve without executing; returns a reusable `Program` |
 | `source_program_with_file` | `(String, String, @eval.Options, (String)->Bool) -> Result[(@syntax.File, @eval.Program), @errors.EvalError]` | Like `source_program` but also returns the parsed AST |
 | `file_program` | `(@syntax.File, @eval.Options, (String)->Bool) -> Result[@eval.Program, @errors.EvalError]` | Resolve an already-parsed `@syntax.File` into a `Program` |
+| `compiled_program` | `(Bytes) -> Result[@eval.Program, @errors.EvalError]` | Reload a `Program` from bytes produced by `Program::write`, skipping parse + resolve |
+
+`Program::write() -> Bytes` serializes a resolved program so it can be persisted
+and reloaded with `compiled_program`. The format holds the resolved AST plus the
+program's options (a versioned, magic-tagged binary); it is specific to this
+tree-walking implementation and **not** byte-compatible with starlark-go's
+bytecode `Program.Write`.
+
+#### Argument unpacking (for host-defined built-ins)
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `unpack_args` | `(String, Array[Value], Array[(String, Value)], Array[String]) -> Result[Array[Value?], String]` | Bind positional + keyword args to a name spec (`"name"`, `"name?"`, `"name??"`) |
+| `unpack_positional` | `(String, Array[Value], Array[(String, Value)], Int, Int) -> Result[Array[Value?], String]` | Bind positional-only args, requiring between `min` and `max` |
+| `unpack_args_with` | `(String, Array[Value], Array[(String, Value)], Array[(String, &@value.Unpacker)]) -> Result[Unit, String]` | Like `unpack_args` but dispatches each matched value to a custom `@value.Unpacker` target |
+
+Implement the `@value.Unpacker` trait (`unpack(Self, Value) -> Result[Unit, String]`)
+on a host type to define custom per-argument validation/coercion, mirroring
+starlark-go's `Unpacker` interface.
 
 #### Value inspection
 
@@ -430,7 +449,9 @@ pub struct Program { /* private fields */ }  // in "connect0459/starlark/eval"
 | `filename()` | `() -> String` | Source file name used during compilation |
 | `num_loads()` | `() -> Int` | Number of `load` statements in the file |
 | `load(Int)` | `(Int) -> (String, @errors.Position)` | Path and position of the i-th `load` statement |
+| `options()` | `() -> @eval.Options` | The file-level dialect options the program was resolved with |
 | `init(@eval.Thread, @eval.Predeclared)` | `-> Result[@eval.Module, @errors.EvalError]` | Execute the program and return an **unfrozen** module |
+| `write()` | `() -> Bytes` | Serialize the resolved program; reload with `compiled_program` |
 
 ```moonbit
 test {
