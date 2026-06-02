@@ -214,6 +214,24 @@ pub fn file_program(
 }
 
 ///|
+/// Reconstructs a `Program` from bytes produced by `Program::write`, skipping
+/// parsing and resolution. The byte format holds the resolved AST and options;
+/// it is specific to this implementation and not compatible with starlark-go's
+/// bytecode format.
+///
+/// Parameters:
+///
+/// - `data` : Bytes previously produced by `Program::write`.
+///
+/// Returns the reconstructed `Program`, or an `EvalError` if the bytes are
+/// truncated, carry an unknown header, or use an incompatible version.
+pub fn compiled_program(
+  data : Bytes,
+) -> Result[@eval.Program, @errors.EvalError] {
+  @eval.compiled_program(data)
+}
+
+///|
 /// Parses, resolves, and executes a Starlark source file; returns the frozen
 /// module whose globals are the file's top-level bindings.
 ///

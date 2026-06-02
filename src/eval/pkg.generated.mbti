@@ -14,6 +14,8 @@ pub fn call(Thread, @value.Value, Array[@value.Value], Array[(String, @value.Val
 
 pub fn compare(String, @value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
+pub fn compiled_program(Bytes) -> Result[Program, @errors.EvalError]
+
 pub fn eval_expr(Thread, String, String, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
 
 pub fn eval_expr_with_opts(Thread, String, String, Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
@@ -101,6 +103,7 @@ pub fn Program::filename(Self) -> String
 pub fn Program::init(Self, Thread, Predeclared) -> Result[Module, @errors.EvalError]
 pub fn Program::load(Self, Int) -> (String, @errors.Position)
 pub fn Program::num_loads(Self) -> Int
+pub fn Program::write(Self) -> Bytes
 
 pub struct Thread {
   // private fields

@@ -47,6 +47,114 @@ test "unpack_args_with surfaces an error when a target rejects its value" {
 }
 
 ///|
+test "Program round-trips through write/compiled_program and executes equally" {
+  let src =
+    #|def fib(n):
+    #|  if n < 2:
+    #|    return n
+    #|  return fib(n - 1) + fib(n - 2)
+    #|result = fib(10)
+    #|names = {"a": [1, 2, 3], "b": (4, 5)}
+    #|big = 100000000000000000000
+    #|pi = 3.14159
+    #|text = "hello\nworld"
+  let prog = match
+    @starlark.source_program("t.star", src, @eval.Options::default(), fn(_) {
+      false
+    }) {
+    Ok(p) => p
+    Err(e) => fail(e.msg())
+  }
+  let bytes = prog.write()
+  let restored = match @starlark.compiled_program(bytes) {
+    Ok(p) => p
+    Err(e) => fail("decode failed: \{e.msg()}")
+  }
+  assert_eq(restored.filename(), "t.star")
+  let t = @eval.Thread::new("t")
+  let m = match restored.init(t, @eval.Predeclared::new()) {
+    Ok(m) => m
+    Err(e) => fail(e.msg())
+  }
+  assert_true(m.get("result") == Some(@value.Value::Int(55N)))
+  assert_true(m.get("big") == Some(@value.Value::Int(100000000000000000000N)))
+  assert_true(m.get("pi") == Some(@value.Value::Float(3.14159)))
+}
+
+///|
+test "compiled_program rejects input with a bad magic header" {
+  let garbage = Bytes::from_array([b'x', b'y', b'z', b'1', b'2'])
+  assert_true(@starlark.compiled_program(garbage) is Err(_))
+}
+
+///|
+test "Program round-trip preserves comprehensions, lambdas, slices and loops" {
+  let src =
+    #|squares = [x * x for x in range(5) if x % 2 == 0]
+    #|pairs = {k: v for k, v in [(1, "a"), (2, "b")]}
+    #|members = {n for n in [1, 1, 2, 3]}
+    #|add = lambda a, b=10: a + b
+    #|s = "abcdef"[1:5:2]
+    #|total = 0
+    #|for i in range(4):
+    #|  total += i
+    #|n = 3
+    #|while n > 0:
+    #|  n -= 1
+    #|flag = 2 not in [1, 3] and -5 < 0
+    #|raw = b"\x00\xff"
+  let prog = match
+    @starlark.source_program("c.star", src, @eval.Options::default(), fn(_) {
+      false
+    }) {
+    Ok(p) => p
+    Err(e) => fail(e.msg())
+  }
+  let restored = match @starlark.compiled_program(prog.write()) {
+    Ok(p) => p
+    Err(e) => fail("decode failed: \{e.msg()}")
+  }
+  let t = @eval.Thread::new("c")
+  let m = match restored.init(t, @eval.Predeclared::new()) {
+    Ok(m) => m
+    Err(e) => fail(e.msg())
+  }
+  assert_true(m.get("total") == Some(@value.Value::Int(6N)))
+  assert_true(m.get("n") == Some(@value.Value::Int(0N)))
+  assert_true(m.get("flag") == Some(@value.Value::Bool(true)))
+  match m.get("squares") {
+    Some(@value.Value::List(l)) => assert_eq(l.length(), 3)
+    _ => fail("expected squares list")
+  }
+  match m.get("add") {
+    Some(@value.Value::Function(_)) => ()
+    _ => fail("expected add function")
+  }
+  assert_true(m.get("raw") is Some(@value.Value::Bytes(_)))
+}
+
+///|
+test "Program round-trip preserves load statements with aliases" {
+  let src =
+    #|load("lib.star", "double", alias = "triple")
+    #|x = 1
+  let prog = match
+    @starlark.source_program("l.star", src, @eval.Options::default(), fn(_) {
+      false
+    }) {
+    Ok(p) => p
+    Err(e) => fail(e.msg())
+  }
+  let restored = match @starlark.compiled_program(prog.write()) {
+    Ok(p) => p
+    Err(e) => fail("decode failed: \{e.msg()}")
+  }
+  assert_eq(restored.num_loads(), 1)
+  let (path, _) = restored.load(0)
+  assert_eq(path, "lib.star")
+}
+
+///|
 test "default_options returns Options with all feature flags enabled" {
   let opts = @eval.Options::default()
   assert_eq(opts.allow_set(), true)

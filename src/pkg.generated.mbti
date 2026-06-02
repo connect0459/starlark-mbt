@@ -23,6 +23,8 @@ pub fn compare_depth(String, @value.Value, @value.Value, Int) -> Result[Bool, @e
 
 pub let compare_limit : Int
 
+pub fn compiled_program(Bytes) -> Result[@eval.Program, @errors.EvalError]
+
 pub fn equal(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
 pub fn equal_depth(@value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]
