@@ -525,7 +525,7 @@ pub fn StringDict::keys(self : StringDict) -> Array[String] {
 ///
 /// - `self` : The dict whose values to freeze.
 pub fn StringDict::freeze(self : StringDict) -> Unit {
-  self.data.each(fn(_, v) { @value.freeze_value(v) })
+  self.data.each(fn(_, v) { v.freeze() })
 }
 
 ///|

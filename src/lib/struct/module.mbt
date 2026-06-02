@@ -52,7 +52,7 @@ pub fn make_module(
       if !frozen_ref.val {
         frozen_ref.val = true
         for e in sorted {
-          @value.freeze_value(e.1)
+          e.1.freeze()
         }
       }
     }),

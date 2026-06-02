@@ -3,7 +3,7 @@
 ///|
 fn new_dict() -> Hashtable[@value.Value, @value.Value] {
   Hashtable::new(
-    @value.starlark_hash,
+    @value.Value::hash,
     fn(a, b) { a.starlark_equals(b) },
     @value.Value::None,
     @value.Value::None,

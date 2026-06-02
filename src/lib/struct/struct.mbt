@@ -61,13 +61,11 @@ fn struct_hash(entries : Array[(String, @value.Value)]) -> Result[UInt, String] 
   let mut m : UInt = struct_hash_mult_init
   for e in entries {
     match
-      @value.starlark_hash(
-        @value.Value::String(@value.StarlarkString::new(e.0)),
-      ) {
+      @value.Value::hash(@value.Value::String(@value.StarlarkString::new(e.0))) {
       Err(msg) => return Err(msg)
       Ok(nh) => {
         x = x ^ (3U * nh)
-        match @value.starlark_hash(e.1) {
+        match @value.Value::hash(e.1) {
           Err(msg) => return Err(msg)
           Ok(vh) => {
             x = x ^ (vh * m)
@@ -299,9 +297,9 @@ pub fn make_struct(
     .with_freeze(fn() {
       if !frozen_ref.val {
         frozen_ref.val = true
-        @value.freeze_value(ctor)
+        @value.Value::freeze(ctor)
         for e in sorted {
-          @value.freeze_value(e.1)
+          @value.Value::freeze(e.1)
         }
       }
     }),

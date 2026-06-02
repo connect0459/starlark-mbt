@@ -146,31 +146,31 @@ test "starlark_equals: different non-numeric types are unequal" {
 
 ///|
 test "starlark_hash: None hashes to 0" {
-  assert_true(starlark_hash(Value::None) == Ok(0U))
+  assert_true(Value::hash(Value::None) == Ok(0U))
 }
 
 ///|
 test "starlark_hash: Bool false hashes to 0, true hashes to 1" {
-  assert_true(starlark_hash(Value::Bool(false)) == Ok(0U))
-  assert_true(starlark_hash(Value::Bool(true)) == Ok(1U))
+  assert_true(Value::hash(Value::Bool(false)) == Ok(0U))
+  assert_true(Value::hash(Value::Bool(true)) == Ok(1U))
 }
 
 ///|
 test "starlark_hash: Int hash values ensure equal Int and Float produce the same hash" {
   let mul : UInt = 12582917U
-  assert_true(starlark_hash(Value::Int(0N)) == Ok(mul * (0U + 3U)))
-  assert_true(starlark_hash(Value::Int(1N)) == Ok(mul * (1U + 3U)))
-  assert_true(starlark_hash(Value::Int(-1N)) == Ok(mul * (0xFFFFFFFFU + 3U)))
+  assert_true(Value::hash(Value::Int(0N)) == Ok(mul * (0U + 3U)))
+  assert_true(Value::hash(Value::Int(1N)) == Ok(mul * (1U + 3U)))
+  assert_true(Value::hash(Value::Int(-1N)) == Ok(mul * (0xFFFFFFFFU + 3U)))
 }
 
 ///|
 test "starlark_hash: equal Int and Float produce same hash" {
   // hash(1.0) must equal hash(1) because 1.0 == 1 in starlark cross-type equality
-  let h_int = starlark_hash(Value::Int(1N))
-  let h_float = starlark_hash(Value::Float(1.0))
+  let h_int = Value::hash(Value::Int(1N))
+  let h_float = Value::hash(Value::Float(1.0))
   assert_true(h_int == h_float)
-  let h_int0 = starlark_hash(Value::Int(0N))
-  let h_float0 = starlark_hash(Value::Float(0.0))
+  let h_int0 = Value::hash(Value::Int(0N))
+  let h_float0 = Value::hash(Value::Float(0.0))
   assert_true(h_int0 == h_float0)
 }
 
@@ -180,8 +180,8 @@ test "starlark_hash: large Float equals large Int hash" {
   // Old code used f.to_int64() which overflows for 1e20; new code uses
   // double_to_bigint so both sides go through hash_bigint with the same BigInt.
   let big_int = 100000000000000000000N // 10**20
-  let h_int = starlark_hash(Value::Int(big_int))
-  let h_float = starlark_hash(Value::Float(1.0e20))
+  let h_int = Value::hash(Value::Int(big_int))
+  let h_float = Value::hash(Value::Float(1.0e20))
   assert_true(h_int == h_float)
 }
 
@@ -190,13 +190,13 @@ test "starlark_hash: Float NaN and Inf all produce the same fixed hash" {
   // 1618033 is the spec constant for non-finite floats
   let non_finite_hash : UInt = 1618033U
   assert_true(
-    starlark_hash(Value::Float(@double.not_a_number)) == Ok(non_finite_hash),
+    Value::hash(Value::Float(@double.not_a_number)) == Ok(non_finite_hash),
   )
   assert_true(
-    starlark_hash(Value::Float(@double.infinity)) == Ok(non_finite_hash),
+    Value::hash(Value::Float(@double.infinity)) == Ok(non_finite_hash),
   )
   assert_true(
-    starlark_hash(Value::Float(@double.neg_infinity)) == Ok(non_finite_hash),
+    Value::hash(Value::Float(@double.neg_infinity)) == Ok(non_finite_hash),
   )
 }
 
@@ -212,15 +212,15 @@ test "starlark_hash: large negative BigInt uses low 32 bits of magnitude" {
   //   Expected hash = 12582917 * uint32(0xFFFFFFFF + 3) = 12582917 * 2 = 25165834.
   let mul : UInt = 12582917U
   let n = -18446744073709551615N // -(2^64 - 1)
-  assert_true(starlark_hash(Value::Int(n)) == Ok(mul * (0xFFFFFFFFU + 3U)))
+  assert_true(Value::hash(Value::Int(n)) == Ok(mul * (0xFFFFFFFFU + 3U)))
 }
 
 ///|
 test "starlark_hash: Bytes hash equals String hash for same bytes" {
   let s = "abc"
   let bytes = @utf8.encode(s)
-  let h_str = starlark_hash(Value::String(StarlarkString::new(s)))
-  let h_bytes = starlark_hash(Value::Bytes(bytes))
+  let h_str = Value::hash(Value::String(StarlarkString::new(s)))
+  let h_bytes = Value::hash(Value::Bytes(bytes))
   assert_true(h_str == h_bytes)
 }
 
@@ -228,15 +228,15 @@ test "starlark_hash: Bytes hash equals String hash for same bytes" {
 test "starlark_hash: empty Tuple has the spec-defined initial hash value" {
   // 0x345678 is the Starlark initial hash accumulator for tuples
   let tuple_hash_init : UInt = 0x345678U
-  assert_true(starlark_hash(Value::Tuple([])) == Ok(tuple_hash_init))
+  assert_true(Value::hash(Value::Tuple([])) == Ok(tuple_hash_init))
 }
 
 ///|
 test "starlark_hash: Tuple hashes combine element hashes deterministically" {
   let t1 = Value::Tuple([Value::Int(0N)])
   let t2 = Value::Tuple([Value::Int(1N)])
-  let h1 = starlark_hash(t1)
-  let h2 = starlark_hash(t2)
+  let h1 = Value::hash(t1)
+  let h2 = Value::hash(t2)
   assert_true(h1 is Ok(_))
   assert_true(h2 is Ok(_))
   assert_false(h1 == h2)
@@ -244,7 +244,7 @@ test "starlark_hash: Tuple hashes combine element hashes deterministically" {
 
 ///|
 test "starlark_hash: List is unhashable" {
-  let result = starlark_hash(Value::List(StarlarkList::new([])))
+  let result = Value::hash(Value::List(StarlarkList::new([])))
   assert_true(result is Err(_))
   match result {
     Err(msg) => assert_true(msg.contains("list"))
@@ -360,7 +360,7 @@ test "compare_values: different types are not orderable" {
 ///|
 test "starlark_hash: module is unhashable" {
   let m = StarlarkModule::new("assert", {})
-  assert_true(starlark_hash(Value::Module(m)) is Err(_))
+  assert_true(Value::hash(Value::Module(m)) is Err(_))
 }
 
 ///|

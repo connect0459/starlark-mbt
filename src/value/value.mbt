@@ -262,7 +262,7 @@ pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
 ///
 /// - `self` : The list to remove from.
 /// - `i` : The zero-based index of the element to remove.
-/// - `verb` : Optional verb used in the error message (default `"remove from"`).
+/// - `verb` : Verb used in the error message (e.g. `"pop from"`, `"remove from"`).
 ///
 /// Returns `Ok(v)` with the removed element, or `Err` if the list is frozen
 /// or being iterated.
@@ -270,7 +270,7 @@ pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
 pub fn StarlarkList::pop_at(
   self : StarlarkList,
   i : Int,
-  verb? : String = "remove from",
+  verb : String,
 ) -> Result[Value, String] {
   match self.check_mutable(verb) {
     Err(e) => Err(e)
@@ -1203,6 +1203,30 @@ pub(all) enum Value {
 /// Returns a `Value::String` backed by a new `StarlarkString`.
 pub fn Value::of_string(s : String) -> Value {
   String(StarlarkString::new(s))
+}
+
+///|
+/// Creates a `Value::Int` from an `Int64`.
+///
+/// Parameters:
+///
+/// - `n` : The 64-bit signed integer to wrap.
+///
+/// Returns a `Value::Int` containing `n` as an arbitrary-precision integer.
+pub fn Value::of_int(n : Int64) -> Value {
+  Int(BigInt::from_int64(n))
+}
+
+///|
+/// Creates a `Value::Float` from a `Double`.
+///
+/// Parameters:
+///
+/// - `f` : The double-precision float to wrap.
+///
+/// Returns a `Value::Float` containing `f`.
+pub fn Value::of_float(f : Double) -> Value {
+  Float(f)
 }
 
 ///|

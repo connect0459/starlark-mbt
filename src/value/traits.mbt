@@ -277,7 +277,7 @@ fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
   // The "len + len" form is a direct port of CPython's uint arithmetic.
   let n = (t.length() + t.length()).reinterpret_as_uint()
   for elem in t {
-    match starlark_hash(elem) {
+    match elem.hash() {
       Err(e) => return Err(e)
       Ok(y) => {
         x = x ^ (y * mult)
@@ -289,18 +289,18 @@ fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
 }
 
 ///|
-/// Computes the Starlark hash of `v`. Returns `Err` for unhashable types
+/// Computes the Starlark hash of `self`. Returns `Err` for unhashable types
 /// (list, dict, set, range, module). Guarantees `hash(x) == hash(y)` whenever
 /// `x == y` under Starlark semantics, including cross-type `Int`/`Float`.
 ///
 /// Parameters:
 ///
-/// - `v` : The value to hash.
+/// - `self` : The value to hash.
 ///
 /// Returns `Ok(hash)` for hashable values, or `Err` with a message like
 /// `"unhashable type: list"` for unhashable types.
-pub fn starlark_hash(v : Value) -> Result[UInt, String] {
-  match v {
+pub fn Value::hash(self : Value) -> Result[UInt, String] {
+  match self {
     None => Ok(0U)
     Bool(false) => Ok(0U)
     Bool(true) => Ok(1U)
@@ -649,14 +649,14 @@ fn set_equals_depth(
 }
 
 ///|
-/// Recursively deep-freezes `v` and all values reachable from it (list items,
-/// dict keys/values, set elements, function defaults and closures).
+/// Recursively deep-freezes `self` and all values reachable from it (list
+/// items, dict keys/values, set elements, function defaults and closures).
 ///
 /// Parameters:
 ///
-/// - `v` : The root value to freeze.
-pub fn freeze_value(v : Value) -> Unit {
-  freeze_value_inner(v, [])
+/// - `self` : The root value to freeze.
+pub fn Value::freeze(self : Value) -> Unit {
+  freeze_value_inner(self, [])
 }
 
 ///|

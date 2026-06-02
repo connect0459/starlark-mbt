@@ -275,7 +275,7 @@ fn make_freeze_fn() -> @value.Value {
       return Err("freeze: got \{pos_args.length()} arguments, want 1")
     }
     let v = pos_args[0]
-    @value.freeze_value(v)
+    v.freeze()
     Ok(v)
   })
 }

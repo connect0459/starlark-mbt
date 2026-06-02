@@ -695,7 +695,7 @@ pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
 pub fn Module::freeze(self : Module) -> Unit {
   self.frozen = true
   self.globals.freeze()
-  self.globals.each(fn(_, v) { @value.freeze_value(v) })
+  self.globals.each(fn(_, v) { v.freeze() })
 }
 
 ///|

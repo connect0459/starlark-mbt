@@ -269,7 +269,7 @@ test "Value::ExtVal repr" {
 ///|
 test "Value::ExtVal hash Err when no hash_fn" {
   let cv = CustomValue::new(fn() { "my_type" }, fn() { true }, fn() { "" })
-  assert_true(starlark_hash(Value::ExtVal(cv)) is Err(_))
+  assert_true(Value::hash(Value::ExtVal(cv)) is Err(_))
 }
 
 ///|
@@ -278,7 +278,7 @@ test "Value::ExtVal hash delegates to hash_fn" {
       Ok(99U)
     },
   )
-  assert_true(starlark_hash(Value::ExtVal(cv)) is Ok(99U))
+  assert_true(Value::hash(Value::ExtVal(cv)) is Ok(99U))
 }
 
 ///|

@@ -24,8 +24,6 @@ pub fn floor_div(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, Strin
 
 pub fn format_float(Double) -> String
 
-pub fn freeze_value(Value) -> Unit
-
 pub fn iterate(Value) -> Result[StarlarkIterator, String]
 
 pub fn java_string_hash(StarlarkString) -> Int
@@ -33,8 +31,6 @@ pub fn java_string_hash(StarlarkString) -> Int
 pub fn length_of(Value) -> Result[Int, String]
 
 pub fn starlark_equals_depth(Value, Value, Int) -> Result[Bool, String]
-
-pub fn starlark_hash(Value) -> Result[UInt, String]
 
 pub fn starlark_mod(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
 
@@ -175,7 +171,7 @@ pub fn StarlarkList::iter(Self) -> Iter[Value]
 pub fn StarlarkList::length(Self) -> Int
 pub fn StarlarkList::new(Array[Value]) -> Self
 pub fn StarlarkList::pop(Self) -> Result[Value?, String]
-pub fn StarlarkList::pop_at(Self, Int, verb? : String) -> Result[Value, String]
+pub fn StarlarkList::pop_at(Self, Int, String) -> Result[Value, String]
 pub fn StarlarkList::push(Self, Value) -> Result[Unit, String]
 pub fn StarlarkList::reverse(Self) -> Result[Unit, String]
 pub fn StarlarkList::set(Self, Int, Value) -> Result[Unit, String]
@@ -209,11 +205,11 @@ pub fn StarlarkSet::contains(Self, Value) -> Result[Bool, String]
 pub fn StarlarkSet::each(Self, (Value) -> Unit) -> Unit
 pub fn StarlarkSet::freeze(Self) -> Unit
 pub fn StarlarkSet::is_frozen(Self) -> Bool
+pub fn StarlarkSet::iter(Self) -> Iter[Value]
 pub fn StarlarkSet::length(Self) -> Int
 pub fn StarlarkSet::new() -> Self
 pub fn StarlarkSet::pop_first(Self) -> Result[Value?, String]
 pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]
-pub fn StarlarkSet::to_iter(Self) -> Iter[Value]
 
 pub struct StarlarkString {
   // private fields
@@ -261,10 +257,14 @@ pub(all) enum Value {
   BytesElems(StarlarkBytesElems)
   ExtVal(CustomValue)
 }
+pub fn Value::freeze(Self) -> Unit
+pub fn Value::hash(Self) -> Result[UInt, String]
 pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
 pub fn Value::new_dict() -> Self
 pub fn Value::new_list(Array[Self]) -> Self
 pub fn Value::new_set() -> Self
+pub fn Value::of_float(Double) -> Self
+pub fn Value::of_int(Int64) -> Self
 pub fn Value::of_string(String) -> Self
 pub fn Value::repr(Self) -> String
 pub fn Value::starlark_equals(Self, Self) -> Bool

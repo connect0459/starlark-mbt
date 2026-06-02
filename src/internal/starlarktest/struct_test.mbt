@@ -340,8 +340,8 @@ test "struct: hash is consistent for equal structs" {
     ],
   )
   assert_true(s1.starlark_equals(s2))
-  let h1 = @value.starlark_hash(s1)
-  let h2 = @value.starlark_hash(s2)
+  let h1 = @value.Value::hash(s1)
+  let h2 = @value.Value::hash(s2)
   match (h1, h2) {
     (Ok(a), Ok(b)) => assert_eq(a, b)
     _ => fail("hash failed")

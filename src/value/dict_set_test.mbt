@@ -107,7 +107,7 @@ test "StarlarkDict: starlark_equals different lengths" {
 
 ///|
 test "StarlarkDict: starlark_hash is unhashable" {
-  let result = starlark_hash(Value::Dict(StarlarkDict::new()))
+  let result = Value::hash(Value::Dict(StarlarkDict::new()))
   assert_true(result is Err(_))
   match result {
     Err(msg) => assert_true(msg.contains("dict"))
@@ -225,7 +225,7 @@ test "StarlarkSet: starlark_equals different elements" {
 
 ///|
 test "StarlarkSet: starlark_hash is unhashable" {
-  let result = starlark_hash(Value::Set(StarlarkSet::new()))
+  let result = Value::hash(Value::Set(StarlarkSet::new()))
   assert_true(result is Err(_))
   match result {
     Err(msg) => assert_true(msg.contains("set"))
@@ -278,13 +278,13 @@ test "StarlarkDict::to_entries preserves insertion order" {
 }
 
 ///|
-test "StarlarkSet::to_iter yields all elements" {
+test "StarlarkSet::iter yields all elements" {
   let s = StarlarkSet::new()
   s.add(Value::Int(1N)) |> ignore
   s.add(Value::Int(2N)) |> ignore
   s.add(Value::Int(3N)) |> ignore
   let elems : Array[Value] = []
-  for v in s.to_iter() {
+  for v in s.iter() {
     elems.push(v)
   }
   assert_eq(elems.length(), 3)

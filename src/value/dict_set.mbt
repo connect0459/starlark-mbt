@@ -13,7 +13,7 @@ pub struct StarlarkDict {
 pub fn StarlarkDict::new() -> StarlarkDict {
   {
     ht: @hashtable.Hashtable::new(
-      starlark_hash,
+      Value::hash,
       fn(a, b) { a.starlark_equals(b) },
       Value::None,
       Value::None,
@@ -189,7 +189,7 @@ pub struct StarlarkSet {
 pub fn StarlarkSet::new() -> StarlarkSet {
   {
     ht: @hashtable.Hashtable::new(
-      starlark_hash,
+      Value::hash,
       fn(a, b) { a.starlark_equals(b) },
       Value::None,
       Value::None,
@@ -299,7 +299,7 @@ fn StarlarkSet::iter_end(self : StarlarkSet) -> Unit {
 /// Returns an `Iter` over all keys in insertion order.
 ///
 /// Returns a lazy iterator over elements in insertion order.
-pub fn StarlarkSet::to_iter(self : StarlarkSet) -> Iter[Value] {
+pub fn StarlarkSet::iter(self : StarlarkSet) -> Iter[Value] {
   let arr : Array[Value] = []
   self.ht.each_key(fn(k) { arr.push(k) })
   arr.iter()

@@ -1143,7 +1143,7 @@ fn call_builtin(
             BigInt::from_int64(@value.java_string_hash(s).to_int64()),
           )
         @value.Value::Bytes(b) => {
-          let h = check(ctx, @value.starlark_hash(@value.Value::Bytes(b)))
+          let h = check(ctx, @value.Value::Bytes(b).hash())
           @value.Value::Int(BigInt::from_int64(h.to_int64()))
         }
         v =>
@@ -2126,7 +2126,7 @@ fn call_list_method(
         Ok(j) => j
         Err(msg) => raise EvalErr(make_eval_error(ctx, "pop: " + msg))
       }
-      check(ctx, l.pop_at(idx, verb="pop from"))
+      check(ctx, l.pop_at(idx, "pop from"))
     }
     "remove" => {
       check_positional(ctx, "remove", pos_args, kw_args, 1, 1)
@@ -2141,7 +2141,7 @@ fn call_list_method(
       if found < 0 {
         raise EvalErr(make_eval_error(ctx, "remove: element not found"))
       }
-      check(ctx, l.pop_at(found)) |> ignore
+      check(ctx, l.pop_at(found, "remove from")) |> ignore
       @value.Value::None
     }
     "insert" => {
