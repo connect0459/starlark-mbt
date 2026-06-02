@@ -2411,6 +2411,84 @@ and `::body()` in the public `value` package already leak `@syntax.Param` /
 
 ---
 
+### Phase R5: Eliminate the `@starlark` facade entirely
+
+**Motivation**: After R4 removed the type aliases, the top-level
+`connect0459/starlark` facade lost its only remaining justification (single
+import). Embedders must import `@eval`/`@value`/`@errors` directly for types
+anyway. An audit of `src/starlark.mbt` showed its 24 public symbols split into:
+(1) 15 **pure pass-throughs** to `@eval` (`exec_file`, `eval_expr*`, `call`,
+`binary`, `unary`, `compare`, `source_program*`, `file_program`,
+`compiled_program`, `exec_repl_chunk`) — identical signatures, zero added value
+and a **second public path** for every entry point; (2) 5 functions that are
+the only public path to an internal package (`parse_file`/`parse_expr` →
+`@parser`; `unpack_args`/`unpack_positional`/`unpack_args_with` → `@unpack`);
+(3) value-inspection helpers (`equal`, `equal_depth`, `compare_depth`, `len_of`,
+`iterate`, `as_float`, `as_string`, `number_to_int`, `compare_limit`,
+`new_thread_with_loader`) that only touch `@value`+`@errors`.
+
+Decision (user): **remove the facade**; everything lives in its natural package
+(matches `tonyfettes/starlark`). Top-level `@starlark` keeps no functions.
+
+**Symbol re-homing:**
+
+| facade symbol(s) | new home | notes |
+| :--- | :--- | :--- |
+| 15 pass-throughs | `@eval` (already `pub`) | drop facade copy; callers use `@eval.*` |
+| `parse_file`, `parse_expr` | move into `@eval` | `@eval` already imports `@parser` |
+| `unpack_args`, `unpack_positional`, `unpack_args_with` | promote `@unpack` → `src/unpack/` public | callers use `@unpack.*` |
+| `equal`, `equal_depth`, `compare_depth`, `len_of`, `as_float`, `as_string`, `number_to_int` | move into `@value` | **String** error (no source position at value level; matches `@value` convention) |
+| `iterate` | use existing `@value.iterate` (String) | drop the EvalError wrapper (added no info) |
+| `compare_limit` | already `pub` in `@value` | just re-point callers |
+| `new_thread_with_loader` | drop | use `@eval.Thread::with_loader` |
+
+**B-6 folded in**: mark engine-only primitives `#internal` once the public
+parity layer exists — `compare_values`, `compare_values_depth`, `length_of`,
+`starlark_equals_depth`, `format_float`. (`Value::starlark_equals` stays public.)
+
+**Steps (each a green commit):**
+
+- [ ] Promote `@unpack`: move `src/internal/unpack/` → `src/unpack/`; update its
+      `moon.pkg` package path and the facade's import (transitional).
+- [ ] Add `parse_file`/`parse_expr` to `@eval`; add `equal`/`equal_depth`/
+      `compare_depth`/`len_of`/`as_float`/`as_string`/`number_to_int` to `@value`;
+      annotate the five engine primitives `#internal`.
+- [ ] Delete `src/starlark.mbt`; rewrite `src/starlark_test.mbt` (77 refs) and
+      `src/starlark_wbtest.mbt` to `@eval.*`/`@value.*`/`@unpack.*`; prune
+      `src/moon.pkg` imports.
+- [ ] Update the 6 `examples/*` (`main.mbt` + `moon.pkg`) and `README.mbt.md`
+      (+ its doc-test `moon.pkg`) to sub-package imports.
+- [ ] `moon fmt && moon info && moon test`; confirm `src/pkg.generated.mbti` has
+      no `Values` and the four sub-package `.mbti` carry the moved symbols.
+
+### Phase R5-docs: `docs/api.md` drift fixes (group A)
+
+`docs/api.md` is plain `.md` (not `.mbt.md`), so its code blocks are never
+compiled and have drifted. Fix together with R5:
+
+- [ ] `eval_expr` env type: `@value.StarlarkDict` → `@value.StringDict`; the
+      example `@value.StarlarkDict::new()` currently **fails to compile**.
+- [ ] `StarlarkDict` methods: `insert`/`get_value` → `set`/`get` (now
+      `Result[Value?, String]`); add `keys`/`each`/`iter`/`to_entries`/`popitem`/
+      `is_frozen`/`freeze`.
+- [ ] `Thread` "non-composable" note is stale — `set_loader`/`set_print`/
+      `set_max_steps`/`set_on_max_steps` allow composition after `Thread::new`.
+- [ ] Document `@errors.Span` and `@errors.Halt` (currently public but absent).
+- [ ] Repoint every `@starlark.*` example to `@eval.*`/`@value.*`/`@unpack.*`.
+- [ ] Consider moving the canonical examples into `README.mbt.md` (doc-tested) to
+      stop future drift.
+
+### Phase R5-symmetry: registry & constructor polish (groups B-7/B-8)
+
+- [ ] `Universe`/`Predeclared`: add the `StringDict` core that is missing
+      (`delete`, `each`, `values`, `freeze`) where it makes sense, so the three
+      name→value registries share one surface.
+- [ ] `errors` constructor arg order: `Binding::new`/`CallFrame::new` are
+      `(String, Position)` while `ResolveError::new`/`SyntaxError::new` are
+      `(Position, String)` — reconcile or document the rationale.
+
+---
+
 ## Future work (out of initial release scope)
 
 - Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
