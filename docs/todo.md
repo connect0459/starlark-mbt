@@ -2233,16 +2233,16 @@ would leave external callers unable to name these types (MoonBit restricts
 and `::body()` in the public `value` package already leak `@syntax.Param` /
 `@syntax.Stmt` — promoting `syntax` makes these usable rather than invisible.
 
-- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/syntax/` to `src/syntax/`
-- [ ] Update every `moon.pkg` import: `"internal/syntax"` → `"syntax"`
+- [x] Move all `.mbt` + `moon.pkg` files from `src/internal/syntax/` to `src/syntax/`
+- [x] Update every `moon.pkg` import: `"internal/syntax"` → `"syntax"`
       (internal packages that import syntax: `lexer`, `parser`, `resolver`, `eval`,
       `value`, `starlarktest`, `unpack`)
-- [ ] Update all `@internal/syntax.*` qualified names in source files
-- [ ] Update `src/starlark.mbt`: `@syntax.File` / `@syntax.Expr` in signatures
-- [ ] Delete the now-empty `src/internal/syntax/` directory
-- [ ] `moon check && moon test`
-- [ ] `moon info` — `.mbti` diff for `src/` must be empty (aliases still present)
-- [ ] Commit: `refactor(syntax): promote src/internal/syntax to src/syntax`
+- [x] Update all `@internal/syntax.*` qualified names in source files
+- [x] Update `src/starlark.mbt`: `@syntax.File` / `@syntax.Expr` in signatures
+- [x] Delete the now-empty `src/internal/syntax/` directory
+- [x] `moon check && moon test`
+- [x] `moon info` — `.mbti` diff for `src/` must be empty (aliases still present)
+- [x] Commit: `refactor(syntax): promote src/internal/syntax to src/syntax`
 
 #### Phase R4b: Remove type aliases and update all call sites
 
@@ -2276,17 +2276,17 @@ and `::body()` in the public `value` package already leak `@syntax.Param` /
 
 **Steps:**
 
-- [ ] Remove all 23 `pub type X = @pkg.X` declarations from `src/starlark.mbt`
-- [ ] Update function signatures in `src/starlark.mbt`: replace alias names with
+- [x] Remove all 23 `pub type X = @pkg.X` declarations from `src/starlark.mbt`
+- [x] Update function signatures in `src/starlark.mbt`: replace alias names with
       fully-qualified names (e.g. `thread : Thread` → `thread : @eval.Thread`)
-- [ ] Update `src/starlark_test.mbt`: replace `@starlark.Thread` → `@eval.Thread`,
+- [x] Update `src/starlark_test.mbt`: replace `@starlark.Thread` → `@eval.Thread`,
       `@starlark.Value` → `@value.Value`, etc. across all test call sites
-- [ ] Update `src/starlark_wbtest.mbt` similarly
+- [x] Update `examples/*/main.mbt` and `examples/*/moon.pkg`: add sub-package imports
 - [ ] Update `docs/api.md`: import examples now require individual sub-package imports
 - [ ] Update `README.mbt.md`: embedding quick-start now shows `@eval`/`@value`/`@errors`
-- [ ] `moon check && moon test`
-- [ ] `moon info` — `.mbti` diff shows all 23 `pub using` entries removed
-- [ ] Commit: `refactor: remove facade type aliases; use sub-packages directly`
+- [x] `moon check && moon test`
+- [x] `moon info` — `.mbti` diff shows all 23 `pub using` entries removed
+- [x] Commit: `refactor: remove facade type aliases; use sub-packages directly`
 
 **After R4b, `src/starlark.mbt` contains only:**
 
