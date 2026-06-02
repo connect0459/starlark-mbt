@@ -3,4 +3,8 @@ import {
   "connect0459/starlark/errors",
   "connect0459/starlark/unpack",
   "connect0459/starlark/value",
+  "connect0459/starlark/lib/json",
+  "connect0459/starlark/lib/math",
+  "connect0459/starlark/lib/struct",
+  "connect0459/starlark/lib/time",
 } for "test"
