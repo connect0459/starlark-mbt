@@ -517,6 +517,7 @@ pub struct StarlarkFunction {
 /// - `pos` : Source position of the `def` statement.
 ///
 /// Returns a new `StarlarkFunction` with no module-globals binding.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::new(
   name : String,
   params : Array[@syntax.Param],
@@ -548,6 +549,7 @@ pub fn StarlarkFunction::position(self : StarlarkFunction) -> @errors.Position {
 /// Returns the parsed parameter list of the function.
 ///
 /// Returns an array of `@syntax.Param` values describing each parameter.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::params(
   self : StarlarkFunction,
 ) -> Array[@syntax.Param] {
@@ -558,6 +560,7 @@ pub fn StarlarkFunction::params(
 /// Returns the list of statements forming the function body.
 ///
 /// Returns the function body as an array of `@syntax.Stmt`.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::body(self : StarlarkFunction) -> Array[@syntax.Stmt] {
   self.body
 }
@@ -576,6 +579,7 @@ pub fn StarlarkFunction::defaults(self : StarlarkFunction) -> Array[Value?] {
 ///
 /// Returns the list of `(bindings, insertion-order-keys)` pairs representing
 /// all enclosing scopes captured at definition time.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::captured_scope(
   self : StarlarkFunction,
 ) -> Array[(Map[String, Value], Array[String])] {
@@ -605,6 +609,7 @@ pub fn StarlarkFunction::with_module_globals(
 ///
 /// Returns the associated `Map[String, Value]`, or `{}` when no module
 /// globals have been set.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] {
   match self.module_globals {
     Some(g) => g
