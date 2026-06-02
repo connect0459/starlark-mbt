@@ -22,16 +22,7 @@ pub fn StarlarkDict::new() -> StarlarkDict {
 }
 
 ///|
-/// Returns `true` if `self` and `other` share the same underlying hash table
-/// (i.e. are the same dict object).
-///
-/// Parameters:
-///
-/// - `self` : The first dict to compare.
-/// - `other` : The second dict to compare.
-///
-/// Returns `true` if both dicts wrap the same underlying hash table instance.
-pub fn StarlarkDict::is_same_storage(
+fn StarlarkDict::is_same_storage(
   self : StarlarkDict,
   other : StarlarkDict,
 ) -> Bool {
@@ -132,16 +123,12 @@ pub fn StarlarkDict::each(
 }
 
 ///|
-/// Marks the start of a Starlark `for`-loop iteration; increments the
-/// iterator count, which prevents mutation until `iter_end` is called.
-pub fn StarlarkDict::iter_begin(self : StarlarkDict) -> Unit {
+fn StarlarkDict::iter_begin(self : StarlarkDict) -> Unit {
   self.ht.iter_begin()
 }
 
 ///|
-/// Marks the end of a Starlark `for`-loop iteration; decrements the iterator
-/// count, restoring mutability when it reaches zero.
-pub fn StarlarkDict::iter_end(self : StarlarkDict) -> Unit {
+fn StarlarkDict::iter_end(self : StarlarkDict) -> Unit {
   self.ht.iter_end()
 }
 
@@ -299,16 +286,12 @@ pub fn StarlarkSet::each(self : StarlarkSet, f : (Value) -> Unit) -> Unit {
 }
 
 ///|
-/// Marks the start of a Starlark `for`-loop iteration; increments the
-/// iterator count, which prevents mutation until `iter_end` is called.
-pub fn StarlarkSet::iter_begin(self : StarlarkSet) -> Unit {
+fn StarlarkSet::iter_begin(self : StarlarkSet) -> Unit {
   self.ht.iter_begin()
 }
 
 ///|
-/// Marks the end of a Starlark `for`-loop iteration; decrements the iterator
-/// count, restoring mutability when it reaches zero.
-pub fn StarlarkSet::iter_end(self : StarlarkSet) -> Unit {
+fn StarlarkSet::iter_end(self : StarlarkSet) -> Unit {
   self.ht.iter_end()
 }
 

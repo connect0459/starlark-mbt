@@ -201,16 +201,7 @@ pub fn StarlarkList::eachi(
 }
 
 ///|
-/// Returns `true` if `self` and `other` share the same underlying array
-/// (identity, not equality). Used to detect self-extend operations.
-///
-/// Parameters:
-///
-/// - `self` : The first list.
-/// - `other` : The second list to compare against.
-///
-/// Returns `true` if both lists share the same backing `Array` instance.
-pub fn StarlarkList::is_same_storage(
+fn StarlarkList::is_same_storage(
   self : StarlarkList,
   other : StarlarkList,
 ) -> Bool {

@@ -167,7 +167,7 @@ fn encode_inner(
       }
     @value.Value::String(s) => Ok(json_quote_string(s))
     @value.Value::List(l) => {
-      if state.list_path.iter().any(fn(pl) { l.is_same_storage(pl) }) {
+      if state.list_path.iter().any(fn(pl) { physical_equal(l, pl) }) {
         return Err("cycle in JSON structure")
       }
       state.list_path.push(l)
