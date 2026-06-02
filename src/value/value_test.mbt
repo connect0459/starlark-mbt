@@ -309,11 +309,17 @@ test "StarlarkList: get returns Some for in-bounds index and None out of bounds"
 }
 
 ///|
-test "Value::of_string wraps a string without manual StarlarkString::new" {
-  match Value::of_string("hello") {
+test "Value::new_string wraps a string without manual StarlarkString::new" {
+  match Value::new_string("hello") {
     String(s) => assert_eq(s.raw(), "hello")
     _ => fail("expected String")
   }
+}
+
+///|
+test "Value::new_int and new_float wrap scalars consistently with new_string" {
+  assert_true(Value::new_int(42L) is Value::Int(42N))
+  assert_true(Value::new_float(1.5) is Value::Float(1.5))
 }
 
 ///|

@@ -1225,7 +1225,7 @@ pub(all) enum Value {
 /// - `s` : The MoonBit `String` to wrap.
 ///
 /// Returns a `Value::String` backed by a new `StarlarkString`.
-pub fn Value::of_string(s : String) -> Value {
+pub fn Value::new_string(s : String) -> Value {
   String(StarlarkString::new(s))
 }
 
@@ -1237,7 +1237,7 @@ pub fn Value::of_string(s : String) -> Value {
 /// - `n` : The 64-bit signed integer to wrap.
 ///
 /// Returns a `Value::Int` containing `n` as an arbitrary-precision integer.
-pub fn Value::of_int(n : Int64) -> Value {
+pub fn Value::new_int(n : Int64) -> Value {
   Int(BigInt::from_int64(n))
 }
 
@@ -1249,7 +1249,7 @@ pub fn Value::of_int(n : Int64) -> Value {
 /// - `f` : The double-precision float to wrap.
 ///
 /// Returns a `Value::Float` containing `f`.
-pub fn Value::of_float(f : Double) -> Value {
+pub fn Value::new_float(f : Double) -> Value {
   Float(f)
 }
 

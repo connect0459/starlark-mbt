@@ -277,11 +277,11 @@ pub fn Value::freeze(Self) -> Unit
 pub fn Value::hash(Self) -> Result[UInt, String]
 pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
 pub fn Value::new_dict() -> Self
+pub fn Value::new_float(Double) -> Self
+pub fn Value::new_int(Int64) -> Self
 pub fn Value::new_list(Array[Self]) -> Self
 pub fn Value::new_set() -> Self
-pub fn Value::of_float(Double) -> Self
-pub fn Value::of_int(Int64) -> Self
-pub fn Value::of_string(String) -> Self
+pub fn Value::new_string(String) -> Self
 pub fn Value::repr(Self) -> String
 pub fn Value::starlark_equals(Self, Self) -> Bool
 pub fn Value::to_str(Self) -> String
