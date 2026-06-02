@@ -2578,6 +2578,42 @@ runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
       under `src/docs/`, explaining why they live in the source tree. 1560 tests
       pass (`moon test`); `moon check --deny-warn` and `moon fmt --check` clean.
 
+### Phase R6: Reintroduce a minimal root entry point (revisits R5) ✅
+
+**Motivation**: R5 left the root `connect0459/starlark` package completely
+empty (test-only), so a new embedder's natural first handhold — `@starlark.exec`,
+mirroring starlark-go's `starlark.ExecFile` — came up unbound, hurting
+discoverability. An audit against the reference `tonyfettes/starlark` showed R5
+over-corrected: tonyfettes uses the *same* public sub-package layout
+(`.../eval`, `.../value`) **and** keeps a small root facade (`eval`, `eval_expr`,
+`new_environment`, `set_builtin`). The R5 mistake that justified removal — a
+*full* 24-symbol pass-through facade with a second public path for every entry
+point — does not apply to a minimal, additive front door.
+
+Decision (user): add **省力ラッパ＋型エイリアス** — zero-ceremony helpers plus a
+few re-exported types, not a full facade. This avoids R5's "two ways to do
+everything" problem because `exec`/`eval` are *new* convenience wrappers (default
+thread + options created internally), not duplicate names for existing `@eval`
+entry points.
+
+- [x] `src/facade.mbt`: `exec(src, filename~) -> Result[Module, EvalError]` and
+      `eval(src, filename~) -> Result[Value, EvalError]`, each constructing a
+      default `Thread` and `Options::default()` internally. Power-user APIs
+      (custom threads, options, loaders, `Program` serialization, `CustomValue`)
+      stay in the sub-packages, unchanged.
+- [x] Re-exported `Value` / `Module` / `EvalError` via `pub using @pkg { type X }`
+      so the helper signatures are nameable from `@starlark`. (`Error` rejected as
+      an alias name — it collides with MoonBit's built-in `Error` type; used the
+      underlying type name `EvalError`.)
+- [x] `src/moon.pkg`: moved `eval`/`errors`/`value` from `for "test"` to normal
+      imports (the root package now has real source). `unpack` stays test-only.
+- [x] `README.mbt.md`: added a "Quick start" doc-test using `@starlark.exec`/`eval`,
+      kept the full-control `@eval.exec_file` example below it, and added the root
+      package to the package table + import list. `src/docs/moon.pkg` imports the
+      root package for the new doc test.
+- [x] `moon info && moon fmt && moon test`: root `.mbti` now exposes exactly
+      `exec`, `eval`, and the three `pub using` aliases; 1571 tests pass.
+
 ---
 
 ## Future work (out of initial release scope)
