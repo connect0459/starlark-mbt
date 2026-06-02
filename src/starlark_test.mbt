@@ -155,6 +155,28 @@ test "Program round-trip preserves load statements with aliases" {
 }
 
 ///|
+test "Program::options exposes the file-level dialect options it was built with" {
+  let opts = @eval.Options::default()
+    .with_allow_set(false)
+    .with_allow_while(false)
+  let prog = match
+    @starlark.source_program("o.star", "x = 1", opts, fn(_) { false }) {
+    Ok(p) => p
+    Err(e) => fail(e.msg())
+  }
+  assert_eq(prog.options().allow_set(), false)
+  assert_eq(prog.options().allow_while(), false)
+  assert_eq(prog.options().allow_float(), true)
+  // The options survive a serialization round-trip.
+  let restored = match @starlark.compiled_program(prog.write()) {
+    Ok(p) => p
+    Err(e) => fail(e.msg())
+  }
+  assert_eq(restored.options().allow_set(), false)
+  assert_eq(restored.options().allow_while(), false)
+}
+
+///|
 test "default_options returns Options with all feature flags enabled" {
   let opts = @eval.Options::default()
   assert_eq(opts.allow_set(), true)

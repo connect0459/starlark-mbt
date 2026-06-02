@@ -113,6 +113,15 @@ pub fn Program::filename(self : Program) -> String {
 }
 
 ///|
+/// Returns the file-level dialect options this program was resolved with.
+/// These options are bound to the program (and survive serialization), so a
+/// `Program` plays the role starlark-go assigns to a file's `FileOptions`:
+/// per-file, immutable dialect configuration rather than global flags.
+pub fn Program::options(self : Program) -> Options {
+  self.opts
+}
+
+///|
 /// Returns the number of `load(...)` statements in the program.
 ///
 /// Returns the count of top-level `load` statements found in the parsed file.

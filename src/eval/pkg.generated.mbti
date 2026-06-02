@@ -103,6 +103,7 @@ pub fn Program::filename(Self) -> String
 pub fn Program::init(Self, Thread, Predeclared) -> Result[Module, @errors.EvalError]
 pub fn Program::load(Self, Int) -> (String, @errors.Position)
 pub fn Program::num_loads(Self) -> Int
+pub fn Program::options(Self) -> Options
 pub fn Program::write(Self) -> Bytes
 
 pub struct Thread {
