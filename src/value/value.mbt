@@ -136,6 +136,7 @@ pub fn StarlarkList::freeze(self : StarlarkList) -> Unit {
 ///
 /// Returns `Ok(())` if mutation is allowed, or `Err` with a descriptive
 /// message if the list is frozen or has active iterators.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkList::check_mutable(
   self : StarlarkList,
   verb : String,
@@ -265,6 +266,7 @@ pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
 ///
 /// Returns `Ok(v)` with the removed element, or `Err` if the list is frozen
 /// or being iterated.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkList::pop_at(
   self : StarlarkList,
   i : Int,
@@ -590,6 +592,7 @@ pub fn StarlarkFunction::captured_scope(
 ///
 /// Returns a new `StarlarkFunction` identical to `self` but with
 /// `module_globals` set to `Some(g)`.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::with_module_globals(
   self : StarlarkFunction,
   g : Map[String, Value],
@@ -833,6 +836,7 @@ pub struct BuiltinCallCtx {
 ///   (defaults to always returning `None`).
 ///
 /// Returns a new `BuiltinCallCtx`.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn BuiltinCallCtx::new(
   call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String],
   get_local? : (String) -> Value? = fn(_) { None },
@@ -893,6 +897,7 @@ pub struct StarlarkBuiltinFunc {
 /// - `name` : The name to associate with this builtin function.
 ///
 /// Returns a `StarlarkBuiltinFunc` with `body` set to `None`.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkBuiltinFunc::dispatch(name : String) -> StarlarkBuiltinFunc {
   { name, body: None, recv: None }
 }
@@ -1322,6 +1327,7 @@ pub fn Value::truth(v : Value) -> Bool {
 ///
 /// Returns `Ok(q)` where `q` is the floor-division result, or
 /// `Err("floored division by zero")` when `b` is zero.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   if b.is_zero() {
     return Err("floored division by zero")
@@ -1349,6 +1355,7 @@ pub fn floor_div(a : BigInt, b : BigInt) -> Result[BigInt, String] {
 ///
 /// Returns `Ok(r)` where `r` has the same sign as `b`, or
 /// `Err("integer modulo by zero")` when `b` is zero.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn starlark_mod(a : BigInt, b : BigInt) -> Result[BigInt, String] {
   if b.is_zero() {
     return Err("integer modulo by zero")

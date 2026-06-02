@@ -81,6 +81,7 @@ pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
 /// - `f` : A finite double with no fractional part.
 ///
 /// Returns the exact integer value of `f` as a `BigInt`.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn double_to_bigint(f : Double) -> BigInt {
   // f must be finite and satisfy f == f.trunc() (no fractional part).
   // Handles the full double range via IEEE 754 bit extraction.
@@ -215,6 +216,7 @@ fn fnv1a(bytes : Bytes) -> UInt {
 /// - `s` : The Starlark string to hash.
 ///
 /// Returns the Java `String.hashCode` of the UTF-8 byte sequence.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn java_string_hash(s : StarlarkString) -> Int {
   let b = s.bytes
   let mut h : Int = 0
@@ -383,6 +385,7 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 /// - `n` : The integer value to convert.
 ///
 /// Returns the nearest representable `Double`, or `+Infinity` on overflow.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn bigint_to_double(n : BigInt) -> Double {
   @string.parse_double(n.to_string()) catch {
     _ => 0.0
@@ -399,6 +402,7 @@ pub fn bigint_to_double(n : BigInt) -> Double {
 ///
 /// Returns `Ok(f)` with the converted finite `Double`, or
 /// `Err("int too large to convert to float")` when the value overflows.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn bigint_to_finite_double(n : BigInt) -> Result[Double, String] {
   let f = @string.parse_double(n.to_string()) catch { _ => @double.infinity }
   if f.is_inf() {
@@ -525,6 +529,7 @@ pub fn compare_values_depth(
 ///
 /// Returns `Ok(true)` when equal, `Ok(false)` when not, or `Err` when the
 /// depth limit is exceeded.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn starlark_equals_depth(
   a : Value,
   b : Value,
