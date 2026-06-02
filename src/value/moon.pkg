@@ -4,6 +4,6 @@ import {
   "moonbitlang/core/string",
   "connect0459/starlark/errors",
   "connect0459/starlark/internal/hashtable",
-  "connect0459/starlark/internal/syntax",
+  "connect0459/starlark/syntax",
   "connect0459/starlark/internal/utf8util",
 }

@@ -3,7 +3,7 @@ import {
   "connect0459/starlark/errors",
   "connect0459/starlark/value",
   "connect0459/starlark/internal/parser",
-  "connect0459/starlark/internal/syntax",
+  "connect0459/starlark/syntax",
   "moonbitlang/x/fs",
 }
 

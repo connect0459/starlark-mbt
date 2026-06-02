@@ -4,7 +4,7 @@ package "connect0459/starlark"
 import {
   "connect0459/starlark/errors",
   "connect0459/starlark/eval",
-  "connect0459/starlark/internal/syntax",
+  "connect0459/starlark/syntax",
   "connect0459/starlark/value",
 }
 
