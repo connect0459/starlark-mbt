@@ -1807,10 +1807,36 @@ gaps (implementations were already correct). Commit: `190d060`
 - [ ] **Remaining `#internal` visibility** — `java_string_hash`, `starlark_equals_depth`,
       `bigint_to_*`, `floor_div`, `starlark_mod`, `check_mutable`, `copy_items`,
       `pop_at`, `BuiltinCallCtx::new`, `StarlarkBuiltinFunc::dispatch/call_body`,
-      `StarlarkFunction::body/params/captured_scope/with_module_globals` appear in
-      `.mbti` due to MoonBit package visibility constraints (no module-internal
-      visibility like Go's `internal/`); accepted as-is — `#internal` warnings
-      protect embedders at compile time.
+      `StarlarkFunction::body/params/captured_scope/globals/with_module_globals/new`
+      appear in `.mbti` due to MoonBit package visibility constraints (no
+      module-internal visibility like Go's `internal/`); accepted as-is —
+      `#internal` warnings protect embedders at compile time.
+
+### Post-R4 API consistency pass
+
+- [x] **`StringDict` wired into the eval entry points** — moved `StringDict` from
+      the facade into the `value` package (the only package `eval` can import) and
+      switched the env/globals parameter of `eval_expr`, `eval_expr_with_opts`,
+      `eval_parsed_expr`, and `exec_repl_chunk` from `StarlarkDict` to `StringDict`.
+      Previously the env was a value-keyed `StarlarkDict` whose non-string keys were
+      silently dropped, while `StringDict` (the natural string-keyed env type) was
+      defined but consumed by nothing. BREAKING: those four signatures now take
+      `@value.StringDict`, and `StringDict` is re-homed under
+      `connect0459/starlark/value`.
+- [x] **`StarlarkFunction` AST internals marked `#internal`** — `body`, `params`,
+      `captured_scope`, `globals`, and `new` join the already-annotated
+      `with_module_globals`; they expose AST nodes and closure/globals runtime
+      state that belong to the eval engine. Public `.mbti` surface is unchanged;
+      external callers get a compile-time warning. Introspection accessors
+      (`name`, `position`, `defaults`, `num_params`, `param`, `param_default`,
+      `defining_module`, `free_var`, …) stay public, mirroring starlark-go's
+      `Function` API.
+- [x] **`StarlarkList::each` added** — `StarlarkDict` and `StarlarkSet` both expose
+      `each()`; `StarlarkList` only had `eachi()`. Added `each((Value) -> Unit)` for
+      symmetry, mirroring the core `Array` `each`/`eachi` pair (additive, non-breaking).
+- [x] **`compare_limit` facade re-export reviewed, kept** — it is an intentional
+      mirror of starlark-go's top-level `CompareLimit`, paired with the facade
+      `equal_depth`/`compare_depth` entry points; not a redundant duplicate.
 
 ### Deferred public-API gaps
 
