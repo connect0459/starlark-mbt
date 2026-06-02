@@ -1779,6 +1779,13 @@ gaps (implementations were already correct). Commit: `190d060`
       `Module::global_names() -> Array[String]` and
       `Module::predeclared_names() -> Array[String]`; embedders enumerate names
       then call `get()` per name.
+- [x] Mark eval-internal helpers in `src/value/` with `#internal(unsafe, "...")`:
+      `check_mutable`, `pop_at`, `with_module_globals`, `BuiltinCallCtx::new`,
+      `StarlarkBuiltinFunc::dispatch`, `floor_div`, `starlark_mod`,
+      `bigint_to_double`, `bigint_to_finite_double`, `double_to_bigint`,
+      `java_string_hash`, `starlark_equals_depth` — must stay `pub` for the
+      eval package but are not part of the public embedding API; the attribute
+      causes the compiler to warn any caller outside the module.
 
 ### Deferred public-API gaps
 
