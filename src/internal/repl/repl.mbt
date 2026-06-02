@@ -23,9 +23,9 @@ pub impl Show for ReplOutput with fn output(self, logger) {
 ///
 /// Parameters:
 ///
-/// * `thread` : The evaluation thread providing the execution context.
-/// * `globals` : The global variable dictionary for the REPL session.
-/// * `input` : The raw source text entered by the user.
+/// - `thread` : The evaluation thread providing the execution context.
+/// - `globals` : The global variable dictionary for the REPL session.
+/// - `input` : The raw source text entered by the user.
 ///
 /// Returns the evaluation result as a `ReplOutput` variant.
 pub fn eval_input(
@@ -73,7 +73,7 @@ pub fn eval_input(
 ///
 /// Parameters:
 ///
-/// * `err` : The evaluation error to format.
+/// - `err` : The evaluation error to format.
 ///
 /// Returns the error's human-readable message string.
 pub fn format_error(err : @errors.EvalError) -> String {
@@ -87,7 +87,7 @@ pub fn format_error(err : @errors.EvalError) -> String {
 ///
 /// Parameters:
 ///
-/// * `base_dir` : The filesystem directory used as the resolution root for
+/// - `base_dir` : The filesystem directory used as the resolution root for
 ///   relative load paths.
 ///
 /// Returns a load handler compatible with `@eval.Thread::with_loader`.
@@ -134,8 +134,8 @@ fn dir_of(path : String) -> String {
 ///
 /// Parameters:
 ///
-/// * `thread` : The evaluation thread used for all input evaluation.
-/// * `globals` : The global variable dictionary shared across all REPL inputs.
+/// - `thread` : The evaluation thread used for all input evaluation.
+/// - `globals` : The global variable dictionary shared across all REPL inputs.
 pub fn run(thread : @eval.Thread, globals : @value.StarlarkDict) -> Unit {
   while true {
     match read_line(">>> ") {

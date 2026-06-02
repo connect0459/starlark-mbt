@@ -61,11 +61,11 @@ pub struct Hashtable[K, V] {
 ///
 /// Parameters:
 ///
-/// * `hash_fn` : Function that computes a hash for a key, returning `Err` if
+/// - `hash_fn` : Function that computes a hash for a key, returning `Err` if
 ///   the key is not hashable.
-/// * `eq_fn` : Function that tests two keys for equality.
-/// * `zero_key` : Placeholder key used to initialise recycled entry slots.
-/// * `zero_val` : Placeholder value used to initialise recycled entry slots.
+/// - `eq_fn` : Function that tests two keys for equality.
+/// - `zero_key` : Placeholder key used to initialise recycled entry slots.
+/// - `zero_val` : Placeholder value used to initialise recycled entry slots.
 ///
 /// Returns a new empty `Hashtable`.
 pub fn[K, V] Hashtable::new(
@@ -281,9 +281,9 @@ pub fn[K, V] Hashtable::iter_end(self : Hashtable[K, V]) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `self` : The hash table to insert into.
-/// * `key` : The key to insert or update.
-/// * `value` : The value to associate with the key.
+/// - `self` : The hash table to insert into.
+/// - `key` : The key to insert or update.
+/// - `value` : The value to associate with the key.
 ///
 /// Returns `Ok(())` on success, or `Err` if the operation is not permitted.
 pub fn[K, V] Hashtable::insert(
@@ -334,8 +334,8 @@ pub fn[K, V] Hashtable::insert(
 ///
 /// Parameters:
 ///
-/// * `self` : The hash table to search.
-/// * `key` : The key to look up.
+/// - `self` : The hash table to search.
+/// - `key` : The key to look up.
 ///
 /// Returns `Ok(Some(value))` if found, `Ok(None)` if absent, or `Err` if
 /// hashing the key fails.
@@ -364,8 +364,8 @@ pub fn[K, V] Hashtable::lookup(
 ///
 /// Parameters:
 ///
-/// * `self` : The hash table to search.
-/// * `key` : The key to test for membership.
+/// - `self` : The hash table to search.
+/// - `key` : The key to test for membership.
 ///
 /// Returns `Ok(true)` if the key exists, `Ok(false)` if absent, or `Err` if
 /// hashing the key fails.
@@ -386,8 +386,8 @@ pub fn[K, V] Hashtable::contains(
 ///
 /// Parameters:
 ///
-/// * `self` : The hash table to remove from.
-/// * `key` : The key to delete.
+/// - `self` : The hash table to remove from.
+/// - `key` : The key to delete.
 ///
 /// Returns `Ok(true)` if the key was found and removed, `Ok(false)` if absent,
 /// or `Err` if the table is frozen or being iterated.
@@ -443,8 +443,8 @@ pub fn[K, V] Hashtable::delete(
 ///
 /// Parameters:
 ///
-/// * `self` : The hash table to iterate over.
-/// * `f` : The function to call with each key.
+/// - `self` : The hash table to iterate over.
+/// - `f` : The function to call with each key.
 pub fn[K, V] Hashtable::each_key(
   self : Hashtable[K, V],
   f : (K) -> Unit,
@@ -461,8 +461,8 @@ pub fn[K, V] Hashtable::each_key(
 ///
 /// Parameters:
 ///
-/// * `self` : The hash table to iterate over.
-/// * `f` : The function to call with each key-value pair.
+/// - `self` : The hash table to iterate over.
+/// - `f` : The function to call with each key-value pair.
 pub fn[K, V] Hashtable::each(
   self : Hashtable[K, V],
   f : (K, V) -> Unit,

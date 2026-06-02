@@ -97,8 +97,8 @@ fn Parser::consume_newlines(self : Parser) -> Unit raise ParseErr {
 ///
 /// Parameters:
 ///
-/// * `filename` : The source file name, recorded in all position values.
-/// * `source` : The UTF-8 source text to parse.
+/// - `filename` : The source file name, recorded in all position values.
+/// - `source` : The UTF-8 source text to parse.
 ///
 /// Returns `Ok(File)` with the parsed AST, or `Err(SyntaxError)` if parsing fails.
 pub fn parse_file(
@@ -119,8 +119,8 @@ pub fn parse_file(
 ///
 /// Parameters:
 ///
-/// * `filename` : The source file name, recorded in all position values.
-/// * `source` : The UTF-8 source text containing exactly one expression.
+/// - `filename` : The source file name, recorded in all position values.
+/// - `source` : The UTF-8 source text containing exactly one expression.
 ///
 /// Returns `Ok(Expr)` with the parsed expression, or `Err(SyntaxError)` if
 /// parsing fails or trailing tokens remain after the expression.
@@ -667,7 +667,7 @@ fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
 ///
 /// Parameters:
 ///
-/// * `self` : The parser whose token stream is consumed.
+/// - `self` : The parser whose token stream is consumed.
 ///
 /// Returns the parsed `Expr` node.
 pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {

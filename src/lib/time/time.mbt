@@ -1628,8 +1628,8 @@ pub let now_override_key : String = "time.now"
 ///
 /// Parameters:
 ///
-/// * `sec` : Unix timestamp in whole seconds (seconds since the Unix epoch).
-/// * `nsec` : Nanoseconds offset within the second (0..999_999_999).
+/// - `sec` : Unix timestamp in whole seconds (seconds since the Unix epoch).
+/// - `nsec` : Nanoseconds offset within the second (0..999_999_999).
 ///
 /// Returns a `time.time` Starlark value representing the given instant.
 pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {

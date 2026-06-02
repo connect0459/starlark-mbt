@@ -327,7 +327,7 @@ fn encode_dict_val(
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark value to encode.
+/// - `v` : The Starlark value to encode.
 ///
 /// Returns `Ok(json_string)` on success, or `Err(message)` if the value
 /// cannot be represented as JSON.
@@ -701,8 +701,8 @@ fn parse_json_number(
 ///
 /// Parameters:
 ///
-/// * `s` : The JSON text to parse.
-/// * `default` : An optional fallback value returned when parsing fails.
+/// - `s` : The JSON text to parse.
+/// - `default` : An optional fallback value returned when parsing fails.
 ///
 /// Returns `Ok(value)` on success, or `Err(message)` if parsing fails and no
 /// default is provided.
@@ -779,9 +779,9 @@ fn write_indent_line(
 ///
 /// Parameters:
 ///
-/// * `s` : The compact JSON string to pretty-print.
-/// * `prefix` : A string prepended to every output line.
-/// * `indent_str` : The string used for each level of nesting indentation.
+/// - `s` : The compact JSON string to pretty-print.
+/// - `prefix` : A string prepended to every output line.
+/// - `indent_str` : The string used for each level of nesting indentation.
 ///
 /// Returns `Ok(indented_string)` on success, or `Err(message)` if `s` is
 /// not valid JSON.

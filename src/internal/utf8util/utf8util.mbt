@@ -3,7 +3,7 @@
 ///
 /// Parameters:
 ///
-/// * `n` : A nibble value in the range 0–15.
+/// - `n` : A nibble value in the range 0–15.
 ///
 /// Returns the corresponding lowercase hex character (`'0'`–`'9'` or `'a'`–`'f'`).
 pub fn hex_char(n : Int) -> Char {
@@ -19,8 +19,8 @@ pub fn hex_char(n : Int) -> Char {
 ///
 /// Parameters:
 ///
-/// * `buf` : The string builder to append to.
-/// * `n` : The integer value whose low 8 bits are formatted.
+/// - `buf` : The string builder to append to.
+/// - `n` : The integer value whose low 8 bits are formatted.
 pub fn write_hex2(buf : StringBuilder, n : Int) -> Unit {
   buf.write_char(hex_char((n >> 4) & 0xF))
   buf.write_char(hex_char(n & 0xF))
@@ -31,8 +31,8 @@ pub fn write_hex2(buf : StringBuilder, n : Int) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `buf` : The string builder to append to.
-/// * `n` : The integer value whose low 16 bits are formatted.
+/// - `buf` : The string builder to append to.
+/// - `n` : The integer value whose low 16 bits are formatted.
 pub fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
   buf.write_char(hex_char((n >> 12) & 0xF))
   buf.write_char(hex_char((n >> 8) & 0xF))
@@ -45,8 +45,8 @@ pub fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `buf` : The string builder to append to.
-/// * `n` : The integer value whose full 32 bits are formatted.
+/// - `buf` : The string builder to append to.
+/// - `n` : The integer value whose full 32 bits are formatted.
 pub fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
   buf.write_char(hex_char((n >> 28) & 0xF))
   buf.write_char(hex_char((n >> 24) & 0xF))
@@ -63,8 +63,8 @@ pub fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `b` : The byte sequence to decode from.
-/// * `pos` : The byte offset at which to start decoding.
+/// - `b` : The byte sequence to decode from.
+/// - `pos` : The byte offset at which to start decoding.
 ///
 /// Returns `(rune, byte_width)`. Returns `(-1, 1)` for invalid or truncated sequences.
 pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
@@ -123,7 +123,7 @@ pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
 ///
 /// Parameters:
 ///
-/// * `r` : The Unicode codepoint to test.
+/// - `r` : The Unicode codepoint to test.
 ///
 /// Returns `true` if the codepoint is considered printable, `false` otherwise.
 pub fn is_unicode_printable(r : Int) -> Bool {

@@ -27,8 +27,8 @@ pub fn StarlarkDict::new() -> StarlarkDict {
 ///
 /// Parameters:
 ///
-/// * `self` : The first dict to compare.
-/// * `other` : The second dict to compare.
+/// - `self` : The first dict to compare.
+/// - `other` : The second dict to compare.
 ///
 /// Returns `true` if both dicts wrap the same underlying hash table instance.
 pub fn StarlarkDict::is_same_storage(
@@ -66,9 +66,9 @@ pub fn StarlarkDict::freeze(self : StarlarkDict) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `self` : The dict to update.
-/// * `key` : The key to insert or update; must be hashable.
-/// * `value` : The value to associate with `key`.
+/// - `self` : The dict to update.
+/// - `key` : The key to insert or update; must be hashable.
+/// - `value` : The value to associate with `key`.
 ///
 /// Returns `Ok(())` on success, or `Err` with an error message on failure.
 pub fn StarlarkDict::set(
@@ -85,8 +85,8 @@ pub fn StarlarkDict::set(
 ///
 /// Parameters:
 ///
-/// * `self` : The dict to look up in.
-/// * `key` : The key to search for; must be hashable.
+/// - `self` : The dict to look up in.
+/// - `key` : The key to search for; must be hashable.
 ///
 /// Returns `Ok(Some(v))` if the key is present, `Ok(None)` if absent, or
 /// `Err` if the key is unhashable.
@@ -104,8 +104,8 @@ pub fn StarlarkDict::get(
 ///
 /// Parameters:
 ///
-/// * `self` : The dict to remove from.
-/// * `key` : The key to remove; must be hashable.
+/// - `self` : The dict to remove from.
+/// - `key` : The key to remove; must be hashable.
 ///
 /// Returns `Ok(true)` if the key was present and removed, `Ok(false)` if the
 /// key was absent, or `Err` if the dict is frozen, under active iteration, or
@@ -122,8 +122,8 @@ pub fn StarlarkDict::delete(
 ///
 /// Parameters:
 ///
-/// * `self` : The dict to iterate over.
-/// * `f` : The callback invoked with each key-value pair.
+/// - `self` : The dict to iterate over.
+/// - `f` : The callback invoked with each key-value pair.
 pub fn StarlarkDict::each(
   self : StarlarkDict,
   f : (Value, Value) -> Unit,
@@ -238,8 +238,8 @@ pub fn StarlarkSet::freeze(self : StarlarkSet) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `self` : The set to insert into.
-/// * `key` : The value to add; must be hashable.
+/// - `self` : The set to insert into.
+/// - `key` : The value to add; must be hashable.
 ///
 /// Returns `Ok(())` on success, or `Err` with an error message on failure.
 pub fn StarlarkSet::add(
@@ -255,8 +255,8 @@ pub fn StarlarkSet::add(
 ///
 /// Parameters:
 ///
-/// * `self` : The set to search.
-/// * `key` : The value to look for; must be hashable.
+/// - `self` : The set to search.
+/// - `key` : The value to look for; must be hashable.
 ///
 /// Returns `Ok(true)` if the value is present, `Ok(false)` if absent, or
 /// `Err` if the key is unhashable.
@@ -274,8 +274,8 @@ pub fn StarlarkSet::contains(
 ///
 /// Parameters:
 ///
-/// * `self` : The set to remove from.
-/// * `key` : The value to remove; must be hashable.
+/// - `self` : The set to remove from.
+/// - `key` : The value to remove; must be hashable.
 ///
 /// Returns `Ok(true)` if the value was present and removed, `Ok(false)` if
 /// absent, or `Err` if the set is frozen, under active iteration, or the key
@@ -292,8 +292,8 @@ pub fn StarlarkSet::remove(
 ///
 /// Parameters:
 ///
-/// * `self` : The set to iterate over.
-/// * `f` : The callback invoked with each element.
+/// - `self` : The set to iterate over.
+/// - `f` : The callback invoked with each element.
 pub fn StarlarkSet::each(self : StarlarkSet, f : (Value) -> Unit) -> Unit {
   self.ht.each_key(f)
 }

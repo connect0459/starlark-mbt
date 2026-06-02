@@ -17,8 +17,8 @@ pub(all) enum Node {
 ///
 /// Parameters:
 ///
-/// * `file` : The parsed file whose nodes are visited.
-/// * `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
+/// - `file` : The parsed file whose nodes are visited.
+/// - `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
 ///   of each parent. Return `false` to skip a subtree.
 pub fn walk_file(file : File, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NFile(file))) {
@@ -36,8 +36,8 @@ pub fn walk_file(file : File, f : (Node?) -> Bool) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `stmt` : The statement node to walk.
-/// * `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
+/// - `stmt` : The statement node to walk.
+/// - `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
 ///   of each parent. Return `false` to skip a subtree.
 pub fn walk_stmt(stmt : Stmt, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NStmt(stmt))) {
@@ -100,8 +100,8 @@ pub fn walk_stmt(stmt : Stmt, f : (Node?) -> Bool) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `expr` : The expression node to walk.
-/// * `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
+/// - `expr` : The expression node to walk.
+/// - `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
 ///   of each parent. Return `false` to skip a subtree.
 pub fn walk_expr(expr : Expr, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NExpr(expr))) {

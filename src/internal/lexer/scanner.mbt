@@ -40,7 +40,7 @@ pub struct ScannedToken {
 ///
 /// Parameters:
 ///
-/// * `self` : The scanned token to inspect.
+/// - `self` : The scanned token to inspect.
 ///
 /// Returns the `Token` variant representing the kind of this token.
 pub fn ScannedToken::token(self : ScannedToken) -> Token {
@@ -52,7 +52,7 @@ pub fn ScannedToken::token(self : ScannedToken) -> Token {
 ///
 /// Parameters:
 ///
-/// * `self` : The scanned token to inspect.
+/// - `self` : The scanned token to inspect.
 ///
 /// Returns the source position where this token begins.
 pub fn ScannedToken::pos(self : ScannedToken) -> @errors.Position {
@@ -80,8 +80,8 @@ pub struct Scanner {
 ///
 /// Parameters:
 ///
-/// * `filename` : The source file name, used in position/error messages.
-/// * `source` : The UTF-8 source text to scan.
+/// - `filename` : The source file name, used in position/error messages.
+/// - `source` : The UTF-8 source text to scan.
 ///
 /// Returns a new `Scanner` ready to produce tokens from `source`.
 pub fn Scanner::new(filename : String, source : String) -> Scanner {
@@ -155,7 +155,7 @@ fn Scanner::current_pos(self : Scanner) -> @errors.Position {
 ///
 /// Parameters:
 ///
-/// * `self` : The scanner to query.
+/// - `self` : The scanner to query.
 ///
 /// Returns the current read position in the source.
 pub fn Scanner::position(self : Scanner) -> @errors.Position {
@@ -205,7 +205,7 @@ fn Scanner::count_indent(self : Scanner) -> Int {
 ///
 /// Parameters:
 ///
-/// * `self` : The scanner to advance.
+/// - `self` : The scanner to advance.
 ///
 /// Returns `Ok(ScannedToken)` with the next token, or `Err(SyntaxError)` if
 /// the input is lexically invalid.

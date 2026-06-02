@@ -68,8 +68,8 @@ pub type CustomValue = @value.CustomValue
 ///
 /// Parameters:
 ///
-/// * `name` : A label used in call-stack traces and error messages.
-/// * `loader` : Callback invoked for each `load()` statement.
+/// - `name` : A label used in call-stack traces and error messages.
+/// - `loader` : Callback invoked for each `load()` statement.
 ///
 /// Returns a new `Thread` that delegates `load()` to `loader`.
 pub fn new_thread_with_loader(
@@ -134,8 +134,8 @@ pub type Program = @eval.Program
 ///
 /// Parameters:
 ///
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to parse.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to parse.
 ///
 /// Returns the parsed `SyntaxFile`, or an `EvalError` on syntax failure.
 pub fn parse_file(
@@ -153,8 +153,8 @@ pub fn parse_file(
 ///
 /// Parameters:
 ///
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark expression source text to parse.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark expression source text to parse.
 ///
 /// Returns the parsed `SyntaxExpr`, or an `EvalError` on syntax failure.
 pub fn parse_expr(
@@ -173,10 +173,10 @@ pub fn parse_expr(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `expr` : Pre-parsed expression AST node to evaluate.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `env` : Global environment dict supplying variable bindings.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `expr` : Pre-parsed expression AST node to evaluate.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `env` : Global environment dict supplying variable bindings.
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on runtime failure.
 pub fn eval_parsed_expr(
@@ -194,10 +194,10 @@ pub fn eval_parsed_expr(
 ///
 /// Parameters:
 ///
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to parse and resolve.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `is_predeclared` : Predicate returning `true` for names that are
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to parse and resolve.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `is_predeclared` : Predicate returning `true` for names that are
 ///   predeclared in the execution environment (used by the resolver).
 ///
 /// Returns the compiled `Program`, or an `EvalError` on parse/resolve failure.
@@ -216,10 +216,10 @@ pub fn source_program(
 ///
 /// Parameters:
 ///
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to parse and resolve.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `is_predeclared` : Predicate returning `true` for names that are
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to parse and resolve.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `is_predeclared` : Predicate returning `true` for names that are
 ///   predeclared in the execution environment.
 ///
 /// Returns a tuple of the parsed `SyntaxFile` and the compiled `Program`,
@@ -238,9 +238,9 @@ pub fn source_program_with_file(
 ///
 /// Parameters:
 ///
-/// * `file` : Pre-parsed Starlark source file AST.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `is_predeclared` : Predicate returning `true` for names that are
+/// - `file` : Pre-parsed Starlark source file AST.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `is_predeclared` : Predicate returning `true` for names that are
 ///   predeclared in the execution environment.
 ///
 /// Returns the compiled `Program`, or an `EvalError` on resolve failure.
@@ -258,10 +258,10 @@ pub fn file_program(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to execute.
-/// * `opts` : Feature flags controlling which dialect features are active.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to execute.
+/// - `opts` : Feature flags controlling which dialect features are active.
 ///
 /// Returns the frozen `Module` containing all top-level globals, or an
 /// `EvalError` on parse, resolve, or runtime failure.
@@ -280,11 +280,11 @@ pub fn exec_file(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to execute.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `universe` : Custom universe of predeclared bindings to use instead of
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to execute.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `universe` : Custom universe of predeclared bindings to use instead of
 ///   the standard built-ins.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
@@ -304,11 +304,11 @@ pub fn exec_file_with_universe(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to execute.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `predeclared` : Extra per-execution bindings injected before user globals.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to execute.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `predeclared` : Extra per-execution bindings injected before user globals.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
 pub fn exec_file_with_predeclared(
@@ -327,10 +327,10 @@ pub fn exec_file_with_predeclared(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark expression source text to evaluate.
-/// * `env` : Global environment dict supplying variable bindings.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark expression source text to evaluate.
+/// - `env` : Global environment dict supplying variable bindings.
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr(
@@ -347,11 +347,11 @@ pub fn eval_expr(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark expression source text to evaluate.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `env` : Global environment dict supplying variable bindings.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark expression source text to evaluate.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `env` : Global environment dict supplying variable bindings.
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr_with_opts(
@@ -371,11 +371,11 @@ pub fn eval_expr_with_opts(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source chunk to execute (may be statements or an expression).
-/// * `globals` : Mutable dict that persists global bindings across REPL chunks.
-/// * `opts` : Feature flags controlling which dialect features are active.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source chunk to execute (may be statements or an expression).
+/// - `globals` : Mutable dict that persists global bindings across REPL chunks.
+/// - `opts` : Feature flags controlling which dialect features are active.
 ///
 /// Returns `Ok(())` on success, or an `EvalError` on failure.
 pub fn exec_repl_chunk(
@@ -395,8 +395,8 @@ pub fn exec_repl_chunk(
 ///
 /// Parameters:
 ///
-/// * `a` : The left-hand value.
-/// * `b` : The right-hand value.
+/// - `a` : The left-hand value.
+/// - `b` : The right-hand value.
 ///
 /// Returns `Ok(true)` if `a == b`, `Ok(false)` if not, or `Err` when the
 /// depth limit is exceeded (cyclic structure).
@@ -410,7 +410,7 @@ pub fn equal(a : Value, b : Value) -> Result[Bool, EvalError] {
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark numeric value to convert.
+/// - `v` : The Starlark numeric value to convert.
 ///
 /// Returns `Some(n)` if the conversion succeeds, `None` if `v` is not a
 /// numeric type, is NaN or infinite, or is outside the signed 64-bit range.
@@ -439,7 +439,7 @@ pub fn number_to_int(v : Value) -> Int64? {
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark value to extract a float from.
+/// - `v` : The Starlark value to extract a float from.
 ///
 /// Returns a tuple `(f, ok)` where `f` is the extracted value and `ok`
 /// indicates whether `v` was a numeric type.
@@ -457,7 +457,7 @@ pub fn as_float(v : Value) -> (Double, Bool) {
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark value to extract a string from.
+/// - `v` : The Starlark value to extract a string from.
 ///
 /// Returns a tuple `(s, ok)` where `s` is the raw string and `ok` indicates
 /// whether `v` was a string type.
@@ -474,7 +474,7 @@ pub fn as_string(v : Value) -> (String, Bool) {
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark value whose length to retrieve.
+/// - `v` : The Starlark value whose length to retrieve.
 ///
 /// Returns the non-negative length, or `-1` if `v` does not support `len`.
 pub fn len_of(v : Value) -> Int {
@@ -490,7 +490,7 @@ pub fn len_of(v : Value) -> Int {
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark value to iterate over.
+/// - `v` : The Starlark value to iterate over.
 ///
 /// Returns `Ok(iterator)` on success, or an `EvalError` if `v` is not iterable.
 pub fn iterate(v : Value) -> Result[StarlarkIterator, EvalError] {
@@ -506,10 +506,10 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, EvalError] {
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `func` : The Starlark callable to invoke (function, builtin, or bound method).
-/// * `args` : Positional arguments to pass.
-/// * `kwargs` : Keyword arguments as `(name, value)` pairs.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `func` : The Starlark callable to invoke (function, builtin, or bound method).
+/// - `args` : Positional arguments to pass.
+/// - `kwargs` : Keyword arguments as `(name, value)` pairs.
 ///
 /// Returns the call result, or an `EvalError` on failure.
 pub fn call(
@@ -541,7 +541,7 @@ pub fn StringDict::new() -> StringDict {
 ///
 /// Parameters:
 ///
-/// * `m` : The map to wrap; ownership is transferred.
+/// - `m` : The map to wrap; ownership is transferred.
 ///
 /// Returns a `StringDict` backed by `m`.
 pub fn StringDict::from_map(m : Map[String, Value]) -> StringDict {
@@ -553,9 +553,9 @@ pub fn StringDict::from_map(m : Map[String, Value]) -> StringDict {
 ///
 /// Parameters:
 ///
-/// * `self` : The dict to modify.
-/// * `key` : The string key to bind.
-/// * `v` : The value to associate with `key`.
+/// - `self` : The dict to modify.
+/// - `key` : The string key to bind.
+/// - `v` : The value to associate with `key`.
 pub fn StringDict::set(self : StringDict, key : String, v : Value) -> Unit {
   self.data[key] = v
 }
@@ -565,8 +565,8 @@ pub fn StringDict::set(self : StringDict, key : String, v : Value) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `self` : The dict to look up in.
-/// * `key` : The string key to retrieve.
+/// - `self` : The dict to look up in.
+/// - `key` : The string key to retrieve.
 ///
 /// Returns `Some(value)` if `key` is present, `None` otherwise.
 pub fn StringDict::get(self : StringDict, key : String) -> Value? {
@@ -578,8 +578,8 @@ pub fn StringDict::get(self : StringDict, key : String) -> Value? {
 ///
 /// Parameters:
 ///
-/// * `self` : The dict to query.
-/// * `key` : The string key to test for presence.
+/// - `self` : The dict to query.
+/// - `key` : The string key to test for presence.
 ///
 /// Returns `true` if `key` exists in the dict.
 pub fn StringDict::has(self : StringDict, key : String) -> Bool {
@@ -591,7 +591,7 @@ pub fn StringDict::has(self : StringDict, key : String) -> Bool {
 ///
 /// Parameters:
 ///
-/// * `self` : The dict whose keys to retrieve.
+/// - `self` : The dict whose keys to retrieve.
 ///
 /// Returns an array of all keys sorted lexicographically.
 pub fn StringDict::keys(self : StringDict) -> Array[String] {
@@ -622,7 +622,7 @@ pub fn StringDict::keys(self : StringDict) -> Array[String] {
 ///
 /// Parameters:
 ///
-/// * `self` : The dict whose values to freeze.
+/// - `self` : The dict whose values to freeze.
 pub fn StringDict::freeze(self : StringDict) -> Unit {
   self.data.each(fn(_, v) { @value.freeze_value(v) })
 }
@@ -636,9 +636,9 @@ pub let compare_limit : Int = @value.compare_limit
 ///
 /// Parameters:
 ///
-/// * `a` : The left-hand value.
-/// * `b` : The right-hand value.
-/// * `depth` : Remaining recursion budget; use `compare_limit` as the initial
+/// - `a` : The left-hand value.
+/// - `b` : The right-hand value.
+/// - `depth` : Remaining recursion budget; use `compare_limit` as the initial
 ///   value. Returns an error when this reaches zero.
 ///
 /// Returns `Ok(true)` if `a == b`, `Ok(false)` if not, or an `EvalError`
@@ -660,11 +660,11 @@ pub fn equal_depth(
 ///
 /// Parameters:
 ///
-/// * `op` : The comparison operator string: `"=="`, `"!="`, `"<"`, `"<="`,
+/// - `op` : The comparison operator string: `"=="`, `"!="`, `"<"`, `"<="`,
 ///   `">"`, or `">="`.
-/// * `a` : The left-hand value.
-/// * `b` : The right-hand value.
-/// * `depth` : Remaining recursion budget; use `compare_limit` as the initial
+/// - `a` : The left-hand value.
+/// - `b` : The right-hand value.
+/// - `depth` : Remaining recursion budget; use `compare_limit` as the initial
 ///   value.
 ///
 /// Returns `Ok(result)` on success, or an `EvalError` on type mismatch,
@@ -708,9 +708,9 @@ pub fn compare_depth(
 ///
 /// Parameters:
 ///
-/// * `op` : The binary operator name.
-/// * `x` : The left-hand operand.
-/// * `y` : The right-hand operand.
+/// - `op` : The binary operator name.
+/// - `x` : The left-hand operand.
+/// - `y` : The right-hand operand.
 ///
 /// Returns the operation result, or an `EvalError` on type mismatch or
 /// arithmetic error (e.g. division by zero).
@@ -724,8 +724,8 @@ pub fn binary(op : String, x : Value, y : Value) -> Result[Value, EvalError] {
 ///
 /// Parameters:
 ///
-/// * `op` : The unary operator name.
-/// * `x` : The operand.
+/// - `op` : The unary operator name.
+/// - `x` : The operand.
 ///
 /// Returns the operation result, or an `EvalError` on type mismatch.
 pub fn unary(op : String, x : Value) -> Result[Value, EvalError] {
@@ -738,9 +738,9 @@ pub fn unary(op : String, x : Value) -> Result[Value, EvalError] {
 ///
 /// Parameters:
 ///
-/// * `op` : The comparison operator name.
-/// * `x` : The left-hand operand.
-/// * `y` : The right-hand operand.
+/// - `op` : The comparison operator name.
+/// - `x` : The left-hand operand.
+/// - `y` : The right-hand operand.
 ///
 /// Returns `Ok(result)` on success, or an `EvalError` on type mismatch.
 pub fn compare(op : String, x : Value, y : Value) -> Result[Bool, EvalError] {

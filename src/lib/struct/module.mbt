@@ -28,9 +28,9 @@ fn module_get_attr(
 ///
 /// Parameters:
 ///
-/// * `name` : The display name of the module, shown in its string
+/// - `name` : The display name of the module, shown in its string
 ///   representation.
-/// * `members` : The attribute name/value pairs exported by the module.
+/// - `members` : The attribute name/value pairs exported by the module.
 ///
 /// Returns a `@value.Value::ExtVal` representing the constructed module.
 pub fn make_module(

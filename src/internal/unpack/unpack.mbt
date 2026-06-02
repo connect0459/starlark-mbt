@@ -31,10 +31,10 @@ fn parse_param_spec(s : String) -> ParamInfo {
 ///
 /// Parameters:
 ///
-/// * `fn_name` : Name of the built-in function, used in error messages.
-/// * `pos_args` : Positional arguments passed by the caller.
-/// * `kw_args` : Keyword arguments passed by the caller, as `(name, value)` pairs.
-/// * `param_specs` : Parameter specification strings describing each accepted parameter.
+/// - `fn_name` : Name of the built-in function, used in error messages.
+/// - `pos_args` : Positional arguments passed by the caller.
+/// - `kw_args` : Keyword arguments passed by the caller, as `(name, value)` pairs.
+/// - `param_specs` : Parameter specification strings describing each accepted parameter.
 ///
 /// Returns `Ok(Array[Value?])` where `result[i]` is `Some(v)` when the
 /// parameter was provided, or `None` when an optional parameter was absent.
@@ -109,11 +109,11 @@ pub fn unpack_args(
 ///
 /// Parameters:
 ///
-/// * `fn_name` : Name of the built-in function, used in error messages.
-/// * `pos_args` : Positional arguments passed by the caller.
-/// * `kw_args` : Keyword arguments passed by the caller; any non-empty list is rejected.
-/// * `min` : Minimum number of positional arguments required.
-/// * `max` : Maximum number of positional arguments accepted.
+/// - `fn_name` : Name of the built-in function, used in error messages.
+/// - `pos_args` : Positional arguments passed by the caller.
+/// - `kw_args` : Keyword arguments passed by the caller; any non-empty list is rejected.
+/// - `min` : Minimum number of positional arguments required.
+/// - `max` : Maximum number of positional arguments accepted.
 ///
 /// Returns `Ok(Array[Value?])` of length `max`; slots beyond the actual count
 /// are `None`.

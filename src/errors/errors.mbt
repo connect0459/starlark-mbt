@@ -12,9 +12,9 @@ pub struct Position {
 ///
 /// Parameters:
 ///
-/// * `filename` : The source file name.
-/// * `line` : The 1-based line number, or 0 for unknown.
-/// * `col` : The 1-based column number, or 0 for unknown.
+/// - `filename` : The source file name.
+/// - `line` : The 1-based line number, or 0 for unknown.
+/// - `col` : The 1-based column number, or 0 for unknown.
 ///
 /// Returns a new `Position` value.
 pub fn Position::new(filename : String, line : Int, col : Int) -> Position {
@@ -75,8 +75,8 @@ pub fn Position::to_string(self : Position) -> String {
 ///
 /// Parameters:
 ///
-/// * `self` : The position to compare from.
-/// * `other` : The position to compare against.
+/// - `self` : The position to compare from.
+/// - `other` : The position to compare against.
 ///
 /// Returns `true` if `self` comes before `other` by line then column.
 pub fn Position::is_before(self : Position, other : Position) -> Bool {
@@ -99,8 +99,8 @@ pub struct Span {
 ///
 /// Parameters:
 ///
-/// * `start` : The inclusive start position.
-/// * `end_` : The exclusive end position.
+/// - `start` : The inclusive start position.
+/// - `end_` : The exclusive end position.
 ///
 /// Returns a new `Span` value.
 pub fn Span::new(start : Position, end_ : Position) -> Span {
@@ -143,8 +143,8 @@ pub struct SyntaxError {
 ///
 /// Parameters:
 ///
-/// * `pos` : The source position where the error was detected.
-/// * `msg` : The human-readable error message.
+/// - `pos` : The source position where the error was detected.
+/// - `msg` : The human-readable error message.
 ///
 /// Returns a new `SyntaxError` value.
 pub fn SyntaxError::new(pos : Position, msg : String) -> SyntaxError {
@@ -187,8 +187,8 @@ pub struct ResolveError {
 ///
 /// Parameters:
 ///
-/// * `pos` : The source position where the error was detected.
-/// * `msg` : The human-readable error message.
+/// - `pos` : The source position where the error was detected.
+/// - `msg` : The human-readable error message.
 ///
 /// Returns a new `ResolveError` value.
 pub fn ResolveError::new(pos : Position, msg : String) -> ResolveError {
@@ -232,8 +232,8 @@ pub struct Binding {
 ///
 /// Parameters:
 ///
-/// * `name` : The variable name.
-/// * `pos` : The source position where the variable is defined.
+/// - `name` : The variable name.
+/// - `pos` : The source position where the variable is defined.
 ///
 /// Returns a new `Binding` value.
 pub fn Binding::new(name : String, pos : Position) -> Binding {
@@ -269,8 +269,8 @@ pub struct CallFrame {
 ///
 /// Parameters:
 ///
-/// * `name` : The function name for this frame.
-/// * `pos` : The source position of the call site within the function.
+/// - `name` : The function name for this frame.
+/// - `pos` : The source position of the call site within the function.
 ///
 /// Returns a new `CallFrame` value.
 pub fn CallFrame::new(name : String, pos : Position) -> CallFrame {
@@ -304,7 +304,7 @@ pub struct CallStack {
 ///
 /// Parameters:
 ///
-/// * `frames` : An array of `CallFrame` values, outermost first.
+/// - `frames` : An array of `CallFrame` values, outermost first.
 ///
 /// Returns a new `CallStack` wrapping the given frames.
 pub fn CallStack::new(frames : Array[CallFrame]) -> CallStack {
@@ -324,8 +324,8 @@ pub fn CallStack::length(self : CallStack) -> Int {
 ///
 /// Parameters:
 ///
-/// * `self` : The call stack to index into.
-/// * `i` : The zero-based index of the frame to retrieve.
+/// - `self` : The call stack to index into.
+/// - `i` : The zero-based index of the frame to retrieve.
 ///
 /// Returns `Some(frame)` if `i` is in range, `None` otherwise.
 pub fn CallStack::at(self : CallStack, i : Int) -> CallFrame? {
@@ -379,7 +379,7 @@ pub struct EvalError {
 ///
 /// Parameters:
 ///
-/// * `msg` : The human-readable error message.
+/// - `msg` : The human-readable error message.
 ///
 /// Returns a new `EvalError` with an empty call stack and no cause.
 pub fn EvalError::simple(msg : String) -> EvalError {
@@ -391,8 +391,8 @@ pub fn EvalError::simple(msg : String) -> EvalError {
 ///
 /// Parameters:
 ///
-/// * `msg` : The human-readable error message.
-/// * `call_stack` : The call-stack snapshot at the point of the error.
+/// - `msg` : The human-readable error message.
+/// - `call_stack` : The call-stack snapshot at the point of the error.
 ///
 /// Returns a new `EvalError` with the given message and stack, and no cause.
 pub fn EvalError::with_stack(msg : String, call_stack : CallStack) -> EvalError {
@@ -405,9 +405,9 @@ pub fn EvalError::with_stack(msg : String, call_stack : CallStack) -> EvalError 
 ///
 /// Parameters:
 ///
-/// * `msg` : The human-readable error message for the outer error.
-/// * `call_stack` : The call-stack snapshot at the point of the outer error.
-/// * `cause` : The inner `EvalError` being wrapped.
+/// - `msg` : The human-readable error message for the outer error.
+/// - `call_stack` : The call-stack snapshot at the point of the outer error.
+/// - `cause` : The inner `EvalError` being wrapped.
 ///
 /// Returns a new `EvalError` that chains to the given cause.
 pub fn EvalError::with_cause(
@@ -478,7 +478,7 @@ pub struct Halt {
 ///
 /// Parameters:
 ///
-/// * `reason` : A string describing why execution was halted.
+/// - `reason` : A string describing why execution was halted.
 ///
 /// Returns a new `Halt` value.
 pub fn Halt::new(reason : String) -> Halt {

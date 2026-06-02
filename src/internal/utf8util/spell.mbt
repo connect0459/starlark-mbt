@@ -9,7 +9,7 @@ let spell_ascii_underscore : Int = 0x5F // '_'
 ///
 /// Parameters:
 ///
-/// * `s` : The string to fold.
+/// - `s` : The string to fold.
 ///
 /// Returns an `Array[Int]` of folded codepoints.
 pub fn spell_fold_chars(s : String) -> Array[Int] {
@@ -33,9 +33,9 @@ pub fn spell_fold_chars(s : String) -> Array[Int] {
 ///
 /// Parameters:
 ///
-/// * `x` : Folded codepoints of the first string.
-/// * `y` : Folded codepoints of the second string.
-/// * `max_dist` : Upper bound; the function returns early with a value ≥
+/// - `x` : Folded codepoints of the first string.
+/// - `y` : Folded codepoints of the second string.
+/// - `max_dist` : Upper bound; the function returns early with a value ≥
 ///   `max_dist` when the true distance would exceed it.
 ///
 /// Returns the edit distance, or a value ≥ `max_dist` if the strings are
@@ -85,8 +85,8 @@ pub fn spell_levenshtein(x : Array[Int], y : Array[Int], max_dist : Int) -> Int 
 ///
 /// Parameters:
 ///
-/// * `x` : The misspelled name.
-/// * `candidates` : The set of valid names to search.
+/// - `x` : The misspelled name.
+/// - `candidates` : The set of valid names to search.
 ///
 /// Returns the nearest candidate string, or `""` if none is close enough.
 pub fn spell_nearest(x : String, candidates : Array[String]) -> String {

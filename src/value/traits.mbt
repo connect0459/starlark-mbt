@@ -9,7 +9,7 @@ pub impl Eq for Value with fn equal(a, b) -> Bool {
 ///
 /// Parameters:
 ///
-/// * `v` : The value to convert to a string.
+/// - `v` : The value to convert to a string.
 ///
 /// Returns the Starlark `str()` representation of `v`.
 pub fn Value::to_str(v : Value) -> String {
@@ -37,8 +37,8 @@ pub fn Value::to_str(v : Value) -> String {
 ///
 /// Parameters:
 ///
-/// * `a` : The left-hand side value.
-/// * `b` : The right-hand side value.
+/// - `a` : The left-hand side value.
+/// - `b` : The right-hand side value.
 ///
 /// Returns `true` when the two values are equal under Starlark semantics.
 pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
@@ -78,7 +78,7 @@ pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
 ///
 /// Parameters:
 ///
-/// * `f` : A finite double with no fractional part.
+/// - `f` : A finite double with no fractional part.
 ///
 /// Returns the exact integer value of `f` as a `BigInt`.
 pub fn double_to_bigint(f : Double) -> BigInt {
@@ -212,7 +212,7 @@ fn fnv1a(bytes : Bytes) -> UInt {
 ///
 /// Parameters:
 ///
-/// * `s` : The Starlark string to hash.
+/// - `s` : The Starlark string to hash.
 ///
 /// Returns the Java `String.hashCode` of the UTF-8 byte sequence.
 pub fn java_string_hash(s : StarlarkString) -> Int {
@@ -293,7 +293,7 @@ fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
 ///
 /// Parameters:
 ///
-/// * `v` : The value to hash.
+/// - `v` : The value to hash.
 ///
 /// Returns `Ok(hash)` for hashable values, or `Err` with a message like
 /// `"unhashable type: list"` for unhashable types.
@@ -380,7 +380,7 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 ///
 /// Parameters:
 ///
-/// * `n` : The integer value to convert.
+/// - `n` : The integer value to convert.
 ///
 /// Returns the nearest representable `Double`, or `+Infinity` on overflow.
 pub fn bigint_to_double(n : BigInt) -> Double {
@@ -395,7 +395,7 @@ pub fn bigint_to_double(n : BigInt) -> Double {
 ///
 /// Parameters:
 ///
-/// * `n` : The integer value to convert.
+/// - `n` : The integer value to convert.
 ///
 /// Returns `Ok(f)` with the converted finite `Double`, or
 /// `Err("int too large to convert to float")` when the value overflows.
@@ -444,9 +444,9 @@ pub let compare_limit : Int = 10
 ///
 /// Parameters:
 ///
-/// * `a` : The left-hand side value.
-/// * `b` : The right-hand side value.
-/// * `op` : The comparison operator string used in error messages (default `"<"`).
+/// - `a` : The left-hand side value.
+/// - `b` : The right-hand side value.
+/// - `op` : The comparison operator string used in error messages (default `"<"`).
 ///
 /// Returns `Ok(n)` where `n < 0`, `n == 0`, or `n > 0`, or `Err` when the
 /// types cannot be compared.
@@ -464,11 +464,11 @@ pub fn compare_values(
 ///
 /// Parameters:
 ///
-/// * `a` : The left-hand side value.
-/// * `b` : The right-hand side value.
-/// * `depth` : Maximum remaining recursion depth; returns `Err` when it
+/// - `a` : The left-hand side value.
+/// - `b` : The right-hand side value.
+/// - `depth` : Maximum remaining recursion depth; returns `Err` when it
 ///   reaches zero.
-/// * `op` : The comparison operator string used in error messages (default `"<"`).
+/// - `op` : The comparison operator string used in error messages (default `"<"`).
 ///
 /// Returns `Ok(n)` where `n < 0`, `n == 0`, or `n > 0`, or `Err` when types
 /// are incompatible or the depth limit is exceeded.
@@ -518,9 +518,9 @@ pub fn compare_values_depth(
 ///
 /// Parameters:
 ///
-/// * `a` : The left-hand side value.
-/// * `b` : The right-hand side value.
-/// * `depth` : Maximum remaining recursion depth; returns `Err` when it
+/// - `a` : The left-hand side value.
+/// - `b` : The right-hand side value.
+/// - `depth` : Maximum remaining recursion depth; returns `Err` when it
 ///   reaches zero.
 ///
 /// Returns `Ok(true)` when equal, `Ok(false)` when not, or `Err` when the
@@ -649,7 +649,7 @@ fn set_equals_depth(
 ///
 /// Parameters:
 ///
-/// * `v` : The root value to freeze.
+/// - `v` : The root value to freeze.
 pub fn freeze_value(v : Value) -> Unit {
   freeze_value_inner(v, [])
 }

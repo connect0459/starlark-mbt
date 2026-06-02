@@ -133,8 +133,8 @@ pub struct File {
 ///
 /// Parameters:
 ///
-/// * `path` : The source file path recorded in the AST.
-/// * `stmts` : The top-level statements parsed from the file.
+/// - `path` : The source file path recorded in the AST.
+/// - `stmts` : The top-level statements parsed from the file.
 ///
 /// Returns a new `File` AST node.
 pub fn File::new(path : String, stmts : Array[Stmt]) -> File {
@@ -146,7 +146,7 @@ pub fn File::new(path : String, stmts : Array[Stmt]) -> File {
 ///
 /// Parameters:
 ///
-/// * `self` : The file node to inspect.
+/// - `self` : The file node to inspect.
 ///
 /// Returns the path string recorded in this `File`.
 pub fn File::path(self : File) -> String {
@@ -158,7 +158,7 @@ pub fn File::path(self : File) -> String {
 ///
 /// Parameters:
 ///
-/// * `self` : The file node to inspect.
+/// - `self` : The file node to inspect.
 ///
 /// Returns the array of top-level `Stmt` nodes in this file.
 pub fn File::stmts(self : File) -> Array[Stmt] {
@@ -170,7 +170,7 @@ pub fn File::stmts(self : File) -> Array[Stmt] {
 ///
 /// Parameters:
 ///
-/// * `e` : The expression node to inspect.
+/// - `e` : The expression node to inspect.
 ///
 /// Returns the `Position` stored in the expression's position slot.
 pub fn expr_pos(e : Expr) -> @errors.Position {
@@ -200,7 +200,7 @@ pub fn expr_pos(e : Expr) -> @errors.Position {
 ///
 /// Parameters:
 ///
-/// * `s` : The statement node to inspect.
+/// - `s` : The statement node to inspect.
 ///
 /// Returns the `Position` stored in the statement's position slot.
 pub fn stmt_pos(s : Stmt) -> @errors.Position {

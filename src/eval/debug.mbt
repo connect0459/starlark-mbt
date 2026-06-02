@@ -67,8 +67,8 @@ pub fn DebugFrame::num_locals(self : DebugFrame) -> Int {
 ///
 /// Parameters:
 ///
-/// * `self` : The debug frame to inspect.
-/// * `i` : Zero-based index into the frame's local variable list.
+/// - `self` : The debug frame to inspect.
+/// - `i` : Zero-based index into the frame's local variable list.
 ///
 /// Returns a tuple of the `Binding` descriptor (name and declaration position)
 /// and the current value of that local, or `None` if it has not been assigned.
@@ -88,8 +88,8 @@ pub fn DebugFrame::frame_local(
 ///
 /// Parameters:
 ///
-/// * `self` : The debug frame to inspect.
-/// * `name` : The name of the local variable to look up.
+/// - `self` : The debug frame to inspect.
+/// - `name` : The name of the local variable to look up.
 ///
 /// Returns the current `Value` of the named local, or `None` if the name is
 /// not found or the variable has not yet been assigned.

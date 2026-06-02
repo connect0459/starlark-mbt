@@ -58,7 +58,7 @@ pub fn StarlarkIterator::collect(self : StarlarkIterator) -> Array[Value] {
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark value to iterate over.
+/// - `v` : The Starlark value to iterate over.
 ///
 /// Returns `Ok(iterator)` for iterable values, or `Err` with a message like
 /// `"int value is not iterable"` for non-iterable types.
@@ -85,7 +85,7 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
 ///
 /// Parameters:
 ///
-/// * `v` : The Starlark value to measure.
+/// - `v` : The Starlark value to measure.
 ///
 /// Returns `Ok(n)` with the element count, or `Err` with a message like
 /// `"len: value of type int has no len"` for types without a length.

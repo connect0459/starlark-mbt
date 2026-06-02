@@ -105,7 +105,7 @@ pub(all) enum Token {
 ///
 /// Parameters:
 ///
-/// * `self` : The token to describe.
+/// - `self` : The token to describe.
 ///
 /// Returns a short string naming the token kind or its literal spelling.
 pub fn Token::to_string(self : Token) -> String {
@@ -208,7 +208,7 @@ pub fn Token::to_string(self : Token) -> String {
 ///
 /// Parameters:
 ///
-/// * `self` : The token to render.
+/// - `self` : The token to render.
 ///
 /// Returns the token's Go-style debug string.
 pub fn Token::go_string(self : Token) -> String {
@@ -264,7 +264,7 @@ pub fn Token::go_string(self : Token) -> String {
 ///
 /// Parameters:
 ///
-/// * `name` : The identifier string to look up.
+/// - `name` : The identifier string to look up.
 ///
 /// Returns `Some(token)` if `name` is a Starlark keyword, `None` otherwise.
 pub fn keyword_token(name : String) -> Token? {

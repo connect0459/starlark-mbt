@@ -273,8 +273,8 @@ fn struct_binary(
 ///
 /// Parameters:
 ///
-/// * `ctor` : The constructor value that names and identifies this struct type.
-/// * `entries` : The field name/value pairs that make up the struct's attributes.
+/// - `ctor` : The constructor value that names and identifies this struct type.
+/// - `entries` : The field name/value pairs that make up the struct's attributes.
 ///
 /// Returns a `@value.Value::ExtVal` representing the constructed struct.
 pub fn make_struct(

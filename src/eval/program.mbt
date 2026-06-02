@@ -18,11 +18,11 @@ pub struct Program {
 ///
 /// Parameters:
 ///
-/// * `filename` : The name used to identify this source file in error messages
+/// - `filename` : The name used to identify this source file in error messages
 ///   and stack traces.
-/// * `src` : The Starlark source text to parse and resolve.
-/// * `opts` : Evaluation options controlling language features.
-/// * `is_predeclared` : A predicate that returns `true` if a given name is
+/// - `src` : The Starlark source text to parse and resolve.
+/// - `opts` : Evaluation options controlling language features.
+/// - `is_predeclared` : A predicate that returns `true` if a given name is
 ///   provided by the embedder's predeclared environment.
 ///
 /// Returns a `Program` ready for `init`, or an `EvalError` if parsing or
@@ -45,11 +45,11 @@ pub fn source_program(
 ///
 /// Parameters:
 ///
-/// * `filename` : The name used to identify this source file in error messages
+/// - `filename` : The name used to identify this source file in error messages
 ///   and stack traces.
-/// * `src` : The Starlark source text to parse and resolve.
-/// * `opts` : Evaluation options controlling language features.
-/// * `is_predeclared` : A predicate that returns `true` if a given name is
+/// - `src` : The Starlark source text to parse and resolve.
+/// - `opts` : Evaluation options controlling language features.
+/// - `is_predeclared` : A predicate that returns `true` if a given name is
 ///   provided by the embedder's predeclared environment.
 ///
 /// Returns a pair of the parsed `File` AST and the resolved `Program`, or an
@@ -76,9 +76,9 @@ pub fn source_program_with_file(
 ///
 /// Parameters:
 ///
-/// * `file` : A previously parsed `File` AST to resolve.
-/// * `opts` : Evaluation options controlling language features.
-/// * `is_predeclared` : A predicate that returns `true` if a given name is
+/// - `file` : A previously parsed `File` AST to resolve.
+/// - `opts` : Evaluation options controlling language features.
+/// - `is_predeclared` : A predicate that returns `true` if a given name is
 ///   provided by the embedder's predeclared environment.
 ///
 /// Returns a resolved `Program`, or an `EvalError` if name resolution fails.
@@ -133,8 +133,8 @@ pub fn Program::num_loads(self : Program) -> Int {
 ///
 /// Parameters:
 ///
-/// * `self` : The program whose load statements are queried.
-/// * `i` : Zero-based index of the load statement to retrieve.
+/// - `self` : The program whose load statements are queried.
+/// - `i` : Zero-based index of the load statement to retrieve.
 ///
 /// Returns a tuple of the module path string and the source position of that
 /// `load` statement, or an empty string and unknown position if `i` is out of
@@ -162,9 +162,9 @@ pub fn Program::load(self : Program, i : Int) -> (String, @errors.Position) {
 ///
 /// Parameters:
 ///
-/// * `self` : The resolved program to execute.
-/// * `thread` : The thread context that carries the call stack and load handler.
-/// * `predeclared` : The set of predeclared name–value bindings visible to the
+/// - `self` : The resolved program to execute.
+/// - `thread` : The thread context that carries the call stack and load handler.
+/// - `predeclared` : The set of predeclared name–value bindings visible to the
 ///   program during execution.
 ///
 /// Returns an unfrozen `Module` whose globals are the top-level bindings

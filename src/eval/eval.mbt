@@ -95,8 +95,8 @@ pub fn Options::load_binds_globally(self : Options) -> Bool {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `load_binds_globally` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `load_binds_globally` flag.
 ///
 /// Returns a new `Options` with the `load_binds_globally` flag set to `v`.
 pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
@@ -108,8 +108,8 @@ pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_recursion` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_recursion` flag.
 ///
 /// Returns a new `Options` with the `allow_recursion` flag set to `v`.
 pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
@@ -121,8 +121,8 @@ pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_set` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_set` flag.
 ///
 /// Returns a new `Options` with the `allow_set` flag set to `v`.
 pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
@@ -134,8 +134,8 @@ pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_global_reassign` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_global_reassign` flag.
 ///
 /// Returns a new `Options` with the `allow_global_reassign` flag set to `v`.
 pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
@@ -147,8 +147,8 @@ pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_lambda` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_lambda` flag.
 ///
 /// Returns a new `Options` with the `allow_lambda` flag set to `v`.
 pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
@@ -160,8 +160,8 @@ pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_while` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_while` flag.
 ///
 /// Returns a new `Options` with the `allow_while` flag set to `v`.
 pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
@@ -173,8 +173,8 @@ pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_bytes` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_bytes` flag.
 ///
 /// Returns a new `Options` with the `allow_bytes` flag set to `v`.
 pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
@@ -186,8 +186,8 @@ pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_float` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_float` flag.
 ///
 /// Returns a new `Options` with the `allow_float` flag set to `v`.
 pub fn Options::with_allow_float(self : Options, v : Bool) -> Options {
@@ -199,8 +199,8 @@ pub fn Options::with_allow_float(self : Options, v : Bool) -> Options {
 ///
 /// Parameters:
 ///
-/// * `self` : The options to copy.
-/// * `v` : The new value for the `allow_top_level_control` flag.
+/// - `self` : The options to copy.
+/// - `v` : The new value for the `allow_top_level_control` flag.
 ///
 /// Returns a new `Options` with the `allow_top_level_control` flag set to `v`.
 pub fn Options::with_allow_top_level_control(
@@ -243,8 +243,8 @@ pub fn Universe::standard() -> Universe {
 ///
 /// Parameters:
 ///
-/// * `self` : The universe to look up in.
-/// * `name` : The predeclared name to retrieve.
+/// - `self` : The universe to look up in.
+/// - `name` : The predeclared name to retrieve.
 ///
 /// Returns `Some(value)` if `name` is present, `None` otherwise.
 pub fn Universe::get(self : Universe, name : String) -> @value.Value? {
@@ -256,8 +256,8 @@ pub fn Universe::get(self : Universe, name : String) -> @value.Value? {
 ///
 /// Parameters:
 ///
-/// * `self` : The universe to query.
-/// * `name` : The name to test for presence.
+/// - `self` : The universe to query.
+/// - `name` : The name to test for presence.
 ///
 /// Returns `true` if `name` exists in the universe.
 pub fn Universe::has(self : Universe, name : String) -> Bool {
@@ -269,9 +269,9 @@ pub fn Universe::has(self : Universe, name : String) -> Bool {
 ///
 /// Parameters:
 ///
-/// * `self` : The universe to modify.
-/// * `name` : The predeclared name to bind.
-/// * `value` : The value to associate with `name`.
+/// - `self` : The universe to modify.
+/// - `name` : The predeclared name to bind.
+/// - `value` : The value to associate with `name`.
 pub fn Universe::set(
   self : Universe,
   name : String,
@@ -298,7 +298,7 @@ pub fn Predeclared::new() -> Predeclared {
 ///
 /// Parameters:
 ///
-/// * `m` : The map to wrap; keys are name strings, values are the bindings.
+/// - `m` : The map to wrap; keys are name strings, values are the bindings.
 ///
 /// Returns a `Predeclared` backed by `m`.
 pub fn Predeclared::from_map(m : Map[String, @value.Value]) -> Predeclared {
@@ -310,9 +310,9 @@ pub fn Predeclared::from_map(m : Map[String, @value.Value]) -> Predeclared {
 ///
 /// Parameters:
 ///
-/// * `self` : The predeclared set to modify.
-/// * `name` : The name to bind.
-/// * `v` : The value to associate with `name`.
+/// - `self` : The predeclared set to modify.
+/// - `name` : The name to bind.
+/// - `v` : The value to associate with `name`.
 pub fn Predeclared::set(
   self : Predeclared,
   name : String,
@@ -326,8 +326,8 @@ pub fn Predeclared::set(
 ///
 /// Parameters:
 ///
-/// * `self` : The predeclared set to look up in.
-/// * `name` : The name to retrieve.
+/// - `self` : The predeclared set to look up in.
+/// - `name` : The name to retrieve.
 ///
 /// Returns `Some(value)` if `name` is present, `None` otherwise.
 pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
@@ -358,7 +358,7 @@ pub struct Thread {
 ///
 /// Parameters:
 ///
-/// * `name` : A label for the thread used in diagnostics.
+/// - `name` : A label for the thread used in diagnostics.
 ///
 /// Returns a new `Thread` ready for Starlark execution.
 pub fn Thread::new(name : String) -> Thread {
@@ -382,8 +382,8 @@ pub fn Thread::new(name : String) -> Thread {
 ///
 /// Parameters:
 ///
-/// * `name` : A label for the thread used in diagnostics.
-/// * `print_fn` : Callback invoked for each `print()` call; receives the
+/// - `name` : A label for the thread used in diagnostics.
+/// - `print_fn` : Callback invoked for each `print()` call; receives the
 ///   active thread and the formatted message string.
 ///
 /// Returns a new `Thread` with the given print callback.
@@ -411,8 +411,8 @@ pub fn Thread::with_print(
 ///
 /// Parameters:
 ///
-/// * `name` : A label for the thread used in diagnostics.
-/// * `load_fn` : Callback invoked for each `load("path", ...)` statement;
+/// - `name` : A label for the thread used in diagnostics.
+/// - `load_fn` : Callback invoked for each `load("path", ...)` statement;
 ///   receives the active thread and the module path, returns the loaded module.
 ///
 /// Returns a new `Thread` with the given load callback.
@@ -441,8 +441,8 @@ pub fn Thread::with_loader(
 ///
 /// Parameters:
 ///
-/// * `name` : A label for the thread used in diagnostics.
-/// * `max_steps` : Maximum number of evaluation steps before the execution
+/// - `name` : A label for the thread used in diagnostics.
+/// - `max_steps` : Maximum number of evaluation steps before the execution
 ///   is cancelled with an error.
 ///
 /// Returns a new `Thread` with the given step budget.
@@ -468,9 +468,9 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
 ///
 /// Parameters:
 ///
-/// * `self` : The thread to store the value on.
-/// * `key` : The key identifying this thread-local slot.
-/// * `value` : The value to store.
+/// - `self` : The thread to store the value on.
+/// - `key` : The key identifying this thread-local slot.
+/// - `value` : The value to store.
 pub fn Thread::set_local(
   self : Thread,
   key : String,
@@ -484,8 +484,8 @@ pub fn Thread::set_local(
 ///
 /// Parameters:
 ///
-/// * `self` : The thread to retrieve from.
-/// * `key` : The key identifying the thread-local slot.
+/// - `self` : The thread to retrieve from.
+/// - `key` : The key identifying the thread-local slot.
 ///
 /// Returns `Some(value)` if a value was stored under `key`, `None` otherwise.
 pub fn Thread::get_local(self : Thread, key : String) -> @value.Value? {
@@ -499,8 +499,8 @@ pub fn Thread::get_local(self : Thread, key : String) -> @value.Value? {
 ///
 /// Parameters:
 ///
-/// * `self` : The thread to cancel.
-/// * `reason` : A message describing why the thread was cancelled; used in
+/// - `self` : The thread to cancel.
+/// - `reason` : A message describing why the thread was cancelled; used in
 ///   the raised error.
 pub fn Thread::cancel(self : Thread, reason : String) -> Unit {
   if self.cancel_reason is None {
@@ -526,8 +526,8 @@ pub fn Thread::reset_steps(self : Thread) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `self` : The thread to update.
-/// * `max` : The new maximum step count.
+/// - `self` : The thread to update.
+/// - `max` : The new maximum step count.
 pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
   self.max_steps = Some(max)
 }
@@ -538,8 +538,8 @@ pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
 ///
 /// Parameters:
 ///
-/// * `self` : The thread to update.
-/// * `print_fn` : The new print callback; receives the active thread and the
+/// - `self` : The thread to update.
+/// - `print_fn` : The new print callback; receives the active thread and the
 ///   formatted message string.
 pub fn Thread::set_print(
   self : Thread,
@@ -553,8 +553,8 @@ pub fn Thread::set_print(
 ///
 /// Parameters:
 ///
-/// * `self` : The thread to update.
-/// * `load_fn` : The new load callback; receives the active thread and the
+/// - `self` : The thread to update.
+/// - `load_fn` : The new load callback; receives the active thread and the
 ///   module path, returns the loaded module or an error.
 pub fn Thread::set_loader(
   self : Thread,
@@ -569,8 +569,8 @@ pub fn Thread::set_loader(
 ///
 /// Parameters:
 ///
-/// * `self` : The thread to update.
-/// * `cb` : The callback to invoke when the step budget is exhausted.
+/// - `self` : The thread to update.
+/// - `cb` : The callback to invoke when the step budget is exhausted.
 pub fn Thread::set_on_max_steps(self : Thread, cb : (Thread) -> Unit) -> Unit {
   self.on_max_steps = Some(cb)
 }
@@ -588,8 +588,8 @@ pub fn Thread::call_stack_depth(self : Thread) -> Int {
 ///
 /// Parameters:
 ///
-/// * `self` : The thread whose debug call stack to inspect.
-/// * `depth` : Distance from the innermost Starlark function frame (0 = innermost).
+/// - `self` : The thread whose debug call stack to inspect.
+/// - `depth` : Distance from the innermost Starlark function frame (0 = innermost).
 ///
 /// Returns `Some(frame)` if a Starlark frame exists at that depth, `None`
 /// otherwise.
@@ -619,8 +619,8 @@ pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
 ///
 /// Parameters:
 ///
-/// * `self` : The thread whose call stack to inspect.
-/// * `n` : Distance from the innermost frame (0 = innermost).
+/// - `self` : The thread whose call stack to inspect.
+/// - `n` : Distance from the innermost frame (0 = innermost).
 ///
 /// Returns `Some(frame)` if the index is valid, `None` otherwise.
 pub fn Thread::call_frame(self : Thread, n : Int) -> @errors.CallFrame? {
@@ -676,7 +676,7 @@ pub fn Module::new() -> Module {
 ///
 /// Parameters:
 ///
-/// * `m` : A map of global name strings to their initial values.
+/// - `m` : A map of global name strings to their initial values.
 ///
 /// Returns a new, frozen `Module` containing the bindings from `m`.
 pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
@@ -709,8 +709,8 @@ pub fn Module::is_frozen(self : Module) -> Bool {
 ///
 /// Parameters:
 ///
-/// * `self` : The module to look up in.
-/// * `name` : The global name to retrieve.
+/// - `self` : The module to look up in.
+/// - `name` : The global name to retrieve.
 ///
 /// Returns `Some(value)` if `name` is present, `None` otherwise.
 pub fn Module::get(self : Module, name : String) -> @value.Value? {
@@ -815,10 +815,10 @@ fn is_builtin(name : String) -> Bool {
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `func` : The Starlark callable to invoke (function, builtin, or bound method).
-/// * `args` : Positional arguments to pass.
-/// * `kwargs` : Keyword arguments as `(name, value)` pairs.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `func` : The Starlark callable to invoke (function, builtin, or bound method).
+/// - `args` : Positional arguments to pass.
+/// - `kwargs` : Keyword arguments as `(name, value)` pairs.
 ///
 /// Returns the call result, or an `EvalError` on failure.
 pub fn call(
@@ -841,9 +841,9 @@ pub fn call(
 ///
 /// Parameters:
 ///
-/// * `op` : The binary operator name.
-/// * `x` : The left-hand operand.
-/// * `y` : The right-hand operand.
+/// - `op` : The binary operator name.
+/// - `x` : The left-hand operand.
+/// - `y` : The right-hand operand.
 ///
 /// Returns the operation result, or an `EvalError` on type mismatch or
 /// arithmetic error.
@@ -880,8 +880,8 @@ pub fn binary(
 ///
 /// Parameters:
 ///
-/// * `op` : The unary operator name.
-/// * `x` : The operand.
+/// - `op` : The unary operator name.
+/// - `x` : The operand.
 ///
 /// Returns the operation result, or an `EvalError` on type mismatch.
 pub fn unary(
@@ -909,9 +909,9 @@ pub fn unary(
 ///
 /// Parameters:
 ///
-/// * `op` : The comparison operator name.
-/// * `x` : The left-hand operand.
-/// * `y` : The right-hand operand.
+/// - `op` : The comparison operator name.
+/// - `x` : The left-hand operand.
+/// - `y` : The right-hand operand.
 ///
 /// Returns `Ok(result)` on success, or an `EvalError` on type mismatch.
 pub fn compare(
@@ -949,10 +949,10 @@ pub fn compare(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to execute.
-/// * `opts` : Feature flags controlling which dialect features are active.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to execute.
+/// - `opts` : Feature flags controlling which dialect features are active.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on parse, resolve, or
 /// runtime failure.
@@ -1016,11 +1016,11 @@ pub fn exec_file(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to execute.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `universe` : Custom universe of predeclared bindings to use instead of
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to execute.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `universe` : Custom universe of predeclared bindings to use instead of
 ///   the standard built-ins.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
@@ -1087,11 +1087,11 @@ pub fn exec_file_with_universe(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source text to execute.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `predeclared` : Extra per-execution bindings injected before user globals.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to execute.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `predeclared` : Extra per-execution bindings injected before user globals.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
 pub fn exec_file_with_predeclared(
@@ -1157,11 +1157,11 @@ pub fn exec_file_with_predeclared(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark source chunk to execute (may be statements or an expression).
-/// * `globals` : Mutable dict that persists global bindings across REPL chunks.
-/// * `opts` : Feature flags controlling which dialect features are active.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source chunk to execute (may be statements or an expression).
+/// - `globals` : Mutable dict that persists global bindings across REPL chunks.
+/// - `opts` : Feature flags controlling which dialect features are active.
 ///
 /// Returns `Ok(())` on success, or an `EvalError` on failure.
 pub fn exec_repl_chunk(
@@ -1233,10 +1233,10 @@ pub fn exec_repl_chunk(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark expression source text to evaluate.
-/// * `env` : Global environment dict supplying variable bindings.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark expression source text to evaluate.
+/// - `env` : Global environment dict supplying variable bindings.
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr(
@@ -1253,11 +1253,11 @@ pub fn eval_expr(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `filename` : Source file name used in error messages and position info.
-/// * `src` : Starlark expression source text to evaluate.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `env` : Global environment dict supplying variable bindings.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark expression source text to evaluate.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `env` : Global environment dict supplying variable bindings.
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr_with_opts(
@@ -1289,10 +1289,10 @@ pub fn eval_expr_with_opts(
 ///
 /// Parameters:
 ///
-/// * `thread` : Execution context providing print/load callbacks and step budget.
-/// * `expr` : Pre-parsed expression AST node to evaluate.
-/// * `opts` : Feature flags controlling which dialect features are active.
-/// * `env` : Global environment dict supplying variable bindings.
+/// - `thread` : Execution context providing print/load callbacks and step budget.
+/// - `expr` : Pre-parsed expression AST node to evaluate.
+/// - `opts` : Feature flags controlling which dialect features are active.
+/// - `env` : Global environment dict supplying variable bindings.
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on runtime failure.
 pub fn eval_parsed_expr(
