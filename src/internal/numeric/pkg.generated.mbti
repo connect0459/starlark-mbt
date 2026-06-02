@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "connect0459/starlark/internal/numeric"
+
+import {
+  "moonbitlang/core/bigint",
+}
+
+// Values
+pub fn bigint_to_double(@bigint.BigInt) -> Double
+
+pub fn bigint_to_finite_double(@bigint.BigInt) -> Result[Double, String]
+
+pub fn double_to_bigint(Double) -> @bigint.BigInt
+
+pub fn floor_div(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
+
+pub fn format_float(Double) -> String
+
+pub fn java_string_hash(Bytes) -> Int
+
+pub fn starlark_mod(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

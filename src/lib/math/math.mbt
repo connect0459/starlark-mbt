@@ -6,7 +6,7 @@ fn to_float_param(
 ) -> Result[Double, String] {
   match v {
     @value.Value::Float(f) => Ok(f)
-    @value.Value::Int(i) => Ok(@value.bigint_to_double(i))
+    @value.Value::Int(i) => Ok(@numeric.bigint_to_double(i))
     _ =>
       Err(
         "\{name}: for parameter \{param_idx}: got \{v.type_name()}, want float or int",
@@ -203,7 +203,7 @@ fn float_to_int(f : Double) -> Result[@value.Value, String] {
   } else if f.is_nan() {
     Err("cannot convert float NaN to integer")
   } else {
-    Ok(@value.Value::Int(@value.double_to_bigint(f)))
+    Ok(@value.Value::Int(@numeric.double_to_bigint(f)))
   }
 }
 

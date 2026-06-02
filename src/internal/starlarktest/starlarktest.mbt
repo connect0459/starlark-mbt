@@ -28,12 +28,12 @@ fn floateq(xf : Double, yf : Double) -> Bool {
 fn assert_float_eq(x : @value.Value, y : @value.Value) -> Bool {
   let xf : Double? = match x {
     @value.Value::Float(f) => Some(f)
-    @value.Value::Int(n) => Some(@value.bigint_to_double(n))
+    @value.Value::Int(n) => Some(@numeric.bigint_to_double(n))
     _ => None
   }
   let yf : Double? = match y {
     @value.Value::Float(f) => Some(f)
-    @value.Value::Int(n) => Some(@value.bigint_to_double(n))
+    @value.Value::Int(n) => Some(@numeric.bigint_to_double(n))
     _ => None
   }
   match (xf, yf) {

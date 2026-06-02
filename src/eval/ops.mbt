@@ -159,7 +159,7 @@ fn eval_binary(
 
 ///|
 fn finite_double(ctx : EvalContext, n : BigInt) -> Double raise EvalErr {
-  match @value.bigint_to_finite_double(n) {
+  match @numeric.bigint_to_finite_double(n) {
     Ok(f) => f
     Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
   }
@@ -501,7 +501,7 @@ fn eval_floor_div(
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) =>
-      @value.Value::Int(check(ctx, @value.floor_div(a, b)))
+      @value.Value::Int(check(ctx, @numeric.floor_div(a, b)))
     (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "floored division by zero"))
@@ -557,7 +557,7 @@ fn eval_mod(
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) =>
-      @value.Value::Int(check(ctx, @value.starlark_mod(a, b)))
+      @value.Value::Int(check(ctx, @numeric.starlark_mod(a, b)))
     (@value.Value::Float(a), @value.Value::Float(b)) => {
       if b == 0.0 {
         raise EvalErr(make_eval_error(ctx, "floating-point modulo by zero"))
@@ -597,7 +597,7 @@ fn percent_to_int(arg : @value.Value) -> Result[BigInt, String] {
       } else if f.is_nan() {
         Err("cannot convert float NaN to integer")
       } else {
-        Ok(@value.double_to_bigint(f))
+        Ok(@numeric.double_to_bigint(f))
       }
     _ => Err("cannot convert \{arg.type_name()} to int")
   }
@@ -727,7 +727,7 @@ fn percent_format(
       'e' | 'E' | 'f' | 'g' | 'G' => {
         let f = match arg {
           @value.Value::Float(f) => f
-          @value.Value::Int(n2) => @value.bigint_to_double(n2)
+          @value.Value::Int(n2) => @numeric.bigint_to_double(n2)
           _ =>
             return Err("%\{spec} format requires float, not \{arg.type_name()}")
         }
@@ -982,7 +982,7 @@ fn format_float_f(f : Double) -> String {
 
 ///|
 fn format_float_g(f : Double) -> String {
-  @value.format_float(f)
+  @numeric.format_float(f)
 }
 
 ///|

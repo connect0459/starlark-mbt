@@ -102,7 +102,7 @@ pub fn len_of(v : Value) -> Int {
 pub fn as_float(v : Value) -> (Double, Bool) {
   match v {
     Float(f) => (f, true)
-    Int(n) => (bigint_to_double(n), true)
+    Int(n) => (@numeric.bigint_to_double(n), true)
     _ => (0.0, false)
   }
 }

@@ -490,22 +490,6 @@ These guard against infinite recursion on cyclic data structures.
 | `compare_values` | `(Value, Value, op? : String) -> Result[Int, String]` | Three-way comparison (`-1`/`0`/`1`); same-type only |
 | `compare_values_depth` | `(Value, Value, Int, op? : String) -> Result[Int, String]` | Three-way comparison with explicit depth limit |
 
-### Low-level numeric and conversion helpers
-
-Building blocks shared with the evaluator; embedders rarely need these directly.
-
-| Function | Signature | Description |
-| :--- | :--- | :--- |
-| `floor_div` | `(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]` | Floor division toward −∞ (Starlark `//`) |
-| `starlark_mod` | `(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]` | Modulo with the sign of the divisor (Starlark `%`) |
-| `format_float` | `(Double) -> String` | Format a float the way `repr`/`str` does (handles inf/nan) |
-| `bigint_to_double` | `(@bigint.BigInt) -> Double` | Convert a `BigInt` to the nearest `Double` |
-| `bigint_to_finite_double` | `(@bigint.BigInt) -> Result[Double, String]` | Like `bigint_to_double` but errors on overflow to ±∞ |
-| `double_to_bigint` | `(Double) -> @bigint.BigInt` | Truncate a `Double` toward zero to a `BigInt` |
-| `java_string_hash` | `(StarlarkString) -> Int` | `java.lang.String.hashCode`-compatible hash used for string values |
-
----
-
 ### `@value.StarlarkString`
 
 The UTF-8-backed immutable string type behind Starlark `string` values.
@@ -1025,16 +1009,17 @@ pub struct File { /* private fields */ }  // in "connect0459/starlark/syntax"
 Every node carries a trailing `@errors.Position`.
 
 ```moonbit nocheck
+///|
 pub(all) enum Expr {
   EIdent(String, Position)
   ELiteral(LiteralVal, Position)
   EUnary(UnaryOp, Expr, Position)
   EBinary(Expr, BinaryOp, Expr, Position)
-  ECond(Expr, Expr, Expr, Position)           // x if cond else y
-  EIndex(Expr, Expr, Position)                 // a[i]
-  ESlice(Expr, Expr?, Expr?, Expr?, Position)  // a[start:end:step]
-  EDot(Expr, String, Position)                 // x.attr
-  ECall(Expr, Array[Arg], Position)            // f(args…)
+  ECond(Expr, Expr, Expr, Position) // x if cond else y
+  EIndex(Expr, Expr, Position) // a[i]
+  ESlice(Expr, Expr?, Expr?, Expr?, Position) // a[start:end:step]
+  EDot(Expr, String, Position) // x.attr
+  ECall(Expr, Array[Arg], Position) // f(args…)
   EList(Array[Expr], Position)
   ETuple(Array[Expr], Position)
   EDict(Array[(Expr, Expr)], Position)
@@ -1045,6 +1030,7 @@ pub(all) enum Expr {
   EDictComp(Expr, Expr, Array[CompClause], Position)
 }
 
+///|
 pub(all) enum Stmt {
   SExpr(Expr)
   SAssign(Expr, Expr, Position)
@@ -1060,26 +1046,30 @@ pub(all) enum Stmt {
   SLoad(String, Array[(String, String, Position)], Position)
 }
 
+///|
 pub(all) enum Param {
-  ParamIdent(String, Position)                 // x
-  ParamDefault(String, Expr, Position)         // x=expr
-  ParamStarBare(Position)                      // *
-  ParamStarIdent(String, Position)             // *args
-  ParamKwIdent(String, Position)               // **kwargs
+  ParamIdent(String, Position) // x
+  ParamDefault(String, Expr, Position) // x=expr
+  ParamStarBare(Position) // *
+  ParamStarIdent(String, Position) // *args
+  ParamKwIdent(String, Position) // **kwargs
 }
 
+///|
 pub(all) enum Arg {
-  ArgPos(Expr)                                 // positional
-  ArgKw(String, Expr, Position)                // name=expr
-  ArgStarArgs(Expr)                            // *args
-  ArgKwArgs(Expr)                              // **kwargs
+  ArgPos(Expr) // positional
+  ArgKw(String, Expr, Position) // name=expr
+  ArgStarArgs(Expr) // *args
+  ArgKwArgs(Expr) // **kwargs
 }
 
+///|
 pub(all) enum CompClause {
-  ClauseFor(Expr, Expr, Position)              // for target in iterable
-  ClauseIf(Expr, Position)                     // if guard
+  ClauseFor(Expr, Expr, Position) // for target in iterable
+  ClauseIf(Expr, Position) // if guard
 }
 
+///|
 pub(all) enum LiteralVal {
   LitNone
   LitBool(Bool)
@@ -1089,23 +1079,57 @@ pub(all) enum LiteralVal {
   LitBytes(Bytes)
 }
 
+///|
 pub(all) enum BinaryOp {
-  OpAdd; OpSub; OpMul; OpDiv; OpFloorDiv; OpMod
-  OpBitAnd; OpBitOr; OpBitXor; OpLShift; OpRShift
-  OpEq; OpNe; OpLt; OpLe; OpGt; OpGe
-  OpIn; OpNotIn; OpAnd; OpOr
+  OpAdd
+  OpSub
+  OpMul
+  OpDiv
+  OpFloorDiv
+  OpMod
+  OpBitAnd
+  OpBitOr
+  OpBitXor
+  OpLShift
+  OpRShift
+  OpEq
+  OpNe
+  OpLt
+  OpLe
+  OpGt
+  OpGe
+  OpIn
+  OpNotIn
+  OpAnd
+  OpOr
 }
 
+///|
 pub(all) enum UnaryOp {
-  OpPlus; OpMinus; OpBitNot; OpNot
+  OpPlus
+  OpMinus
+  OpBitNot
+  OpNot
 }
 
+///|
 pub(all) enum AugOp {
-  AugAdd; AugSub; AugMul; AugDiv; AugFloorDiv; AugMod
-  AugBitAnd; AugBitOr; AugBitXor; AugLShift; AugRShift
+  AugAdd
+  AugSub
+  AugMul
+  AugDiv
+  AugFloorDiv
+  AugMod
+  AugBitAnd
+  AugBitOr
+  AugBitXor
+  AugLShift
+  AugRShift
 }
 
 // Visitor wrapper passed to walk_*; one variant per node kind.
+
+///|
 pub(all) enum Node {
   NFile(File)
   NStmt(Stmt)

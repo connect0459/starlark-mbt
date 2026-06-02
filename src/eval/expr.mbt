@@ -1005,7 +1005,7 @@ fn call_builtin(
                       ),
                     )
                   } else {
-                    @value.Value::Int(@value.double_to_bigint(f.trunc()))
+                    @value.Value::Int(@numeric.double_to_bigint(f.trunc()))
                   }
                 @value.Value::Bool(b) =>
                   @value.Value::Int(if b { 1N } else { 0N })
@@ -1040,7 +1040,7 @@ fn call_builtin(
         match pos_args[0] {
           @value.Value::Float(f) => @value.Value::Float(f)
           @value.Value::Int(n) =>
-            match @value.bigint_to_finite_double(n) {
+            match @numeric.bigint_to_finite_double(n) {
               Ok(f) => @value.Value::Float(f)
               Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
             }
@@ -1140,7 +1140,9 @@ fn call_builtin(
       match pos_args[0] {
         @value.Value::String(s) =>
           @value.Value::Int(
-            BigInt::from_int64(@value.java_string_hash(s).to_int64()),
+            BigInt::from_int64(
+              @numeric.java_string_hash(s.to_bytes()).to_int64(),
+            ),
           )
         @value.Value::Bytes(b) => {
           let h = check(ctx, @value.Value::Bytes(b).hash())

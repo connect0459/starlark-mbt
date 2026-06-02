@@ -18,7 +18,7 @@ pub fn Value::to_str(v : Value) -> String {
     Bool(true) => "True"
     Bool(false) => "False"
     Int(i) => i.to_string()
-    Float(f) => format_float(f)
+    Float(f) => @numeric.format_float(f)
     String(s) => s.raw
     Bytes(b) => repr_bytes_val(b)
     List(l) => repr_inner(List(l), [], [])
@@ -73,39 +73,6 @@ pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
 }
 
 ///|
-/// Converts a finite `Double` with no fractional part to a `BigInt` via IEEE
-/// 754 bit extraction. The caller must guarantee `f.is_finite() && f == f.trunc()`.
-///
-/// Parameters:
-///
-/// - `f` : A finite double with no fractional part.
-///
-/// Returns the exact integer value of `f` as a `BigInt`.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn double_to_bigint(f : Double) -> BigInt {
-  // f must be finite and satisfy f == f.trunc() (no fractional part).
-  // Handles the full double range via IEEE 754 bit extraction.
-  let bits = f.reinterpret_as_uint64()
-  let negative = bits >> ieee754_sign_shift != 0UL
-  let biased_exp = ((bits >> ieee754_mantissa_bits) & ieee754_exponent_mask).to_int()
-  if biased_exp < ieee754_exponent_bias {
-    return 0N
-  }
-  let mantissa = (bits & ieee754_mantissa_mask) | ieee754_implicit_bit
-  let shift = biased_exp - ieee754_exponent_bias - ieee754_mantissa_bits
-  let abs_val = if shift >= 0 {
-    BigInt::from_uint64(mantissa) << shift
-  } else {
-    BigInt::from_uint64(mantissa) >> -shift
-  }
-  if negative {
-    -abs_val
-  } else {
-    abs_val
-  }
-}
-
-///|
 fn int_float_eq(n : BigInt, f : Double) -> Bool {
   if f.is_nan() || f.is_inf() {
     return false
@@ -115,7 +82,7 @@ fn int_float_eq(n : BigInt, f : Double) -> Bool {
   if f != f.trunc() {
     return false
   }
-  n == double_to_bigint(f)
+  n == @numeric.double_to_bigint(f)
 }
 
 ///|
@@ -158,44 +125,10 @@ let tuple_hash_prime : UInt = 1000003U
 ///|
 let tuple_hash_step_base : UInt = 82520U
 
-// Java String.hashCode prime multiplier
-
-///|
-let java_hash_prime : Int = 31
-
-// Unicode replacement character substituted for invalid UTF-8 sequences
-
-///|
-let unicode_replacement_rune : Int = 0xFFFD
-
 // 2^32 — used to extract the low 32 bits of a BigInt magnitude
 
 ///|
 let bigint_uint32_modulus : BigInt = 4294967296N
-
-// IEEE 754 double-precision bit layout
-
-///|
-let ieee754_sign_shift : Int = 63
-
-///|
-let ieee754_mantissa_bits : Int = 52
-
-///|
-// 11-bit biased-exponent field mask (bits 52..62)
-let ieee754_exponent_mask : UInt64 = 0x7FFUL
-
-///|
-// Exponent bias: stored_exponent = true_exponent + 1023
-let ieee754_exponent_bias : Int = 1023
-
-///|
-// 52-bit fractional-mantissa mask (bits 0..51)
-let ieee754_mantissa_mask : UInt64 = 0x000FFFFFFFFFFFFFUL
-
-///|
-// Implicit leading 1 in the significand (bit 52)
-let ieee754_implicit_bit : UInt64 = 0x0010000000000000UL
 
 ///|
 fn fnv1a(bytes : Bytes) -> UInt {
@@ -203,29 +136,6 @@ fn fnv1a(bytes : Bytes) -> UInt {
   for i in 0..<bytes.length() {
     let b = bytes[i].to_int().reinterpret_as_uint()
     h = (h ^ b) * fnv_prime
-  }
-  h
-}
-
-///|
-/// Computes Java's `String.hashCode` over the UTF-8 bytes of `s`. Used as
-/// the Starlark string hash function to match starlark-go's `hashString`.
-///
-/// Parameters:
-///
-/// - `s` : The Starlark string to hash.
-///
-/// Returns the Java `String.hashCode` of the UTF-8 byte sequence.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn java_string_hash(s : StarlarkString) -> Int {
-  let b = s.bytes
-  let mut h : Int = 0
-  let mut pos = 0
-  while pos < b.length() {
-    let (cp, n) = @utf8util.utf8_decode_rune(b, pos)
-    pos += n
-    h = java_hash_prime * h +
-      (if cp < 0 { unicode_replacement_rune } else { cp })
   }
   h
 }
@@ -266,7 +176,7 @@ fn hash_float(f : Double) -> UInt {
   }
   // Convert to exact integer value then hash — ensures
   // hash(1e20) == hash(10**20).
-  hash_bigint(double_to_bigint(f))
+  hash_bigint(@numeric.double_to_bigint(f))
 }
 
 ///|
@@ -377,42 +287,6 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 }
 
 ///|
-/// Converts a `BigInt` to `Double`, potentially losing precision. Returns
-/// `+Infinity` for values too large to represent.
-///
-/// Parameters:
-///
-/// - `n` : The integer value to convert.
-///
-/// Returns the nearest representable `Double`, or `+Infinity` on overflow.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn bigint_to_double(n : BigInt) -> Double {
-  @string.parse_double(n.to_string()) catch {
-    _ => 0.0
-  }
-}
-
-///|
-/// Converts a `BigInt` to `Double`, returning `Err("int too large to convert
-/// to float")` if the result would be infinite.
-///
-/// Parameters:
-///
-/// - `n` : The integer value to convert.
-///
-/// Returns `Ok(f)` with the converted finite `Double`, or
-/// `Err("int too large to convert to float")` when the value overflows.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn bigint_to_finite_double(n : BigInt) -> Result[Double, String] {
-  let f = @string.parse_double(n.to_string()) catch { _ => @double.infinity }
-  if f.is_inf() {
-    Err("int too large to convert to float")
-  } else {
-    Ok(f)
-  }
-}
-
-///|
 fn int_float_cmp(n : BigInt, f : Double) -> Int {
   if f != f {
     -1 // NaN > everything in starlark ordering
@@ -423,7 +297,7 @@ fn int_float_cmp(n : BigInt, f : Double) -> Int {
   } else {
     // finite f: compare exactly using floor(f)
     let ffloor = f.floor()
-    let f_floor_big = double_to_bigint(ffloor)
+    let f_floor_big = @numeric.double_to_bigint(ffloor)
     if f == ffloor {
       n.compare(f_floor_big)
     } else {

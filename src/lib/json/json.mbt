@@ -135,7 +135,7 @@ fn format_nonfinite(f : Double) -> String {
 
 ///|
 fn format_float_json(f : Double) -> String {
-  @value.format_float(f)
+  @numeric.format_float(f)
 }
 
 ///|
