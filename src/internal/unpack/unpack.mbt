@@ -104,6 +104,50 @@ pub fn unpack_args(
 }
 
 ///|
+/// Like `unpack_args`, but dispatches each matched argument to a custom
+/// `Unpacker` target instead of returning the raw values. Mirrors how
+/// starlark-go's `UnpackArgs` drives `Unpacker` targets: for every parameter
+/// whose value was supplied, the corresponding target's `unpack` is invoked so
+/// it can validate and absorb the value; absent optional parameters are
+/// skipped.
+///
+/// Parameters:
+///
+/// - `fn_name` : Name of the built-in function, used in error messages.
+/// - `pos_args` : Positional arguments passed by the caller.
+/// - `kw_args` : Keyword arguments passed by the caller, as `(name, value)` pairs.
+/// - `specs` : One `(param_spec, target)` pair per parameter, where `param_spec`
+///   uses the same `"name"` / `"name?"` / `"name??"` syntax as `unpack_args`
+///   and `target` receives the matched value via `Unpacker::unpack`.
+///
+/// Returns `Ok(())` once every supplied argument has been unpacked into its
+/// target, or `Err` with a descriptive message on any argument mismatch or if
+/// a target rejects its value.
+pub fn unpack_args_with(
+  fn_name : String,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+  specs : Array[(String, &@value.Unpacker)],
+) -> Result[Unit, String] {
+  let param_specs = specs.map(fn(s) { s.0 })
+  let values = match unpack_args(fn_name, pos_args, kw_args, param_specs) {
+    Ok(vs) => vs
+    Err(e) => return Err(e)
+  }
+  for i in 0..<specs.length() {
+    match values[i] {
+      Some(v) =>
+        match specs[i].1.unpack(v) {
+          Ok(_) => ()
+          Err(e) => return Err(e)
+        }
+      None => ()
+    }
+  }
+  Ok(())
+}
+
+///|
 /// Extracts positional-only arguments, rejecting keyword arguments.
 /// Requires between `min` and `max` positional args.
 ///

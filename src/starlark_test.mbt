@@ -5,6 +5,48 @@ test "new_thread creates a Thread usable with exec_file" {
 }
 
 ///|
+/// A custom Unpacker target that records the integer it is handed and rejects
+/// non-integer values, exercising the public Unpacker protocol.
+struct IntCell {
+  mut value : Int64
+}
+
+///|
+impl @value.Unpacker for IntCell with fn unpack(self, v) {
+  match v {
+    @value.Value::Int(n) => {
+      self.value = n.to_int64()
+      Ok(())
+    }
+    _ => Err("want int")
+  }
+}
+
+///|
+test "unpack_args_with dispatches matched arguments to custom Unpacker targets" {
+  let n = IntCell::{ value: 0 }
+  let m = IntCell::{ value: -1 }
+  let result = unpack_args_with(
+    "f",
+    [@value.Value::new_int(7L)],
+    [("count", @value.Value::new_int(42L))],
+    [("first", n as &@value.Unpacker), ("count?", m)],
+  )
+  assert_true(result is Ok(_))
+  assert_eq(n.value, 7L)
+  assert_eq(m.value, 42L)
+}
+
+///|
+test "unpack_args_with surfaces an error when a target rejects its value" {
+  let n = IntCell::{ value: 0 }
+  let result = unpack_args_with("f", [@value.Value::new_string("nope")], [], [
+    ("first", n as &@value.Unpacker),
+  ])
+  assert_true(result is Err(_))
+}
+
+///|
 test "default_options returns Options with all feature flags enabled" {
   let opts = @eval.Options::default()
   assert_eq(opts.allow_set(), true)

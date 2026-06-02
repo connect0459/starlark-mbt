@@ -111,6 +111,17 @@ pub trait IterableMapping: Mapping {
 }
 
 ///|
+/// Custom argument-unpacking protocol. A type implementing `Unpacker` defines
+/// how a single Starlark `Value` is validated and absorbed into the target,
+/// mirroring starlark-go's `Unpacker` interface. Pass implementors to
+/// `unpack_args_with` (in the `unpack` package) to give built-in functions
+/// custom per-argument coercion beyond the plain value extraction performed
+/// by `unpack_args`.
+pub(open) trait Unpacker {
+  fn unpack(Self, Value) -> Result[Unit, String]
+}
+
+///|
 /// Vtable-based wrapper for embedding custom Starlark value types.
 /// Construct with `CustomValue::new`, then call `with_*` builder methods to add
 /// optional protocol support. Wrap in `Value::ExtVal(cv)` to produce a Value.

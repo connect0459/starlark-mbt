@@ -60,6 +60,75 @@ pub fn parse_expr(
 }
 
 ///|
+/// Extracts positional and keyword arguments into a result array whose indices
+/// correspond to the entries in `param_specs`. A helper for host-implemented
+/// built-in functions. See the `unpack` package for the parameter-spec syntax
+/// (`"name"`, `"name?"`, `"name??"`).
+///
+/// Parameters:
+///
+/// - `fn_name` : Name of the built-in function, used in error messages.
+/// - `pos_args` : Positional arguments passed by the caller.
+/// - `kw_args` : Keyword arguments passed by the caller, as `(name, value)` pairs.
+/// - `param_specs` : Parameter specification strings describing each parameter.
+///
+/// Returns `Ok(Array[Value?])` aligned with `param_specs`, or `Err` on mismatch.
+pub fn unpack_args(
+  fn_name : String,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+  param_specs : Array[String],
+) -> Result[Array[@value.Value?], String] {
+  @unpack.unpack_args(fn_name, pos_args, kw_args, param_specs)
+}
+
+///|
+/// Extracts positional-only arguments, rejecting keyword arguments. Requires
+/// between `min` and `max` positional arguments.
+///
+/// Parameters:
+///
+/// - `fn_name` : Name of the built-in function, used in error messages.
+/// - `pos_args` : Positional arguments passed by the caller.
+/// - `kw_args` : Keyword arguments passed by the caller; any non-empty list is rejected.
+/// - `min` : Minimum number of positional arguments required.
+/// - `max` : Maximum number of positional arguments accepted.
+///
+/// Returns `Ok(Array[Value?])` of length `max`, or `Err` on mismatch.
+pub fn unpack_positional(
+  fn_name : String,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+  min : Int,
+  max : Int,
+) -> Result[Array[@value.Value?], String] {
+  @unpack.unpack_positional(fn_name, pos_args, kw_args, min, max)
+}
+
+///|
+/// Like `unpack_args`, but dispatches each matched argument to a custom
+/// `@value.Unpacker` target for validation and coercion, mirroring how
+/// starlark-go's `UnpackArgs` drives `Unpacker` targets.
+///
+/// Parameters:
+///
+/// - `fn_name` : Name of the built-in function, used in error messages.
+/// - `pos_args` : Positional arguments passed by the caller.
+/// - `kw_args` : Keyword arguments passed by the caller, as `(name, value)` pairs.
+/// - `specs` : One `(param_spec, target)` pair per parameter.
+///
+/// Returns `Ok(())` once every supplied argument is unpacked, or `Err` on
+/// mismatch or when a target rejects its value.
+pub fn unpack_args_with(
+  fn_name : String,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+  specs : Array[(String, &@value.Unpacker)],
+) -> Result[Unit, String] {
+  @unpack.unpack_args_with(fn_name, pos_args, kw_args, specs)
+}
+
+///|
 /// Evaluates a pre-parsed expression node under `opts` with the bindings in
 /// `env` as the global environment.
 ///

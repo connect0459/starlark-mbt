@@ -61,6 +61,12 @@ pub fn source_program_with_file(String, String, @eval.Options, (String) -> Bool)
 
 pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
 
+pub fn unpack_args(String, Array[@value.Value], Array[(String, @value.Value)], Array[String]) -> Result[Array[@value.Value?], String]
+
+pub fn unpack_args_with(String, Array[@value.Value], Array[(String, @value.Value)], Array[(String, &@value.Unpacker)]) -> Result[Unit, String]
+
+pub fn unpack_positional(String, Array[@value.Value], Array[(String, @value.Value)], Int, Int) -> Result[Array[@value.Value?], String]
+
 // Errors
 
 // Types and methods

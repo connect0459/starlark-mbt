@@ -345,3 +345,7 @@ pub trait TotallyOrdered {
   fn cmp(Self, Value) -> Int?
 }
 
+pub(open) trait Unpacker {
+  fn unpack(Self, Value) -> Result[Unit, String]
+}
+

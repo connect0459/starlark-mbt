@@ -3,6 +3,7 @@ import {
   "connect0459/starlark/eval",
   "connect0459/starlark/errors",
   "connect0459/starlark/internal/parser",
+  "connect0459/starlark/internal/unpack",
   "connect0459/starlark/syntax",
   "connect0459/starlark/value",
 }
