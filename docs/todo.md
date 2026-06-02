@@ -2530,6 +2530,26 @@ runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
       `file:line:col: msg` render order). Reordering would be a breaking change for
       purely cosmetic uniformity across types that carry different data.
 
+### Phase R5-apicover: api.mbt.md per-package restructure & full coverage ✅
+
+- [x] Split `docs/api.mbt.md` so every public package owns a top-level `##`
+      heading (`eval`, `value`, `errors`, `syntax`, `unpack`, `lib/*`). Previously
+      `value`/`errors`/`syntax`/`unpack` types were nested as `###` under the
+      `eval` package section.
+- [x] Cover every public item against the `.mbti` surface: all concrete value
+      types (`StarlarkString`/`StarlarkList`/`StarlarkSet`/`StarlarkRange`/
+      `StarlarkModule`/`StarlarkIterator`/`StarlarkBoundMethod`, the string/bytes
+      iterables) plus `BuiltinCallCtx`; `Value::` constructors and value-level
+      methods; the low-level numeric/conversion helpers (`floor_div`,
+      `starlark_mod`, `format_float`, `bigint_to_double`, …); the embedder
+      protocol traits; `Predeclared`/`Universe` collection accessors; the eight
+      `Options::with_allow_*` mutators; `EvalError::cause`/`with_cause`; the
+      `syntax` walkers and full AST node enums.
+- [x] Fixed `Module` accessor drift in prose tables (not caught by doc tests,
+      since prose isn't compiled): listed `globals_map`/`predeclared_map`, which
+      do not exist; real accessors are `global_names`, `predeclared_names`,
+      `predeclared_count`. All 14 `mbt check` blocks still pass (`moon test`).
+
 ---
 
 ## Future work (out of initial release scope)
