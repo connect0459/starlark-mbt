@@ -8,11 +8,11 @@ fn main {
     #|
     #|result = fib(15)
     #|sequence = [fib(i) for i in range(10)]
-  match @starlark.exec_file(thread, "fibonacci.star", src, @eval.Options::default()) {
+  match @eval.exec_file(thread, "fibonacci.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("result") {
         Some(v) =>
-          match @starlark.number_to_int(v) {
+          match @value.number_to_int(v) {
             Some(n) => println("fib(15) = \{n}")
             None => ()
           }

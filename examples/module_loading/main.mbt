@@ -18,10 +18,10 @@ fn main {
     match modules.get(path) {
       Some(src) => {
         let lt = @eval.Thread::new("load:\{path}")
-        @starlark.exec_file(lt, path, src, @eval.Options::default())
+        @eval.exec_file(lt, path, src, @eval.Options::default())
       }
       None =>
-        @starlark.exec_file(
+        @eval.exec_file(
           @eval.Thread::new("err"),
           path,
           "raise_error = 1 // 0",
@@ -29,7 +29,7 @@ fn main {
         )
     }
   }
-  let thread = @starlark.new_thread_with_loader("main", loader)
+  let thread = @eval.Thread::with_loader("main", loader)
   let src =
     #|load("utils.star", "clamp", "pipeline")
     #|
@@ -42,7 +42,7 @@ fn main {
     #|    lambda s: s.lower(),
     #|    lambda s: s.replace(",", ""),
     #|)
-  match @starlark.exec_file(thread, "main.star", src, @eval.Options::default()) {
+  match @eval.exec_file(thread, "main.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("clamped") {
         Some(v) => println("clamped = \{v.repr()}")
@@ -50,7 +50,7 @@ fn main {
       }
       match m.get("result") {
         Some(v) => {
-          let (s, _) = @starlark.as_string(v)
+          let (s, _) = @value.as_string(v)
           println("pipeline result = \{s}")
         }
         None => ()

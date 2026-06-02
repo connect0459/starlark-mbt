@@ -7,18 +7,18 @@ fn main {
     #|csv = "alice,30,engineer"
     #|parts = csv.split(",")
     #|formatted = "name={} age={} role={}".format(*parts)
-  match @starlark.exec_file(thread, "string_fmt.star", src, @eval.Options::default()) {
+  match @eval.exec_file(thread, "string_fmt.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("joined") {
         Some(v) => {
-          let (s, _) = @starlark.as_string(v)
+          let (s, _) = @value.as_string(v)
           println("joined = \{s}")
         }
         None => ()
       }
       match m.get("upper_first") {
         Some(v) => {
-          let (s, _) = @starlark.as_string(v)
+          let (s, _) = @value.as_string(v)
           println("upper_first = \{s}")
         }
         None => ()
@@ -29,7 +29,7 @@ fn main {
       }
       match m.get("formatted") {
         Some(v) => {
-          let (s, _) = @starlark.as_string(v)
+          let (s, _) = @value.as_string(v)
           println("formatted = \{s}")
         }
         None => ()
