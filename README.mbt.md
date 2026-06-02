@@ -61,11 +61,11 @@ test {
 
 For full usage examples — print capture, expression evaluation, host bindings, module
 loading, error handling, extensions, and calling Starlark functions from host code — see
-the [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api.mbt.md).
+the [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/src/docs/api/index.md).
 
 ## Documentation
 
-- [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api.mbt.md) — Full API reference for all packages
+- [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/src/docs/api/index.md) — Per-package API reference for all packages
 
 ## Contributing
 
