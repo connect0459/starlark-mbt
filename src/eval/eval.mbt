@@ -138,7 +138,7 @@ pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_global_reassign` flag.
 ///
 /// Returns a new `Options` with the `allow_global_reassign` flag set to `v`.
-pub fn Options::with_global_reassign(self : Options, v : Bool) -> Options {
+pub fn Options::with_allow_global_reassign(self : Options, v : Bool) -> Options {
   { ..self, allow_global_reassign: v }
 }
 
