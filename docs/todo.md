@@ -698,6 +698,18 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       `StarlarkModule.name`, `StarlarkIterator.next_fn/done_fn`,
       `StarlarkString.raw`).
 
+- [x] **[MED]** Eighth-pass audit — extracted the low-level numeric helpers
+      (`floor_div`, `starlark_mod`, `format_float`, `bigint_to_double`,
+      `double_to_bigint`, `bigint_to_finite_double`, `java_string_hash`) out of
+      the public `value` package into a new `src/internal/numeric/` package.
+      These were `pub` (though `#internal`-tagged) interpreter building blocks
+      that leaked into the published `value` interface; they are now invisible to
+      embedders. Rewired the evaluator, `lib/json`, `lib/math`, and
+      `starlarktest` to `@numeric`; `java_string_hash` now takes `Bytes` instead
+      of `StarlarkString` to drop its value-type dependency. Compared against
+      starlark-go (~85 exported symbols in the core `starlark` package) the
+      public surface is now in the same ballpark, well below starlark-rust.
+
 ### Deferred API hardening (requires large eval refactoring)
 
 - [x] **[LOW]** Restrict `StarlarkList` mutable fields — `items`, `frozen`, `itercount`
