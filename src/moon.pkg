@@ -1,9 +1,6 @@
 import {
-  "moonbitlang/core/int64",
   "connect0459/starlark/eval",
   "connect0459/starlark/errors",
-  "connect0459/starlark/internal/parser",
   "connect0459/starlark/unpack",
-  "connect0459/starlark/syntax",
   "connect0459/starlark/value",
-}
+} for "test"

@@ -1,73 +1,7 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark"
 
-import {
-  "connect0459/starlark/errors",
-  "connect0459/starlark/eval",
-  "connect0459/starlark/syntax",
-  "connect0459/starlark/value",
-}
-
 // Values
-pub fn as_float(@value.Value) -> (Double, Bool)
-
-pub fn as_string(@value.Value) -> (String, Bool)
-
-pub fn binary(String, @value.Value, @value.Value) -> Result[@value.Value, @errors.EvalError]
-
-pub fn call(@eval.Thread, @value.Value, Array[@value.Value], Array[(String, @value.Value)]) -> Result[@value.Value, @errors.EvalError]
-
-pub fn compare(String, @value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
-
-pub fn compare_depth(String, @value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]
-
-pub let compare_limit : Int
-
-pub fn compiled_program(Bytes) -> Result[@eval.Program, @errors.EvalError]
-
-pub fn equal(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
-
-pub fn equal_depth(@value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]
-
-pub fn eval_expr(@eval.Thread, String, String, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
-
-pub fn eval_expr_with_opts(@eval.Thread, String, String, @eval.Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
-
-pub fn eval_parsed_expr(@eval.Thread, @syntax.Expr, @eval.Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
-
-pub fn exec_file(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]
-
-pub fn exec_file_with_predeclared(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]
-
-pub fn exec_file_with_universe(@eval.Thread, String, String, @eval.Options, @eval.Universe) -> Result[@eval.Module, @errors.EvalError]
-
-pub fn exec_repl_chunk(@eval.Thread, String, String, @value.StringDict, @eval.Options) -> Result[Unit, @errors.EvalError]
-
-pub fn file_program(@syntax.File, @eval.Options, (String) -> Bool) -> Result[@eval.Program, @errors.EvalError]
-
-pub fn iterate(@value.Value) -> Result[@value.StarlarkIterator, @errors.EvalError]
-
-pub fn len_of(@value.Value) -> Int
-
-pub fn new_thread_with_loader(String, (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError]) -> @eval.Thread
-
-pub fn number_to_int(@value.Value) -> Int64?
-
-pub fn parse_expr(String, String) -> Result[@syntax.Expr, @errors.EvalError]
-
-pub fn parse_file(String, String) -> Result[@syntax.File, @errors.EvalError]
-
-pub fn source_program(String, String, @eval.Options, (String) -> Bool) -> Result[@eval.Program, @errors.EvalError]
-
-pub fn source_program_with_file(String, String, @eval.Options, (String) -> Bool) -> Result[(@syntax.File, @eval.Program), @errors.EvalError]
-
-pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
-
-pub fn unpack_args(String, Array[@value.Value], Array[(String, @value.Value)], Array[String]) -> Result[Array[@value.Value?], String]
-
-pub fn unpack_args_with(String, Array[@value.Value], Array[(String, @value.Value)], Array[(String, &@value.Unpacker)]) -> Result[Unit, String]
-
-pub fn unpack_positional(String, Array[@value.Value], Array[(String, @value.Value)], Int, Int) -> Result[Array[@value.Value?], String]
 
 // Errors
 
