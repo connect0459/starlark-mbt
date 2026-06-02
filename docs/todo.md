@@ -1786,6 +1786,21 @@ gaps (implementations were already correct). Commit: `190d060`
       `java_string_hash`, `starlark_equals_depth` — must stay `pub` for the
       eval package but are not part of the public embedding API; the attribute
       causes the compiler to warn any caller outside the module.
+- [x] **Value method consistency pass** — convert `starlark_hash(v)` free
+      function to `Value::hash(self)` method (consistent with `repr`, `to_str`,
+      `truth`, `type_name`, `starlark_equals`); convert `freeze_value(v)` to
+      `Value::freeze(self)` method (consistent with `StarlarkList/Dict/Set::freeze`);
+      rename `StarlarkSet::to_iter` → `StarlarkSet::iter` (consistent with
+      `StarlarkList::iter`); add `Value::of_int(Int64)` and `Value::of_float(Double)`
+      convenience constructors alongside `Value::of_string`; remove labeled optional
+      `verb?` from `StarlarkList::pop_at` (now a plain positional `String`).
+- [ ] **Remaining `#internal` visibility** — `java_string_hash`, `starlark_equals_depth`,
+      `bigint_to_*`, `floor_div`, `starlark_mod`, `check_mutable`, `copy_items`,
+      `pop_at`, `BuiltinCallCtx::new`, `StarlarkBuiltinFunc::dispatch/call_body`,
+      `StarlarkFunction::body/params/captured_scope/with_module_globals` appear in
+      `.mbti` due to MoonBit package visibility constraints (no module-internal
+      visibility like Go's `internal/`); accepted as-is — `#internal` warnings
+      protect embedders at compile time.
 
 ### Deferred public-API gaps
 
