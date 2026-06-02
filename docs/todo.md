@@ -2484,11 +2484,37 @@ compiled and had drifted. All fixed (commit `<api>`):
 - [x] Repointed every `@starlark.*` example to `@eval.*`/`@value.*`/`@unpack.*`;
       removed the facade row + section; reorganized the helper tables under the
       package that now owns them (`@eval`/`@value`/`@unpack`).
-- [ ] **[deferred]** `README.mbt.md` is **not** wired as a doc test — `moon.mod.json`
-      has no `readme` field, so its `moonbit` fence is never compiled (this is why
-      the stale `@starlark` ref never failed CI). Wiring it (`"readme":
-      "README.mbt.md"`) would make the quick-start drift-proof; deferred because it
-      may surface the old `fail!`-style syntax. Worth doing in a follow-up.
+
+### Phase R5-doctest: make README.mbt.md and docs/api.md verified doc tests ✅
+
+Root cause of doc drift was the **fence tag**, not the `readme` binding
+(`moon.mod` — not `.json` — already has `readme = "README.mbt.md"`, but that is
+publishing metadata only; it does not make moon compile the file). Verified via
+probes:
+
+- ` ```moonbit ` → **display only**, never compiled (what README/api.md used).
+- ` ```mbt check ` → top-level source context (accepts `///|` + `test {}`);
+  compiled by `moon check` and its `test {}` blocks run under `moon test`.
+- ` ```mbt test ` → bare test body (auto-wrapped; no explicit `test {}`).
+- moon only scans under `source: "src"`, **but follows symlinks** there — so a
+  real doc at repo root / `docs/` becomes testable via a symlink inside `src/`.
+
+Done:
+
+- [x] `README.mbt.md` usage example → ` ```mbt check ` + `test {}`; symlink
+      `src/readme.mbt.md → ../README.mbt.md`. Caught a real bug: the example used
+      `sum(...)` (not a Starlark builtin) → changed to `max(...)`. Commit: `<readme>`.
+- [x] `docs/api.md` → `docs/api.mbt.md` (real file renders on GitHub; README links
+      updated). Symlink `src/api.mbt.md → ../docs/api.mbt.md`. Converted the 14
+      runnable example blocks to ` ```mbt check ` (kept the 15 `pub struct`/`pub enum`
+      signature blocks as ` ```moonbit `, display-only). Added json/math/struct/time
+      to the root package's `for "test"` imports. Caught a real drift: the json
+      example asserted spaced `{"key": [1, 2, 3]}` but `json.encode` emits compact
+      `{"key":[1,2,3]}`. 1560 tests pass. Commit: `<apidoc>`.
+
+Convention going forward: GitHub-facing docs stay real files at their normal path;
+add a `src/*.mbt.md` symlink to make moon test them; use ` ```mbt check ` for
+runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
 
 ### Phase R5-symmetry: registry & constructor polish (groups B-7/B-8) ✅
 
