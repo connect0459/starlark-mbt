@@ -1,4 +1,35 @@
 ///|
+test "Universe: new creates an empty universe queryable like other registries" {
+  let u = Universe::new()
+  assert_false(u.has("x"))
+  assert_eq(u.keys().length(), 0)
+  u.set("x", @value.Value::Int(1N))
+  assert_true(u.has("x"))
+  assert_true(u.keys() == ["x"])
+}
+
+///|
+test "Universe: from_map wraps an existing binding map" {
+  let u = Universe::from_map({
+    "a": @value.Value::Int(1N),
+    "b": @value.Value::Int(2N),
+  })
+  assert_true(u.has("a"))
+  assert_true(u.has("b"))
+  assert_true(u.keys() == ["a", "b"])
+}
+
+///|
+test "Predeclared: has and keys mirror the other name-value registries" {
+  let p = Predeclared::new()
+  assert_false(p.has("k"))
+  assert_eq(p.keys().length(), 0)
+  p.set("k", @value.Value::Int(7N))
+  assert_true(p.has("k"))
+  assert_true(p.keys() == ["k"])
+}
+
+///|
 test "Options: all extension flags are enabled by default" {
   let opts = Options::default()
   assert_eq(opts.allow_set(), true)

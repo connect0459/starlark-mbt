@@ -220,8 +220,20 @@ pub struct Universe {
 
 ///|
 /// Creates an empty `Universe` with no predeclared names.
-pub fn Universe::empty() -> Universe {
+pub fn Universe::new() -> Universe {
   { bindings: {} }
+}
+
+///|
+/// Creates a `Universe` wrapping an existing binding map.
+///
+/// Parameters:
+///
+/// - `m` : The map to wrap; keys are name strings, values are the bindings.
+///
+/// Returns a `Universe` backed by `m`.
+pub fn Universe::from_map(m : Map[String, @value.Value]) -> Universe {
+  { bindings: m }
 }
 
 ///|
@@ -262,6 +274,20 @@ pub fn Universe::get(self : Universe, name : String) -> @value.Value? {
 /// Returns `true` if `name` exists in the universe.
 pub fn Universe::has(self : Universe, name : String) -> Bool {
   self.bindings.contains(name)
+}
+
+///|
+/// Returns the predeclared names in lexicographic order.
+///
+/// Parameters:
+///
+/// - `self` : The universe whose names to retrieve.
+///
+/// Returns an array of all names sorted lexicographically.
+pub fn Universe::keys(self : Universe) -> Array[String] {
+  let ks = self.bindings.keys().collect()
+  ks.sort()
+  ks
 }
 
 ///|
@@ -332,6 +358,33 @@ pub fn Predeclared::set(
 /// Returns `Some(value)` if `name` is present, `None` otherwise.
 pub fn Predeclared::get(self : Predeclared, name : String) -> @value.Value? {
   self.bindings.get(name)
+}
+
+///|
+/// Returns `true` if `name` is present in the predeclared set.
+///
+/// Parameters:
+///
+/// - `self` : The predeclared set to query.
+/// - `name` : The name to test for presence.
+///
+/// Returns `true` if `name` exists in the set.
+pub fn Predeclared::has(self : Predeclared, name : String) -> Bool {
+  self.bindings.contains(name)
+}
+
+///|
+/// Returns the predeclared names in lexicographic order.
+///
+/// Parameters:
+///
+/// - `self` : The predeclared set whose names to retrieve.
+///
+/// Returns an array of all names sorted lexicographically.
+pub fn Predeclared::keys(self : Predeclared) -> Array[String] {
+  let ks = self.bindings.keys().collect()
+  ks.sort()
+  ks
 }
 
 ///|

@@ -285,7 +285,8 @@ pub struct Universe { /* private fields */ }  // in "connect0459/starlark/eval"
 | Constructor | Description |
 | :--- | :--- |
 | `Universe::standard()` | Full Starlark built-in set (`print`, `range`, `len`, …) |
-| `Universe::empty()` | No built-ins (useful for sandboxed evaluation) |
+| `Universe::new()` | No built-ins (useful for sandboxed evaluation) |
+| `Universe::from_map(m)` | Wrap an existing `Map[String, Value]` of bindings |
 
 ---
 
