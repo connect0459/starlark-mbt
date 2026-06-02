@@ -58,6 +58,7 @@ pub fn Module::global_names(Self) -> Array[String]
 pub fn Module::globals_count(Self) -> Int
 pub fn Module::is_frozen(Self) -> Bool
 pub fn Module::new() -> Self
+pub fn Module::predeclared_count(Self) -> Int
 pub fn Module::predeclared_names(Self) -> Array[String]
 
 pub struct Options {

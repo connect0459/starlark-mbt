@@ -17,6 +17,17 @@ test "StarlarkDict: set and get a key" {
 }
 
 ///|
+test "StarlarkDict: iter yields keys in insertion order like List and Set" {
+  let d = StarlarkDict::new()
+  d.set(Value::Int(1N), Value::Int(10N)) |> ignore
+  d.set(Value::Int(2N), Value::Int(20N)) |> ignore
+  let seen = d.iter().collect()
+  assert_eq(seen.length(), 2)
+  assert_true(seen[0] == Value::Int(1N))
+  assert_true(seen[1] == Value::Int(2N))
+}
+
+///|
 test "StarlarkDict: duplicate key updates value" {
   let d = StarlarkDict::new()
   let key = Value::Int(1N)

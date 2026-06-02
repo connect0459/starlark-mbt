@@ -143,6 +143,16 @@ pub fn StarlarkDict::keys(self : StarlarkDict) -> Array[Value] {
 }
 
 ///|
+/// Returns a lazy iterator over the dict keys in insertion order.
+///
+/// Mirrors `StarlarkList::iter` and `StarlarkSet::iter`; iterating a dict
+/// yields its keys (as Starlark's `for k in dict` does). Use `to_entries`
+/// for `(key, value)` pairs.
+pub fn StarlarkDict::iter(self : StarlarkDict) -> Iter[Value] {
+  self.keys().iter()
+}
+
+///|
 /// Returns an `Iter` over all key-value pairs in insertion order.
 ///
 /// Returns a lazy iterator over `(key, value)` pairs in insertion order.

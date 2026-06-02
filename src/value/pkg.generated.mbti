@@ -118,6 +118,7 @@ pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
 pub fn StarlarkDict::freeze(Self) -> Unit
 pub fn StarlarkDict::get(Self, Value) -> Result[Value?, String]
 pub fn StarlarkDict::is_frozen(Self) -> Bool
+pub fn StarlarkDict::iter(Self) -> Iter[Value]
 pub fn StarlarkDict::keys(Self) -> Array[Value]
 pub fn StarlarkDict::length(Self) -> Int
 pub fn StarlarkDict::new() -> Self

@@ -781,6 +781,12 @@ pub fn Module::globals_count(self : Module) -> Int {
 }
 
 ///|
+/// Returns the number of predeclared bindings injected before execution.
+pub fn Module::predeclared_count(self : Module) -> Int {
+  self.predeclared.length()
+}
+
+///|
 /// Returns the names of all exported globals in insertion order.
 ///
 /// Returns an `Array[String]` of every global name bound in the module.

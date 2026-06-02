@@ -245,7 +245,24 @@ test "Thread: with_print callback receives Thread with accessible call stack" {
 test "Module: starts with empty globals and is not frozen" {
   let m = Module::new()
   assert_eq(m.globals_count(), 0)
+  assert_eq(m.predeclared_count(), 0)
   assert_false(m.is_frozen())
+}
+
+///|
+test "Module: predeclared_count matches injected predeclared bindings" {
+  let t = Thread::new("test")
+  let pd = Predeclared::new()
+  pd.set("a", @value.Value::Int(1N))
+  pd.set("b", @value.Value::Int(2N))
+  match
+    exec_file_with_predeclared(t, "<test>", "x = 1", Options::default(), pd) {
+    Ok(m) => {
+      assert_eq(m.predeclared_count(), 2)
+      assert_true(m.predeclared_names().length() == 2)
+    }
+    Err(e) => fail(e.msg())
+  }
 }
 
 ///|
