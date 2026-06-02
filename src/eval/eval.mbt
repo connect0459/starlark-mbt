@@ -307,6 +307,50 @@ pub fn Universe::set(
 }
 
 ///|
+/// Calls `f(name, value)` for every binding in the universe.
+///
+/// Parameters:
+///
+/// - `self` : The universe to iterate.
+/// - `f` : Callback receiving each name and its bound value.
+pub fn Universe::each(
+  self : Universe,
+  f : (String, @value.Value) -> Unit,
+) -> Unit {
+  self.bindings.each(f)
+}
+
+///|
+/// Returns all bound values in the universe.
+///
+/// Parameters:
+///
+/// - `self` : The universe whose values to retrieve.
+///
+/// Returns an array of all bound values.
+pub fn Universe::values(self : Universe) -> Array[@value.Value] {
+  self.bindings.values().collect()
+}
+
+///|
+/// Removes the binding for `name`.
+///
+/// Parameters:
+///
+/// - `self` : The universe to modify.
+/// - `name` : The name to remove.
+///
+/// Returns `true` if `name` was present (and removed), `false` if absent.
+pub fn Universe::delete(self : Universe, name : String) -> Bool {
+  if self.bindings.contains(name) {
+    self.bindings.remove(name)
+    true
+  } else {
+    false
+  }
+}
+
+///|
 /// Per-execution extra bindings injected before user globals. Visible to
 /// both the resolver and evaluator but not exported in the resulting Module.
 pub struct Predeclared {
@@ -385,6 +429,50 @@ pub fn Predeclared::keys(self : Predeclared) -> Array[String] {
   let ks = self.bindings.keys().collect()
   ks.sort()
   ks
+}
+
+///|
+/// Calls `f(name, value)` for every binding in the set.
+///
+/// Parameters:
+///
+/// - `self` : The predeclared set to iterate.
+/// - `f` : Callback receiving each name and its bound value.
+pub fn Predeclared::each(
+  self : Predeclared,
+  f : (String, @value.Value) -> Unit,
+) -> Unit {
+  self.bindings.each(f)
+}
+
+///|
+/// Returns all bound values in the set.
+///
+/// Parameters:
+///
+/// - `self` : The predeclared set whose values to retrieve.
+///
+/// Returns an array of all bound values.
+pub fn Predeclared::values(self : Predeclared) -> Array[@value.Value] {
+  self.bindings.values().collect()
+}
+
+///|
+/// Removes the binding for `name`.
+///
+/// Parameters:
+///
+/// - `self` : The predeclared set to modify.
+/// - `name` : The name to remove.
+///
+/// Returns `true` if `name` was present (and removed), `false` if absent.
+pub fn Predeclared::delete(self : Predeclared, name : String) -> Bool {
+  if self.bindings.contains(name) {
+    self.bindings.remove(name)
+    true
+  } else {
+    false
+  }
 }
 
 ///|

@@ -93,12 +93,15 @@ pub fn Options::with_load_binds_globally(Self, Bool) -> Self
 pub struct Predeclared {
   // private fields
 }
+pub fn Predeclared::delete(Self, String) -> Bool
+pub fn Predeclared::each(Self, (String, @value.Value) -> Unit) -> Unit
 pub fn Predeclared::from_map(Map[String, @value.Value]) -> Self
 pub fn Predeclared::get(Self, String) -> @value.Value?
 pub fn Predeclared::has(Self, String) -> Bool
 pub fn Predeclared::keys(Self) -> Array[String]
 pub fn Predeclared::new() -> Self
 pub fn Predeclared::set(Self, String, @value.Value) -> Unit
+pub fn Predeclared::values(Self) -> Array[@value.Value]
 
 pub struct Program {
   // private fields
@@ -139,6 +142,8 @@ pub fn Thread::with_step_budget(String, Int) -> Self
 pub struct Universe {
   // private fields
 }
+pub fn Universe::delete(Self, String) -> Bool
+pub fn Universe::each(Self, (String, @value.Value) -> Unit) -> Unit
 pub fn Universe::from_map(Map[String, @value.Value]) -> Self
 pub fn Universe::get(Self, String) -> @value.Value?
 pub fn Universe::has(Self, String) -> Bool
@@ -146,6 +151,7 @@ pub fn Universe::keys(Self) -> Array[String]
 pub fn Universe::new() -> Self
 pub fn Universe::set(Self, String, @value.Value) -> Unit
 pub fn Universe::standard() -> Self
+pub fn Universe::values(Self) -> Array[@value.Value]
 
 // Type aliases
 

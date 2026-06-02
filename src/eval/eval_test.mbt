@@ -30,6 +30,38 @@ test "Predeclared: has and keys mirror the other name-value registries" {
 }
 
 ///|
+test "Universe: each, values, and delete round out the registry surface" {
+  let u = Universe::from_map({
+    "a": @value.Value::Int(1N),
+    "b": @value.Value::Int(2N),
+  })
+  let seen : Map[String, @value.Value] = {}
+  u.each((k, v) => seen[k] = v)
+  assert_eq(seen.length(), 2)
+  assert_eq(u.values().length(), 2)
+  assert_true(u.delete("a"))
+  assert_false(u.delete("a"))
+  assert_false(u.has("a"))
+  assert_true(u.has("b"))
+}
+
+///|
+test "Predeclared: each, values, and delete round out the registry surface" {
+  let p = Predeclared::from_map({
+    "x": @value.Value::Int(10N),
+    "y": @value.Value::Int(20N),
+  })
+  let seen : Map[String, @value.Value] = {}
+  p.each((k, v) => seen[k] = v)
+  assert_eq(seen.length(), 2)
+  assert_eq(p.values().length(), 2)
+  assert_true(p.delete("x"))
+  assert_false(p.delete("x"))
+  assert_false(p.has("x"))
+  assert_true(p.has("y"))
+}
+
+///|
 test "Options: all extension flags are enabled by default" {
   let opts = Options::default()
   assert_eq(opts.allow_set(), true)
