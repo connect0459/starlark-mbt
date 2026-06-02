@@ -219,6 +219,18 @@ fn assign_to(
           raise EvalErr(
             make_eval_error(ctx, "can't assign to .\{attr} field of module"),
           )
+        @value.Value::ExtVal(c) =>
+          match c.get_set_field(attr, value) {
+            Some(Ok(_)) => ()
+            Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
+            None =>
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "can't assign to .\{attr} field of \{obj.type_name()}",
+                ),
+              )
+          }
         _ =>
           raise EvalErr(
             make_eval_error(

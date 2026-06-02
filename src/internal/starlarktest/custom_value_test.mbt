@@ -240,6 +240,60 @@ test "ExtVal compare_fn: < operator dispatches to compare_fn" {
 }
 
 ///|
+test "ExtVal HasSetField: x.field=v dispatches to set_field_fn" {
+  let storage : Map[String, @value.Value] = {}
+  let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
+      "<myobj>"
+    })
+    .with_attrs(fn(name) { Ok(storage.get(name)) }, fn() {
+      storage.keys().collect()
+    })
+    .with_set_field(fn(name, val) {
+      storage.set(name, val)
+      Ok(())
+    })
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("obj", @value.Value::ExtVal(cv))
+  let errs = run_with_predeclared(
+    predeclared,
+    (
+      #|load("assert.star", "assert")
+      #|obj.x = 42
+      #|obj.msg = "hello"
+      #|assert.eq(obj.x, 42)
+      #|assert.eq(obj.msg, "hello")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "ExtVal HasSetField: error from set_field_fn propagates as EvalError" {
+  let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
+    "<myobj>"
+  }).with_set_field(fn(name, _val) { Err("read-only field: \{name}") })
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("obj", @value.Value::ExtVal(cv))
+  let errs = run_with_predeclared(predeclared, "obj.x = 1")
+  assert_eq(errs.length(), 1)
+  assert_true(errs[0].contains("read-only field: x"))
+}
+
+///|
+test "ExtVal HasSetField: type without set_field_fn raises cannot-assign error" {
+  let cv = @value.CustomValue::new(fn() { "frozen_obj" }, fn() { true }, fn() {
+    "<frozen_obj>"
+  })
+  let predeclared = @eval.Predeclared::new()
+  predeclared.set("obj", @value.Value::ExtVal(cv))
+  let errs = run_with_predeclared(predeclared, "obj.x = 1")
+  assert_eq(errs.length(), 1)
+  assert_true(errs[0].contains("can't assign to .x field of frozen_obj"))
+}
+
+///|
 test "ExtVal HasSetKey: x[k]=v dispatches to set_key_fn for arbitrary keys" {
   let backing = @value.StarlarkDict::new()
   let cv = @value.CustomValue::new(fn() { "mymap" }, fn() { true }, fn() {

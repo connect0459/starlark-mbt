@@ -64,7 +64,7 @@ pub fn CustomValue::get_items(Self) -> Result[Array[(Value, Value)], String]?
 pub fn CustomValue::get_iterate(Self) -> Result[StarlarkIterator, String]
 pub fn CustomValue::get_length(Self) -> Result[Int, String]
 pub fn CustomValue::get_repr(Self) -> String
-pub fn CustomValue::get_set_field(Self, String, Value) -> Result[Unit, String]
+pub fn CustomValue::get_set_field(Self, String, Value) -> Result[Unit, String]?
 pub fn CustomValue::get_truth(Self) -> Bool
 pub fn CustomValue::get_type_name(Self) -> String
 pub fn CustomValue::get_unary(Self, String) -> Result[Value, String]?

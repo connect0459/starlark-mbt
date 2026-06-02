@@ -468,8 +468,8 @@ pub fn CustomValue::get_attr_names(self : CustomValue) -> Array[String]? {
 }
 
 ///|
-/// Invokes the field-assignment callback for `name = v`, or returns
-/// `Err("cannot set field on T")` if no callback was registered.
+/// Invokes the field-assignment callback for `name = v`, or returns `None`
+/// if no callback was registered.
 ///
 /// Parameters:
 ///
@@ -477,16 +477,16 @@ pub fn CustomValue::get_attr_names(self : CustomValue) -> Array[String]? {
 /// - `name` : The name of the field to assign.
 /// - `v` : The value to assign.
 ///
-/// Returns `Ok(())` on success, or `Err` if no callback was registered or
-/// the callback signals an error.
+/// Returns `Some(Ok(()))` on success, `Some(Err(...))` if the callback
+/// signals an error, or `None` if no field-assignment callback was registered.
 pub fn CustomValue::get_set_field(
   self : CustomValue,
   name : String,
   v : Value,
-) -> Result[Unit, String] {
+) -> Result[Unit, String]? {
   match self.set_field_fn {
-    Some(f) => f(name, v)
-    None => Err("cannot set field on \{(self.type_name_fn)()}")
+    Some(f) => Some(f(name, v))
+    None => None
   }
 }
 
