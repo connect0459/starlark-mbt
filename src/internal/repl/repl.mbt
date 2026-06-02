@@ -30,7 +30,7 @@ pub impl Show for ReplOutput with fn output(self, logger) {
 /// Returns the evaluation result as a `ReplOutput` variant.
 pub fn eval_input(
   thread : @eval.Thread,
-  globals : @value.StarlarkDict,
+  globals : @value.StringDict,
   input : String,
 ) -> ReplOutput {
   let file = match @parser.parse_file("<repl>", input) {
@@ -47,8 +47,7 @@ pub fn eval_input(
           Empty
         } else {
           // Bind the last expression's value to `_`, matching the Python REPL.
-          let key = @value.Value::String(@value.StarlarkString::new("_"))
-          globals.set(key, v) |> ignore
+          globals.set("_", v)
           Value(v.repr())
         }
       Err(e) => EvalError(e.msg())
@@ -136,7 +135,7 @@ fn dir_of(path : String) -> String {
 ///
 /// - `thread` : The evaluation thread used for all input evaluation.
 /// - `globals` : The global variable dictionary shared across all REPL inputs.
-pub fn run(thread : @eval.Thread, globals : @value.StarlarkDict) -> Unit {
+pub fn run(thread : @eval.Thread, globals : @value.StringDict) -> Unit {
   while true {
     match read_line(">>> ") {
       None => break

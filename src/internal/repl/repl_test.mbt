@@ -4,8 +4,8 @@ fn make_thread() -> @eval.Thread {
 }
 
 ///|
-fn empty_globals() -> @value.StarlarkDict {
-  @value.StarlarkDict::new()
+fn empty_globals() -> @value.StringDict {
+  @value.StringDict::new()
 }
 
 // --- eval_input ---

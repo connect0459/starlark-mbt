@@ -236,6 +236,20 @@ pub fn StarlarkStringElems::is_ords(Self) -> Bool
 pub fn StarlarkStringElems::new(StarlarkString, Bool) -> Self
 pub fn StarlarkStringElems::source_string(Self) -> StarlarkString
 
+pub struct StringDict {
+  // private fields
+}
+pub fn StringDict::delete(Self, String) -> Bool
+pub fn StringDict::each(Self, (String, Value) -> Unit) -> Unit
+pub fn StringDict::freeze(Self) -> Unit
+pub fn StringDict::from_map(Map[String, Value]) -> Self
+pub fn StringDict::get(Self, String) -> Value?
+pub fn StringDict::has(Self, String) -> Bool
+pub fn StringDict::keys(Self) -> Array[String]
+pub fn StringDict::new() -> Self
+pub fn StringDict::set(Self, String, Value) -> Unit
+pub fn StringDict::values(Self) -> Array[Value]
+
 pub(all) enum Value {
   None
   Bool(Bool)

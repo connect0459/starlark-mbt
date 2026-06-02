@@ -14,11 +14,11 @@ pub fn call(Thread, @value.Value, Array[@value.Value], Array[(String, @value.Val
 
 pub fn compare(String, @value.Value, @value.Value) -> Result[Bool, @errors.EvalError]
 
-pub fn eval_expr(Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+pub fn eval_expr(Thread, String, String, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
 
-pub fn eval_expr_with_opts(Thread, String, String, Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+pub fn eval_expr_with_opts(Thread, String, String, Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
 
-pub fn eval_parsed_expr(Thread, @syntax.Expr, Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]
+pub fn eval_parsed_expr(Thread, @syntax.Expr, Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
 
 pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
@@ -26,7 +26,7 @@ pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) 
 
 pub fn exec_file_with_universe(Thread, String, String, Options, Universe) -> Result[Module, @errors.EvalError]
 
-pub fn exec_repl_chunk(Thread, String, String, @value.StarlarkDict, Options) -> Result[Unit, @errors.EvalError]
+pub fn exec_repl_chunk(Thread, String, String, @value.StringDict, Options) -> Result[Unit, @errors.EvalError]
 
 pub fn file_program(@syntax.File, Options, (String) -> Bool) -> Result[Program, @errors.EvalError]
 

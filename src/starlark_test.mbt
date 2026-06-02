@@ -108,7 +108,7 @@ test "Universe::set adds a binding visible to executed modules" {
 ///|
 test "eval_expr_with_opts respects allow_set option" {
   let t = @eval.Thread::new("test")
-  let env = @value.StarlarkDict::new()
+  let env = @value.StringDict::new()
   // With allow_set=true, {1, 2} parses and evaluates as a Set.
   let opts_with_set = @eval.Options::default()
   match
@@ -233,7 +233,7 @@ test "exec_file reports a syntax error wrapped as EvalError" {
 ///|
 test "eval_expr evaluates an expression in an empty environment" {
   let t = @eval.Thread::new("test")
-  let env = @value.StarlarkDict::new()
+  let env = @value.StringDict::new()
   match @starlark.eval_expr(t, "<test>", "1 + 2", env) {
     Ok(v) => assert_true(v is @value.Value::Int(3N))
     Err(_) => assert_true(false)
@@ -468,7 +468,7 @@ test "call invokes a Starlark function from the host" {
 
 ///|
 test "StringDict: basic construction and access" {
-  let d = @starlark.StringDict::new()
+  let d = @value.StringDict::new()
   d.set("x", @value.Value::Int(1N))
   d.set("y", @value.Value::Bool(true))
   assert_true(d.has("x"))
@@ -480,7 +480,7 @@ test "StringDict: basic construction and access" {
 
 ///|
 test "StringDict::keys returns sorted keys" {
-  let d = @starlark.StringDict::new()
+  let d = @value.StringDict::new()
   d.set("beta", @value.Value::None)
   d.set("alpha", @value.Value::None)
   d.set("gamma", @value.Value::None)
@@ -490,7 +490,7 @@ test "StringDict::keys returns sorted keys" {
 
 ///|
 test "StringDict::freeze freezes contained values" {
-  let d = @starlark.StringDict::new()
+  let d = @value.StringDict::new()
   let lst = @value.StarlarkList::new([@value.Value::Int(1N)])
   d.set("lst", @value.Value::List(lst))
   d.freeze()
@@ -499,7 +499,7 @@ test "StringDict::freeze freezes contained values" {
 
 ///|
 test "StringDict::delete removes an entry" {
-  let d = @starlark.StringDict::new()
+  let d = @value.StringDict::new()
   d.set("x", @value.Value::Int(1N))
   d.set("y", @value.Value::Int(2N))
   assert_true(d.delete("x"))
@@ -510,7 +510,7 @@ test "StringDict::delete removes an entry" {
 
 ///|
 test "StringDict::each iterates all key-value pairs" {
-  let d = @starlark.StringDict::new()
+  let d = @value.StringDict::new()
   d.set("a", @value.Value::Int(1N))
   d.set("b", @value.Value::Int(2N))
   let keys : Array[String] = []
@@ -520,7 +520,7 @@ test "StringDict::each iterates all key-value pairs" {
 
 ///|
 test "StringDict::values returns all values" {
-  let d = @starlark.StringDict::new()
+  let d = @value.StringDict::new()
   d.set("a", @value.Value::Int(1N))
   d.set("b", @value.Value::Int(2N))
   let vals = d.values()
@@ -922,7 +922,7 @@ test "eval_parsed_expr evaluates a pre-parsed expression" {
       return
     }
   }
-  let env = @value.StarlarkDict::new()
+  let env = @value.StringDict::new()
   match
     @starlark.eval_parsed_expr(thread, expr, @eval.Options::default(), env) {
     Ok(v) => assert_true(v is @value.Value::Int(31N))

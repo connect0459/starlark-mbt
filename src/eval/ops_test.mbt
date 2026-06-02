@@ -4,7 +4,7 @@
 ///|
 fn eval_op(src : String) -> Result[@value.Value, @errors.EvalError] {
   let t = Thread::new("test")
-  let env = @value.StarlarkDict::new()
+  let env = @value.StringDict::new()
   eval_expr(t, "<test>", src, env)
 }
 
@@ -382,11 +382,10 @@ fn eval_with_env(
   bindings : Array[(String, @value.Value)],
 ) -> Result[@value.Value, @errors.EvalError] {
   let t = Thread::new("test")
-  let env = @value.StarlarkDict::new()
+  let env = @value.StringDict::new()
   for pair in bindings {
     let (name, v) = pair
-    let key = @value.Value::String(@value.StarlarkString::new(name))
-    env.set(key, v) |> ignore
+    env.set(name, v)
   }
   eval_expr(t, "<test>", src, env)
 }

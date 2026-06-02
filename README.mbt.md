@@ -14,7 +14,7 @@ All optional features (`set`, `lambda`, `while`, `bytes`, `float`, recursion) ar
 | :--- | :--- | :--- |
 | `connect0459/starlark` | `@starlark` | Core interpreter entry functions (`exec_file`, `eval_expr`, `call`, …) |
 | `connect0459/starlark/eval` | `@eval` | `Thread`, `Module`, `Options`, `Program`, `Predeclared`, `Universe` |
-| `connect0459/starlark/value` | `@value` | `Value`, `StarlarkDict`, `StarlarkList`, `StarlarkString`, `CustomValue`, … |
+| `connect0459/starlark/value` | `@value` | `Value`, `StringDict`, `StarlarkDict`, `StarlarkList`, `StarlarkString`, `CustomValue`, … |
 | `connect0459/starlark/errors` | `@errors` | `EvalError`, `SyntaxError`, `ResolveError`, `Position`, `CallStack`, … |
 | `connect0459/starlark/syntax` | `@syntax` | `File`, `Expr` — AST types for `parse_file`/`parse_expr` |
 | `connect0459/starlark/lib/json` | `@json` | JSON encode / decode extension |
@@ -34,7 +34,7 @@ Then declare the packages you need in your `moon.pkg` (add extension packages as
 import {
   "connect0459/starlark",               // exec_file, eval_expr, call, …
   "connect0459/starlark/eval",          // Thread, Module, Options, Program, …
-  "connect0459/starlark/value",         // Value, StarlarkDict, StarlarkList, …
+  "connect0459/starlark/value",         // Value, StringDict, StarlarkDict, StarlarkList, …
   // "connect0459/starlark/errors",     // EvalError, Position, CallStack, …
   // "connect0459/starlark/syntax",     // File, Expr (parse_file / parse_expr)
   // optional extensions:

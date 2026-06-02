@@ -30,10 +30,10 @@ The packages `eval`, `value`, `errors`, and `syntax` are public sub-packages; im
 | `exec_file` | `(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]` | Execute a Starlark source file |
 | `exec_file_with_predeclared` | `(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]` | Execute with extra host bindings visible to the script |
 | `exec_file_with_universe` | `(@eval.Thread, String, String, @eval.Options, @eval.Universe) -> Result[@eval.Module, @errors.EvalError]` | Execute with a custom built-in universe instead of the standard one |
-| `exec_repl_chunk` | `(@eval.Thread, String, String, @value.StarlarkDict, @eval.Options) -> Result[Unit, @errors.EvalError]` | Execute one REPL chunk; updates the persistent `globals` dict in place |
-| `eval_expr` | `(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]` | Evaluate a single Starlark expression with default options |
-| `eval_expr_with_opts` | `(@eval.Thread, String, String, @eval.Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]` | Like `eval_expr` but with explicit options |
-| `eval_parsed_expr` | `(@eval.Thread, @syntax.Expr, @eval.Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]` | Evaluate a pre-parsed expression node |
+| `exec_repl_chunk` | `(@eval.Thread, String, String, @value.StringDict, @eval.Options) -> Result[Unit, @errors.EvalError]` | Execute one REPL chunk; updates the persistent `globals` dict in place |
+| `eval_expr` | `(@eval.Thread, String, String, @value.StringDict) -> Result[@value.Value, @errors.EvalError]` | Evaluate a single Starlark expression with default options |
+| `eval_expr_with_opts` | `(@eval.Thread, String, String, @eval.Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]` | Like `eval_expr` but with explicit options |
+| `eval_parsed_expr` | `(@eval.Thread, @syntax.Expr, @eval.Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]` | Evaluate a pre-parsed expression node |
 | `call` | `(@eval.Thread, @value.Value, Array[@value.Value], Array[(String, @value.Value)]) -> Result[@value.Value, @errors.EvalError]` | Call any Starlark callable from host code |
 
 #### Parsing and compilation
@@ -361,13 +361,14 @@ pub struct StarlarkDict { /* private fields */ }  // in "connect0459/starlark/va
 
 ---
 
-### `StringDict`
+### `@value.StringDict`
 
-A `Map[String, Value]` wrapper used for host-side string-keyed dictionaries. Analogous to
-`starlark.StringDict` in starlark-go.
+A `Map[String, Value]` wrapper used for host-side string-keyed dictionaries, and the
+environment type accepted by `eval_expr` and the persistent `globals` of
+`exec_repl_chunk`. Analogous to `starlark.StringDict` in starlark-go.
 
 ```moonbit
-pub struct StringDict { /* private fields */ }
+pub struct StringDict { /* private fields */ }  // in "connect0459/starlark/value"
 ```
 
 | Method | Description |
@@ -377,7 +378,10 @@ pub struct StringDict { /* private fields */ }
 | `set(String, Value)` | Add or replace a binding |
 | `get(String) -> Value?` | Look up by key |
 | `has(String) -> Bool` | Test for key presence |
+| `delete(String) -> Bool` | Remove a binding; returns whether it was present |
 | `keys() -> Array[String]` | Sorted list of keys |
+| `each((String, Value) -> Unit)` | Iterate all key-value pairs |
+| `values() -> Array[Value]` | All contained values |
 | `freeze()` | Transitively freeze all contained values |
 
 ---

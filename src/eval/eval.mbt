@@ -1173,7 +1173,7 @@ pub fn exec_repl_chunk(
   thread : Thread,
   filename : String,
   src : String,
-  globals : @value.StarlarkDict,
+  globals : @value.StringDict,
   opts : Options,
 ) -> Result[Unit, @errors.EvalError] {
   let file = match @parser.parse_file(filename, src) {
@@ -1181,24 +1181,13 @@ pub fn exec_repl_chunk(
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   let ctx = EvalContext::new(thread, { ..opts, load_binds_globally: true })
-  globals.each(fn(k, v) {
-    match k {
-      @value.Value::String(s) => ctx.global_env.bind(s.raw(), v)
-      _ => ()
-    }
-  })
+  globals.each(fn(k, v) { ctx.global_env.bind(k, v) })
   collect_module_globals_into(
     file.stmts(),
     true,
     ctx.global_env.known_module_globals,
   )
-  let extra_names : Array[String] = []
-  globals.each(fn(k, _) {
-    match k {
-      @value.Value::String(s) => extra_names.push(s.raw())
-      _ => ()
-    }
-  })
+  let extra_names = globals.keys()
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_set(opts.allow_set)
     .with_load_binds_globally(true)
@@ -1225,10 +1214,7 @@ pub fn exec_repl_chunk(
   }
   ignore(ctx.thread.call_stack.pop())
   ctx.toplevel_frame_idx = -1
-  ctx.global_env.locals.each(fn(name, v) {
-    let key = @value.Value::String(@value.StarlarkString::new(name))
-    globals.set(key, v) |> ignore
-  })
+  ctx.global_env.locals.each(fn(name, v) { globals.set(name, v) })
   Ok(())
 }
 
@@ -1248,7 +1234,7 @@ pub fn eval_expr(
   thread : Thread,
   filename : String,
   src : String,
-  env : @value.StarlarkDict,
+  env : @value.StringDict,
 ) -> Result[@value.Value, @errors.EvalError] {
   eval_expr_with_opts(thread, filename, src, Options::default(), env)
 }
@@ -1270,19 +1256,14 @@ pub fn eval_expr_with_opts(
   filename : String,
   src : String,
   opts : Options,
-  env : @value.StarlarkDict,
+  env : @value.StringDict,
 ) -> Result[@value.Value, @errors.EvalError] {
   let expr = match @parser.parse_expr(filename, src) {
     Ok(e) => e
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   let ctx = EvalContext::new(thread, opts)
-  env.each(fn(k, v) {
-    match k {
-      @value.Value::String(s) => ctx.global_env.bind(s.raw(), v)
-      _ => ()
-    }
-  })
+  env.each(fn(k, v) { ctx.global_env.bind(k, v) })
   Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
     EvalErr(e) => Err(e)
   }
@@ -1304,15 +1285,10 @@ pub fn eval_parsed_expr(
   thread : Thread,
   expr : @syntax.Expr,
   opts : Options,
-  env : @value.StarlarkDict,
+  env : @value.StringDict,
 ) -> Result[@value.Value, @errors.EvalError] {
   let ctx = EvalContext::new(thread, opts)
-  env.each(fn(k, v) {
-    match k {
-      @value.Value::String(s) => ctx.global_env.bind(s.raw(), v)
-      _ => ()
-    }
-  })
+  env.each(fn(k, v) { ctx.global_env.bind(k, v) })
   Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
     EvalErr(e) => Err(e)
   }

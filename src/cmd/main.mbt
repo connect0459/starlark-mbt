@@ -62,7 +62,7 @@ fn run_file(filepath : String) -> Int {
 ///|
 fn run_repl() -> Unit {
   let thread = @eval.Thread::with_loader("REPL", @repl.make_load("."))
-  let globals = @value.StarlarkDict::new()
+  let globals = @value.StringDict::new()
   if @repl.is_terminal() {
     println("Welcome to Starlark (connect0459/starlark)")
   }

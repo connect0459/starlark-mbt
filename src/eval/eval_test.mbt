@@ -236,7 +236,7 @@ test "Module: freeze also freezes the globals dict" {
 ///|
 fn eval_e(src : String) -> Result[@value.Value, @errors.EvalError] {
   let t = Thread::new("test")
-  let env = @value.StarlarkDict::new()
+  let env = @value.StringDict::new()
   eval_expr(t, "<test>", src, env)
 }
 
@@ -608,18 +608,14 @@ test "load_binds_globally=false: loaded name is accessible from a function body"
 // --- exec_repl_chunk ---
 
 ///|
-fn dict_get(d : @value.StarlarkDict, name : String) -> @value.Value? {
-  let key = @value.Value::String(@value.StarlarkString::new(name))
-  match d.get(key) {
-    Ok(Some(v)) => Some(v)
-    _ => None
-  }
+fn dict_get(d : @value.StringDict, name : String) -> @value.Value? {
+  d.get(name)
 }
 
 ///|
 test "exec_repl_chunk: assigns a variable into globals dict" {
   let thread = Thread::new("repl")
-  let globals = @value.StarlarkDict::new()
+  let globals = @value.StringDict::new()
   match
     exec_repl_chunk(thread, "<repl>", "x = 42", globals, Options::default()) {
     Ok(_) => assert_true(dict_get(globals, "x") == Some(@value.Value::Int(42N)))
@@ -633,7 +629,7 @@ test "exec_repl_chunk: assigns a variable into globals dict" {
 ///|
 test "exec_repl_chunk: subsequent chunk sees variables from previous chunk" {
   let thread = Thread::new("repl")
-  let globals = @value.StarlarkDict::new()
+  let globals = @value.StringDict::new()
   let _ = exec_repl_chunk(
     thread,
     "<repl>",
@@ -654,7 +650,7 @@ test "exec_repl_chunk: subsequent chunk sees variables from previous chunk" {
 ///|
 test "exec_repl_chunk: returns EvalError on runtime error" {
   let thread = Thread::new("repl")
-  let globals = @value.StarlarkDict::new()
+  let globals = @value.StringDict::new()
   match
     exec_repl_chunk(thread, "<repl>", "x = 1 // 0", globals, Options::default()) {
     Err(e) => assert_true(e.msg().contains("zero"))
@@ -752,7 +748,7 @@ test "compare: unknown operator returns error" {
 ///|
 test "exec_repl_chunk: returns EvalError on parse or resolve error" {
   let thread = Thread::new("repl")
-  let globals = @value.StarlarkDict::new()
+  let globals = @value.StringDict::new()
   match
     exec_repl_chunk(
       thread,
