@@ -734,22 +734,22 @@ test "StarlarkFunction::position returns def site position" {
 }
 
 ///|
-test "Module::globals_map returns all module-level globals" {
+test "Module::global_names returns all module-level global names" {
   let t = @eval.Thread::new("test")
   match
     @starlark.exec_file(t, "<test>", "x = 1\ny = 2", @eval.Options::default()) {
     Ok(m) => {
-      let gmap = m.globals_map()
-      assert_true(gmap.contains("x"))
-      assert_true(gmap.contains("y"))
-      assert_eq(gmap.length(), 2)
+      let names = m.global_names()
+      assert_true(names.contains("x"))
+      assert_true(names.contains("y"))
+      assert_eq(names.length(), 2)
     }
     Err(_) => assert_true(false)
   }
 }
 
 ///|
-test "Module::predeclared_map returns predeclared bindings" {
+test "Module::predeclared_names returns predeclared binding names" {
   let t = @eval.Thread::new("test")
   let pre = @eval.Predeclared::new()
   pre.set("answer", @value.Value::Int(42N))
@@ -762,8 +762,8 @@ test "Module::predeclared_map returns predeclared bindings" {
       pre,
     ) {
     Ok(m) => {
-      let pmap = m.predeclared_map()
-      assert_true(pmap.contains("answer"))
+      let names = m.predeclared_names()
+      assert_true(names.contains("answer"))
     }
     Err(_) => assert_true(false)
   }

@@ -54,11 +54,11 @@ pub struct Module {
 pub fn Module::freeze(Self) -> Unit
 pub fn Module::from_map(Map[String, @value.Value]) -> Self
 pub fn Module::get(Self, String) -> @value.Value?
+pub fn Module::global_names(Self) -> Array[String]
 pub fn Module::globals_count(Self) -> Int
-pub fn Module::globals_map(Self) -> Map[String, @value.Value]
 pub fn Module::is_frozen(Self) -> Bool
 pub fn Module::new() -> Self
-pub fn Module::predeclared_map(Self) -> Map[String, @value.Value]
+pub fn Module::predeclared_names(Self) -> Array[String]
 
 pub struct Options {
   // private fields

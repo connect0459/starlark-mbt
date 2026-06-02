@@ -728,13 +728,14 @@ pub fn Module::globals_count(self : Module) -> Int {
 }
 
 ///|
-/// Returns the module globals as a plain `Map[String, Value]`, in insertion
-/// order.
-pub fn Module::globals_map(self : Module) -> Map[String, @value.Value] {
-  let result : Map[String, @value.Value] = {}
-  self.globals.each(fn(k, v) {
+/// Returns the names of all exported globals in insertion order.
+///
+/// Returns an `Array[String]` of every global name bound in the module.
+pub fn Module::global_names(self : Module) -> Array[String] {
+  let result : Array[String] = []
+  self.globals.each(fn(k, _) {
     match k {
-      @value.Value::String(s) => result[s.raw()] = v
+      @value.Value::String(s) => result.push(s.raw())
       _ => ()
     }
   })
@@ -742,10 +743,14 @@ pub fn Module::globals_map(self : Module) -> Map[String, @value.Value] {
 }
 
 ///|
-/// Returns the predeclared bindings that were injected before execution, as
-/// a plain map.
-pub fn Module::predeclared_map(self : Module) -> Map[String, @value.Value] {
-  self.predeclared
+/// Returns the names of all predeclared bindings that were injected before
+/// execution.
+///
+/// Returns an `Array[String]` of every predeclared name.
+pub fn Module::predeclared_names(self : Module) -> Array[String] {
+  let result : Array[String] = []
+  self.predeclared.each(fn(k, _) { result.push(k) })
+  result
 }
 
 ///|
