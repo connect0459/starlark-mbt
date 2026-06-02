@@ -270,7 +270,7 @@ test "module globals are frozen after exec_file" {
 }
 
 ///|
-test "module_get returns None for undefined globals" {
+test "Module::get returns None for undefined globals" {
   let t = @eval.Thread::new("test")
   match @starlark.exec_file(t, "<test>", "x = 1", @eval.Options::default()) {
     Ok(m) => assert_true(m.get("y") is None)

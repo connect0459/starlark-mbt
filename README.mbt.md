@@ -10,13 +10,17 @@ All optional features (`set`, `lambda`, `while`, `bytes`, `float`, recursion) ar
 
 ## Packages
 
-| Package | Description |
-| :--- | :--- |
-| `connect0459/starlark` | Core interpreter: `Thread`, `exec_file`, `eval_expr` |
-| `connect0459/starlark/json` | JSON encode / decode extension |
-| `connect0459/starlark/math` | Math functions extension (mirrors Python's `math` module) |
-| `connect0459/starlark/struct` | `struct`, `module`, and `gensym` extension (starlarkstruct) |
-| `connect0459/starlark/time` | Time and duration extension (starlarktime) |
+| Package | Import alias | Description |
+| :--- | :--- | :--- |
+| `connect0459/starlark` | `@starlark` | Core interpreter entry functions (`exec_file`, `eval_expr`, `call`, …) |
+| `connect0459/starlark/eval` | `@eval` | `Thread`, `Module`, `Options`, `Program`, `Predeclared`, `Universe` |
+| `connect0459/starlark/value` | `@value` | `Value`, `StarlarkDict`, `StarlarkList`, `StarlarkString`, `CustomValue`, … |
+| `connect0459/starlark/errors` | `@errors` | `EvalError`, `SyntaxError`, `ResolveError`, `Position`, `CallStack`, … |
+| `connect0459/starlark/syntax` | `@syntax` | `File`, `Expr` — AST types for `parse_file`/`parse_expr` |
+| `connect0459/starlark/lib/json` | `@json` | JSON encode / decode extension |
+| `connect0459/starlark/lib/math` | `@math` | Math functions extension (mirrors Python's `math` module) |
+| `connect0459/starlark/lib/struct` | `@struct` | `struct`, `module`, and `gensym` extension (starlarkstruct) |
+| `connect0459/starlark/lib/time` | `@time` | Time and duration extension (starlarktime) |
 
 ## Installation
 
@@ -28,12 +32,16 @@ Then declare the packages you need in your `moon.pkg` (add extension packages as
 
 ```text
 import {
-  "connect0459/starlark",
+  "connect0459/starlark",               // exec_file, eval_expr, call, …
+  "connect0459/starlark/eval",          // Thread, Module, Options, Program, …
+  "connect0459/starlark/value",         // Value, StarlarkDict, StarlarkList, …
+  // "connect0459/starlark/errors",     // EvalError, Position, CallStack, …
+  // "connect0459/starlark/syntax",     // File, Expr (parse_file / parse_expr)
   // optional extensions:
-  // "connect0459/starlark/json",
-  // "connect0459/starlark/math",
-  // "connect0459/starlark/struct",
-  // "connect0459/starlark/time",
+  // "connect0459/starlark/lib/json",
+  // "connect0459/starlark/lib/math",
+  // "connect0459/starlark/lib/struct",
+  // "connect0459/starlark/lib/time",
 }
 ```
 
@@ -41,11 +49,11 @@ import {
 
 ```moonbit
 test {
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   let src = "result = sum([i * i for i in range(5)])"
-  match @starlark.exec_file(thread, "example.star", src, @starlark.Options::default()) {
+  match @starlark.exec_file(thread, "example.star", src, @eval.Options::default()) {
     Ok(m) =>
-      assert_true(@starlark.module_get(m, "result") is Some(@starlark.Value::Int(30L)))
+      assert_true(m.get("result") is Some(@value.Value::Int(30N)))
     Err(e) => fail!(e.to_string())
   }
 }

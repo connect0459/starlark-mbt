@@ -4,13 +4,18 @@
 
 | Package | Import alias | Description |
 | :--- | :--- | :--- |
-| `connect0459/starlark` | `@starlark` | Core interpreter façade |
-| `connect0459/starlark/json` | `@json` | JSON encode / decode extension |
-| `connect0459/starlark/math` | `@math` | Math functions extension |
-| `connect0459/starlark/struct` | `@struct` | `struct`, `module`, and `gensym` extension (starlarkstruct) |
-| `connect0459/starlark/time` | `@time` | Time and duration extension (starlarktime) |
+| `connect0459/starlark` | `@starlark` | Core entry functions (`exec_file`, `eval_expr`, `call`, …) |
+| `connect0459/starlark/eval` | `@eval` | `Thread`, `Module`, `Options`, `Program`, `Predeclared`, `Universe`, `DebugFrame` |
+| `connect0459/starlark/value` | `@value` | `Value`, `StarlarkDict`, `StarlarkList`, `StarlarkString`, `CustomValue`, `StarlarkBuiltinFunc`, `StarlarkIterator` |
+| `connect0459/starlark/errors` | `@errors` | `EvalError`, `SyntaxError`, `ResolveError`, `Position`, `Binding`, `CallFrame`, `CallStack` |
+| `connect0459/starlark/syntax` | `@syntax` | `File`, `Expr` — AST types returned by `parse_file`/`parse_expr` |
+| `connect0459/starlark/lib/json` | `@json` | JSON encode / decode extension |
+| `connect0459/starlark/lib/math` | `@math` | Math functions extension |
+| `connect0459/starlark/lib/struct` | `@struct` | `struct`, `module`, and `gensym` extension (starlarkstruct) |
+| `connect0459/starlark/lib/time` | `@time` | Time and duration extension (starlarktime) |
 
 All `src/internal/*` packages are implementation details and are not importable by consumers.
+The packages `eval`, `value`, `errors`, and `syntax` are public sub-packages; import them directly when you need their types.
 
 ---
 
@@ -22,49 +27,43 @@ All `src/internal/*` packages are implementation details and are not importable 
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `exec_file` | `(Thread, String, String, Options) -> Result[Module, EvalError]` | Execute a Starlark source file |
-| `exec_file_with_predeclared` | `(Thread, String, String, Options, Predeclared) -> Result[Module, EvalError]` | Execute with extra host bindings visible to the script |
-| `exec_file_with_universe` | `(Thread, String, String, Options, Universe) -> Result[Module, EvalError]` | Execute with a custom built-in universe instead of the standard one |
-| `exec_repl_chunk` | `(Thread, String, String, StarlarkDict, Options) -> Result[Unit, EvalError]` | Execute one REPL chunk; updates the persistent `globals` dict in place |
-| `eval_expr` | `(Thread, String, String, StarlarkDict) -> Result[Value, EvalError]` | Evaluate a single Starlark expression with default options |
-| `eval_expr_with_opts` | `(Thread, String, String, Options, StarlarkDict) -> Result[Value, EvalError]` | Like `eval_expr` but with explicit options |
-| `eval_parsed_expr` | `(Thread, SyntaxExpr, Options, StarlarkDict) -> Result[Value, EvalError]` | Evaluate a pre-parsed expression node |
-| `module_get` | `(Module, String) -> Value?` | Look up a global by name in an executed module |
-| `call` | `(Thread, Value, Array[Value], Array[(String, Value)]) -> Result[Value, EvalError]` | Call any Starlark callable from host code |
+| `exec_file` | `(@eval.Thread, String, String, @eval.Options) -> Result[@eval.Module, @errors.EvalError]` | Execute a Starlark source file |
+| `exec_file_with_predeclared` | `(@eval.Thread, String, String, @eval.Options, @eval.Predeclared) -> Result[@eval.Module, @errors.EvalError]` | Execute with extra host bindings visible to the script |
+| `exec_file_with_universe` | `(@eval.Thread, String, String, @eval.Options, @eval.Universe) -> Result[@eval.Module, @errors.EvalError]` | Execute with a custom built-in universe instead of the standard one |
+| `exec_repl_chunk` | `(@eval.Thread, String, String, @value.StarlarkDict, @eval.Options) -> Result[Unit, @errors.EvalError]` | Execute one REPL chunk; updates the persistent `globals` dict in place |
+| `eval_expr` | `(@eval.Thread, String, String, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]` | Evaluate a single Starlark expression with default options |
+| `eval_expr_with_opts` | `(@eval.Thread, String, String, @eval.Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]` | Like `eval_expr` but with explicit options |
+| `eval_parsed_expr` | `(@eval.Thread, @syntax.Expr, @eval.Options, @value.StarlarkDict) -> Result[@value.Value, @errors.EvalError]` | Evaluate a pre-parsed expression node |
+| `call` | `(@eval.Thread, @value.Value, Array[@value.Value], Array[(String, @value.Value)]) -> Result[@value.Value, @errors.EvalError]` | Call any Starlark callable from host code |
 
 #### Parsing and compilation
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `parse_file` | `(String, String) -> Result[SyntaxFile, EvalError]` | Parse Starlark source to an AST |
-| `parse_expr` | `(String, String) -> Result[SyntaxExpr, EvalError]` | Parse a single Starlark expression to an AST node |
-| `source_program` | `(String, String, Options, (String)->Bool) -> Result[Program, EvalError]` | Parse and resolve without executing; returns a reusable `Program` |
-| `source_program_with_file` | `(String, String, Options, (String)->Bool) -> Result[(SyntaxFile, Program), EvalError]` | Like `source_program` but also returns the parsed AST |
-| `file_program` | `(SyntaxFile, Options, (String)->Bool) -> Result[Program, EvalError]` | Resolve an already-parsed `SyntaxFile` into a `Program` |
+| `parse_file` | `(String, String) -> Result[@syntax.File, @errors.EvalError]` | Parse Starlark source to an AST |
+| `parse_expr` | `(String, String) -> Result[@syntax.Expr, @errors.EvalError]` | Parse a single Starlark expression to an AST node |
+| `source_program` | `(String, String, @eval.Options, (String)->Bool) -> Result[@eval.Program, @errors.EvalError]` | Parse and resolve without executing; returns a reusable `Program` |
+| `source_program_with_file` | `(String, String, @eval.Options, (String)->Bool) -> Result[(@syntax.File, @eval.Program), @errors.EvalError]` | Like `source_program` but also returns the parsed AST |
+| `file_program` | `(@syntax.File, @eval.Options, (String)->Bool) -> Result[@eval.Program, @errors.EvalError]` | Resolve an already-parsed `@syntax.File` into a `Program` |
 
 #### Value inspection
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `repr` | `(Value) -> String` | Starlark `repr()` of a value (quoted strings, recursive containers) |
-| `to_str` | `(Value) -> String` | Starlark `str()` of a value (unquoted strings) |
-| `type_name` | `(Value) -> String` | Starlark `type()` string for a value |
-| `truth` | `(Value) -> Bool` | Starlark truthiness (`if` / `and` / `or` semantics) |
-| `starlark_equals` | `(Value, Value) -> Bool` | Structural equality (`==` semantics; `NaN == NaN`) |
-| `equal` | `(Value, Value) -> Result[Bool, EvalError]` | Equality check returning `Result` (for error propagation) |
-| `len_of` | `(Value) -> Int` | Sequence length; returns `-1` for non-sequences |
-| `iterate` | `(Value) -> Result[StarlarkIterator, EvalError]` | Obtain an iterator over a Starlark iterable |
-| `number_to_int` | `(Value) -> Int64?` | Convert `Int` or `Float` to `Int64`; `None` otherwise |
-| `as_float` | `(Value) -> (Double, Bool)` | Extract `Float` or convert `Int` to `Double`; second element is `true` on success |
-| `as_string` | `(Value) -> (String, Bool)` | Extract raw string from `String` value; second element is `true` on success |
+| `equal` | `(@value.Value, @value.Value) -> Result[Bool, @errors.EvalError]` | Equality check returning `Result` (for error propagation) |
+| `len_of` | `(@value.Value) -> Int` | Sequence length; returns `-1` for non-sequences |
+| `iterate` | `(@value.Value) -> Result[@value.StarlarkIterator, @errors.EvalError]` | Obtain an iterator over a Starlark iterable |
+| `number_to_int` | `(@value.Value) -> Int64?` | Convert `Int` or `Float` to `Int64`; `None` otherwise |
+| `as_float` | `(@value.Value) -> (Double, Bool)` | Extract `Float` or convert `Int` to `Double`; second element is `true` on success |
+| `as_string` | `(@value.Value) -> (String, Bool)` | Extract raw string from `String` value; second element is `true` on success |
 
 #### Operator dispatch
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `binary` | `(String, Value, Value) -> Result[Value, EvalError]` | Apply a binary operator by name (`"+"`, `"-"`, `"*"`, etc.) |
-| `unary` | `(String, Value) -> Result[Value, EvalError]` | Apply a unary operator by name (`"-"`, `"~"`, `"not"`) |
-| `compare` | `(String, Value, Value) -> Result[Bool, EvalError]` | Apply a comparison operator by name (`"=="`, `"<"`, etc.) |
+| `binary` | `(String, @value.Value, @value.Value) -> Result[@value.Value, @errors.EvalError]` | Apply a binary operator by name (`"+"`, `"-"`, `"*"`, etc.) |
+| `unary` | `(String, @value.Value) -> Result[@value.Value, @errors.EvalError]` | Apply a unary operator by name (`"-"`, `"~"`, `"not"`) |
+| `compare` | `(String, @value.Value, @value.Value) -> Result[Bool, @errors.EvalError]` | Apply a comparison operator by name (`"=="`, `"<"`, etc.) |
 
 #### Depth-limited comparison
 
@@ -73,8 +72,8 @@ Prevents infinite recursion on cyclic data structures.
 | Symbol | Signature | Description |
 | :--- | :--- | :--- |
 | `compare_limit` | `Int` | Default recursion depth for comparisons (value: `10`) |
-| `equal_depth` | `(Value, Value, Int) -> Result[Bool, EvalError]` | Equality with explicit depth limit |
-| `compare_depth` | `(String, Value, Value, Int) -> Result[Bool, EvalError]` | Comparison with explicit depth limit |
+| `equal_depth` | `(@value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]` | Equality with explicit depth limit |
+| `compare_depth` | `(String, @value.Value, @value.Value, Int) -> Result[Bool, @errors.EvalError]` | Comparison with explicit depth limit |
 
 #### `exec_file`
 
@@ -82,11 +81,11 @@ Parses, resolves, and evaluates `src` as a complete Starlark file. `filename` is
 in error messages. Returns the frozen `Module` containing all top-level globals on success.
 
 ```moonbit
-let thread = @starlark.Thread::new("main")
+let thread = @eval.Thread::new("main")
 let _ = @starlark.exec_file(
   thread, "build.star",
   "greeting = 'hello ' + 'world'",
-  @starlark.Options::default(),
+  @eval.Options::default(),
 )
 ```
 
@@ -94,11 +93,11 @@ let _ = @starlark.exec_file(
 
 Evaluates a single expression `src` in the given environment `env`. Unlike `exec_file`,
 this does not run statements and does not produce a `Module`; it returns the expression value.
-`env` may be empty (`StarlarkDict::new()`) or pre-populated with bindings.
+`env` may be empty (`@value.StarlarkDict::new()`) or pre-populated with bindings.
 
 ```moonbit
-let thread = @starlark.Thread::new("expr")
-let env = @starlark.StarlarkDict::new()
+let thread = @eval.Thread::new("expr")
+let env = @value.StarlarkDict::new()
 let _ = @starlark.eval_expr(thread, "<expr>", "len([1, 2, 3])", env)
 ```
 
@@ -109,26 +108,26 @@ visible to the script as predeclared names (higher precedence than universe buil
 lower than locals and globals).
 
 ```moonbit
-let thread = @starlark.Thread::new("main")
-let predeclared = @starlark.Predeclared::from_map({
-  "MY_FLAG": @starlark.Value::Bool(true),
+let thread = @eval.Thread::new("main")
+let predeclared = @eval.Predeclared::from_map({
+  "MY_FLAG": @value.Value::Bool(true),
 })
 let _ = @starlark.exec_file_with_predeclared(
   thread, "script.star",
   "enabled = MY_FLAG",
-  @starlark.Options::default(),
+  @eval.Options::default(),
   predeclared,
 )
 ```
 
 ---
 
-### `Thread`
+### `@eval.Thread`
 
 Holds execution context: print callback, load callback, call stack, and step budget.
 
 ```moonbit
-pub struct Thread { /* private fields */ }
+pub struct Thread { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
 #### Constructors
@@ -137,7 +136,7 @@ pub struct Thread { /* private fields */ }
 | :--- | :--- | :--- |
 | `Thread::new` | `(String) -> Thread` | Thread with default print (stdout) and no loader |
 | `Thread::with_print` | `(String, (String) -> Unit) -> Thread` | Thread with a custom print callback |
-| `Thread::with_loader` | `(String, (Thread, String) -> Result[Module, EvalError]) -> Thread` | Thread with a module loader |
+| `Thread::with_loader` | `(String, (Thread, String) -> Result[@eval.Module, @errors.EvalError]) -> Thread` | Thread with a module loader |
 | `Thread::with_step_budget` | `(String, Int) -> Thread` | Thread that halts after `n` evaluation steps |
 
 The first argument to every constructor is the thread name (used in error messages).
@@ -186,9 +185,9 @@ Embedders can store per-thread context (request IDs, counters, etc.) without sub
 
 ```moonbit
 test {
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   thread.cancel("timeout")
-  match @starlark.exec_file(thread, "x.star", "x = 1", @starlark.Options::default()) {
+  match @starlark.exec_file(thread, "x.star", "x = 1", @eval.Options::default()) {
     Err(e) => assert_true(e.msg().contains("timeout"))
     Ok(_) => fail!("expected cancellation")
   }
@@ -197,13 +196,13 @@ test {
 
 ---
 
-### `Options`
+### `@eval.Options`
 
 Feature flags that control Starlark dialect. All flags default to `true` except
 `load_binds_globally` (default `false`).
 
 ```moonbit
-pub struct Options { /* private fields */ }
+pub struct Options { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
 | Accessor | Default | Description |
@@ -220,7 +219,7 @@ pub struct Options { /* private fields */ }
 
 ```moonbit
 test {
-  let opts = @starlark.Options::default()
+  let opts = @eval.Options::default()
   assert_eq(opts.allow_set(), true)
   assert_eq(opts.load_binds_globally(), false)
 }
@@ -230,19 +229,19 @@ Use `with_load_binds_globally(Bool)` to obtain a modified copy:
 
 ```moonbit
 test {
-  let opts = @starlark.Options::default().with_load_binds_globally(true)
+  let opts = @eval.Options::default().with_load_binds_globally(true)
   assert_eq(opts.load_binds_globally(), true)
 }
 ```
 
 ---
 
-### `Module`
+### `@eval.Module`
 
 The result of a successful `exec_file` call. Its globals dict is frozen on return.
 
 ```moonbit
-pub struct Module { /* private fields */ }
+pub struct Module { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
 | Method | Signature | Description |
@@ -258,12 +257,12 @@ pub struct Module { /* private fields */ }
 
 ---
 
-### `Predeclared`
+### `@eval.Predeclared`
 
 Extra bindings injected before user globals. Scripts can read but not reassign them.
 
 ```moonbit
-pub struct Predeclared { /* private fields */ }
+pub struct Predeclared { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
 | Constructor / Method | Description |
@@ -275,12 +274,12 @@ pub struct Predeclared { /* private fields */ }
 
 ---
 
-### `Universe`
+### `@eval.Universe`
 
 The predeclared built-in environment shared across all threads.
 
 ```moonbit
-pub struct Universe { /* private fields */ }
+pub struct Universe { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
 | Constructor | Description |
@@ -290,15 +289,15 @@ pub struct Universe { /* private fields */ }
 
 ---
 
-### `Value`
+### `@value.Value`
 
-All Starlark values share this enum type.
+All Starlark values share this enum type. Defined in `"connect0459/starlark/value"`.
 
 ```moonbit
 pub enum Value {
   None
   Bool(Bool)
-  Int(Int64)
+  Int(BigInt)               // arbitrary-precision integer
   Float(Double)
   String(StarlarkString)
   Bytes(Bytes)
@@ -311,9 +310,10 @@ pub enum Value {
   Builtin(StarlarkBuiltinFunc)
   BoundMethod(StarlarkBoundMethod)
   Module(StarlarkModule)
-  StringElems(StarlarkStringElems)      // returned by str.elems()
+  StringElems(StarlarkStringElems)           // returned by str.elems()
   StringCodepoints(StarlarkStringCodepoints) // returned by str.codepoints()
-  BytesElems(StarlarkBytesElems)        // returned by bytes.elems()
+  BytesElems(StarlarkBytesElems)             // returned by bytes.elems()
+  ExtVal(CustomValue)                        // embedder-defined custom type
 }
 ```
 
@@ -321,15 +321,18 @@ The three iterator variants (`StringElems`, `StringCodepoints`, `BytesElems`) ar
 returned by the respective string/bytes methods. They report their own `type()` strings
 (`"string.elems"`, `"string.codepoints"`, `"bytes.elems"`) and support `len()`.
 
+> **Note:** `Int` holds a `BigInt` (arbitrary precision). Use the `N` suffix for integer
+> literals in patterns: `@value.Value::Int(42N)`.
+
 Pattern matching is the primary way to inspect a `Value`:
 
 ```moonbit
 test {
-  let thread = @starlark.Thread::new("main")
-  match @starlark.exec_file(thread, "s.star", "x = 'hello'", @starlark.Options::default()) {
+  let thread = @eval.Thread::new("main")
+  match @starlark.exec_file(thread, "s.star", "x = 'hello'", @eval.Options::default()) {
     Ok(m) =>
-      match @starlark.module_get(m, "x") {
-        Some(@starlark.Value::String(s)) => assert_eq(s.raw(), "hello")
+      match m.get("x") {
+        Some(@value.Value::String(s)) => assert_eq(s.raw(), "hello")
         _ => fail!("expected string")
       }
     Err(e) => fail!(e.to_string())
@@ -337,18 +340,14 @@ test {
 }
 ```
 
-> **Note:** `StarlarkString`, `StarlarkList`, `StarlarkDict`, and related types are defined in
-> the internal package. Access them through the `Value` enum constructors or via methods returned
-> from interpreter results.
-
 ---
 
-### `StarlarkDict`
+### `@value.StarlarkDict`
 
 An insertion-ordered mutable mapping. Used as the environment for `eval_expr`.
 
 ```moonbit
-pub struct StarlarkDict { /* private fields */ }
+pub struct StarlarkDict { /* private fields */ }  // in "connect0459/starlark/value"
 ```
 
 | Method | Description |
@@ -383,12 +382,12 @@ pub struct StringDict { /* private fields */ }
 
 ---
 
-### `StarlarkBuiltinFunc`
+### `@value.StarlarkBuiltinFunc`
 
 A host-provided callable injected into the Starlark environment.
 
 ```moonbit
-pub struct StarlarkBuiltinFunc { /* private fields */ }
+pub struct StarlarkBuiltinFunc { /* private fields */ }  // in "connect0459/starlark/value"
 ```
 
 | Method | Description |
@@ -400,46 +399,46 @@ pub struct StarlarkBuiltinFunc { /* private fields */ }
 
 ---
 
-### `SyntaxFile` and `SyntaxExpr`
+### `@syntax.File` and `@syntax.Expr`
 
-Type aliases for the parsed AST. Returned by `parse_file` and `parse_expr`; consumed by
-`file_program` and `eval_parsed_expr`.
+Parsed AST types from `"connect0459/starlark/syntax"`. Returned by `parse_file` and
+`parse_expr`; consumed by `file_program` and `eval_parsed_expr`.
 
 ```moonbit
-pub type SyntaxFile  // alias for internal File AST
-pub type SyntaxExpr  // alias for internal Expr AST
+pub struct File { /* private fields */ }  // in "connect0459/starlark/syntax"
+pub enum Expr { /* ... */ }               // in "connect0459/starlark/syntax"
 ```
 
 ---
 
-### `Program`
+### `@eval.Program`
 
 A parsed-and-resolved Starlark program that can be executed multiple times without
 re-parsing. Unlike `exec_file`, `Program::init` does **not** freeze the returned module.
 
 ```moonbit
-pub struct Program { /* private fields */ }
+pub struct Program { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
 | Method | Signature | Description |
 | :--- | :--- | :--- |
 | `filename()` | `() -> String` | Source file name used during compilation |
 | `num_loads()` | `() -> Int` | Number of `load` statements in the file |
-| `load(Int)` | `(Int) -> (String, Position)` | Path and position of the i-th `load` statement |
-| `init(Thread, Predeclared)` | `-> Result[Module, EvalError]` | Execute the program and return an **unfrozen** module |
+| `load(Int)` | `(Int) -> (String, @errors.Position)` | Path and position of the i-th `load` statement |
+| `init(@eval.Thread, @eval.Predeclared)` | `-> Result[@eval.Module, @errors.EvalError]` | Execute the program and return an **unfrozen** module |
 
 ```moonbit
 test {
   let prog_result = @starlark.source_program(
     "lib.star", "def square(n): return n * n",
-    @starlark.Options::default(),
+    @eval.Options::default(),
     fn(_) { false },
   )
   match prog_result {
     Ok(prog) => {
-      let thread = @starlark.Thread::new("main")
-      match prog.init(thread, @starlark.Predeclared::new()) {
-        Ok(m) => assert_true(@starlark.module_get(m, "square") is Some(@starlark.Value::Function(_)))
+      let thread = @eval.Thread::new("main")
+      match prog.init(thread, @eval.Predeclared::new()) {
+        Ok(m) => assert_true(m.get("square") is Some(@value.Value::Function(_)))
         Err(e) => fail!(e.to_string())
       }
     }
@@ -450,58 +449,57 @@ test {
 
 ---
 
-### `DebugFrame`
+### `@eval.DebugFrame`
 
 A read-only snapshot of an active Starlark call frame. Obtain via `Thread.debug_frame(depth)`
 (depth 0 = innermost Starlark function).
 
 ```moonbit
-pub struct DebugFrame { /* private fields */ }
+pub struct DebugFrame { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
 | Method | Returns | Description |
 | :--- | :--- | :--- |
-| `callable()` | `Value` | The `Function` or `Builtin` value executing in this frame |
+| `callable()` | `@value.Value` | The `Function` or `Builtin` value executing in this frame |
 | `num_locals()` | `Int` | Total number of local variables (parameters + body locals) |
-| `frame_local(Int)` | `(Binding, Value?)` | Binding descriptor and current value of the i-th local; `None` if not yet assigned |
-| `local_by_name(String)` | `Value?` | Current value of the named local; `None` if absent or unassigned |
-| `position()` | `Position` | Current execution position within the frame |
+| `frame_local(Int)` | `(@errors.Binding, @value.Value?)` | Binding descriptor and current value of the i-th local; `None` if not yet assigned |
+| `local_by_name(String)` | `@value.Value?` | Current value of the named local; `None` if absent or unassigned |
+| `position()` | `@errors.Position` | Current execution position within the frame |
 
 ---
 
-### `Binding`
+### `@errors.Binding`
 
 A local variable name together with its definition position. Used by the debugger API.
 
 ```moonbit
-pub struct Binding { /* private fields */ }
+pub struct Binding { /* private fields */ }  // in "connect0459/starlark/errors"
 ```
 
 | Method | Returns | Description |
 | :--- | :--- | :--- |
 | `name()` | `String` | Variable name |
-| `pos()` | `Position` | Declaration position in source |
+| `pos()` | `@errors.Position` | Declaration position in source |
 
 ---
 
-### `CustomValue`
+### `@value.CustomValue`
 
 Embedder-defined custom type that participates in the Starlark value system as
-`Value::ExtVal(cv)`. Construct with `CustomValue::new(...)` and attach optional
-protocol implementations via fluent `.with_*` methods.
-
-Wrap a `CustomValue` in the `Value` enum using the free function `new_custom_value(cv)`.
+`@value.Value::ExtVal(cv)`. Defined in `"connect0459/starlark/value"`.
+Construct with `CustomValue::new(...)` and attach optional protocol implementations
+via fluent `.with_*` methods.
 
 See the `src/struct/` and `src/time/` extensions for idiomatic usage examples.
 
 ---
 
-### `StarlarkFunction`
+### `@value.StarlarkFunction`
 
-A user-defined (Starlark-source) function. Obtain via `Value::Function(f)` pattern matching.
+A user-defined (Starlark-source) function. Obtain via `@value.Value::Function(f)` pattern matching.
 
 ```moonbit
-pub struct StarlarkFunction { /* private fields */ }
+pub struct StarlarkFunction { /* private fields */ }  // in "connect0459/starlark/value"
 ```
 
 #### Identity
@@ -528,21 +526,21 @@ pub struct StarlarkFunction { /* private fields */ }
 | Method | Returns | Description |
 | :--- | :--- | :--- |
 | `num_free_vars()` | `Int` | Number of captured (closure) variables |
-| `free_var(Int)` | `(String, Value)?` | Name and current value of the i-th free variable |
-| `globals()` | `Map[String, Value]` | Module globals visible when the function was defined |
+| `free_var(Int)` | `(String, @value.Value)?` | Name and current value of the i-th free variable |
+| `globals()` | `Map[String, @value.Value]` | Module globals visible when the function was defined |
 | `defining_module()` | `StarlarkModule?` | Module that defined this function; `None` for functions not created via `exec_file` |
 
 ```moonbit
 test {
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   match @starlark.exec_file(
     thread, "lib.star",
     "CONST = 99\ndef greet(name):\n  \"\"\"Say hello.\"\"\"\n  return 'hi ' + name",
-    @starlark.Options::default(),
+    @eval.Options::default(),
   ) {
     Ok(m) =>
-      match @starlark.module_get(m, "greet") {
-        Some(@starlark.Value::Function(f)) => {
+      match m.get("greet") {
+        Some(@value.Value::Function(f)) => {
           assert_eq(f.name(), "greet")
           assert_eq(f.num_params(), 1)
           assert_eq(f.doc(), "Say hello.")
@@ -561,9 +559,9 @@ test {
 
 ---
 
-### `CallStack` and `CallFrame`
+### `@errors.CallStack` and `@errors.CallFrame`
 
-A snapshot of the call stack at a point in time.
+A snapshot of the call stack at a point in time. Both defined in `"connect0459/starlark/errors"`.
 
 ```moonbit
 pub struct CallStack { /* private fields */ }
@@ -575,8 +573,8 @@ pub struct CallFrame { /* private fields */ }
 | Method | Returns | Description |
 | :--- | :--- | :--- |
 | `length()` | `Int` | Number of frames |
-| `at(Int)` | `CallFrame?` | Frame at index (0 = outermost) |
-| `pop()` | `CallFrame?` | Remove and return the innermost frame |
+| `at(Int)` | `@errors.CallFrame?` | Frame at index (0 = outermost) |
+| `pop()` | `@errors.CallFrame?` | Remove and return the innermost frame |
 | `to_string()` | `String` | Human-readable backtrace |
 
 #### `CallFrame`
@@ -584,15 +582,15 @@ pub struct CallFrame { /* private fields */ }
 | Method | Returns | Description |
 | :--- | :--- | :--- |
 | `name()` | `String` | Function name at this frame |
-| `pos()` | `Position` | Call-site position |
+| `pos()` | `@errors.Position` | Call-site position |
 
 ```moonbit
 test {
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   let _ = @starlark.exec_file(
     thread, "x.star",
     "def f(): pass\nf()",
-    @starlark.Options::default(),
+    @eval.Options::default(),
   )
   let stack = thread.call_stack()
   assert_eq(stack.length(), 0) // stack is empty after execution
@@ -605,9 +603,10 @@ test {
 
 All three error types share the pattern of carrying a `Position` (or call stack) and a
 human-readable message. `exec_file` wraps `SyntaxError` and `ResolveError` into `EvalError`
-before returning, so callers typically only need to handle `EvalError`.
+before returning, so callers typically only need to handle `EvalError`. All are defined in
+`"connect0459/starlark/errors"`.
 
-#### `EvalError`
+#### `@errors.EvalError`
 
 Runtime errors raised during evaluation.
 
@@ -616,30 +615,30 @@ Runtime errors raised during evaluation.
 | `msg()` | `String` | Error message |
 | `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
 | `backtrace()` | `String` | Formatted call stack |
-| `EvalError::simple(String)` | `EvalError` | Construct with no position (for host code) |
-| `EvalError::with_stack(String, CallStack)` | `EvalError` | Construct with a call stack |
+| `EvalError::simple(String)` | `@errors.EvalError` | Construct with no position (for host code) |
+| `EvalError::with_stack(String, @errors.CallStack)` | `@errors.EvalError` | Construct with a call stack |
 
-#### `SyntaxError`
+#### `@errors.SyntaxError`
 
 Lexer or parser errors.
 
 | Method | Returns | Description |
 | :--- | :--- | :--- |
 | `msg()` | `String` | Error message |
-| `pos()` | `Position` | Source position |
+| `pos()` | `@errors.Position` | Source position |
 | `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
 
-#### `ResolveError`
+#### `@errors.ResolveError`
 
 Name-resolution errors (undefined variables, invalid scoping, etc.).
 
 | Method | Returns | Description |
 | :--- | :--- | :--- |
 | `msg()` | `String` | Error message |
-| `pos()` | `Position` | Source position |
+| `pos()` | `@errors.Position` | Source position |
 | `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
 
-#### `Position`
+#### `@errors.Position`
 
 A source location: filename, 1-based line, 1-based column. Column 0 means unknown.
 
@@ -649,19 +648,19 @@ A source location: filename, 1-based line, 1-based column. Column 0 means unknow
 | `line()` | `Int` | 1-based line number |
 | `col()` | `Int` | 1-based column (0 = unknown) |
 | `is_valid()` | `Bool` | `true` if line > 0 |
-| `is_before(Position)` | `Bool` | Positional comparison |
+| `is_before(@errors.Position)` | `Bool` | Positional comparison |
 | `to_string()` | `String` | `"<file>:<line>:<col>"` |
 
 ---
 
-## `starlark/json` package
+## `starlark/lib/json` package
 
 Inject `json_module()` as a predeclared binding to make all functions available in Starlark scripts.
 
 ```text
 import {
   "connect0459/starlark",
-  "connect0459/starlark/json",
+  "connect0459/starlark/lib/json",
 }
 ```
 
@@ -669,9 +668,9 @@ import {
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `json_module()` | `() -> Value` | Returns the `json` module value to inject |
-| `encode_to_json(Value)` | `-> Result[String, String]` | Encode a Starlark value to a JSON string |
-| `decode_from_json(String, Value?)` | `-> Result[Value, String]` | Decode a JSON string; `default` returned on parse error when provided |
+| `json_module()` | `() -> @value.Value` | Returns the `json` module value to inject |
+| `encode_to_json(@value.Value)` | `-> Result[String, String]` | Encode a Starlark value to a JSON string |
+| `decode_from_json(String, @value.Value?)` | `-> Result[@value.Value, String]` | Decode a JSON string; `default` returned on parse error when provided |
 | `indent_json(String, String, String)` | `-> Result[String, String]` | Pretty-print JSON with `prefix` and `indent` |
 
 ### Starlark-level functions (inside scripts)
@@ -697,15 +696,15 @@ Supported Starlark → JSON mappings:
 
 ```moonbit
 test {
-  let thread = @starlark.Thread::new("main")
-  let predeclared = @starlark.Predeclared::from_map({ "json": @json.json_module() })
+  let thread = @eval.Thread::new("main")
+  let predeclared = @eval.Predeclared::from_map({ "json": @json.json_module() })
   let src = "payload = json.encode({\"key\": [1, 2, 3]})"
   match @starlark.exec_file_with_predeclared(
-    thread, "data.star", src, @starlark.Options::default(), predeclared,
+    thread, "data.star", src, @eval.Options::default(), predeclared,
   ) {
     Ok(m) =>
-      match @starlark.module_get(m, "payload") {
-        Some(@starlark.Value::String(s)) =>
+      match m.get("payload") {
+        Some(@value.Value::String(s)) =>
           assert_eq(s.raw(), "{\"key\": [1, 2, 3]}")
         _ => fail!("expected string")
       }
@@ -716,7 +715,7 @@ test {
 
 ---
 
-## `starlark/math` package
+## `starlark/lib/math` package
 
 Math extension providing floating-point functions. Inject `math_module()` as a predeclared
 binding to expose functions under the `math` namespace in Starlark scripts.
@@ -724,7 +723,7 @@ binding to expose functions under the `math` namespace in Starlark scripts.
 ```text
 import {
   "connect0459/starlark",
-  "connect0459/starlark/math",
+  "connect0459/starlark/lib/math",
 }
 ```
 
@@ -732,7 +731,7 @@ import {
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `math_module()` | `() -> Value` | Returns the `math` module value to inject |
+| `math_module()` | `() -> @value.Value` | Returns the `math` module value to inject |
 
 ### Starlark-level constants and functions (inside scripts)
 
@@ -783,17 +782,17 @@ import {
 
 ```moonbit
 test {
-  let thread = @starlark.Thread::new("main")
-  let predeclared = @starlark.Predeclared::from_map({ "math": @math.math_module() })
+  let thread = @eval.Thread::new("main")
+  let predeclared = @eval.Predeclared::from_map({ "math": @math.math_module() })
   match @starlark.exec_file_with_predeclared(
     thread, "trig.star",
     "approx_pi = math.atan2(0.0, -1.0)",
-    @starlark.Options::default(),
+    @eval.Options::default(),
     predeclared,
   ) {
     Ok(m) =>
-      match @starlark.module_get(m, "approx_pi") {
-        Some(@starlark.Value::Float(f)) => assert_true(f > 3.14 && f < 3.15)
+      match m.get("approx_pi") {
+        Some(@value.Value::Float(f)) => assert_true(f > 3.14 && f < 3.15)
         _ => fail!("expected float")
       }
     Err(e) => fail!(e.to_string())
@@ -803,7 +802,7 @@ test {
 
 ---
 
-## `starlark/struct` package
+## `starlark/lib/struct` package
 
 Provides `struct`, `module`, and `gensym` as Starlark extensions (analogous to
 `starlark-go/lib/starlarkstruct`). Import and inject the callables you need as
@@ -812,7 +811,7 @@ predeclared bindings.
 ```text
 import {
   "connect0459/starlark",
-  "connect0459/starlark/struct",
+  "connect0459/starlark/lib/struct",
 }
 ```
 
@@ -820,12 +819,12 @@ import {
 
 | Symbol | Signature | Description |
 | :--- | :--- | :--- |
-| `struct_builtin()` | `() -> Value` | Returns the `struct(…)` Starlark callable |
-| `module_builtin()` | `() -> Value` | Returns the `module(name, …)` Starlark callable |
-| `gensym_builtin()` | `() -> Value` | Returns the `gensym(name=…)` Starlark callable |
-| `make_struct(ctor, entries)` | `(Value, Array[(String, Value)]) -> Value` | Construct a struct value directly from MoonBit code |
-| `make_module(name, members)` | `(String, Array[(String, Value)]) -> Value` | Construct a module value directly from MoonBit code |
-| `default_ctor` | `Value` | The default constructor string `"struct"` |
+| `struct_builtin()` | `() -> @value.Value` | Returns the `struct(…)` Starlark callable |
+| `module_builtin()` | `() -> @value.Value` | Returns the `module(name, …)` Starlark callable |
+| `gensym_builtin()` | `() -> @value.Value` | Returns the `gensym(name=…)` Starlark callable |
+| `make_struct(ctor, entries)` | `(@value.Value, Array[(String, @value.Value)]) -> @value.Value` | Construct a struct value directly from MoonBit code |
+| `make_module(name, members)` | `(String, Array[(String, @value.Value)]) -> @value.Value` | Construct a module value directly from MoonBit code |
+| `default_ctor` | `@value.Value` | The default constructor string `"struct"` |
 
 ### Starlark-level usage (inside scripts)
 
@@ -841,18 +840,18 @@ After injecting `struct_builtin()` as `"struct"` in predeclared:
 
 ```moonbit
 test {
-  let predeclared = @starlark.Predeclared::from_map({
+  let predeclared = @eval.Predeclared::from_map({
     "struct": @struct.struct_builtin(),
     "module": @struct.module_builtin(),
   })
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   let src = "p = struct(x=1, y=2)\nm = module('geo', dist=p)"
   match @starlark.exec_file_with_predeclared(
-    thread, "s.star", src, @starlark.Options::default(), predeclared,
+    thread, "s.star", src, @eval.Options::default(), predeclared,
   ) {
     Ok(m) => {
-      assert_true(@starlark.module_get(m, "p") is Some(@starlark.Value::ExtVal(_)))
-      assert_true(@starlark.module_get(m, "m") is Some(@starlark.Value::ExtVal(_)))
+      assert_true(m.get("p") is Some(@value.Value::ExtVal(_)))
+      assert_true(m.get("m") is Some(@value.Value::ExtVal(_)))
     }
     Err(e) => fail!(e.to_string())
   }
@@ -861,7 +860,7 @@ test {
 
 ---
 
-## `starlark/time` package
+## `starlark/lib/time` package
 
 Time and duration types analogous to `starlark-go/lib/starlarktime`. Inject
 `time_module()` as a predeclared binding to expose the `time` namespace.
@@ -869,7 +868,7 @@ Time and duration types analogous to `starlark-go/lib/starlarktime`. Inject
 ```text
 import {
   "connect0459/starlark",
-  "connect0459/starlark/time",
+  "connect0459/starlark/lib/time",
 }
 ```
 
@@ -877,8 +876,8 @@ import {
 
 | Symbol | Signature | Description |
 | :--- | :--- | :--- |
-| `time_module()` | `() -> Value` | Returns the `time` module value to inject |
-| `time_value(sec, nsec)` | `(Int64, Int) -> Value` | Create a `time.time` value from Unix seconds + nanoseconds |
+| `time_module()` | `() -> @value.Value` | Returns the `time` module value to inject |
+| `time_value(sec, nsec)` | `(Int64, Int) -> @value.Value` | Create a `time.time` value from Unix seconds + nanoseconds |
 | `now_override_key` | `String` | Thread-local key for overriding `time.now()` in tests |
 | `get_unix_time_now()` | `() -> (Int64, Int)` | Read the real system clock (seconds, nanoseconds) |
 
@@ -921,8 +920,8 @@ import {
 
 ```moonbit
 test {
-  let predeclared = @starlark.Predeclared::from_map({ "time": @time.time_module() })
-  let thread = @starlark.Thread::new("main")
+  let predeclared = @eval.Predeclared::from_map({ "time": @time.time_module() })
+  let thread = @eval.Thread::new("main")
   // Fix the clock so the test is deterministic.
   thread.set_local(@time.now_override_key, @time.time_value(1_000_000L, 0))
   let src =
@@ -931,13 +930,13 @@ test {
     #|d = time.parse_duration("1h30m")
     #|total_ns = d.nanoseconds
   match @starlark.exec_file_with_predeclared(
-    thread, "t.star", src, @starlark.Options::default(), predeclared,
+    thread, "t.star", src, @eval.Options::default(), predeclared,
   ) {
     Ok(m) => {
-      assert_true(@starlark.module_get(m, "stamp") is Some(@starlark.Value::Int(1_000_000L)))
+      assert_true(m.get("stamp") is Some(@value.Value::Int(1_000_000N)))
       // 1.5 hours = 5_400_000_000_000 nanoseconds
       assert_true(
-        @starlark.module_get(m, "total_ns") is Some(@starlark.Value::Int(5_400_000_000_000L)),
+        m.get("total_ns") is Some(@value.Value::Int(5_400_000_000_000N)),
       )
     }
     Err(e) => fail!(e.to_string())

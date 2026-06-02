@@ -29,7 +29,7 @@ pub fn new_thread_with_loader(
 /// - `filename` : Source file name used in error messages and position info.
 /// - `src` : Starlark source text to parse.
 ///
-/// Returns the parsed `SyntaxFile`, or an `EvalError` on syntax failure.
+/// Returns the parsed `@syntax.File`, or an `EvalError` on syntax failure.
 pub fn parse_file(
   filename : String,
   src : String,
@@ -48,7 +48,7 @@ pub fn parse_file(
 /// - `filename` : Source file name used in error messages and position info.
 /// - `src` : Starlark expression source text to parse.
 ///
-/// Returns the parsed `SyntaxExpr`, or an `EvalError` on syntax failure.
+/// Returns the parsed `@syntax.Expr`, or an `EvalError` on syntax failure.
 pub fn parse_expr(
   filename : String,
   src : String,
@@ -103,7 +103,7 @@ pub fn source_program(
 }
 
 ///|
-/// Like `source_program` but also returns the parsed `SyntaxFile` alongside
+/// Like `source_program` but also returns the parsed `@syntax.File` alongside
 /// the `Program`.
 ///
 /// Parameters:
@@ -114,7 +114,7 @@ pub fn source_program(
 /// - `is_predeclared` : Predicate returning `true` for names that are
 ///   predeclared in the execution environment.
 ///
-/// Returns a tuple of the parsed `SyntaxFile` and the compiled `Program`,
+/// Returns a tuple of the parsed `@syntax.File` and the compiled `Program`,
 /// or an `EvalError` on parse/resolve failure.
 pub fn source_program_with_file(
   filename : String,
@@ -126,7 +126,7 @@ pub fn source_program_with_file(
 }
 
 ///|
-/// Resolves an already-parsed `SyntaxFile` into an executable `Program`.
+/// Resolves an already-parsed `@syntax.File` into an executable `Program`.
 ///
 /// Parameters:
 ///
