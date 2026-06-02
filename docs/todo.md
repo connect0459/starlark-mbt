@@ -51,10 +51,10 @@ are not part of the published API.
   public API (internal only). Created in Phase 6 before porting `.star` files.
 - `src/cmd/` — CLI entry point (renamed from `src/main/` in Phase 8)
 - `src/internal/repl/` — REPL implementation (internal to CLI; embedders use `exec_repl_chunk` from the façade)
-- `src/json/` — `starlarkjson` extension (was `src/lib/json/`)
-- `src/math/` — `math` extension (was `src/lib/math/`)
-- `src/struct/` — `starlarkstruct` extension (was `src/lib/struct/`)
-- `src/time/` — `time` extension (was `src/lib/time/`)
+- `src/lib/json/` — `starlarkjson` extension (moved from `src/json/` in Phase R1)
+- `src/lib/math/` — `math` extension (moved from `src/math/` in Phase R1)
+- `src/lib/struct/` — `starlarkstruct` extension (moved from `src/struct/` in Phase R1)
+- `src/lib/time/` — `time` extension (moved from `src/time/` in Phase R1)
 
 Sub-packages may be added or split when any file exceeds ~600 LOC.
 
@@ -627,7 +627,7 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [x] `json.indent(string, prefix=, indent=)` — pretty-print JSON; empty containers inline
 - [x] Error reporting via descriptive string messages (starlark-go json also uses string errors,
       not Position-based; source Position not applicable for this extension)
-- [x] Lives as a separate package: `src/json/` (importable, not auto-injected; was `src/lib/json/`)
+- [x] Lives as a separate package: `src/lib/json/` (importable, not auto-injected)
 - [x] Reference: `starlark-go/lib/json/json.go`
 
 ---
@@ -2282,8 +2282,8 @@ and `::body()` in the public `value` package already leak `@syntax.Param` /
 - [x] Update `src/starlark_test.mbt`: replace `@starlark.Thread` → `@eval.Thread`,
       `@starlark.Value` → `@value.Value`, etc. across all test call sites
 - [x] Update `examples/*/main.mbt` and `examples/*/moon.pkg`: add sub-package imports
-- [ ] Update `docs/api.md`: import examples now require individual sub-package imports
-- [ ] Update `README.mbt.md`: embedding quick-start now shows `@eval`/`@value`/`@errors`
+- [x] Update `docs/api.md`: import examples now require individual sub-package imports
+- [x] Update `README.mbt.md`: embedding quick-start now shows `@eval`/`@value`/`@errors`
 - [x] `moon check && moon test`
 - [x] `moon info` — `.mbti` diff shows all 23 `pub using` entries removed
 - [x] Commit: `refactor: remove facade type aliases; use sub-packages directly`
