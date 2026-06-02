@@ -2448,44 +2448,61 @@ parity layer exists — `compare_values`, `compare_values_depth`, `length_of`,
 
 **Steps (each a green commit):**
 
-- [ ] Promote `@unpack`: move `src/internal/unpack/` → `src/unpack/`; update its
-      `moon.pkg` package path and the facade's import (transitional).
-- [ ] Add `parse_file`/`parse_expr` to `@eval`; add `equal`/`equal_depth`/
-      `compare_depth`/`len_of`/`as_float`/`as_string`/`number_to_int` to `@value`;
-      annotate the five engine primitives `#internal`.
-- [ ] Delete `src/starlark.mbt`; rewrite `src/starlark_test.mbt` (77 refs) and
-      `src/starlark_wbtest.mbt` to `@eval.*`/`@value.*`/`@unpack.*`; prune
-      `src/moon.pkg` imports.
-- [ ] Update the 6 `examples/*` (`main.mbt` + `moon.pkg`) and `README.mbt.md`
-      (+ its doc-test `moon.pkg`) to sub-package imports.
-- [ ] `moon fmt && moon info && moon test`; confirm `src/pkg.generated.mbti` has
-      no `Values` and the four sub-package `.mbti` carry the moved symbols.
+- [x] Promote `@unpack`: moved `src/internal/unpack/` → `src/unpack/`. Its only
+      importer was the facade. Commit: `afcbb79`.
+- [x] Added `parse_file`/`parse_expr` to `@eval` (in `program.mbt`); added
+      `equal`/`equal_depth`/`compare_depth`/`len_of`/`as_float`/`as_string`/
+      `number_to_int` to `@value` (new `value/inspect.mbt`, **String** errors);
+      annotated `compare_values`/`compare_values_depth`/`length_of`/`format_float`
+      `#internal` (`starlark_equals_depth` already was). Public `@value.iterate`
+      (String) kept as canonical; the EvalError wrapper dropped. Commit: `cc25091`.
+- [x] Deleted `src/starlark.mbt`; rewrote `src/starlark_test.mbt` to
+      `@eval.*`/`@value.*`/`@unpack.*`; `src/starlark_wbtest.mbt` had no facade
+      refs. Pruned `src/moon.pkg` and switched it to `import { … } for "test"`
+      (the root package is now test-only). Commit: `46cad40`.
+- [x] Updated the 6 `examples/*` (`main.mbt` + `moon.pkg`) and `README.mbt.md`.
+      Commit: `643b0aa`.
+- [x] `moon fmt && moon info && moon test`: `src/pkg.generated.mbti` now has an
+      empty `Values` block; sub-package `.mbti` carry the moved symbols; 1545 tests
+      pass.
 
-### Phase R5-docs: `docs/api.md` drift fixes (group A)
+### Phase R5-docs: `docs/api.md` drift fixes (group A) ✅
 
 `docs/api.md` is plain `.md` (not `.mbt.md`), so its code blocks are never
-compiled and have drifted. Fix together with R5:
+compiled and had drifted. All fixed (commit `<api>`):
 
-- [ ] `eval_expr` env type: `@value.StarlarkDict` → `@value.StringDict`; the
-      example `@value.StarlarkDict::new()` currently **fails to compile**.
-- [ ] `StarlarkDict` methods: `insert`/`get_value` → `set`/`get` (now
-      `Result[Value?, String]`); add `keys`/`each`/`iter`/`to_entries`/`popitem`/
+- [x] `eval_expr` env type: `@value.StarlarkDict` → `@value.StringDict`; the
+      broken `@value.StarlarkDict::new()` example corrected.
+- [x] `StarlarkDict` methods: `insert`/`get_value` → `set`/`get` (now
+      `Result[Value?, String]`); added `keys`/`each`/`iter`/`to_entries`/`popitem`/
       `is_frozen`/`freeze`.
-- [ ] `Thread` "non-composable" note is stale — `set_loader`/`set_print`/
-      `set_max_steps`/`set_on_max_steps` allow composition after `Thread::new`.
-- [ ] Document `@errors.Span` and `@errors.Halt` (currently public but absent).
-- [ ] Repoint every `@starlark.*` example to `@eval.*`/`@value.*`/`@unpack.*`.
-- [ ] Consider moving the canonical examples into `README.mbt.md` (doc-tested) to
-      stop future drift.
+- [x] `Thread` note rewritten: `with_print` takes `(Thread, String)`; constructors
+      compose via `set_print`/`set_loader`/`set_max_steps`/`set_on_max_steps`.
+      Also fixed stale `on_max_steps` → `set_on_max_steps`, `set_max_steps(Int?)` →
+      `(Int)`, added `reset_steps`, `call_frame`, and a Mutators subsection.
+- [x] Documented `@errors.Span` and `@errors.Halt`.
+- [x] Repointed every `@starlark.*` example to `@eval.*`/`@value.*`/`@unpack.*`;
+      removed the facade row + section; reorganized the helper tables under the
+      package that now owns them (`@eval`/`@value`/`@unpack`).
+- [ ] **[deferred]** `README.mbt.md` is **not** wired as a doc test — `moon.mod.json`
+      has no `readme` field, so its `moonbit` fence is never compiled (this is why
+      the stale `@starlark` ref never failed CI). Wiring it (`"readme":
+      "README.mbt.md"`) would make the quick-start drift-proof; deferred because it
+      may surface the old `fail!`-style syntax. Worth doing in a follow-up.
 
-### Phase R5-symmetry: registry & constructor polish (groups B-7/B-8)
+### Phase R5-symmetry: registry & constructor polish (groups B-7/B-8) ✅
 
-- [ ] `Universe`/`Predeclared`: add the `StringDict` core that is missing
-      (`delete`, `each`, `values`, `freeze`) where it makes sense, so the three
-      name→value registries share one surface.
-- [ ] `errors` constructor arg order: `Binding::new`/`CallFrame::new` are
-      `(String, Position)` while `ResolveError::new`/`SyntaxError::new` are
-      `(Position, String)` — reconcile or document the rationale.
+- [x] `Universe`/`Predeclared`: added `each`/`values`/`delete` (mirroring
+      `StringDict`'s core). `freeze` deliberately **omitted** — these registries
+      have no transitive-freeze semantics (unlike `StringDict::freeze`), so a
+      no-op `freeze()` would mislead. Commit: `<sym>`.
+- [x] `errors` constructor arg order: **kept** as an intentional convention, not
+      reordered. The orders are internally consistent within each semantic group —
+      entity constructors lead with identity (`Binding::new(name, pos)`,
+      `CallFrame::new(name, pos)`), error constructors lead with location
+      (`ResolveError::new(pos, msg)`, `SyntaxError::new(pos, msg)`, matching the
+      `file:line:col: msg` render order). Reordering would be a breaking change for
+      purely cosmetic uniformity across types that carry different data.
 
 ---
 
