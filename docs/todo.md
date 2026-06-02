@@ -2562,6 +2562,22 @@ runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
       do not exist; real accessors are `global_names`, `predeclared_names`,
       `predeclared_count`. All 14 `mbt check` blocks still pass (`moon test`).
 
+### Phase R5-docpkg: relocate doc-test markdown into a dedicated src/docs package ✅
+
+- [x] Replaced the `src/api-*.mbt.md → ../docs/api/*.mbt.md` file-symlink scheme
+      (and its `link-api-docs` / `link-api-docs-check` justfile machinery) with a
+      real `connect0459/starlark/docs` package tree. moon discovers doc tests by
+      scanning `.mbt.md` files inside a package directory and does not follow
+      directory symlinks, so the pages now live in the source tree directly.
+- [x] `src/docs/README.mbt.md → ../../README.mbt.md` (doc test for the top-level
+      README); `src/docs/api/*.mbt.md` holds one page per public package. Both are
+      otherwise-empty packages (empty `.mbti`) so they add nothing to the public
+      API surface. Per-package `moon.pkg` declares the `for "test"` imports each
+      page needs, which let the root `src/moon.pkg` drop its `lib/*` test imports.
+- [x] Added `docs/README.md` pointing readers from `docs/` to the doc-test pages
+      under `src/docs/`, explaining why they live in the source tree. 1560 tests
+      pass (`moon test`); `moon check --deny-warn` and `moon fmt --check` clean.
+
 ---
 
 ## Future work (out of initial release scope)
