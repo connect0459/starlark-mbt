@@ -1,4 +1,14 @@
 ///|
+test "StarlarkList::each visits every element in order" {
+  let lst = StarlarkList::new([Value::Int(1N), Value::Int(2N), Value::Int(3N)])
+  let seen : Array[Value] = []
+  lst.each(fn(v) { seen.push(v) })
+  assert_eq(seen.length(), 3)
+  assert_true(seen[0] == Value::Int(1N))
+  assert_true(seen[2] == Value::Int(3N))
+}
+
+///|
 test "StarlarkString: ASCII byte length" {
   let s = StarlarkString::new("hello")
   assert_eq(s.byte_len(), 5)

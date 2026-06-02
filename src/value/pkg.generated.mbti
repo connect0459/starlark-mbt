@@ -161,6 +161,7 @@ pub struct StarlarkList {
 pub fn StarlarkList::check_mutable(Self, String) -> Result[Unit, String]
 pub fn StarlarkList::clear(Self) -> Result[Unit, String]
 pub fn StarlarkList::copy_items(Self) -> Array[Value]
+pub fn StarlarkList::each(Self, (Value) -> Unit) -> Unit
 pub fn StarlarkList::eachi(Self, (Int, Value) -> Unit) -> Unit
 pub fn StarlarkList::freeze(Self) -> Unit
 pub fn StarlarkList::get(Self, Int) -> Value

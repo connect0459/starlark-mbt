@@ -188,6 +188,17 @@ pub fn StarlarkList::iter(self : StarlarkList) -> Iter[Value] {
 }
 
 ///|
+/// Calls `f(value)` for each element in order.
+///
+/// Parameters:
+///
+/// - `self` : The list to iterate over.
+/// - `f` : A callback receiving each element value.
+pub fn StarlarkList::each(self : StarlarkList, f : (Value) -> Unit) -> Unit {
+  self.items.each(f)
+}
+
+///|
 /// Calls `f(index, value)` for each element.
 ///
 /// Parameters:
