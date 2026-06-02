@@ -1838,6 +1838,26 @@ gaps (implementations were already correct). Commit: `190d060`
       mirror of starlark-go's top-level `CompareLimit`, paired with the facade
       `equal_depth`/`compare_depth` entry points; not a redundant duplicate.
 
+### Post-R4 API symmetry & safety pass
+
+- [x] **`StarlarkList::get` made bounds-safe** — it was the only container
+      accessor that aborted on an out-of-bounds index (every other accessor
+      returns `Result`/`Option`). Now returns `Value?` like core `Array::get`;
+      added `StarlarkList::op_get` to back the aborting `list[i]` indexed syntax
+      used on already-bounds-checked internal paths. BREAKING (return type).
+- [x] **`Value` scalar constructors unified under `new_` prefix** — renamed
+      `Value::of_int`/`of_float`/`of_string` to `new_int`/`new_float`/`new_string`
+      so all `Value` factories share one prefix with `new_list`/`new_dict`/
+      `new_set`/`new_builtin`, matching starlark-go's `New*` family. BREAKING.
+- [x] **Name-value registry APIs unified** — `Universe` and `Predeclared` now
+      share the same core surface as `StringDict`: renamed `Universe::empty` →
+      `new`, added `Universe::from_map`/`keys` and `Predeclared::has`/`keys`.
+      `keys()` returns lexicographic order on all three. `Universe::empty` BREAKING.
+- [x] **Container/Module symmetry additions** — added `StarlarkDict::iter`
+      (lazy key iterator mirroring `StarlarkList::iter`/`StarlarkSet::iter`;
+      dict iteration yields keys) and `Module::predeclared_count` (counterpart to
+      `globals_count`, alongside the existing `predeclared_names`). Additive.
+
 ### Deferred public-API gaps
 
 - [ ] **MISSING-62**: No bytecode `CompiledProgram`/`Program.Write` — tree-walking
