@@ -1336,7 +1336,7 @@ fn eval_index(
       match idx {
         @value.Value::Int(i) => {
           let j = check(ctx, adjust_index(i, l.length(), "list"))
-          l.get(j)
+          l[j]
         }
         _ =>
           raise EvalErr(
@@ -1543,13 +1543,13 @@ fn eval_slice(
       if step > 0 {
         let mut i = start
         while i < stop {
-          items.push(l.get(i))
+          items.push(l[i])
           i += step
         }
       } else {
         let mut i = start
         while i > stop {
-          items.push(l.get(i))
+          items.push(l[i])
           i += step
         }
       }

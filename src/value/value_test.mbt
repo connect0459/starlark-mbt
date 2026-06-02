@@ -280,7 +280,7 @@ test "StarlarkList: push appends item accessible by index" {
   let l = StarlarkList::new([])
   l.push(Value::String(StarlarkString::new("hello"))) |> ignore
   assert_eq(l.length(), 1)
-  let elem = l.get(0)
+  let elem = l[0]
   match elem {
     Value::String(s) => assert_eq(s.raw(), "hello")
     _ => fail("expected String")
@@ -294,9 +294,18 @@ test "StarlarkList: push multiple items maintains insertion order" {
   l.push(Value::Int(2N)) |> ignore
   l.push(Value::Int(3N)) |> ignore
   assert_eq(l.length(), 3)
-  assert_true(l.get(0) is Value::Int(1N))
-  assert_true(l.get(1) is Value::Int(2N))
-  assert_true(l.get(2) is Value::Int(3N))
+  assert_true(l[0] is Value::Int(1N))
+  assert_true(l[1] is Value::Int(2N))
+  assert_true(l[2] is Value::Int(3N))
+}
+
+///|
+test "StarlarkList: get returns Some for in-bounds index and None out of bounds" {
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N)])
+  assert_true(l.get(0) is Some(Value::Int(1N)))
+  assert_true(l.get(1) is Some(Value::Int(2N)))
+  assert_true(l.get(2) is None)
+  assert_true(l.get(-1) is None)
 }
 
 ///|

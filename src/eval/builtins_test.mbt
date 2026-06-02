@@ -29,8 +29,8 @@ test "exec_file: range(stop) produces correct sequence when iterated" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 5)
-          assert_true(l.get(0) == @value.Value::Int(0N))
-          assert_true(l.get(4) == @value.Value::Int(4N))
+          assert_true(l[0] == @value.Value::Int(0N))
+          assert_true(l[4] == @value.Value::Int(4N))
         }
         _ => assert_true(false)
       }
@@ -45,7 +45,7 @@ test "exec_file: range(start, stop) begins at start" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(2N))
+          assert_true(l[0] == @value.Value::Int(2N))
         }
         _ => assert_true(false)
       }
@@ -279,8 +279,8 @@ test "exec_file: sorted returns a new list in ascending order" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 6)
-          assert_true(l.get(0) == @value.Value::Int(1N))
-          assert_true(l.get(5) == @value.Value::Int(9N))
+          assert_true(l[0] == @value.Value::Int(1N))
+          assert_true(l[5] == @value.Value::Int(9N))
         }
         _ => assert_true(false)
       }
@@ -295,8 +295,8 @@ test "exec_file: reversed returns elements in reverse order" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(3N))
-          assert_true(l.get(2) == @value.Value::Int(1N))
+          assert_true(l[0] == @value.Value::Int(3N))
+          assert_true(l[2] == @value.Value::Int(1N))
         }
         _ => assert_true(false)
       }
@@ -313,7 +313,7 @@ test "exec_file: enumerate wraps each element with its index" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 2)
-          match l.get(0) {
+          match l[0] {
             @value.Value::Tuple(t) => assert_true(t[0] == @value.Value::Int(0N))
             _ => assert_true(false)
           }
@@ -331,7 +331,7 @@ test "exec_file: zip pairs elements from two sequences" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 2)
-          match l.get(0) {
+          match l[0] {
             @value.Value::Tuple(t) => {
               assert_true(t[0] == @value.Value::Int(1N))
               match t[1] {
@@ -665,7 +665,7 @@ test "exec_file: list.insert places element at given index" {
       match g(m, "lst") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(1) == @value.Value::Int(2N))
+          assert_true(l[1] == @value.Value::Int(2N))
         }
         _ => assert_true(false)
       }
@@ -768,7 +768,7 @@ test "exec_file: dict.items returns list of key-value tuples" {
       match g(m, "it") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 1)
-          assert_true(l.get(0) is @value.Value::Tuple(_))
+          assert_true(l[0] is @value.Value::Tuple(_))
         }
         _ => assert_true(false)
       }
@@ -1480,8 +1480,8 @@ test "exec_file: list comprehension transforms and filters elements" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 2)
-          assert_true(l.get(0) == @value.Value::Int(6N))
-          assert_true(l.get(1) == @value.Value::Int(8N))
+          assert_true(l[0] == @value.Value::Int(6N))
+          assert_true(l[1] == @value.Value::Int(8N))
         }
         _ => assert_true(false)
       }
@@ -1605,9 +1605,9 @@ test "exec_file: bytes.elems returns list of integer byte values" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(65N))
-          assert_true(l.get(1) == @value.Value::Int(66N))
-          assert_true(l.get(2) == @value.Value::Int(67N))
+          assert_true(l[0] == @value.Value::Int(65N))
+          assert_true(l[1] == @value.Value::Int(66N))
+          assert_true(l[2] == @value.Value::Int(67N))
         }
         _ => assert_true(false)
       }
@@ -1696,7 +1696,7 @@ test "exec_file: sorted with key= sorts by key function result" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          match l.get(0) {
+          match l[0] {
             @value.Value::String(s) => assert_eq(s.raw(), "a")
             _ => assert_true(false)
           }
@@ -1714,8 +1714,8 @@ test "exec_file: sorted with reverse=True returns descending order" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(3N))
-          assert_true(l.get(2) == @value.Value::Int(1N))
+          assert_true(l[0] == @value.Value::Int(3N))
+          assert_true(l[2] == @value.Value::Int(1N))
         }
         _ => assert_true(false)
       }
@@ -1730,7 +1730,7 @@ test "exec_file: sorted accepts key and reverse positionally" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          match l.get(0) {
+          match l[0] {
             @value.Value::String(s) => assert_eq(s.raw(), "ccc")
             _ => assert_true(false)
           }
@@ -1823,7 +1823,7 @@ test "exec_file: dir on string returns sorted method names" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_true(l.length() > 0)
-          assert_true(l.get(0) is @value.Value::String(_))
+          assert_true(l[0] is @value.Value::String(_))
         }
         _ => assert_true(false)
       }
@@ -1864,7 +1864,7 @@ test "exec_file: str.rsplit with sep splits from right" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          match l.get(0) {
+          match l[0] {
             @value.Value::String(s) => assert_eq(s.raw(), "a")
             _ => assert_true(false)
           }
@@ -1882,11 +1882,11 @@ test "exec_file: str.rsplit with maxsplit limits from right" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          match l.get(0) {
+          match l[0] {
             @value.Value::String(s) => assert_eq(s.raw(), "a,b")
             _ => assert_true(false)
           }
-          match l.get(2) {
+          match l[2] {
             @value.Value::String(s) => assert_eq(s.raw(), "d")
             _ => assert_true(false)
           }
@@ -1906,7 +1906,7 @@ test "exec_file: str.codepoints returns list of single-char strings" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          match l.get(0) {
+          match l[0] {
             @value.Value::String(s) => assert_eq(s.raw(), "a")
             _ => assert_true(false)
           }
@@ -1924,9 +1924,9 @@ test "exec_file: str.codepoint_ords returns list of code point integers" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(65N))
-          assert_true(l.get(1) == @value.Value::Int(66N))
-          assert_true(l.get(2) == @value.Value::Int(67N))
+          assert_true(l[0] == @value.Value::Int(65N))
+          assert_true(l[1] == @value.Value::Int(66N))
+          assert_true(l[2] == @value.Value::Int(67N))
         }
         _ => assert_true(false)
       }
@@ -1993,13 +1993,13 @@ test "exec_file: str.splitlines without keepends splits at newlines" {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
           assert_true(
-            l.get(0) == @value.Value::String(@value.StarlarkString::new("a")),
+            l[0] == @value.Value::String(@value.StarlarkString::new("a")),
           )
           assert_true(
-            l.get(1) == @value.Value::String(@value.StarlarkString::new("b")),
+            l[1] == @value.Value::String(@value.StarlarkString::new("b")),
           )
           assert_true(
-            l.get(2) == @value.Value::String(@value.StarlarkString::new("c")),
+            l[2] == @value.Value::String(@value.StarlarkString::new("c")),
           )
         }
         _ => assert_true(false)
@@ -2016,13 +2016,13 @@ test "exec_file: str.splitlines with keepends=True keeps line endings" {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
           assert_true(
-            l.get(0) == @value.Value::String(@value.StarlarkString::new("a\n")),
+            l[0] == @value.Value::String(@value.StarlarkString::new("a\n")),
           )
           assert_true(
-            l.get(1) == @value.Value::String(@value.StarlarkString::new("b\n")),
+            l[1] == @value.Value::String(@value.StarlarkString::new("b\n")),
           )
           assert_true(
-            l.get(2) == @value.Value::String(@value.StarlarkString::new("c")),
+            l[2] == @value.Value::String(@value.StarlarkString::new("c")),
           )
         }
         _ => assert_true(false)
@@ -2108,8 +2108,8 @@ test "exec_file: sorted accepts iterable passed by keyword" {
       match g(m, "r") {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 3)
-          assert_true(l.get(0) == @value.Value::Int(1N))
-          assert_true(l.get(2) == @value.Value::Int(3N))
+          assert_true(l[0] == @value.Value::Int(1N))
+          assert_true(l[2] == @value.Value::Int(3N))
         }
         _ => assert_true(false)
       }
@@ -2165,10 +2165,10 @@ test "exec_file: split and strip treat Unicode whitespace as separators" {
         Some(@value.Value::List(l)) => {
           assert_eq(l.length(), 2)
           assert_true(
-            l.get(0) == @value.Value::String(@value.StarlarkString::new("a")),
+            l[0] == @value.Value::String(@value.StarlarkString::new("a")),
           )
           assert_true(
-            l.get(1) == @value.Value::String(@value.StarlarkString::new("b")),
+            l[1] == @value.Value::String(@value.StarlarkString::new("b")),
           )
         }
         _ => assert_true(false)

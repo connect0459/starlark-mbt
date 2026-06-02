@@ -216,7 +216,7 @@ test "exec_file: list subscript assignment updates element in place" {
     Ok(m) =>
       match get_s(m, "lst") {
         Some(@value.Value::List(l)) =>
-          assert_true(l.get(1) == @value.Value::Int(99N))
+          assert_true(l[1] == @value.Value::Int(99N))
         _ => assert_true(false)
       }
     Err(_) => assert_true(false)

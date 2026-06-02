@@ -164,13 +164,14 @@ pub fn StarlarkList::copy_items(Self) -> Array[Value]
 pub fn StarlarkList::each(Self, (Value) -> Unit) -> Unit
 pub fn StarlarkList::eachi(Self, (Int, Value) -> Unit) -> Unit
 pub fn StarlarkList::freeze(Self) -> Unit
-pub fn StarlarkList::get(Self, Int) -> Value
+pub fn StarlarkList::get(Self, Int) -> Value?
 pub fn StarlarkList::insert(Self, Int, Value) -> Result[Unit, String]
 pub fn StarlarkList::is_empty(Self) -> Bool
 pub fn StarlarkList::is_frozen(Self) -> Bool
 pub fn StarlarkList::iter(Self) -> Iter[Value]
 pub fn StarlarkList::length(Self) -> Int
 pub fn StarlarkList::new(Array[Value]) -> Self
+pub fn StarlarkList::op_get(Self, Int) -> Value
 pub fn StarlarkList::pop(Self) -> Result[Value?, String]
 pub fn StarlarkList::pop_at(Self, Int, String) -> Result[Value, String]
 pub fn StarlarkList::push(Self, Value) -> Result[Unit, String]

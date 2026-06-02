@@ -121,7 +121,7 @@ test "DebugFrame: env builtin builds dict of own locals in calling Starlark fram
         Some(v) => v
       }
       let env_dict = match e_val {
-        @value.Value::List(lst) => lst.get(0)
+        @value.Value::List(lst) => lst[0]
         _ => fail("e is not a list")
       }
       // env() returns the own locals of g at call time: q=2, inner=4

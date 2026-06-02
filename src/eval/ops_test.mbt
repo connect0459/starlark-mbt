@@ -259,8 +259,8 @@ test "eval_expr: list slice with positive bounds" {
   match eval_op("[1, 2, 3, 4, 5][1:4]") {
     Ok(@value.Value::List(l)) => {
       assert_eq(l.length(), 3)
-      assert_true(l.get(0) == @value.Value::Int(2N))
-      assert_true(l.get(2) == @value.Value::Int(4N))
+      assert_true(l[0] == @value.Value::Int(2N))
+      assert_true(l[2] == @value.Value::Int(4N))
     }
     _ => assert_true(false)
   }
@@ -279,8 +279,8 @@ test "eval_expr: list slice with negative step reverses list" {
   match eval_op("[1, 2, 3, 4, 5][::-1]") {
     Ok(@value.Value::List(l)) => {
       assert_eq(l.length(), 5)
-      assert_true(l.get(0) == @value.Value::Int(5N))
-      assert_true(l.get(4) == @value.Value::Int(1N))
+      assert_true(l[0] == @value.Value::Int(5N))
+      assert_true(l[4] == @value.Value::Int(1N))
     }
     _ => assert_true(false)
   }

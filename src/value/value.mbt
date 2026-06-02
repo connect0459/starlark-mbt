@@ -174,8 +174,16 @@ pub fn StarlarkList::is_empty(self : StarlarkList) -> Bool {
 /// - `self` : The list to index into.
 /// - `i` : The zero-based index of the element to retrieve.
 ///
-/// Returns the `Value` at index `i`.
-pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value {
+/// Returns `Some(value)` at index `i`, or `None` if `i` is out of bounds.
+/// Mirrors `Array::get`; use `list[i]` for direct (aborting) indexed access.
+pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value? {
+  self.items.get(i)
+}
+
+///|
+/// Returns the `Value` at index `i`, aborting if `i` is out of bounds.
+/// Mirrors `Array`'s indexed access; use `get` for a bounds-checked option.
+pub fn StarlarkList::op_get(self : StarlarkList, i : Int) -> Value {
   self.items[i]
 }
 

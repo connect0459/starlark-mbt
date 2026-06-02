@@ -406,8 +406,8 @@ test "eval_expr: list literal with elements has correct elements" {
   match eval_e("[1, 2, 3]") {
     Ok(@value.Value::List(l)) => {
       assert_eq(l.length(), 3)
-      assert_true(l.get(0) == @value.Value::Int(1N))
-      assert_true(l.get(2) == @value.Value::Int(3N))
+      assert_true(l[0] == @value.Value::Int(1N))
+      assert_true(l[2] == @value.Value::Int(3N))
     }
     _ => assert_true(false)
   }
