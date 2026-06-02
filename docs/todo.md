@@ -2212,6 +2212,96 @@ internal call sites updated before removing the facade wrappers.
 
 ---
 
+### Phase R4: Remove type aliases from `src/starlark.mbt`
+
+**Motivation**: After R2, `@eval`, `@value`, and `@errors` are public packages.
+The 23 `pub type X = @pkg.X` declarations in `src/starlark.mbt` are now
+redundant re-exports. They cause stale-facade risk (every new type must be
+manually added) and diverge from the reference implementation
+(`tonyfettes/starlark`), which exposes types directly from sub-packages.
+Embedders import the specific package they need; the `@starlark` facade
+becomes a function-only entry point.
+
+**Two sequential sub-phases:**
+
+#### Phase R4a: Promote `src/internal/syntax/` → `src/syntax/`
+
+`SyntaxFile` / `SyntaxExpr` alias `@syntax.File` / `@syntax.Expr`, which live
+in `internal/syntax`. Removing the aliases without first promoting the package
+would leave external callers unable to name these types (MoonBit restricts
+`internal` import to within the module). Additionally, `StarlarkFunction::params()`
+and `::body()` in the public `value` package already leak `@syntax.Param` /
+`@syntax.Stmt` — promoting `syntax` makes these usable rather than invisible.
+
+- [ ] Move all `.mbt` + `moon.pkg` files from `src/internal/syntax/` to `src/syntax/`
+- [ ] Update every `moon.pkg` import: `"internal/syntax"` → `"syntax"`
+      (internal packages that import syntax: `lexer`, `parser`, `resolver`, `eval`,
+      `value`, `starlarktest`, `unpack`)
+- [ ] Update all `@internal/syntax.*` qualified names in source files
+- [ ] Update `src/starlark.mbt`: `@syntax.File` / `@syntax.Expr` in signatures
+- [ ] Delete the now-empty `src/internal/syntax/` directory
+- [ ] `moon check && moon test`
+- [ ] `moon info` — `.mbti` diff for `src/` must be empty (aliases still present)
+- [ ] Commit: `refactor(syntax): promote src/internal/syntax to src/syntax`
+
+#### Phase R4b: Remove type aliases and update all call sites
+
+**Remove** from `src/starlark.mbt` (24 declarations):
+
+| Alias | Direct type |
+| :--- | :--- |
+| `Thread` | `@eval.Thread` |
+| `Module` | `@eval.Module` |
+| `Options` | `@eval.Options` |
+| `Universe` | `@eval.Universe` |
+| `Predeclared` | `@eval.Predeclared` |
+| `DebugFrame` | `@eval.DebugFrame` |
+| `Program` | `@eval.Program` |
+| `Value` | `@value.Value` |
+| `StarlarkDict` | `@value.StarlarkDict` |
+| `StarlarkList` | `@value.StarlarkList` |
+| `StarlarkString` | `@value.StarlarkString` |
+| `StarlarkBuiltinFunc` | `@value.StarlarkBuiltinFunc` |
+| `StarlarkIterator` | `@value.StarlarkIterator` |
+| `CustomValue` | `@value.CustomValue` |
+| `SyntaxFile` | `@syntax.File` |
+| `SyntaxExpr` | `@syntax.Expr` |
+| `EvalError` | `@errors.EvalError` |
+| `SyntaxError` | `@errors.SyntaxError` |
+| `ResolveError` | `@errors.ResolveError` |
+| `Position` | `@errors.Position` |
+| `Binding` | `@errors.Binding` |
+| `CallFrame` | `@errors.CallFrame` |
+| `CallStack` | `@errors.CallStack` |
+
+**Steps:**
+
+- [ ] Remove all 23 `pub type X = @pkg.X` declarations from `src/starlark.mbt`
+- [ ] Update function signatures in `src/starlark.mbt`: replace alias names with
+      fully-qualified names (e.g. `thread : Thread` → `thread : @eval.Thread`)
+- [ ] Update `src/starlark_test.mbt`: replace `@starlark.Thread` → `@eval.Thread`,
+      `@starlark.Value` → `@value.Value`, etc. across all test call sites
+- [ ] Update `src/starlark_wbtest.mbt` similarly
+- [ ] Update `docs/api.md`: import examples now require individual sub-package imports
+- [ ] Update `README.mbt.md`: embedding quick-start now shows `@eval`/`@value`/`@errors`
+- [ ] `moon check && moon test`
+- [ ] `moon info` — `.mbti` diff shows all 23 `pub using` entries removed
+- [ ] Commit: `refactor: remove facade type aliases; use sub-packages directly`
+
+**After R4b, `src/starlark.mbt` contains only:**
+
+- High-level entry functions: `exec_file`, `eval_expr`, `exec_repl_chunk`,
+  `exec_file_with_predeclared`, `exec_file_with_universe`, `eval_expr_with_opts`,
+  `eval_parsed_expr`, `parse_file`, `parse_expr`
+- Program API: `source_program`, `source_program_with_file`, `file_program`
+- Utility functions: `call`, `equal`, `equal_depth`, `binary`, `unary`, `compare`,
+  `compare_depth`, `number_to_int`, `as_float`, `as_string`, `len_of`, `iterate`,
+  `new_thread_with_loader`
+- `StringDict` struct and methods (defined here, not a wrapper)
+- `compare_limit` constant
+
+---
+
 ## Future work (out of initial release scope)
 
 - Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
