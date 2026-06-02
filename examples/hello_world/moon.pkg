@@ -1,5 +1,6 @@
 import {
   "connect0459/starlark",
+  "connect0459/starlark/eval",
 }
 
 options(

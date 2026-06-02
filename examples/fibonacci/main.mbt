@@ -1,5 +1,5 @@
 fn main {
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   let src =
     #|def fib(n):
     #|    if n <= 1:
@@ -8,7 +8,7 @@ fn main {
     #|
     #|result = fib(15)
     #|sequence = [fib(i) for i in range(10)]
-  match @starlark.exec_file(thread, "fibonacci.star", src, @starlark.Options::default()) {
+  match @starlark.exec_file(thread, "fibonacci.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("result") {
         Some(v) =>

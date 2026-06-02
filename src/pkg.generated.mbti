@@ -76,51 +76,6 @@ pub fn StringDict::new() -> Self
 pub fn StringDict::set(Self, String, @value.Value) -> Unit
 
 // Type aliases
-pub using @errors {type Binding}
-
-pub using @errors {type CallFrame}
-
-pub using @errors {type CallStack}
-
-pub using @value {type CustomValue}
-
-pub using @eval {type DebugFrame}
-
-pub using @errors {type EvalError}
-
-pub using @eval {type Module}
-
-pub using @eval {type Options}
-
-pub using @errors {type Position}
-
-pub using @eval {type Predeclared}
-
-pub using @eval {type Program}
-
-pub using @errors {type ResolveError}
-
-pub using @value {type StarlarkBuiltinFunc}
-
-pub using @value {type StarlarkDict}
-
-pub using @value {type StarlarkIterator}
-
-pub using @value {type StarlarkList}
-
-pub using @value {type StarlarkString}
-
-pub using @errors {type SyntaxError}
-
-pub using @syntax {type Expr as SyntaxExpr}
-
-pub using @syntax {type File as SyntaxFile}
-
-pub using @eval {type Thread}
-
-pub using @eval {type Universe}
-
-pub using @value {type Value}
 
 // Traits
 

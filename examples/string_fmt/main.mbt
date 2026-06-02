@@ -1,5 +1,5 @@
 fn main {
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   let src =
     #|words = ["starlark", "moonbit", "interpreter"]
     #|joined = ", ".join(words)
@@ -7,7 +7,7 @@ fn main {
     #|csv = "alice,30,engineer"
     #|parts = csv.split(",")
     #|formatted = "name={} age={} role={}".format(*parts)
-  match @starlark.exec_file(thread, "string_fmt.star", src, @starlark.Options::default()) {
+  match @starlark.exec_file(thread, "string_fmt.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("joined") {
         Some(v) => {

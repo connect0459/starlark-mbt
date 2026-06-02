@@ -1,5 +1,5 @@
 fn main {
-  let thread = @starlark.Thread::new("main")
+  let thread = @eval.Thread::new("main")
   let src =
     #|nums = [3, 1, 4, 1, 5, 9, 2, 6]
     #|asc = sorted(nums)
@@ -13,7 +13,7 @@ fn main {
     #|has_even = any([x % 2 == 0 for x in nums])
     #|all_pos = all([x > 0 for x in nums])
     #|indexed = list(enumerate(["x", "y", "z"]))
-  match @starlark.exec_file(thread, "builtins.star", src, @starlark.Options::default()) {
+  match @starlark.exec_file(thread, "builtins.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("asc") {
         Some(v) => println("sorted asc  = \{v.repr()}")

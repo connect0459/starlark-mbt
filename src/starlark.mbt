@@ -1,62 +1,4 @@
 ///|
-/// Execution context carrying the print callback, load callback, call stack,
-/// and step budget for a single Starlark evaluation.
-pub type Thread = @eval.Thread
-
-///|
-/// The result of executing a Starlark file: a frozen mapping of global names
-/// to their values.
-pub type Module = @eval.Module
-
-///|
-/// Feature-flag set controlling which optional Starlark dialect features are
-/// enabled. All flags default to `true`.
-pub type Options = @eval.Options
-
-///|
-/// The set of predeclared built-in bindings shared across all modules in a
-/// program (e.g. `None`, `True`, `print`, `range`).
-pub type Universe = @eval.Universe
-
-///|
-/// Extra per-execution bindings injected before user globals, visible to
-/// both the resolver and evaluator but not exported in the resulting Module.
-pub type Predeclared = @eval.Predeclared
-
-///|
-/// A Starlark value. Covers all built-in types: `None`, `Bool`, `Int`,
-/// `Float`, `String`, `Bytes`, `List`, `Tuple`, `Dict`, `Set`, `Range`,
-/// `Function`, `Builtin`, `BoundMethod`, `Module`, and embedder extensions.
-pub type Value = @value.Value
-
-///|
-/// An insertion-ordered mutable mapping from Starlark hashable keys to values.
-pub type StarlarkDict = @value.StarlarkDict
-
-///|
-/// A mutable, ordered sequence of Starlark values.
-pub type StarlarkList = @value.StarlarkList
-
-///|
-/// An immutable Starlark string backed by a pre-computed UTF-8 byte array for
-/// O(1) byte indexing.
-pub type StarlarkString = @value.StarlarkString
-
-///|
-/// A built-in function callable from Starlark. May be a named dispatcher or
-/// a closure carrying an arbitrary host implementation.
-pub type StarlarkBuiltinFunc = @value.StarlarkBuiltinFunc
-
-///|
-/// A forward-only iterator over a Starlark sequence or mapping.
-pub type StarlarkIterator = @value.StarlarkIterator
-
-///|
-/// Trait that embedder-defined custom types must implement to participate in
-/// the Starlark value system.
-pub type CustomValue = @value.CustomValue
-
-///|
 /// Creates a new `Thread` with the given name and a `loader` callback that
 /// handles `load()` statements encountered during execution.
 ///
@@ -74,60 +16,10 @@ pub type CustomValue = @value.CustomValue
 /// Returns a new `Thread` that delegates `load()` to `loader`.
 pub fn new_thread_with_loader(
   name : String,
-  loader : (Thread, String) -> Result[Module, EvalError],
-) -> Thread {
+  loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError],
+) -> @eval.Thread {
   @eval.Thread::with_loader(name, loader)
 }
-
-///|
-/// The parsed AST of a complete Starlark source file.
-pub type SyntaxFile = @syntax.File
-
-///|
-/// A single parsed Starlark expression node.
-pub type SyntaxExpr = @syntax.Expr
-
-///|
-/// A runtime error produced during Starlark evaluation, carrying a message
-/// and a call stack snapshot.
-pub type EvalError = @errors.EvalError
-
-///|
-/// A parse-time error with source position.
-pub type SyntaxError = @errors.SyntaxError
-
-///|
-/// A name-resolution error with source position.
-pub type ResolveError = @errors.ResolveError
-
-///|
-/// A source location: 1-based line and column, matching starlark-go's
-/// `syntax.Position` convention.
-pub type Position = @errors.Position
-
-///|
-/// A local variable name together with its definition position; used by the
-/// debugger API.
-pub type Binding = @errors.Binding
-
-///|
-/// A single frame in a Starlark call stack, recording the function name and
-/// the source position of the call site.
-pub type CallFrame = @errors.CallFrame
-
-///|
-/// An ordered snapshot of call frames, outermost first.
-pub type CallStack = @errors.CallStack
-
-///|
-/// A read-only snapshot of an active Starlark call frame; returned by
-/// `Thread.debug_frame`.
-pub type DebugFrame = @eval.DebugFrame
-
-///|
-/// A parsed-and-resolved Starlark program that can be executed repeatedly
-/// without re-parsing or re-resolving.
-pub type Program = @eval.Program
 
 ///|
 /// Parses `src` as a Starlark source file and returns its AST.
@@ -141,7 +33,7 @@ pub type Program = @eval.Program
 pub fn parse_file(
   filename : String,
   src : String,
-) -> Result[SyntaxFile, EvalError] {
+) -> Result[@syntax.File, @errors.EvalError] {
   match @parser.parse_file(filename, src) {
     Ok(f) => Ok(f)
     Err(e) => Err(@errors.EvalError::simple(e.to_string()))
@@ -160,7 +52,7 @@ pub fn parse_file(
 pub fn parse_expr(
   filename : String,
   src : String,
-) -> Result[SyntaxExpr, EvalError] {
+) -> Result[@syntax.Expr, @errors.EvalError] {
   match @parser.parse_expr(filename, src) {
     Ok(e) => Ok(e)
     Err(e) => Err(@errors.EvalError::simple(e.to_string()))
@@ -180,11 +72,11 @@ pub fn parse_expr(
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on runtime failure.
 pub fn eval_parsed_expr(
-  thread : Thread,
-  expr : SyntaxExpr,
-  opts : Options,
-  env : StarlarkDict,
-) -> Result[Value, EvalError] {
+  thread : @eval.Thread,
+  expr : @syntax.Expr,
+  opts : @eval.Options,
+  env : @value.StarlarkDict,
+) -> Result[@value.Value, @errors.EvalError] {
   @eval.eval_parsed_expr(thread, expr, opts, env)
 }
 
@@ -204,9 +96,9 @@ pub fn eval_parsed_expr(
 pub fn source_program(
   filename : String,
   src : String,
-  opts : Options,
+  opts : @eval.Options,
   is_predeclared : (String) -> Bool,
-) -> Result[Program, EvalError] {
+) -> Result[@eval.Program, @errors.EvalError] {
   @eval.source_program(filename, src, opts, is_predeclared)
 }
 
@@ -227,9 +119,9 @@ pub fn source_program(
 pub fn source_program_with_file(
   filename : String,
   src : String,
-  opts : Options,
+  opts : @eval.Options,
   is_predeclared : (String) -> Bool,
-) -> Result[(SyntaxFile, Program), EvalError] {
+) -> Result[(@syntax.File, @eval.Program), @errors.EvalError] {
   @eval.source_program_with_file(filename, src, opts, is_predeclared)
 }
 
@@ -245,10 +137,10 @@ pub fn source_program_with_file(
 ///
 /// Returns the compiled `Program`, or an `EvalError` on resolve failure.
 pub fn file_program(
-  file : SyntaxFile,
-  opts : Options,
+  file : @syntax.File,
+  opts : @eval.Options,
   is_predeclared : (String) -> Bool,
-) -> Result[Program, EvalError] {
+) -> Result[@eval.Program, @errors.EvalError] {
   @eval.file_program(file, opts, is_predeclared)
 }
 
@@ -266,11 +158,11 @@ pub fn file_program(
 /// Returns the frozen `Module` containing all top-level globals, or an
 /// `EvalError` on parse, resolve, or runtime failure.
 pub fn exec_file(
-  thread : Thread,
+  thread : @eval.Thread,
   filename : String,
   src : String,
-  opts : Options,
-) -> Result[Module, EvalError] {
+  opts : @eval.Options,
+) -> Result[@eval.Module, @errors.EvalError] {
   @eval.exec_file(thread, filename, src, opts)
 }
 
@@ -289,12 +181,12 @@ pub fn exec_file(
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
 pub fn exec_file_with_universe(
-  thread : Thread,
+  thread : @eval.Thread,
   filename : String,
   src : String,
-  opts : Options,
-  universe : Universe,
-) -> Result[Module, EvalError] {
+  opts : @eval.Options,
+  universe : @eval.Universe,
+) -> Result[@eval.Module, @errors.EvalError] {
   @eval.exec_file_with_universe(thread, filename, src, opts, universe)
 }
 
@@ -312,12 +204,12 @@ pub fn exec_file_with_universe(
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
 pub fn exec_file_with_predeclared(
-  thread : Thread,
+  thread : @eval.Thread,
   filename : String,
   src : String,
-  opts : Options,
-  predeclared : Predeclared,
-) -> Result[Module, EvalError] {
+  opts : @eval.Options,
+  predeclared : @eval.Predeclared,
+) -> Result[@eval.Module, @errors.EvalError] {
   @eval.exec_file_with_predeclared(thread, filename, src, opts, predeclared)
 }
 
@@ -334,11 +226,11 @@ pub fn exec_file_with_predeclared(
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr(
-  thread : Thread,
+  thread : @eval.Thread,
   filename : String,
   src : String,
-  env : StarlarkDict,
-) -> Result[Value, EvalError] {
+  env : @value.StarlarkDict,
+) -> Result[@value.Value, @errors.EvalError] {
   @eval.eval_expr(thread, filename, src, env)
 }
 
@@ -355,12 +247,12 @@ pub fn eval_expr(
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on failure.
 pub fn eval_expr_with_opts(
-  thread : Thread,
+  thread : @eval.Thread,
   filename : String,
   src : String,
-  opts : Options,
-  env : StarlarkDict,
-) -> Result[Value, EvalError] {
+  opts : @eval.Options,
+  env : @value.StarlarkDict,
+) -> Result[@value.Value, @errors.EvalError] {
   @eval.eval_expr_with_opts(thread, filename, src, opts, env)
 }
 
@@ -379,12 +271,12 @@ pub fn eval_expr_with_opts(
 ///
 /// Returns `Ok(())` on success, or an `EvalError` on failure.
 pub fn exec_repl_chunk(
-  thread : Thread,
+  thread : @eval.Thread,
   filename : String,
   src : String,
-  globals : StarlarkDict,
-  opts : Options,
-) -> Result[Unit, EvalError] {
+  globals : @value.StarlarkDict,
+  opts : @eval.Options,
+) -> Result[Unit, @errors.EvalError] {
   @eval.exec_repl_chunk(thread, filename, src, globals, opts)
 }
 
@@ -400,7 +292,10 @@ pub fn exec_repl_chunk(
 ///
 /// Returns `Ok(true)` if `a == b`, `Ok(false)` if not, or `Err` when the
 /// depth limit is exceeded (cyclic structure).
-pub fn equal(a : Value, b : Value) -> Result[Bool, EvalError] {
+pub fn equal(
+  a : @value.Value,
+  b : @value.Value,
+) -> Result[Bool, @errors.EvalError] {
   equal_depth(a, b, @value.compare_limit)
 }
 
@@ -414,7 +309,7 @@ pub fn equal(a : Value, b : Value) -> Result[Bool, EvalError] {
 ///
 /// Returns `Some(n)` if the conversion succeeds, `None` if `v` is not a
 /// numeric type, is NaN or infinite, or is outside the signed 64-bit range.
-pub fn number_to_int(v : Value) -> Int64? {
+pub fn number_to_int(v : @value.Value) -> Int64? {
   match v {
     @value.Value::Int(n) =>
       if n.compare_int64(@int64.MAX_VALUE) > 0 ||
@@ -443,7 +338,7 @@ pub fn number_to_int(v : Value) -> Int64? {
 ///
 /// Returns a tuple `(f, ok)` where `f` is the extracted value and `ok`
 /// indicates whether `v` was a numeric type.
-pub fn as_float(v : Value) -> (Double, Bool) {
+pub fn as_float(v : @value.Value) -> (Double, Bool) {
   match v {
     @value.Value::Float(f) => (f, true)
     @value.Value::Int(n) => (@value.bigint_to_double(n), true)
@@ -461,7 +356,7 @@ pub fn as_float(v : Value) -> (Double, Bool) {
 ///
 /// Returns a tuple `(s, ok)` where `s` is the raw string and `ok` indicates
 /// whether `v` was a string type.
-pub fn as_string(v : Value) -> (String, Bool) {
+pub fn as_string(v : @value.Value) -> (String, Bool) {
   match v {
     @value.Value::String(s) => (s.raw(), true)
     _ => ("", false)
@@ -477,7 +372,7 @@ pub fn as_string(v : Value) -> (String, Bool) {
 /// - `v` : The Starlark value whose length to retrieve.
 ///
 /// Returns the non-negative length, or `-1` if `v` does not support `len`.
-pub fn len_of(v : Value) -> Int {
+pub fn len_of(v : @value.Value) -> Int {
   match @value.length_of(v) {
     Ok(n) => n
     Err(_) => -1
@@ -493,7 +388,9 @@ pub fn len_of(v : Value) -> Int {
 /// - `v` : The Starlark value to iterate over.
 ///
 /// Returns `Ok(iterator)` on success, or an `EvalError` if `v` is not iterable.
-pub fn iterate(v : Value) -> Result[StarlarkIterator, EvalError] {
+pub fn iterate(
+  v : @value.Value,
+) -> Result[@value.StarlarkIterator, @errors.EvalError] {
   match @value.iterate(v) {
     Ok(it) => Ok(it)
     Err(msg) => Err(@errors.EvalError::simple(msg))
@@ -513,11 +410,11 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, EvalError] {
 ///
 /// Returns the call result, or an `EvalError` on failure.
 pub fn call(
-  thread : Thread,
-  func : Value,
-  args : Array[Value],
-  kwargs : Array[(String, Value)],
-) -> Result[Value, EvalError] {
+  thread : @eval.Thread,
+  func : @value.Value,
+  args : Array[@value.Value],
+  kwargs : Array[(String, @value.Value)],
+) -> Result[@value.Value, @errors.EvalError] {
   @eval.call(thread, func, args, kwargs)
 }
 
@@ -525,7 +422,7 @@ pub fn call(
 /// A string-keyed dict of `Value`s; used by the embedding API to pass named
 /// globals or inspect module exports.
 pub struct StringDict {
-  priv data : Map[String, Value]
+  priv data : Map[String, @value.Value]
 }
 
 ///|
@@ -544,7 +441,7 @@ pub fn StringDict::new() -> StringDict {
 /// - `m` : The map to wrap; ownership is transferred.
 ///
 /// Returns a `StringDict` backed by `m`.
-pub fn StringDict::from_map(m : Map[String, Value]) -> StringDict {
+pub fn StringDict::from_map(m : Map[String, @value.Value]) -> StringDict {
   { data: m }
 }
 
@@ -556,7 +453,11 @@ pub fn StringDict::from_map(m : Map[String, Value]) -> StringDict {
 /// - `self` : The dict to modify.
 /// - `key` : The string key to bind.
 /// - `v` : The value to associate with `key`.
-pub fn StringDict::set(self : StringDict, key : String, v : Value) -> Unit {
+pub fn StringDict::set(
+  self : StringDict,
+  key : String,
+  v : @value.Value,
+) -> Unit {
   self.data[key] = v
 }
 
@@ -569,7 +470,7 @@ pub fn StringDict::set(self : StringDict, key : String, v : Value) -> Unit {
 /// - `key` : The string key to retrieve.
 ///
 /// Returns `Some(value)` if `key` is present, `None` otherwise.
-pub fn StringDict::get(self : StringDict, key : String) -> Value? {
+pub fn StringDict::get(self : StringDict, key : String) -> @value.Value? {
   self.data.get(key)
 }
 
@@ -644,10 +545,10 @@ pub let compare_limit : Int = @value.compare_limit
 /// Returns `Ok(true)` if `a == b`, `Ok(false)` if not, or an `EvalError`
 /// when the depth limit is exceeded (cyclic structure).
 pub fn equal_depth(
-  a : Value,
-  b : Value,
+  a : @value.Value,
+  b : @value.Value,
   depth : Int,
-) -> Result[Bool, EvalError] {
+) -> Result[Bool, @errors.EvalError] {
   match @value.starlark_equals_depth(a, b, depth) {
     Ok(b) => Ok(b)
     Err(e) => Err(@errors.EvalError::simple(e))
@@ -671,10 +572,10 @@ pub fn equal_depth(
 /// depth exhaustion, or unknown operator.
 pub fn compare_depth(
   op : String,
-  a : Value,
-  b : Value,
+  a : @value.Value,
+  b : @value.Value,
   depth : Int,
-) -> Result[Bool, EvalError] {
+) -> Result[Bool, @errors.EvalError] {
   match op {
     "==" =>
       match @value.starlark_equals_depth(a, b, depth) {
@@ -714,7 +615,11 @@ pub fn compare_depth(
 ///
 /// Returns the operation result, or an `EvalError` on type mismatch or
 /// arithmetic error (e.g. division by zero).
-pub fn binary(op : String, x : Value, y : Value) -> Result[Value, EvalError] {
+pub fn binary(
+  op : String,
+  x : @value.Value,
+  y : @value.Value,
+) -> Result[@value.Value, @errors.EvalError] {
   @eval.binary(op, x, y)
 }
 
@@ -728,7 +633,10 @@ pub fn binary(op : String, x : Value, y : Value) -> Result[Value, EvalError] {
 /// - `x` : The operand.
 ///
 /// Returns the operation result, or an `EvalError` on type mismatch.
-pub fn unary(op : String, x : Value) -> Result[Value, EvalError] {
+pub fn unary(
+  op : String,
+  x : @value.Value,
+) -> Result[@value.Value, @errors.EvalError] {
   @eval.unary(op, x)
 }
 
@@ -743,6 +651,10 @@ pub fn unary(op : String, x : Value) -> Result[Value, EvalError] {
 /// - `y` : The right-hand operand.
 ///
 /// Returns `Ok(result)` on success, or an `EvalError` on type mismatch.
-pub fn compare(op : String, x : Value, y : Value) -> Result[Bool, EvalError] {
+pub fn compare(
+  op : String,
+  x : @value.Value,
+  y : @value.Value,
+) -> Result[Bool, @errors.EvalError] {
   @eval.compare(op, x, y)
 }

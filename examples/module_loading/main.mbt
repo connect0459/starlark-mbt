@@ -12,20 +12,20 @@ fn main {
     #|    return result
   let modules : Map[String, String] = { "utils.star": utils_src }
   let loader = fn(
-    _t : @starlark.Thread,
+    _t : @eval.Thread,
     path : String,
-  ) -> Result[@starlark.Module, @starlark.EvalError] {
+  ) -> Result[@eval.Module, @errors.EvalError] {
     match modules.get(path) {
       Some(src) => {
-        let lt = @starlark.Thread::new("load:\{path}")
-        @starlark.exec_file(lt, path, src, @starlark.Options::default())
+        let lt = @eval.Thread::new("load:\{path}")
+        @starlark.exec_file(lt, path, src, @eval.Options::default())
       }
       None =>
         @starlark.exec_file(
-          @starlark.Thread::new("err"),
+          @eval.Thread::new("err"),
           path,
           "raise_error = 1 // 0",
-          @starlark.Options::default(),
+          @eval.Options::default(),
         )
     }
   }
@@ -42,7 +42,7 @@ fn main {
     #|    lambda s: s.lower(),
     #|    lambda s: s.replace(",", ""),
     #|)
-  match @starlark.exec_file(thread, "main.star", src, @starlark.Options::default()) {
+  match @starlark.exec_file(thread, "main.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("clamped") {
         Some(v) => println("clamped = \{v.repr()}")
