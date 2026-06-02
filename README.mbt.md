@@ -12,6 +12,7 @@ All optional features (`set`, `lambda`, `while`, `bytes`, `float`, recursion) ar
 
 | Package | Import alias | Description |
 | :--- | :--- | :--- |
+| `connect0459/starlark` | `@starlark` | Quick-start entry points: `exec` (run a script), `eval` (evaluate an expression); re-exported `Value`, `Module`, `EvalError` |
 | `connect0459/starlark/eval` | `@eval` | Entry functions (`exec_file`, `eval_expr`, `call`, `source_program`, `parse_file`, …) plus `Thread`, `Module`, `Options`, `Program`, `Predeclared`, `Universe` |
 | `connect0459/starlark/value` | `@value` | `Value`, `StringDict`, `StarlarkDict`, `StarlarkList`, `StarlarkString`, `CustomValue`; value helpers (`equal`, `len_of`, `as_float`, …) |
 | `connect0459/starlark/unpack` | `@unpack` | `unpack_args`, `unpack_positional`, `unpack_args_with` for host-defined built-ins |
@@ -32,6 +33,7 @@ Then declare the packages you need in your `moon.pkg` (add extension packages as
 
 ```text
 import {
+  "connect0459/starlark",               // exec, eval — quick-start helpers with default thread and options
   "connect0459/starlark/eval",          // exec_file, eval_expr, call, parse_file, Thread, Module, Options, …
   "connect0459/starlark/value",         // Value, StringDict, StarlarkDict, value helpers (equal, len_of, …)
   // "connect0459/starlark/errors",     // EvalError, Position, CallStack, …
@@ -46,6 +48,32 @@ import {
 ```
 
 ## Usage
+
+### Quick start
+
+The root `@starlark` package offers zero-ceremony helpers that run with a
+default thread and the default dialect options:
+
+```mbt check
+///|
+test {
+  // Run a script and read back a module global.
+  match @starlark.exec("result = max([i * i for i in range(5)])") {
+    Ok(m) => assert_true(m.get("result") is Some(@value.Value::Int(16N)))
+    Err(e) => fail(e.msg())
+  }
+  // Evaluate a single expression.
+  match @starlark.eval("1 + 2 * 3") {
+    Ok(v) => assert_true(v is @value.Value::Int(7N))
+    Err(e) => fail(e.msg())
+  }
+}
+```
+
+### Full control
+
+For custom threads, options, predeclared bindings, or module loaders, use the
+`@eval` package directly:
 
 ```mbt check
 ///|

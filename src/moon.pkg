@@ -1,6 +1,9 @@
 import {
   "connect0459/starlark/eval",
   "connect0459/starlark/errors",
-  "connect0459/starlark/unpack",
   "connect0459/starlark/value",
+}
+
+import {
+  "connect0459/starlark/unpack",
 } for "test"

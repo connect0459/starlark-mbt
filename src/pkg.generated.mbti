@@ -1,13 +1,27 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "connect0459/starlark"
 
+import {
+  "connect0459/starlark/errors",
+  "connect0459/starlark/eval",
+  "connect0459/starlark/value",
+}
+
 // Values
+pub fn eval(String, filename? : String) -> Result[@value.Value, @errors.EvalError]
+
+pub fn exec(String, filename? : String) -> Result[@eval.Module, @errors.EvalError]
 
 // Errors
 
 // Types and methods
 
 // Type aliases
+pub using @errors {type EvalError}
+
+pub using @eval {type Module}
+
+pub using @value {type Value}
 
 // Traits
 
