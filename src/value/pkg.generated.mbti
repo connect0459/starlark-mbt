@@ -8,9 +8,15 @@ import {
 }
 
 // Values
+pub fn as_float(Value) -> (Double, Bool)
+
+pub fn as_string(Value) -> (String, Bool)
+
 pub fn bigint_to_double(@bigint.BigInt) -> Double
 
 pub fn bigint_to_finite_double(@bigint.BigInt) -> Result[Double, String]
+
+pub fn compare_depth(String, Value, Value, Int) -> Result[Bool, String]
 
 pub let compare_limit : Int
 
@@ -20,6 +26,10 @@ pub fn compare_values_depth(Value, Value, Int, op? : String) -> Result[Int, Stri
 
 pub fn double_to_bigint(Double) -> @bigint.BigInt
 
+pub fn equal(Value, Value) -> Result[Bool, String]
+
+pub fn equal_depth(Value, Value, Int) -> Result[Bool, String]
+
 pub fn floor_div(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
 
 pub fn format_float(Double) -> String
@@ -28,7 +38,11 @@ pub fn iterate(Value) -> Result[StarlarkIterator, String]
 
 pub fn java_string_hash(StarlarkString) -> Int
 
+pub fn len_of(Value) -> Int
+
 pub fn length_of(Value) -> Result[Int, String]
+
+pub fn number_to_int(Value) -> Int64?
 
 pub fn starlark_equals_depth(Value, Value, Int) -> Result[Bool, String]
 

@@ -32,6 +32,10 @@ pub fn exec_repl_chunk(Thread, String, String, @value.StringDict, Options) -> Re
 
 pub fn file_program(@syntax.File, Options, (String) -> Bool) -> Result[Program, @errors.EvalError]
 
+pub fn parse_expr(String, String) -> Result[@syntax.Expr, @errors.EvalError]
+
+pub fn parse_file(String, String) -> Result[@syntax.File, @errors.EvalError]
+
 pub fn source_program(String, String, Options, (String) -> Bool) -> Result[Program, @errors.EvalError]
 
 pub fn source_program_with_file(String, String, Options, (String) -> Bool) -> Result[(@syntax.File, Program), @errors.EvalError]

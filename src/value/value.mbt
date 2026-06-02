@@ -1436,6 +1436,7 @@ fn is_neg_zero(f : Double) -> Bool {
 /// - `f` : The double-precision float to format.
 ///
 /// Returns the Starlark string representation of `f`.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn format_float(f : Double) -> String {
   if f.is_nan() {
     return "nan"

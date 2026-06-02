@@ -12,6 +12,44 @@ pub struct Program {
 }
 
 ///|
+/// Parses `src` as a Starlark source file and returns its AST.
+///
+/// Parameters:
+///
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark source text to parse.
+///
+/// Returns the parsed `@syntax.File`, or an `EvalError` on syntax failure.
+pub fn parse_file(
+  filename : String,
+  src : String,
+) -> Result[@syntax.File, @errors.EvalError] {
+  match @parser.parse_file(filename, src) {
+    Ok(f) => Ok(f)
+    Err(e) => Err(@errors.EvalError::simple(e.to_string()))
+  }
+}
+
+///|
+/// Parses `src` as a single Starlark expression and returns its AST node.
+///
+/// Parameters:
+///
+/// - `filename` : Source file name used in error messages and position info.
+/// - `src` : Starlark expression source text to parse.
+///
+/// Returns the parsed `@syntax.Expr`, or an `EvalError` on syntax failure.
+pub fn parse_expr(
+  filename : String,
+  src : String,
+) -> Result[@syntax.Expr, @errors.EvalError] {
+  match @parser.parse_expr(filename, src) {
+    Ok(e) => Ok(e)
+    Err(e) => Err(@errors.EvalError::simple(e.to_string()))
+  }
+}
+
+///|
 /// Parses and resolves `src` as a Starlark file named `filename`, returning
 /// an immutable `Program` on success. `is_predeclared` answers whether a name
 /// is provided by the embedder's predeclared environment.

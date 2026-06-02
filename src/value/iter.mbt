@@ -89,6 +89,7 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
 ///
 /// Returns `Ok(n)` with the element count, or `Err` with a message like
 /// `"len: value of type int has no len"` for types without a length.
+#internal(unsafe, "eval engine only; embedders use len_of")
 pub fn length_of(v : Value) -> Result[Int, String] {
   match v {
     String(s) => Ok(s.byte_len())

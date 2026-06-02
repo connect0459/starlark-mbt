@@ -454,6 +454,7 @@ pub let compare_limit : Int = 10
 ///
 /// Returns `Ok(n)` where `n < 0`, `n == 0`, or `n > 0`, or `Err` when the
 /// types cannot be compared.
+#internal(unsafe, "eval engine only; embedders use compare_depth")
 pub fn compare_values(
   a : Value,
   b : Value,
@@ -476,6 +477,7 @@ pub fn compare_values(
 ///
 /// Returns `Ok(n)` where `n < 0`, `n == 0`, or `n > 0`, or `Err` when types
 /// are incompatible or the depth limit is exceeded.
+#internal(unsafe, "eval engine only; embedders use compare_depth")
 pub fn compare_values_depth(
   a : Value,
   b : Value,
