@@ -47,14 +47,14 @@ import {
 
 ## Usage
 
-```moonbit
+```mbt check
+///|
 test {
   let thread = @eval.Thread::new("main")
-  let src = "result = sum([i * i for i in range(5)])"
+  let src = "result = max([i * i for i in range(5)])"
   match @eval.exec_file(thread, "example.star", src, @eval.Options::default()) {
-    Ok(m) =>
-      assert_true(m.get("result") is Some(@value.Value::Int(30N)))
-    Err(e) => fail!(e.to_string())
+    Ok(m) => assert_true(m.get("result") is Some(@value.Value::Int(16N)))
+    Err(e) => fail(e.to_string())
   }
 }
 ```
