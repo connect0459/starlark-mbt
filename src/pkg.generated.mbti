@@ -67,6 +67,8 @@ pub fn unary(String, @value.Value) -> Result[@value.Value, @errors.EvalError]
 pub struct StringDict {
   // private fields
 }
+pub fn StringDict::delete(Self, String) -> Bool
+pub fn StringDict::each(Self, (String, @value.Value) -> Unit) -> Unit
 pub fn StringDict::freeze(Self) -> Unit
 pub fn StringDict::from_map(Map[String, @value.Value]) -> Self
 pub fn StringDict::get(Self, String) -> @value.Value?
@@ -74,6 +76,7 @@ pub fn StringDict::has(Self, String) -> Bool
 pub fn StringDict::keys(Self) -> Array[String]
 pub fn StringDict::new() -> Self
 pub fn StringDict::set(Self, String, @value.Value) -> Unit
+pub fn StringDict::values(Self) -> Array[@value.Value]
 
 // Type aliases
 

@@ -519,6 +519,51 @@ pub fn StringDict::keys(self : StringDict) -> Array[String] {
 }
 
 ///|
+/// Removes the binding for `key`.
+///
+/// Parameters:
+///
+/// - `self` : The dict to modify.
+/// - `key` : The string key to remove.
+///
+/// Returns `true` if `key` was present (and removed), `false` if absent.
+pub fn StringDict::delete(self : StringDict, key : String) -> Bool {
+  if self.data.contains(key) {
+    self.data.remove(key)
+    true
+  } else {
+    false
+  }
+}
+
+///|
+/// Calls `f(key, value)` for every entry in the dict, in lexicographic
+/// key order.
+///
+/// Parameters:
+///
+/// - `self` : The dict to iterate.
+/// - `f` : Callback receiving each key-value pair.
+pub fn StringDict::each(
+  self : StringDict,
+  f : (String, @value.Value) -> Unit,
+) -> Unit {
+  self.data.each(f)
+}
+
+///|
+/// Returns all values in lexicographic key order.
+///
+/// Parameters:
+///
+/// - `self` : The dict whose values to retrieve.
+///
+/// Returns an array of all values sorted by their corresponding keys.
+pub fn StringDict::values(self : StringDict) -> Array[@value.Value] {
+  self.data.values().collect()
+}
+
+///|
 /// Recursively deep-freezes all values in the dict.
 ///
 /// Parameters:

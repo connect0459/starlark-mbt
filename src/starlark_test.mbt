@@ -498,6 +498,36 @@ test "StringDict::freeze freezes contained values" {
 }
 
 ///|
+test "StringDict::delete removes an entry" {
+  let d = @starlark.StringDict::new()
+  d.set("x", @value.Value::Int(1N))
+  d.set("y", @value.Value::Int(2N))
+  assert_true(d.delete("x"))
+  assert_false(d.has("x"))
+  assert_true(d.has("y"))
+  assert_false(d.delete("missing"))
+}
+
+///|
+test "StringDict::each iterates all key-value pairs" {
+  let d = @starlark.StringDict::new()
+  d.set("a", @value.Value::Int(1N))
+  d.set("b", @value.Value::Int(2N))
+  let keys : Array[String] = []
+  d.each(fn(k, _v) { keys.push(k) })
+  assert_eq(keys.length(), 2)
+}
+
+///|
+test "StringDict::values returns all values" {
+  let d = @starlark.StringDict::new()
+  d.set("a", @value.Value::Int(1N))
+  d.set("b", @value.Value::Int(2N))
+  let vals = d.values()
+  assert_eq(vals.length(), 2)
+}
+
+///|
 test "binary: integer arithmetic via public API" {
   let two = @value.Value::Int(2N)
   let three = @value.Value::Int(3N)
