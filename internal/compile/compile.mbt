@@ -221,6 +221,9 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
   let opsize : Array[Int] = Array::make(n, 0)
   for i in 0..<n {
     let ins = self.instrs[i]
+    if ins.is_jump && self.label_at[ins.arg] < 0 {
+      abort("compile: jump to unplaced label \{ins.arg}")
+    }
     opsize[i] = if !ins.op.has_arg() {
       0
     } else if ins.is_jump {
