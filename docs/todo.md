@@ -2779,10 +2779,9 @@ a validation-only pre-pass and `@syntax` stays immutable.
       missing-name error, no-loader error.
 - [x] **Flip prerequisites**: the remaining constructs the walker handles but the
       compiler did not, split into two PRs so the flip can switch the default
-      with full coverage. (M10 step-counting recalibration is deferred until the
-      VM is the default engine. The one construct still outstanding —
-      augmented assignment to an index/attribute target — is noted below and
-      scoped to the flip.)
+      with full coverage. The VM now lowers every walker construct. (M10
+      step-counting recalibration is deferred until the VM is the default
+      engine.)
   - [x] **PR-A**: assignment targets + augmented assignment. Plain assignment
         evaluates the right-hand side first, then assigns to the target;
         `compile_assign_target` handles identifier, index (`SetIndex`), attribute
@@ -2812,8 +2811,14 @@ a validation-only pre-pass and `@syntax` stays immutable.
         errors. Undefined-name parity is provided by the shared resolver pass and
         pinned by differential tests. With every expression variant now lowered,
         the compiler's unsupported-expression fallback is removed.
-        (Augmented assignment to index/attribute targets — `xs[i] += v`,
-        `obj.f += v` — is still unsupported; it remains scoped to the flip.)
+        Augmented assignment to index/attribute targets (`xs[i] += v`,
+        `obj.f += v`) also lowers: the container/index are read once via
+        `Dup`/`Dup2` and stored back, with `SetIndex`/`SetField` adopting the
+        object-then-value stack layout (plain assignment reorders through
+        `Exch`). This surfaced and closed a pre-existing VM gap — the `Attr`
+        opcode was unhandled, so every attribute read and method call aborted;
+        `Attr` now dispatches through the shared attribute lookup. With this the
+        VM lowers every construct the walker handles.
 - [ ] **M11**: `StarlarkFunction` holds a `Funcode`; drop `syntax` from `value`
       (the goal). Verify `value` `.mbti` unchanged except `new`; no `syntax` import.
 - [ ] **M12**: flip `exec_file`/`eval_expr`/`Program::init` to the VM; delete the
