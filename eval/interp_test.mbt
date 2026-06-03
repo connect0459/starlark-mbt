@@ -44,6 +44,42 @@ fn assert_vm_matches_walker(src : String) -> Unit raise {
 }
 
 ///|
+/// Runs `src` through both engines under a step budget and asserts they agree on
+/// the resulting cancellation error.
+fn assert_vm_matches_walker_under_budget(
+  src : String,
+  max_steps : Int,
+) -> Unit raise {
+  let opts = @eval.Options::default()
+  let wr = @eval.exec_file(
+    @eval.Thread::with_step_budget("w", max_steps),
+    "t.star",
+    src,
+    opts,
+  )
+  let vr = @eval.exec_file_vm(
+    @eval.Thread::with_step_budget("v", max_steps),
+    "t.star",
+    src,
+    opts,
+  )
+  match (wr, vr) {
+    (Err(we), Err(ve)) => assert_eq(ve.msg(), we.msg())
+    (Ok(_), Err(ve)) =>
+      fail("walker succeeded but VM errored (\{ve.msg()}) for: \{src}")
+    (Err(we), Ok(_)) =>
+      fail("walker errored (\{we.msg()}) but VM succeeded for: \{src}")
+    (Ok(_), Ok(_)) =>
+      fail("expected both engines to hit the step budget for: \{src}")
+  }
+}
+
+///|
+test "vm matches walker on step-budget cancellation" {
+  assert_vm_matches_walker_under_budget("a = 1 + 2\nb = a * 3\nc = [a, b]", 0)
+}
+
+///|
 test "vm matches walker on integer arithmetic" {
   assert_vm_matches_walker("x = 1 + 2 * 3 - 4")
   assert_vm_matches_walker("x = 17 // 5\ny = 17 % 5")

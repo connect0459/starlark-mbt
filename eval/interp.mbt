@@ -161,6 +161,7 @@ fn run_program_into(
 
   let mut pc = 0
   while pc < code.length() {
+    check_steps(ctx)
     let op = match @compile.Opcode::from_byte(code[pc]) {
       Some(o) => o
       None => abort("vm: invalid opcode byte \{code[pc].to_int()}")
