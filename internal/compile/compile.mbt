@@ -490,11 +490,36 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit1(Opcode::MakeTuple, xs.length(), xs.length(), 1)
     }
+    EDict(pairs, pos) => {
+      self.set_pos(pos)
+      self.emit0(Opcode::MakeDict, 0, 1)
+      for pair in pairs {
+        let (k, v) = pair
+        self.compile_expr(k)
+        self.compile_expr(v)
+        self.set_pos(pos)
+        // [.., dict, key, value] -> dict[key] = value, erroring on a key that
+        // already appears in this literal; the dict stays on the stack.
+        self.emit0(Opcode::SetDictUniq, 2, 0)
+      }
+    }
+    ESet(elems, pos) => {
+      self.set_pos(pos)
+      self.emit0(Opcode::MakeSet, 0, 1)
+      for e in elems {
+        self.compile_expr(e)
+        self.set_pos(pos)
+        // [.., set, value] -> set.add(value); the set stays on the stack.
+        self.emit0(Opcode::SetAdd, 1, 0)
+      }
+    }
     ECall(callee, args, pos) => self.compile_call(callee, args, pos)
     EListComp(elt, clauses, pos) =>
       self.compile_comprehension(CList(elt), clauses, pos)
     EDictComp(k, v, clauses, pos) =>
       self.compile_comprehension(CDict(k, v), clauses, pos)
+    ESetComp(elt, clauses, pos) =>
+      self.compile_comprehension(CSet(elt), clauses, pos)
     ELambda(params, body_e, pos) => {
       // A lambda is a function whose body is a single `return <expr>`.
       let body : Array[@syntax.Stmt] = [
@@ -502,10 +527,6 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       ]
       self.compile_make_func("lambda", params, body, pos)
     }
-    _ =>
-      raise CompileErr(
-        "compile: unsupported expression at \{@syntax.expr_pos(e).to_string()}",
-      )
   }
 }
 
@@ -558,9 +579,11 @@ fn Fcomp::compile_call(
 }
 
 ///|
-/// What a comprehension accumulates: a list element, or a dict key/value.
+/// What a comprehension accumulates: a list element, a set element, or a dict
+/// key/value.
 priv enum CompKind {
   CList(@syntax.Expr)
+  CSet(@syntax.Expr)
   CDict(@syntax.Expr, @syntax.Expr)
 }
 
@@ -582,6 +605,7 @@ fn Fcomp::compile_comprehension(
   self.set_pos(pos)
   match kind {
     CList(_) => self.emit1(Opcode::MakeList, 0, 0, 1)
+    CSet(_) => self.emit0(Opcode::MakeSet, 0, 1)
     CDict(_, _) => self.emit0(Opcode::MakeDict, 0, 1)
   }
   // Collect every name a comprehension `for` clause binds, including the names
@@ -656,6 +680,10 @@ fn Fcomp::emit_comp_rest(
       CList(elt) => {
         self.compile_expr(elt)
         self.emit0(Opcode::Append, 1, 0)
+      }
+      CSet(elt) => {
+        self.compile_expr(elt)
+        self.emit0(Opcode::SetAdd, 1, 0)
       }
       CDict(k, v) => {
         self.compile_expr(k)

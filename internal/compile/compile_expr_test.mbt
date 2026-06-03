@@ -161,6 +161,30 @@ test "toplevel always ends with NONE and RETURN" {
 }
 
 ///|
+test "a dict literal builds a dict and sets each unique entry" {
+  // d = {1: 2}
+  let dict = @syntax.Expr::EDict([(lit_int(1), lit_int(2))], p(1, 5))
+  let fc = compile_top([
+    @syntax.Stmt::SAssign(@syntax.Expr::EIdent("d", p(1, 1)), dict, p(1, 3)),
+  ])
+  let ops = ops_of(fc)
+  assert_true(ops.contains(MakeDict))
+  assert_true(ops.contains(SetDictUniq))
+}
+
+///|
+test "a set literal builds a set and adds each element" {
+  // s = {1, 2}
+  let set = @syntax.Expr::ESet([lit_int(1), lit_int(2)], p(1, 5))
+  let fc = compile_top([
+    @syntax.Stmt::SAssign(@syntax.Expr::EIdent("s", p(1, 1)), set, p(1, 3)),
+  ])
+  let ops = ops_of(fc)
+  assert_true(ops.contains(MakeSet))
+  assert_eq(ops.filter(fn(o) { o == SetAdd }).length(), 2)
+}
+
+///|
 /// `num_params` counts every named parameter that occupies a local slot,
 /// including `*args` and `**kwargs`, so it stays consistent with the `locals`
 /// ordering and the runtime function's `num_params` contract.
@@ -281,8 +305,18 @@ test "augmented assignment stamps the target load with the target's own position
 
 ///|
 test "unsupported constructs surface as a CompileErr that pinpoints the source position" {
-  // A dict literal is not yet lowered; the error must locate it.
-  let stmt = @syntax.Stmt::SExpr(@syntax.Expr::EDict([], p(1, 1)))
+  // Augmented assignment to an index target is not yet lowered; the error must
+  // locate the target.
+  let stmt = @syntax.Stmt::SAugAssign(
+    @syntax.Expr::EIndex(
+      @syntax.Expr::EIdent("xs", p(1, 1)),
+      lit_int(0),
+      p(1, 1),
+    ),
+    AugAdd,
+    lit_int(1),
+    p(1, 3),
+  )
   let file = @syntax.File::new("t.star", [stmt])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
@@ -292,10 +326,16 @@ test "unsupported constructs surface as a CompileErr that pinpoints the source p
 }
 
 ///|
-test "an unsupported expression reports its own position in the error" {
-  // A dict literal is not yet lowered; the error must locate it.
-  let dict = @syntax.Expr::EDict([], p(3, 9))
-  let file = @syntax.File::new("t.star", [@syntax.Stmt::SExpr(dict)])
+test "an unsupported augmented-assignment target reports its own position in the error" {
+  // Augmented assignment to an attribute target is not yet lowered; the error
+  // must locate the target expression.
+  let lhs = @syntax.Expr::EDot(
+    @syntax.Expr::EIdent("obj", p(3, 1)),
+    "f",
+    p(3, 9),
+  )
+  let stmt = @syntax.Stmt::SAugAssign(lhs, AugAdd, lit_int(1), p(3, 1))
+  let file = @syntax.File::new("t.star", [stmt])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
     Err(CompileErr(msg)) => assert_true(msg.contains("t.star:3:9"))

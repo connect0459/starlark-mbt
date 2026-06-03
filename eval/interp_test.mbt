@@ -727,6 +727,33 @@ test "vm matches walker on assigning to an index out of range" {
 }
 
 ///|
+test "vm matches walker on a dict literal" {
+  assert_vm_matches_walker("d = {\"a\": 1, \"b\": 2, \"c\": 3}")
+  assert_vm_matches_walker("d = {}")
+  assert_vm_matches_walker("d = {1: \"x\", 2: \"y\"}\nv = d[2]")
+}
+
+///|
+test "vm matches walker on a dict literal with a duplicate key" {
+  assert_vm_matches_walker("d = {\"a\": 1, \"a\": 2}")
+}
+
+///|
+test "vm matches walker on a nested dict and list literal" {
+  assert_vm_matches_walker("d = {\"xs\": [1, 2], \"nested\": {\"k\": 3}}")
+}
+
+///|
+test "vm matches walker on dict-key index assignment" {
+  assert_vm_matches_walker("d = {\"a\": 1}\nd[\"b\"] = 2\nx = d")
+}
+
+///|
+test "vm matches walker on a set literal" {
+  assert_vm_matches_walker("s = set([1, 2, 3])\nt = {1, 2, 2, 3}\nn = len(t)")
+}
+
+///|
 test "vm matches walker on a for loop with a tuple target" {
   assert_vm_matches_walker(
     "total = 0\nfor a, b in [(1, 2), (3, 4)]:\n  total += a * b\nx = total",
@@ -748,6 +775,18 @@ test "vm matches walker on a for-loop tuple target unpack mismatch" {
 ///|
 test "vm matches walker on a list comprehension with a tuple target" {
   assert_vm_matches_walker("xs = [a + b for a, b in [(1, 2), (3, 4)]]")
+}
+
+///|
+test "vm matches walker on a set comprehension" {
+  assert_vm_matches_walker("s = {x % 3 for x in range(10)}\nn = len(s)")
+}
+
+///|
+test "vm matches walker on a guarded set comprehension" {
+  assert_vm_matches_walker(
+    "s = {x for x in range(10) if x % 2 == 0}\nn = len(s)",
+  )
 }
 
 ///|

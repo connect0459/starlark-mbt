@@ -358,12 +358,21 @@ fn VM::run_frame(
         push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
       MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
       MakeDict => push(@value.Value::Dict(@value.StarlarkDict::new()))
+      MakeSet => push(@value.Value::Set(@value.StarlarkSet::new()))
       Append => {
         // [.., list, elem] -> append elem to the accumulator list, which stays.
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::List(l) => check(ctx, l.push(elem))
           other => abort("vm: Append expects a list, got \{other.type_name()}")
+        }
+      }
+      SetAdd => {
+        // [.., set, elem] -> add elem to the accumulator set, which stays.
+        let elem = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Set(s) => check(ctx, s.add(elem))
+          other => abort("vm: SetAdd expects a set, got \{other.type_name()}")
         }
       }
       SetDict => {
@@ -373,6 +382,24 @@ fn VM::run_frame(
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => check(ctx, d.set(key, value))
           other => abort("vm: SetDict expects a dict, got \{other.type_name()}")
+        }
+      }
+      SetDictUniq => {
+        // [.., dict, key, value] -> dict[key] = value, but error if the key
+        // already appears (dict-literal semantics); the dict stays.
+        let value = pop()
+        let key = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Dict(d) =>
+            match check(ctx, d.get(key)) {
+              Some(_) =>
+                raise EvalErr(
+                  make_eval_error(ctx, "duplicate key: \{key.repr()}"),
+                )
+              None => check(ctx, d.set(key, value))
+            }
+          other =>
+            abort("vm: SetDictUniq expects a dict, got \{other.type_name()}")
         }
       }
       Local =>
