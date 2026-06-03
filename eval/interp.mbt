@@ -187,7 +187,12 @@ fn run_program_into(
       FalseOp => push(@value.Value::Bool(false))
       Constant => push(const_to_value(prog.constants[arg]))
       Pop => pop() |> ignore
-      Dup => push(stack[stack.length() - 1])
+      Dup =>
+        if stack.is_empty() {
+          abort("vm: operand stack underflow")
+        } else {
+          push(stack[stack.length() - 1])
+        }
       UPlus => push(eval_unary(ctx, OpPlus, pop(), pos))
       UMinus => push(eval_unary(ctx, OpMinus, pop(), pos))
       Tilde => push(eval_unary(ctx, OpBitNot, pop(), pos))
