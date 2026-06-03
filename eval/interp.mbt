@@ -149,9 +149,13 @@ pub fn exec_file_vm(
       ),
     )
     let idx = ctx.thread.call_stack.length() - 1
-    let no_locals : Array[LocalSlot] = []
+    // The module-init function has local slots for any comprehension variables.
+    let top_locals : Array[LocalSlot] = Array::make(
+      prog.toplevel.locals.length(),
+      LUnbound,
+    )
     let no_freevars : Array[@value.Cell] = []
-    vm.run_frame(prog.toplevel, "<toplevel>", no_locals, no_freevars, idx)
+    vm.run_frame(prog.toplevel, "<toplevel>", top_locals, no_freevars, idx)
     |> ignore
     ctx.thread.call_stack.pop() |> ignore
     let out : Map[String, @value.Value] = {}
@@ -268,6 +272,24 @@ fn VM::run_frame(
       MakeList =>
         push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
       MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
+      MakeDict => push(@value.Value::Dict(@value.StarlarkDict::new()))
+      Append => {
+        // [.., list, elem] -> append elem to the accumulator list, which stays.
+        let elem = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::List(l) => check(ctx, l.push(elem))
+          other => abort("vm: Append expects a list, got \{other.type_name()}")
+        }
+      }
+      SetDict => {
+        // [.., dict, key, value] -> dict[key] = value; the dict stays.
+        let value = pop()
+        let key = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Dict(d) => check(ctx, d.set(key, value))
+          other => abort("vm: SetDict expects a dict, got \{other.type_name()}")
+        }
+      }
       Local =>
         match locals[arg] {
           LVal(v) => push(v)
