@@ -2692,8 +2692,12 @@ a validation-only pre-pass and `@syntax` stays immutable.
 - [x] **M1**: `internal/compile` skeleton — `Opcode` (byte encode/decode +
       `has_arg`), `Const` pool, `Funcode`/`CompiledProgram`, pc→position recovery
       (`pclinetab` equivalent). Types only; no compiler logic. 5 tests.
-- [ ] **M2**: bytecode compiler for expressions + module init (scope/slot layout,
-      pclinetab emission).
+- [x] **M2**: bytecode compiler for the straight-line expression subset + module
+      init — emitter (constant/name pools, global slot assignment, operand-stack
+      tracking, pclinetab), lowering for literals/idents/unary/binary/list/tuple/
+      index/slice/attr and module-level expr/assign/pass; disassembler for tests.
+      Unhandled nodes raise `CompileErr`. (and/or, calls, control flow, functions,
+      comprehensions, load deferred to their milestones.) 8 tests.
 - [ ] **M3**: VM behind an internal flag + differential-test harness
       (literals/arith/comparisons/data ops).
 - [ ] **M4**: locals/globals/module init on the VM (unbound sentinel +
