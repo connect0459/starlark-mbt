@@ -15,12 +15,16 @@ flags and **enabled by default**.
 - [x] Submodule removed (no runtime file I/O; CI sparse-clone step also removed);
       `justfile` `setup` target simplified to `moon update` only.
 
-- [x] Migrate to `src/` directory structure (urllib.mbt pattern)
-- [x] Update `moon.mod` with `options(source: "src")`
+- [x] Migrate to `src/` directory structure (urllib.mbt pattern) — later flattened in Phase R7
+- [x] Update `moon.mod` with `options(source: "src")` — later removed in Phase R7
 - [x] Establish `src/starlark/` as the library package
 - [x] Establish `src/main/` as the CLI entry point (kept minimal until Phase 7)
 
 ### Package layout (target)
+
+> **Note**: the `src/` prefix below is historical. Phase R7 flattened the layout
+> (removed `options(source: "src")`), so these directories now live at the
+> repository root (`internal/*`, `lib/*`, `eval/`, …). Import paths are unchanged.
 
 Follow the urllib.mbt convention: keep `src/starlark/` as a thin public
 façade and place implementation details under `src/internal/*` so they
@@ -2613,6 +2617,48 @@ entry points.
       root package for the new doc test.
 - [x] `moon info && moon fmt && moon test`: root `.mbti` now exposes exactly
       `exec`, `eval`, and the three `pub using` aliases; 1571 tests pass.
+
+---
+
+### Phase R7: Flatten source layout (remove `options(source: "src")`) ✅
+
+**Motivation**: an audit of the canonical MoonBit libraries showed that
+`moonbitlang/core` and `moonbitlang/x` both use a **flat** layout — package
+directories (`crypto/`, `time/`, `json5/`, …) sit at the module root with no
+`src/` and no `source` option. The `src/` convention (used by `mizchi/bitflow`
+and the urllib.mbt scaffold this project started from) is equally valid, but the
+flat form is the official-library standard.
+
+Decision (user): adopt the flat layout. `options(source: "src")` only controls
+the on-disk source root; package import paths (`connect0459/starlark/eval`, …)
+derive from the module name and package directories, so the change is **invisible
+to downstream consumers** — every generated `.mbti` is a pure rename with no
+content change, and it can be done safely at any time (it does not block or
+depend on publishing).
+
+- [x] Move all packages from `src/` to the repository root: the root package
+      files (`facade.mbt`, `starlark_test.mbt`, `moon.pkg`, …) plus `cmd/`,
+      `errors/`, `eval/`, `internal/*`, `lib/*`, `syntax/`, `unpack/`, `value/`.
+      Removed `options(source: "src")` from `moon.mod`.
+- [x] Dropped the source-tree-only `connect0459/starlark/docs` package: the
+      top-level `README.mbt.md` now serves as the **root package's** doc test
+      directly (verified `@starlark` self-reference compiles), eliminating the
+      `src/docs/README.mbt.md` symlink. The verified API reference pages moved to
+      `docs/api/` (package `connect0459/starlark/docs/api`), merging cleanly into
+      the existing top-level `docs/` tree.
+- [x] Updated path references in `justfile` (`moon run src/cmd` → `moon run cmd`),
+      `README.mbt.md`, `CONTRIBUTING.md`, `docs/README.md`, and the doc-test pages.
+      Also corrected stale `docs/api/index.md` prose claiming "no top-level
+      facade" (superseded by R6).
+- [x] Verified no scan hazards: `examples/` and `.connect0459/ref-repos/*` are
+      nested modules (own `moon.mod`) and `apm_modules/` carries no packages, so
+      scanning from the new root picks up only this module's packages.
+- [x] `moon check --deny-warn`, `moon fmt --check`, `moon test` (1571 pass),
+      `moon info` clean; `just run-examples` confirms the `examples` module's
+      `path: ".."` dependency still resolves.
+- [x] Renamed the root package's primary files after the package itself now that
+      it sits at the repository root: `facade.mbt` → `starlark.mbt`, and folded
+      `facade_test.mbt` into the existing `starlark_test.mbt`. `.mbti` unchanged.
 
 ---
 
