@@ -727,6 +727,66 @@ test "vm matches walker on assigning to an index out of range" {
 }
 
 ///|
+test "vm matches walker on a call with a *args splat" {
+  assert_vm_matches_walker(
+    "def f(a, b, c):\n  return a + b + c\n\nxs = [1, 2, 3]\nr = f(*xs)",
+  )
+}
+
+///|
+test "vm matches walker on a call with fixed positionals and a *args splat" {
+  assert_vm_matches_walker(
+    "def f(a, b, c, d):\n  return a * 1000 + b * 100 + c * 10 + d\n\nr = f(1, *[2, 3], 4)",
+  )
+}
+
+///|
+test "vm matches walker on a call with a **kwargs splat" {
+  assert_vm_matches_walker(
+    "def f(a, b):\n  return a - b\n\nkw = {\"a\": 10, \"b\": 3}\nr = f(**kw)",
+  )
+}
+
+///|
+test "vm matches walker on a call with keywords and a **kwargs splat" {
+  assert_vm_matches_walker(
+    "def f(a, b, c):\n  return (a, b, c)\n\nr = f(a=1, **{\"b\": 2, \"c\": 3})",
+  )
+}
+
+///|
+test "vm matches walker on a call with both *args and **kwargs" {
+  assert_vm_matches_walker(
+    "def f(a, b, c, d):\n  return a + b + c + d\n\nr = f(*[1, 2], **{\"c\": 3, \"d\": 4})",
+  )
+}
+
+///|
+test "vm matches walker on a *args splat into a builtin" {
+  assert_vm_matches_walker("r = max(*[3, 1, 2])")
+}
+
+///|
+test "vm matches walker on a *args splat that is not iterable" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(*5)")
+}
+
+///|
+test "vm matches walker on a **kwargs splat that is not a mapping" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(**5)")
+}
+
+///|
+test "vm matches walker on a **kwargs splat with a non-string key" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(**{1: 2})")
+}
+
+///|
+test "vm matches walker on a *args splat with an unexpected keyword" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(*[1], **{\"z\": 9})")
+}
+
+///|
 test "vm matches walker on a dict literal" {
   assert_vm_matches_walker("d = {\"a\": 1, \"b\": 2, \"c\": 3}")
   assert_vm_matches_walker("d = {}")

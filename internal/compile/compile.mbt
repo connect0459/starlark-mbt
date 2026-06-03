@@ -544,6 +544,12 @@ fn Fcomp::compile_call(
   self.compile_expr(callee)
   let mut npos = 0
   let mut nkw = 0
+  let mut has_star = false
+  let mut has_kwstar = false
+  // The resolver guarantees canonical argument order: positionals, then
+  // keywords, then `*args`, then `**kwargs`. Compiling in source order therefore
+  // leaves the splat values on top of the fixed arguments, which the `Call`
+  // family pops first.
   for a in args {
     match a {
       ArgPos(e) => {
@@ -555,14 +561,19 @@ fn Fcomp::compile_call(
         self.compile_expr(e)
         nkw += 1
       }
-      ArgStarArgs(_) | ArgKwArgs(_) =>
-        raise CompileErr(
-          "compile: *args and **kwargs call arguments not yet supported at \{pos.to_string()}",
-        )
+      ArgStarArgs(e) => {
+        self.compile_expr(e)
+        has_star = true
+      }
+      ArgKwArgs(e) => {
+        self.compile_expr(e)
+        has_kwstar = true
+      }
     }
   }
-  // The Call operand packs `(npos << 8) | nkw`; each field is 8 bits, so both
-  // counts must stay below 256 or they would corrupt one another at decode.
+  // The operand packs `(npos << 8) | nkw` for the fixed counts; each field is 8
+  // bits, so both must stay below 256 or they would corrupt one another at
+  // decode. Splat arguments are carried out of band by the opcode variant.
   if npos >= 256 {
     raise CompileErr(
       "compile: \{npos} positional arguments in call, limit is 255 at \{pos.to_string()}",
@@ -574,8 +585,22 @@ fn Fcomp::compile_call(
     )
   }
   self.set_pos(pos)
-  // pops callee + npos positional + nkw (name, value) pairs, pushes the result.
-  self.emit1(Opcode::Call, (npos << 8) | nkw, 1 + npos + 2 * nkw, 1)
+  // Each opcode pops callee + npos positional + nkw (name, value) pairs, plus the
+  // `*args` iterable and/or `**kwargs` mapping for the splat variants, and pushes
+  // the result.
+  let extra = (if has_star { 1 } else { 0 }) + (if has_kwstar { 1 } else { 0 })
+  let npop = 1 + npos + 2 * nkw + extra
+  let operand = (npos << 8) | nkw
+  let op = if has_star && has_kwstar {
+    Opcode::CallVarKw
+  } else if has_star {
+    Opcode::CallVar
+  } else if has_kwstar {
+    Opcode::CallKw
+  } else {
+    Opcode::Call
+  }
+  self.emit1(op, operand, npop, 1)
 }
 
 ///|
