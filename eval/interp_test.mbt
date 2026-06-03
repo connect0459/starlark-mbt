@@ -20,7 +20,15 @@ fn globals_map(m : @eval.Module) -> Map[String, @value.Value] {
 ///|
 /// Runs `src` through both engines and asserts they agree.
 fn assert_vm_matches_walker(src : String) -> Unit raise {
-  let opts = @eval.Options::default()
+  assert_vm_matches_walker_opts(src, @eval.Options::default())
+}
+
+///|
+/// Runs `src` through both engines under `opts` and asserts they agree.
+fn assert_vm_matches_walker_opts(
+  src : String,
+  opts : @eval.Options,
+) -> Unit raise {
   let wr = @eval.exec_file(@eval.Thread::new("w"), "t.star", src, opts)
   let vr = @eval.exec_file_vm(@eval.Thread::new("v"), "t.star", src, opts)
   match (wr, vr) {
@@ -283,6 +291,33 @@ test "vm matches walker on a deep error backtrace through several frames" {
 ///|
 test "vm matches walker on maximum recursion depth" {
   assert_vm_matches_walker("def f(n):\n  return f(n + 1)\n\nx = f(0)")
+}
+
+///|
+test "vm matches walker on direct recursion when recursion is disabled" {
+  let opts = @eval.Options::default().with_allow_recursion(false)
+  assert_vm_matches_walker_opts(
+    "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\n\nx = fact(5)",
+    opts,
+  )
+}
+
+///|
+test "vm matches walker on mutual recursion when recursion is disabled" {
+  let opts = @eval.Options::default().with_allow_recursion(false)
+  assert_vm_matches_walker_opts(
+    "def is_even(n):\n  if n == 0:\n    return True\n  return is_odd(n - 1)\n\ndef is_odd(n):\n  if n == 0:\n    return False\n  return is_even(n - 1)\n\nx = is_even(4)",
+    opts,
+  )
+}
+
+///|
+test "vm matches walker on a non-recursive call when recursion is disabled" {
+  let opts = @eval.Options::default().with_allow_recursion(false)
+  assert_vm_matches_walker_opts(
+    "def inc(n):\n  return n + 1\n\ndef twice(n):\n  return inc(inc(n))\n\nx = twice(10)",
+    opts,
+  )
 }
 
 ///|

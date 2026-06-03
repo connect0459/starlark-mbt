@@ -132,7 +132,12 @@ pub fn exec_file_vm(
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
   let ctx = EvalContext::new(thread, opts)
-  let vm = VM::{ ctx, prog, globals: Array::make(prog.globals.length(), None) }
+  let vm = VM::{
+    ctx,
+    prog,
+    globals: Array::make(prog.globals.length(), None),
+    active: [],
+  }
   try {
     // Push the module-init frame so backtraces begin at <toplevel>, matching
     // the walker.
@@ -171,6 +176,7 @@ priv struct VM {
   ctx : EvalContext
   prog : @compile.CompiledProgram
   globals : Array[@value.Value?]
+  active : Array[@compile.Funcode]
 }
 
 ///|
@@ -356,6 +362,22 @@ fn VM::call_value(
     @value.Value::Function(f) =>
       match f.compiled_funcode() {
         Some(fc) => {
+          if !self.prog.recursion {
+            let fpos = fc.pos
+            for g in self.active {
+              let gpos = g.pos
+              if fpos.line() == gpos.line() &&
+                fpos.col() == gpos.col() &&
+                fpos.filename() == gpos.filename() {
+                raise EvalErr(
+                  make_eval_error(
+                    self.ctx,
+                    "function \{f.name()} called recursively",
+                  ),
+                )
+              }
+            }
+          }
           if self.ctx.thread.call_stack.length() >=
             self.ctx.thread.max_recursion_depth {
             raise EvalErr(
@@ -378,13 +400,16 @@ fn VM::call_value(
             locals[i] = Some(args[i])
           }
           self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
+          self.active.push(fc)
           let fidx = self.ctx.thread.call_stack.length() - 1
           let r = self.run_frame(fc, f.name(), locals, fidx) catch {
             EvalErr(e) => {
+              self.active.pop() |> ignore
               self.ctx.thread.call_stack.pop() |> ignore
               raise EvalErr(e)
             }
           }
+          self.active.pop() |> ignore
           self.ctx.thread.call_stack.pop() |> ignore
           r
         }
