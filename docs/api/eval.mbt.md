@@ -27,11 +27,11 @@ Starlark, and for the `Thread`/`Module`/`Options`/`Program` types.
 | `file_program` | `(@syntax.File, Options, (String)->Bool) -> Result[Program, @errors.EvalError]` | Resolve an already-parsed `@syntax.File` into a `Program` |
 | `compiled_program` | `(Bytes) -> Result[Program, @errors.EvalError]` | Reload a `Program` from bytes produced by `Program::write`, skipping parse + resolve |
 
-`Program::write() -> Bytes` serializes a resolved program so it can be persisted
-and reloaded with `compiled_program`. The format holds the resolved AST plus the
-program's options (a versioned, magic-tagged binary); it is specific to this
-tree-walking implementation and **not** byte-compatible with starlark-go's
-bytecode `Program.Write`.
+`Program::write() -> Bytes` serializes a compiled program so it can be persisted
+and reloaded with `compiled_program`. The format holds the compiled bytecode
+program (constant pool, function table, global/load tables, and the module-init
+funcode) plus the program's options (a versioned, magic-tagged binary); it is
+**not** byte-compatible with starlark-go's `Program.Write`.
 
 ## Operator dispatch
 
