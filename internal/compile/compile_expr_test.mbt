@@ -244,6 +244,42 @@ test "line table maps a statement's instructions back to its source line" {
 }
 
 ///|
+test "augmented assignment stamps the target load with the target's own position" {
+  // y = 1   (line 1)
+  // x += 1  (line 2)
+  // The load of `x` must carry x's own position, not the previous statement's,
+  // so a referenced-before-assignment error is attributed to the right line.
+  let stmts : Array[@syntax.Stmt] = [
+    @syntax.Stmt::SAssign(
+      @syntax.Expr::EIdent("y", p(1, 1)),
+      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitInt(1N), p(1, 5)),
+      p(1, 3),
+    ),
+    @syntax.Stmt::SAugAssign(
+      @syntax.Expr::EIdent("x", p(2, 1)),
+      AugAdd,
+      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitInt(1N), p(2, 6)),
+      p(2, 3),
+    ),
+  ]
+  let fc = compile_top(stmts)
+  let mut load : @compile.Instr? = None
+  for ins in fc.disasm() {
+    if ins.op == Global {
+      load = Some(ins)
+      break
+    }
+  }
+  match load {
+    Some(ins) => {
+      assert_eq(fc.position(ins.pc).line(), 2)
+      assert_eq(fc.position(ins.pc).col(), 1)
+    }
+    None => abort("expected a Global load for the augmented-assignment target")
+  }
+}
+
+///|
 test "unsupported constructs surface as a CompileErr that pinpoints the source position" {
   // A dict literal is not yet lowered; the error must locate it.
   let stmt = @syntax.Stmt::SExpr(@syntax.Expr::EDict([], p(1, 1)))

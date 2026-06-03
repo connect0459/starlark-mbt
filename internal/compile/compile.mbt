@@ -875,8 +875,9 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
     }
     SAugAssign(lhs, aug_op, rhs, pos) =>
       match lhs {
-        EIdent(name, _) => {
+        EIdent(name, ident_pos) => {
           // load <name>; <rhs>; AugApply<op>; store <name>
+          self.set_pos(ident_pos)
           self.compile_ident(name)
           self.compile_expr(rhs)
           self.set_pos(pos)
