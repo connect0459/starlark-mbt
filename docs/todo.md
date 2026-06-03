@@ -2870,7 +2870,14 @@ a validation-only pre-pass and `@syntax` stays immutable.
       function. **`value` no longer imports `syntax`** — the root architectural
       blemish the migration set out to remove. (The differential harness now
       runs the VM on both sides; the conformance suite is the behavioral gate.)
-- [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
+- [x] **M13**: programs serialize as bytecode (the compiled program — constants,
+      function table, global/load tables, module-init funcode — plus options),
+      not the AST; `compiled_program` decodes straight to the runnable program
+      (no re-parse/resolve/compile). `SerialVersion` bumped to 2 so an older
+      AST-format blob is rejected cleanly. `Program` drops its AST `File`
+      (`filename`/`num_loads`/`load` derive from the compiled load table), and the
+      AST serializers are deleted — `serial.mbt` is now `@syntax`-free. The
+      existing write/read round-trip tests validate the new format.
 
 ---
 
