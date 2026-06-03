@@ -2732,8 +2732,10 @@ a validation-only pre-pass and `@syntax` stays immutable.
           value-level call dispatch, reusing every builtin. Unlocks positional
           builtin calls (`len`/`abs`/`str`/`int`/`min`/`max`/`sorted`/`list`/
           `tuple`/`range`/...) and `range()`-driven loops; errors/backtraces
-          match. (Builtin→VM-function callbacks like `sorted(key=)` not reachable
-          until keyword args compile.)
+          match. A builtin that receives a function positionally (e.g.
+          `sorted(iterable, key)`) re-enters the VM via `ctx.vm`, so the callback
+          runs on a VM frame with matching recursion/backtrace semantics;
+          keyword/splat callbacks await M6b-2.
         - [ ] **M6b-2**: full user-function argument binding — defaults, keyword
           args, `*args`/`**kwargs`, keyword-only params (compiler param kinds +
           `MakeTuple` defaults with MANDATORY sentinels; `CALL_KW`/`CALL_VAR`/
