@@ -278,7 +278,10 @@ fn VM::run_frame(
         let funcode = self.prog.functions[arg]
         let defaults : Array[@value.Value?] = match pop() {
           @value.Value::Tuple(items) => items.map(fn(v) { Some(v) })
-          _ => []
+          other =>
+            abort(
+              "vm: MakeFunc expected a defaults tuple, got \{other.type_name()}",
+            )
         }
         push(
           @value.Value::Function(
