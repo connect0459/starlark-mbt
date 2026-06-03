@@ -74,19 +74,6 @@ fn vm_read_arg(code : Bytes, i : Int) -> (Int, Int) {
 }
 
 ///|
-/// Resolves a predeclared/universal name to its runtime value, mirroring the
-/// walker's base environment (`EvalContext::new`): `None`/`True`/`False` map to
-/// their literal values; every other name becomes a dispatched builtin.
-fn vm_resolve_external(name : String) -> @value.Value {
-  match name {
-    "None" => @value.Value::None
-    "True" => @value.Value::Bool(true)
-    "False" => @value.Value::Bool(false)
-    _ => @value.Value::Builtin(@value.StarlarkBuiltinFunc::dispatch(name))
-  }
-}
-
-///|
 /// Collects exactly `n` values from `value` for a sequence assignment, mirroring
 /// the walker's unpacking: tuples/lists yield their items directly, other values
 /// are iterated, and a non-iterable or a length mismatch raises the same error.
@@ -730,14 +717,21 @@ fn VM::run_frame(
           }
         }
       // Resolve predeclared/universal names against the context's base
-      // environment first so embedder-supplied bindings (a custom universe,
-      // per-call predeclared values, or `eval_expr`'s `env`) are visible; fall
-      // back to the standard builtin dispatch.
-      Predeclared | Universal =>
-        match ctx.global_env.lookup(m.prog.names[arg]) {
+      // environment, which holds the builtins, the universal `None`/`True`/
+      // `False`, and embedder-supplied bindings (a custom universe, per-call
+      // predeclared values, or `eval_expr`'s `env`). A name with no binding
+      // there is undefined and raises the same error the walker reports,
+      // rather than resolving to a fabricated builtin.
+      Predeclared | Universal => {
+        let name = m.prog.names[arg]
+        match ctx.global_env.lookup(name) {
           LFound(v) => push(v)
-          _ => push(vm_resolve_external(m.prog.names[arg]))
+          _ =>
+            raise EvalErr(
+              make_eval_error(ctx, "\{pos.to_string()}: undefined: \{name}"),
+            )
         }
+      }
       Load => self.exec_load(m, m.prog.load_stmts[arg])
       MakeFunc => {
         let funcode = m.prog.functions[arg]
