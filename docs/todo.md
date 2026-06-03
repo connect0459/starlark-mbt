@@ -2871,7 +2871,6 @@ a validation-only pre-pass and `@syntax` stays immutable.
       blemish the migration set out to remove. (The differential harness now
       runs the VM on both sides; the conformance suite is the behavioral gate.)
 - [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
-- [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
 
 ---
 
