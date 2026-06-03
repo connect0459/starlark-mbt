@@ -149,3 +149,63 @@ test "vm matches walker on nested expressions" {
     "a = (1 + 2) * (3 + 4)\nb = [a, a + 1, a * 2]\nc = b[2] - b[0]",
   )
 }
+
+///|
+test "vm matches walker on if / else at module scope" {
+  assert_vm_matches_walker("x = 5\nif x > 3:\n  y = 1\nelse:\n  y = 2")
+  assert_vm_matches_walker("x = 1\nif x > 3:\n  y = 1\nelse:\n  y = 2")
+}
+
+///|
+test "vm matches walker on and / or short-circuiting" {
+  assert_vm_matches_walker(
+    "a = True and 5\nb = False or 7\nc = 0 or 9\nd = 1 and 2\ne = 0 and 3",
+  )
+}
+
+///|
+test "vm matches walker on the conditional expression" {
+  assert_vm_matches_walker(
+    "x = 10\na = 1 if x > 5 else 2\nb = 1 if x < 5 else 2",
+  )
+}
+
+///|
+test "vm matches walker on a while loop with accumulation" {
+  assert_vm_matches_walker(
+    "i = 0\ns = 0\nwhile i < 5:\n  s = s + i\n  i = i + 1",
+  )
+}
+
+///|
+test "vm matches walker on a for loop over a list" {
+  assert_vm_matches_walker("s = 0\nfor x in [1, 2, 3, 4]:\n  s = s + x")
+}
+
+///|
+test "vm matches walker on for with break" {
+  assert_vm_matches_walker(
+    "s = 0\nfor x in [1, 2, 3, 4, 5]:\n  if x > 3:\n    break\n  s = s + x",
+  )
+}
+
+///|
+test "vm matches walker on for with continue" {
+  assert_vm_matches_walker(
+    "s = 0\nfor x in [1, 2, 3, 4]:\n  if x == 2:\n    continue\n  s = s + x",
+  )
+}
+
+///|
+test "vm matches walker on nested loops" {
+  assert_vm_matches_walker(
+    "total = 0\nfor i in [1, 2, 3]:\n  for j in [10, 20]:\n    total = total + i * j",
+  )
+}
+
+///|
+test "vm matches walker on while with break and continue" {
+  assert_vm_matches_walker(
+    "i = 0\ns = 0\nwhile i < 10:\n  i = i + 1\n  if i == 3:\n    continue\n  if i > 6:\n    break\n  s = s + i",
+  )
+}

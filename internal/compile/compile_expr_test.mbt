@@ -176,13 +176,14 @@ test "line table maps a statement's instructions back to its source line" {
 
 ///|
 test "unsupported constructs surface as a CompileErr that pinpoints the source position" {
-  let iff = @syntax.Stmt::SIf(
-    @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(true), p(1, 4)),
-    [@syntax.Stmt::SPass(p(2, 3))],
+  // A function definition is not yet lowered; the error must locate it.
+  let def_stmt = @syntax.Stmt::SDef(
+    "f",
     [],
+    [@syntax.Stmt::SPass(p(2, 3))],
     p(1, 1),
   )
-  let file = @syntax.File::new("t.star", [iff])
+  let file = @syntax.File::new("t.star", [def_stmt])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
     Err(CompileErr(msg)) => assert_true(msg.contains("t.star:1:1"))
@@ -192,14 +193,13 @@ test "unsupported constructs surface as a CompileErr that pinpoints the source p
 
 ///|
 test "an unsupported expression reports its own position in the error" {
-  // A conditional expression is not yet lowered; the error must locate it.
-  let cond = @syntax.Expr::ECond(
-    @syntax.Expr::EIdent("x", p(3, 5)),
-    lit_int(1),
-    lit_int(2),
+  // A call expression is not yet lowered; the error must locate it.
+  let call = @syntax.Expr::ECall(
+    @syntax.Expr::EIdent("f", p(3, 5)),
+    [],
     p(3, 9),
   )
-  let file = @syntax.File::new("t.star", [@syntax.Stmt::SExpr(cond)])
+  let file = @syntax.File::new("t.star", [@syntax.Stmt::SExpr(call)])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
     Err(CompileErr(msg)) => assert_true(msg.contains("t.star:3:9"))

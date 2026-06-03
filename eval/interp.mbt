@@ -153,6 +153,12 @@ fn run_program_into(
   let code = fc.code
   let globals : Array[@value.Value?] = Array::make(prog.globals.length(), None)
   let stack : Array[@value.Value] = []
+  // Active iterators (the `for`-loop iterator stack). `IterPop` releases each
+  // one (decrementing the container's iteration count). Releasing iterators
+  // when an error unwinds through an active loop is deferred until the engine
+  // flip; it is not observable here because such errors propagate out of the
+  // VM entry point and abandon the module.
+  let iterstack : Array[@value.StarlarkIterator] = []
   fn push(v : @value.Value) -> Unit {
     stack.push(v)
   }
@@ -219,6 +225,23 @@ fn run_program_into(
         }
       Predeclared => push(vm_resolve_external(prog.names[arg]))
       Universal => push(vm_resolve_external(prog.names[arg]))
+      Jmp => pc = arg
+      CJmp => if pop().truth() { pc = arg }
+      IterPush =>
+        match @value.iterate(pop()) {
+          Ok(it) => iterstack.push(it)
+          Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
+        }
+      IterJmp =>
+        match iterstack[iterstack.length() - 1].next() {
+          Some(elem) => push(elem) // fall through with the next element
+          None => pc = arg // exhausted: jump past the loop body
+        }
+      IterPop =>
+        match iterstack.pop() {
+          Some(it) => it.done()
+          None => abort("vm: iterator stack underflow")
+        }
       Return => break
       _ =>
         match binop_of_opcode(op) {
