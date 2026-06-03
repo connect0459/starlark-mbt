@@ -108,6 +108,9 @@ fn Fcomp::set_pos(self : Fcomp, pos : @errors.Position) -> Unit {
 /// Adjusts the tracked operand-stack height and updates the peak.
 fn Fcomp::stack(self : Fcomp, pop : Int, push : Int) -> Unit {
   self.cur_stack = self.cur_stack - pop + push
+  if self.cur_stack < 0 {
+    abort("compile: operand-stack underflow (max_stack would be invalid)")
+  }
   if self.cur_stack > self.max_stack {
     self.max_stack = self.cur_stack
   }
