@@ -438,6 +438,22 @@ fn VM::run_frame(
         } else {
           push(stack[stack.length() - 1])
         }
+      Dup2 => {
+        // [.., x, y] -> [.., x, y, x, y]
+        let n = stack.length()
+        if n < 2 {
+          abort("vm: operand stack underflow")
+        }
+        push(stack[n - 2])
+        push(stack[n - 1])
+      }
+      Exch => {
+        // [.., x, y] -> [.., y, x]
+        let y = pop()
+        let x = pop()
+        push(y)
+        push(x)
+      }
       UPlus => push(eval_unary(ctx, OpPlus, pop(), pos))
       UMinus => push(eval_unary(ctx, OpMinus, pop(), pos))
       Tilde => push(eval_unary(ctx, OpBitNot, pop(), pos))
@@ -446,6 +462,10 @@ fn VM::run_frame(
         let idx = pop()
         let obj = pop()
         push(eval_index(ctx, obj, idx, pos))
+      }
+      Attr => {
+        let obj = pop()
+        push(eval_getattr(ctx, obj, self.prog.names[arg], pos))
       }
       MakeList =>
         push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
@@ -541,16 +561,16 @@ fn VM::run_frame(
         }
       SetGlobal => self.globals[arg] = Some(pop())
       SetIndex => {
-        // stack: [value, obj, idx]
+        // stack: [obj, idx, value]
+        let value = pop()
         let idx = pop()
         let obj = pop()
-        let value = pop()
         set_index(ctx, obj, idx, value, pos)
       }
       SetField => {
-        // stack: [value, obj]
-        let obj = pop()
+        // stack: [obj, value]
         let value = pop()
+        let obj = pop()
         let attr = self.prog.names[arg]
         match obj {
           @value.Value::Module(_) =>

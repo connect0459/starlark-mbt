@@ -305,18 +305,9 @@ test "augmented assignment stamps the target load with the target's own position
 
 ///|
 test "unsupported constructs surface as a CompileErr that pinpoints the source position" {
-  // Augmented assignment to an index target is not yet lowered; the error must
-  // locate the target.
-  let stmt = @syntax.Stmt::SAugAssign(
-    @syntax.Expr::EIndex(
-      @syntax.Expr::EIdent("xs", p(1, 1)),
-      lit_int(0),
-      p(1, 1),
-    ),
-    AugAdd,
-    lit_int(1),
-    p(1, 3),
-  )
+  // A literal is not a valid augmented-assignment target; the error must locate
+  // the target.
+  let stmt = @syntax.Stmt::SAugAssign(lit_int(0), AugAdd, lit_int(1), p(1, 3))
   let file = @syntax.File::new("t.star", [stmt])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
@@ -326,14 +317,10 @@ test "unsupported constructs surface as a CompileErr that pinpoints the source p
 }
 
 ///|
-test "an unsupported augmented-assignment target reports its own position in the error" {
-  // Augmented assignment to an attribute target is not yet lowered; the error
-  // must locate the target expression.
-  let lhs = @syntax.Expr::EDot(
-    @syntax.Expr::EIdent("obj", p(3, 1)),
-    "f",
-    p(3, 9),
-  )
+test "an invalid augmented-assignment target reports its own position in the error" {
+  // A call is not a valid augmented-assignment target; the error must locate the
+  // target expression rather than fall back to the statement.
+  let lhs = @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(3, 9)), [], p(3, 9))
   let stmt = @syntax.Stmt::SAugAssign(lhs, AugAdd, lit_int(1), p(3, 1))
   let file = @syntax.File::new("t.star", [stmt])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)

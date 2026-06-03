@@ -727,6 +727,73 @@ test "vm matches walker on assigning to an index out of range" {
 }
 
 ///|
+test "vm matches walker on attribute access and method calls" {
+  assert_vm_matches_walker("s = \"Hello\".upper()\nt = \"a,b,c\".split(\",\")")
+  assert_vm_matches_walker(
+    "d = {\"k\": 1}\nv = d.get(\"k\")\nw = d.get(\"x\", 9)",
+  )
+}
+
+///|
+test "vm matches walker on a mutating method call on a list" {
+  assert_vm_matches_walker("xs = [3, 1, 2]\nxs.append(4)\nxs.sort()\ny = xs")
+}
+
+///|
+test "vm matches walker on a method call inside a function" {
+  assert_vm_matches_walker(
+    "def f(xs):\n  xs.append(99)\n  return xs\n\nr = f([1, 2])",
+  )
+}
+
+///|
+test "vm matches walker on accessing a missing attribute" {
+  assert_vm_matches_walker("xs = [1, 2]\ny = xs.no_such_attr")
+}
+
+///|
+test "vm matches walker on augmented assignment to an unassignable attribute" {
+  // Built-in values reject attribute assignment; both engines must report the
+  // same error for `obj.attr += v`.
+  assert_vm_matches_walker("xs = [1, 2]\nxs.foo += 1")
+}
+
+///|
+test "vm matches walker on augmented assignment to a list index" {
+  assert_vm_matches_walker("xs = [1, 2, 3]\nxs[1] += 10\nxs[0] *= 5\ny = xs")
+}
+
+///|
+test "vm matches walker on augmented assignment to a dict key" {
+  assert_vm_matches_walker(
+    "d = {\"a\": 1, \"b\": 2}\nd[\"a\"] += 100\nd[\"b\"] //= 2\nx = d",
+  )
+}
+
+///|
+test "vm matches walker on augmented in-place list extend at an index" {
+  // `xs[i] += [..]` must mutate the nested list in place
+  assert_vm_matches_walker(
+    "xs = [[1], [2]]\nys = xs[0]\nxs[0] += [9]\na = xs\nb = ys",
+  )
+}
+
+///|
+test "vm matches walker on the index of an augmented target evaluated once" {
+  // The container and index are evaluated once; appending to a log proves it.
+  assert_vm_matches_walker(
+    "log = []\n" +
+    "def idx():\n  log.append(\"i\")\n  return 0\n\n" +
+    "xs = [10]\nxs[idx()] += 5\nx = xs\nn = log",
+  )
+}
+
+///|
+test "vm matches walker on augmented assignment to an out-of-range index" {
+  assert_vm_matches_walker("xs = [1]\nxs[5] += 1")
+}
+
+///|
 test "vm matches walker on an undefined name at module scope" {
   assert_vm_matches_walker("x = undefined_name")
 }

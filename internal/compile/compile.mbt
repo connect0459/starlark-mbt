@@ -931,9 +931,37 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
           self.emit1(Opcode::AugApply, aug_op_code(aug_op), 2, 1)
           self.compile_store(name)
         }
+        EIndex(obj, idx, ipos) => {
+          // Evaluate the container and index once: read obj[idx], apply the
+          // operator with the right-hand side, then store back.
+          self.compile_expr(obj)
+          self.compile_expr(idx)
+          self.emit0(Opcode::Dup2, 0, 2) // [obj, idx, obj, idx]
+          self.set_pos(ipos)
+          self.emit0(Opcode::Index, 2, 1) // [obj, idx, obj[idx]]
+          self.compile_expr(rhs)
+          self.set_pos(pos)
+          self.emit1(Opcode::AugApply, aug_op_code(aug_op), 2, 1) // [obj, idx, new]
+          self.set_pos(ipos)
+          self.emit0(Opcode::SetIndex, 3, 0)
+        }
+        EDot(obj, attr, dpos) => {
+          // Evaluate the container once: read obj.attr, apply the operator with
+          // the right-hand side, then store back.
+          let name_idx = self.pcomp.add_name(attr)
+          self.compile_expr(obj)
+          self.emit0(Opcode::Dup, 0, 1) // [obj, obj]
+          self.set_pos(dpos)
+          self.emit1(Opcode::Attr, name_idx, 1, 1) // [obj, obj.attr]
+          self.compile_expr(rhs)
+          self.set_pos(pos)
+          self.emit1(Opcode::AugApply, aug_op_code(aug_op), 2, 1) // [obj, new]
+          self.set_pos(dpos)
+          self.emit1(Opcode::SetField, name_idx, 2, 0)
+        }
         _ =>
           raise CompileErr(
-            "compile: augmented assignment to index/attribute targets not yet supported at \{@syntax.expr_pos(lhs).to_string()}",
+            "compile: invalid augmented-assignment target at \{@syntax.expr_pos(lhs).to_string()}",
           )
       }
     SPass(_) => ()
@@ -1113,8 +1141,9 @@ fn Fcomp::compile_store(self : Fcomp, name : String) -> Unit raise CompileErr {
 /// Assigns the value currently on top of the operand stack to `target`,
 /// consuming it. The right-hand side is evaluated before this is called, so
 /// for index/attribute targets the container and index/attribute are evaluated
-/// after the value (matching the walker). Tuple/list targets unpack the value
-/// and assign each element (recursively, supporting nesting).
+/// after the value (matching the walker). `Exch` reorders the stack into the
+/// `[obj, idx, value]` / `[obj, value]` layout the store opcodes expect. Tuple/
+/// list targets unpack the value and assign each element (recursively).
 fn Fcomp::compile_assign_target(
   self : Fcomp,
   target : @syntax.Expr,
@@ -1122,16 +1151,19 @@ fn Fcomp::compile_assign_target(
   match target {
     EIdent(name, _) => self.compile_store(name)
     EIndex(obj, idx, ipos) => {
+      // stack: [value]
       self.compile_expr(obj)
+      self.emit0(Opcode::Exch, 2, 2) // [obj, value]
       self.compile_expr(idx)
+      self.emit0(Opcode::Exch, 2, 2) // [obj, idx, value]
       self.set_pos(ipos)
-      // stack: [value, obj, idx] -> set_index(obj, idx, value)
       self.emit0(Opcode::SetIndex, 3, 0)
     }
     EDot(obj, attr, dpos) => {
+      // stack: [value]
       self.compile_expr(obj)
+      self.emit0(Opcode::Exch, 2, 2) // [obj, value]
       self.set_pos(dpos)
-      // stack: [value, obj] -> obj.attr = value
       self.emit1(Opcode::SetField, self.pcomp.add_name(attr), 2, 0)
     }
     ETuple(elems, tpos) | EList(elems, tpos) => {
