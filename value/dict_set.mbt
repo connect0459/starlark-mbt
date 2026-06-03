@@ -146,7 +146,7 @@ pub fn StarlarkDict::keys(self : StarlarkDict) -> Array[Value] {
 /// Returns a lazy iterator over the dict keys in insertion order.
 ///
 /// Mirrors `StarlarkList::iter` and `StarlarkSet::iter`; iterating a dict
-/// yields its keys (as Starlark's `for k in dict` does). Use `to_entries`
+/// yields its keys (as Starlark's `for k in dict` does). Use `entries`
 /// for `(key, value)` pairs.
 pub fn StarlarkDict::iter(self : StarlarkDict) -> Iter[Value] {
   self.keys().iter()
@@ -156,7 +156,7 @@ pub fn StarlarkDict::iter(self : StarlarkDict) -> Iter[Value] {
 /// Returns an `Iter` over all key-value pairs in insertion order.
 ///
 /// Returns a lazy iterator over `(key, value)` pairs in insertion order.
-pub fn StarlarkDict::to_entries(self : StarlarkDict) -> Iter[(Value, Value)] {
+pub fn StarlarkDict::entries(self : StarlarkDict) -> Iter[(Value, Value)] {
   let arr : Array[(Value, Value)] = []
   self.ht.each(fn(k, v) { arr.push((k, v)) })
   arr.iter()
