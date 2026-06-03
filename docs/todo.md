@@ -2725,9 +2725,20 @@ a validation-only pre-pass and `@syntax` stays immutable.
         gained a private optional `funcode` + `#internal from_compiled` (M11
         representation introduced early); `value` now imports the AST-free
         `compile` (no syntax leak). Harness compares globals by `repr`.
-      - [ ] **M6b**: argument defaults, keyword args, `*args`/`**kwargs`,
-        keyword-only params, builtin calls from the VM, and arg-count error
-        message parity.
+      - [~] **M6b**: builtin calls + full argument binding.
+        - [x] **M6b-1**: builtin calls from the VM — the VM intercepts compiled
+          user functions (frames) and delegates all other callees (builtins,
+          bound methods, custom values, non-callable errors) to the existing
+          value-level call dispatch, reusing every builtin. Unlocks positional
+          builtin calls (`len`/`abs`/`str`/`int`/`min`/`max`/`sorted`/`list`/
+          `tuple`/`range`/...) and `range()`-driven loops; errors/backtraces
+          match. (Builtin→VM-function callbacks like `sorted(key=)` not reachable
+          until keyword args compile.)
+        - [ ] **M6b-2**: full user-function argument binding — defaults, keyword
+          args, `*args`/`**kwargs`, keyword-only params (compiler param kinds +
+          `MakeTuple` defaults with MANDATORY sentinels; `CALL_KW`/`CALL_VAR`/
+          `CALL_VAR_KW`; a port of starlark-go `setArgs`), and arg-count error
+          message parity.
 - [ ] **M7**: closure cells (Cell, FREE/FREECELL/LOCALCELL/SETLOCALCELL,
       cell-promotion analysis; BUG-28 parity). Spike the capture analysis first.
 - [ ] **M8**: comprehensions (lowered to ITER loops with isolated scope).
