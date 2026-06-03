@@ -139,8 +139,8 @@ pub fn file_program(
 ///|
 /// Runs the resolver over `file`, returning an `EvalError` carrying the joined
 /// resolver messages if resolution fails. Shared by `file_program` and the
-/// one-shot VM entries so resolver errors (messages and positions) match the
-/// walker exactly.
+/// one-shot execution entries so resolver errors (messages and positions) are
+/// reported consistently.
 fn validate_resolution(
   file : @syntax.File,
   opts : Options,

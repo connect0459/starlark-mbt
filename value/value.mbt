@@ -558,9 +558,9 @@ pub fn StarlarkFunction::new(
 }
 
 ///|
-/// Creates a `StarlarkFunction` backed by compiled bytecode rather than an AST.
-/// Used by the bytecode VM during the dual-engine migration (issue #1); the AST
-/// fields are left empty because the VM executes `funcode` directly.
+/// Creates a `StarlarkFunction` backed by compiled bytecode. This is how every
+/// executable function value is built: the VM runs `funcode` against the
+/// module the function carries.
 ///
 /// Parameters:
 ///

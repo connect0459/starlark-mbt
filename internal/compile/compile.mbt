@@ -1,14 +1,15 @@
 // Bytecode compiler: lowers a resolved `@syntax.File` to a `CompiledProgram`.
 //
 // The compiler assumes the file has already passed name resolution (so it never
-// re-validates), and computes its own slot/global layout. This file implements
-// the straight-line expression subset and module-level initialization; control
-// flow, calls, functions, closures, comprehensions, and load statements are
-// added in later milestones. Nodes not yet handled raise `CompileErr`.
+// re-validates), and computes its own slot/global layout. It lowers the full
+// language — expressions, control flow, calls, functions, closures,
+// comprehensions, and load statements. Constructs it cannot lower (e.g. an
+// invalid assignment target) raise `CompileErr`.
 
 ///|
-/// Raised for source constructs the compiler does not yet lower. During the
-/// dual-engine migration this lets callers fall back to the AST walker.
+/// Raised for source constructs the compiler cannot lower (e.g. an invalid
+/// assignment target). The resolver rejects most such programs first, so this is
+/// largely a defensive guard.
 pub suberror CompileErr {
   CompileErr(String)
 }
@@ -619,7 +620,7 @@ priv enum CompKind {
 /// variables are isolated comp-local slots (saved/restored around the
 /// comprehension); the first clause's iterable is evaluated in the enclosing
 /// scope, while all later iterables see every comprehension target as a
-/// (possibly-unassigned) comp local — matching the walker's scoping.
+/// (possibly-unassigned) comp local — matching the established scoping.
 fn Fcomp::compile_comprehension(
   self : Fcomp,
   kind : CompKind,
@@ -1141,7 +1142,7 @@ fn Fcomp::compile_store(self : Fcomp, name : String) -> Unit raise CompileErr {
 /// Assigns the value currently on top of the operand stack to `target`,
 /// consuming it. The right-hand side is evaluated before this is called, so
 /// for index/attribute targets the container and index/attribute are evaluated
-/// after the value (matching the walker). `Exch` reorders the stack into the
+/// after the value (matching the established interpreter). `Exch` reorders the stack into the
 /// `[obj, idx, value]` / `[obj, value]` layout the store opcodes expect. Tuple/
 /// list targets unpack the value and assign each element (recursively).
 fn Fcomp::compile_assign_target(

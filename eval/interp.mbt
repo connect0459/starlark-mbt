@@ -1,14 +1,12 @@
-// Bytecode virtual machine. This is now the default engine (issue #1): it
-// executes `@compile.CompiledProgram` bytecode, and every public entry point
+// Bytecode virtual machine (issue #1): the interpreter's only execution engine.
+// It executes `@compile.CompiledProgram` bytecode, and every public entry point
 // (`exec_file`, `eval_expr`, the universe/predeclared variants, the REPL, and
-// `Program::init`) runs on it. The AST walker is retained behind the flip for
-// rollback and for the differential harness, which still verifies the two
-// engines agree.
+// `Program::init`) runs on it.
 //
-// Operator semantics are reused wholesale from `ops.mbt` (eval_binary /
-// eval_unary / eval_index): the VM pops operands off its stack and calls the
-// same functions the walker does, passing a source position recovered from the
-// funcode's line table so error messages and positions match.
+// Operator semantics are reused wholesale from the value-level helpers in
+// `ops.mbt` (eval_binary / eval_unary / eval_index): the VM pops operands off
+// its stack and calls those functions, passing a source position recovered from
+// the funcode's line table so error messages and positions are precise.
 
 ///|
 /// Materializes a compile-time constant-pool entry into a runtime value.
@@ -25,7 +23,7 @@ fn const_to_value(c : @compile.Const) -> @value.Value {
 
 ///|
 /// Maps a binary-operator opcode to its `@syntax.BinaryOp`, so the VM can reuse
-/// the walker's `eval_binary`. Returns `None` for non-binary opcodes.
+/// the value-level `eval_binary`. Returns `None` for non-binary opcodes.
 fn binop_of_opcode(op : @compile.Opcode) -> @syntax.BinaryOp? {
   match op {
     Plus => Some(OpAdd)
@@ -76,7 +74,7 @@ fn vm_read_arg(code : Bytes, i : Int) -> (Int, Int) {
 
 ///|
 /// Collects exactly `n` values from `value` for a sequence assignment, mirroring
-/// the walker's unpacking: tuples/lists yield their items directly, other values
+/// the established interpreter's unpacking: tuples/lists yield their items directly, other values
 /// are iterated, and a non-iterable or a length mismatch raises the same error.
 fn unpack_items(
   ctx : EvalContext,
@@ -134,7 +132,7 @@ fn unpack_items(
 
 ///|
 /// Expands a `*args` call argument, appending each item of `iterable` to `out`.
-/// Mirrors the walker's argument expansion, including the not-iterable error.
+/// Mirrors the established interpreter's argument expansion, including the not-iterable error.
 fn expand_star_args(
   ctx : EvalContext,
   iterable : @value.Value,
@@ -163,7 +161,7 @@ fn expand_star_args(
 
 ///|
 /// Expands a `**kwargs` call argument, appending each `(name, value)` of the
-/// mapping to `out`. Mirrors the walker: the argument must be a dict and every
+/// mapping to `out`. Mirrors the established interpreter: the argument must be a dict and every
 /// key must be a string.
 fn expand_kwargs(
   ctx : EvalContext,
@@ -254,11 +252,10 @@ fn pop_n(stack : Array[@value.Value], n : Int) -> Array[@value.Value] {
 
 ///|
 /// Compiles and runs `src` on the bytecode VM, returning a `Module` of the
-/// resulting globals. The public `exec_file` delegates here. Retained as an
-/// internal entry so the differential harness can run the VM explicitly while
-/// the walker remains available. Resolution matches `file_program` so resolver
-/// errors match the walker.
-#internal(unsafe, "experimental bytecode VM entry; not part of the public embedding API")
+/// resulting globals. The public `exec_file` delegates here; it is exposed as an
+/// `#internal` entry so tests can run the VM directly. Resolution is performed by
+/// `compile_and_run_vm` via `validate_resolution`.
+#internal(unsafe, "bytecode VM entry; not part of the public embedding API")
 pub fn exec_file_vm(
   thread : Thread,
   filename : String,
@@ -292,8 +289,8 @@ fn compile_and_run_vm(
   extra_pred : (String) -> Bool,
   init? : (String) -> @value.Value? = fn(_) { None },
 ) -> Result[(@compile.CompiledProgram, RunModule), @errors.EvalError] {
-  // Validate with the same resolver pass the walker uses; resolver errors
-  // (messages and positions) match the walker exactly.
+  // Validate with the same resolver pass the established interpreter uses; resolver errors
+  // (messages and positions) match the established interpreter exactly.
   match validate_resolution(file, ctx.opts, extra_pred) {
     Err(e) => return Err(e)
     Ok(_) => ()
@@ -337,7 +334,7 @@ fn module_output(
 /// Runs a compiled program's module-init function on a fresh VM and returns the
 /// resulting module state (its populated global slots). Shared by `exec_file_vm`
 /// and `eval_expr_vm`. Pushes and pops the `<toplevel>` call frame so backtraces
-/// begin at `<toplevel>`, matching the walker.
+/// begin at `<toplevel>`, matching the established interpreter.
 fn run_program_vm(
   ctx : EvalContext,
   prog : @compile.CompiledProgram,
@@ -410,7 +407,7 @@ pub fn eval_expr_vm(
   )
   let file = @syntax.File::new(filename, [stmt])
   // Validate with the same resolver pass the file entries use, treating `env`
-  // bindings as predeclared, so an undefined name reports the walker's runtime
+  // bindings as predeclared, so an undefined name reports the established interpreter's runtime
   // "<pos>: undefined: name" instead of a position-less compile error.
   match file_program(file, opts, fn(name) { env.get(name) is Some(_) }) {
     Err(e) => return Err(e)
@@ -471,7 +468,7 @@ priv struct RunModule {
   prog : @compile.CompiledProgram
   globals : Array[@value.Value?]
   // Module-global names bound by `load`. Excluded from the module's exported
-  // globals unless `load_binds_globally` (matching the walker).
+  // globals unless `load_binds_globally` (matching the established interpreter).
   load_bound : Array[String]
 }
 
@@ -479,7 +476,7 @@ priv struct RunModule {
 /// Executes one funcode frame and returns its `Return` value. `name` is the
 /// frame's display name and `frame_idx` its slot in the thread call stack, which
 /// is restamped with the current source position on every instruction so error
-/// backtraces locate each frame precisely (matching the walker's live position
+/// backtraces locate each frame precisely (matching the established interpreter's live position
 /// tracking).
 fn VM::run_frame(
   self : VM,
@@ -601,7 +598,7 @@ fn VM::run_frame(
       }
       Slice => {
         // stack: [obj, lo, hi, step] (omitted bounds pushed as None). The
-        // bound conversion order matches the walker for identical errors.
+        // bound conversion order matches the established interpreter for identical errors.
         let step_v = pop()
         let hi_v = pop()
         let lo_v = pop()
@@ -760,7 +757,7 @@ fn VM::run_frame(
           None => {
             // A name bound by `load` is module-local unless `load_binds_globally`,
             // so referencing it before its load reports "local variable", matching
-            // the walker.
+            // the established interpreter.
             let gname = m.prog.globals[arg].name()
             let kind = if !ctx.opts.load_binds_globally &&
               load_binds_name(m.prog, gname) {
@@ -780,7 +777,7 @@ fn VM::run_frame(
       // environment, which holds the builtins, the universal `None`/`True`/
       // `False`, and embedder-supplied bindings (a custom universe, per-call
       // predeclared values, or `eval_expr`'s `env`). A name with no binding
-      // there is undefined and raises the same error the walker reports,
+      // there is undefined and raises the same error the established interpreter reports,
       // rather than resolving to a fabricated builtin.
       Predeclared | Universal => {
         let name = m.prog.names[arg]
@@ -867,7 +864,7 @@ fn VM::run_frame(
         let star = pop()
         let (callee, args, kwargs) = pop_call_fixed(arg)
         // Expand `*args` before `**kwargs` so the iteration order (and thus the
-        // order any error surfaces) matches the walker's left-to-right argument
+        // order any error surfaces) matches the established interpreter's left-to-right argument
         // expansion.
         expand_star_args(ctx, star, args)
         expand_kwargs(ctx, kwstar, kwargs)
@@ -918,8 +915,9 @@ fn VM::run_frame(
 ///|
 /// Invokes `callee` with positional `args`, returning its result. User-defined
 /// functions run on a fresh frame; the call position `pos` is recorded on the
-/// callee's frame for backtraces. Only positional calls to compiled functions
-/// are supported so far (builtin dispatch and keyword/splat arguments follow).
+/// callee's frame for backtraces. Compiled functions run on a fresh VM frame;
+/// builtins, bound methods, and custom values dispatch through the shared
+/// value-level `call_value`.
 fn VM::call_value(
   self : VM,
   callee : @value.Value,
@@ -931,18 +929,18 @@ fn VM::call_value(
     @value.Value::Function(f) =>
       match f.compiled_funcode() {
         Some(fc) => self.call_compiled(f, fc, args, kwargs, pos)
-        // An AST-backed function (e.g. one loaded from a module compiled by the
-        // walker) has no bytecode, so the walker runs it. After the engine flip
-        // every function is compiled and this path goes away.
+        // A function value with no compiled code is the minimal, non-runnable
+        // value built by `StarlarkFunction::new` (tests / reflection only);
+        // dispatching it raises the not-callable error from the shared path.
         None => call_value(self.ctx, callee, args, kwargs, pos)
       }
-    // Builtins, bound methods, and custom values are value-level operations with
-    // no AST involvement, so the walker's `call_value` handles them directly,
-    // reusing every builtin implementation. The non-callable error path is
-    // produced there as well. A builtin that calls back into a compiled function
-    // — e.g. `sorted(iterable, key)` with the key passed positionally — re-enters
-    // the VM through `ctx.vm`, so the callback runs on a VM frame with the same
-    // recursion and backtrace semantics as a direct VM call.
+    // Builtins, bound methods, and custom values are value-level operations, so
+    // the shared value-level `call_value` handles them directly, reusing every
+    // builtin implementation and producing the non-callable error path. A
+    // builtin that calls back into a compiled function — e.g. `sorted(iterable,
+    // key)` with the key passed positionally — re-enters the VM through
+    // `ctx.vm`, so the callback runs on a VM frame with the same recursion and
+    // backtrace semantics as a direct VM call.
     _ => call_value(self.ctx, callee, args, kwargs, pos)
   }
 }
@@ -1029,7 +1027,8 @@ fn VM::call_compiled(
 /// Executes a `load` statement: invokes the thread's loader for the module path
 /// and binds each requested export into its module-global slot, recording the
 /// bound names so module-local load bindings can be filtered from the exported
-/// globals. Mirrors the AST walker's `exec_load`, including error messages.
+/// globals. Reproduces the interpreter's `load` semantics, including the error
+/// messages.
 fn VM::exec_load(
   self : VM,
   m : RunModule,
@@ -1089,8 +1088,8 @@ fn VM::exec_load(
 
 ///|
 /// Binds positional and keyword arguments to a compiled function's parameter
-/// slots, applying defaults and collecting `*args`/`**kwargs`. This is a direct
-/// port of the AST walker's `bind_args` over the funcode's parameter specs, so
+/// slots, applying defaults and collecting `*args`/`**kwargs`. It binds over the
+/// funcode's parameter specs using the interpreter's established algorithm, so
 /// the argument-error messages are identical. Named parameters occupy
 /// `locals[0..]` in declaration order (a bare `*` separator takes no slot);
 /// `defaults` is aligned to the parameter-spec index.
@@ -1268,8 +1267,7 @@ fn VM::bind_args(
 
 ///|
 /// Number of leading positional parameters (before any `*`/`*args`), used in
-/// the argument-count error message. Mirrors the walker's `count_max_positional`
-/// over parameter specs.
+/// the argument-count error message, computed over the parameter specs.
 fn count_max_positional_spec(params : Array[@compile.ParamSpec]) -> Int {
   let mut n = 0
   for p in params {
