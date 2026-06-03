@@ -37,7 +37,16 @@ fn fresh_fcomp() -> Fcomp {
 ///|
 test "an unsupported statement reports its position in the error" {
   let fc = fresh_fcomp()
-  let stmt = @syntax.Stmt::SReturn(None, @errors.Position::new("t.star", 7, 2))
+  // Augmented assignment is not yet lowered.
+  let stmt = @syntax.Stmt::SAugAssign(
+    @syntax.Expr::EIdent("x", @errors.Position::new("t.star", 7, 1)),
+    AugAdd,
+    @syntax.Expr::ELiteral(
+      @syntax.LiteralVal::LitInt(BigInt::from_int(1)),
+      @errors.Position::new("t.star", 7, 6),
+    ),
+    @errors.Position::new("t.star", 7, 2),
+  )
   let r = try? fc.compile_stmt(stmt)
   match r {
     Err(CompileErr(msg)) => assert_true(msg.contains("t.star:7:2"))
