@@ -88,6 +88,12 @@ priv struct Fcomp {
   mut pending_pos : @errors.Position?
   mut cur_stack : Int
   mut max_stack : Int
+  mut num_params : Int
+  // Set at construction; richer parameter forms (defaults/*args/**kwargs/kwonly)
+  // populate these in a later milestone.
+  num_kwonly_params : Int
+  has_varargs : Bool
+  has_kwargs : Bool
 }
 
 ///|
@@ -105,6 +111,10 @@ fn Fcomp::new(pcomp : Pcomp, name : String, pos : @errors.Position) -> Fcomp {
     pending_pos: None,
     cur_stack: 0,
     max_stack: 0,
+    num_params: 0,
+    num_kwonly_params: 0,
+    has_varargs: false,
+    has_kwargs: false,
   }
 }
 
@@ -292,10 +302,10 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
     cells: [],
     freevars: [],
     max_stack: self.max_stack,
-    num_params: 0,
-    num_kwonly_params: 0,
-    has_varargs: false,
-    has_kwargs: false,
+    num_params: self.num_params,
+    num_kwonly_params: self.num_kwonly_params,
+    has_varargs: self.has_varargs,
+    has_kwargs: self.has_kwargs,
   }
 }
 
@@ -374,11 +384,47 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit1(Opcode::MakeTuple, xs.length(), xs.length(), 1)
     }
+    ECall(callee, args, pos) => self.compile_call(callee, args, pos)
+    ELambda(params, body_e, pos) => {
+      // A lambda is a function whose body is a single `return <expr>`.
+      let body : Array[@syntax.Stmt] = [
+        @syntax.Stmt::SReturn(Some(body_e), pos),
+      ]
+      self.compile_make_func("lambda", params, body, pos)
+    }
     _ =>
       raise CompileErr(
         "compile: unsupported expression at \{@syntax.expr_pos(e).to_string()}",
       )
   }
+}
+
+///|
+/// Compiles a call. Only positional arguments are supported so far; keyword,
+/// `*args`, and `**kwargs` arguments are added with full argument binding.
+fn Fcomp::compile_call(
+  self : Fcomp,
+  callee : @syntax.Expr,
+  args : Array[@syntax.Arg],
+  pos : @errors.Position,
+) -> Unit raise CompileErr {
+  self.compile_expr(callee)
+  let mut npos = 0
+  for a in args {
+    match a {
+      ArgPos(e) => {
+        self.compile_expr(e)
+        npos += 1
+      }
+      _ =>
+        raise CompileErr(
+          "compile: keyword, *args, and **kwargs call arguments not yet supported at \{pos.to_string()}",
+        )
+    }
+  }
+  self.set_pos(pos)
+  // operand encodes (npositional << 8) | nnamed; pops callee + args, pushes result
+  self.emit1(Opcode::Call, npos << 8, 1 + npos, 1)
 }
 
 ///|
@@ -585,11 +631,43 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
         Some((cont, _)) => self.emit_jump(Opcode::Jmp, cont, 0, 0)
         None => raise CompileErr("compile: continue not in a loop")
       }
+    SReturn(expr_opt, pos) => {
+      match expr_opt {
+        Some(e) => self.compile_expr(e)
+        None => self.emit0(Opcode::NoneOp, 0, 1)
+      }
+      self.set_pos(pos)
+      self.emit0(Opcode::Return, 1, 0)
+    }
+    SDef(name, params, body, pos) => {
+      self.compile_make_func(name, params, body, pos)
+      self.set_pos(pos)
+      self.compile_store(name)
+    }
     _ =>
       raise CompileErr(
         "compile: unsupported statement at \{@syntax.stmt_pos(s).to_string()}",
       )
   }
+}
+
+///|
+/// Compiles a function definition into a nested funcode and emits the code that
+/// builds the function value at runtime (its defaults gathered into a tuple,
+/// then `MakeFunc`). Leaves the function value on the operand stack.
+fn Fcomp::compile_make_func(
+  self : Fcomp,
+  name : String,
+  params : Array[@syntax.Param],
+  body : Array[@syntax.Stmt],
+  pos : @errors.Position,
+) -> Unit raise CompileErr {
+  let idx = compile_function(self.pcomp, name, params, body, pos)
+  // Default values are evaluated in the enclosing scope at definition time and
+  // gathered into a tuple consumed by MakeFunc. No defaults are supported yet.
+  self.set_pos(pos)
+  self.emit1(Opcode::MakeTuple, 0, 0, 1)
+  self.emit1(Opcode::MakeFunc, idx, 1, 1)
 }
 
 ///|
@@ -661,6 +739,79 @@ fn Fcomp::compile_store(self : Fcomp, name : String) -> Unit raise CompileErr {
   }
 }
 
+///|
+/// Compiles a function body into a nested funcode, registers it in the program's
+/// function table, and returns its index (the `MakeFunc` operand). Parameters
+/// become the first local slots; names assigned in the body become further
+/// locals. Only plain positional parameters are supported so far.
+fn compile_function(
+  pcomp : Pcomp,
+  name : String,
+  params : Array[@syntax.Param],
+  body : Array[@syntax.Stmt],
+  pos : @errors.Position,
+) -> Int raise CompileErr {
+  let fc = Fcomp::new(pcomp, name, pos)
+  for p in params {
+    match p {
+      ParamIdent(pname, ppos) => {
+        let idx = fc.locals.length()
+        fc.locals.push(@errors.Binding::new(pname, ppos))
+        fc.local_index[pname] = idx
+      }
+      _ =>
+        raise CompileErr(
+          "compile: parameter defaults, *args, **kwargs, and keyword-only parameters are not yet supported at \{pos.to_string()}",
+        )
+    }
+  }
+  fc.num_params = params.length()
+  collect_function_locals(fc, body)
+  fc.compile_stmts(body)
+  // Functions implicitly return None when control reaches the end.
+  fc.emit0(Opcode::NoneOp, 0, 1)
+  fc.emit0(Opcode::Return, 1, 0)
+  let funcode = fc.finish()
+  let idx = pcomp.functions.length()
+  pcomp.functions.push(funcode)
+  idx
+}
+
+///|
+/// Pre-pass over a function body: every name bound inside it (assignment LHS,
+/// `for` target, nested `def` name) becomes a local slot after the parameters.
+fn collect_function_locals(fc : Fcomp, body : Array[@syntax.Stmt]) -> Unit {
+  fn add(name : String, pos : @errors.Position) -> Unit {
+    if !fc.local_index.contains(name) {
+      let idx = fc.locals.length()
+      fc.locals.push(@errors.Binding::new(name, pos))
+      fc.local_index[name] = idx
+    }
+  }
+
+  fn walk(ss : Array[@syntax.Stmt]) -> Unit {
+    for s in ss {
+      match s {
+        SAssign(EIdent(name, pos), _, _) => add(name, pos)
+        SFor(EIdent(name, pos), _, b, _) => {
+          add(name, pos)
+          walk(b)
+        }
+        SIf(_, t, e, _) => {
+          walk(t)
+          walk(e)
+        }
+        SWhile(_, b, _) => walk(b)
+        // A nested def binds its name in this scope; its body is a separate scope.
+        SDef(name, _, _, p) => add(name, p)
+        _ => ()
+      }
+    }
+  }
+
+  walk(body)
+}
+
 // --- module-global collection ---
 
 ///|
@@ -685,6 +836,7 @@ fn collect_globals(
     for s in ss {
       match s {
         SAssign(EIdent(name, pos), _, _) => add(name, pos)
+        SDef(name, _, _, pos) => add(name, pos)
         SFor(target, _, body, _) => {
           match target {
             EIdent(name, pos) => add(name, pos)
@@ -697,7 +849,7 @@ fn collect_globals(
           walk(else_body)
         }
         SWhile(_, body, _) => walk(body)
-        SPass(_) | SExpr(_) | SBreak(_) | SContinue(_) => ()
+        SReturn(_, _) | SPass(_) | SExpr(_) | SBreak(_) | SContinue(_) => ()
         _ =>
           raise CompileErr(
             "compile: unsupported top-level statement at \{@syntax.stmt_pos(s).to_string()}",

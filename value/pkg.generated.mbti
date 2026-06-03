@@ -3,6 +3,7 @@ package "connect0459/starlark/value"
 
 import {
   "connect0459/starlark/errors",
+  "connect0459/starlark/internal/compile",
   "connect0459/starlark/syntax",
   "moonbitlang/core/bigint",
 }
@@ -131,10 +132,12 @@ pub struct StarlarkFunction {
 }
 pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
 pub fn StarlarkFunction::captured_scope(Self) -> Array[(Map[String, Value], Array[String])]
+pub fn StarlarkFunction::compiled_funcode(Self) -> @compile.Funcode?
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
 pub fn StarlarkFunction::defining_module(Self) -> StarlarkModule?
 pub fn StarlarkFunction::doc(Self) -> String
 pub fn StarlarkFunction::free_var(Self, Int) -> (String, Value)?
+pub fn StarlarkFunction::from_compiled(String, @compile.Funcode, Array[Value?]) -> Self
 pub fn StarlarkFunction::globals(Self) -> Map[String, Value]
 pub fn StarlarkFunction::has_kwargs(Self) -> Bool
 pub fn StarlarkFunction::has_varargs(Self) -> Bool

@@ -132,32 +132,71 @@ pub fn exec_file_vm(
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
   let ctx = EvalContext::new(thread, opts)
-  let globals_map : Map[String, @value.Value] = {}
+  let vm = VM::{
+    ctx,
+    prog,
+    globals: Array::make(prog.globals.length(), None),
+    active: [],
+  }
   try {
-    run_program_into(ctx, prog, globals_map)
-    Ok(Module::from_map(globals_map))
+    // Push the module-init frame so backtraces begin at <toplevel>, matching
+    // the walker.
+    ctx.thread.call_stack.push(
+      @errors.CallFrame::new(
+        "<toplevel>",
+        @errors.Position::new(filename, 1, 1),
+      ),
+    )
+    let idx = ctx.thread.call_stack.length() - 1
+    let no_locals : Array[@value.Value?] = []
+    vm.run_frame(prog.toplevel, "<toplevel>", no_locals, idx) |> ignore
+    ctx.thread.call_stack.pop() |> ignore
+    let out : Map[String, @value.Value] = {}
+    for i, binding in prog.globals {
+      match vm.globals[i] {
+        Some(v) => out[binding.name()] = v
+        None => ()
+      }
+    }
+    Ok(Module::from_map(out))
   } catch {
-    EvalErr(e) => Err(e)
+    EvalErr(e) => {
+      ctx.thread.call_stack.pop() |> ignore
+      Err(e)
+    }
   }
 }
 
 ///|
-/// Runs the program and writes the resulting module globals into `out`
-/// (name -> value, assigned globals only), mirroring the walker's module dict.
-fn run_program_into(
-  ctx : EvalContext,
-  prog : @compile.CompiledProgram,
-  out : Map[String, @value.Value],
-) -> Unit raise EvalErr {
-  let fc = prog.toplevel
+/// VM execution state shared across all call frames of one program run: the
+/// evaluation context (thread + options) and the module's global slots. Each
+/// `run_frame` invocation owns its own operand stack, locals, and iterator
+/// stack.
+priv struct VM {
+  ctx : EvalContext
+  prog : @compile.CompiledProgram
+  globals : Array[@value.Value?]
+  active : Array[@compile.Funcode]
+}
+
+///|
+/// Executes one funcode frame and returns its `Return` value. `name` is the
+/// frame's display name and `frame_idx` its slot in the thread call stack, which
+/// is restamped with the current source position on every instruction so error
+/// backtraces locate each frame precisely (matching the walker's live position
+/// tracking).
+fn VM::run_frame(
+  self : VM,
+  fc : @compile.Funcode,
+  name : String,
+  locals : Array[@value.Value?],
+  frame_idx : Int,
+) -> @value.Value raise EvalErr {
+  let ctx = self.ctx
   let code = fc.code
-  let globals : Array[@value.Value?] = Array::make(prog.globals.length(), None)
   let stack : Array[@value.Value] = []
-  // Active iterators (the `for`-loop iterator stack). `IterPop` releases each
-  // one (decrementing the container's iteration count). Releasing iterators
-  // when an error unwinds through an active loop is deferred until the engine
-  // flip; it is not observable here because such errors propagate out of the
-  // VM entry point and abandon the module.
+  // See note in exec_file_vm: iterator release on the error-unwind path is
+  // deferred until the engine flip; it is not observable here.
   let iterstack : Array[@value.StarlarkIterator] = []
   fn push(v : @value.Value) -> Unit {
     stack.push(v)
@@ -170,6 +209,7 @@ fn run_program_into(
     }
   }
 
+  let mut result = @value.Value::None
   let mut pc = 0
   while pc < code.length() {
     check_steps(ctx)
@@ -187,11 +227,14 @@ fn run_program_into(
       0
     }
     let pos = fc.position(cur_pc)
+    // Keep this frame's backtrace position current. An outer frame stops
+    // advancing at its Call instruction, so it naturally shows the call site.
+    ctx.thread.call_stack[frame_idx] = @errors.CallFrame::new(name, pos)
     match op {
       NoneOp => push(@value.Value::None)
       TrueOp => push(@value.Value::Bool(true))
       FalseOp => push(@value.Value::Bool(false))
-      Constant => push(const_to_value(prog.constants[arg]))
+      Constant => push(const_to_value(self.prog.constants[arg]))
       Pop => pop() |> ignore
       Dup =>
         if stack.is_empty() {
@@ -211,20 +254,57 @@ fn run_program_into(
       MakeList =>
         push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
       MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
-      SetGlobal => globals[arg] = Some(pop())
-      Global =>
-        match globals[arg] {
+      Local =>
+        match locals[arg] {
           Some(v) => push(v)
           None =>
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "global variable \{prog.globals[arg].name()} referenced before assignment",
+                "local variable \{fc.locals[arg].name()} referenced before assignment",
               ),
             )
         }
-      Predeclared => push(vm_resolve_external(prog.names[arg]))
-      Universal => push(vm_resolve_external(prog.names[arg]))
+      SetLocal => locals[arg] = Some(pop())
+      SetGlobal => self.globals[arg] = Some(pop())
+      Global =>
+        match self.globals[arg] {
+          Some(v) => push(v)
+          None =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "global variable \{self.prog.globals[arg].name()} referenced before assignment",
+              ),
+            )
+        }
+      Predeclared => push(vm_resolve_external(self.prog.names[arg]))
+      Universal => push(vm_resolve_external(self.prog.names[arg]))
+      MakeFunc => {
+        let funcode = self.prog.functions[arg]
+        let defaults : Array[@value.Value?] = match pop() {
+          @value.Value::Tuple(items) => items.map(fn(v) { Some(v) })
+          other =>
+            abort(
+              "vm: MakeFunc expected a defaults tuple, got \{other.type_name()}",
+            )
+        }
+        push(
+          @value.Value::Function(
+            @value.StarlarkFunction::from_compiled(
+              funcode.name,
+              funcode,
+              defaults,
+            ),
+          ),
+        )
+      }
+      Call => {
+        let npos = arg >> 8
+        let args = pop_n(stack, npos)
+        let callee = pop()
+        push(self.call_value(callee, args, pos))
+      }
       Jmp => pc = arg
       CJmp => if pop().truth() { pc = arg }
       IterPush =>
@@ -246,7 +326,10 @@ fn run_program_into(
           Some(it) => it.done()
           None => abort("vm: iterator stack underflow")
         }
-      Return => break
+      Return => {
+        result = pop()
+        break
+      }
       _ =>
         match binop_of_opcode(op) {
           Some(binop) => {
@@ -261,10 +344,87 @@ fn run_program_into(
         }
     }
   }
-  for i, binding in prog.globals {
-    match globals[i] {
-      Some(v) => out[binding.name()] = v
-      None => ()
-    }
+  result
+}
+
+///|
+/// Invokes `callee` with positional `args`, returning its result. User-defined
+/// functions run on a fresh frame; the call position `pos` is recorded on the
+/// callee's frame for backtraces. Only positional calls to compiled functions
+/// are supported so far (builtin dispatch and keyword/splat arguments follow).
+fn VM::call_value(
+  self : VM,
+  callee : @value.Value,
+  args : Array[@value.Value],
+  pos : @errors.Position,
+) -> @value.Value raise EvalErr {
+  match callee {
+    @value.Value::Function(f) =>
+      match f.compiled_funcode() {
+        Some(fc) => {
+          if !self.prog.recursion {
+            let fpos = fc.pos
+            for g in self.active {
+              let gpos = g.pos
+              if fpos.line() == gpos.line() &&
+                fpos.col() == gpos.col() &&
+                fpos.filename() == gpos.filename() {
+                raise EvalErr(
+                  make_eval_error(
+                    self.ctx,
+                    "function \{f.name()} called recursively",
+                  ),
+                )
+              }
+            }
+          }
+          if self.ctx.thread.call_stack.length() >=
+            self.ctx.thread.max_recursion_depth {
+            raise EvalErr(
+              make_eval_error(self.ctx, "maximum recursion depth exceeded"),
+            )
+          }
+          if args.length() != fc.num_params {
+            raise EvalErr(
+              make_eval_error(
+                self.ctx,
+                "function \{f.name()} accepts \{fc.num_params} positional arguments (\{args.length()} given)",
+              ),
+            )
+          }
+          let locals : Array[@value.Value?] = Array::make(
+            fc.locals.length(),
+            None,
+          )
+          for i in 0..<args.length() {
+            locals[i] = Some(args[i])
+          }
+          self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
+          self.active.push(fc)
+          let fidx = self.ctx.thread.call_stack.length() - 1
+          let r = self.run_frame(fc, f.name(), locals, fidx) catch {
+            EvalErr(e) => {
+              self.active.pop() |> ignore
+              self.ctx.thread.call_stack.pop() |> ignore
+              raise EvalErr(e)
+            }
+          }
+          self.active.pop() |> ignore
+          self.ctx.thread.call_stack.pop() |> ignore
+          r
+        }
+        None => abort("vm: function value has no compiled code")
+      }
+    @value.Value::Builtin(_) =>
+      raise EvalErr(
+        make_eval_error(self.ctx, "vm: builtin calls not yet supported"),
+      )
+    _ =>
+      raise EvalErr(
+        make_eval_error(
+          self.ctx,
+          "invalid call of non-function (\{callee.type_name()})",
+        ),
+      )
   }
 }

@@ -20,7 +20,15 @@ fn globals_map(m : @eval.Module) -> Map[String, @value.Value] {
 ///|
 /// Runs `src` through both engines and asserts they agree.
 fn assert_vm_matches_walker(src : String) -> Unit raise {
-  let opts = @eval.Options::default()
+  assert_vm_matches_walker_opts(src, @eval.Options::default())
+}
+
+///|
+/// Runs `src` through both engines under `opts` and asserts they agree.
+fn assert_vm_matches_walker_opts(
+  src : String,
+  opts : @eval.Options,
+) -> Unit raise {
   let wr = @eval.exec_file(@eval.Thread::new("w"), "t.star", src, opts)
   let vr = @eval.exec_file_vm(@eval.Thread::new("v"), "t.star", src, opts)
   match (wr, vr) {
@@ -30,12 +38,17 @@ fn assert_vm_matches_walker(src : String) -> Unit raise {
       assert_eq(vg.length(), wg.length())
       for name, wval in wg {
         match vg.get(name) {
-          Some(vval) => assert_true(wval.starlark_equals(vval))
+          // Compare by repr: it is canonical for data values and yields
+          // "<function name>" for functions (which compare by identity, so
+          // the two engines' distinct function objects are never `==`).
+          Some(vval) => assert_eq(vval.repr(), wval.repr())
           None => fail("VM is missing global '\{name}' for: \{src}")
         }
       }
     }
-    (Err(we), Err(ve)) => assert_eq(ve.msg(), we.msg())
+    // Compare the full rendering (message + backtrace) so error positions and
+    // call stacks match the walker, not just the message text.
+    (Err(we), Err(ve)) => assert_eq(ve.to_string(), we.to_string())
     (Ok(_), Err(ve)) =>
       fail("walker succeeded but VM errored (\{ve.msg()}) for: \{src}")
     (Err(we), Ok(_)) =>
@@ -208,4 +221,110 @@ test "vm matches walker on while with break and continue" {
   assert_vm_matches_walker(
     "i = 0\ns = 0\nwhile i < 10:\n  i = i + 1\n  if i == 3:\n    continue\n  if i > 6:\n    break\n  s = s + i",
   )
+}
+
+///|
+test "vm matches walker on a function definition and call" {
+  assert_vm_matches_walker("def add(a, b):\n  return a + b\n\nx = add(2, 3)")
+}
+
+///|
+test "vm matches walker on function-local variables" {
+  assert_vm_matches_walker(
+    "def f(a):\n  b = a * 2\n  c = b + 1\n  return c\n\nx = f(10)",
+  )
+}
+
+///|
+test "vm matches walker on a function with internal control flow" {
+  assert_vm_matches_walker(
+    "def classify(n):\n  if n < 0:\n    return -1\n  elif n == 0:\n    return 0\n  return 1\n\na = classify(-5)\nb = classify(0)\nc = classify(7)",
+  )
+}
+
+///|
+test "vm matches walker on nested function calls" {
+  assert_vm_matches_walker(
+    "def inc(x):\n  return x + 1\n\ndef double(x):\n  return x * 2\n\ny = double(inc(5))",
+  )
+}
+
+///|
+test "vm matches walker on a loop inside a function" {
+  assert_vm_matches_walker(
+    "def total(xs):\n  s = 0\n  for x in xs:\n    s = s + x\n  return s\n\nr = total([1, 2, 3, 4, 5])",
+  )
+}
+
+///|
+test "vm matches walker on recursion (factorial)" {
+  assert_vm_matches_walker(
+    "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\n\nx = fact(5)",
+  )
+}
+
+///|
+test "vm matches walker on recursion (fibonacci)" {
+  assert_vm_matches_walker(
+    "def fib(n):\n  if n < 2:\n    return n\n  return fib(n - 1) + fib(n - 2)\n\nx = fib(10)",
+  )
+}
+
+///|
+test "vm matches walker on a lambda" {
+  assert_vm_matches_walker("f = lambda x: x * x\n\ny = f(6)")
+}
+
+///|
+test "vm matches walker on an error raised inside a called function (backtrace)" {
+  // The full rendering, including the f -> <toplevel> backtrace, must match.
+  assert_vm_matches_walker("def f(n):\n  return n + \"oops\"\n\ny = f(5)")
+}
+
+///|
+test "vm matches walker on a deep error backtrace through several frames" {
+  assert_vm_matches_walker(
+    "def a(x):\n  return b(x) + 1\n\ndef b(x):\n  return c(x) + 1\n\ndef c(x):\n  return x[0]\n\nr = a(5)",
+  )
+}
+
+///|
+test "vm matches walker on maximum recursion depth" {
+  assert_vm_matches_walker("def f(n):\n  return f(n + 1)\n\nx = f(0)")
+}
+
+///|
+test "vm matches walker on direct recursion when recursion is disabled" {
+  let opts = @eval.Options::default().with_allow_recursion(false)
+  assert_vm_matches_walker_opts(
+    "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\n\nx = fact(5)",
+    opts,
+  )
+}
+
+///|
+test "vm matches walker on mutual recursion when recursion is disabled" {
+  let opts = @eval.Options::default().with_allow_recursion(false)
+  assert_vm_matches_walker_opts(
+    "def is_even(n):\n  if n == 0:\n    return True\n  return is_odd(n - 1)\n\ndef is_odd(n):\n  if n == 0:\n    return False\n  return is_even(n - 1)\n\nx = is_even(4)",
+    opts,
+  )
+}
+
+///|
+test "vm matches walker on a non-recursive call when recursion is disabled" {
+  let opts = @eval.Options::default().with_allow_recursion(false)
+  assert_vm_matches_walker_opts(
+    "def inc(n):\n  return n + 1\n\ndef twice(n):\n  return inc(inc(n))\n\nx = twice(10)",
+    opts,
+  )
+}
+
+///|
+test "vm leaves no call frame behind after an error on a reused thread" {
+  let thread = @eval.Thread::new("v")
+  let opts = @eval.Options::default()
+  let r = @eval.exec_file_vm(thread, "t.star", "x = 1 + \"oops\"", opts)
+  assert_true(r is Err(_))
+  assert_eq(thread.call_stack_depth(), 0)
 }

@@ -2717,8 +2717,17 @@ a validation-only pre-pass and `@syntax` stays immutable.
       differential tests. (Iterator release on the error-unwind path is deferred
       to the flip; not observable here. For-loop destructuring targets arrive with
       tuple unpacking.)
-- [ ] **M6**: function defs + calls (MAKEFUNC no-freevars, CALL*, RETURN, arg
-      binding, recursion/depth, backtrace stamping; validate `error_format_test`).
+- [~] **M6**: function defs + calls.
+      - [x] **M6a**: `def`/`lambda` → nested funcodes with per-function local
+        slots; positional `Call`, `Return`, `MakeFunc`; recursion/depth; live
+        per-frame backtrace stamping (verified by full `to_string()` comparison
+        incl. deep + max-recursion backtraces). Per issue #1, `StarlarkFunction`
+        gained a private optional `funcode` + `#internal from_compiled` (M11
+        representation introduced early); `value` now imports the AST-free
+        `compile` (no syntax leak). Harness compares globals by `repr`.
+      - [ ] **M6b**: argument defaults, keyword args, `*args`/`**kwargs`,
+        keyword-only params, builtin calls from the VM, and arg-count error
+        message parity.
 - [ ] **M7**: closure cells (Cell, FREE/FREECELL/LOCALCELL/SETLOCALCELL,
       cell-promotion analysis; BUG-28 parity). Spike the capture analysis first.
 - [ ] **M8**: comprehensions (lowered to ITER loops with isolated scope).

@@ -519,6 +519,11 @@ pub struct StarlarkFunction {
   priv captured_scope : Array[(Map[String, Value], Array[String])]
   priv pos : @errors.Position
   priv module_globals : Map[String, Value]?
+  // Compiled code for the bytecode VM. `None` for functions built by the AST
+  // walker (which interprets `body`/`params` directly). During the dual-engine
+  // migration (issue #1) the VM builds functions via `from_compiled`, which sets
+  // this; the AST fields then go away once the walker is removed.
+  priv funcode : @compile.Funcode?
 }
 
 ///|
@@ -545,7 +550,54 @@ pub fn StarlarkFunction::new(
   captured_scope : Array[(Map[String, Value], Array[String])],
   pos : @errors.Position,
 ) -> StarlarkFunction {
-  { name, params, body, defaults, captured_scope, pos, module_globals: None }
+  {
+    name,
+    params,
+    body,
+    defaults,
+    captured_scope,
+    pos,
+    module_globals: None,
+    funcode: None,
+  }
+}
+
+///|
+/// Creates a `StarlarkFunction` backed by compiled bytecode rather than an AST.
+/// Used by the bytecode VM during the dual-engine migration (issue #1); the AST
+/// fields are left empty because the VM executes `funcode` directly.
+///
+/// Parameters:
+///
+/// - `name` : The function's declared name.
+/// - `funcode` : The compiled code for this function.
+/// - `defaults` : Default values aligned to the optional parameters.
+#internal(unsafe, "bytecode VM only; not part of the public embedding API")
+pub fn StarlarkFunction::from_compiled(
+  name : String,
+  funcode : @compile.Funcode,
+  defaults : Array[Value?],
+) -> StarlarkFunction {
+  {
+    name,
+    params: [],
+    body: [],
+    defaults,
+    captured_scope: [],
+    pos: funcode.pos,
+    module_globals: None,
+    funcode: Some(funcode),
+  }
+}
+
+///|
+/// Returns the compiled code backing this function, or `None` if it is an
+/// AST-interpreted function. Used by the VM to run a called function.
+#internal(unsafe, "bytecode VM only; not part of the public embedding API")
+pub fn StarlarkFunction::compiled_funcode(
+  self : StarlarkFunction,
+) -> @compile.Funcode? {
+  self.funcode
 }
 
 ///|
