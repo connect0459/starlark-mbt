@@ -150,7 +150,6 @@ pub struct StarlarkList { /* private fields */ }  // in "connect0459/starlark/va
 | `clear()` | `-> Result[Unit, String]` | Remove all elements |
 | `reverse()` | `-> Result[Unit, String]` | Reverse in place |
 | `sort_by((Value, Value) -> Int)` | `-> Result[Unit, String]` | Sort in place with a comparator |
-| `copy_items()` | `-> Array[Value]` | A copy of the backing array |
 | `each((Value) -> Unit)` | `-> Unit` | Iterate elements |
 | `eachi((Int, Value) -> Unit)` | `-> Unit` | Iterate elements with index |
 | `iter()` | `-> Iter[Value]` | Lazy iterator over elements |
@@ -180,8 +179,8 @@ pub struct StarlarkDict { /* private fields */ }  // in "connect0459/starlark/va
 | `length() -> Int` | Number of entries |
 | `keys() -> Array[Value]` | Keys in insertion order |
 | `each((Value, Value) -> Unit)` | Iterate all key–value pairs |
-| `iter() -> Iter[Value]` | Lazy iterator over keys |
-| `to_entries() -> Iter[(Value, Value)]` | Lazy iterator over key–value pairs |
+| `iter() -> Iter[Value]` | Iterator over a snapshot of keys in insertion order |
+| `entries() -> Iter[(Value, Value)]` | Iterator over a snapshot of key–value pairs in insertion order |
 | `popitem() -> Result[(Value, Value)?, String]` | Remove and return the last inserted pair |
 | `is_frozen() -> Bool` | Whether the dict is frozen |
 | `freeze() -> Unit` | Freeze the dict (and, transitively, its values) |

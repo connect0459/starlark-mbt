@@ -122,6 +122,7 @@ pub struct StarlarkDict {
 pub fn StarlarkDict::clear(Self) -> Result[Unit, String]
 pub fn StarlarkDict::delete(Self, Value) -> Result[Bool, String]
 pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
+pub fn StarlarkDict::entries(Self) -> Iter[(Value, Value)]
 pub fn StarlarkDict::freeze(Self) -> Unit
 pub fn StarlarkDict::get(Self, Value) -> Result[Value?, String]
 pub fn StarlarkDict::is_frozen(Self) -> Bool
@@ -131,7 +132,6 @@ pub fn StarlarkDict::length(Self) -> Int
 pub fn StarlarkDict::new() -> Self
 pub fn StarlarkDict::popitem(Self) -> Result[(Value, Value)?, String]
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
-pub fn StarlarkDict::to_entries(Self) -> Iter[(Value, Value)]
 
 pub struct StarlarkFunction {
   // private fields

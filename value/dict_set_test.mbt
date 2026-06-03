@@ -262,25 +262,25 @@ test "StarlarkSet: freeze prevents remove" {
 // --- Iter[T] typed iterator adaptors ---
 
 ///|
-test "StarlarkDict::to_entries yields all key-value pairs" {
+test "StarlarkDict::entries yields all key-value pairs" {
   let d = StarlarkDict::new()
   d.set(Value::String(StarlarkString::new("a")), Value::Int(1N)) |> ignore
   d.set(Value::String(StarlarkString::new("b")), Value::Int(2N)) |> ignore
   let result : Array[(Value, Value)] = []
-  for entry in d.to_entries() {
+  for entry in d.entries() {
     result.push(entry)
   }
   assert_eq(result.length(), 2)
 }
 
 ///|
-test "StarlarkDict::to_entries preserves insertion order" {
+test "StarlarkDict::entries preserves insertion order" {
   let d = StarlarkDict::new()
   d.set(Value::Int(3N), Value::String(StarlarkString::new("three"))) |> ignore
   d.set(Value::Int(1N), Value::String(StarlarkString::new("one"))) |> ignore
   d.set(Value::Int(2N), Value::String(StarlarkString::new("two"))) |> ignore
   let keys : Array[Value] = []
-  for entry in d.to_entries() {
+  for entry in d.entries() {
     keys.push(entry.0)
   }
   assert_true(keys[0] == Value::Int(3N))

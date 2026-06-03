@@ -134,7 +134,6 @@ loader, `Thread::new(name)` then `.set_print(...)` and `.set_loader(...)`.
 | `max_steps()` | `Int?` | Step budget; `None` if uncapped |
 | `execution_steps()` | `Int` | Steps consumed so far |
 | `call_stack_depth()` | `Int` | Current call depth |
-| `call_frames()` | `Array[@errors.CallFrame]` | Current call stack frames |
 | `call_stack()` | `@errors.CallStack` | Snapshot of the current call stack |
 | `call_frame(Int)` | `@errors.CallFrame?` | Frame at depth `n` (0 = innermost); `None` if out of range |
 | `debug_frame(Int)` | `DebugFrame?` | Snapshot of an active call frame (0 = innermost Starlark function); `None` if out of range |

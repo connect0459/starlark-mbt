@@ -170,7 +170,7 @@ fn expand_kwargs(
 ) -> Unit raise EvalErr {
   match mapping {
     @value.Value::Dict(d) =>
-      for entry in d.to_entries() {
+      for entry in d.entries() {
         let (k, val) = entry
         match k {
           @value.Value::String(s) => out.push((s.raw(), val))

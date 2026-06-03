@@ -121,7 +121,6 @@ pub struct Thread {
   // private fields
 }
 pub fn Thread::call_frame(Self, Int) -> @errors.CallFrame?
-pub fn Thread::call_frames(Self) -> Array[@errors.CallFrame]
 pub fn Thread::call_stack(Self) -> @errors.CallStack
 pub fn Thread::call_stack_depth(Self) -> Int
 pub fn Thread::cancel(Self, String) -> Unit
