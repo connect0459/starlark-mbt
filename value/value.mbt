@@ -513,20 +513,14 @@ pub fn StarlarkRange::contains(self : StarlarkRange, n : Int64) -> Bool {
 ///|
 pub struct StarlarkFunction {
   priv name : String
-  priv params : Array[@syntax.Param]
-  priv body : Array[@syntax.Stmt]
   priv defaults : Array[Value?]
-  priv captured_scope : Array[(Map[String, Value], Array[String])]
   priv pos : @errors.Position
-  priv module_globals : Map[String, Value]?
-  // Compiled code for the bytecode VM. `None` for functions built by the AST
-  // walker (which interprets `body`/`params` directly). During the dual-engine
-  // migration (issue #1) the VM builds functions via `from_compiled`, which sets
-  // this; the AST fields then go away once the walker is removed.
+  // Compiled code for the bytecode VM. `Some` for every function produced by
+  // executing Starlark (`from_compiled`); `None` only for the minimal,
+  // non-runnable function value the tests build via `new`.
   priv funcode : @compile.Funcode?
   // Captured cells for a compiled closure, one per `funcode.freevars` entry.
-  // Empty for AST functions (which capture via `captured_scope`) and for
-  // compiled functions that close over nothing.
+  // Empty for a function that closes over nothing.
   priv vm_freevars : Array[Cell]
   // The compiled module this function belongs to: its program and its live
   // module-global slots. A compiled function resolves its constants, globals,
@@ -538,37 +532,24 @@ pub struct StarlarkFunction {
 }
 
 ///|
-/// Creates a new `StarlarkFunction` from its constituent parts.
+/// Creates a minimal, non-runnable `StarlarkFunction` carrying only a name and
+/// position (no compiled code). Functions produced by executing Starlark are
+/// built by `from_compiled`; this exists for tests and reflection-only uses that
+/// need a function value but never call it.
 ///
 /// Parameters:
 ///
 /// - `name` : The function's declared name.
-/// - `params` : The parsed parameter list.
-/// - `body` : The list of statements forming the function body.
-/// - `defaults` : Default values aligned to the parameter list (`None` for
-///   parameters without a default).
-/// - `captured_scope` : The closure scope as a list of
-///   `(bindings, insertion-order-keys)` pairs.
-/// - `pos` : Source position of the `def` statement.
-///
-/// Returns a new `StarlarkFunction` with no module-globals binding.
+/// - `pos` : Source position to report for the function.
 #internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::new(
   name : String,
-  params : Array[@syntax.Param],
-  body : Array[@syntax.Stmt],
-  defaults : Array[Value?],
-  captured_scope : Array[(Map[String, Value], Array[String])],
   pos : @errors.Position,
 ) -> StarlarkFunction {
   {
     name,
-    params,
-    body,
-    defaults,
-    captured_scope,
+    defaults: [],
     pos,
-    module_globals: None,
     funcode: None,
     vm_freevars: [],
     module_prog: None,
@@ -601,12 +582,8 @@ pub fn StarlarkFunction::from_compiled(
 ) -> StarlarkFunction {
   {
     name,
-    params: [],
-    body: [],
     defaults,
-    captured_scope: [],
     pos: funcode.pos,
-    module_globals: None,
     funcode: Some(funcode),
     vm_freevars: freevars,
     module_prog: Some(prog),
@@ -671,62 +648,12 @@ pub fn StarlarkFunction::position(self : StarlarkFunction) -> @errors.Position {
 }
 
 ///|
-/// Returns the parsed parameter list of the function.
-///
-/// Returns an array of `@syntax.Param` values describing each parameter.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn StarlarkFunction::params(
-  self : StarlarkFunction,
-) -> Array[@syntax.Param] {
-  self.params
-}
-
-///|
-/// Returns the list of statements forming the function body.
-///
-/// Returns the function body as an array of `@syntax.Stmt`.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn StarlarkFunction::body(self : StarlarkFunction) -> Array[@syntax.Stmt] {
-  self.body
-}
-
-///|
 /// Returns the default value array aligned to the parameter list.
 ///
 /// Returns an array of `Value?`, where `None` indicates no default for that
 /// parameter position.
 pub fn StarlarkFunction::defaults(self : StarlarkFunction) -> Array[Value?] {
   self.defaults
-}
-
-///|
-/// Returns the captured closure scope of the function.
-///
-/// Returns the list of `(bindings, insertion-order-keys)` pairs representing
-/// all enclosing scopes captured at definition time.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn StarlarkFunction::captured_scope(
-  self : StarlarkFunction,
-) -> Array[(Map[String, Value], Array[String])] {
-  self.captured_scope
-}
-
-///|
-/// Returns a copy of the function with module-level globals bound to `g`.
-///
-/// Parameters:
-///
-/// - `self` : The function to update.
-/// - `g` : The module-level globals map to associate with this function.
-///
-/// Returns a new `StarlarkFunction` identical to `self` but with
-/// `module_globals` set to `Some(g)`.
-#internal(unsafe, "eval engine only; not part of the public embedding API")
-pub fn StarlarkFunction::with_module_globals(
-  self : StarlarkFunction,
-  g : Map[String, Value],
-) -> StarlarkFunction {
-  { ..self, module_globals: Some(g) }
 }
 
 ///|
@@ -751,11 +678,7 @@ pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] 
       }
       m
     }
-    None =>
-      match self.module_globals {
-        Some(g) => g
-        None => {}
-      }
+    None => {}
   }
 }
 
@@ -769,11 +692,7 @@ pub fn StarlarkFunction::defining_module(
 ) -> StarlarkModule? {
   match self.module_prog {
     Some(_) => Some(StarlarkModule::new(self.pos.filename(), self.globals()))
-    None =>
-      match self.module_globals {
-        None => None
-        Some(globals) => Some(StarlarkModule::new(self.pos.filename(), globals))
-      }
+    None => None
   }
 }
 
@@ -785,16 +704,7 @@ pub fn StarlarkFunction::defining_module(
 pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
   match self.funcode {
     Some(fc) => fc.doc
-    None =>
-      match self.body {
-        [
-          @syntax.Stmt::SExpr(
-            @syntax.Expr::ELiteral(@syntax.LiteralVal::LitString(s), _)
-          ),
-          ..,
-        ] => s
-        _ => ""
-      }
+    None => ""
   }
 }
 
@@ -804,15 +714,9 @@ pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
 /// Returns `true` when any parameter is `ParamStarIdent`.
 pub fn StarlarkFunction::has_varargs(self : StarlarkFunction) -> Bool {
   match self.funcode {
-    Some(fc) => return fc.has_varargs
-    None => ()
+    Some(fc) => fc.has_varargs
+    None => false
   }
-  for p in self.params {
-    if p is @syntax.Param::ParamStarIdent(_, _) {
-      return true
-    }
-  }
-  false
 }
 
 ///|
@@ -821,15 +725,9 @@ pub fn StarlarkFunction::has_varargs(self : StarlarkFunction) -> Bool {
 /// Returns `true` when any parameter is `ParamKwIdent`.
 pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
   match self.funcode {
-    Some(fc) => return fc.has_kwargs
-    None => ()
+    Some(fc) => fc.has_kwargs
+    None => false
   }
-  for p in self.params {
-    if p is @syntax.Param::ParamKwIdent(_, _) {
-      return true
-    }
-  }
-  false
 }
 
 ///|
@@ -839,17 +737,9 @@ pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
 /// `*args`, and `**kwargs`), excluding bare `ParamStarBare` separators.
 pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
   match self.funcode {
-    Some(fc) => return fc.num_params
-    None => ()
+    Some(fc) => fc.num_params
+    None => 0
   }
-  let mut count = 0
-  for p in self.params {
-    match p {
-      @syntax.Param::ParamStarBare(_) => ()
-      _ => count = count + 1
-    }
-  }
-  count
 }
 
 ///|
@@ -859,23 +749,9 @@ pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
 /// follow a `ParamStarBare` or `ParamStarIdent` separator.
 pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int {
   match self.funcode {
-    Some(fc) => return fc.num_kwonly_params
-    None => ()
+    Some(fc) => fc.num_kwonly_params
+    None => 0
   }
-  let mut after_star = false
-  let mut count = 0
-  for p in self.params {
-    match p {
-      @syntax.Param::ParamStarBare(_) | @syntax.Param::ParamStarIdent(_, _) =>
-        after_star = true
-      @syntax.Param::ParamKwIdent(_, _) => ()
-      @syntax.Param::ParamIdent(_, _) | @syntax.Param::ParamDefault(_, _, _) =>
-        if after_star {
-          count = count + 1
-        }
-    }
-  }
-  count
 }
 
 ///|
@@ -897,43 +773,12 @@ pub fn StarlarkFunction::param(
     Some(fc) =>
       if i >= 0 && i < fc.num_params {
         let b = fc.locals[i]
-        return (b.name(), b.pos())
+        (b.name(), b.pos())
       } else {
         abort("StarlarkFunction::param: index \{i} out of range")
       }
-    None => ()
+    None => abort("StarlarkFunction::param: index \{i} out of range")
   }
-  let mut idx = 0
-  for p in self.params {
-    match p {
-      @syntax.Param::ParamStarBare(_) => ()
-      @syntax.Param::ParamIdent(name, pos) => {
-        if idx == i {
-          return (name, pos)
-        }
-        idx = idx + 1
-      }
-      @syntax.Param::ParamDefault(name, _, pos) => {
-        if idx == i {
-          return (name, pos)
-        }
-        idx = idx + 1
-      }
-      @syntax.Param::ParamStarIdent(name, pos) => {
-        if idx == i {
-          return (name, pos)
-        }
-        idx = idx + 1
-      }
-      @syntax.Param::ParamKwIdent(name, pos) => {
-        if idx == i {
-          return (name, pos)
-        }
-        idx = idx + 1
-      }
-    }
-  }
-  abort("StarlarkFunction::param: index \{i} out of range")
 }
 
 ///|
@@ -962,14 +807,9 @@ pub fn StarlarkFunction::param_default(
 /// Returns the sum of binding counts across all captured-scope layers.
 pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
   match self.funcode {
-    Some(fc) => return fc.freevars.length()
-    None => ()
+    Some(fc) => fc.freevars.length()
+    None => 0
   }
-  let mut total = 0
-  for scope in self.captured_scope {
-    total = total + scope.0.length()
-  }
-  total
 }
 
 ///|
@@ -995,26 +835,12 @@ pub fn StarlarkFunction::free_var(
           Some(v) => v
           None => Value::None
         }
-        return Some((name, v))
+        Some((name, v))
       } else {
-        return None
+        None
       }
-    None => ()
+    None => None
   }
-  let mut idx = 0
-  let mut result : (String, Value)? = None
-  for scope in self.captured_scope {
-    scope.0.each(fn(name, v) {
-      if idx == i && result is None {
-        result = Some((name, v))
-      }
-      idx = idx + 1
-    })
-    if result is Some(_) {
-      break
-    }
-  }
-  result
 }
 
 ///|

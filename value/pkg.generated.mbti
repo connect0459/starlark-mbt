@@ -4,7 +4,6 @@ package "connect0459/starlark/value"
 import {
   "connect0459/starlark/errors",
   "connect0459/starlark/internal/compile",
-  "connect0459/starlark/syntax",
   "moonbitlang/core/bigint",
 }
 
@@ -137,8 +136,6 @@ pub fn StarlarkDict::to_entries(Self) -> Iter[(Value, Value)]
 pub struct StarlarkFunction {
   // private fields
 }
-pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
-pub fn StarlarkFunction::captured_scope(Self) -> Array[(Map[String, Value], Array[String])]
 pub fn StarlarkFunction::compiled_freevars(Self) -> Array[Cell]
 pub fn StarlarkFunction::compiled_funcode(Self) -> @compile.Funcode?
 pub fn StarlarkFunction::compiled_module_prog(Self) -> @compile.CompiledProgram?
@@ -152,15 +149,13 @@ pub fn StarlarkFunction::globals(Self) -> Map[String, Value]
 pub fn StarlarkFunction::has_kwargs(Self) -> Bool
 pub fn StarlarkFunction::has_varargs(Self) -> Bool
 pub fn StarlarkFunction::name(Self) -> String
-pub fn StarlarkFunction::new(String, Array[@syntax.Param], Array[@syntax.Stmt], Array[Value?], Array[(Map[String, Value], Array[String])], @errors.Position) -> Self
+pub fn StarlarkFunction::new(String, @errors.Position) -> Self
 pub fn StarlarkFunction::num_free_vars(Self) -> Int
 pub fn StarlarkFunction::num_kwonly_params(Self) -> Int
 pub fn StarlarkFunction::num_params(Self) -> Int
 pub fn StarlarkFunction::param(Self, Int) -> (String, @errors.Position)
 pub fn StarlarkFunction::param_default(Self, Int) -> Value?
-pub fn StarlarkFunction::params(Self) -> Array[@syntax.Param]
 pub fn StarlarkFunction::position(Self) -> @errors.Position
-pub fn StarlarkFunction::with_module_globals(Self, Map[String, Value]) -> Self
 
 pub struct StarlarkIterator {
   // private fields
