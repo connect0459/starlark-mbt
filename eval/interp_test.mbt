@@ -727,6 +727,21 @@ test "vm matches walker on assigning to an index out of range" {
 }
 
 ///|
+test "vm matches walker on an undefined name at module scope" {
+  assert_vm_matches_walker("x = undefined_name")
+}
+
+///|
+test "vm matches walker on an undefined name inside a function" {
+  assert_vm_matches_walker("def f():\n  return missing\n\ny = f()")
+}
+
+///|
+test "vm matches walker on an undefined name used in an expression" {
+  assert_vm_matches_walker("a = 1\nb = a + nope")
+}
+
+///|
 test "vm matches walker on a call with a *args splat" {
   assert_vm_matches_walker(
     "def f(a, b, c):\n  return a + b + c\n\nxs = [1, 2, 3]\nr = f(*xs)",
