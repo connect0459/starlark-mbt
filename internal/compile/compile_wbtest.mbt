@@ -18,6 +18,7 @@ fn empty_pcomp() -> Pcomp {
     globals: [],
     global_index: {},
     loads: [],
+    load_stmts: [],
     is_predeclared: fn(_) { false },
     is_universal: fn(_) { false },
   }

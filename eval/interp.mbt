@@ -137,6 +137,7 @@ pub fn exec_file_vm(
     prog,
     globals: Array::make(prog.globals.length(), None),
     active: [],
+    load_bound: [],
   }
   ctx.vm = Some(vm)
   try {
@@ -161,7 +162,11 @@ pub fn exec_file_vm(
     let out : Map[String, @value.Value] = {}
     for i, binding in prog.globals {
       match vm.globals[i] {
-        Some(v) => out[binding.name()] = v
+        // Load-bound names are module-local unless load_binds_globally.
+        Some(v) =>
+          if opts.load_binds_globally || !vm.load_bound.contains(binding.name()) {
+            out[binding.name()] = v
+          }
         None => ()
       }
     }
@@ -194,6 +199,9 @@ priv struct VM {
   prog : @compile.CompiledProgram
   globals : Array[@value.Value?]
   active : Array[@compile.Funcode]
+  // Module-global names bound by `load`. Excluded from the module's exported
+  // globals unless `load_binds_globally` (matching the walker).
+  load_bound : Array[String]
 }
 
 ///|
@@ -348,6 +356,7 @@ fn VM::run_frame(
         }
       Predeclared => push(vm_resolve_external(self.prog.names[arg]))
       Universal => push(vm_resolve_external(self.prog.names[arg]))
+      Load => self.exec_load(self.prog.load_stmts[arg])
       MakeFunc => {
         let funcode = self.prog.functions[arg]
         let provided : Array[@value.Value] = match pop() {
@@ -476,7 +485,10 @@ fn VM::call_value(
     @value.Value::Function(f) =>
       match f.compiled_funcode() {
         Some(fc) => self.call_compiled(f, fc, args, kwargs, pos)
-        None => abort("vm: function value has no compiled code")
+        // An AST-backed function (e.g. one loaded from a module compiled by the
+        // walker) has no bytecode, so the walker runs it. After the engine flip
+        // every function is compiled and this path goes away.
+        None => call_value(self.ctx, callee, args, kwargs, pos)
       }
     // Builtins, bound methods, and custom values are value-level operations with
     // no AST involvement, so the walker's `call_value` handles them directly,
@@ -543,6 +555,64 @@ fn VM::call_compiled(
   self.active.pop() |> ignore
   self.ctx.thread.call_stack.pop() |> ignore
   r
+}
+
+///|
+/// Executes a `load` statement: invokes the thread's loader for the module path
+/// and binds each requested export into its module-global slot, recording the
+/// bound names so module-local load bindings can be filtered from the exported
+/// globals. Mirrors the AST walker's `exec_load`, including error messages.
+fn VM::exec_load(self : VM, ls : @compile.LoadStmt) -> Unit raise EvalErr {
+  let ctx = self.ctx
+  let loader = match ctx.thread.load_fn {
+    Some(l) => l
+    None =>
+      raise EvalErr(
+        make_eval_error(ctx, "load not implemented by this application"),
+      )
+  }
+  let loaded = match loader(ctx.thread, ls.path) {
+    Ok(m) => m
+    Err(inner) => {
+      let frames : Array[@errors.CallFrame] = []
+      for frame in ctx.thread.call_stack {
+        frames.push(frame)
+      }
+      raise EvalErr(
+        @errors.EvalError::with_cause(
+          "cannot load \{ls.path}: \{inner.msg()}",
+          @errors.CallStack::new(frames),
+          inner,
+        ),
+      )
+    }
+  }
+  for i in 0..<ls.exports.length() {
+    let export_name = ls.exports[i]
+    match loaded.get(export_name) {
+      Some(v) => {
+        self.globals[ls.slots[i]] = Some(v)
+        self.load_bound.push(ls.locals[i])
+      }
+      None => {
+        let suggestion = @utf8util.spell_nearest(
+          export_name,
+          loaded.global_names(),
+        )
+        let hint = if suggestion == "" {
+          ""
+        } else {
+          " (did you mean \{suggestion}?)"
+        }
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "load: name \{export_name} not found in module \{ls.path}\{hint}",
+          ),
+        )
+      }
+    }
+  }
 }
 
 ///|

@@ -110,4 +110,20 @@ pub(all) struct CompiledProgram {
   globals : Array[@errors.Binding]
   toplevel : Funcode
   recursion : Bool
+  // Load statements, indexed by the `Load` opcode operand. The VM calls the
+  // loader for `path` and binds each export into its module-global slot.
+  load_stmts : Array[LoadStmt]
+}
+
+///|
+/// A compiled `load("path", local=export, ...)` statement. `slots[i]` is the
+/// module-global slot that receives the symbol named `exports[i]`; `locals[i]`
+/// is the local name (tracked so module-local load bindings can be excluded from
+/// the module's exported globals).
+pub(all) struct LoadStmt {
+  path : String
+  pos : @errors.Position
+  exports : Array[String]
+  locals : Array[String]
+  slots : Array[Int]
 }

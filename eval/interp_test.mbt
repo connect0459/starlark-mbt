@@ -24,13 +24,13 @@ fn assert_vm_matches_walker(src : String) -> Unit raise {
 }
 
 ///|
-/// Runs `src` through both engines under `opts` and asserts they agree.
-fn assert_vm_matches_walker_opts(
+/// Asserts the walker's and the VM's results agree: equal module globals (by
+/// repr) on success, or an identical full error rendering (message + backtrace).
+fn compare_results(
+  wr : Result[@eval.Module, @errors.EvalError],
+  vr : Result[@eval.Module, @errors.EvalError],
   src : String,
-  opts : @eval.Options,
 ) -> Unit raise {
-  let wr = @eval.exec_file(@eval.Thread::new("w"), "t.star", src, opts)
-  let vr = @eval.exec_file_vm(@eval.Thread::new("v"), "t.star", src, opts)
   match (wr, vr) {
     (Ok(wm), Ok(vm)) => {
       let wg = globals_map(wm)
@@ -54,6 +54,50 @@ fn assert_vm_matches_walker_opts(
     (Err(we), Ok(_)) =>
       fail("walker errored (\{we.msg()}) but VM succeeded for: \{src}")
   }
+}
+
+///|
+/// Runs `src` through both engines under `opts` and asserts they agree.
+fn assert_vm_matches_walker_opts(
+  src : String,
+  opts : @eval.Options,
+) -> Unit raise {
+  let wr = @eval.exec_file(@eval.Thread::new("w"), "t.star", src, opts)
+  let vr = @eval.exec_file_vm(@eval.Thread::new("v"), "t.star", src, opts)
+  compare_results(wr, vr, src)
+}
+
+///|
+/// Runs `src` through both engines with a loader that serves `lib_src` (compiled
+/// once) for the module path `"lib.star"`, and asserts they agree.
+fn assert_vm_matches_walker_load(
+  src : String,
+  lib_src : String,
+  opts? : @eval.Options = @eval.Options::default(),
+) -> Unit raise {
+  let lib = match
+    @eval.exec_file(@eval.Thread::new("lib"), "lib.star", lib_src, opts) {
+    Ok(m) => m
+    Err(e) => abort("test library failed to compile: \{e.msg()}")
+  }
+  fn loader(
+    _t : @eval.Thread,
+    path : String,
+  ) -> Result[@eval.Module, @errors.EvalError] {
+    if path == "lib.star" {
+      Ok(lib)
+    } else {
+      Err(@errors.EvalError::simple("no such module: \{path}"))
+    }
+  }
+
+  let wt = @eval.Thread::new("w")
+  wt.set_loader(loader)
+  let vt = @eval.Thread::new("v")
+  vt.set_loader(loader)
+  let wr = @eval.exec_file(wt, "t.star", src, opts)
+  let vr = @eval.exec_file_vm(vt, "t.star", src, opts)
+  compare_results(wr, vr, src)
 }
 
 ///|
@@ -579,4 +623,47 @@ test "vm matches walker when a name repeats across comprehension for clauses" {
   // later reference to the same name must see the enclosing global, not a
   // leftover comp-local slot.
   assert_vm_matches_walker("i = 5\nxs = [i for i in [1] for i in [2]]\ny = i")
+}
+
+///|
+test "vm matches walker on a basic load statement" {
+  assert_vm_matches_walker_load(
+    "load(\"lib.star\", \"foo\", \"bar\")\nx = foo + 1\ny = bar", "foo = 42\nbar = [1, 2, 3]",
+  )
+}
+
+///|
+test "vm matches walker on load with aliasing" {
+  assert_vm_matches_walker_load(
+    "load(\"lib.star\", a=\"foo\", b=\"bar\")\nx = a\ny = b", "foo = 7\nbar = \"hi\"",
+  )
+}
+
+///|
+test "vm matches walker on load of a function then calling it" {
+  assert_vm_matches_walker_load(
+    "load(\"lib.star\", \"add\")\nz = add(2, 3)", "def add(a, b):\n  return a + b",
+  )
+}
+
+///|
+test "vm matches walker on load_binds_globally exporting loaded names" {
+  assert_vm_matches_walker_load(
+    "load(\"lib.star\", \"foo\")\nx = foo",
+    "foo = 99",
+    opts=@eval.Options::default().with_load_binds_globally(true),
+  )
+}
+
+///|
+test "vm matches walker on load of a missing name" {
+  assert_vm_matches_walker_load(
+    "load(\"lib.star\", \"nope\")\nx = nope", "foo = 1",
+  )
+}
+
+///|
+test "vm matches walker when load has no loader configured" {
+  // No loader is set, so both engines report 'load not implemented'.
+  assert_vm_matches_walker("load(\"lib.star\", \"foo\")\nx = foo")
 }

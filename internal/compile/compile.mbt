@@ -24,6 +24,7 @@ priv struct Pcomp {
   globals : Array[@errors.Binding]
   global_index : Map[String, Int]
   loads : Array[@errors.Binding]
+  load_stmts : Array[LoadStmt]
   is_predeclared : (String) -> Bool
   is_universal : (String) -> Bool
 }
@@ -937,6 +938,26 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.compile_store(name)
     }
+    SLoad(path, bindings, pos) => {
+      let exports : Array[String] = []
+      let locals : Array[String] = []
+      let slots : Array[Int] = []
+      for b in bindings {
+        let (local_name, export_name, _) = b
+        let slot = match self.pcomp.global_index.get(local_name) {
+          Some(i) => i
+          None =>
+            raise CompileErr("compile: load binds unknown global \{local_name}")
+        }
+        exports.push(export_name)
+        locals.push(local_name)
+        slots.push(slot)
+      }
+      let idx = self.pcomp.load_stmts.length()
+      self.pcomp.load_stmts.push({ path, pos, exports, locals, slots })
+      self.set_pos(pos)
+      self.emit1(Opcode::Load, idx, 0, 0)
+    }
     _ =>
       raise CompileErr(
         "compile: unsupported statement at \{@syntax.stmt_pos(s).to_string()}",
@@ -1175,6 +1196,10 @@ fn collect_globals(
       match s {
         SAssign(EIdent(name, pos), _, _) => add(name, pos)
         SDef(name, _, _, pos) => add(name, pos)
+        SLoad(_, bindings, _) =>
+          for b in bindings {
+            add(b.0, b.2)
+          }
         SFor(target, _, body, _) => {
           match target {
             EIdent(name, pos) => add(name, pos)
@@ -1223,6 +1248,7 @@ pub fn compile(
     globals: [],
     global_index: {},
     loads: [],
+    load_stmts: [],
     is_predeclared,
     is_universal,
   }
@@ -1245,5 +1271,6 @@ pub fn compile(
     globals: pcomp.globals,
     toplevel,
     recursion,
+    load_stmts: pcomp.load_stmts,
   }
 }
