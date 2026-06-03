@@ -254,7 +254,7 @@ fn pop_n(stack : Array[@value.Value], n : Int) -> Array[@value.Value] {
 /// Compiles and runs `src` on the bytecode VM, returning a `Module` of the
 /// resulting globals. The public `exec_file` delegates here; it is exposed as an
 /// `#internal` entry so tests can run the VM directly. Resolution is performed by
-/// `file_program`.
+/// `compile_and_run_vm` via `validate_resolution`.
 #internal(unsafe, "bytecode VM entry; not part of the public embedding API")
 pub fn exec_file_vm(
   thread : Thread,
