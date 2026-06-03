@@ -528,6 +528,13 @@ pub struct StarlarkFunction {
   // Empty for AST functions (which capture via `captured_scope`) and for
   // compiled functions that close over nothing.
   priv vm_freevars : Array[Cell]
+  // The compiled module this function belongs to: its program and its live
+  // module-global slots. A compiled function resolves its constants, globals,
+  // nested functions, and predeclared names against this module — never the
+  // caller's — matching starlark-go (`fn.module`). `None`/empty for AST
+  // functions.
+  priv module_prog : @compile.CompiledProgram?
+  priv module_slots : Array[Value?]
 }
 
 ///|
@@ -564,6 +571,8 @@ pub fn StarlarkFunction::new(
     module_globals: None,
     funcode: None,
     vm_freevars: [],
+    module_prog: None,
+    module_slots: [],
   }
 }
 
@@ -576,12 +585,17 @@ pub fn StarlarkFunction::new(
 ///
 /// - `name` : The function's declared name.
 /// - `funcode` : The compiled code for this function.
+/// - `prog` : The compiled program (module) this function belongs to.
+/// - `slots` : The module's live global slots, shared so the function resolves
+///   its module globals (and forward references) against its own module.
 /// - `defaults` : Default values aligned to the optional parameters.
 /// - `freevars` : Captured cells, one per `funcode.freevars` entry.
 #internal(unsafe, "bytecode VM only; not part of the public embedding API")
 pub fn StarlarkFunction::from_compiled(
   name : String,
   funcode : @compile.Funcode,
+  prog : @compile.CompiledProgram,
+  slots : Array[Value?],
   defaults : Array[Value?],
   freevars : Array[Cell],
 ) -> StarlarkFunction {
@@ -595,7 +609,29 @@ pub fn StarlarkFunction::from_compiled(
     module_globals: None,
     funcode: Some(funcode),
     vm_freevars: freevars,
+    module_prog: Some(prog),
+    module_slots: slots,
   }
+}
+
+///|
+/// Returns the compiled program (module) this function belongs to, or `None` for
+/// an AST function. The VM runs the function's funcode against this program so
+/// constants, globals, and nested functions resolve correctly across modules.
+#internal(unsafe, "bytecode VM only; not part of the public embedding API")
+pub fn StarlarkFunction::compiled_module_prog(
+  self : StarlarkFunction,
+) -> @compile.CompiledProgram? {
+  self.module_prog
+}
+
+///|
+/// Returns the function's module-global slots (shared with its defining module).
+#internal(unsafe, "bytecode VM only; not part of the public embedding API")
+pub fn StarlarkFunction::compiled_module_slots(
+  self : StarlarkFunction,
+) -> Array[Value?] {
+  self.module_slots
 }
 
 ///|
@@ -700,9 +736,26 @@ pub fn StarlarkFunction::with_module_globals(
 /// globals have been set.
 #internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] {
-  match self.module_globals {
-    Some(g) => g
-    None => {}
+  match self.module_prog {
+    // Compiled function: build the name->value map from the module's global
+    // bindings and their current slot values.
+    Some(prog) => {
+      let m : Map[String, Value] = {}
+      for i, b in prog.globals {
+        if i < self.module_slots.length() {
+          match self.module_slots[i] {
+            Some(v) => m[b.name()] = v
+            None => ()
+          }
+        }
+      }
+      m
+    }
+    None =>
+      match self.module_globals {
+        Some(g) => g
+        None => {}
+      }
   }
 }
 
@@ -714,9 +767,13 @@ pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] 
 pub fn StarlarkFunction::defining_module(
   self : StarlarkFunction,
 ) -> StarlarkModule? {
-  match self.module_globals {
-    None => None
-    Some(globals) => Some(StarlarkModule::new(self.pos.filename(), globals))
+  match self.module_prog {
+    Some(_) => Some(StarlarkModule::new(self.pos.filename(), self.globals()))
+    None =>
+      match self.module_globals {
+        None => None
+        Some(globals) => Some(StarlarkModule::new(self.pos.filename(), globals))
+      }
   }
 }
 
@@ -726,14 +783,18 @@ pub fn StarlarkFunction::defining_module(
 /// Returns the string literal from the first statement of the body when it
 /// is a bare string expression; otherwise `""`.
 pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
-  match self.body {
-    [
-      @syntax.Stmt::SExpr(
-        @syntax.Expr::ELiteral(@syntax.LiteralVal::LitString(s), _)
-      ),
-      ..,
-    ] => s
-    _ => ""
+  match self.funcode {
+    Some(fc) => fc.doc
+    None =>
+      match self.body {
+        [
+          @syntax.Stmt::SExpr(
+            @syntax.Expr::ELiteral(@syntax.LiteralVal::LitString(s), _)
+          ),
+          ..,
+        ] => s
+        _ => ""
+      }
   }
 }
 
@@ -742,6 +803,10 @@ pub fn StarlarkFunction::doc(self : StarlarkFunction) -> String {
 ///
 /// Returns `true` when any parameter is `ParamStarIdent`.
 pub fn StarlarkFunction::has_varargs(self : StarlarkFunction) -> Bool {
+  match self.funcode {
+    Some(fc) => return fc.has_varargs
+    None => ()
+  }
   for p in self.params {
     if p is @syntax.Param::ParamStarIdent(_, _) {
       return true
@@ -755,6 +820,10 @@ pub fn StarlarkFunction::has_varargs(self : StarlarkFunction) -> Bool {
 ///
 /// Returns `true` when any parameter is `ParamKwIdent`.
 pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
+  match self.funcode {
+    Some(fc) => return fc.has_kwargs
+    None => ()
+  }
   for p in self.params {
     if p is @syntax.Param::ParamKwIdent(_, _) {
       return true
@@ -769,6 +838,10 @@ pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
 /// Returns the count of parameters that bind to a name (positional, default,
 /// `*args`, and `**kwargs`), excluding bare `ParamStarBare` separators.
 pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
+  match self.funcode {
+    Some(fc) => return fc.num_params
+    None => ()
+  }
   let mut count = 0
   for p in self.params {
     match p {
@@ -785,6 +858,10 @@ pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
 /// Returns the count of `ParamIdent` and `ParamDefault` parameters that
 /// follow a `ParamStarBare` or `ParamStarIdent` separator.
 pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int {
+  match self.funcode {
+    Some(fc) => return fc.num_kwonly_params
+    None => ()
+  }
   let mut after_star = false
   let mut count = 0
   for p in self.params {
@@ -815,6 +892,17 @@ pub fn StarlarkFunction::param(
   self : StarlarkFunction,
   i : Int,
 ) -> (String, @errors.Position) {
+  match self.funcode {
+    // Named parameters occupy the first `num_params` local slots, in order.
+    Some(fc) =>
+      if i >= 0 && i < fc.num_params {
+        let b = fc.locals[i]
+        return (b.name(), b.pos())
+      } else {
+        abort("StarlarkFunction::param: index \{i} out of range")
+      }
+    None => ()
+  }
   let mut idx = 0
   for p in self.params {
     match p {
@@ -873,6 +961,10 @@ pub fn StarlarkFunction::param_default(
 ///
 /// Returns the sum of binding counts across all captured-scope layers.
 pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
+  match self.funcode {
+    Some(fc) => return fc.freevars.length()
+    None => ()
+  }
   let mut total = 0
   for scope in self.captured_scope {
     total = total + scope.0.length()
@@ -893,6 +985,22 @@ pub fn StarlarkFunction::free_var(
   self : StarlarkFunction,
   i : Int,
 ) -> (String, Value)? {
+  match self.funcode {
+    // Free variables parallel `funcode.freevars`; the captured value lives in
+    // the corresponding closure cell (`None` if the cell is still unbound).
+    Some(fc) =>
+      if i >= 0 && i < fc.freevars.length() {
+        let name = fc.freevars[i].name()
+        let v = match self.vm_freevars[i].get() {
+          Some(v) => v
+          None => Value::None
+        }
+        return Some((name, v))
+      } else {
+        return None
+      }
+    None => ()
+  }
   let mut idx = 0
   let mut result : (String, Value)? = None
   for scope in self.captured_scope {

@@ -75,26 +75,35 @@ fn assert_vm_matches_walker_load(
   lib_src : String,
   opts? : @eval.Options = @eval.Options::default(),
 ) -> Unit raise {
-  let lib = match
-    @eval.exec_file(@eval.Thread::new("lib"), "lib.star", lib_src, opts) {
-    Ok(m) => m
-    Err(e) => abort("test library failed to compile: \{e.msg()}")
-  }
-  fn loader(
-    _t : @eval.Thread,
-    path : String,
-  ) -> Result[@eval.Module, @errors.EvalError] {
-    if path == "lib.star" {
-      Ok(lib)
-    } else {
-      Err(@errors.EvalError::simple("no such module: \{path}"))
+  // Build the loaded library with the same engine that runs the test program:
+  // a VM-compiled module's functions are bytecode-backed and a walker-compiled
+  // module's are AST-backed, so each engine must load a module it can run.
+  fn make_loader(
+    lib : @eval.Module,
+  ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
+    fn(_t, path) {
+      if path == "lib.star" {
+        Ok(lib)
+      } else {
+        Err(@errors.EvalError::simple("no such module: \{path}"))
+      }
     }
   }
 
+  let wlib = match
+    @eval.exec_file(@eval.Thread::new("wlib"), "lib.star", lib_src, opts) {
+    Ok(m) => m
+    Err(e) => abort("test library failed to compile (walker): \{e.msg()}")
+  }
+  let vlib = match
+    @eval.exec_file_vm(@eval.Thread::new("vlib"), "lib.star", lib_src, opts) {
+    Ok(m) => m
+    Err(e) => abort("test library failed to compile (vm): \{e.msg()}")
+  }
   let wt = @eval.Thread::new("w")
-  wt.set_loader(loader)
+  wt.set_loader(make_loader(wlib))
   let vt = @eval.Thread::new("v")
-  vt.set_loader(loader)
+  vt.set_loader(make_loader(vlib))
   let wr = @eval.exec_file(wt, "t.star", src, opts)
   let vr = @eval.exec_file_vm(vt, "t.star", src, opts)
   compare_results(wr, vr, src)
@@ -644,6 +653,183 @@ test "vm matches walker on load of a function then calling it" {
   assert_vm_matches_walker_load(
     "load(\"lib.star\", \"add\")\nz = add(2, 3)", "def add(a, b):\n  return a + b",
   )
+}
+
+///|
+test "vm matches walker on a loaded function that uses its own constants" {
+  // The loaded function's constant (100) and the caller's constant (3) occupy
+  // the same pool index in their respective programs; the callee must read its
+  // own program's constants, not the caller's.
+  assert_vm_matches_walker_load(
+    "load(\"lib.star\", \"scale\")\nr = scale(3)", "def scale(x):\n  return x * 100",
+  )
+}
+
+///|
+/// Runs `main_src` on the VM with a loader serving a VM-compiled `lib.star`.
+fn vm_load_run(
+  main_src : String,
+  lib_src : String,
+) -> Result[@eval.Module, @errors.EvalError] {
+  let lib = match
+    @eval.exec_file_vm(
+      @eval.Thread::new("lib"),
+      "lib.star",
+      lib_src,
+      @eval.Options::default(),
+    ) {
+    Ok(m) => m
+    Err(e) => abort("test library failed to compile: \{e.msg()}")
+  }
+  let t = @eval.Thread::new("main")
+  t.set_loader(fn(_t, path) {
+    if path == "lib.star" {
+      Ok(lib)
+    } else {
+      Err(@errors.EvalError::simple("no such module: \{path}"))
+    }
+  })
+  @eval.exec_file_vm(t, "main.star", main_src, @eval.Options::default())
+}
+
+// These two cases intentionally do NOT use the differential harness: the AST
+// walker cannot resolve a loaded function's own module globals or sibling
+// functions (it resolves them against the caller and reports "undefined"). The
+// VM, like starlark-go and starlark-rust, resolves them against the function's
+// own module — the correct behavior — so the engines diverge here by design.
+
+///|
+test "host call runs a bytecode-compiled function" {
+  let m = match
+    @eval.exec_file_vm(
+      @eval.Thread::new("t"),
+      "t.star",
+      "def add(a, b):\n  return a + b",
+      @eval.Options::default(),
+    ) {
+    Ok(m) => m
+    Err(e) => {
+      fail("compile failed: \{e.msg()}")
+      return
+    }
+  }
+  let f = match m.get("add") {
+    Some(v) => v
+    None => {
+      fail("missing add")
+      return
+    }
+  }
+  match
+    @eval.call(
+      @eval.Thread::new("t2"),
+      f,
+      [@value.Value::Int(3N), @value.Value::Int(4N)],
+      [],
+    ) {
+    Ok(v) =>
+      match @value.number_to_int(v) {
+        Some(n) => assert_eq(n, 7L)
+        None => fail("result is not an int")
+      }
+    Err(e) => fail("host call errored: \{e.msg()}")
+  }
+}
+
+///|
+test "reflection works on a bytecode-compiled function" {
+  let m = match
+    @eval.exec_file_vm(
+      @eval.Thread::new("t"),
+      "refl.star",
+      "G = 1\ndef f(x, y):\n  \"the doc\"\n  return x + y",
+      @eval.Options::default(),
+    ) {
+    Ok(m) => m
+    Err(e) => {
+      fail("compile failed: \{e.msg()}")
+      return
+    }
+  }
+  match m.get("f") {
+    Some(@value.Value::Function(f)) => {
+      assert_eq(f.num_params(), 2)
+      assert_eq(f.param(0).0, "x")
+      assert_eq(f.param(1).0, "y")
+      assert_eq(f.doc(), "the doc")
+      assert_true(f.globals().contains("G"))
+      match f.defining_module() {
+        Some(mod_ref) => assert_eq(mod_ref.name(), "refl.star")
+        None => fail("expected a defining module")
+      }
+    }
+    _ => fail("missing function f")
+  }
+}
+
+///|
+test "reflection reports free variables of a bytecode-compiled closure" {
+  let m = match
+    @eval.exec_file_vm(
+      @eval.Thread::new("t"),
+      "t.star",
+      "def outer():\n  c = 99\n  def inner():\n    return c\n  return inner\n\nf = outer()",
+      @eval.Options::default(),
+    ) {
+    Ok(m) => m
+    Err(e) => {
+      fail("compile failed: \{e.msg()}")
+      return
+    }
+  }
+  match m.get("f") {
+    Some(@value.Value::Function(f)) => {
+      assert_true(f.num_free_vars() >= 1)
+      match f.free_var(0) {
+        Some((name, _)) => assert_true(name.length() > 0)
+        None => fail("expected a free variable")
+      }
+    }
+    _ => fail("missing function f")
+  }
+}
+
+///|
+test "vm resolves a loaded function's module global against its own module" {
+  match
+    vm_load_run(
+      "load(\"lib.star\", \"scaled\")\nr = scaled(5)", "factor = 10\ndef scaled(x):\n  return x * factor",
+    ) {
+    Ok(m) =>
+      match m.get("r") {
+        Some(v) =>
+          match @value.number_to_int(v) {
+            Some(n) => assert_eq(n, 50L)
+            None => fail("r is not an int")
+          }
+        None => fail("missing global r")
+      }
+    Err(e) => fail("vm errored: \{e.msg()}")
+  }
+}
+
+///|
+test "vm resolves a sibling call inside a loaded module against its own module" {
+  match
+    vm_load_run(
+      "load(\"lib.star\", \"outer\")\nr = outer(7)", "def helper(n):\n  return n + 1000\n\ndef outer(x):\n  return helper(x) * 2",
+    ) {
+    Ok(m) =>
+      match m.get("r") {
+        Some(v) =>
+          match @value.number_to_int(v) {
+            Some(n) => assert_eq(n, 2014L)
+            None => fail("r is not an int")
+          }
+        None => fail("missing global r")
+      }
+    Err(e) => fail("vm errored: \{e.msg()}")
+  }
 }
 
 ///|

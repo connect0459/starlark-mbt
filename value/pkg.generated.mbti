@@ -141,11 +141,13 @@ pub fn StarlarkFunction::body(Self) -> Array[@syntax.Stmt]
 pub fn StarlarkFunction::captured_scope(Self) -> Array[(Map[String, Value], Array[String])]
 pub fn StarlarkFunction::compiled_freevars(Self) -> Array[Cell]
 pub fn StarlarkFunction::compiled_funcode(Self) -> @compile.Funcode?
+pub fn StarlarkFunction::compiled_module_prog(Self) -> @compile.CompiledProgram?
+pub fn StarlarkFunction::compiled_module_slots(Self) -> Array[Value?]
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
 pub fn StarlarkFunction::defining_module(Self) -> StarlarkModule?
 pub fn StarlarkFunction::doc(Self) -> String
 pub fn StarlarkFunction::free_var(Self, Int) -> (String, Value)?
-pub fn StarlarkFunction::from_compiled(String, @compile.Funcode, Array[Value?], Array[Cell]) -> Self
+pub fn StarlarkFunction::from_compiled(String, @compile.Funcode, @compile.CompiledProgram, Array[Value?], Array[Value?], Array[Cell]) -> Self
 pub fn StarlarkFunction::globals(Self) -> Map[String, Value]
 pub fn StarlarkFunction::has_kwargs(Self) -> Bool
 pub fn StarlarkFunction::has_varargs(Self) -> Bool
