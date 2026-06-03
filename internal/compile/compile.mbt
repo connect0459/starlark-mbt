@@ -225,7 +225,10 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit1(Opcode::MakeTuple, xs.length(), xs.length(), 1)
     }
-    _ => raise CompileErr("compile: unsupported expression")
+    _ =>
+      raise CompileErr(
+        "compile: unsupported expression at \{@syntax.expr_pos(e).to_string()}",
+      )
   }
 }
 
@@ -340,10 +343,16 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
           self.set_pos(pos)
           self.compile_store(name)
         }
-        _ => raise CompileErr("compile: unsupported assignment target")
+        _ =>
+          raise CompileErr(
+            "compile: unsupported assignment target at \{@syntax.expr_pos(lhs).to_string()}",
+          )
       }
     SPass(_) => ()
-    _ => raise CompileErr("compile: unsupported statement")
+    _ =>
+      raise CompileErr(
+        "compile: unsupported statement at \{@syntax.stmt_pos(s).to_string()}",
+      )
   }
 }
 
@@ -384,7 +393,10 @@ fn collect_globals(
     match s {
       SAssign(EIdent(name, pos), _, _) => add(name, pos)
       SPass(_) | SExpr(_) => ()
-      _ => raise CompileErr("compile: unsupported top-level statement")
+      _ =>
+        raise CompileErr(
+          "compile: unsupported top-level statement at \{@syntax.stmt_pos(s).to_string()}",
+        )
     }
   }
 }
