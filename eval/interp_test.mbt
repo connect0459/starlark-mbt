@@ -571,3 +571,12 @@ test "vm matches walker on a comprehension whose later iterable references the t
   // comp-local `a` before assignment -> referenced-before-assignment error.
   assert_vm_matches_walker("xs = [a for _ in [1] for a in a]")
 }
+
+///|
+test "vm matches walker when a name repeats across comprehension for clauses" {
+  // The same target appears in two `for` clauses, so it is a single
+  // comp-local that must be fully unbound when the comprehension ends; a
+  // later reference to the same name must see the enclosing global, not a
+  // leftover comp-local slot.
+  assert_vm_matches_walker("i = 5\nxs = [i for i in [1] for i in [2]]\ny = i")
+}

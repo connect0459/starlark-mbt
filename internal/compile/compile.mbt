@@ -602,10 +602,19 @@ fn Fcomp::compile_comprehension(
   }
   self.compile_expr(first_iter)
   self.emit0(Opcode::IterPush, 1, 0)
-  // Now bind every comprehension target as a comp-local slot.
+  // Now bind every comprehension target as a comp-local slot. A name that
+  // repeats across `for` clauses is one variable sharing a single slot, so it
+  // is bound and recorded once; otherwise the restore loop below would replay
+  // duplicate entries and leave the name pointing at a comp-local slot after
+  // the comprehension ends.
   let saved : Array[(String, Int?)] = []
+  let bound : Map[String, Unit] = {}
   for t in targets {
     let (name, tp) = t
+    if bound.contains(name) {
+      continue
+    }
+    bound[name] = ()
     saved.push((name, self.local_index.get(name)))
     let slot = self.locals.length()
     self.locals.push(@errors.Binding::new(name, tp))
