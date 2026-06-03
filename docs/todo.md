@@ -2836,12 +2836,27 @@ a validation-only pre-pass and `@syntax` stays immutable.
       The differential harness asserts equality only where the engines agree;
       corrected cases are pinned by VM-only tests. `exec_file` still runs the
       walker.
-- [ ] **M12a** (flip): switch `exec_file`/`eval_expr`/`Program::init` to the VM,
-      retaining the walker for rollback. Resolve the remaining VM↔walker parity
-      gaps the flip surfaces (deep-call-chain backtrace frame positions — the VM
-      stamps per-instruction so the deepest frame shows its own position, the
-      walker shows the call site; the load-local "referenced before assignment"
-      message). Full `starlarktest` green under the VM.
+- [~] **M12a** (flip): switch the public entries to the VM, retaining the walker
+      for rollback.
+  - [x] `exec_file` runs on the VM (`exec_file_walker` retained; the differential
+        harness's walker side points at it). `eval_expr`/`eval_expr_with_opts`/
+        `eval_parsed_expr` run on the VM (expression lowered as a synthetic
+        `<result> = <expr>` module; `env` bindings resolved as predeclared via the
+        context base environment). Parity gaps the flip surfaced are fixed: the
+        load-local "referenced before assignment" message now says "local"
+        (matching the walker/conformance); backtraces report each frame's precise
+        position (the walker advanced a function frame only on a call, so the
+        innermost frame showed its call site — the VM matches starlark-go's
+        pc→line table and shows the failing expression, with the `error_format`
+        expectations updated); and two pre-existing VM holes are closed — the
+        `Attr` (attribute read / method call) and `Slice` opcodes had no handler.
+        Full `starlarktest` green under the VM (1727 tests).
+  - [ ] Remaining entries on the walker for now (next): `exec_file_with_universe`,
+        `exec_file_with_predeclared`, `exec_repl_chunk`, `Program::init`.
+- [ ] **M11 + M12b** (cleanup — the goal): delete the walker (`signal.mbt`, AST
+      halves of expr/stmt/eval, `EvalEnv` closure machinery, `captured_scope`);
+      `StarlarkFunction` holds a `Funcode` only; **drop `syntax` from `value`**;
+      slot-based `DebugFrame`.
 - [ ] **M11 + M12b** (cleanup — the goal): delete the walker (`signal.mbt`, AST
       halves of expr/stmt/eval, `EvalEnv` closure machinery, `captured_scope`);
       `StarlarkFunction` holds a `Funcode` only; **drop `syntax` from `value`**;
