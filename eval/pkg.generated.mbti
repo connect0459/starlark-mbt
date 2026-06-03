@@ -24,6 +24,8 @@ pub fn eval_parsed_expr(Thread, @syntax.Expr, Options, @value.StringDict) -> Res
 
 pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
+pub fn exec_file_vm(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
+
 pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) -> Result[Module, @errors.EvalError]
 
 pub fn exec_file_with_universe(Thread, String, String, Options, Universe) -> Result[Module, @errors.EvalError]
