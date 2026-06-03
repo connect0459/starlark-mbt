@@ -349,6 +349,26 @@ test "eval_expr: resolves a binding supplied via env" {
 }
 
 ///|
+test "eval_expr: an undefined name reports the walker-style error with position" {
+  let t = Thread::new("test")
+  let env = @value.StringDict::new()
+  match eval_expr(t, "expr.star", "ghost", env) {
+    Err(e) => assert_eq(e.to_string(), "expr.star:1:1: undefined: ghost")
+    Ok(_) => fail("expected an undefined-name error")
+  }
+}
+
+///|
+test "eval_expr: a runtime error carries the caller-supplied filename" {
+  let t = Thread::new("test")
+  let env = @value.StringDict::new()
+  match eval_expr(t, "expr.star", "1 // 0", env) {
+    Err(e) => assert_true(e.backtrace().contains("expr.star"))
+    Ok(_) => fail("expected a division-by-zero error")
+  }
+}
+
+///|
 test "eval_expr: None literal evaluates to None" {
   assert_true(eval_e("None") is Ok(@value.Value::None))
 }

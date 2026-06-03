@@ -336,9 +336,10 @@ fn run_program_vm(
 
 ///|
 /// Compiles and evaluates a single expression on the bytecode VM, returning its
-/// value. The expression is lowered as a synthetic `<result> = <expr>` module so
-/// the VM can run it; `env` bindings are bound into the context (and treated as
-/// predeclared) so they resolve, and the result is read back from its global.
+/// value. The expression is lowered as a synthetic `<result> = <expr>` module
+/// (named after the expression's source file) so the VM can run it; `env`
+/// bindings are bound into the context (and treated as predeclared) so they
+/// resolve, and the result is read back from its global.
 #internal(unsafe, "bytecode VM only; not part of the public embedding API")
 pub fn eval_expr_vm(
   thread : Thread,
@@ -349,13 +350,21 @@ pub fn eval_expr_vm(
   let ctx = EvalContext::new(thread, opts)
   env.each(fn(k, v) { ctx.global_env.bind(k, v) })
   let pos = @syntax.expr_pos(expr)
-  let result_name = "$expr_result"
+  let filename = pos.filename()
+  let result_name = "eval_expr_result"
   let stmt = @syntax.Stmt::SAssign(
     @syntax.Expr::EIdent(result_name, pos),
     expr,
     pos,
   )
-  let file = @syntax.File::new("<expr>", [stmt])
+  let file = @syntax.File::new(filename, [stmt])
+  // Validate with the same resolver pass the file entries use, treating `env`
+  // bindings as predeclared, so an undefined name reports the walker's runtime
+  // "<pos>: undefined: name" instead of a position-less compile error.
+  match file_program(file, opts, fn(name) { env.get(name) is Some(_) }) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
   let prog = @compile.compile(
     file,
     fn(name) { is_builtin(name) || env.get(name) is Some(_) },
@@ -364,7 +373,7 @@ pub fn eval_expr_vm(
   ) catch {
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
-  let m = match run_program_vm(ctx, prog, "<expr>") {
+  let m = match run_program_vm(ctx, prog, filename) {
     Ok(m) => m
     Err(e) => return Err(e)
   }
