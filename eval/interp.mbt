@@ -285,7 +285,7 @@ fn compile_and_run_vm(
 ) -> Result[(@compile.CompiledProgram, RunModule), @errors.EvalError] {
   // Validate with the same resolver pass the walker uses; resolver errors
   // (messages and positions) match the walker exactly.
-  match file_program(file, ctx.opts, extra_pred) {
+  match validate_resolution(file, ctx.opts, extra_pred) {
     Err(e) => return Err(e)
     Ok(_) => ()
   }
