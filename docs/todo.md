@@ -2662,16 +2662,70 @@ depend on publishing).
 
 ---
 
+## Bytecode Compiler + VM Migration
+
+Replace the AST-walking interpreter with a bytecode compiler + VM, modeled on
+starlark-go (`internal/compile` + `interp.go`). **Motivation**: the runtime
+function value `@value.StarlarkFunction` holds `Array[@syntax.Stmt]`/`Param`,
+leaking the AST into the embedder-facing `value` package. Both starlark-go and
+starlark-rust avoid this because their runtime function holds *compiled* code
+(`Funcode`/`Bc`) in an internal package, never the syntax AST. Implementing the
+bytecode layer eliminates the leak at the root and improves performance.
+
+Decision (user, pre-release): full bytecode migration, **dual-engine + diff
+testing** (keep the AST walker as default; bring up the VM feature-by-feature
+behind an internal flag, asserting VM results equal walker results; flip the
+default only when the full suite is green under the VM, then delete the walker).
+Step counting becomes **per-instruction** (go-faithful); step-budget thresholds
+recalibrated in an isolated commit. Serialization stays AST-based until the flip,
+then switches to bytecode (`SerialVersion=2`). Full plan and risk analysis
+recorded outside the repo.
+
+Architecture: new `internal/compile/` holds the syntax-free `Funcode`
+(`code: Bytes` + AST-free metadata, fields name only `@errors` + primitives),
+`CompiledProgram`, the `Opcode` set, and a `Const` pool (primitive literal
+carriers, never `Value`). Import edges: `value → compile → errors` (no cycle;
+the constant pool avoids `Value`, so `compile` never imports `value`). The
+compiler does its own scope/slot + cell/free layout; the existing resolver stays
+a validation-only pre-pass and `@syntax` stays immutable.
+
+- [x] **M1**: `internal/compile` skeleton — `Opcode` (byte encode/decode +
+      `has_arg`), `Const` pool, `Funcode`/`CompiledProgram`, pc→position recovery
+      (`pclinetab` equivalent). Types only; no compiler logic. 5 tests.
+- [ ] **M2**: bytecode compiler for expressions + module init (scope/slot layout,
+      pclinetab emission).
+- [ ] **M3**: VM behind an internal flag + differential-test harness
+      (literals/arith/comparisons/data ops).
+- [ ] **M4**: locals/globals/module init on the VM (unbound sentinel +
+      referenced-before-assignment parity).
+- [ ] **M5**: control flow + iteration (JMP/CJMP/ITER*, for/while/break/continue).
+- [ ] **M6**: function defs + calls (MAKEFUNC no-freevars, CALL*, RETURN, arg
+      binding, recursion/depth, backtrace stamping; validate `error_format_test`).
+- [ ] **M7**: closure cells (Cell, FREE/FREECELL/LOCALCELL/SETLOCALCELL,
+      cell-promotion analysis; BUG-28 parity). Spike the capture analysis first.
+- [ ] **M8**: comprehensions (lowered to ITER loops with isolated scope).
+- [ ] **M9**: `load` statements on the VM.
+- [ ] **M10**: switch step counting to per-instruction + recalibrate budgets.
+- [ ] **M11**: `StarlarkFunction` holds a `Funcode`; drop `syntax` from `value`
+      (the goal). Verify `value` `.mbti` unchanged except `new`; no `syntax` import.
+- [ ] **M12**: flip `exec_file`/`eval_expr`/`Program::init` to the VM; delete the
+      walker (`signal.mbt`, AST halves of expr/stmt/eval, `EvalEnv` closure
+      machinery, `captured_scope`); slot-based `DebugFrame`.
+- [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
+
+---
+
 ## Future work (out of initial release scope)
 
-- Hide `StarlarkFunction.body/params/captured_scope` from public API — these expose
-  `@syntax.Stmt` / `@syntax.Param` AST types. Requires moving call dispatch logic into
-  the `value` package or introducing a trait boundary to avoid circular imports.
+- ~~Hide `StarlarkFunction.body/params/captured_scope` from public API~~ — being
+  addressed by the **Bytecode Compiler + VM Migration** above: the compiled
+  `Funcode` replaces the AST body/params so `value` no longer depends on `@syntax`.
 - `math` extension library — implemented as `src/lib/math/`
 - ~~`time` extension library~~ — implemented as `src/lib/time/`; non-UTC timezones via IANA tzdb (native) / static table (wasm/js); native-only DST tests in `time_tz_native_test.mbt`
 - `proto` extension library (`starlark-go/lib/proto`)
 - ~~`starlarkstruct`~~ — implemented as `src/lib/struct/`; `struct()` builtin, `gensym()` callable symbols, `+` merge, `make_struct` API
-- Bytecode compilation / interpreter (currently AST-walking only) — MISSING-62
+- Bytecode compilation / interpreter — MISSING-62; **in progress**, see the
+  "Bytecode Compiler + VM Migration" section above
 - Profiling and debugging hooks (`starlark-go/starlark/profile.go`)
 - ~~Big-integer `Int`~~ — implemented; `Value::Int` now uses MoonBit `BigInt` (arbitrary precision)
 - Thread-local storage `Thread.set_local()` / `Thread.local()` for embedder context
