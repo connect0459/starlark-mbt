@@ -245,14 +245,9 @@ test "line table maps a statement's instructions back to its source line" {
 
 ///|
 test "unsupported constructs surface as a CompileErr that pinpoints the source position" {
-  // Augmented assignment is not yet lowered; the error must locate it.
-  let aug = @syntax.Stmt::SAugAssign(
-    @syntax.Expr::EIdent("x", p(1, 1)),
-    AugAdd,
-    lit_int(1),
-    p(1, 1),
-  )
-  let file = @syntax.File::new("t.star", [aug])
+  // A dict literal is not yet lowered; the error must locate it.
+  let stmt = @syntax.Stmt::SExpr(@syntax.Expr::EDict([], p(1, 1)))
+  let file = @syntax.File::new("t.star", [stmt])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
     Err(CompileErr(msg)) => assert_true(msg.contains("t.star:1:1"))

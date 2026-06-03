@@ -867,16 +867,25 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
       self.compile_expr(e)
       self.emit0(Opcode::Pop, 1, 0)
     }
-    SAssign(lhs, rhs, pos) =>
+    SAssign(lhs, rhs, pos) => {
+      // The right-hand side is evaluated first, then assigned to the target.
+      self.compile_expr(rhs)
+      self.set_pos(pos)
+      self.compile_assign_target(lhs)
+    }
+    SAugAssign(lhs, aug_op, rhs, pos) =>
       match lhs {
         EIdent(name, _) => {
+          // load <name>; <rhs>; AugApply<op>; store <name>
+          self.compile_ident(name)
           self.compile_expr(rhs)
           self.set_pos(pos)
+          self.emit1(Opcode::AugApply, aug_op_code(aug_op), 2, 1)
           self.compile_store(name)
         }
         _ =>
           raise CompileErr(
-            "compile: unsupported assignment target at \{@syntax.expr_pos(lhs).to_string()}",
+            "compile: augmented assignment to index/attribute targets not yet supported at \{@syntax.expr_pos(lhs).to_string()}",
           )
       }
     SPass(_) => ()
@@ -958,10 +967,6 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit1(Opcode::Load, idx, 0, 0)
     }
-    _ =>
-      raise CompileErr(
-        "compile: unsupported statement at \{@syntax.stmt_pos(s).to_string()}",
-      )
   }
 }
 
@@ -1065,6 +1070,83 @@ fn Fcomp::compile_store(self : Fcomp, name : String) -> Unit raise CompileErr {
 }
 
 ///|
+/// Assigns the value currently on top of the operand stack to `target`,
+/// consuming it. The right-hand side is evaluated before this is called, so
+/// for index/attribute targets the container and index/attribute are evaluated
+/// after the value (matching the walker). Tuple/list targets unpack the value
+/// and assign each element (recursively, supporting nesting).
+fn Fcomp::compile_assign_target(
+  self : Fcomp,
+  target : @syntax.Expr,
+) -> Unit raise CompileErr {
+  match target {
+    EIdent(name, _) => self.compile_store(name)
+    EIndex(obj, idx, ipos) => {
+      self.compile_expr(obj)
+      self.compile_expr(idx)
+      self.set_pos(ipos)
+      // stack: [value, obj, idx] -> set_index(obj, idx, value)
+      self.emit0(Opcode::SetIndex, 3, 0)
+    }
+    EDot(obj, attr, dpos) => {
+      self.compile_expr(obj)
+      self.set_pos(dpos)
+      // stack: [value, obj] -> obj.attr = value
+      self.emit1(Opcode::SetField, self.pcomp.add_name(attr), 2, 0)
+    }
+    ETuple(elems, tpos) | EList(elems, tpos) => {
+      self.set_pos(tpos)
+      // pops the value, pushes its `n` elements with element 0 on top
+      self.emit1(Opcode::Unpack, elems.length(), 1, elems.length())
+      for e in elems {
+        self.compile_assign_target(e)
+      }
+    }
+    _ =>
+      raise CompileErr(
+        "compile: invalid assignment target at \{@syntax.expr_pos(target).to_string()}",
+      )
+  }
+}
+
+///|
+/// Maps an augmented-assignment operator to its integer code (the `AugApply`
+/// operand). Matches the serialization ordering of `@syntax.AugOp`.
+fn aug_op_code(op : @syntax.AugOp) -> Int {
+  match op {
+    AugAdd => 0
+    AugSub => 1
+    AugMul => 2
+    AugDiv => 3
+    AugFloorDiv => 4
+    AugMod => 5
+    AugBitAnd => 6
+    AugBitOr => 7
+    AugBitXor => 8
+    AugLShift => 9
+    AugRShift => 10
+  }
+}
+
+///|
+/// Calls `add(name, pos)` for every name an assignment to `target` binds: the
+/// identifier itself, or each element of a tuple/list target (recursively).
+/// Index and attribute targets bind no new name.
+fn collect_target_names(
+  target : @syntax.Expr,
+  add : (String, @errors.Position) -> Unit,
+) -> Unit {
+  match target {
+    EIdent(name, pos) => add(name, pos)
+    ETuple(elems, _) | EList(elems, _) =>
+      for e in elems {
+        collect_target_names(e, add)
+      }
+    _ => ()
+  }
+}
+
+///|
 /// Compiles a function body into a nested funcode, registers it in the program's
 /// function table, and returns its index (the `MakeFunc` operand). Parameters
 /// become the first local slots; names assigned in the body become further
@@ -1151,9 +1233,10 @@ fn collect_function_locals(fc : Fcomp, body : Array[@syntax.Stmt]) -> Unit {
   fn walk(ss : Array[@syntax.Stmt]) -> Unit {
     for s in ss {
       match s {
-        SAssign(EIdent(name, pos), _, _) => add(name, pos)
-        SFor(EIdent(name, pos), _, b, _) => {
-          add(name, pos)
+        SAssign(target, _, _) => collect_target_names(target, add)
+        SAugAssign(target, _, _, _) => collect_target_names(target, add)
+        SFor(target, _, b, _) => {
+          collect_target_names(target, add)
           walk(b)
         }
         SIf(_, t, e, _) => {
@@ -1177,10 +1260,7 @@ fn collect_function_locals(fc : Fcomp, body : Array[@syntax.Stmt]) -> Unit {
 /// Pre-pass: assign a global slot index to every name bound at module scope, in
 /// source order, so that forward references compile to the right `Global` index.
 /// Mirrors the binding sites the resolver treats as module globals.
-fn collect_globals(
-  pcomp : Pcomp,
-  stmts : Array[@syntax.Stmt],
-) -> Unit raise CompileErr {
+fn collect_globals(pcomp : Pcomp, stmts : Array[@syntax.Stmt]) -> Unit {
   fn add(name : String, pos : @errors.Position) -> Unit {
     if !pcomp.global_index.contains(name) {
       let idx = pcomp.globals.length()
@@ -1191,20 +1271,18 @@ fn collect_globals(
 
   // Collects binding sites within `ss`; module-scope `if`/`for`/`while` bodies
   // still bind module globals, so recurse into them.
-  fn walk(ss : Array[@syntax.Stmt]) -> Unit raise CompileErr {
+  fn walk(ss : Array[@syntax.Stmt]) -> Unit {
     for s in ss {
       match s {
-        SAssign(EIdent(name, pos), _, _) => add(name, pos)
+        SAssign(target, _, _) => collect_target_names(target, add)
+        SAugAssign(target, _, _, _) => collect_target_names(target, add)
         SDef(name, _, _, pos) => add(name, pos)
         SLoad(_, bindings, _) =>
           for b in bindings {
             add(b.0, b.2)
           }
         SFor(target, _, body, _) => {
-          match target {
-            EIdent(name, pos) => add(name, pos)
-            _ => ()
-          }
+          collect_target_names(target, add)
           walk(body)
         }
         SIf(_, then_body, else_body, _) => {
@@ -1213,10 +1291,6 @@ fn collect_globals(
         }
         SWhile(_, body, _) => walk(body)
         SReturn(_, _) | SPass(_) | SExpr(_) | SBreak(_) | SContinue(_) => ()
-        _ =>
-          raise CompileErr(
-            "compile: unsupported top-level statement at \{@syntax.stmt_pos(s).to_string()}",
-          )
       }
     }
   }
