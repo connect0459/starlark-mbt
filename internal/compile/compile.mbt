@@ -808,12 +808,14 @@ fn compile_function(
       ParamStarIdent(pname, ppos) => {
         add_param_local(pname, ppos)
         fc.params.push(PStarArgs(pname))
+        fc.num_params += 1
         fc.has_varargs = true
         after_star = true
       }
       ParamKwIdent(pname, ppos) => {
         add_param_local(pname, ppos)
         fc.params.push(PKwArgs(pname))
+        fc.num_params += 1
         fc.has_kwargs = true
       }
     }

@@ -161,6 +161,35 @@ test "toplevel always ends with NONE and RETURN" {
 }
 
 ///|
+/// `num_params` counts every named parameter that occupies a local slot,
+/// including `*args` and `**kwargs`, so it stays consistent with the `locals`
+/// ordering and the runtime function's `num_params` contract.
+test "num_params counts varargs and kwargs parameters" {
+  // def f(a, b=1, *args, **kw): pass
+  let def_ = @syntax.Stmt::SDef(
+    "f",
+    [
+      @syntax.Param::ParamIdent("a", p(1, 1)),
+      @syntax.Param::ParamDefault("b", lit_int(1), p(1, 1)),
+      @syntax.Param::ParamStarIdent("args", p(1, 1)),
+      @syntax.Param::ParamKwIdent("kw", p(1, 1)),
+    ],
+    [@syntax.Stmt::SPass(p(2, 3))],
+    p(1, 1),
+  )
+  let file = @syntax.File::new("t.star", [def_])
+  let prog = @compile.compile(
+    file,
+    fn(_) { false },
+    fn(n) { n == "None" || n == "True" || n == "False" },
+    true,
+  ) catch {
+    _ => abort("compile failed")
+  }
+  assert_eq(prog.functions[0].num_params, 4)
+}
+
+///|
 test "line table maps a statement's instructions back to its source line" {
   // x = 42 placed on line 7
   let assign = @syntax.Stmt::SAssign(
