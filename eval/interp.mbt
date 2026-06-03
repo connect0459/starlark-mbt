@@ -283,12 +283,25 @@ fn VM::run_frame(
       Universal => push(vm_resolve_external(self.prog.names[arg]))
       MakeFunc => {
         let funcode = self.prog.functions[arg]
-        let defaults : Array[@value.Value?] = match pop() {
-          @value.Value::Tuple(items) => items.map(fn(v) { Some(v) })
+        let provided : Array[@value.Value] = match pop() {
+          @value.Value::Tuple(items) => items
           other =>
             abort(
               "vm: MakeFunc expected a defaults tuple, got \{other.type_name()}",
             )
+        }
+        // Align the supplied defaults onto the optional parameters (in order);
+        // every other parameter slot has no default.
+        let defaults : Array[@value.Value?] = Array::make(
+          funcode.params.length(),
+          None,
+        )
+        let mut di = 0
+        for i, spec in funcode.params {
+          if spec is POptional(_) {
+            defaults[i] = Some(provided[di])
+            di += 1
+          }
         }
         push(
           @value.Value::Function(
@@ -302,9 +315,25 @@ fn VM::run_frame(
       }
       Call => {
         let npos = arg >> 8
+        let nkw = arg & 0xff
+        let kwargs : Array[(String, @value.Value)] = Array::make(
+          nkw,
+          ("", @value.Value::None),
+        )
+        for i = nkw - 1; i >= 0; i = i - 1 {
+          let v = pop()
+          let nm = match pop() {
+            @value.Value::String(s) => s.raw()
+            other =>
+              abort(
+                "vm: keyword argument name must be a string, got \{other.type_name()}",
+              )
+          }
+          kwargs[i] = (nm, v)
+        }
         let args = pop_n(stack, npos)
         let callee = pop()
-        push(self.call_value(callee, args, pos))
+        push(self.call_value(callee, args, kwargs, pos))
       }
       Jmp => pc = arg
       CJmp => if pop().truth() { pc = arg }
@@ -357,12 +386,13 @@ fn VM::call_value(
   self : VM,
   callee : @value.Value,
   args : Array[@value.Value],
+  kwargs : Array[(String, @value.Value)],
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   match callee {
     @value.Value::Function(f) =>
       match f.compiled_funcode() {
-        Some(fc) => self.call_compiled(f, fc, args, pos)
+        Some(fc) => self.call_compiled(f, fc, args, kwargs, pos)
         None => abort("vm: function value has no compiled code")
       }
     // Builtins, bound methods, and custom values are value-level operations with
@@ -372,7 +402,7 @@ fn VM::call_value(
     // — e.g. `sorted(iterable, key)` with the key passed positionally — re-enters
     // the VM through `ctx.vm`, so the callback runs on a VM frame with the same
     // recursion and backtrace semantics as a direct VM call.
-    _ => call_value(self.ctx, callee, args, [], pos)
+    _ => call_value(self.ctx, callee, args, kwargs, pos)
   }
 }
 
@@ -387,6 +417,7 @@ fn VM::call_compiled(
   f : @value.StarlarkFunction,
   fc : @compile.Funcode,
   args : Array[@value.Value],
+  kwargs : Array[(String, @value.Value)],
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
   if !self.prog.recursion {
@@ -405,18 +436,8 @@ fn VM::call_compiled(
   if self.ctx.thread.call_stack.length() >= self.ctx.thread.max_recursion_depth {
     raise EvalErr(make_eval_error(self.ctx, "maximum recursion depth exceeded"))
   }
-  if args.length() != fc.num_params {
-    raise EvalErr(
-      make_eval_error(
-        self.ctx,
-        "function \{f.name()} accepts \{fc.num_params} positional arguments (\{args.length()} given)",
-      ),
-    )
-  }
   let locals : Array[@value.Value?] = Array::make(fc.locals.length(), None)
-  for i in 0..<args.length() {
-    locals[i] = Some(args[i])
-  }
+  self.bind_args(fc, f.name(), f.defaults(), args, kwargs, locals)
   self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
   self.active.push(fc)
   let fidx = self.ctx.thread.call_stack.length() - 1
@@ -430,4 +451,212 @@ fn VM::call_compiled(
   self.active.pop() |> ignore
   self.ctx.thread.call_stack.pop() |> ignore
   r
+}
+
+///|
+/// Binds positional and keyword arguments to a compiled function's parameter
+/// slots, applying defaults and collecting `*args`/`**kwargs`. This is a direct
+/// port of the AST walker's `bind_args` over the funcode's parameter specs, so
+/// the argument-error messages are identical. Named parameters occupy
+/// `locals[0..]` in declaration order (a bare `*` separator takes no slot);
+/// `defaults` is aligned to the parameter-spec index.
+fn VM::bind_args(
+  self : VM,
+  fc : @compile.Funcode,
+  fname : String,
+  defaults : Array[@value.Value?],
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+  locals : Array[@value.Value?],
+) -> Unit raise EvalErr {
+  let params = fc.params
+  if params.length() == 0 {
+    let nactual = pos_args.length() + kw_args.length()
+    if nactual > 0 {
+      raise EvalErr(
+        make_eval_error(
+          self.ctx,
+          "function \{fname} accepts no arguments (\{nactual} given)",
+        ),
+      )
+    }
+    return
+  }
+  let kw_map : Map[String, @value.Value] = {}
+  for kw in kw_args {
+    let (kn, kv) = kw
+    if kw_map.contains(kn) {
+      raise EvalErr(
+        make_eval_error(
+          self.ctx,
+          "function \{fname} got multiple values for parameter \"\{kn}\"",
+        ),
+      )
+    }
+    kw_map[kn] = kv
+  }
+  let mut pos_idx = 0
+  let mut slot = 0
+  let mut param_idx = 0
+  let mut passed_star = false
+  let mut had_kwargs_param = false
+  let missing_required : Array[String] = []
+  fn dup_error(name : String) -> EvalErr {
+    EvalErr(
+      make_eval_error(
+        self.ctx,
+        "function \{fname} got multiple values for parameter \"\{name}\"",
+      ),
+    )
+  }
+
+  while param_idx < params.length() {
+    match params[param_idx] {
+      PRequired(name) => {
+        if pos_idx < pos_args.length() && !passed_star {
+          if kw_map.contains(name) {
+            raise dup_error(name)
+          }
+          locals[slot] = Some(pos_args[pos_idx])
+          pos_idx += 1
+        } else if kw_map.contains(name) {
+          locals[slot] = Some(kw_map[name])
+          kw_map.remove(name)
+        } else if defaults[param_idx] is Some(dv) {
+          locals[slot] = Some(dv)
+        } else {
+          missing_required.push(name)
+        }
+        slot += 1
+        param_idx += 1
+      }
+      POptional(name) => {
+        if pos_idx < pos_args.length() && !passed_star {
+          if kw_map.contains(name) {
+            raise dup_error(name)
+          }
+          locals[slot] = Some(pos_args[pos_idx])
+          pos_idx += 1
+        } else if kw_map.contains(name) {
+          locals[slot] = Some(kw_map[name])
+          kw_map.remove(name)
+        } else {
+          match defaults[param_idx] {
+            Some(dv) => locals[slot] = Some(dv)
+            None => missing_required.push(name)
+          }
+        }
+        slot += 1
+        param_idx += 1
+      }
+      PStarArgs(_) => {
+        passed_star = true
+        let rest : Array[@value.Value] = []
+        while pos_idx < pos_args.length() {
+          rest.push(pos_args[pos_idx])
+          pos_idx += 1
+        }
+        locals[slot] = Some(@value.Value::Tuple(rest))
+        slot += 1
+        param_idx += 1
+      }
+      PStarBare => {
+        passed_star = true
+        if pos_idx < pos_args.length() {
+          let max_pos = count_max_positional_spec(params)
+          let has_opt = has_optional_pos_spec(params)
+          raise EvalErr(
+            make_eval_error(
+              self.ctx,
+              "function \{fname} accepts \{pos_arg_count_msg(max_pos, pos_args.length(), has_opt)}",
+            ),
+          )
+        }
+        param_idx += 1
+      }
+      PKwArgs(_) => {
+        had_kwargs_param = true
+        let kw_dict = @value.StarlarkDict::new()
+        kw_map.each(fn(kn, kv) {
+          let key = @value.Value::String(@value.StarlarkString::new(kn))
+          ignore(kw_dict.set(key, kv))
+        })
+        kw_map.clear()
+        locals[slot] = Some(@value.Value::Dict(kw_dict))
+        slot += 1
+        param_idx += 1
+      }
+    }
+  }
+  if pos_idx < pos_args.length() && !passed_star {
+    let max_pos = count_max_positional_spec(params)
+    let has_opt = has_optional_pos_spec(params)
+    raise EvalErr(
+      make_eval_error(
+        self.ctx,
+        "function \{fname} accepts \{pos_arg_count_msg(max_pos, pos_args.length(), has_opt)}",
+      ),
+    )
+  }
+  if !had_kwargs_param && kw_map.length() > 0 {
+    let mut first_key = ""
+    kw_map.each(fn(k, _) { if first_key == "" { first_key = k } })
+    let valid_names : Array[String] = []
+    for p in params {
+      match p {
+        PRequired(name) | POptional(name) => valid_names.push(name)
+        _ => ()
+      }
+    }
+    let hint = match @utf8util.spell_nearest(first_key, valid_names) {
+      "" => ""
+      s => " (did you mean \{s}?)"
+    }
+    raise EvalErr(
+      make_eval_error(
+        self.ctx,
+        "function \{fname} got an unexpected keyword argument \"\{first_key}\"\{hint}",
+      ),
+    )
+  }
+  if !missing_required.is_empty() {
+    let n = missing_required.length()
+    let names = missing_required.join(", ")
+    let arg_word = if n == 1 { "argument" } else { "arguments" }
+    raise EvalErr(
+      make_eval_error(
+        self.ctx,
+        "function \{fname} missing \{n} \{arg_word} (\{names})",
+      ),
+    )
+  }
+}
+
+///|
+/// Number of leading positional parameters (before any `*`/`*args`), used in
+/// the argument-count error message. Mirrors the walker's `count_max_positional`
+/// over parameter specs.
+fn count_max_positional_spec(params : Array[@compile.ParamSpec]) -> Int {
+  let mut n = 0
+  for p in params {
+    match p {
+      PRequired(_) | POptional(_) => n += 1
+      PStarBare | PStarArgs(_) => break
+      _ => ()
+    }
+  }
+  n
+}
+
+///|
+/// Whether any leading positional parameter (before a `*`/`*args`) is optional.
+fn has_optional_pos_spec(params : Array[@compile.ParamSpec]) -> Bool {
+  for p in params {
+    match p {
+      POptional(_) => return true
+      PStarBare | PStarArgs(_) => break
+      _ => ()
+    }
+  }
+  false
 }

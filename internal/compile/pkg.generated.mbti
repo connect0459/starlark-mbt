@@ -53,6 +53,7 @@ pub(all) struct Funcode {
   num_kwonly_params : Int
   has_varargs : Bool
   has_kwargs : Bool
+  params : Array[ParamSpec]
 }
 pub fn Funcode::disasm(Self) -> Array[Instr]
 pub fn Funcode::position(Self, Int) -> @errors.Position
@@ -136,6 +137,14 @@ pub(all) enum Opcode {
 pub fn Opcode::from_byte(Byte) -> Self?
 pub fn Opcode::has_arg(Self) -> Bool
 pub fn Opcode::to_byte(Self) -> Byte
+
+pub(all) enum ParamSpec {
+  PRequired(String)
+  POptional(String)
+  PStarBare
+  PStarArgs(String)
+  PKwArgs(String)
+} derive(Eq)
 
 pub(all) struct PcLine {
   pc : Int
