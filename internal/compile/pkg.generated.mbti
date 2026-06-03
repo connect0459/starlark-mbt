@@ -28,6 +28,7 @@ pub(all) struct CompiledProgram {
   globals : Array[@errors.Binding]
   toplevel : Funcode
   recursion : Bool
+  load_stmts : Array[LoadStmt]
 }
 
 pub(all) enum Const {
@@ -69,6 +70,14 @@ pub(all) struct Instr {
   op : Opcode
   arg : Int
 } derive(Eq)
+
+pub(all) struct LoadStmt {
+  path : String
+  pos : @errors.Position
+  exports : Array[String]
+  locals : Array[String]
+  slots : Array[Int]
+}
 
 pub(all) enum Opcode {
   Nop
