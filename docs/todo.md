@@ -2777,7 +2777,28 @@ a validation-only pre-pass and `@syntax` stays immutable.
       is AST-backed, so the VM delegates such calls to the walker. Differential
       tests: basic load, aliasing, load-and-call, `load_binds_globally`,
       missing-name error, no-loader error.
-- [ ] **M10**: switch step counting to per-instruction + recalibrate budgets.
+- [~] **Flip prerequisites**: the remaining constructs the walker handles but the
+      compiler did not, split into two PRs so the flip can switch the default
+      with full coverage. (M10 step-counting recalibration is deferred until the
+      VM is the default engine.)
+  - [x] **PR-A**: assignment targets + augmented assignment. Plain assignment
+        evaluates the right-hand side first, then assigns to the target;
+        `compile_assign_target` handles identifier, index (`SetIndex`), attribute
+        (`SetField`), and tuple/list targets (`Unpack` + recursive assignment,
+        supporting nesting). Augmented assignment to an identifier loads the
+        current value, applies the operator (`AugApply`), and stores back; the VM
+        reuses the walker's `set_index`/`eval_aug_val`/iteration helpers, so
+        in-place list/dict mutation and the unpack length/type errors match.
+        Module- and function-local binding pre-passes now collect names from every
+        assignment and tuple/list target. Differential tests: index/attribute
+        assignment, tuple and nested unpacking, swap, augmented identifier
+        assignment, in-place list extend, augmented assignment inside a function.
+        (Augmented assignment to index/attribute targets is still unsupported;
+        deferred to the flip.)
+  - [ ] **PR-B**: data literals (`EDict`/`ESet`), set comprehensions (set
+        accumulator opcode), splat call sites (`f(*args)`/`f(**kwargs)` →
+        `CallVar`/`CallKw`/`CallVarKw`), tuple targets in `for`/comprehensions,
+        and undefined-name error-reporting parity.
 - [ ] **M11**: `StarlarkFunction` holds a `Funcode`; drop `syntax` from `value`
       (the goal). Verify `value` `.mbti` unchanged except `new`; no `syntax` import.
 - [ ] **M12**: flip `exec_file`/`eval_expr`/`Program::init` to the VM; delete the
