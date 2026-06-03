@@ -7,8 +7,7 @@ about: Report a bug
 
 ## Affected Package (Required)
 
-- [ ] `src/url`
-- [ ] `src/urlpattern`
+- [ ] `xxx` package
 - [ ] Other
 
 ## Minimal Reproduction (Required)

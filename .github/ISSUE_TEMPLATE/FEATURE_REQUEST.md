@@ -28,8 +28,7 @@ about: Request a new feature or enhancement
 
 ## Affected Package
 
-- [ ] `src/url`
-- [ ] `src/urlpattern`
+- [ ] `xxx` package
 - [ ] Tooling / CI
 - [ ] Documentation
 

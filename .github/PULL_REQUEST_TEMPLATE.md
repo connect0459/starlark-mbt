@@ -20,8 +20,7 @@ It is difficult to review without knowing the specifications and background.
 
 ## Scope of Change
 
-- [ ] `src/url` package
-- [ ] `src/urlpattern` package
+- [ ] `xxx` package
 - [ ] Tooling / CI
 - [ ] Documentation
 
