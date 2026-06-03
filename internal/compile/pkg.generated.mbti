@@ -1,0 +1,136 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "connect0459/starlark/internal/compile"
+
+import {
+  "connect0459/starlark/errors",
+  "moonbitlang/core/bigint",
+}
+
+// Values
+pub fn all_opcodes() -> Array[Opcode]
+
+pub let op_arg_min : Int
+
+// Errors
+
+// Types and methods
+pub(all) struct CompiledProgram {
+  loads : Array[@errors.Binding]
+  names : Array[String]
+  constants : Array[Const]
+  functions : Array[Funcode]
+  globals : Array[@errors.Binding]
+  toplevel : Funcode
+  recursion : Bool
+}
+
+pub(all) enum Const {
+  CNone
+  CBool(Bool)
+  CInt(@bigint.BigInt)
+  CFloat(Double)
+  CStr(String)
+  CBytes(Bytes)
+} derive(Eq)
+
+pub(all) struct Funcode {
+  pos : @errors.Position
+  name : String
+  doc : String
+  code : Bytes
+  pclinetab : Array[PcLine]
+  locals : Array[@errors.Binding]
+  cells : Array[Int]
+  freevars : Array[@errors.Binding]
+  max_stack : Int
+  num_params : Int
+  num_kwonly_params : Int
+  has_varargs : Bool
+  has_kwargs : Bool
+}
+pub fn Funcode::position(Self, Int) -> @errors.Position
+
+pub(all) enum Opcode {
+  Nop
+  Dup
+  Dup2
+  Pop
+  Exch
+  Lt
+  Gt
+  Ge
+  Le
+  Eql
+  Neq
+  Plus
+  Minus
+  Star
+  Slash
+  SlashSlash
+  Percent
+  Amp
+  Pipe
+  Circumflex
+  LtLt
+  GtGt
+  In
+  UPlus
+  UMinus
+  Tilde
+  NoneOp
+  TrueOp
+  FalseOp
+  Mandatory
+  IterPush
+  IterPop
+  Not
+  Return
+  SetIndex
+  Index
+  SetDict
+  SetDictUniq
+  Append
+  Slice
+  InplaceAdd
+  InplacePipe
+  MakeDict
+  Jmp
+  CJmp
+  IterJmp
+  Constant
+  MakeTuple
+  MakeList
+  MakeFunc
+  Load
+  SetLocal
+  SetGlobal
+  Local
+  Free
+  FreeCell
+  LocalCell
+  SetLocalCell
+  Global
+  Predeclared
+  Universal
+  Attr
+  SetField
+  Unpack
+  Call
+  CallVar
+  CallKw
+  CallVarKw
+} derive(Eq)
+pub fn Opcode::from_byte(Byte) -> Self?
+pub fn Opcode::has_arg(Self) -> Bool
+pub fn Opcode::to_byte(Self) -> Byte
+
+pub(all) struct PcLine {
+  pc : Int
+  line : Int
+  col : Int
+} derive(Eq)
+
+// Type aliases
+
+// Traits
+
