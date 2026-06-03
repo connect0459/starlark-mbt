@@ -513,3 +513,70 @@ test "vm matches walker on a closure capturing a module global is not a closure"
     "n = 10\n\ndef add(x):\n  return x + n\n\ny = add(5)",
   )
 }
+
+///|
+test "vm matches walker on a simple list comprehension" {
+  assert_vm_matches_walker("xs = [x * 2 for x in [1, 2, 3, 4]]")
+}
+
+///|
+test "vm matches walker on a list comprehension with an if guard" {
+  assert_vm_matches_walker("xs = [x for x in [1, 2, 3, 4, 5, 6] if x % 2 == 0]")
+}
+
+///|
+test "vm matches walker on a nested (multi-for) list comprehension" {
+  assert_vm_matches_walker("xs = [x * 10 + y for x in [1, 2] for y in [3, 4]]")
+}
+
+///|
+test "vm matches walker on a comprehension with multiple if guards" {
+  assert_vm_matches_walker(
+    "xs = [x for x in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] if x % 2 == 0 if x > 4]",
+  )
+}
+
+///|
+test "vm matches walker on a comprehension over range" {
+  assert_vm_matches_walker("xs = [i * i for i in range(6)]")
+}
+
+///|
+test "vm matches walker on a dict comprehension" {
+  assert_vm_matches_walker("d = {k: k * k for k in [1, 2, 3]}")
+}
+
+///|
+test "vm matches walker on a dict comprehension with a guard" {
+  assert_vm_matches_walker("d = {x: x + 1 for x in [1, 2, 3, 4] if x != 2}")
+}
+
+///|
+test "vm matches walker on a comprehension inside a function" {
+  assert_vm_matches_walker(
+    "def squares(n):\n  return [i * i for i in range(n)]\n\nxs = squares(5)",
+  )
+}
+
+// Note: referencing a comprehension variable after the comprehension (e.g.
+// `xs = [x for x in [1,2,3]]; y = x`) is a resolver-permitted but
+// runtime-undefined name. The walker reports it at runtime ("undefined: x")
+// while the VM compiler currently reports it at compile time; reconciling
+// undefined-name error reporting is deferred to the engine flip and is not
+// specific to comprehensions.
+
+///|
+test "vm matches walker on a comprehension whose later iterable references the target" {
+  // `[a for _ in [1] for a in a]`: the second iterable `a` references the
+  // comp-local `a` before assignment -> referenced-before-assignment error.
+  assert_vm_matches_walker("xs = [a for _ in [1] for a in a]")
+}
+
+///|
+test "vm matches walker when a name repeats across comprehension for clauses" {
+  // The same target appears in two `for` clauses, so it is a single
+  // comp-local that must be fully unbound when the comprehension ends; a
+  // later reference to the same name must see the enclosing global, not a
+  // leftover comp-local slot.
+  assert_vm_matches_walker("i = 5\nxs = [i for i in [1] for i in [2]]\ny = i")
+}

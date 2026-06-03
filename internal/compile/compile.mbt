@@ -490,6 +490,10 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.emit1(Opcode::MakeTuple, xs.length(), xs.length(), 1)
     }
     ECall(callee, args, pos) => self.compile_call(callee, args, pos)
+    EListComp(elt, clauses, pos) =>
+      self.compile_comprehension(CList(elt), clauses, pos)
+    EDictComp(k, v, clauses, pos) =>
+      self.compile_comprehension(CDict(k, v), clauses, pos)
     ELambda(params, body_e, pos) => {
       // A lambda is a function whose body is a single `return <expr>`.
       let body : Array[@syntax.Stmt] = [
@@ -550,6 +554,163 @@ fn Fcomp::compile_call(
   self.set_pos(pos)
   // pops callee + npos positional + nkw (name, value) pairs, pushes the result.
   self.emit1(Opcode::Call, (npos << 8) | nkw, 1 + npos + 2 * nkw, 1)
+}
+
+///|
+/// What a comprehension accumulates: a list element, or a dict key/value.
+priv enum CompKind {
+  CList(@syntax.Expr)
+  CDict(@syntax.Expr, @syntax.Expr)
+}
+
+///|
+/// Compiles a list or dict comprehension to an accumulator plus a nest of
+/// iterator loops and `if` guards. An empty accumulator stays on the operand
+/// stack throughout; each innermost iteration appends to it. Comprehension
+/// variables are isolated comp-local slots (saved/restored around the
+/// comprehension); the first clause's iterable is evaluated in the enclosing
+/// scope, while all later iterables see every comprehension target as a
+/// (possibly-unassigned) comp local — matching the walker's scoping.
+fn Fcomp::compile_comprehension(
+  self : Fcomp,
+  kind : CompKind,
+  clauses : Array[@syntax.CompClause],
+  pos : @errors.Position,
+) -> Unit raise CompileErr {
+  let base = self.cur_stack
+  self.set_pos(pos)
+  match kind {
+    CList(_) => self.emit1(Opcode::MakeList, 0, 0, 1)
+    CDict(_, _) => self.emit0(Opcode::MakeDict, 0, 1)
+  }
+  // Validate and collect comprehension target names (idents only).
+  let targets : Array[(String, @errors.Position)] = []
+  for c in clauses {
+    match c {
+      ClauseFor(EIdent(name, tp), _, _) => targets.push((name, tp))
+      ClauseFor(t, _, _) =>
+        raise CompileErr(
+          "compile: unsupported comprehension target at \{@syntax.expr_pos(t).to_string()}",
+        )
+      ClauseIf(_, _) => ()
+    }
+  }
+  // The first clause is always a `for` (Starlark grammar). Its iterable is
+  // evaluated in the enclosing scope, before any comprehension target is bound.
+  guard clauses[0] is ClauseFor(first_target, first_iter, _) else {
+    raise CompileErr("compile: comprehension must begin with a for clause")
+  }
+  self.compile_expr(first_iter)
+  self.emit0(Opcode::IterPush, 1, 0)
+  // Now bind every comprehension target as a comp-local slot. A name that
+  // repeats across `for` clauses is one variable sharing a single slot, so it
+  // is bound and recorded once; otherwise the restore loop below would replay
+  // duplicate entries and leave the name pointing at a comp-local slot after
+  // the comprehension ends.
+  let saved : Array[(String, Int?)] = []
+  let bound : Map[String, Unit] = {}
+  for t in targets {
+    let (name, tp) = t
+    if bound.contains(name) {
+      continue
+    }
+    bound[name] = ()
+    saved.push((name, self.local_index.get(name)))
+    let slot = self.locals.length()
+    self.locals.push(@errors.Binding::new(name, tp))
+    self.local_index[name] = slot
+  }
+  let head = self.new_label()
+  let end_lbl = self.new_label()
+  self.place_label(head)
+  self.set_stack(base + 1)
+  self.emit_jump(Opcode::IterJmp, end_lbl, 0, 1)
+  self.compile_comp_store(first_target)
+  self.emit_comp_rest(kind, clauses, 1, base)
+  self.emit_jump(Opcode::Jmp, head, 0, 0)
+  self.place_label(end_lbl)
+  self.set_stack(base + 1)
+  self.emit0(Opcode::IterPop, 0, 0)
+  // Restore the names the comprehension targets shadowed.
+  for s in saved {
+    let (name, old) = s
+    match old {
+      Some(i) => self.local_index[name] = i
+      None => self.local_index.remove(name)
+    }
+  }
+}
+
+///|
+/// Emits the remaining comprehension clauses from index `ci`, then the body that
+/// appends to the accumulator. `base + 1` is the operand height with just the
+/// accumulator on the stack.
+fn Fcomp::emit_comp_rest(
+  self : Fcomp,
+  kind : CompKind,
+  clauses : Array[@syntax.CompClause],
+  ci : Int,
+  base : Int,
+) -> Unit raise CompileErr {
+  if ci >= clauses.length() {
+    match kind {
+      CList(elt) => {
+        self.compile_expr(elt)
+        self.emit0(Opcode::Append, 1, 0)
+      }
+      CDict(k, v) => {
+        self.compile_expr(k)
+        self.compile_expr(v)
+        self.emit0(Opcode::SetDict, 2, 0)
+      }
+    }
+    return
+  }
+  match clauses[ci] {
+    ClauseFor(target, iter_e, _) => {
+      self.compile_expr(iter_e)
+      self.emit0(Opcode::IterPush, 1, 0)
+      let head = self.new_label()
+      let end_lbl = self.new_label()
+      self.place_label(head)
+      self.set_stack(base + 1)
+      self.emit_jump(Opcode::IterJmp, end_lbl, 0, 1)
+      self.compile_comp_store(target)
+      self.emit_comp_rest(kind, clauses, ci + 1, base)
+      self.emit_jump(Opcode::Jmp, head, 0, 0)
+      self.place_label(end_lbl)
+      self.set_stack(base + 1)
+      self.emit0(Opcode::IterPop, 0, 0)
+    }
+    ClauseIf(cond, _) => {
+      self.compile_expr(cond)
+      let keep = self.new_label()
+      let skip = self.new_label()
+      self.emit_jump(Opcode::CJmp, keep, 1, 0)
+      self.emit_jump(Opcode::Jmp, skip, 0, 0)
+      self.place_label(keep)
+      self.set_stack(base + 1)
+      self.emit_comp_rest(kind, clauses, ci + 1, base)
+      self.place_label(skip)
+      self.set_stack(base + 1)
+    }
+  }
+}
+
+///|
+/// Stores the current iteration element into a comprehension target (idents
+/// only; validated by `compile_comprehension`).
+fn Fcomp::compile_comp_store(
+  self : Fcomp,
+  target : @syntax.Expr,
+) -> Unit raise CompileErr {
+  match target {
+    EIdent(name, _) => self.compile_store(name)
+    _ =>
+      raise CompileErr(
+        "compile: unsupported comprehension target at \{@syntax.expr_pos(target).to_string()}",
+      )
+  }
 }
 
 ///|

@@ -2758,7 +2758,15 @@ a validation-only pre-pass and `@syntax` stays immutable.
       cell mutated in a loop, and same-named-global-is-not-captured. (Closures
       that index-assign a captured container await index/attribute assignment
       targets — a separate compiler feature, not closure-specific.)
-- [ ] **M8**: comprehensions (lowered to ITER loops with isolated scope).
+- [~] **M8**: comprehensions. List and dict comprehensions lower to an
+      accumulator (`MakeList`/`MakeDict`) plus a nest of iterator loops and
+      if-guards (`Append`/`SetDict`); comp variables are isolated comp-local
+      slots (saved/restored), first iterable in the enclosing scope, all targets
+      known in later iterables (BUG-28 scoping). The module-init frame now
+      allocates locals (module-scope comp vars). Verified by differential tests
+      (simple/guarded/nested/multi-guard/range/in-function list comps; dict comps
+      with/without guards; later-iterable-references-target). **Set
+      comprehensions deferred** (need a set-accumulator opcode).
 - [ ] **M9**: `load` statements on the VM.
 - [ ] **M10**: switch step counting to per-instruction + recalibrate budgets.
 - [ ] **M11**: `StarlarkFunction` holds a `Funcode`; drop `syntax` from `value`
