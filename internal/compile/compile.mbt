@@ -490,11 +490,36 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit1(Opcode::MakeTuple, xs.length(), xs.length(), 1)
     }
+    EDict(pairs, pos) => {
+      self.set_pos(pos)
+      self.emit0(Opcode::MakeDict, 0, 1)
+      for pair in pairs {
+        let (k, v) = pair
+        self.compile_expr(k)
+        self.compile_expr(v)
+        self.set_pos(pos)
+        // [.., dict, key, value] -> dict[key] = value, erroring on a key that
+        // already appears in this literal; the dict stays on the stack.
+        self.emit0(Opcode::SetDictUniq, 2, 0)
+      }
+    }
+    ESet(elems, pos) => {
+      self.set_pos(pos)
+      self.emit0(Opcode::MakeSet, 0, 1)
+      for e in elems {
+        self.compile_expr(e)
+        self.set_pos(pos)
+        // [.., set, value] -> set.add(value); the set stays on the stack.
+        self.emit0(Opcode::SetAdd, 1, 0)
+      }
+    }
     ECall(callee, args, pos) => self.compile_call(callee, args, pos)
     EListComp(elt, clauses, pos) =>
       self.compile_comprehension(CList(elt), clauses, pos)
     EDictComp(k, v, clauses, pos) =>
       self.compile_comprehension(CDict(k, v), clauses, pos)
+    ESetComp(elt, clauses, pos) =>
+      self.compile_comprehension(CSet(elt), clauses, pos)
     ELambda(params, body_e, pos) => {
       // A lambda is a function whose body is a single `return <expr>`.
       let body : Array[@syntax.Stmt] = [
@@ -502,10 +527,6 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       ]
       self.compile_make_func("lambda", params, body, pos)
     }
-    _ =>
-      raise CompileErr(
-        "compile: unsupported expression at \{@syntax.expr_pos(e).to_string()}",
-      )
   }
 }
 
@@ -523,6 +544,12 @@ fn Fcomp::compile_call(
   self.compile_expr(callee)
   let mut npos = 0
   let mut nkw = 0
+  let mut has_star = false
+  let mut has_kwstar = false
+  // The resolver guarantees canonical argument order: positionals, then
+  // keywords, then `*args`, then `**kwargs`. Compiling in source order therefore
+  // leaves the splat values on top of the fixed arguments, which the `Call`
+  // family pops first.
   for a in args {
     match a {
       ArgPos(e) => {
@@ -534,14 +561,19 @@ fn Fcomp::compile_call(
         self.compile_expr(e)
         nkw += 1
       }
-      ArgStarArgs(_) | ArgKwArgs(_) =>
-        raise CompileErr(
-          "compile: *args and **kwargs call arguments not yet supported at \{pos.to_string()}",
-        )
+      ArgStarArgs(e) => {
+        self.compile_expr(e)
+        has_star = true
+      }
+      ArgKwArgs(e) => {
+        self.compile_expr(e)
+        has_kwstar = true
+      }
     }
   }
-  // The Call operand packs `(npos << 8) | nkw`; each field is 8 bits, so both
-  // counts must stay below 256 or they would corrupt one another at decode.
+  // The operand packs `(npos << 8) | nkw` for the fixed counts; each field is 8
+  // bits, so both must stay below 256 or they would corrupt one another at
+  // decode. Splat arguments are carried out of band by the opcode variant.
   if npos >= 256 {
     raise CompileErr(
       "compile: \{npos} positional arguments in call, limit is 255 at \{pos.to_string()}",
@@ -553,14 +585,30 @@ fn Fcomp::compile_call(
     )
   }
   self.set_pos(pos)
-  // pops callee + npos positional + nkw (name, value) pairs, pushes the result.
-  self.emit1(Opcode::Call, (npos << 8) | nkw, 1 + npos + 2 * nkw, 1)
+  // Each opcode pops callee + npos positional + nkw (name, value) pairs, plus the
+  // `*args` iterable and/or `**kwargs` mapping for the splat variants, and pushes
+  // the result.
+  let extra = (if has_star { 1 } else { 0 }) + (if has_kwstar { 1 } else { 0 })
+  let npop = 1 + npos + 2 * nkw + extra
+  let operand = (npos << 8) | nkw
+  let op = if has_star && has_kwstar {
+    Opcode::CallVarKw
+  } else if has_star {
+    Opcode::CallVar
+  } else if has_kwstar {
+    Opcode::CallKw
+  } else {
+    Opcode::Call
+  }
+  self.emit1(op, operand, npop, 1)
 }
 
 ///|
-/// What a comprehension accumulates: a list element, or a dict key/value.
+/// What a comprehension accumulates: a list element, a set element, or a dict
+/// key/value.
 priv enum CompKind {
   CList(@syntax.Expr)
+  CSet(@syntax.Expr)
   CDict(@syntax.Expr, @syntax.Expr)
 }
 
@@ -582,17 +630,16 @@ fn Fcomp::compile_comprehension(
   self.set_pos(pos)
   match kind {
     CList(_) => self.emit1(Opcode::MakeList, 0, 0, 1)
+    CSet(_) => self.emit0(Opcode::MakeSet, 0, 1)
     CDict(_, _) => self.emit0(Opcode::MakeDict, 0, 1)
   }
-  // Validate and collect comprehension target names (idents only).
+  // Collect every name a comprehension `for` clause binds, including the names
+  // inside tuple/list targets, so each gets an isolated comp-local slot.
   let targets : Array[(String, @errors.Position)] = []
   for c in clauses {
     match c {
-      ClauseFor(EIdent(name, tp), _, _) => targets.push((name, tp))
       ClauseFor(t, _, _) =>
-        raise CompileErr(
-          "compile: unsupported comprehension target at \{@syntax.expr_pos(t).to_string()}",
-        )
+        collect_target_names(t, fn(name, tp) { targets.push((name, tp)) })
       ClauseIf(_, _) => ()
     }
   }
@@ -659,6 +706,10 @@ fn Fcomp::emit_comp_rest(
         self.compile_expr(elt)
         self.emit0(Opcode::Append, 1, 0)
       }
+      CSet(elt) => {
+        self.compile_expr(elt)
+        self.emit0(Opcode::SetAdd, 1, 0)
+      }
       CDict(k, v) => {
         self.compile_expr(k)
         self.compile_expr(v)
@@ -699,19 +750,15 @@ fn Fcomp::emit_comp_rest(
 }
 
 ///|
-/// Stores the current iteration element into a comprehension target (idents
-/// only; validated by `compile_comprehension`).
+/// Stores the current iteration element into a comprehension target. The target
+/// names were bound as comp-local slots by `compile_comprehension`, so this
+/// reuses the general assignment-target lowering (identifier or tuple/list,
+/// including nesting).
 fn Fcomp::compile_comp_store(
   self : Fcomp,
   target : @syntax.Expr,
 ) -> Unit raise CompileErr {
-  match target {
-    EIdent(name, _) => self.compile_store(name)
-    _ =>
-      raise CompileErr(
-        "compile: unsupported comprehension target at \{@syntax.expr_pos(target).to_string()}",
-      )
-  }
+  self.compile_assign_target(target)
 }
 
 ///|
@@ -884,9 +931,37 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
           self.emit1(Opcode::AugApply, aug_op_code(aug_op), 2, 1)
           self.compile_store(name)
         }
+        EIndex(obj, idx, ipos) => {
+          // Evaluate the container and index once: read obj[idx], apply the
+          // operator with the right-hand side, then store back.
+          self.compile_expr(obj)
+          self.compile_expr(idx)
+          self.emit0(Opcode::Dup2, 0, 2) // [obj, idx, obj, idx]
+          self.set_pos(ipos)
+          self.emit0(Opcode::Index, 2, 1) // [obj, idx, obj[idx]]
+          self.compile_expr(rhs)
+          self.set_pos(pos)
+          self.emit1(Opcode::AugApply, aug_op_code(aug_op), 2, 1) // [obj, idx, new]
+          self.set_pos(ipos)
+          self.emit0(Opcode::SetIndex, 3, 0)
+        }
+        EDot(obj, attr, dpos) => {
+          // Evaluate the container once: read obj.attr, apply the operator with
+          // the right-hand side, then store back.
+          let name_idx = self.pcomp.add_name(attr)
+          self.compile_expr(obj)
+          self.emit0(Opcode::Dup, 0, 1) // [obj, obj]
+          self.set_pos(dpos)
+          self.emit1(Opcode::Attr, name_idx, 1, 1) // [obj, obj.attr]
+          self.compile_expr(rhs)
+          self.set_pos(pos)
+          self.emit1(Opcode::AugApply, aug_op_code(aug_op), 2, 1) // [obj, new]
+          self.set_pos(dpos)
+          self.emit1(Opcode::SetField, name_idx, 2, 0)
+        }
         _ =>
           raise CompileErr(
-            "compile: augmented assignment to index/attribute targets not yet supported at \{@syntax.expr_pos(lhs).to_string()}",
+            "compile: invalid augmented-assignment target at \{@syntax.expr_pos(lhs).to_string()}",
           )
       }
     SPass(_) => ()
@@ -1025,16 +1100,8 @@ fn Fcomp::compile_for(
   self.set_stack(base)
   // IterJmp: on exhaustion jump to end; otherwise push the next element.
   self.emit_jump(Opcode::IterJmp, end_lbl, 0, 1)
-  match target {
-    EIdent(name, _) => {
-      self.set_pos(pos)
-      self.compile_store(name)
-    }
-    _ =>
-      raise CompileErr(
-        "compile: unsupported for-loop target at \{@syntax.expr_pos(target).to_string()}",
-      )
-  }
+  self.set_pos(pos)
+  self.compile_assign_target(target)
   self.loop_stack.push((head, end_lbl)) // continue -> head, break -> end
   self.compile_stmts(body)
   self.loop_stack.pop() |> ignore
@@ -1074,8 +1141,9 @@ fn Fcomp::compile_store(self : Fcomp, name : String) -> Unit raise CompileErr {
 /// Assigns the value currently on top of the operand stack to `target`,
 /// consuming it. The right-hand side is evaluated before this is called, so
 /// for index/attribute targets the container and index/attribute are evaluated
-/// after the value (matching the walker). Tuple/list targets unpack the value
-/// and assign each element (recursively, supporting nesting).
+/// after the value (matching the walker). `Exch` reorders the stack into the
+/// `[obj, idx, value]` / `[obj, value]` layout the store opcodes expect. Tuple/
+/// list targets unpack the value and assign each element (recursively).
 fn Fcomp::compile_assign_target(
   self : Fcomp,
   target : @syntax.Expr,
@@ -1083,16 +1151,19 @@ fn Fcomp::compile_assign_target(
   match target {
     EIdent(name, _) => self.compile_store(name)
     EIndex(obj, idx, ipos) => {
+      // stack: [value]
       self.compile_expr(obj)
+      self.emit0(Opcode::Exch, 2, 2) // [obj, value]
       self.compile_expr(idx)
+      self.emit0(Opcode::Exch, 2, 2) // [obj, idx, value]
       self.set_pos(ipos)
-      // stack: [value, obj, idx] -> set_index(obj, idx, value)
       self.emit0(Opcode::SetIndex, 3, 0)
     }
     EDot(obj, attr, dpos) => {
+      // stack: [value]
       self.compile_expr(obj)
+      self.emit0(Opcode::Exch, 2, 2) // [obj, value]
       self.set_pos(dpos)
-      // stack: [value, obj] -> obj.attr = value
       self.emit1(Opcode::SetField, self.pcomp.add_name(attr), 2, 0)
     }
     ETuple(elems, tpos) | EList(elems, tpos) => {

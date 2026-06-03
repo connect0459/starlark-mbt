@@ -36,15 +36,11 @@ fn fresh_fcomp() -> Fcomp {
 }
 
 ///|
-test "an unsupported augmented-assignment target reports its position" {
+test "an invalid augmented-assignment target reports its position" {
   let fc = fresh_fcomp()
-  // Augmented assignment to an index target is not yet lowered.
-  let target = @syntax.Expr::EIndex(
-    @syntax.Expr::EIdent("xs", @errors.Position::new("t.star", 7, 1)),
-    @syntax.Expr::ELiteral(
-      @syntax.LiteralVal::LitInt(BigInt::from_int(0)),
-      @errors.Position::new("t.star", 7, 4),
-    ),
+  // A literal is not a valid augmented-assignment target.
+  let target = @syntax.Expr::ELiteral(
+    @syntax.LiteralVal::LitInt(BigInt::from_int(0)),
     @errors.Position::new("t.star", 7, 1),
   )
   let stmt = @syntax.Stmt::SAugAssign(

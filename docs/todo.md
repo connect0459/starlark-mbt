@@ -2777,10 +2777,11 @@ a validation-only pre-pass and `@syntax` stays immutable.
       is AST-backed, so the VM delegates such calls to the walker. Differential
       tests: basic load, aliasing, load-and-call, `load_binds_globally`,
       missing-name error, no-loader error.
-- [~] **Flip prerequisites**: the remaining constructs the walker handles but the
+- [x] **Flip prerequisites**: the remaining constructs the walker handles but the
       compiler did not, split into two PRs so the flip can switch the default
-      with full coverage. (M10 step-counting recalibration is deferred until the
-      VM is the default engine.)
+      with full coverage. The VM now lowers every walker construct. (M10
+      step-counting recalibration is deferred until the VM is the default
+      engine.)
   - [x] **PR-A**: assignment targets + augmented assignment. Plain assignment
         evaluates the right-hand side first, then assigns to the target;
         `compile_assign_target` handles identifier, index (`SetIndex`), attribute
@@ -2795,10 +2796,29 @@ a validation-only pre-pass and `@syntax` stays immutable.
         assignment, in-place list extend, augmented assignment inside a function.
         (Augmented assignment to index/attribute targets is still unsupported;
         deferred to the flip.)
-  - [ ] **PR-B**: data literals (`EDict`/`ESet`), set comprehensions (set
-        accumulator opcode), splat call sites (`f(*args)`/`f(**kwargs)` →
-        `CallVar`/`CallKw`/`CallVarKw`), tuple targets in `for`/comprehensions,
-        and undefined-name error-reporting parity.
+  - [x] **PR-B**: the remaining walker constructs the compiler did not lower.
+        Tuple/list targets in `for` loops and comprehension `for` clauses route
+        through `compile_assign_target`, with every bound name (including those
+        inside a tuple/list target) collected as an isolated comp-local slot.
+        Dict literals build a dict and set each entry via `SetDictUniq` (erroring
+        on a duplicate literal key); set literals and set comprehensions build a
+        set and add each element via two new no-argument opcodes `MakeSet`/
+        `SetAdd` (shifting `op_arg_min` and the argument-carrying opcodes up by
+        two — internal only, no serialized bytecode yet). Splat call sites
+        compile to `CallVar`/`CallKw`/`CallVarKw`; the VM expands the `*args`
+        iterable and `**kwargs` mapping into the shared call path, reusing the
+        walker's expansion and its not-iterable / not-a-mapping / non-string-key
+        errors. Undefined-name parity is provided by the shared resolver pass and
+        pinned by differential tests. With every expression variant now lowered,
+        the compiler's unsupported-expression fallback is removed.
+        Augmented assignment to index/attribute targets (`xs[i] += v`,
+        `obj.f += v`) also lowers: the container/index are read once via
+        `Dup`/`Dup2` and stored back, with `SetIndex`/`SetField` adopting the
+        object-then-value stack layout (plain assignment reorders through
+        `Exch`). This surfaced and closed a pre-existing VM gap — the `Attr`
+        opcode was unhandled, so every attribute read and method call aborted;
+        `Attr` now dispatches through the shared attribute lookup. With this the
+        VM lowers every construct the walker handles.
 - [ ] **M11**: `StarlarkFunction` holds a `Funcode`; drop `syntax` from `value`
       (the goal). Verify `value` `.mbti` unchanged except `new`; no `syntax` import.
 - [ ] **M12**: flip `exec_file`/`eval_expr`/`Program::init` to the VM; delete the

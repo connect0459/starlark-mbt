@@ -23,7 +23,7 @@ test "opcode byte encoding round-trips and is dense" {
 /// `from_byte` rejects byte values that are not opcodes.
 test "from_byte rejects out-of-range bytes" {
   assert_true(@compile.Opcode::from_byte(b'\xFF') is None)
-  assert_true(@compile.Opcode::from_byte(b'\x68') is None) // one past CallVarKw
+  assert_true(@compile.Opcode::from_byte(b'\x47') is None) // 71, one past AugApply (70)
 }
 
 ///|

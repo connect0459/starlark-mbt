@@ -58,6 +58,8 @@ pub(all) enum Opcode {
   InplaceAdd
   InplacePipe
   MakeDict
+  MakeSet
+  SetAdd
   // --- opcodes with an argument go below this line (op_arg_min) ---
   Jmp
   CJmp
@@ -94,7 +96,7 @@ pub(all) enum Opcode {
 ///|
 /// The lowest opcode byte value that carries a uvarint operand. Opcodes whose
 /// byte value is `>= op_arg_min` are followed by an operand in the stream.
-pub let op_arg_min : Int = 43
+pub let op_arg_min : Int = 45
 
 ///|
 /// Maps an opcode to its byte encoding. This is the authoritative ordering;
@@ -144,32 +146,34 @@ pub fn Opcode::to_byte(self : Opcode) -> Byte {
     InplaceAdd => 40
     InplacePipe => 41
     MakeDict => 42
-    Jmp => 43
-    CJmp => 44
-    IterJmp => 45
-    Constant => 46
-    MakeTuple => 47
-    MakeList => 48
-    MakeFunc => 49
-    Load => 50
-    SetLocal => 51
-    SetGlobal => 52
-    Local => 53
-    Free => 54
-    FreeCell => 55
-    LocalCell => 56
-    SetLocalCell => 57
-    Global => 58
-    Predeclared => 59
-    Universal => 60
-    Attr => 61
-    SetField => 62
-    Unpack => 63
-    Call => 64
-    CallVar => 65
-    CallKw => 66
-    CallVarKw => 67
-    AugApply => 68
+    MakeSet => 43
+    SetAdd => 44
+    Jmp => 45
+    CJmp => 46
+    IterJmp => 47
+    Constant => 48
+    MakeTuple => 49
+    MakeList => 50
+    MakeFunc => 51
+    Load => 52
+    SetLocal => 53
+    SetGlobal => 54
+    Local => 55
+    Free => 56
+    FreeCell => 57
+    LocalCell => 58
+    SetLocalCell => 59
+    Global => 60
+    Predeclared => 61
+    Universal => 62
+    Attr => 63
+    SetField => 64
+    Unpack => 65
+    Call => 66
+    CallVar => 67
+    CallKw => 68
+    CallVarKw => 69
+    AugApply => 70
   }
   n.to_byte()
 }
@@ -222,32 +226,34 @@ pub fn Opcode::from_byte(b : Byte) -> Opcode? {
     40 => Some(InplaceAdd)
     41 => Some(InplacePipe)
     42 => Some(MakeDict)
-    43 => Some(Jmp)
-    44 => Some(CJmp)
-    45 => Some(IterJmp)
-    46 => Some(Constant)
-    47 => Some(MakeTuple)
-    48 => Some(MakeList)
-    49 => Some(MakeFunc)
-    50 => Some(Load)
-    51 => Some(SetLocal)
-    52 => Some(SetGlobal)
-    53 => Some(Local)
-    54 => Some(Free)
-    55 => Some(FreeCell)
-    56 => Some(LocalCell)
-    57 => Some(SetLocalCell)
-    58 => Some(Global)
-    59 => Some(Predeclared)
-    60 => Some(Universal)
-    61 => Some(Attr)
-    62 => Some(SetField)
-    63 => Some(Unpack)
-    64 => Some(Call)
-    65 => Some(CallVar)
-    66 => Some(CallKw)
-    67 => Some(CallVarKw)
-    68 => Some(AugApply)
+    43 => Some(MakeSet)
+    44 => Some(SetAdd)
+    45 => Some(Jmp)
+    46 => Some(CJmp)
+    47 => Some(IterJmp)
+    48 => Some(Constant)
+    49 => Some(MakeTuple)
+    50 => Some(MakeList)
+    51 => Some(MakeFunc)
+    52 => Some(Load)
+    53 => Some(SetLocal)
+    54 => Some(SetGlobal)
+    55 => Some(Local)
+    56 => Some(Free)
+    57 => Some(FreeCell)
+    58 => Some(LocalCell)
+    59 => Some(SetLocalCell)
+    60 => Some(Global)
+    61 => Some(Predeclared)
+    62 => Some(Universal)
+    63 => Some(Attr)
+    64 => Some(SetField)
+    65 => Some(Unpack)
+    66 => Some(Call)
+    67 => Some(CallVar)
+    68 => Some(CallKw)
+    69 => Some(CallVarKw)
+    70 => Some(AugApply)
     _ => None
   }
 }
@@ -307,6 +313,8 @@ pub fn all_opcodes() -> Array[Opcode] {
     InplaceAdd,
     InplacePipe,
     MakeDict,
+    MakeSet,
+    SetAdd,
     Jmp,
     CJmp,
     IterJmp,

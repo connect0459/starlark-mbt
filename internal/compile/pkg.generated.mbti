@@ -123,6 +123,8 @@ pub(all) enum Opcode {
   InplaceAdd
   InplacePipe
   MakeDict
+  MakeSet
+  SetAdd
   Jmp
   CJmp
   IterJmp

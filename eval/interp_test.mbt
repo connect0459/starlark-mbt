@@ -725,3 +725,213 @@ test "vm matches walker on augmented assignment inside a function" {
 test "vm matches walker on assigning to an index out of range" {
   assert_vm_matches_walker("xs = [1, 2]\nxs[5] = 9")
 }
+
+///|
+test "vm matches walker on attribute access and method calls" {
+  assert_vm_matches_walker("s = \"Hello\".upper()\nt = \"a,b,c\".split(\",\")")
+  assert_vm_matches_walker(
+    "d = {\"k\": 1}\nv = d.get(\"k\")\nw = d.get(\"x\", 9)",
+  )
+}
+
+///|
+test "vm matches walker on a mutating method call on a list" {
+  assert_vm_matches_walker("xs = [3, 1, 2]\nxs.append(4)\nxs.sort()\ny = xs")
+}
+
+///|
+test "vm matches walker on a method call inside a function" {
+  assert_vm_matches_walker(
+    "def f(xs):\n  xs.append(99)\n  return xs\n\nr = f([1, 2])",
+  )
+}
+
+///|
+test "vm matches walker on accessing a missing attribute" {
+  assert_vm_matches_walker("xs = [1, 2]\ny = xs.no_such_attr")
+}
+
+///|
+test "vm matches walker on augmented assignment to an unassignable attribute" {
+  // Built-in values reject attribute assignment; both engines must report the
+  // same error for `obj.attr += v`.
+  assert_vm_matches_walker("xs = [1, 2]\nxs.foo += 1")
+}
+
+///|
+test "vm matches walker on augmented assignment to a list index" {
+  assert_vm_matches_walker("xs = [1, 2, 3]\nxs[1] += 10\nxs[0] *= 5\ny = xs")
+}
+
+///|
+test "vm matches walker on augmented assignment to a dict key" {
+  assert_vm_matches_walker(
+    "d = {\"a\": 1, \"b\": 2}\nd[\"a\"] += 100\nd[\"b\"] //= 2\nx = d",
+  )
+}
+
+///|
+test "vm matches walker on augmented in-place list extend at an index" {
+  // `xs[i] += [..]` must mutate the nested list in place
+  assert_vm_matches_walker(
+    "xs = [[1], [2]]\nys = xs[0]\nxs[0] += [9]\na = xs\nb = ys",
+  )
+}
+
+///|
+test "vm matches walker on the index of an augmented target evaluated once" {
+  // The container and index are evaluated once; appending to a log proves it.
+  assert_vm_matches_walker(
+    "log = []\n" +
+    "def idx():\n  log.append(\"i\")\n  return 0\n\n" +
+    "xs = [10]\nxs[idx()] += 5\nx = xs\nn = log",
+  )
+}
+
+///|
+test "vm matches walker on augmented assignment to an out-of-range index" {
+  assert_vm_matches_walker("xs = [1]\nxs[5] += 1")
+}
+
+///|
+test "vm matches walker on an undefined name at module scope" {
+  assert_vm_matches_walker("x = undefined_name")
+}
+
+///|
+test "vm matches walker on an undefined name inside a function" {
+  assert_vm_matches_walker("def f():\n  return missing\n\ny = f()")
+}
+
+///|
+test "vm matches walker on an undefined name used in an expression" {
+  assert_vm_matches_walker("a = 1\nb = a + nope")
+}
+
+///|
+test "vm matches walker on a call with a *args splat" {
+  assert_vm_matches_walker(
+    "def f(a, b, c):\n  return a + b + c\n\nxs = [1, 2, 3]\nr = f(*xs)",
+  )
+}
+
+///|
+test "vm matches walker on a call with fixed positionals and a *args splat" {
+  assert_vm_matches_walker(
+    "def f(a, b, c, d):\n  return a * 1000 + b * 100 + c * 10 + d\n\nr = f(1, *[2, 3], 4)",
+  )
+}
+
+///|
+test "vm matches walker on a call with a **kwargs splat" {
+  assert_vm_matches_walker(
+    "def f(a, b):\n  return a - b\n\nkw = {\"a\": 10, \"b\": 3}\nr = f(**kw)",
+  )
+}
+
+///|
+test "vm matches walker on a call with keywords and a **kwargs splat" {
+  assert_vm_matches_walker(
+    "def f(a, b, c):\n  return (a, b, c)\n\nr = f(a=1, **{\"b\": 2, \"c\": 3})",
+  )
+}
+
+///|
+test "vm matches walker on a call with both *args and **kwargs" {
+  assert_vm_matches_walker(
+    "def f(a, b, c, d):\n  return a + b + c + d\n\nr = f(*[1, 2], **{\"c\": 3, \"d\": 4})",
+  )
+}
+
+///|
+test "vm matches walker on a *args splat into a builtin" {
+  assert_vm_matches_walker("r = max(*[3, 1, 2])")
+}
+
+///|
+test "vm matches walker on a *args splat that is not iterable" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(*5)")
+}
+
+///|
+test "vm matches walker on a **kwargs splat that is not a mapping" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(**5)")
+}
+
+///|
+test "vm matches walker on a **kwargs splat with a non-string key" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(**{1: 2})")
+}
+
+///|
+test "vm matches walker on a *args splat with an unexpected keyword" {
+  assert_vm_matches_walker("def f(a):\n  return a\n\nr = f(*[1], **{\"z\": 9})")
+}
+
+///|
+test "vm matches walker on a dict literal" {
+  assert_vm_matches_walker("d = {\"a\": 1, \"b\": 2, \"c\": 3}")
+  assert_vm_matches_walker("d = {}")
+  assert_vm_matches_walker("d = {1: \"x\", 2: \"y\"}\nv = d[2]")
+}
+
+///|
+test "vm matches walker on a dict literal with a duplicate key" {
+  assert_vm_matches_walker("d = {\"a\": 1, \"a\": 2}")
+}
+
+///|
+test "vm matches walker on a nested dict and list literal" {
+  assert_vm_matches_walker("d = {\"xs\": [1, 2], \"nested\": {\"k\": 3}}")
+}
+
+///|
+test "vm matches walker on dict-key index assignment" {
+  assert_vm_matches_walker("d = {\"a\": 1}\nd[\"b\"] = 2\nx = d")
+}
+
+///|
+test "vm matches walker on a set literal" {
+  assert_vm_matches_walker("s = set([1, 2, 3])\nt = {1, 2, 2, 3}\nn = len(t)")
+}
+
+///|
+test "vm matches walker on a for loop with a tuple target" {
+  assert_vm_matches_walker(
+    "total = 0\nfor a, b in [(1, 2), (3, 4)]:\n  total += a * b\nx = total",
+  )
+}
+
+///|
+test "vm matches walker on a for loop with a nested tuple target" {
+  assert_vm_matches_walker(
+    "s = 0\nfor (a, b), c in [((1, 2), 3), ((4, 5), 6)]:\n  s += a + b + c\nx = s",
+  )
+}
+
+///|
+test "vm matches walker on a for-loop tuple target unpack mismatch" {
+  assert_vm_matches_walker("for a, b in [(1, 2, 3)]:\n  pass")
+}
+
+///|
+test "vm matches walker on a list comprehension with a tuple target" {
+  assert_vm_matches_walker("xs = [a + b for a, b in [(1, 2), (3, 4)]]")
+}
+
+///|
+test "vm matches walker on a set comprehension" {
+  assert_vm_matches_walker("s = {x % 3 for x in range(10)}\nn = len(s)")
+}
+
+///|
+test "vm matches walker on a guarded set comprehension" {
+  assert_vm_matches_walker(
+    "s = {x for x in range(10) if x % 2 == 0}\nn = len(s)",
+  )
+}
+
+///|
+test "vm matches walker on a dict comprehension with a tuple target" {
+  assert_vm_matches_walker("d = {k: v for k, v in [(\"a\", 1), (\"b\", 2)]}")
+}

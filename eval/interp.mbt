@@ -145,6 +145,69 @@ fn unpack_items(
 }
 
 ///|
+/// Expands a `*args` call argument, appending each item of `iterable` to `out`.
+/// Mirrors the walker's argument expansion, including the not-iterable error.
+fn expand_star_args(
+  ctx : EvalContext,
+  iterable : @value.Value,
+  out : Array[@value.Value],
+) -> Unit raise EvalErr {
+  let it = match @value.iterate(iterable) {
+    Ok(it) => it
+    Err(_) =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "argument after * must be iterable, not \{iterable.type_name()}",
+        ),
+      )
+  }
+  while true {
+    match it.next() {
+      None => {
+        it.done()
+        break
+      }
+      Some(item) => out.push(item)
+    }
+  }
+}
+
+///|
+/// Expands a `**kwargs` call argument, appending each `(name, value)` of the
+/// mapping to `out`. Mirrors the walker: the argument must be a dict and every
+/// key must be a string.
+fn expand_kwargs(
+  ctx : EvalContext,
+  mapping : @value.Value,
+  out : Array[(String, @value.Value)],
+) -> Unit raise EvalErr {
+  match mapping {
+    @value.Value::Dict(d) =>
+      for entry in d.to_entries() {
+        let (k, val) = entry
+        match k {
+          @value.Value::String(s) => out.push((s.raw(), val))
+          _ =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "keywords must be strings, not \{k.type_name()}",
+              ),
+            )
+        }
+      }
+    _ =>
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "argument after ** must be a mapping, not \{mapping.type_name()}",
+        ),
+      )
+  }
+}
+
+///|
 /// Decodes an `AugApply` operand back into an augmented-assignment operator.
 fn augop_of_int(code : Int) -> @syntax.AugOp {
   match code {
@@ -312,6 +375,36 @@ fn VM::run_frame(
     }
   }
 
+  // Pops the fixed call arguments for a `Call`-family opcode: `nargs` packs the
+  // positional count in the high bits and the keyword count in the low 8 bits.
+  // Returns the callee and the positional and keyword arguments in source order.
+  // Splat arguments (the `*args` iterable / `**kwargs` mapping) sit above these
+  // on the stack and are popped by the caller before this runs.
+  fn pop_call_fixed(
+    nargs : Int,
+  ) -> (@value.Value, Array[@value.Value], Array[(String, @value.Value)]) {
+    let npos = nargs >> 8
+    let nkw = nargs & 0xff
+    let kwargs : Array[(String, @value.Value)] = Array::make(
+      nkw,
+      ("", @value.Value::None),
+    )
+    for i = nkw - 1; i >= 0; i = i - 1 {
+      let v = pop()
+      let nm = match pop() {
+        @value.Value::String(s) => s.raw()
+        other =>
+          abort(
+            "vm: keyword argument name must be a string, got \{other.type_name()}",
+          )
+      }
+      kwargs[i] = (nm, v)
+    }
+    let args = pop_n(stack, npos)
+    let callee = pop()
+    (callee, args, kwargs)
+  }
+
   let mut result = @value.Value::None
   let mut pc = 0
   while pc < code.length() {
@@ -345,6 +438,22 @@ fn VM::run_frame(
         } else {
           push(stack[stack.length() - 1])
         }
+      Dup2 => {
+        // [.., x, y] -> [.., x, y, x, y]
+        let n = stack.length()
+        if n < 2 {
+          abort("vm: operand stack underflow")
+        }
+        push(stack[n - 2])
+        push(stack[n - 1])
+      }
+      Exch => {
+        // [.., x, y] -> [.., y, x]
+        let y = pop()
+        let x = pop()
+        push(y)
+        push(x)
+      }
       UPlus => push(eval_unary(ctx, OpPlus, pop(), pos))
       UMinus => push(eval_unary(ctx, OpMinus, pop(), pos))
       Tilde => push(eval_unary(ctx, OpBitNot, pop(), pos))
@@ -354,16 +463,29 @@ fn VM::run_frame(
         let obj = pop()
         push(eval_index(ctx, obj, idx, pos))
       }
+      Attr => {
+        let obj = pop()
+        push(eval_getattr(ctx, obj, self.prog.names[arg], pos))
+      }
       MakeList =>
         push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
       MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
       MakeDict => push(@value.Value::Dict(@value.StarlarkDict::new()))
+      MakeSet => push(@value.Value::Set(@value.StarlarkSet::new()))
       Append => {
         // [.., list, elem] -> append elem to the accumulator list, which stays.
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::List(l) => check(ctx, l.push(elem))
           other => abort("vm: Append expects a list, got \{other.type_name()}")
+        }
+      }
+      SetAdd => {
+        // [.., set, elem] -> add elem to the accumulator set, which stays.
+        let elem = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Set(s) => check(ctx, s.add(elem))
+          other => abort("vm: SetAdd expects a set, got \{other.type_name()}")
         }
       }
       SetDict => {
@@ -373,6 +495,24 @@ fn VM::run_frame(
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => check(ctx, d.set(key, value))
           other => abort("vm: SetDict expects a dict, got \{other.type_name()}")
+        }
+      }
+      SetDictUniq => {
+        // [.., dict, key, value] -> dict[key] = value, but error if the key
+        // already appears (dict-literal semantics); the dict stays.
+        let value = pop()
+        let key = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Dict(d) =>
+            match check(ctx, d.get(key)) {
+              Some(_) =>
+                raise EvalErr(
+                  make_eval_error(ctx, "duplicate key: \{key.repr()}"),
+                )
+              None => check(ctx, d.set(key, value))
+            }
+          other =>
+            abort("vm: SetDictUniq expects a dict, got \{other.type_name()}")
         }
       }
       Local =>
@@ -421,16 +561,16 @@ fn VM::run_frame(
         }
       SetGlobal => self.globals[arg] = Some(pop())
       SetIndex => {
-        // stack: [value, obj, idx]
+        // stack: [obj, idx, value]
+        let value = pop()
         let idx = pop()
         let obj = pop()
-        let value = pop()
         set_index(ctx, obj, idx, value, pos)
       }
       SetField => {
-        // stack: [value, obj]
-        let obj = pop()
+        // stack: [obj, value]
         let value = pop()
+        let obj = pop()
         let attr = self.prog.names[arg]
         match obj {
           @value.Value::Module(_) =>
@@ -533,25 +673,33 @@ fn VM::run_frame(
         )
       }
       Call => {
-        let npos = arg >> 8
-        let nkw = arg & 0xff
-        let kwargs : Array[(String, @value.Value)] = Array::make(
-          nkw,
-          ("", @value.Value::None),
-        )
-        for i = nkw - 1; i >= 0; i = i - 1 {
-          let v = pop()
-          let nm = match pop() {
-            @value.Value::String(s) => s.raw()
-            other =>
-              abort(
-                "vm: keyword argument name must be a string, got \{other.type_name()}",
-              )
-          }
-          kwargs[i] = (nm, v)
-        }
-        let args = pop_n(stack, npos)
-        let callee = pop()
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        push(self.call_value(callee, args, kwargs, pos))
+      }
+      CallVar => {
+        // [.., callee, pos.., kw pairs.., *args]
+        let star = pop()
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        expand_star_args(ctx, star, args)
+        push(self.call_value(callee, args, kwargs, pos))
+      }
+      CallKw => {
+        // [.., callee, pos.., kw pairs.., **kwargs]
+        let kwstar = pop()
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        expand_kwargs(ctx, kwstar, kwargs)
+        push(self.call_value(callee, args, kwargs, pos))
+      }
+      CallVarKw => {
+        // [.., callee, pos.., kw pairs.., *args, **kwargs]
+        let kwstar = pop()
+        let star = pop()
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        // Expand `*args` before `**kwargs` so the iteration order (and thus the
+        // order any error surfaces) matches the walker's left-to-right argument
+        // expansion.
+        expand_star_args(ctx, star, args)
+        expand_kwargs(ctx, kwstar, kwargs)
         push(self.call_value(callee, args, kwargs, pos))
       }
       Jmp => pc = arg
