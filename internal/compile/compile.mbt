@@ -76,7 +76,7 @@ priv struct Fcomp {
   pcomp : Pcomp
   name : String
   pos : @errors.Position
-  doc : String
+  mut doc : String
   instrs : Array[PInstr]
   // label id -> index into `instrs` where the label is placed (-1 until placed).
   // A label placed at `instrs.length()` denotes the position just past the end.
@@ -1232,6 +1232,11 @@ fn compile_function(
   parent~ : Fcomp,
 ) -> Int raise CompileErr {
   let fc = Fcomp::new(pcomp, name, pos, parent=Some(parent))
+  // A leading bare string-literal statement is the function's docstring.
+  fc.doc = match body {
+    [SExpr(ELiteral(LitString(s), _)), ..] => s
+    _ => ""
+  }
   // Assign a local slot to each named parameter (a bare `*` separator gets none)
   // and record an AST-free spec so the VM can bind arguments. `after_star` tracks
   // keyword-only parameters (those following a `*`/`*args`).

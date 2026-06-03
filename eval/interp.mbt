@@ -272,11 +272,10 @@ pub fn exec_file_vm(
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
   let ctx = EvalContext::new(thread, opts)
-  let vm = VM::{
-    ctx,
+  let vm = VM::{ ctx, active: [] }
+  let m = RunModule::{
     prog,
     globals: Array::make(prog.globals.length(), None),
-    active: [],
     load_bound: [],
   }
   ctx.vm = Some(vm)
@@ -296,15 +295,15 @@ pub fn exec_file_vm(
       LUnbound,
     )
     let no_freevars : Array[@value.Cell] = []
-    vm.run_frame(prog.toplevel, "<toplevel>", top_locals, no_freevars, idx)
+    vm.run_frame(m, prog.toplevel, "<toplevel>", top_locals, no_freevars, idx)
     |> ignore
     ctx.thread.call_stack.pop() |> ignore
     let out : Map[String, @value.Value] = {}
     for i, binding in prog.globals {
-      match vm.globals[i] {
+      match m.globals[i] {
         // Load-bound names are module-local unless load_binds_globally.
         Some(v) =>
-          if opts.load_binds_globally || !vm.load_bound.contains(binding.name()) {
+          if opts.load_binds_globally || !m.load_bound.contains(binding.name()) {
             out[binding.name()] = v
           }
         None => ()
@@ -330,15 +329,26 @@ priv enum LocalSlot {
 }
 
 ///|
-/// VM execution state shared across all call frames of one program run: the
-/// evaluation context (thread + options) and the module's global slots. Each
-/// `run_frame` invocation owns its own operand stack, locals, and iterator
-/// stack.
+/// VM execution state shared across all call frames of one execution: the
+/// evaluation context (thread + options) and the active-funcode stack used for
+/// the recursion check. Module-specific state (program + global slots) is not
+/// here — each frame runs against the module of the function it executes (see
+/// `RunModule`), so a function loaded from another module resolves its
+/// constants, globals, and nested functions against its own module.
 priv struct VM {
   ctx : EvalContext
+  active : Array[@compile.Funcode]
+}
+
+///|
+/// The compiled module a frame runs against: its program (constant pool,
+/// function table, name table, load statements) and its live global slots. The
+/// toplevel frame uses the run's module; a called function uses the module it
+/// was defined in (carried on the function value). Mirrors starlark-go's
+/// `fn.module`.
+priv struct RunModule {
   prog : @compile.CompiledProgram
   globals : Array[@value.Value?]
-  active : Array[@compile.Funcode]
   // Module-global names bound by `load`. Excluded from the module's exported
   // globals unless `load_binds_globally` (matching the walker).
   load_bound : Array[String]
@@ -352,6 +362,7 @@ priv struct VM {
 /// tracking).
 fn VM::run_frame(
   self : VM,
+  m : RunModule,
   fc : @compile.Funcode,
   name : String,
   locals : Array[LocalSlot],
@@ -430,7 +441,7 @@ fn VM::run_frame(
       NoneOp => push(@value.Value::None)
       TrueOp => push(@value.Value::Bool(true))
       FalseOp => push(@value.Value::Bool(false))
-      Constant => push(const_to_value(self.prog.constants[arg]))
+      Constant => push(const_to_value(m.prog.constants[arg]))
       Pop => pop() |> ignore
       Dup =>
         if stack.is_empty() {
@@ -465,7 +476,7 @@ fn VM::run_frame(
       }
       Attr => {
         let obj = pop()
-        push(eval_getattr(ctx, obj, self.prog.names[arg], pos))
+        push(eval_getattr(ctx, obj, m.prog.names[arg], pos))
       }
       MakeList =>
         push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
@@ -559,7 +570,7 @@ fn VM::run_frame(
               ),
             )
         }
-      SetGlobal => self.globals[arg] = Some(pop())
+      SetGlobal => m.globals[arg] = Some(pop())
       SetIndex => {
         // stack: [obj, idx, value]
         let value = pop()
@@ -571,7 +582,7 @@ fn VM::run_frame(
         // stack: [obj, value]
         let value = pop()
         let obj = pop()
-        let attr = self.prog.names[arg]
+        let attr = m.prog.names[arg]
         match obj {
           @value.Value::Module(_) =>
             raise EvalErr(
@@ -611,21 +622,21 @@ fn VM::run_frame(
         push(eval_aug_val(ctx, lv, augop_of_int(arg), rv, pos))
       }
       Global =>
-        match self.globals[arg] {
+        match m.globals[arg] {
           Some(v) => push(v)
           None =>
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "global variable \{self.prog.globals[arg].name()} referenced before assignment",
+                "global variable \{m.prog.globals[arg].name()} referenced before assignment",
               ),
             )
         }
-      Predeclared => push(vm_resolve_external(self.prog.names[arg]))
-      Universal => push(vm_resolve_external(self.prog.names[arg]))
-      Load => self.exec_load(self.prog.load_stmts[arg])
+      Predeclared => push(vm_resolve_external(m.prog.names[arg]))
+      Universal => push(vm_resolve_external(m.prog.names[arg]))
+      Load => self.exec_load(m, m.prog.load_stmts[arg])
       MakeFunc => {
-        let funcode = self.prog.functions[arg]
+        let funcode = m.prog.functions[arg]
         let provided : Array[@value.Value] = match pop() {
           @value.Value::Tuple(items) => items
           other =>
@@ -666,6 +677,8 @@ fn VM::run_frame(
             @value.StarlarkFunction::from_compiled(
               funcode.name,
               funcode,
+              m.prog,
+              m.globals,
               defaults,
               fvs,
             ),
@@ -790,7 +803,20 @@ fn VM::call_compiled(
   kwargs : Array[(String, @value.Value)],
   pos : @errors.Position,
 ) -> @value.Value raise EvalErr {
-  if !self.prog.recursion {
+  // The callee runs against its own module (program + global slots), carried on
+  // the function value, so a function loaded from another module resolves its
+  // constants, globals, and nested functions against that module — not the
+  // caller's.
+  let callee_prog = match f.compiled_module_prog() {
+    Some(p) => p
+    None => abort("vm: compiled function is missing its module program")
+  }
+  let m = RunModule::{
+    prog: callee_prog,
+    globals: f.compiled_module_slots(),
+    load_bound: [],
+  }
+  if !m.prog.recursion {
     let fpos = fc.pos
     for g in self.active {
       let gpos = g.pos
@@ -820,7 +846,7 @@ fn VM::call_compiled(
   self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
   self.active.push(fc)
   let fidx = self.ctx.thread.call_stack.length() - 1
-  let r = self.run_frame(fc, f.name(), locals, f.compiled_freevars(), fidx) catch {
+  let r = self.run_frame(m, fc, f.name(), locals, f.compiled_freevars(), fidx) catch {
     EvalErr(e) => {
       self.active.pop() |> ignore
       self.ctx.thread.call_stack.pop() |> ignore
@@ -837,7 +863,11 @@ fn VM::call_compiled(
 /// and binds each requested export into its module-global slot, recording the
 /// bound names so module-local load bindings can be filtered from the exported
 /// globals. Mirrors the AST walker's `exec_load`, including error messages.
-fn VM::exec_load(self : VM, ls : @compile.LoadStmt) -> Unit raise EvalErr {
+fn VM::exec_load(
+  self : VM,
+  m : RunModule,
+  ls : @compile.LoadStmt,
+) -> Unit raise EvalErr {
   let ctx = self.ctx
   let loader = match ctx.thread.load_fn {
     Some(l) => l
@@ -866,8 +896,8 @@ fn VM::exec_load(self : VM, ls : @compile.LoadStmt) -> Unit raise EvalErr {
     let export_name = ls.exports[i]
     match loaded.get(export_name) {
       Some(v) => {
-        self.globals[ls.slots[i]] = Some(v)
-        self.load_bound.push(ls.locals[i])
+        m.globals[ls.slots[i]] = Some(v)
+        m.load_bound.push(ls.locals[i])
       }
       None => {
         let suggestion = @utf8util.spell_nearest(

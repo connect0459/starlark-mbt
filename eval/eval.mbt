@@ -981,7 +981,12 @@ pub fn call(
 ) -> Result[@value.Value, @errors.EvalError] {
   let ctx = EvalContext::new(thread, Options::default())
   let pos = @errors.Position::new("<call>", 0, 0)
-  Ok(call_value(ctx, func, args, kwargs, pos)) catch {
+  // Route through a VM so a bytecode-compiled function (which carries its own
+  // module) runs on the VM; the VM delegates AST functions and builtins to the
+  // walker's `call_value`.
+  let vm = VM::{ ctx, active: [] }
+  ctx.vm = Some(vm)
+  Ok(vm.call_value(func, args, kwargs, pos)) catch {
     EvalErr(e) => Err(e)
   }
 }
