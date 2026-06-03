@@ -579,11 +579,8 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
           None => ()
         }
       }
-      for pair in f.captured_scope {
-        pair.0.each(fn(_, val) { freeze_value_inner(val, seen_funcs) })
-      }
-      // Freeze the values a bytecode-compiled closure captured through cells, so
-      // freezing the function also freezes the data it closes over.
+      // Freeze the values the closure captured through cells, so freezing the
+      // function also freezes the data it closes over.
       for cell in f.vm_freevars {
         match cell.get() {
           Some(cv) => freeze_value_inner(cv, seen_funcs)

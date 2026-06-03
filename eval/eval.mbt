@@ -901,54 +901,6 @@ pub fn Module::predeclared_names(self : Module) -> Array[String] {
 }
 
 ///|
-fn collect_module_globals_into(
-  stmts : Array[@syntax.Stmt],
-  load_binds_globally : Bool,
-  result : Map[String, Bool],
-) -> Unit {
-  for stmt in stmts {
-    match stmt {
-      @syntax.Stmt::SDef(name, _, _, _) => result[name] = false
-      @syntax.Stmt::SAssign(lhs, _, _) => collect_lhs_global_names(lhs, result)
-      @syntax.Stmt::SAugAssign(lhs, _, _, _) =>
-        collect_lhs_global_names(lhs, result)
-      @syntax.Stmt::SLoad(_, bindings, _) => {
-        let is_local = !load_binds_globally
-        for pair in bindings {
-          result[pair.0] = is_local
-        }
-      }
-      @syntax.Stmt::SIf(_, then_body, else_body, _) => {
-        collect_module_globals_into(then_body, load_binds_globally, result)
-        collect_module_globals_into(else_body, load_binds_globally, result)
-      }
-      @syntax.Stmt::SFor(target, _, body, _) => {
-        collect_lhs_global_names(target, result)
-        collect_module_globals_into(body, load_binds_globally, result)
-      }
-      @syntax.Stmt::SWhile(_, body, _) =>
-        collect_module_globals_into(body, load_binds_globally, result)
-      _ => ()
-    }
-  }
-}
-
-///|
-fn collect_lhs_global_names(
-  expr : @syntax.Expr,
-  result : Map[String, Bool],
-) -> Unit {
-  match expr {
-    @syntax.Expr::EIdent(name, _) => result[name] = false
-    @syntax.Expr::ETuple(elems, _) | @syntax.Expr::EList(elems, _) =>
-      for elem in elems {
-        collect_lhs_global_names(elem, result)
-      }
-    _ => ()
-  }
-}
-
-///|
 let builtin_names : Array[String] = [
   "print", "len", "str", "repr", "type", "range", "list", "tuple", "dict", "bool",
   "int", "float", "abs", "min", "max", "set", "enumerate", "zip", "sorted", "reversed",
@@ -1124,64 +1076,6 @@ pub fn exec_file(
   opts : Options,
 ) -> Result[Module, @errors.EvalError] {
   exec_file_vm(thread, filename, src, opts)
-}
-
-///|
-/// The AST-walking implementation of `exec_file`, retained behind the engine
-/// flip for rollback and the differential harness.
-#internal(unsafe, "retained AST-walker entry; not part of the public embedding API")
-pub fn exec_file_walker(
-  thread : Thread,
-  filename : String,
-  src : String,
-  opts : Options,
-) -> Result[Module, @errors.EvalError] {
-  let file = match @parser.parse_file(filename, src) {
-    Ok(f) => f
-    Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
-  }
-  let ctx = EvalContext::new(thread, opts)
-  collect_module_globals_into(
-    file.stmts(),
-    opts.load_binds_globally,
-    ctx.global_env.known_module_globals,
-  )
-  let resolve_opts = @resolver.ResolveOptions::default()
-    .with_allow_global_reassign(opts.allow_global_reassign)
-    .with_allow_set(opts.allow_set)
-    .with_load_binds_globally(opts.load_binds_globally)
-  let resolved = @resolver.resolve(
-    file,
-    is_builtin,
-    fn(name) { name == "None" || name == "True" || name == "False" },
-    resolve_opts,
-  )
-  if !resolved.is_valid() {
-    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
-    return Err(@errors.EvalError::simple(msg))
-  }
-  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
-  ctx.thread.call_stack.push(
-    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
-  )
-  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
-    EvalErr(e) => {
-      ignore(ctx.thread.call_stack.pop())
-      ctx.toplevel_frame_idx = -1
-      return Err(e)
-    }
-  }
-  ignore(ctx.thread.call_stack.pop())
-  ctx.toplevel_frame_idx = -1
-  let m = Module::new()
-  ctx.global_env.locals.each(fn(name, v) {
-    if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
-      let key = @value.Value::String(@value.StarlarkString::new(name))
-      m.globals.set(key, v) |> ignore
-    }
-  })
-  m.freeze()
-  Ok(m)
 }
 
 ///|

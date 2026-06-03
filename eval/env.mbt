@@ -1,18 +1,19 @@
 ///|
-priv enum LookupResult {
-  LFound(@value.Value)
-  LUnbound(String)
-  LUnboundModule(String, Bool)
-  LNotFound
+/// The runtime error raised during evaluation, wrapping a structured
+/// `@errors.EvalError` (message + call-stack backtrace).
+priv suberror EvalErr {
+  EvalErr(@errors.EvalError)
 }
 
 ///|
+/// A two-level name environment: per-execution bindings (a custom universe,
+/// per-call predeclared values, or an expression `env`) layered over a base of
+/// the universal constants and the builtins. Used only to resolve predeclared
+/// and universal names for the VM; module globals live in the VM's own slot
+/// array, not here.
 priv struct EvalEnv {
   locals : Map[String, @value.Value]
-  known_locals : Array[String]
-  known_module_globals : Map[String, Bool]
   parent : EvalEnv?
-  is_module_scope : Bool
 }
 
 ///|
@@ -20,71 +21,31 @@ priv struct EvalContext {
   thread : Thread
   opts : Options
   global_env : EvalEnv
-  load_bound_names : Array[String]
-  mut toplevel_frame_idx : Int
-  // Set when the bytecode VM drives execution, so a builtin that calls back into
-  // a compiled function (e.g. `sorted(iterable, key)`) re-enters the VM instead
-  // of the AST walker. `None` under the AST-walker engine.
+  // The bytecode VM driving execution, so a builtin that calls back into a
+  // compiled function (e.g. `sorted(iterable, key)`) re-enters the VM.
   mut vm : VM?
 }
 
 ///|
 fn EvalEnv::new() -> EvalEnv {
-  {
-    locals: {},
-    known_locals: [],
-    known_module_globals: {},
-    parent: None,
-    is_module_scope: true,
-  }
+  { locals: {}, parent: None }
 }
 
 ///|
 fn EvalEnv::for_module(parent : EvalEnv) -> EvalEnv {
-  {
-    locals: {},
-    known_locals: [],
-    known_module_globals: {},
-    parent: Some(parent),
-    is_module_scope: true,
-  }
+  { locals: {}, parent: Some(parent) }
 }
 
 ///|
-fn EvalEnv::with_parent_and_known_locals(
-  parent : EvalEnv,
-  known_locals : Array[String],
-) -> EvalEnv {
-  {
-    locals: {},
-    known_locals,
-    known_module_globals: {},
-    parent: Some(parent),
-    is_module_scope: false,
-  }
-}
-
-///|
-fn EvalEnv::lookup(self : EvalEnv, name : String) -> LookupResult {
+/// Resolves `name`, searching this environment then its parent; `None` if
+/// unbound.
+fn EvalEnv::lookup(self : EvalEnv, name : String) -> @value.Value? {
   match self.locals.get(name) {
-    Some(v) => LFound(v)
+    Some(v) => Some(v)
     None =>
-      if !self.is_module_scope && self.known_locals.contains(name) {
-        LUnbound(name)
-      } else if self.is_module_scope {
-        match self.known_module_globals.get(name) {
-          Some(is_load_local) => LUnboundModule(name, is_load_local)
-          None =>
-            match self.parent {
-              None => LNotFound
-              Some(p) => p.lookup(name)
-            }
-        }
-      } else {
-        match self.parent {
-          None => LNotFound
-          Some(p) => p.lookup(name)
-        }
+      match self.parent {
+        Some(p) => p.lookup(name)
+        None => None
       }
   }
 }
@@ -92,23 +53,6 @@ fn EvalEnv::lookup(self : EvalEnv, name : String) -> LookupResult {
 ///|
 fn EvalEnv::bind(self : EvalEnv, name : String, v : @value.Value) -> Unit {
   self.locals[name] = v
-}
-
-///|
-fn EvalEnv::collect_local_scopes(
-  self : EvalEnv,
-) -> Array[(Map[String, @value.Value], Array[String])] {
-  let scopes : Array[(Map[String, @value.Value], Array[String])] = []
-  let mut current = self
-  while !current.is_module_scope {
-    scopes.push((current.locals, current.known_locals))
-    match current.parent {
-      None => break
-      Some(p) => current = p
-    }
-  }
-  scopes.rev_in_place()
-  scopes
 }
 
 ///|
@@ -124,14 +68,7 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
     )
   }
   let global_env = EvalEnv::for_module(base)
-  {
-    thread,
-    opts,
-    global_env,
-    load_bound_names: [],
-    toplevel_frame_idx: -1,
-    vm: None,
-  }
+  { thread, opts, global_env, vm: None }
 }
 
 ///|

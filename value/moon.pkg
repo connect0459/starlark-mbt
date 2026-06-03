@@ -7,6 +7,5 @@ import {
   "connect0459/starlark/internal/compile",
   "connect0459/starlark/internal/hashtable",
   "connect0459/starlark/internal/numeric",
-  "connect0459/starlark/syntax",
   "connect0459/starlark/internal/utf8util",
 }
