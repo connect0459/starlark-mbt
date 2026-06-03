@@ -7,7 +7,7 @@
 /// resolution costs are paid once. A `Program` may be `init`'d multiple times
 /// with different `predeclared` dictionaries.
 pub struct Program {
-  priv file : @syntax.File
+  priv filename : String
   priv opts : Options
   priv compiled : @compile.CompiledProgram
 }
@@ -104,7 +104,7 @@ pub fn source_program_with_file(
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   match file_program(file, opts, is_predeclared) {
-    Ok(prog) => Ok((prog.file, prog))
+    Ok(prog) => Ok((file, prog))
     Err(e) => Err(e)
   }
 }
@@ -133,7 +133,7 @@ pub fn file_program(
   let compiled = compile_resolved(file, opts) catch {
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
-  Ok({ file, opts, compiled })
+  Ok({ filename: file.path(), opts, compiled })
 }
 
 ///|
@@ -194,7 +194,7 @@ fn compile_resolved(
 ///
 /// Returns the filename string that was supplied when the program was created.
 pub fn Program::filename(self : Program) -> String {
-  self.file.path()
+  self.filename
 }
 
 ///|
@@ -209,16 +209,9 @@ pub fn Program::options(self : Program) -> Options {
 ///|
 /// Returns the number of `load(...)` statements in the program.
 ///
-/// Returns the count of top-level `load` statements found in the parsed file.
+/// Returns the count of top-level `load` statements found in the program.
 pub fn Program::num_loads(self : Program) -> Int {
-  let mut count = 0
-  for stmt in self.file.stmts() {
-    match stmt {
-      @syntax.Stmt::SLoad(_) => count += 1
-      _ => ()
-    }
-  }
-  count
+  self.compiled.load_stmts.length()
 }
 
 ///|
@@ -234,19 +227,11 @@ pub fn Program::num_loads(self : Program) -> Int {
 /// `load` statement, or an empty string and unknown position if `i` is out of
 /// range.
 pub fn Program::load(self : Program, i : Int) -> (String, @errors.Position) {
-  let mut idx = 0
-  for stmt in self.file.stmts() {
-    match stmt {
-      @syntax.Stmt::SLoad(path, _, pos) => {
-        if idx == i {
-          return (path, pos)
-        }
-        idx += 1
-      }
-      _ => ()
-    }
+  if i < 0 || i >= self.compiled.load_stmts.length() {
+    return ("", @errors.Position::new("", 0, 0))
   }
-  ("", @errors.Position::new("", 0, 0))
+  let ls = self.compiled.load_stmts[i]
+  (ls.path, ls.pos)
 }
 
 ///|
@@ -272,7 +257,7 @@ pub fn Program::init(
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
   // Resolution and compilation were paid once when the program was created;
   // `init` only binds the predeclared values and runs the cached bytecode.
-  let rm = match run_program_vm(ctx, self.compiled, self.file.path()) {
+  let rm = match run_program_vm(ctx, self.compiled, self.filename) {
     Ok(m) => m
     Err(e) => return Err(e)
   }
