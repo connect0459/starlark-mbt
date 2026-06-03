@@ -1,6 +1,6 @@
 ///|
 /// A name the VM resolves as predeclared but that has no binding in the base
-/// environment must raise the same undefined-name error the walker reports,
+/// environment must raise an undefined-name error with its source position,
 /// rather than silently resolving to a fabricated (body-less) builtin.
 test "vm reports an undefined predeclared name instead of fabricating a builtin" {
   let file = match @parser.parse_file("t.star", "x = ghost") {

@@ -349,7 +349,7 @@ test "eval_expr: resolves a binding supplied via env" {
 }
 
 ///|
-test "eval_expr: an undefined name reports the walker-style error with position" {
+test "eval_expr: an undefined name reports an undefined-name error with position" {
   let t = Thread::new("test")
   let env = @value.StringDict::new()
   match eval_expr(t, "expr.star", "ghost", env) {

@@ -38,7 +38,7 @@ pub(all) struct Funcode {
   has_varargs : Bool
   has_kwargs : Bool
   // Parameter specs in declaration order, AST-free, so the VM can bind call
-  // arguments with the same algorithm the AST walker uses. Named parameters
+  // arguments with the established binding algorithm. Named parameters
   // occupy local slots 0,1,2,... in this order (a bare `*` separator takes no
   // slot). Defaults are carried separately on the runtime function value,
   // aligned to this list.
