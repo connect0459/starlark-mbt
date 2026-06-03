@@ -233,9 +233,13 @@ fn run_program_into(
           Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
         }
       IterJmp =>
-        match iterstack[iterstack.length() - 1].next() {
-          Some(elem) => push(elem) // fall through with the next element
-          None => pc = arg // exhausted: jump past the loop body
+        match iterstack.last() {
+          Some(it) =>
+            match it.next() {
+              Some(elem) => push(elem) // fall through with the next element
+              None => pc = arg // exhausted: jump past the loop body
+            }
+          None => abort("vm: iterator stack underflow")
         }
       IterPop =>
         match iterstack.pop() {
