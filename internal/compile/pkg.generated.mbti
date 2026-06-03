@@ -39,6 +39,11 @@ pub(all) enum Const {
   CBytes(Bytes)
 } derive(Eq)
 
+pub(all) enum FreevarSource {
+  FromLocal(Int)
+  FromFree(Int)
+} derive(Eq)
+
 pub(all) struct Funcode {
   pos : @errors.Position
   name : String
@@ -54,6 +59,7 @@ pub(all) struct Funcode {
   has_varargs : Bool
   has_kwargs : Bool
   params : Array[ParamSpec]
+  freevar_sources : Array[FreevarSource]
 }
 pub fn Funcode::disasm(Self) -> Array[Instr]
 pub fn Funcode::position(Self, Int) -> @errors.Position

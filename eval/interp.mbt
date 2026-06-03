@@ -149,8 +149,10 @@ pub fn exec_file_vm(
       ),
     )
     let idx = ctx.thread.call_stack.length() - 1
-    let no_locals : Array[@value.Value?] = []
-    vm.run_frame(prog.toplevel, "<toplevel>", no_locals, idx) |> ignore
+    let no_locals : Array[LocalSlot] = []
+    let no_freevars : Array[@value.Cell] = []
+    vm.run_frame(prog.toplevel, "<toplevel>", no_locals, no_freevars, idx)
+    |> ignore
     ctx.thread.call_stack.pop() |> ignore
     let out : Map[String, @value.Value] = {}
     for i, binding in prog.globals {
@@ -166,6 +168,16 @@ pub fn exec_file_vm(
       Err(e)
     }
   }
+}
+
+///|
+/// A function frame's local slot. A plain local holds `LVal`/`LUnbound`; a local
+/// captured by a nested function is promoted to `LBoxed` (a shared cell) at frame
+/// entry, so the closure and this frame observe each other's assignments.
+priv enum LocalSlot {
+  LUnbound
+  LVal(@value.Value)
+  LBoxed(@value.Cell)
 }
 
 ///|
@@ -190,7 +202,8 @@ fn VM::run_frame(
   self : VM,
   fc : @compile.Funcode,
   name : String,
-  locals : Array[@value.Value?],
+  locals : Array[LocalSlot],
+  freevars : Array[@value.Cell],
   frame_idx : Int,
 ) -> @value.Value raise EvalErr {
   let ctx = self.ctx
@@ -257,16 +270,48 @@ fn VM::run_frame(
       MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
       Local =>
         match locals[arg] {
-          Some(v) => push(v)
-          None =>
+          LVal(v) => push(v)
+          LUnbound =>
             raise EvalErr(
               make_eval_error(
                 ctx,
                 "local variable \{fc.locals[arg].name()} referenced before assignment",
               ),
             )
+          LBoxed(_) => abort("vm: Local on a cell slot")
         }
-      SetLocal => locals[arg] = Some(pop())
+      SetLocal => locals[arg] = LVal(pop())
+      LocalCell =>
+        match locals[arg] {
+          LBoxed(c) =>
+            match c.get() {
+              Some(v) => push(v)
+              None =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "local variable \{fc.locals[arg].name()} referenced before assignment",
+                  ),
+                )
+            }
+          _ => abort("vm: LocalCell on a non-cell slot")
+        }
+      SetLocalCell =>
+        match locals[arg] {
+          LBoxed(c) => c.set(pop())
+          _ => abort("vm: SetLocalCell on a non-cell slot")
+        }
+      FreeCell =>
+        match freevars[arg].get() {
+          Some(v) => push(v)
+          None =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "local variable \{fc.freevars[arg].name()} referenced before assignment",
+              ),
+            )
+        }
       SetGlobal => self.globals[arg] = Some(pop())
       Global =>
         match self.globals[arg] {
@@ -303,12 +348,28 @@ fn VM::run_frame(
             di += 1
           }
         }
+        // Gather the closure's captured cells from this (the defining) frame.
+        let fvs : Array[@value.Cell] = Array::make(
+          funcode.freevar_sources.length(),
+          @value.Cell::new(),
+        )
+        for k, src in funcode.freevar_sources {
+          fvs[k] = match src {
+            FromLocal(li) =>
+              match locals[li] {
+                LBoxed(c) => c
+                _ => abort("vm: MakeFunc free variable expects a cell slot")
+              }
+            FromFree(fi) => freevars[fi]
+          }
+        }
         push(
           @value.Value::Function(
             @value.StarlarkFunction::from_compiled(
               funcode.name,
               funcode,
               defaults,
+              fvs,
             ),
           ),
         )
@@ -436,12 +497,21 @@ fn VM::call_compiled(
   if self.ctx.thread.call_stack.length() >= self.ctx.thread.max_recursion_depth {
     raise EvalErr(make_eval_error(self.ctx, "maximum recursion depth exceeded"))
   }
-  let locals : Array[@value.Value?] = Array::make(fc.locals.length(), None)
+  let locals : Array[LocalSlot] = Array::make(fc.locals.length(), LUnbound)
   self.bind_args(fc, f.name(), f.defaults(), args, kwargs, locals)
+  // Promote captured locals to shared cells, carrying any bound value in.
+  for ci in fc.cells {
+    let cell = @value.Cell::new()
+    match locals[ci] {
+      LVal(v) => cell.set(v)
+      _ => ()
+    }
+    locals[ci] = LBoxed(cell)
+  }
   self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
   self.active.push(fc)
   let fidx = self.ctx.thread.call_stack.length() - 1
-  let r = self.run_frame(fc, f.name(), locals, fidx) catch {
+  let r = self.run_frame(fc, f.name(), locals, f.compiled_freevars(), fidx) catch {
     EvalErr(e) => {
       self.active.pop() |> ignore
       self.ctx.thread.call_stack.pop() |> ignore
@@ -467,7 +537,7 @@ fn VM::bind_args(
   defaults : Array[@value.Value?],
   pos_args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
-  locals : Array[@value.Value?],
+  locals : Array[LocalSlot],
 ) -> Unit raise EvalErr {
   let params = fc.params
   if params.length() == 0 {
@@ -517,13 +587,13 @@ fn VM::bind_args(
           if kw_map.contains(name) {
             raise dup_error(name)
           }
-          locals[slot] = Some(pos_args[pos_idx])
+          locals[slot] = LVal(pos_args[pos_idx])
           pos_idx += 1
         } else if kw_map.contains(name) {
-          locals[slot] = Some(kw_map[name])
+          locals[slot] = LVal(kw_map[name])
           kw_map.remove(name)
         } else if defaults[param_idx] is Some(dv) {
-          locals[slot] = Some(dv)
+          locals[slot] = LVal(dv)
         } else {
           missing_required.push(name)
         }
@@ -535,14 +605,14 @@ fn VM::bind_args(
           if kw_map.contains(name) {
             raise dup_error(name)
           }
-          locals[slot] = Some(pos_args[pos_idx])
+          locals[slot] = LVal(pos_args[pos_idx])
           pos_idx += 1
         } else if kw_map.contains(name) {
-          locals[slot] = Some(kw_map[name])
+          locals[slot] = LVal(kw_map[name])
           kw_map.remove(name)
         } else {
           match defaults[param_idx] {
-            Some(dv) => locals[slot] = Some(dv)
+            Some(dv) => locals[slot] = LVal(dv)
             None => missing_required.push(name)
           }
         }
@@ -556,7 +626,7 @@ fn VM::bind_args(
           rest.push(pos_args[pos_idx])
           pos_idx += 1
         }
-        locals[slot] = Some(@value.Value::Tuple(rest))
+        locals[slot] = LVal(@value.Value::Tuple(rest))
         slot += 1
         param_idx += 1
       }
@@ -582,7 +652,7 @@ fn VM::bind_args(
           ignore(kw_dict.set(key, kv))
         })
         kw_map.clear()
-        locals[slot] = Some(@value.Value::Dict(kw_dict))
+        locals[slot] = LVal(@value.Value::Dict(kw_dict))
         slot += 1
         param_idx += 1
       }
