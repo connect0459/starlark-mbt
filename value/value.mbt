@@ -232,6 +232,7 @@ fn StarlarkList::is_same_storage(
 /// Returns a copy of the underlying items array.
 ///
 /// Returns a shallow copy of the internal `Array[Value]`.
+#internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkList::copy_items(self : StarlarkList) -> Array[Value] {
   self.items.copy()
 }
