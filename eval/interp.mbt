@@ -155,7 +155,10 @@ pub fn exec_file_vm(
     }
     Ok(Module::from_map(out))
   } catch {
-    EvalErr(e) => Err(e)
+    EvalErr(e) => {
+      ctx.thread.call_stack.pop() |> ignore
+      Err(e)
+    }
   }
 }
 

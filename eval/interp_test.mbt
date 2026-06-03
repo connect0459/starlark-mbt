@@ -284,3 +284,12 @@ test "vm matches walker on a deep error backtrace through several frames" {
 test "vm matches walker on maximum recursion depth" {
   assert_vm_matches_walker("def f(n):\n  return f(n + 1)\n\nx = f(0)")
 }
+
+///|
+test "vm leaves no call frame behind after an error on a reused thread" {
+  let thread = @eval.Thread::new("v")
+  let opts = @eval.Options::default()
+  let r = @eval.exec_file_vm(thread, "t.star", "x = 1 + \"oops\"", opts)
+  assert_true(r is Err(_))
+  assert_eq(thread.call_stack_depth(), 0)
+}
