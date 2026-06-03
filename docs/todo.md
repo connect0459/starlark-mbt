@@ -2698,10 +2698,16 @@ a validation-only pre-pass and `@syntax` stays immutable.
       index/slice/attr and module-level expr/assign/pass; disassembler for tests.
       Unhandled nodes raise `CompileErr`. (and/or, calls, control flow, functions,
       comprehensions, load deferred to their milestones.) 8 tests.
-- [ ] **M3**: VM behind an internal flag + differential-test harness
-      (literals/arith/comparisons/data ops).
-- [ ] **M4**: locals/globals/module init on the VM (unbound sentinel +
-      referenced-before-assignment parity).
+- [x] **M3**: bytecode VM (`eval/interp.mbt`) reachable via an internal
+      experimental entry (`exec_file_vm`, `#internal`); operator semantics reused
+      from `ops.mbt` with positions from the funcode line table. Differential-test
+      harness runs every program through both walker and VM and asserts agreement
+      on results and errors. Covers constants/arith/comparison/unary/membership/
+      list+tuple/index. 13 differential tests. Default `exec_file` unchanged.
+- [x] **M4**: module globals on the VM — `SetGlobal`/`Global`, unbound sentinel,
+      and the same "global variable X referenced before assignment" error as the
+      walker (verified by the harness). (Function-local slots arrive with
+      functions in M6, since the compiler emits no locals until then.)
 - [ ] **M5**: control flow + iteration (JMP/CJMP/ITER*, for/while/break/continue).
 - [ ] **M6**: function defs + calls (MAKEFUNC no-freevars, CALL*, RETURN, arg
       binding, recursion/depth, backtrace stamping; validate `error_format_test`).
