@@ -74,19 +74,6 @@ fn vm_read_arg(code : Bytes, i : Int) -> (Int, Int) {
 }
 
 ///|
-/// Resolves a predeclared/universal name to its runtime value, mirroring the
-/// walker's base environment (`EvalContext::new`): `None`/`True`/`False` map to
-/// their literal values; every other name becomes a dispatched builtin.
-fn vm_resolve_external(name : String) -> @value.Value {
-  match name {
-    "None" => @value.Value::None
-    "True" => @value.Value::Bool(true)
-    "False" => @value.Value::Bool(false)
-    _ => @value.Value::Builtin(@value.StarlarkBuiltinFunc::dispatch(name))
-  }
-}
-
-///|
 /// Collects exactly `n` values from `value` for a sequence assignment, mirroring
 /// the walker's unpacking: tuples/lists yield their items directly, other values
 /// are iterated, and a non-iterable or a length mismatch raises the same error.
@@ -208,6 +195,21 @@ fn expand_kwargs(
 }
 
 ///|
+/// Reports whether `name` is bound by a `load` statement of `prog` (its local
+/// alias). Such names are module-local unless `load_binds_globally`, which the
+/// referenced-before-assignment message reflects.
+fn load_binds_name(prog : @compile.CompiledProgram, name : String) -> Bool {
+  for ls in prog.load_stmts {
+    for loc in ls.locals {
+      if loc == name {
+        return true
+      }
+    }
+  }
+  false
+}
+
+///|
 /// Decodes an `AugApply` operand back into an augmented-assignment operator.
 fn augop_of_int(code : Int) -> @syntax.AugOp {
   match code {
@@ -272,6 +274,34 @@ pub fn exec_file_vm(
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
   let ctx = EvalContext::new(thread, opts)
+  let m = match run_program_vm(ctx, prog, filename) {
+    Ok(m) => m
+    Err(e) => return Err(e)
+  }
+  let out : Map[String, @value.Value] = {}
+  for i, binding in prog.globals {
+    match m.globals[i] {
+      // Load-bound names are module-local unless load_binds_globally.
+      Some(v) =>
+        if opts.load_binds_globally || !m.load_bound.contains(binding.name()) {
+          out[binding.name()] = v
+        }
+      None => ()
+    }
+  }
+  Ok(Module::from_map(out))
+}
+
+///|
+/// Runs a compiled program's module-init function on a fresh VM and returns the
+/// resulting module state (its populated global slots). Shared by `exec_file_vm`
+/// and `eval_expr_vm`. Pushes and pops the `<toplevel>` call frame so backtraces
+/// begin at `<toplevel>`, matching the walker.
+fn run_program_vm(
+  ctx : EvalContext,
+  prog : @compile.CompiledProgram,
+  filename : String,
+) -> Result[RunModule, @errors.EvalError] {
   let vm = VM::{ ctx, active: [] }
   let m = RunModule::{
     prog,
@@ -280,8 +310,6 @@ pub fn exec_file_vm(
   }
   ctx.vm = Some(vm)
   try {
-    // Push the module-init frame so backtraces begin at <toplevel>, matching
-    // the walker.
     ctx.thread.call_stack.push(
       @errors.CallFrame::new(
         "<toplevel>",
@@ -289,7 +317,6 @@ pub fn exec_file_vm(
       ),
     )
     let idx = ctx.thread.call_stack.length() - 1
-    // The module-init function has local slots for any comprehension variables.
     let top_locals : Array[LocalSlot] = Array::make(
       prog.toplevel.locals.length(),
       LUnbound,
@@ -298,24 +325,67 @@ pub fn exec_file_vm(
     vm.run_frame(m, prog.toplevel, "<toplevel>", top_locals, no_freevars, idx)
     |> ignore
     ctx.thread.call_stack.pop() |> ignore
-    let out : Map[String, @value.Value] = {}
-    for i, binding in prog.globals {
-      match m.globals[i] {
-        // Load-bound names are module-local unless load_binds_globally.
-        Some(v) =>
-          if opts.load_binds_globally || !m.load_bound.contains(binding.name()) {
-            out[binding.name()] = v
-          }
-        None => ()
-      }
-    }
-    Ok(Module::from_map(out))
+    Ok(m)
   } catch {
     EvalErr(e) => {
       ctx.thread.call_stack.pop() |> ignore
       Err(e)
     }
   }
+}
+
+///|
+/// Compiles and evaluates a single expression on the bytecode VM, returning its
+/// value. The expression is lowered as a synthetic `<result> = <expr>` module
+/// (named after the expression's source file) so the VM can run it; `env`
+/// bindings are bound into the context (and treated as predeclared) so they
+/// resolve, and the result is read back from its global.
+#internal(unsafe, "bytecode VM only; not part of the public embedding API")
+pub fn eval_expr_vm(
+  thread : Thread,
+  expr : @syntax.Expr,
+  opts : Options,
+  env : @value.StringDict,
+) -> Result[@value.Value, @errors.EvalError] {
+  let ctx = EvalContext::new(thread, opts)
+  env.each(fn(k, v) { ctx.global_env.bind(k, v) })
+  let pos = @syntax.expr_pos(expr)
+  let filename = pos.filename()
+  let result_name = "eval_expr_result"
+  let stmt = @syntax.Stmt::SAssign(
+    @syntax.Expr::EIdent(result_name, pos),
+    expr,
+    pos,
+  )
+  let file = @syntax.File::new(filename, [stmt])
+  // Validate with the same resolver pass the file entries use, treating `env`
+  // bindings as predeclared, so an undefined name reports the walker's runtime
+  // "<pos>: undefined: name" instead of a position-less compile error.
+  match file_program(file, opts, fn(name) { env.get(name) is Some(_) }) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
+  let prog = @compile.compile(
+    file,
+    fn(name) { is_builtin(name) || env.get(name) is Some(_) },
+    fn(name) { name == "None" || name == "True" || name == "False" },
+    opts.allow_recursion,
+  ) catch {
+    @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
+  }
+  let m = match run_program_vm(ctx, prog, filename) {
+    Ok(m) => m
+    Err(e) => return Err(e)
+  }
+  for i, binding in prog.globals {
+    if binding.name() == result_name {
+      match m.globals[i] {
+        Some(v) => return Ok(v)
+        None => return Ok(@value.Value::None)
+      }
+    }
+  }
+  Ok(@value.Value::None)
 }
 
 ///|
@@ -478,6 +548,18 @@ fn VM::run_frame(
         let obj = pop()
         push(eval_getattr(ctx, obj, m.prog.names[arg], pos))
       }
+      Slice => {
+        // stack: [obj, lo, hi, step] (omitted bounds pushed as None). The
+        // bound conversion order matches the walker for identical errors.
+        let step_v = pop()
+        let hi_v = pop()
+        let lo_v = pop()
+        let obj = pop()
+        let step = slice_int_arg(ctx, step_v, "slice step")
+        let lo = slice_int_arg(ctx, lo_v, "start index")
+        let hi = slice_int_arg(ctx, hi_v, "end index")
+        push(eval_slice(ctx, obj, lo, hi, step))
+      }
       MakeList =>
         push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
       MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
@@ -624,16 +706,41 @@ fn VM::run_frame(
       Global =>
         match m.globals[arg] {
           Some(v) => push(v)
-          None =>
+          None => {
+            // A name bound by `load` is module-local unless `load_binds_globally`,
+            // so referencing it before its load reports "local variable", matching
+            // the walker.
+            let gname = m.prog.globals[arg].name()
+            let kind = if !ctx.opts.load_binds_globally &&
+              load_binds_name(m.prog, gname) {
+              "local"
+            } else {
+              "global"
+            }
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "global variable \{m.prog.globals[arg].name()} referenced before assignment",
+                "\{kind} variable \{gname} referenced before assignment",
               ),
             )
+          }
         }
-      Predeclared => push(vm_resolve_external(m.prog.names[arg]))
-      Universal => push(vm_resolve_external(m.prog.names[arg]))
+      // Resolve predeclared/universal names against the context's base
+      // environment, which holds the builtins, the universal `None`/`True`/
+      // `False`, and embedder-supplied bindings (a custom universe, per-call
+      // predeclared values, or `eval_expr`'s `env`). A name with no binding
+      // there is undefined and raises the same error the walker reports,
+      // rather than resolving to a fabricated builtin.
+      Predeclared | Universal => {
+        let name = m.prog.names[arg]
+        match ctx.global_env.lookup(name) {
+          LFound(v) => push(v)
+          _ =>
+            raise EvalErr(
+              make_eval_error(ctx, "\{pos.to_string()}: undefined: \{name}"),
+            )
+        }
+      }
       Load => self.exec_load(m, m.prog.load_stmts[arg])
       MakeFunc => {
         let funcode = m.prog.functions[arg]

@@ -1113,7 +1113,24 @@ pub fn compare(
 ///
 /// Returns the frozen `Module`, or an `EvalError` on parse, resolve, or
 /// runtime failure.
+///
+/// Runs on the bytecode VM (issue #1). The AST walker remains available as
+/// `exec_file_walker` for rollback and is exercised against the VM by the
+/// differential harness; it is removed in the cleanup milestone.
 pub fn exec_file(
+  thread : Thread,
+  filename : String,
+  src : String,
+  opts : Options,
+) -> Result[Module, @errors.EvalError] {
+  exec_file_vm(thread, filename, src, opts)
+}
+
+///|
+/// The AST-walking implementation of `exec_file`, retained behind the engine
+/// flip for rollback and the differential harness.
+#internal(unsafe, "retained AST-walker entry; not part of the public embedding API")
+pub fn exec_file_walker(
   thread : Thread,
   filename : String,
   src : String,
@@ -1414,11 +1431,7 @@ pub fn eval_expr_with_opts(
     Ok(e) => e
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
-  let ctx = EvalContext::new(thread, opts)
-  env.each(fn(k, v) { ctx.global_env.bind(k, v) })
-  Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
-    EvalErr(e) => Err(e)
-  }
+  eval_expr_vm(thread, expr, opts, env)
 }
 
 ///|
@@ -1439,9 +1452,5 @@ pub fn eval_parsed_expr(
   opts : Options,
   env : @value.StringDict,
 ) -> Result[@value.Value, @errors.EvalError] {
-  let ctx = EvalContext::new(thread, opts)
-  env.each(fn(k, v) { ctx.global_env.bind(k, v) })
-  Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
-    EvalErr(e) => Err(e)
-  }
+  eval_expr_vm(thread, expr, opts, env)
 }

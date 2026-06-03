@@ -147,7 +147,7 @@ test "error format: EvalError backtrace includes traceback with call frames" {
           #|Traceback (most recent call last):
           #|  test.star:5:2: in <toplevel>
           #|  test.star:4:4: in f
-          #|  test.star:4:4: in g
+          #|  test.star:2:10: in g
           #|Error: unknown binary op: int + string
         ),
       )
@@ -170,7 +170,7 @@ test "error format: EvalError backtrace with no frames shows only Error line" {
         e.backtrace(),
         content=(
           #|Traceback (most recent call last):
-          #|  test.star:1:1: in <toplevel>
+          #|  test.star:1:5: in <toplevel>
           #|Error: unknown binary op: int + string
         ),
       )
@@ -417,7 +417,7 @@ test "error format: load failure cause preserves inner backtrace" {
             content=(
               #|Traceback (most recent call last):
               #|  crash.star:4:2: in <toplevel>
-              #|  crash.star:4:2: in f
+              #|  crash.star:2:10: in f
               #|Error: floored division by zero
             ),
           )
@@ -547,7 +547,7 @@ test "error format: intermediate frame shows call-site within function" {
           #|Traceback (most recent call last):
           #|  test.star:5:2: in <toplevel>
           #|  test.star:4:4: in f
-          #|  test.star:4:4: in g
+          #|  test.star:2:10: in g
           #|Error: unknown binary op: int + string
         ),
       )
@@ -581,7 +581,7 @@ test "error format: deep call chain frames show call positions" {
           #|  crash.star:3:20: in h
           #|  <builtin>: in min
           #|  crash.star:2:19: in g
-          #|  crash.star:2:19: in f
+          #|  crash.star:1:18: in f
           #|Error: floored division by zero
         ),
       )
