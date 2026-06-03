@@ -2819,11 +2819,33 @@ a validation-only pre-pass and `@syntax` stays immutable.
         opcode was unhandled, so every attribute read and method call aborted;
         `Attr` now dispatches through the shared attribute lookup. With this the
         VM lowers every construct the walker handles.
-- [ ] **M11**: `StarlarkFunction` holds a `Funcode`; drop `syntax` from `value`
-      (the goal). Verify `value` `.mbti` unchanged except `new`; no `syntax` import.
-- [ ] **M12**: flip `exec_file`/`eval_expr`/`Program::init` to the VM; delete the
-      walker (`signal.mbt`, AST halves of expr/stmt/eval, `EvalEnv` closure
-      machinery, `captured_scope`); slot-based `DebugFrame`.
+- [x] **Compiled-function representation** (split out of the flip so it lands and
+      is proven before the default switches): a bytecode-compiled function now
+      carries the program and live module-global slots it was defined in, and the
+      VM runs each frame against the executing function's module rather than the
+      caller's (mirroring starlark-go/rust `fn.module`). This fixes cross-module
+      calls — a loaded function reads its own constant pool, module globals, and
+      sibling functions — and makes a compiled function callable from the host
+      (`call` routes through the VM). Reflection (`param`/`doc`/`free_var`/
+      `globals`/`defining_module`/arity) is recovered from the funcode + carried
+      module, so it behaves the same for AST- and bytecode-backed functions; the
+      compiler records a function's leading-string docstring. **Known divergence:**
+      the walker resolves a called function's globals against the caller, so it
+      cannot see a loaded function's own module globals/siblings ("undefined");
+      the VM is correct (verified against starlark-go/rust) and diverges there.
+      The differential harness asserts equality only where the engines agree;
+      corrected cases are pinned by VM-only tests. `exec_file` still runs the
+      walker.
+- [ ] **M12a** (flip): switch `exec_file`/`eval_expr`/`Program::init` to the VM,
+      retaining the walker for rollback. Resolve the remaining VM↔walker parity
+      gaps the flip surfaces (deep-call-chain backtrace frame positions — the VM
+      stamps per-instruction so the deepest frame shows its own position, the
+      walker shows the call site; the load-local "referenced before assignment"
+      message). Full `starlarktest` green under the VM.
+- [ ] **M11 + M12b** (cleanup — the goal): delete the walker (`signal.mbt`, AST
+      halves of expr/stmt/eval, `EvalEnv` closure machinery, `captured_scope`);
+      `StarlarkFunction` holds a `Funcode` only; **drop `syntax` from `value`**;
+      slot-based `DebugFrame`.
 - [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
 
 ---
