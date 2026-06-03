@@ -2767,7 +2767,16 @@ a validation-only pre-pass and `@syntax` stays immutable.
       (simple/guarded/nested/multi-guard/range/in-function list comps; dict comps
       with/without guards; later-iterable-references-target). **Set
       comprehensions deferred** (need a set-accumulator opcode).
-- [ ] **M9**: `load` statements on the VM.
+- [x] **M9**: `load` statements on the VM. Each `load` compiles to a `Load`
+      opcode indexing a per-program load table (path + exports + module-global
+      slots); the VM's handler invokes the thread loader, binds each export into
+      its global slot, and tracks load-bound names so module-local load bindings
+      are excluded from exported globals unless `load_binds_globally` — mirroring
+      the walker, including the no-loader / cannot-load (with cause) / name-not-
+      found (did-you-mean) errors. A function loaded from a walker-compiled module
+      is AST-backed, so the VM delegates such calls to the walker. Differential
+      tests: basic load, aliasing, load-and-call, `load_binds_globally`,
+      missing-name error, no-loader error.
 - [ ] **M10**: switch step counting to per-instruction + recalibrate budgets.
 - [ ] **M11**: `StarlarkFunction` holds a `Funcode`; drop `syntax` from `value`
       (the goal). Verify `value` `.mbti` unchanged except `new`; no `syntax` import.
