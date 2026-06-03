@@ -87,6 +87,83 @@ fn vm_resolve_external(name : String) -> @value.Value {
 }
 
 ///|
+/// Collects exactly `n` values from `value` for a sequence assignment, mirroring
+/// the walker's unpacking: tuples/lists yield their items directly, other values
+/// are iterated, and a non-iterable or a length mismatch raises the same error.
+fn unpack_items(
+  ctx : EvalContext,
+  value : @value.Value,
+  n : Int,
+) -> Array[@value.Value] raise EvalErr {
+  let items : Array[@value.Value] = match value {
+    @value.Value::Tuple(t) => t
+    @value.Value::List(l) => {
+      let arr : Array[@value.Value] = []
+      for v in l.iter() {
+        arr.push(v)
+      }
+      arr
+    }
+    _ =>
+      match @value.iterate(value) {
+        Ok(it) => {
+          let collected : Array[@value.Value] = []
+          while true {
+            match it.next() {
+              None => break
+              Some(item) => collected.push(item)
+            }
+          }
+          it.done()
+          collected
+        }
+        Err(_) =>
+          raise EvalErr(
+            make_eval_error(
+              ctx,
+              "got \{value.type_name()} in sequence assignment",
+            ),
+          )
+      }
+  }
+  if items.length() < n {
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "too few values to unpack (got \{items.length()}, want \{n})",
+      ),
+    )
+  } else if items.length() > n {
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "too many values to unpack (got \{items.length()}, want \{n})",
+      ),
+    )
+  }
+  items
+}
+
+///|
+/// Decodes an `AugApply` operand back into an augmented-assignment operator.
+fn augop_of_int(code : Int) -> @syntax.AugOp {
+  match code {
+    0 => AugAdd
+    1 => AugSub
+    2 => AugMul
+    3 => AugDiv
+    4 => AugFloorDiv
+    5 => AugMod
+    6 => AugBitAnd
+    7 => AugBitOr
+    8 => AugBitXor
+    9 => AugLShift
+    10 => AugRShift
+    _ => abort("vm: invalid augmented-operator code \{code}")
+  }
+}
+
+///|
 /// Pops `n` values off the operand stack and returns them in source order
 /// (bottom-to-top), as produced by `MakeList`/`MakeTuple`.
 fn pop_n(stack : Array[@value.Value], n : Int) -> Array[@value.Value] {
@@ -343,6 +420,56 @@ fn VM::run_frame(
             )
         }
       SetGlobal => self.globals[arg] = Some(pop())
+      SetIndex => {
+        // stack: [value, obj, idx]
+        let idx = pop()
+        let obj = pop()
+        let value = pop()
+        set_index(ctx, obj, idx, value, pos)
+      }
+      SetField => {
+        // stack: [value, obj]
+        let obj = pop()
+        let value = pop()
+        let attr = self.prog.names[arg]
+        match obj {
+          @value.Value::Module(_) =>
+            raise EvalErr(
+              make_eval_error(ctx, "can't assign to .\{attr} field of module"),
+            )
+          @value.Value::ExtVal(c) =>
+            match c.get_set_field(attr, value) {
+              Some(Ok(_)) => ()
+              Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
+              None =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "can't assign to .\{attr} field of \{obj.type_name()}",
+                  ),
+                )
+            }
+          _ =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "can't assign to .\{attr} field of \{obj.type_name()}",
+              ),
+            )
+        }
+      }
+      Unpack => {
+        let items = unpack_items(ctx, pop(), arg)
+        // push elements so element 0 ends up on top of the stack
+        for i = items.length() - 1; i >= 0; i = i - 1 {
+          push(items[i])
+        }
+      }
+      AugApply => {
+        let rv = pop()
+        let lv = pop()
+        push(eval_aug_val(ctx, lv, augop_of_int(arg), rv, pos))
+      }
       Global =>
         match self.globals[arg] {
           Some(v) => push(v)

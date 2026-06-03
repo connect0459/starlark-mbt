@@ -84,6 +84,11 @@ pub(all) enum Opcode {
   CallVar
   CallKw
   CallVarKw
+  // Augmented assignment apply: pops rhs then lhs, pushes the combined value.
+  // Operand is the augmented-operator code (see `AugOp` ordering). Not present
+  // in starlark-go; this implementation applies the in-place `+=`/`|=` semantics
+  // through one opcode rather than dedicated INPLACE_* opcodes.
+  AugApply
 } derive(Eq)
 
 ///|
@@ -164,6 +169,7 @@ pub fn Opcode::to_byte(self : Opcode) -> Byte {
     CallVar => 65
     CallKw => 66
     CallVarKw => 67
+    AugApply => 68
   }
   n.to_byte()
 }
@@ -241,6 +247,7 @@ pub fn Opcode::from_byte(b : Byte) -> Opcode? {
     65 => Some(CallVar)
     66 => Some(CallKw)
     67 => Some(CallVarKw)
+    68 => Some(AugApply)
     _ => None
   }
 }
@@ -325,5 +332,6 @@ pub fn all_opcodes() -> Array[Opcode] {
     CallVar,
     CallKw,
     CallVarKw,
+    AugApply,
   ]
 }

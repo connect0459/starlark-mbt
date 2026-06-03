@@ -148,6 +148,7 @@ pub(all) enum Opcode {
   CallVar
   CallKw
   CallVarKw
+  AugApply
 } derive(Eq)
 pub fn Opcode::from_byte(Byte) -> Self?
 pub fn Opcode::has_arg(Self) -> Bool

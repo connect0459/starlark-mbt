@@ -667,3 +667,61 @@ test "vm matches walker when load has no loader configured" {
   // No loader is set, so both engines report 'load not implemented'.
   assert_vm_matches_walker("load(\"lib.star\", \"foo\")\nx = foo")
 }
+
+///|
+test "vm matches walker on index assignment" {
+  assert_vm_matches_walker("xs = [1, 2, 3]\nxs[1] = 99\ny = xs")
+}
+
+// (Dict-key index assignment and dict `|=` are exercised in the data-literals
+// PR, once dict literals compile.)
+
+///|
+test "vm matches walker on tuple unpacking assignment" {
+  assert_vm_matches_walker("a, b = (1, 2)\nx = a\ny = b")
+  assert_vm_matches_walker("a, b, c = [10, 20, 30]\ns = a + b + c")
+}
+
+///|
+test "vm matches walker on nested tuple unpacking" {
+  assert_vm_matches_walker("(a, b), c = ((1, 2), 3)\ns = a + b + c")
+}
+
+///|
+test "vm matches walker on unpacking length mismatch errors" {
+  assert_vm_matches_walker("a, b = (1, 2, 3)")
+  assert_vm_matches_walker("a, b, c = (1, 2)")
+}
+
+///|
+test "vm matches walker on unpacking a non-iterable" {
+  assert_vm_matches_walker("a, b = 5")
+}
+
+///|
+test "vm matches walker on swap via tuple assignment" {
+  assert_vm_matches_walker("a = 1\nb = 2\na, b = b, a\nx = a\ny = b")
+}
+
+///|
+test "vm matches walker on augmented assignment to a name" {
+  assert_vm_matches_walker("x = 10\nx += 5\nx *= 2\nx -= 1\nx //= 3\ny = x")
+}
+
+///|
+test "vm matches walker on in-place list extend via +=" {
+  // `xs += [..]` must mutate in place so the alias sees the change
+  assert_vm_matches_walker("xs = [1, 2]\nys = xs\nxs += [3, 4]\na = xs\nb = ys")
+}
+
+///|
+test "vm matches walker on augmented assignment inside a function" {
+  assert_vm_matches_walker(
+    "def f(n):\n  total = 0\n  for i in range(n):\n    total += i\n  return total\n\nr = f(5)",
+  )
+}
+
+///|
+test "vm matches walker on assigning to an index out of range" {
+  assert_vm_matches_walker("xs = [1, 2]\nxs[5] = 9")
+}

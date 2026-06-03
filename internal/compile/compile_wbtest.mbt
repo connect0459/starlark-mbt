@@ -36,21 +36,29 @@ fn fresh_fcomp() -> Fcomp {
 }
 
 ///|
-test "an unsupported statement reports its position in the error" {
+test "an unsupported augmented-assignment target reports its position" {
   let fc = fresh_fcomp()
-  // Augmented assignment is not yet lowered.
+  // Augmented assignment to an index target is not yet lowered.
+  let target = @syntax.Expr::EIndex(
+    @syntax.Expr::EIdent("xs", @errors.Position::new("t.star", 7, 1)),
+    @syntax.Expr::ELiteral(
+      @syntax.LiteralVal::LitInt(BigInt::from_int(0)),
+      @errors.Position::new("t.star", 7, 4),
+    ),
+    @errors.Position::new("t.star", 7, 1),
+  )
   let stmt = @syntax.Stmt::SAugAssign(
-    @syntax.Expr::EIdent("x", @errors.Position::new("t.star", 7, 1)),
+    target,
     AugAdd,
     @syntax.Expr::ELiteral(
       @syntax.LiteralVal::LitInt(BigInt::from_int(1)),
-      @errors.Position::new("t.star", 7, 6),
+      @errors.Position::new("t.star", 7, 9),
     ),
     @errors.Position::new("t.star", 7, 2),
   )
   let r = try? fc.compile_stmt(stmt)
   match r {
-    Err(CompileErr(msg)) => assert_true(msg.contains("t.star:7:2"))
+    Err(CompileErr(msg)) => assert_true(msg.contains("t.star:7:1"))
     _ => abort("expected a CompileErr")
   }
 }
@@ -58,12 +66,9 @@ test "an unsupported statement reports its position in the error" {
 ///|
 test "an unsupported assignment target reports the target position" {
   let fc = fresh_fcomp()
-  let target = @syntax.Expr::EIndex(
-    @syntax.Expr::EIdent("xs", @errors.Position::new("t.star", 4, 1)),
-    @syntax.Expr::ELiteral(
-      @syntax.LiteralVal::LitInt(BigInt::from_int(0)),
-      @errors.Position::new("t.star", 4, 4),
-    ),
+  // A literal is not a valid assignment target.
+  let target = @syntax.Expr::ELiteral(
+    @syntax.LiteralVal::LitInt(BigInt::from_int(0)),
     @errors.Position::new("t.star", 4, 1),
   )
   let rhs = @syntax.Expr::ELiteral(
