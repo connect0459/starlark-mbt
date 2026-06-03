@@ -463,3 +463,53 @@ test "vm matches walker on a nullary function called with arguments" {
 test "vm matches walker on keyword args passed to a builtin" {
   assert_vm_matches_walker("xs = sorted([3, 1, 2], reverse=True)")
 }
+
+///|
+test "vm matches walker on a single-level closure" {
+  assert_vm_matches_walker(
+    "def make_adder(n):\n  def add(x):\n    return x + n\n  return add\n\nf = make_adder(10)\na = f(5)\nb = f(100)",
+  )
+}
+
+///|
+test "vm matches walker on independent closures from the same factory" {
+  assert_vm_matches_walker(
+    "def make_adder(n):\n  def add(x):\n    return x + n\n  return add\n\nf = make_adder(10)\ng = make_adder(20)\na = f(1)\nb = g(1)",
+  )
+}
+
+///|
+test "vm matches walker on a closure capturing multiple variables" {
+  assert_vm_matches_walker(
+    "def f(a, b):\n  def g(c):\n    return a + b + c\n  return g(100)\n\nx = f(1, 2)",
+  )
+}
+
+///|
+test "vm matches walker on multi-level nested closures" {
+  assert_vm_matches_walker(
+    "def a(x):\n  def b(y):\n    def c(z):\n      return x + y + z\n    return c\n  return b\n\nr = a(1)(2)(3)",
+  )
+}
+
+///|
+test "vm matches walker on a lambda closure" {
+  assert_vm_matches_walker(
+    "def make(n):\n  return lambda x: x + n\n\nf = make(10)\ny = f(5)",
+  )
+}
+
+///|
+test "vm matches walker on a closure over a locally-mutated variable" {
+  assert_vm_matches_walker(
+    "def f():\n  total = 0\n  for i in [1, 2, 3]:\n    total = total + i\n  def get():\n    return total\n  return get()\n\nx = f()",
+  )
+}
+
+///|
+test "vm matches walker on a closure capturing a module global is not a closure" {
+  // `n` here is a module global, not a captured local: must use the global path.
+  assert_vm_matches_walker(
+    "n = 10\n\ndef add(x):\n  return x + n\n\ny = add(5)",
+  )
+}

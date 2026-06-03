@@ -524,6 +524,10 @@ pub struct StarlarkFunction {
   // migration (issue #1) the VM builds functions via `from_compiled`, which sets
   // this; the AST fields then go away once the walker is removed.
   priv funcode : @compile.Funcode?
+  // Captured cells for a compiled closure, one per `funcode.freevars` entry.
+  // Empty for AST functions (which capture via `captured_scope`) and for
+  // compiled functions that close over nothing.
+  priv vm_freevars : Array[Cell]
 }
 
 ///|
@@ -559,6 +563,7 @@ pub fn StarlarkFunction::new(
     pos,
     module_globals: None,
     funcode: None,
+    vm_freevars: [],
   }
 }
 
@@ -572,11 +577,13 @@ pub fn StarlarkFunction::new(
 /// - `name` : The function's declared name.
 /// - `funcode` : The compiled code for this function.
 /// - `defaults` : Default values aligned to the optional parameters.
+/// - `freevars` : Captured cells, one per `funcode.freevars` entry.
 #internal(unsafe, "bytecode VM only; not part of the public embedding API")
 pub fn StarlarkFunction::from_compiled(
   name : String,
   funcode : @compile.Funcode,
   defaults : Array[Value?],
+  freevars : Array[Cell],
 ) -> StarlarkFunction {
   {
     name,
@@ -587,7 +594,18 @@ pub fn StarlarkFunction::from_compiled(
     pos: funcode.pos,
     module_globals: None,
     funcode: Some(funcode),
+    vm_freevars: freevars,
   }
+}
+
+///|
+/// Returns the captured cells of a compiled closure (one per `funcode.freevars`
+/// entry). Empty for AST functions. Used by the VM to set up a call frame.
+#internal(unsafe, "bytecode VM only; not part of the public embedding API")
+pub fn StarlarkFunction::compiled_freevars(
+  self : StarlarkFunction,
+) -> Array[Cell] {
+  self.vm_freevars
 }
 
 ///|

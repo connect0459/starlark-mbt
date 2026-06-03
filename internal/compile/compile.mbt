@@ -94,10 +94,26 @@ priv struct Fcomp {
   mut has_kwargs : Bool
   // Parameter specs in declaration order (empty for the module-init function).
   params : Array[ParamSpec]
+  // Enclosing function compiler, for resolving free variables (None at module
+  // scope).
+  parent : Fcomp?
+  // Local slot indices captured by a nested function (promoted to cells). Used
+  // as a set; the value is always true.
+  cell_set : Map[Int, Bool]
+  // Captured free variables: names, their capture source in the enclosing frame,
+  // and a name->index lookup. Parallel arrays.
+  freevar_names : Array[String]
+  freevar_srcs : Array[FreevarSource]
+  freevar_index : Map[String, Int]
 }
 
 ///|
-fn Fcomp::new(pcomp : Pcomp, name : String, pos : @errors.Position) -> Fcomp {
+fn Fcomp::new(
+  pcomp : Pcomp,
+  name : String,
+  pos : @errors.Position,
+  parent? : Fcomp? = None,
+) -> Fcomp {
   {
     pcomp,
     name,
@@ -116,6 +132,60 @@ fn Fcomp::new(pcomp : Pcomp, name : String, pos : @errors.Position) -> Fcomp {
     has_varargs: false,
     has_kwargs: false,
     params: [],
+    parent,
+    cell_set: {},
+    freevar_names: [],
+    freevar_srcs: [],
+    freevar_index: {},
+  }
+}
+
+///|
+/// Marks local slot `idx` as a cell (captured by a nested function).
+fn Fcomp::mark_cell(self : Fcomp, idx : Int) -> Unit {
+  self.cell_set[idx] = true
+}
+
+///|
+/// Records a captured free variable `name` with its source, returning its index.
+fn Fcomp::add_freevar(self : Fcomp, name : String, src : FreevarSource) -> Int {
+  match self.freevar_index.get(name) {
+    Some(i) => i
+    None => {
+      let i = self.freevar_names.length()
+      self.freevar_names.push(name)
+      self.freevar_srcs.push(src)
+      self.freevar_index[name] = i
+      i
+    }
+  }
+}
+
+///|
+/// Resolves `name` as a free variable captured from an enclosing function,
+/// returning its free-variable index in this function (or `None` if `name` is
+/// not bound in any enclosing function scope — i.e. it is a global/predeclared
+/// name). Threads the capture through every intermediate function and promotes
+/// the originating local to a cell.
+fn Fcomp::resolve_free(self : Fcomp, name : String) -> Int? {
+  match self.freevar_index.get(name) {
+    Some(i) => return Some(i)
+    None => ()
+  }
+  match self.parent {
+    None => None
+    Some(p) =>
+      match p.local_index.get(name) {
+        Some(pidx) => {
+          p.mark_cell(pidx)
+          Some(self.add_freevar(name, FromLocal(pidx)))
+        }
+        None =>
+          match p.resolve_free(name) {
+            Some(pfi) => Some(self.add_freevar(name, FromFree(pfi)))
+            None => None
+          }
+      }
   }
 }
 
@@ -228,6 +298,25 @@ fn uvarint_len(n : Int) -> Int {
 /// dependent (uvarint is variable-width), so sizes are iterated to a fixpoint;
 /// because operand sizes only grow, this converges.
 fn Fcomp::finish(self : Fcomp) -> Funcode {
+  // Rewrite accesses to cell locals into their cell forms. Cells are only known
+  // after the whole body (including nested functions that capture them) has been
+  // compiled, so this is a deferred pass over the pseudo-instructions.
+  if self.cell_set.length() > 0 {
+    for i in 0..<self.instrs.length() {
+      let ins = self.instrs[i]
+      if !ins.is_jump && self.cell_set.contains(ins.arg) {
+        let new_op = match ins.op {
+          Local => Some(Opcode::LocalCell)
+          SetLocal => Some(Opcode::SetLocalCell)
+          _ => None
+        }
+        match new_op {
+          Some(op) => self.instrs[i] = { ..ins, op, }
+          None => ()
+        }
+      }
+    }
+  }
   let n = self.instrs.length()
   let opsize : Array[Int] = Array::make(n, 0)
   for i in 0..<n {
@@ -300,8 +389,11 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
     code: Bytes::from_array(code),
     pclinetab,
     locals: self.locals,
-    cells: [],
-    freevars: [],
+    cells: cell_indices(self.cell_set),
+    freevars: self.freevar_names.map(fn(nm) {
+      @errors.Binding::new(nm, self.pos)
+    }),
+    freevar_sources: self.freevar_srcs,
     max_stack: self.max_stack,
     num_params: self.num_params,
     num_kwonly_params: self.num_kwonly_params,
@@ -309,6 +401,17 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
     has_kwargs: self.has_kwargs,
     params: self.params,
   }
+}
+
+///|
+/// Returns the cell local-slot indices in ascending order.
+fn cell_indices(set : Map[Int, Bool]) -> Array[Int] {
+  let out : Array[Int] = []
+  for idx, _ in set {
+    out.push(idx)
+  }
+  out.sort()
+  out
 }
 
 // --- expression compilation ---
@@ -484,18 +587,25 @@ fn Fcomp::compile_literal(self : Fcomp, lit : @syntax.LiteralVal) -> Unit {
 /// that resolves to none of these would have been rejected by the resolver, so
 /// reaching that branch indicates a compiler/resolver disagreement.
 fn Fcomp::compile_ident(self : Fcomp, name : String) -> Unit raise CompileErr {
+  // Resolution order: local -> free (enclosing function) -> global ->
+  // predeclared -> universal. A free variable shadows a module global of the
+  // same name (lexical scoping).
   match self.local_index.get(name) {
     Some(idx) => self.emit1(Opcode::Local, idx, 0, 1)
     None =>
-      match self.pcomp.global_index.get(name) {
-        Some(idx) => self.emit1(Opcode::Global, idx, 0, 1)
+      match self.resolve_free(name) {
+        Some(fi) => self.emit1(Opcode::FreeCell, fi, 0, 1)
         None =>
-          if (self.pcomp.is_predeclared)(name) {
-            self.emit1(Opcode::Predeclared, self.pcomp.add_name(name), 0, 1)
-          } else if (self.pcomp.is_universal)(name) {
-            self.emit1(Opcode::Universal, self.pcomp.add_name(name), 0, 1)
-          } else {
-            raise CompileErr("compile: undefined name \{name}")
+          match self.pcomp.global_index.get(name) {
+            Some(idx) => self.emit1(Opcode::Global, idx, 0, 1)
+            None =>
+              if (self.pcomp.is_predeclared)(name) {
+                self.emit1(Opcode::Predeclared, self.pcomp.add_name(name), 0, 1)
+              } else if (self.pcomp.is_universal)(name) {
+                self.emit1(Opcode::Universal, self.pcomp.add_name(name), 0, 1)
+              } else {
+                raise CompileErr("compile: undefined name \{name}")
+              }
           }
       }
   }
@@ -684,7 +794,7 @@ fn Fcomp::compile_make_func(
   body : Array[@syntax.Stmt],
   pos : @errors.Position,
 ) -> Unit raise CompileErr {
-  let idx = compile_function(self.pcomp, name, params, body, pos)
+  let idx = compile_function(self.pcomp, name, params, body, pos, parent=self)
   // Default values are evaluated now, in the enclosing scope, in parameter order
   // (only parameters with a default), then gathered into a tuple consumed by
   // MakeFunc. The VM maps them back onto the optional parameters' slots.
@@ -783,8 +893,9 @@ fn compile_function(
   params : Array[@syntax.Param],
   body : Array[@syntax.Stmt],
   pos : @errors.Position,
+  parent~ : Fcomp,
 ) -> Int raise CompileErr {
-  let fc = Fcomp::new(pcomp, name, pos)
+  let fc = Fcomp::new(pcomp, name, pos, parent=Some(parent))
   // Assign a local slot to each named parameter (a bare `*` separator gets none)
   // and record an AST-free spec so the VM can bind arguments. `after_star` tracks
   // keyword-only parameters (those following a `*`/`*args`).

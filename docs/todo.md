@@ -2746,8 +2746,18 @@ a validation-only pre-pass and `@syntax` stays immutable.
           positional, missing required, unexpected keyword + did-you-mean,
           multiple values) match. Keyword args reach builtins too. (Splat *call
           sites* — `f(*xs)`/`f(**kw)` — remain pending; deferred to the flip.)
-- [ ] **M7**: closure cells (Cell, FREE/FREECELL/LOCALCELL/SETLOCALCELL,
-      cell-promotion analysis; BUG-28 parity). Spike the capture analysis first.
+- [x] **M7**: closures via captured cells. Free variables resolve up the
+      enclosing-function chain; the originating local is promoted to a cell and
+      the capture is threaded through intermediate functions (FromLocal/FromFree
+      sources on the funcode). A deferred pass rewrites the defining function's
+      `Local`/`SetLocal` to `LocalCell`/`SetLocalCell`. VM frames hold boxed local
+      slots; cell locals are boxed at entry, `MakeFunc` gathers the closure's
+      cells from the defining frame, and `LocalCell`/`SetLocalCell`/`FreeCell`
+      share state. The spike validated single- AND multi-level closures
+      (`a(1)(2)(3)`), independent closures, multi-var capture, lambda closures,
+      cell mutated in a loop, and same-named-global-is-not-captured. (Closures
+      that index-assign a captured container await index/attribute assignment
+      targets — a separate compiler feature, not closure-specific.)
 - [ ] **M8**: comprehensions (lowered to ITER loops with isolated scope).
 - [ ] **M9**: `load` statements on the VM.
 - [ ] **M10**: switch step counting to per-instruction + recalibrate budgets.

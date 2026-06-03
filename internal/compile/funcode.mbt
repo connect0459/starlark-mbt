@@ -43,7 +43,19 @@ pub(all) struct Funcode {
   // slot). Defaults are carried separately on the runtime function value,
   // aligned to this list.
   params : Array[ParamSpec]
+  // For each captured free variable (parallel to `freevars`), where the
+  // enclosing frame holds its cell: a local-cell slot or one of the enclosing
+  // function's own free variables. `MakeFunc` reads these to gather the closure's
+  // cells from the frame that builds it.
+  freevar_sources : Array[FreevarSource]
 }
+
+///|
+/// Where a closure's captured cell comes from in the enclosing frame.
+pub(all) enum FreevarSource {
+  FromLocal(Int) // the enclosing frame's local-cell slot
+  FromFree(Int) // the enclosing function's own free variable
+} derive(Eq)
 
 ///|
 /// An AST-free description of a single function parameter, mirroring the
