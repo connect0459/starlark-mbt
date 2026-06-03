@@ -2708,7 +2708,15 @@ a validation-only pre-pass and `@syntax` stays immutable.
       and the same "global variable X referenced before assignment" error as the
       walker (verified by the harness). (Function-local slots arrive with
       functions in M6, since the compiler emits no locals until then.)
-- [ ] **M5**: control flow + iteration (JMP/CJMP/ITER*, for/while/break/continue).
+- [x] **M5**: control flow + iteration. The emitter now uses a pseudo-instruction
+      stream + symbolic labels + a two-pass assembler (jump targets resolved to
+      byte offsets, operand widths iterated to a fixpoint; jump-free output
+      unchanged). Lowers `and`/`or`, the conditional expression, `if`/`else`,
+      `while`, `for` (iterator stack), and `break`/`continue`; the VM gains
+      `Jmp`/`CJmp`/`IterPush`/`IterJmp`/`IterPop`. Verified by control-flow
+      differential tests. (Iterator release on the error-unwind path is deferred
+      to the flip; not observable here. For-loop destructuring targets arrive with
+      tuple unpacking.)
 - [ ] **M6**: function defs + calls (MAKEFUNC no-freevars, CALL*, RETURN, arg
       binding, recursion/depth, backtrace stamping; validate `error_format_test`).
 - [ ] **M7**: closure cells (Cell, FREE/FREECELL/LOCALCELL/SETLOCALCELL,

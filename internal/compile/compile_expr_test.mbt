@@ -176,13 +176,14 @@ test "line table maps a statement's instructions back to its source line" {
 
 ///|
 test "unsupported constructs surface as a CompileErr that pinpoints the source position" {
-  let iff = @syntax.Stmt::SIf(
-    @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(true), p(1, 4)),
-    [@syntax.Stmt::SPass(p(2, 3))],
+  // A function definition is not yet lowered; the error must locate it.
+  let def_stmt = @syntax.Stmt::SDef(
+    "f",
     [],
+    [@syntax.Stmt::SPass(p(2, 3))],
     p(1, 1),
   )
-  let file = @syntax.File::new("t.star", [iff])
+  let file = @syntax.File::new("t.star", [def_stmt])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
     Err(CompileErr(msg)) => assert_true(msg.contains("t.star:1:1"))
@@ -192,17 +193,41 @@ test "unsupported constructs surface as a CompileErr that pinpoints the source p
 
 ///|
 test "an unsupported expression reports its own position in the error" {
-  // A conditional expression is not yet lowered; the error must locate it.
-  let cond = @syntax.Expr::ECond(
-    @syntax.Expr::EIdent("x", p(3, 5)),
-    lit_int(1),
-    lit_int(2),
+  // A call expression is not yet lowered; the error must locate it.
+  let call = @syntax.Expr::ECall(
+    @syntax.Expr::EIdent("f", p(3, 5)),
+    [],
     p(3, 9),
   )
-  let file = @syntax.File::new("t.star", [@syntax.Stmt::SExpr(cond)])
+  let file = @syntax.File::new("t.star", [@syntax.Stmt::SExpr(call)])
   let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
   match r {
     Err(CompileErr(msg)) => assert_true(msg.contains("t.star:3:9"))
+    _ => abort("expected a CompileErr")
+  }
+}
+
+///|
+test "an unsupported for-loop target reports its own position, not the enclosing statement" {
+  // A tuple-destructuring `for` target is not yet lowered; the error must
+  // pinpoint the target expression rather than fall back to the statement.
+  let target = @syntax.Expr::ETuple(
+    [@syntax.Expr::EIdent("k", p(1, 5)), @syntax.Expr::EIdent("v", p(1, 8))],
+    p(1, 5),
+  )
+  let for_stmt = @syntax.Stmt::SFor(
+    target,
+    @syntax.Expr::EList([], p(1, 14)),
+    [@syntax.Stmt::SPass(p(2, 3))],
+    p(1, 1),
+  )
+  let file = @syntax.File::new("t.star", [for_stmt])
+  let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
+  match r {
+    Err(CompileErr(msg)) => {
+      assert_true(msg.contains("for-loop target"))
+      assert_true(msg.contains("t.star:1:5"))
+    }
     _ => abort("expected a CompileErr")
   }
 }

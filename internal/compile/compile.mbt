@@ -55,18 +55,37 @@ fn Pcomp::add_name(self : Pcomp, name : String) -> Int {
 
 // --- function-level compiler state ---
 
+// A pseudo-instruction emitted by the compiler. `arg` is the operand for normal
+// instructions; for jumps (`is_jump`) it is a label id that the assembler
+// resolves to a byte offset. Because operands are uvarint-encoded (variable
+// width), jump targets are resolved in a second pass: `Fcomp::assemble`
+// iterates the operand sizes to a fixpoint, then serializes to bytes. Jump-free
+// code serializes identically to direct emission.
+
+///|
+priv struct PInstr {
+  op : Opcode
+  arg : Int
+  is_jump : Bool
+  pos : @errors.Position?
+}
+
 ///|
 priv struct Fcomp {
   pcomp : Pcomp
   name : String
   pos : @errors.Position
   doc : String
-  code : Array[Byte]
-  pclinetab : Array[PcLine]
+  instrs : Array[PInstr]
+  // label id -> index into `instrs` where the label is placed (-1 until placed).
+  // A label placed at `instrs.length()` denotes the position just past the end.
+  label_at : Array[Int]
   locals : Array[@errors.Binding]
   local_index : Map[String, Int]
-  mut last_line : Int
-  mut last_col : Int
+  // Stack of (continue_label, break_label) for the enclosing loops, so `break`
+  // and `continue` jump to the right targets.
+  loop_stack : Array[(Int, Int)]
+  mut pending_pos : @errors.Position?
   mut cur_stack : Int
   mut max_stack : Int
 }
@@ -78,30 +97,23 @@ fn Fcomp::new(pcomp : Pcomp, name : String, pos : @errors.Position) -> Fcomp {
     name,
     pos,
     doc: "",
-    code: [],
-    pclinetab: [],
+    instrs: [],
+    label_at: [],
     locals: [],
     local_index: {},
-    last_line: -1,
-    last_col: -1,
+    loop_stack: [],
+    pending_pos: None,
     cur_stack: 0,
     max_stack: 0,
   }
 }
 
 ///|
-/// Records a source position for the instruction about to be emitted. Only adds
-/// a line-table entry when the position differs from the previous one, keeping
-/// the table compact (the binary search in `Funcode::position` recovers the
-/// right position for intervening offsets).
+/// Records the source position to associate with subsequent emitted
+/// instructions, until the next `set_pos`. The assembler turns these into the
+/// line table (deduplicated), which `Funcode::position` searches.
 fn Fcomp::set_pos(self : Fcomp, pos : @errors.Position) -> Unit {
-  let line = pos.line()
-  let col = pos.col()
-  if line != self.last_line || col != self.last_col {
-    self.pclinetab.push(PcLine::{ pc: self.code.length(), line, col })
-    self.last_line = line
-    self.last_col = col
-  }
+  self.pending_pos = Some(pos)
 }
 
 ///|
@@ -117,8 +129,19 @@ fn Fcomp::stack(self : Fcomp, pop : Int, push : Int) -> Unit {
 }
 
 ///|
+/// Forces the tracked stack height at a control-flow merge point (where the
+/// linear instruction order does not reflect the real runtime height). The
+/// compiler knows the correct height at each label it places.
+fn Fcomp::set_stack(self : Fcomp, h : Int) -> Unit {
+  self.cur_stack = h
+  if h > self.max_stack {
+    self.max_stack = h
+  }
+}
+
+///|
 fn Fcomp::emit0(self : Fcomp, op : Opcode, pop : Int, push : Int) -> Unit {
-  self.code.push(op.to_byte())
+  self.instrs.push({ op, arg: 0, is_jump: false, pos: self.pending_pos })
   self.stack(pop, push)
 }
 
@@ -130,9 +153,37 @@ fn Fcomp::emit1(
   pop : Int,
   push : Int,
 ) -> Unit {
-  self.code.push(op.to_byte())
-  write_uvarint(self.code, arg)
+  self.instrs.push({ op, arg, is_jump: false, pos: self.pending_pos })
   self.stack(pop, push)
+}
+
+///|
+/// Emits a jump instruction targeting `label` (resolved to a byte offset at
+/// assembly time).
+fn Fcomp::emit_jump(
+  self : Fcomp,
+  op : Opcode,
+  label : Int,
+  pop : Int,
+  push : Int,
+) -> Unit {
+  self.instrs.push({ op, arg: label, is_jump: true, pos: self.pending_pos })
+  self.stack(pop, push)
+}
+
+///|
+/// Allocates a fresh, unplaced jump label.
+fn Fcomp::new_label(self : Fcomp) -> Int {
+  let id = self.label_at.length()
+  self.label_at.push(-1)
+  id
+}
+
+///|
+/// Places `label` at the current emission point (the next instruction emitted,
+/// or the end of the stream).
+fn Fcomp::place_label(self : Fcomp, label : Int) -> Unit {
+  self.label_at[label] = self.instrs.length()
 }
 
 ///|
@@ -149,13 +200,94 @@ fn write_uvarint(code : Array[Byte], n : Int) -> Unit {
 }
 
 ///|
+/// Returns the number of bytes a non-negative uvarint operand occupies.
+fn uvarint_len(n : Int) -> Int {
+  let mut v = n
+  let mut count = 1
+  while v >= 0x80 {
+    count += 1
+    v = v >> 7
+  }
+  count
+}
+
+///|
+/// Serializes the pseudo-instruction stream into bytecode, resolving jump labels
+/// to byte offsets. Jump operand widths and instruction offsets are mutually
+/// dependent (uvarint is variable-width), so sizes are iterated to a fixpoint;
+/// because operand sizes only grow, this converges.
 fn Fcomp::finish(self : Fcomp) -> Funcode {
+  let n = self.instrs.length()
+  let opsize : Array[Int] = Array::make(n, 0)
+  for i in 0..<n {
+    let ins = self.instrs[i]
+    if ins.is_jump && self.label_at[ins.arg] < 0 {
+      abort("compile: jump to unplaced label \{ins.arg}")
+    }
+    opsize[i] = if !ins.op.has_arg() {
+      0
+    } else if ins.is_jump {
+      1
+    } else {
+      uvarint_len(ins.arg)
+    }
+  }
+  let offsets : Array[Int] = Array::make(n + 1, 0)
+  let mut changed = true
+  while changed {
+    changed = false
+    let mut off = 0
+    for i in 0..<n {
+      offsets[i] = off
+      off = off + 1 + opsize[i]
+    }
+    offsets[n] = off
+    for i in 0..<n {
+      let ins = self.instrs[i]
+      if ins.is_jump {
+        let target = offsets[self.label_at[ins.arg]]
+        let need = uvarint_len(target)
+        if need != opsize[i] {
+          opsize[i] = need
+          changed = true
+        }
+      }
+    }
+  }
+  let code : Array[Byte] = []
+  let pclinetab : Array[PcLine] = []
+  let mut last_line = -1
+  let mut last_col = -1
+  for i in 0..<n {
+    let ins = self.instrs[i]
+    match ins.pos {
+      Some(pp) => {
+        let line = pp.line()
+        let col = pp.col()
+        if line != last_line || col != last_col {
+          pclinetab.push(PcLine::{ pc: code.length(), line, col })
+          last_line = line
+          last_col = col
+        }
+      }
+      None => ()
+    }
+    code.push(ins.op.to_byte())
+    if ins.op.has_arg() {
+      let operand = if ins.is_jump {
+        offsets[self.label_at[ins.arg]]
+      } else {
+        ins.arg
+      }
+      write_uvarint(code, operand)
+    }
+  }
   {
     pos: self.pos,
     name: self.name,
     doc: self.doc,
-    code: Bytes::from_array(self.code),
-    pclinetab: self.pclinetab,
+    code: Bytes::from_array(code),
+    pclinetab,
     locals: self.locals,
     cells: [],
     freevars: [],
@@ -192,6 +324,23 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.emit0(opcode, 1, 1)
     }
     EBinary(l, op, r, pos) => self.compile_binary(l, op, r, pos)
+    // `then if cond else orelse` — note the AST stores the then-value first.
+    ECond(then_e, cond_e, else_e, _) => {
+      let else_lbl = self.new_label()
+      let end_lbl = self.new_label()
+      let base = self.cur_stack
+      self.compile_expr(cond_e)
+      // jump to the else branch when the condition is false: negate then CJMP.
+      self.emit0(Opcode::Not, 1, 1)
+      self.emit_jump(Opcode::CJmp, else_lbl, 1, 0)
+      self.compile_expr(then_e)
+      self.emit_jump(Opcode::Jmp, end_lbl, 0, 0)
+      self.place_label(else_lbl)
+      self.set_stack(base)
+      self.compile_expr(else_e)
+      self.place_label(end_lbl)
+      self.set_stack(base + 1)
+    }
     EIndex(x, i, pos) => {
       self.compile_expr(x)
       self.compile_expr(i)
@@ -292,9 +441,11 @@ fn Fcomp::compile_binary(
   r : @syntax.Expr,
   pos : @errors.Position,
 ) -> Unit raise CompileErr {
-  // `and` / `or` short-circuit (jumps) are handled with control flow later.
+  // `and` / `or` short-circuit via jumps, so the right operand is only
+  // evaluated when needed.
   match op {
-    OpAnd | OpOr => raise CompileErr("compile: and/or not yet supported")
+    OpAnd => return self.compile_and(l, r)
+    OpOr => return self.compile_or(l, r)
     _ => ()
   }
   self.compile_expr(l)
@@ -327,6 +478,46 @@ fn Fcomp::compile_binary(
   }
 }
 
+///|
+/// `l or r`: evaluate `l`; if it is truthy keep it, otherwise evaluate `r`.
+fn Fcomp::compile_or(
+  self : Fcomp,
+  l : @syntax.Expr,
+  r : @syntax.Expr,
+) -> Unit raise CompileErr {
+  let done = self.new_label()
+  let base = self.cur_stack
+  self.compile_expr(l)
+  self.emit0(Opcode::Dup, 0, 1)
+  self.emit_jump(Opcode::CJmp, done, 1, 0) // keep l when truthy
+  self.emit0(Opcode::Pop, 1, 0)
+  self.compile_expr(r)
+  self.place_label(done)
+  self.set_stack(base + 1)
+}
+
+///|
+/// `l and r`: evaluate `l`; if it is falsy keep it, otherwise evaluate `r`.
+fn Fcomp::compile_and(
+  self : Fcomp,
+  l : @syntax.Expr,
+  r : @syntax.Expr,
+) -> Unit raise CompileErr {
+  let cont = self.new_label()
+  let done = self.new_label()
+  let base = self.cur_stack
+  self.compile_expr(l)
+  self.emit0(Opcode::Dup, 0, 1)
+  self.emit_jump(Opcode::CJmp, cont, 1, 0) // evaluate r when l truthy
+  self.emit_jump(Opcode::Jmp, done, 0, 0) // otherwise keep l
+  self.place_label(cont)
+  self.set_stack(base + 1) // the CJMP-taken path keeps the duplicated value
+  self.emit0(Opcode::Pop, 1, 0)
+  self.compile_expr(r)
+  self.place_label(done)
+  self.set_stack(base + 1)
+}
+
 // --- statement compilation ---
 
 ///|
@@ -349,10 +540,109 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
           )
       }
     SPass(_) => ()
+    SIf(cond, then_body, else_body, _) => {
+      let then_lbl = self.new_label()
+      let end_lbl = self.new_label()
+      let base = self.cur_stack
+      self.compile_expr(cond)
+      self.emit_jump(Opcode::CJmp, then_lbl, 1, 0)
+      self.compile_stmts(else_body)
+      self.emit_jump(Opcode::Jmp, end_lbl, 0, 0)
+      self.place_label(then_lbl)
+      self.set_stack(base)
+      self.compile_stmts(then_body)
+      self.place_label(end_lbl)
+      self.set_stack(base)
+    }
+    SWhile(cond, body, _) => {
+      let head = self.new_label()
+      let body_lbl = self.new_label()
+      let end_lbl = self.new_label()
+      let base = self.cur_stack
+      self.place_label(head)
+      self.set_stack(base)
+      self.compile_expr(cond)
+      self.emit_jump(Opcode::CJmp, body_lbl, 1, 0)
+      self.emit_jump(Opcode::Jmp, end_lbl, 0, 0)
+      self.place_label(body_lbl)
+      self.set_stack(base)
+      self.loop_stack.push((head, end_lbl)) // continue -> head, break -> end
+      self.compile_stmts(body)
+      self.loop_stack.pop() |> ignore
+      self.emit_jump(Opcode::Jmp, head, 0, 0)
+      self.place_label(end_lbl)
+      self.set_stack(base)
+    }
+    SFor(target, iter_expr, body, pos) =>
+      self.compile_for(target, iter_expr, body, pos)
+    SBreak(_) =>
+      match self.loop_stack.last() {
+        Some((_, brk)) => self.emit_jump(Opcode::Jmp, brk, 0, 0)
+        None => raise CompileErr("compile: break not in a loop")
+      }
+    SContinue(_) =>
+      match self.loop_stack.last() {
+        Some((cont, _)) => self.emit_jump(Opcode::Jmp, cont, 0, 0)
+        None => raise CompileErr("compile: continue not in a loop")
+      }
     _ =>
       raise CompileErr(
         "compile: unsupported statement at \{@syntax.stmt_pos(s).to_string()}",
       )
+  }
+}
+
+///|
+/// Compiles a `for target in iterable: body` loop. The iterable is pushed onto
+/// the VM's iterator stack (`IterPush`); each round `IterJmp` either yields the
+/// next element (fall through) or exits the loop; `IterPop` releases the
+/// iterator (and unfreezes the container) on exit. Only a simple identifier
+/// target is supported so far; destructuring targets are added with tuple
+/// unpacking.
+fn Fcomp::compile_for(
+  self : Fcomp,
+  target : @syntax.Expr,
+  iter_expr : @syntax.Expr,
+  body : Array[@syntax.Stmt],
+  pos : @errors.Position,
+) -> Unit raise CompileErr {
+  let head = self.new_label()
+  let end_lbl = self.new_label()
+  let base = self.cur_stack
+  self.compile_expr(iter_expr)
+  self.set_pos(pos)
+  self.emit0(Opcode::IterPush, 1, 0)
+  self.place_label(head)
+  self.set_stack(base)
+  // IterJmp: on exhaustion jump to end; otherwise push the next element.
+  self.emit_jump(Opcode::IterJmp, end_lbl, 0, 1)
+  match target {
+    EIdent(name, _) => {
+      self.set_pos(pos)
+      self.compile_store(name)
+    }
+    _ =>
+      raise CompileErr(
+        "compile: unsupported for-loop target at \{@syntax.expr_pos(target).to_string()}",
+      )
+  }
+  self.loop_stack.push((head, end_lbl)) // continue -> head, break -> end
+  self.compile_stmts(body)
+  self.loop_stack.pop() |> ignore
+  self.emit_jump(Opcode::Jmp, head, 0, 0)
+  self.place_label(end_lbl)
+  self.set_stack(base)
+  self.emit0(Opcode::IterPop, 0, 0)
+}
+
+///|
+/// Compiles a statement sequence.
+fn Fcomp::compile_stmts(
+  self : Fcomp,
+  stmts : Array[@syntax.Stmt],
+) -> Unit raise CompileErr {
+  for s in stmts {
+    self.compile_stmt(s)
   }
 }
 
@@ -389,16 +679,34 @@ fn collect_globals(
     }
   }
 
-  for s in stmts {
-    match s {
-      SAssign(EIdent(name, pos), _, _) => add(name, pos)
-      SPass(_) | SExpr(_) => ()
-      _ =>
-        raise CompileErr(
-          "compile: unsupported top-level statement at \{@syntax.stmt_pos(s).to_string()}",
-        )
+  // Collects binding sites within `ss`; module-scope `if`/`for`/`while` bodies
+  // still bind module globals, so recurse into them.
+  fn walk(ss : Array[@syntax.Stmt]) -> Unit raise CompileErr {
+    for s in ss {
+      match s {
+        SAssign(EIdent(name, pos), _, _) => add(name, pos)
+        SFor(target, _, body, _) => {
+          match target {
+            EIdent(name, pos) => add(name, pos)
+            _ => ()
+          }
+          walk(body)
+        }
+        SIf(_, then_body, else_body, _) => {
+          walk(then_body)
+          walk(else_body)
+        }
+        SWhile(_, body, _) => walk(body)
+        SPass(_) | SExpr(_) | SBreak(_) | SContinue(_) => ()
+        _ =>
+          raise CompileErr(
+            "compile: unsupported top-level statement at \{@syntax.stmt_pos(s).to_string()}",
+          )
+      }
     }
   }
+
+  walk(stmts)
 }
 
 // --- public entry ---
