@@ -2857,10 +2857,20 @@ a validation-only pre-pass and `@syntax` stays immutable.
         cells (frozen-list error parity); and the VM records call frames for
         `Thread::debug_frame`, reading locals from the live slot array, so the
         `DebugFrame` API works under the VM.
-- [ ] **M11 + M12b** (cleanup — the goal): delete the walker (`signal.mbt`, AST
-      halves of expr/stmt/eval, `EvalEnv` closure machinery, `captured_scope`);
-      `StarlarkFunction` holds a `Funcode` only; **drop `syntax` from `value`**;
-      slot-based `DebugFrame`.
+- [x] **M11 + M12b** (cleanup — the goal): the AST walker is deleted —
+      `exec_file_walker`, the statement executor / expression evaluator and the
+      walker's call/closure/comprehension machinery, the `Signal` enum
+      (`signal.mbt`), and the walker-only `EvalEnv` scope chain
+      (`LookupResult`/`collect_local_scopes`). `EvalEnv` is reduced to the
+      two-level predeclared/universal name environment the VM needs; `DebugFrame`
+      is slot-based. `StarlarkFunction` no longer stores the AST (`params`/`body`/
+      `captured_scope` and their accessors are gone) — a function value carries
+      only its `Funcode`, module, cells, and defaults; `new` is a minimal
+      name+position constructor and `from_compiled` builds every executable
+      function. **`value` no longer imports `syntax`** — the root architectural
+      blemish the migration set out to remove. (The differential harness now
+      runs the VM on both sides; the conformance suite is the behavioral gate.)
+- [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
 - [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
 
 ---
