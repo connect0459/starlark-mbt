@@ -1015,5 +1015,9 @@ fn decode_program(data : Bytes) -> Program raise SerialErr {
   let opts = dec.decode_options()
   let stmts = dec.decode_stmt_array()
   let file = @syntax.File::new(path, stmts)
-  { file, opts }
+  let compiled = compile_resolved(file, opts) catch {
+    @compile.CompileErr(msg) =>
+      raise SerialErr("cannot compile program: \{msg}")
+  }
+  { file, opts, compiled }
 }

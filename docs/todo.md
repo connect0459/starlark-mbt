@@ -2836,23 +2836,27 @@ a validation-only pre-pass and `@syntax` stays immutable.
       The differential harness asserts equality only where the engines agree;
       corrected cases are pinned by VM-only tests. `exec_file` still runs the
       walker.
-- [~] **M12a** (flip): switch the public entries to the VM, retaining the walker
-      for rollback.
-  - [x] `exec_file` runs on the VM (`exec_file_walker` retained; the differential
-        harness's walker side points at it). `eval_expr`/`eval_expr_with_opts`/
-        `eval_parsed_expr` run on the VM (expression lowered as a synthetic
-        `<result> = <expr>` module; `env` bindings resolved as predeclared via the
-        context base environment). Parity gaps the flip surfaced are fixed: the
-        load-local "referenced before assignment" message now says "local"
-        (matching the walker/conformance); backtraces report each frame's precise
-        position (the walker advanced a function frame only on a call, so the
-        innermost frame showed its call site — the VM matches starlark-go's
+- [x] **M12a** (flip): every public execution entry now runs on the VM, with the
+      walker retained behind the flip for rollback and the differential harness.
+  - [x] `exec_file` + `eval_expr`/`eval_expr_with_opts`/`eval_parsed_expr` (an
+        expression is lowered as a synthetic `<result> = <expr>` module; `env`
+        bindings resolve as predeclared via the context base environment). Parity
+        gaps fixed: the load-local "referenced before assignment" message says
+        "local" (matching the walker/conformance); backtraces report each frame's
+        precise position (the walker advanced a function frame only on a call, so
+        the innermost frame showed its call site — the VM matches starlark-go's
         pc→line table and shows the failing expression, with the `error_format`
-        expectations updated); and two pre-existing VM holes are closed — the
-        `Attr` (attribute read / method call) and `Slice` opcodes had no handler.
-        Full `starlarktest` green under the VM (1727 tests).
-  - [ ] Remaining entries on the walker for now (next): `exec_file_with_universe`,
-        `exec_file_with_predeclared`, `exec_repl_chunk`, `Program::init`.
+        expectations updated); and the `Attr` and `Slice` opcodes (which had no
+        VM handler) are implemented.
+  - [x] `exec_file_with_universe`, `exec_file_with_predeclared`,
+        `exec_repl_chunk`, and `Program::init` — they share one compile-and-run
+        path; the REPL seeds each chunk's module globals from prior chunks. This
+        moves the whole conformance suite (driven through
+        `exec_file_with_predeclared`) onto the VM. Two gaps closed: freezing a
+        function now freezes the values its bytecode closure captured through
+        cells (frozen-list error parity); and the VM records call frames for
+        `Thread::debug_frame`, reading locals from the live slot array, so the
+        `DebugFrame` API works under the VM.
 - [ ] **M11 + M12b** (cleanup — the goal): delete the walker (`signal.mbt`, AST
       halves of expr/stmt/eval, `EvalEnv` closure machinery, `captured_scope`);
       `StarlarkFunction` holds a `Funcode` only; **drop `syntax` from `value`**;

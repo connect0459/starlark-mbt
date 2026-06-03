@@ -1211,48 +1211,15 @@ pub fn exec_file_with_universe(
   }
   let ctx = EvalContext::new(thread, opts)
   universe.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
-  collect_module_globals_into(
-    file.stmts(),
-    opts.load_binds_globally,
-    ctx.global_env.known_module_globals,
-  )
   let universe_names : Array[String] = universe.bindings.keys().collect()
-  let resolve_opts = @resolver.ResolveOptions::default()
-    .with_allow_global_reassign(opts.allow_global_reassign)
-    .with_allow_set(opts.allow_set)
-    .with_load_binds_globally(opts.load_binds_globally)
-  let resolved = @resolver.resolve(
-    file,
-    fn(name) { is_builtin(name) || universe_names.contains(name) },
-    fn(name) { name == "None" || name == "True" || name == "False" },
-    resolve_opts,
-  )
-  if !resolved.is_valid() {
-    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
-    return Err(@errors.EvalError::simple(msg))
+  let (prog, m) = match
+    compile_and_run_vm(ctx, file, filename, fn(name) {
+      universe_names.contains(name)
+    }) {
+    Ok(pair) => pair
+    Err(e) => return Err(e)
   }
-  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
-  ctx.thread.call_stack.push(
-    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
-  )
-  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
-    EvalErr(e) => {
-      ignore(ctx.thread.call_stack.pop())
-      ctx.toplevel_frame_idx = -1
-      return Err(e)
-    }
-  }
-  ignore(ctx.thread.call_stack.pop())
-  ctx.toplevel_frame_idx = -1
-  let m = Module::new()
-  ctx.global_env.locals.each(fn(name, v) {
-    if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
-      let key = @value.Value::String(@value.StarlarkString::new(name))
-      m.globals.set(key, v) |> ignore
-    }
-  })
-  m.freeze()
-  Ok(m)
+  Ok(Module::from_map(module_output(prog, m, opts)))
 }
 
 ///|
@@ -1281,45 +1248,18 @@ pub fn exec_file_with_predeclared(
   }
   let ctx = EvalContext::new(thread, opts)
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
-  collect_module_globals_into(
-    file.stmts(),
-    opts.load_binds_globally,
-    ctx.global_env.known_module_globals,
-  )
   let extra_names : Array[String] = predeclared.bindings.keys().collect()
-  let resolve_opts = @resolver.ResolveOptions::default()
-    .with_allow_global_reassign(opts.allow_global_reassign)
-    .with_allow_set(opts.allow_set)
-    .with_load_binds_globally(opts.load_binds_globally)
-  let resolved = @resolver.resolve(
-    file,
-    fn(name) { is_builtin(name) || extra_names.contains(name) },
-    fn(name) { name == "None" || name == "True" || name == "False" },
-    resolve_opts,
-  )
-  if !resolved.is_valid() {
-    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
-    return Err(@errors.EvalError::simple(msg))
+  let (prog, rm) = match
+    compile_and_run_vm(ctx, file, filename, fn(name) {
+      extra_names.contains(name)
+    }) {
+    Ok(pair) => pair
+    Err(e) => return Err(e)
   }
-  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
-  ctx.thread.call_stack.push(
-    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
-  )
-  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
-    EvalErr(e) => {
-      ignore(ctx.thread.call_stack.pop())
-      ctx.toplevel_frame_idx = -1
-      return Err(e)
-    }
-  }
-  ignore(ctx.thread.call_stack.pop())
-  ctx.toplevel_frame_idx = -1
   let m = { ..Module::new(), predeclared: predeclared.bindings }
-  ctx.global_env.locals.each(fn(name, v) {
-    if ctx.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
-      let key = @value.Value::String(@value.StarlarkString::new(name))
-      m.globals.set(key, v) |> ignore
-    }
+  module_output(prog, rm, opts).each(fn(name, v) {
+    let key = @value.Value::String(@value.StarlarkString::new(name))
+    m.globals.set(key, v) |> ignore
   })
   m.freeze()
   Ok(m)
@@ -1349,41 +1289,25 @@ pub fn exec_repl_chunk(
     Ok(f) => f
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
-  let ctx = EvalContext::new(thread, { ..opts, load_binds_globally: true })
+  // REPL chunks bind globally so each chunk's bindings persist into the next.
+  let chunk_opts = { ..opts, load_binds_globally: true }
+  let ctx = EvalContext::new(thread, chunk_opts)
   globals.each(fn(k, v) { ctx.global_env.bind(k, v) })
-  collect_module_globals_into(
-    file.stmts(),
-    true,
-    ctx.global_env.known_module_globals,
-  )
   let extra_names = globals.keys()
-  let resolve_opts = @resolver.ResolveOptions::default()
-    .with_allow_set(opts.allow_set)
-    .with_load_binds_globally(true)
-  let resolved = @resolver.resolve(
-    file,
-    fn(name) { is_builtin(name) || extra_names.contains(name) },
-    fn(name) { name == "None" || name == "True" || name == "False" },
-    resolve_opts,
-  )
-  if !resolved.is_valid() {
-    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
-    return Err(@errors.EvalError::simple(msg))
+  // Seed this chunk's module-global slots with the values accumulated so far so
+  // a global the chunk reassigns starts from its previous value.
+  let (prog, m) = match
+    compile_and_run_vm(
+      ctx,
+      file,
+      filename,
+      fn(name) { extra_names.contains(name) },
+      init=fn(name) { globals.get(name) },
+    ) {
+    Ok(pair) => pair
+    Err(e) => return Err(e)
   }
-  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
-  ctx.thread.call_stack.push(
-    @errors.CallFrame::new("<toplevel>", @errors.Position::new(filename, 1, 1)),
-  )
-  ignore(exec_stmts(ctx, ctx.global_env, file.stmts())) catch {
-    EvalErr(e) => {
-      ignore(ctx.thread.call_stack.pop())
-      ctx.toplevel_frame_idx = -1
-      return Err(e)
-    }
-  }
-  ignore(ctx.thread.call_stack.pop())
-  ctx.toplevel_frame_idx = -1
-  ctx.global_env.locals.each(fn(name, v) { globals.set(name, v) })
+  module_output(prog, m, chunk_opts).each(fn(name, v) { globals.set(name, v) })
   Ok(())
 }
 

@@ -9,6 +9,7 @@
 pub struct Program {
   priv file : @syntax.File
   priv opts : Options
+  priv compiled : @compile.CompiledProgram
 }
 
 ///|
@@ -125,6 +126,26 @@ pub fn file_program(
   opts : Options,
   is_predeclared : (String) -> Bool,
 ) -> Result[Program, @errors.EvalError] {
+  match validate_resolution(file, opts, is_predeclared) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
+  let compiled = compile_resolved(file, opts) catch {
+    @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
+  }
+  Ok({ file, opts, compiled })
+}
+
+///|
+/// Runs the resolver over `file`, returning an `EvalError` carrying the joined
+/// resolver messages if resolution fails. Shared by `file_program` and the
+/// one-shot VM entries so resolver errors (messages and positions) match the
+/// walker exactly.
+fn validate_resolution(
+  file : @syntax.File,
+  opts : Options,
+  is_predeclared : (String) -> Bool,
+) -> Result[Unit, @errors.EvalError] {
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(opts.allow_global_reassign)
     .with_allow_set(opts.allow_set)
@@ -132,14 +153,40 @@ pub fn file_program(
   let resolved = @resolver.resolve(
     file,
     fn(name) { is_builtin(name) || is_predeclared(name) },
-    fn(name) { name == "None" || name == "True" || name == "False" },
+    is_universal_name,
     resolve_opts,
   )
   if !resolved.is_valid() {
     let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
     return Err(@errors.EvalError::simple(msg))
   }
-  Ok({ file, opts })
+  Ok(())
+}
+
+///|
+/// Returns `true` for the universal constants `None`, `True`, and `False`.
+fn is_universal_name(name : String) -> Bool {
+  name == "None" || name == "True" || name == "False"
+}
+
+///|
+/// Compiles an already-resolved `file` to bytecode. Because the resolver has
+/// already validated every name, any free name that is not a module global,
+/// local, free, or universal must be predeclared; classifying every such name
+/// as predeclared reproduces exactly the classification the resolver settled on
+/// without needing to retain the embedder's original `is_predeclared` predicate.
+/// This lets a `Program` carry its compiled form across `init` calls (and across
+/// serialization) without re-resolving.
+fn compile_resolved(
+  file : @syntax.File,
+  opts : Options,
+) -> @compile.CompiledProgram raise @compile.CompileErr {
+  @compile.compile(
+    file,
+    fn(name) { !is_universal_name(name) },
+    is_universal_name,
+    opts.allow_recursion,
+  )
 }
 
 ///|
@@ -223,33 +270,17 @@ pub fn Program::init(
 ) -> Result[Module, @errors.EvalError] {
   let ctx = EvalContext::new(thread, self.opts)
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
-  collect_module_globals_into(
-    self.file.stmts(),
-    self.opts.load_binds_globally,
-    ctx.global_env.known_module_globals,
-  )
-  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
-  ctx.thread.call_stack.push(
-    @errors.CallFrame::new(
-      "<toplevel>",
-      @errors.Position::new(self.file.path(), 1, 1),
-    ),
-  )
-  ignore(exec_stmts(ctx, ctx.global_env, self.file.stmts())) catch {
-    EvalErr(e) => {
-      ignore(ctx.thread.call_stack.pop())
-      ctx.toplevel_frame_idx = -1
-      return Err(e)
-    }
+  // Resolution and compilation were paid once when the program was created;
+  // `init` only binds the predeclared values and runs the cached bytecode.
+  let rm = match run_program_vm(ctx, self.compiled, self.file.path()) {
+    Ok(m) => m
+    Err(e) => return Err(e)
   }
-  ignore(ctx.thread.call_stack.pop())
-  ctx.toplevel_frame_idx = -1
+  // Unlike `exec_file`, the returned module is left unfrozen.
   let m = { ..Module::new(), predeclared: predeclared.bindings }
-  ctx.global_env.locals.each(fn(name, v) {
-    if self.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
-      let key = @value.Value::String(@value.StarlarkString::new(name))
-      m.globals.set(key, v) |> ignore
-    }
+  module_output(self.compiled, rm, self.opts).each(fn(name, v) {
+    let key = @value.Value::String(@value.StarlarkString::new(name))
+    m.globals.set(key, v) |> ignore
   })
   Ok(m)
 }

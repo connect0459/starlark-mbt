@@ -1,8 +1,9 @@
-// Bytecode virtual machine. This is the second engine in the dual-engine
-// migration (see issue #1): it executes `@compile.CompiledProgram` bytecode and
-// is verified against the AST walker via differential tests. It is NOT yet on
-// any default execution path; `exec_file_vm` is an internal entry point used by
-// the differential harness while the VM is brought up feature by feature.
+// Bytecode virtual machine. This is now the default engine (issue #1): it
+// executes `@compile.CompiledProgram` bytecode, and every public entry point
+// (`exec_file`, `eval_expr`, the universe/predeclared variants, the REPL, and
+// `Program::init`) runs on it. The AST walker is retained behind the flip for
+// rollback and for the differential harness, which still verifies the two
+// engines agree.
 //
 // Operator semantics are reused wholesale from `ops.mbt` (eval_binary /
 // eval_unary / eval_index): the VM pops operands off its stack and calls the
@@ -244,10 +245,10 @@ fn pop_n(stack : Array[@value.Value], n : Int) -> Array[@value.Value] {
 
 ///|
 /// Compiles and runs `src` on the bytecode VM, returning a `Module` of the
-/// resulting globals. Internal entry point for the differential harness during
-/// the dual-engine migration (issue #1); the public `exec_file` still uses the
-/// AST walker. Resolution is performed exactly as in `file_program` so resolver
-/// errors match the walker. Removed when the engine flip lands.
+/// resulting globals. The public `exec_file` delegates here. Retained as an
+/// internal entry so the differential harness can run the VM explicitly while
+/// the walker remains available. Resolution matches `file_program` so resolver
+/// errors match the walker.
 #internal(unsafe, "experimental bytecode VM entry; not part of the public embedding API")
 pub fn exec_file_vm(
   thread : Thread,
@@ -259,29 +260,60 @@ pub fn exec_file_vm(
     Ok(f) => f
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
+  let ctx = EvalContext::new(thread, opts)
+  let (prog, m) = match
+    compile_and_run_vm(ctx, file, filename, fn(_) { false }) {
+    Ok(pair) => pair
+    Err(e) => return Err(e)
+  }
+  Ok(Module::from_map(module_output(prog, m, opts)))
+}
+
+///|
+/// Validates `file` with the resolver, compiles it, and runs it on the VM,
+/// returning the compiled program and the resulting module state. `extra_pred`
+/// names the embedder-supplied predeclared names (a custom universe or per-call
+/// predeclared bindings) so resolution and compilation classify them correctly;
+/// the bindings themselves must already be bound into `ctx.global_env`. Shared by
+/// every VM entry point.
+fn compile_and_run_vm(
+  ctx : EvalContext,
+  file : @syntax.File,
+  filename : String,
+  extra_pred : (String) -> Bool,
+  init? : (String) -> @value.Value? = fn(_) { None },
+) -> Result[(@compile.CompiledProgram, RunModule), @errors.EvalError] {
   // Validate with the same resolver pass the walker uses; resolver errors
   // (messages and positions) match the walker exactly.
-  match file_program(file, opts, fn(_) { false }) {
+  match validate_resolution(file, ctx.opts, extra_pred) {
     Err(e) => return Err(e)
     Ok(_) => ()
   }
   let prog = @compile.compile(
     file,
-    fn(name) { is_builtin(name) },
+    fn(name) { is_builtin(name) || extra_pred(name) },
     fn(name) { name == "None" || name == "True" || name == "False" },
-    opts.allow_recursion,
+    ctx.opts.allow_recursion,
   ) catch {
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
-  let ctx = EvalContext::new(thread, opts)
-  let m = match run_program_vm(ctx, prog, filename) {
-    Ok(m) => m
-    Err(e) => return Err(e)
+  match run_program_vm(ctx, prog, filename, init~) {
+    Ok(m) => Ok((prog, m))
+    Err(e) => Err(e)
   }
+}
+
+///|
+/// Collects a finished run's module globals as a name -> value map, excluding
+/// load-local bindings unless `load_binds_globally`.
+fn module_output(
+  prog : @compile.CompiledProgram,
+  m : RunModule,
+  opts : Options,
+) -> Map[String, @value.Value] {
   let out : Map[String, @value.Value] = {}
   for i, binding in prog.globals {
     match m.globals[i] {
-      // Load-bound names are module-local unless load_binds_globally.
       Some(v) =>
         if opts.load_binds_globally || !m.load_bound.contains(binding.name()) {
           out[binding.name()] = v
@@ -289,7 +321,7 @@ pub fn exec_file_vm(
       None => ()
     }
   }
-  Ok(Module::from_map(out))
+  out
 }
 
 ///|
@@ -301,12 +333,22 @@ fn run_program_vm(
   ctx : EvalContext,
   prog : @compile.CompiledProgram,
   filename : String,
+  init? : (String) -> @value.Value? = fn(_) { None },
 ) -> Result[RunModule, @errors.EvalError] {
   let vm = VM::{ ctx, active: [] }
   let m = RunModule::{
     prog,
     globals: Array::make(prog.globals.length(), None),
     load_bound: [],
+  }
+  // Pre-fill module-global slots from `init` (the REPL seeds a chunk's globals
+  // with the values accumulated by previous chunks, so a global reassigned in a
+  // later chunk starts from its prior value rather than unbound).
+  for i, binding in prog.globals {
+    match init(binding.name()) {
+      Some(v) => m.globals[i] = Some(v)
+      None => ()
+    }
   }
   ctx.vm = Some(vm)
   try {
@@ -952,14 +994,21 @@ fn VM::call_compiled(
   }
   self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
   self.active.push(fc)
+  // Record the frame for debugger inspection (`Thread::debug_frame`), referencing
+  // the live local slots so locals read at their current values.
+  self.ctx.thread.debug_stack.push(
+    ActiveCallFrame::VmFrame(@value.Value::Function(f), fc, locals),
+  )
   let fidx = self.ctx.thread.call_stack.length() - 1
   let r = self.run_frame(m, fc, f.name(), locals, f.compiled_freevars(), fidx) catch {
     EvalErr(e) => {
+      self.ctx.thread.debug_stack.pop() |> ignore
       self.active.pop() |> ignore
       self.ctx.thread.call_stack.pop() |> ignore
       raise EvalErr(e)
     }
   }
+  self.ctx.thread.debug_stack.pop() |> ignore
   self.active.pop() |> ignore
   self.ctx.thread.call_stack.pop() |> ignore
   r

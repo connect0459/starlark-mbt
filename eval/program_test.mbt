@@ -112,6 +112,36 @@ test "Program: num_loads and load" {
 }
 
 ///|
+/// A program resolved with a broad predeclared predicate stays runnable when a
+/// later `init` supplies a narrower dictionary, as long as the omitted names are
+/// only referenced on unreachable paths: resolution and compilation are paid
+/// once at creation, so `init` never re-rejects names the broader predicate
+/// accepted.
+test "Program: init tolerates a narrower predeclared dict for unreachable names" {
+  let src =
+    #|if False:
+    #|    sink = ghost
+    #|y = 1
+  let prog = match
+    source_program("broad.star", src, Options::default(), fn(name) {
+      name == "ghost"
+    }) {
+    Ok(p) => p
+    Err(e) => fail("source_program failed: \{e.to_string()}")
+  }
+  // `ghost` is omitted from the init dictionary; because its only use is on the
+  // dead `if False` branch, the run must still succeed.
+  match prog.init(Thread::new("test"), Predeclared::new()) {
+    Err(e) => fail("init failed: \{e.to_string()}")
+    Ok(m) =>
+      match m.get("y") {
+        None => fail("missing y")
+        Some(v) => assert_eq(v.repr(), "1")
+      }
+  }
+}
+
+///|
 test "Program: init result is not frozen" {
   let prog = match
     source_program("mutable.star", "x = 1", Options::default(), fn(_) { false }) {
