@@ -1431,11 +1431,7 @@ pub fn eval_expr_with_opts(
     Ok(e) => e
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
-  let ctx = EvalContext::new(thread, opts)
-  env.each(fn(k, v) { ctx.global_env.bind(k, v) })
-  Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
-    EvalErr(e) => Err(e)
-  }
+  eval_expr_vm(thread, expr, opts, env)
 }
 
 ///|
@@ -1456,9 +1452,5 @@ pub fn eval_parsed_expr(
   opts : Options,
   env : @value.StringDict,
 ) -> Result[@value.Value, @errors.EvalError] {
-  let ctx = EvalContext::new(thread, opts)
-  env.each(fn(k, v) { ctx.global_env.bind(k, v) })
-  Ok(eval_expr_node(ctx, ctx.global_env, expr)) catch {
-    EvalErr(e) => Err(e)
-  }
+  eval_expr_vm(thread, expr, opts, env)
 }
