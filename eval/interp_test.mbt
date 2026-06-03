@@ -303,6 +303,62 @@ test "vm matches walker on direct recursion when recursion is disabled" {
 }
 
 ///|
+test "vm matches walker on builtin calls with positional arguments" {
+  assert_vm_matches_walker("n = len([1, 2, 3])\nm = len(\"hello\")")
+  assert_vm_matches_walker(
+    "a = abs(-7)\nb = str(42)\nc = int(\"15\")\nd = bool(0)",
+  )
+  assert_vm_matches_walker(
+    "lo = min([3, 1, 2])\nhi = max([3, 1, 2])\ns = sorted([3, 1, 2])",
+  )
+  assert_vm_matches_walker(
+    "xs = list((1, 2, 3))\nt = tuple([4, 5])\nr = reversed([1, 2, 3])",
+  )
+}
+
+///|
+test "vm matches walker on range and range-driven for loops" {
+  assert_vm_matches_walker("xs = list(range(5))")
+  assert_vm_matches_walker("s = 0\nfor i in range(4):\n  s = s + i")
+}
+
+///|
+test "vm matches walker on builtin calls inside a function" {
+  assert_vm_matches_walker(
+    "def total(n):\n  s = 0\n  for i in range(n):\n    s = s + i\n  return s\n\nr = total(5)",
+  )
+}
+
+///|
+test "vm matches walker on a builtin type error (backtrace)" {
+  // The builtin error and backtrace must match the walker exactly.
+  assert_vm_matches_walker("x = len(5)")
+}
+
+///|
+test "vm matches walker when a builtin calls back into a user function" {
+  // `sorted`/`min`/`max` accept the key function positionally, so the VM runs
+  // them today and the callback must re-enter the VM, not diverge.
+  assert_vm_matches_walker(
+    "def neg(x):\n  return 0 - x\n\nr = sorted([1, 3, 2], neg)",
+  )
+  assert_vm_matches_walker(
+    "def keyfn(x):\n  return x % 3\n\nlo = min([5, 7, 9], keyfn)\nhi = max([5, 7, 9], keyfn)",
+  )
+}
+
+///|
+test "vm matches walker on a builtin callback to a recursive function when recursion is disabled" {
+  // The callback re-enters the same function while it is on the stack; with
+  // recursion disabled both engines must reject it identically.
+  let opts = @eval.Options::default().with_allow_recursion(false)
+  assert_vm_matches_walker_opts(
+    "def f(x):\n  if x == 0:\n    return sorted([1, 2], f)\n  return x\n\nr = f(0)",
+    opts,
+  )
+}
+
+///|
 test "vm matches walker on mutual recursion when recursion is disabled" {
   let opts = @eval.Options::default().with_allow_recursion(false)
   assert_vm_matches_walker_opts(

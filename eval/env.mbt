@@ -22,6 +22,10 @@ priv struct EvalContext {
   global_env : EvalEnv
   load_bound_names : Array[String]
   mut toplevel_frame_idx : Int
+  // Set when the bytecode VM drives execution, so a builtin that calls back into
+  // a compiled function (e.g. `sorted(iterable, key)`) re-enters the VM instead
+  // of the AST walker. `None` under the AST-walker engine.
+  mut vm : VM?
 }
 
 ///|
@@ -120,7 +124,14 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
     )
   }
   let global_env = EvalEnv::for_module(base)
-  { thread, opts, global_env, load_bound_names: [], toplevel_frame_idx: -1 }
+  {
+    thread,
+    opts,
+    global_env,
+    load_bound_names: [],
+    toplevel_frame_idx: -1,
+    vm: None,
+  }
 }
 
 ///|

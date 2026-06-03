@@ -460,7 +460,16 @@ fn call_value(
     )
   }
   match func_val {
-    @value.Value::Function(f) => call_func(ctx, f, pos_args, kw_args, pos)
+    // A compiled function reached while the VM drives execution (e.g. a builtin
+    // callback like `sorted(iterable, key)`) must run on a VM frame, not the AST
+    // walker, which has no body for it. Keyword arguments are not compiled yet,
+    // so only the positional case is routed; anything else falls through.
+    @value.Value::Function(f) =>
+      match (f.compiled_funcode(), ctx.vm) {
+        (Some(fc), Some(vm)) if kw_args.length() == 0 =>
+          vm.call_compiled(f, fc, pos_args, pos)
+        _ => call_func(ctx, f, pos_args, kw_args, pos)
+      }
     @value.Value::Builtin(f) => {
       let builtin_frame = @errors.CallFrame::new(
         f.name(),

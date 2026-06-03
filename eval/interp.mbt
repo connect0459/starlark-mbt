@@ -138,6 +138,7 @@ pub fn exec_file_vm(
     globals: Array::make(prog.globals.length(), None),
     active: [],
   }
+  ctx.vm = Some(vm)
   try {
     // Push the module-init frame so backtraces begin at <toplevel>, matching
     // the walker.
@@ -361,70 +362,72 @@ fn VM::call_value(
   match callee {
     @value.Value::Function(f) =>
       match f.compiled_funcode() {
-        Some(fc) => {
-          if !self.prog.recursion {
-            let fpos = fc.pos
-            for g in self.active {
-              let gpos = g.pos
-              if fpos.line() == gpos.line() &&
-                fpos.col() == gpos.col() &&
-                fpos.filename() == gpos.filename() {
-                raise EvalErr(
-                  make_eval_error(
-                    self.ctx,
-                    "function \{f.name()} called recursively",
-                  ),
-                )
-              }
-            }
-          }
-          if self.ctx.thread.call_stack.length() >=
-            self.ctx.thread.max_recursion_depth {
-            raise EvalErr(
-              make_eval_error(self.ctx, "maximum recursion depth exceeded"),
-            )
-          }
-          if args.length() != fc.num_params {
-            raise EvalErr(
-              make_eval_error(
-                self.ctx,
-                "function \{f.name()} accepts \{fc.num_params} positional arguments (\{args.length()} given)",
-              ),
-            )
-          }
-          let locals : Array[@value.Value?] = Array::make(
-            fc.locals.length(),
-            None,
-          )
-          for i in 0..<args.length() {
-            locals[i] = Some(args[i])
-          }
-          self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
-          self.active.push(fc)
-          let fidx = self.ctx.thread.call_stack.length() - 1
-          let r = self.run_frame(fc, f.name(), locals, fidx) catch {
-            EvalErr(e) => {
-              self.active.pop() |> ignore
-              self.ctx.thread.call_stack.pop() |> ignore
-              raise EvalErr(e)
-            }
-          }
-          self.active.pop() |> ignore
-          self.ctx.thread.call_stack.pop() |> ignore
-          r
-        }
+        Some(fc) => self.call_compiled(f, fc, args, pos)
         None => abort("vm: function value has no compiled code")
       }
-    @value.Value::Builtin(_) =>
-      raise EvalErr(
-        make_eval_error(self.ctx, "vm: builtin calls not yet supported"),
-      )
-    _ =>
-      raise EvalErr(
-        make_eval_error(
-          self.ctx,
-          "invalid call of non-function (\{callee.type_name()})",
-        ),
-      )
+    // Builtins, bound methods, and custom values are value-level operations with
+    // no AST involvement, so the walker's `call_value` handles them directly,
+    // reusing every builtin implementation. The non-callable error path is
+    // produced there as well. A builtin that calls back into a compiled function
+    // — e.g. `sorted(iterable, key)` with the key passed positionally — re-enters
+    // the VM through `ctx.vm`, so the callback runs on a VM frame with the same
+    // recursion and backtrace semantics as a direct VM call.
+    _ => call_value(self.ctx, callee, args, [], pos)
   }
+}
+
+///|
+/// Runs a compiled function `f` (with code `fc`) on a fresh VM frame, binding
+/// `args` positionally. `pos` is recorded on the callee's call frame for
+/// backtraces. Shared by the `Call` opcode and by builtin callbacks that re-enter
+/// the VM, so recursion detection, depth limits, and argument-count errors are
+/// produced identically on both paths.
+fn VM::call_compiled(
+  self : VM,
+  f : @value.StarlarkFunction,
+  fc : @compile.Funcode,
+  args : Array[@value.Value],
+  pos : @errors.Position,
+) -> @value.Value raise EvalErr {
+  if !self.prog.recursion {
+    let fpos = fc.pos
+    for g in self.active {
+      let gpos = g.pos
+      if fpos.line() == gpos.line() &&
+        fpos.col() == gpos.col() &&
+        fpos.filename() == gpos.filename() {
+        raise EvalErr(
+          make_eval_error(self.ctx, "function \{f.name()} called recursively"),
+        )
+      }
+    }
+  }
+  if self.ctx.thread.call_stack.length() >= self.ctx.thread.max_recursion_depth {
+    raise EvalErr(make_eval_error(self.ctx, "maximum recursion depth exceeded"))
+  }
+  if args.length() != fc.num_params {
+    raise EvalErr(
+      make_eval_error(
+        self.ctx,
+        "function \{f.name()} accepts \{fc.num_params} positional arguments (\{args.length()} given)",
+      ),
+    )
+  }
+  let locals : Array[@value.Value?] = Array::make(fc.locals.length(), None)
+  for i in 0..<args.length() {
+    locals[i] = Some(args[i])
+  }
+  self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
+  self.active.push(fc)
+  let fidx = self.ctx.thread.call_stack.length() - 1
+  let r = self.run_frame(fc, f.name(), locals, fidx) catch {
+    EvalErr(e) => {
+      self.active.pop() |> ignore
+      self.ctx.thread.call_stack.pop() |> ignore
+      raise EvalErr(e)
+    }
+  }
+  self.active.pop() |> ignore
+  self.ctx.thread.call_stack.pop() |> ignore
+  r
 }
