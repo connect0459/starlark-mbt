@@ -749,12 +749,6 @@ pub fn Thread::call_stack(self : Thread) -> @errors.CallStack {
 }
 
 ///|
-/// Returns a copy of the raw call-frame array (outermost first).
-pub fn Thread::call_frames(self : Thread) -> Array[@errors.CallFrame] {
-  self.call_stack.copy()
-}
-
-///|
 /// Returns the call frame at `n` steps from the innermost frame (0 =
 /// innermost, 1 = its caller, etc.), or `None` if out of range.
 ///
