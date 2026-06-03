@@ -584,15 +584,13 @@ fn Fcomp::compile_comprehension(
     CList(_) => self.emit1(Opcode::MakeList, 0, 0, 1)
     CDict(_, _) => self.emit0(Opcode::MakeDict, 0, 1)
   }
-  // Validate and collect comprehension target names (idents only).
+  // Collect every name a comprehension `for` clause binds, including the names
+  // inside tuple/list targets, so each gets an isolated comp-local slot.
   let targets : Array[(String, @errors.Position)] = []
   for c in clauses {
     match c {
-      ClauseFor(EIdent(name, tp), _, _) => targets.push((name, tp))
       ClauseFor(t, _, _) =>
-        raise CompileErr(
-          "compile: unsupported comprehension target at \{@syntax.expr_pos(t).to_string()}",
-        )
+        collect_target_names(t, fn(name, tp) { targets.push((name, tp)) })
       ClauseIf(_, _) => ()
     }
   }
@@ -699,19 +697,15 @@ fn Fcomp::emit_comp_rest(
 }
 
 ///|
-/// Stores the current iteration element into a comprehension target (idents
-/// only; validated by `compile_comprehension`).
+/// Stores the current iteration element into a comprehension target. The target
+/// names were bound as comp-local slots by `compile_comprehension`, so this
+/// reuses the general assignment-target lowering (identifier or tuple/list,
+/// including nesting).
 fn Fcomp::compile_comp_store(
   self : Fcomp,
   target : @syntax.Expr,
 ) -> Unit raise CompileErr {
-  match target {
-    EIdent(name, _) => self.compile_store(name)
-    _ =>
-      raise CompileErr(
-        "compile: unsupported comprehension target at \{@syntax.expr_pos(target).to_string()}",
-      )
-  }
+  self.compile_assign_target(target)
 }
 
 ///|
@@ -1025,16 +1019,8 @@ fn Fcomp::compile_for(
   self.set_stack(base)
   // IterJmp: on exhaustion jump to end; otherwise push the next element.
   self.emit_jump(Opcode::IterJmp, end_lbl, 0, 1)
-  match target {
-    EIdent(name, _) => {
-      self.set_pos(pos)
-      self.compile_store(name)
-    }
-    _ =>
-      raise CompileErr(
-        "compile: unsupported for-loop target at \{@syntax.expr_pos(target).to_string()}",
-      )
-  }
+  self.set_pos(pos)
+  self.compile_assign_target(target)
   self.loop_stack.push((head, end_lbl)) // continue -> head, break -> end
   self.compile_stmts(body)
   self.loop_stack.pop() |> ignore

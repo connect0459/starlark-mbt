@@ -725,3 +725,32 @@ test "vm matches walker on augmented assignment inside a function" {
 test "vm matches walker on assigning to an index out of range" {
   assert_vm_matches_walker("xs = [1, 2]\nxs[5] = 9")
 }
+
+///|
+test "vm matches walker on a for loop with a tuple target" {
+  assert_vm_matches_walker(
+    "total = 0\nfor a, b in [(1, 2), (3, 4)]:\n  total += a * b\nx = total",
+  )
+}
+
+///|
+test "vm matches walker on a for loop with a nested tuple target" {
+  assert_vm_matches_walker(
+    "s = 0\nfor (a, b), c in [((1, 2), 3), ((4, 5), 6)]:\n  s += a + b + c\nx = s",
+  )
+}
+
+///|
+test "vm matches walker on a for-loop tuple target unpack mismatch" {
+  assert_vm_matches_walker("for a, b in [(1, 2, 3)]:\n  pass")
+}
+
+///|
+test "vm matches walker on a list comprehension with a tuple target" {
+  assert_vm_matches_walker("xs = [a + b for a, b in [(1, 2), (3, 4)]]")
+}
+
+///|
+test "vm matches walker on a dict comprehension with a tuple target" {
+  assert_vm_matches_walker("d = {k: v for k, v in [(\"a\", 1), (\"b\", 2)]}")
+}
