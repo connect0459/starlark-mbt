@@ -36,7 +36,7 @@ fn fresh_fcomp() -> Fcomp {
 }
 
 ///|
-test "an unsupported statement reports its position in the error" {
+test "an unsupported augmented-assignment target reports its position" {
   let fc = fresh_fcomp()
   // Augmented assignment to an index target is not yet lowered.
   let target = @syntax.Expr::EIndex(
