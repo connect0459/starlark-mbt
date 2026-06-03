@@ -557,10 +557,12 @@ pub fn Program::write(self : Program) -> Bytes {
 
 ///|
 /// Reconstructs a `Program` from bytes produced by `Program::write`. The input
-/// is trusted to encode an already-resolved, valid program: resolution is not
-/// re-run (it would require the original `is_predeclared` predicate). Returns
-/// an `EvalError` if the bytes are truncated, carry an unknown magic header, or
-/// were written by an incompatible serializer version.
+/// is trusted to already carry the compiled bytecode program: neither
+/// resolution nor compilation is re-run during decode (re-resolution would
+/// require the original `is_predeclared` predicate), so the bytes hydrate
+/// straight into a runnable `CompiledProgram`. Returns an `EvalError` if the
+/// bytes are truncated, carry an unknown magic header, or were written by an
+/// incompatible serializer version.
 pub fn compiled_program(data : Bytes) -> Result[Program, @errors.EvalError] {
   Ok(decode_program(data)) catch {
     SerialErr(msg) =>
