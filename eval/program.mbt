@@ -223,33 +223,19 @@ pub fn Program::init(
 ) -> Result[Module, @errors.EvalError] {
   let ctx = EvalContext::new(thread, self.opts)
   predeclared.bindings.each(fn(name, v) { ctx.global_env.bind(name, v) })
-  collect_module_globals_into(
-    self.file.stmts(),
-    self.opts.load_binds_globally,
-    ctx.global_env.known_module_globals,
-  )
-  ctx.toplevel_frame_idx = ctx.thread.call_stack.length()
-  ctx.thread.call_stack.push(
-    @errors.CallFrame::new(
-      "<toplevel>",
-      @errors.Position::new(self.file.path(), 1, 1),
-    ),
-  )
-  ignore(exec_stmts(ctx, ctx.global_env, self.file.stmts())) catch {
-    EvalErr(e) => {
-      ignore(ctx.thread.call_stack.pop())
-      ctx.toplevel_frame_idx = -1
-      return Err(e)
-    }
+  let extra_names : Array[String] = predeclared.bindings.keys().collect()
+  let (prog, rm) = match
+    compile_and_run_vm(ctx, self.file, self.file.path(), fn(name) {
+      extra_names.contains(name)
+    }) {
+    Ok(pair) => pair
+    Err(e) => return Err(e)
   }
-  ignore(ctx.thread.call_stack.pop())
-  ctx.toplevel_frame_idx = -1
+  // Unlike `exec_file`, the returned module is left unfrozen.
   let m = { ..Module::new(), predeclared: predeclared.bindings }
-  ctx.global_env.locals.each(fn(name, v) {
-    if self.opts.load_binds_globally || !ctx.load_bound_names.contains(name) {
-      let key = @value.Value::String(@value.StarlarkString::new(name))
-      m.globals.set(key, v) |> ignore
-    }
+  module_output(prog, rm, self.opts).each(fn(name, v) {
+    let key = @value.Value::String(@value.StarlarkString::new(name))
+    m.globals.set(key, v) |> ignore
   })
   Ok(m)
 }

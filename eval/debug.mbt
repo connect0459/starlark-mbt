@@ -1,8 +1,19 @@
 ///|
-priv struct ActiveCallFrame {
-  func_val : @value.Value
-  all_local_names : Array[String]
-  locals_map : Map[String, @value.Value]
+/// An active call frame recorded for debugger inspection. The walker variant
+/// carries a live locals map; the VM variant carries the funcode and the live
+/// local-slot array, from which the names and current values are recovered when
+/// a `DebugFrame` snapshot is taken.
+priv enum ActiveCallFrame {
+  AstFrame(@value.Value, Array[String], Map[String, @value.Value])
+  VmFrame(@value.Value, @compile.Funcode, Array[LocalSlot])
+}
+
+///|
+fn ActiveCallFrame::callable(self : ActiveCallFrame) -> @value.Value {
+  match self {
+    AstFrame(func_val, _, _) => func_val
+    VmFrame(func_val, _, _) => func_val
+  }
 }
 
 ///|
@@ -36,10 +47,31 @@ pub struct DebugFrame {
 
 ///|
 fn DebugFrame::from_active(af : ActiveCallFrame) -> DebugFrame {
-  {
-    callable_val: af.func_val,
-    all_local_names: af.all_local_names,
-    locals_map: af.locals_map,
+  match af {
+    AstFrame(func_val, all_local_names, locals_map) =>
+      { callable_val: func_val, all_local_names, locals_map }
+    VmFrame(func_val, fc, slots) => {
+      // Recover the frame's named locals (parameters first, then body locals)
+      // and their current values from the live slot array.
+      let all_local_names : Array[String] = []
+      let locals_map : Map[String, @value.Value] = {}
+      for i, b in fc.locals {
+        let name = b.name()
+        if !all_local_names.contains(name) {
+          all_local_names.push(name)
+        }
+        let v = match slots[i] {
+          LVal(v) => Some(v)
+          LBoxed(c) => c.get()
+          LUnbound => None
+        }
+        match v {
+          Some(vv) => locals_map[name] = vv
+          None => ()
+        }
+      }
+      { callable_val: func_val, all_local_names, locals_map }
+    }
   }
 }
 

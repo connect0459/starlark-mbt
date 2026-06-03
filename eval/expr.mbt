@@ -552,7 +552,7 @@ fn call_func(
   if !ctx.opts.allow_recursion {
     let fpos = f.position()
     for frame in ctx.thread.debug_stack {
-      match frame.func_val {
+      match frame.callable() {
         @value.Value::Function(g) => {
           let gpos = g.position()
           if fpos.line() == gpos.line() &&
@@ -587,11 +587,13 @@ fn call_func(
     let known_locals = collect_assigned_names(f.body())
     let func_env = EvalEnv::with_parent_and_known_locals(parent, known_locals)
     let all_local_names = collect_all_local_names(f, known_locals)
-    ctx.thread.debug_stack.push(ActiveCallFrame::{
-      func_val: @value.Value::Function(f),
-      all_local_names,
-      locals_map: func_env.locals,
-    })
+    ctx.thread.debug_stack.push(
+      ActiveCallFrame::AstFrame(
+        @value.Value::Function(f),
+        all_local_names,
+        func_env.locals,
+      ),
+    )
     bind_args(ctx, f, pos_args, kw_args, func_env, pos)
     let sig = exec_stmts(ctx, func_env, f.body())
     ignore(ctx.thread.call_stack.pop())
