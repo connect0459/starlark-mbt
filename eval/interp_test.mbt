@@ -303,6 +303,39 @@ test "vm matches walker on direct recursion when recursion is disabled" {
 }
 
 ///|
+test "vm matches walker on builtin calls with positional arguments" {
+  assert_vm_matches_walker("n = len([1, 2, 3])\nm = len(\"hello\")")
+  assert_vm_matches_walker(
+    "a = abs(-7)\nb = str(42)\nc = int(\"15\")\nd = bool(0)",
+  )
+  assert_vm_matches_walker(
+    "lo = min([3, 1, 2])\nhi = max([3, 1, 2])\ns = sorted([3, 1, 2])",
+  )
+  assert_vm_matches_walker(
+    "xs = list((1, 2, 3))\nt = tuple([4, 5])\nr = reversed([1, 2, 3])",
+  )
+}
+
+///|
+test "vm matches walker on range and range-driven for loops" {
+  assert_vm_matches_walker("xs = list(range(5))")
+  assert_vm_matches_walker("s = 0\nfor i in range(4):\n  s = s + i")
+}
+
+///|
+test "vm matches walker on builtin calls inside a function" {
+  assert_vm_matches_walker(
+    "def total(n):\n  s = 0\n  for i in range(n):\n    s = s + i\n  return s\n\nr = total(5)",
+  )
+}
+
+///|
+test "vm matches walker on a builtin type error (backtrace)" {
+  // The builtin error and backtrace must match the walker exactly.
+  assert_vm_matches_walker("x = len(5)")
+}
+
+///|
 test "vm matches walker on mutual recursion when recursion is disabled" {
   let opts = @eval.Options::default().with_allow_recursion(false)
   assert_vm_matches_walker_opts(

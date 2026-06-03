@@ -415,16 +415,12 @@ fn VM::call_value(
         }
         None => abort("vm: function value has no compiled code")
       }
-    @value.Value::Builtin(_) =>
-      raise EvalErr(
-        make_eval_error(self.ctx, "vm: builtin calls not yet supported"),
-      )
-    _ =>
-      raise EvalErr(
-        make_eval_error(
-          self.ctx,
-          "invalid call of non-function (\{callee.type_name()})",
-        ),
-      )
+    // Builtins, bound methods, and custom values are value-level operations with
+    // no AST involvement, so the walker's `call_value` handles them directly,
+    // reusing every builtin implementation. The non-callable error path is
+    // produced there as well. (A builtin that calls back into a VM-compiled
+    // function — e.g. `sorted(key=...)` — is not reachable yet, since keyword
+    // arguments are not compiled; full callback routing lands with the flip.)
+    _ => call_value(self.ctx, callee, args, [], pos)
   }
 }
