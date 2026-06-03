@@ -208,6 +208,21 @@ fn expand_kwargs(
 }
 
 ///|
+/// Reports whether `name` is bound by a `load` statement of `prog` (its local
+/// alias). Such names are module-local unless `load_binds_globally`, which the
+/// referenced-before-assignment message reflects.
+fn load_binds_name(prog : @compile.CompiledProgram, name : String) -> Bool {
+  for ls in prog.load_stmts {
+    for loc in ls.locals {
+      if loc == name {
+        return true
+      }
+    }
+  }
+  false
+}
+
+///|
 /// Decodes an `AugApply` operand back into an augmented-assignment operator.
 fn augop_of_int(code : Int) -> @syntax.AugOp {
   match code {
@@ -624,13 +639,24 @@ fn VM::run_frame(
       Global =>
         match m.globals[arg] {
           Some(v) => push(v)
-          None =>
+          None => {
+            // A name bound by `load` is module-local unless `load_binds_globally`,
+            // so referencing it before its load reports "local variable", matching
+            // the walker.
+            let gname = m.prog.globals[arg].name()
+            let kind = if !ctx.opts.load_binds_globally &&
+              load_binds_name(m.prog, gname) {
+              "local"
+            } else {
+              "global"
+            }
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "global variable \{m.prog.globals[arg].name()} referenced before assignment",
+                "\{kind} variable \{gname} referenced before assignment",
               ),
             )
+          }
         }
       Predeclared => push(vm_resolve_external(m.prog.names[arg]))
       Universal => push(vm_resolve_external(m.prog.names[arg]))

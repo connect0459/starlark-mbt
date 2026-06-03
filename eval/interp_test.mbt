@@ -62,7 +62,7 @@ fn assert_vm_matches_walker_opts(
   src : String,
   opts : @eval.Options,
 ) -> Unit raise {
-  let wr = @eval.exec_file(@eval.Thread::new("w"), "t.star", src, opts)
+  let wr = @eval.exec_file_walker(@eval.Thread::new("w"), "t.star", src, opts)
   let vr = @eval.exec_file_vm(@eval.Thread::new("v"), "t.star", src, opts)
   compare_results(wr, vr, src)
 }
@@ -91,7 +91,7 @@ fn assert_vm_matches_walker_load(
   }
 
   let wlib = match
-    @eval.exec_file(@eval.Thread::new("wlib"), "lib.star", lib_src, opts) {
+    @eval.exec_file_walker(@eval.Thread::new("wlib"), "lib.star", lib_src, opts) {
     Ok(m) => m
     Err(e) => abort("test library failed to compile (walker): \{e.msg()}")
   }
@@ -104,7 +104,7 @@ fn assert_vm_matches_walker_load(
   wt.set_loader(make_loader(wlib))
   let vt = @eval.Thread::new("v")
   vt.set_loader(make_loader(vlib))
-  let wr = @eval.exec_file(wt, "t.star", src, opts)
+  let wr = @eval.exec_file_walker(wt, "t.star", src, opts)
   let vr = @eval.exec_file_vm(vt, "t.star", src, opts)
   compare_results(wr, vr, src)
 }
@@ -117,7 +117,7 @@ fn assert_vm_matches_walker_under_budget(
   max_steps : Int,
 ) -> Unit raise {
   let opts = @eval.Options::default()
-  let wr = @eval.exec_file(
+  let wr = @eval.exec_file_walker(
     @eval.Thread::with_step_budget("w", max_steps),
     "t.star",
     src,
