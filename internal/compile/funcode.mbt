@@ -37,7 +37,25 @@ pub(all) struct Funcode {
   num_kwonly_params : Int
   has_varargs : Bool
   has_kwargs : Bool
+  // Parameter specs in declaration order, AST-free, so the VM can bind call
+  // arguments with the same algorithm the AST walker uses. Named parameters
+  // occupy local slots 0,1,2,... in this order (a bare `*` separator takes no
+  // slot). Defaults are carried separately on the runtime function value,
+  // aligned to this list.
+  params : Array[ParamSpec]
 }
+
+///|
+/// An AST-free description of a single function parameter, mirroring the
+/// `@syntax.Param` kinds the binder needs (without the default expression, which
+/// is evaluated at definition time and stored on the function value).
+pub(all) enum ParamSpec {
+  PRequired(String) // `x`
+  POptional(String) // `x = default`
+  PStarBare // bare `*` separator (keyword-only marker; no slot)
+  PStarArgs(String) // `*args`
+  PKwArgs(String) // `**kwargs`
+} derive(Eq)
 
 ///|
 /// Recovers the source position for the instruction at bytecode offset `pc`.

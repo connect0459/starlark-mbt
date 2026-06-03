@@ -89,11 +89,11 @@ priv struct Fcomp {
   mut cur_stack : Int
   mut max_stack : Int
   mut num_params : Int
-  // Set at construction; richer parameter forms (defaults/*args/**kwargs/kwonly)
-  // populate these in a later milestone.
-  num_kwonly_params : Int
-  has_varargs : Bool
-  has_kwargs : Bool
+  mut num_kwonly_params : Int
+  mut has_varargs : Bool
+  mut has_kwargs : Bool
+  // Parameter specs in declaration order (empty for the module-init function).
+  params : Array[ParamSpec]
 }
 
 ///|
@@ -115,6 +115,7 @@ fn Fcomp::new(pcomp : Pcomp, name : String, pos : @errors.Position) -> Fcomp {
     num_kwonly_params: 0,
     has_varargs: false,
     has_kwargs: false,
+    params: [],
   }
 }
 
@@ -306,6 +307,7 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
     num_kwonly_params: self.num_kwonly_params,
     has_varargs: self.has_varargs,
     has_kwargs: self.has_kwargs,
+    params: self.params,
   }
 }
 
@@ -400,8 +402,10 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
 }
 
 ///|
-/// Compiles a call. Only positional arguments are supported so far; keyword,
-/// `*args`, and `**kwargs` arguments are added with full argument binding.
+/// Compiles a call with positional and keyword arguments. Each keyword argument
+/// pushes its name (a string constant) then its value, so the VM can recover the
+/// `(name, value)` pairs. `*args`/`**kwargs` at the call site are not yet
+/// supported. The operand encodes `(npositional << 8) | nkeyword`.
 fn Fcomp::compile_call(
   self : Fcomp,
   callee : @syntax.Expr,
@@ -410,21 +414,39 @@ fn Fcomp::compile_call(
 ) -> Unit raise CompileErr {
   self.compile_expr(callee)
   let mut npos = 0
+  let mut nkw = 0
   for a in args {
     match a {
       ArgPos(e) => {
         self.compile_expr(e)
         npos += 1
       }
-      _ =>
+      ArgKw(kw_name, e, _) => {
+        self.emit1(Opcode::Constant, self.pcomp.add_const(CStr(kw_name)), 0, 1)
+        self.compile_expr(e)
+        nkw += 1
+      }
+      ArgStarArgs(_) | ArgKwArgs(_) =>
         raise CompileErr(
-          "compile: keyword, *args, and **kwargs call arguments not yet supported at \{pos.to_string()}",
+          "compile: *args and **kwargs call arguments not yet supported at \{pos.to_string()}",
         )
     }
   }
+  // The Call operand packs `(npos << 8) | nkw`; each field is 8 bits, so both
+  // counts must stay below 256 or they would corrupt one another at decode.
+  if npos >= 256 {
+    raise CompileErr(
+      "compile: \{npos} positional arguments in call, limit is 255 at \{pos.to_string()}",
+    )
+  }
+  if nkw >= 256 {
+    raise CompileErr(
+      "compile: \{nkw} keyword arguments in call, limit is 255 at \{pos.to_string()}",
+    )
+  }
   self.set_pos(pos)
-  // operand encodes (npositional << 8) | nnamed; pops callee + args, pushes result
-  self.emit1(Opcode::Call, npos << 8, 1 + npos, 1)
+  // pops callee + npos positional + nkw (name, value) pairs, pushes the result.
+  self.emit1(Opcode::Call, (npos << 8) | nkw, 1 + npos + 2 * nkw, 1)
 }
 
 ///|
@@ -663,10 +685,21 @@ fn Fcomp::compile_make_func(
   pos : @errors.Position,
 ) -> Unit raise CompileErr {
   let idx = compile_function(self.pcomp, name, params, body, pos)
-  // Default values are evaluated in the enclosing scope at definition time and
-  // gathered into a tuple consumed by MakeFunc. No defaults are supported yet.
+  // Default values are evaluated now, in the enclosing scope, in parameter order
+  // (only parameters with a default), then gathered into a tuple consumed by
+  // MakeFunc. The VM maps them back onto the optional parameters' slots.
+  let mut ndefaults = 0
+  for p in params {
+    match p {
+      ParamDefault(_, default_e, _) => {
+        self.compile_expr(default_e)
+        ndefaults += 1
+      }
+      _ => ()
+    }
+  }
   self.set_pos(pos)
-  self.emit1(Opcode::MakeTuple, 0, 0, 1)
+  self.emit1(Opcode::MakeTuple, ndefaults, ndefaults, 1)
   self.emit1(Opcode::MakeFunc, idx, 1, 1)
 }
 
@@ -752,20 +785,53 @@ fn compile_function(
   pos : @errors.Position,
 ) -> Int raise CompileErr {
   let fc = Fcomp::new(pcomp, name, pos)
+  // Assign a local slot to each named parameter (a bare `*` separator gets none)
+  // and record an AST-free spec so the VM can bind arguments. `after_star` tracks
+  // keyword-only parameters (those following a `*`/`*args`).
+  fn add_param_local(pname : String, ppos : @errors.Position) -> Unit {
+    let idx = fc.locals.length()
+    fc.locals.push(@errors.Binding::new(pname, ppos))
+    fc.local_index[pname] = idx
+  }
+
+  let mut after_star = false
   for p in params {
     match p {
       ParamIdent(pname, ppos) => {
-        let idx = fc.locals.length()
-        fc.locals.push(@errors.Binding::new(pname, ppos))
-        fc.local_index[pname] = idx
+        add_param_local(pname, ppos)
+        fc.params.push(PRequired(pname))
+        fc.num_params += 1
+        if after_star {
+          fc.num_kwonly_params += 1
+        }
       }
-      _ =>
-        raise CompileErr(
-          "compile: parameter defaults, *args, **kwargs, and keyword-only parameters are not yet supported at \{pos.to_string()}",
-        )
+      ParamDefault(pname, _, ppos) => {
+        add_param_local(pname, ppos)
+        fc.params.push(POptional(pname))
+        fc.num_params += 1
+        if after_star {
+          fc.num_kwonly_params += 1
+        }
+      }
+      ParamStarBare(_) => {
+        fc.params.push(PStarBare)
+        after_star = true
+      }
+      ParamStarIdent(pname, ppos) => {
+        add_param_local(pname, ppos)
+        fc.params.push(PStarArgs(pname))
+        fc.num_params += 1
+        fc.has_varargs = true
+        after_star = true
+      }
+      ParamKwIdent(pname, ppos) => {
+        add_param_local(pname, ppos)
+        fc.params.push(PKwArgs(pname))
+        fc.num_params += 1
+        fc.has_kwargs = true
+      }
     }
   }
-  fc.num_params = params.length()
   collect_function_locals(fc, body)
   fc.compile_stmts(body)
   // Functions implicitly return None when control reaches the end.

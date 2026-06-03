@@ -384,3 +384,82 @@ test "vm leaves no call frame behind after an error on a reused thread" {
   assert_true(r is Err(_))
   assert_eq(thread.call_stack_depth(), 0)
 }
+
+///|
+test "vm matches walker on default parameter values" {
+  assert_vm_matches_walker(
+    "def f(a, b=10):\n  return a + b\n\nx = f(1)\ny = f(1, 2)",
+  )
+}
+
+///|
+test "vm matches walker on keyword arguments" {
+  assert_vm_matches_walker(
+    "def f(a, b, c):\n  return a * 100 + b * 10 + c\n\nx = f(1, c=3, b=2)\ny = f(c=3, a=1, b=2)",
+  )
+}
+
+///|
+test "vm matches walker on defaults combined with keyword arguments" {
+  assert_vm_matches_walker(
+    "def f(a, b=2, c=3):\n  return [a, b, c]\n\nx = f(1)\ny = f(1, c=9)\nz = f(1, 8, 9)",
+  )
+}
+
+///|
+test "vm matches walker on *args" {
+  assert_vm_matches_walker(
+    "def f(a, *rest):\n  return [a, rest]\n\nx = f(1)\ny = f(1, 2, 3)",
+  )
+}
+
+///|
+test "vm matches walker on **kwargs" {
+  assert_vm_matches_walker(
+    "def f(a, **kw):\n  return [a, kw]\n\nx = f(1, b=2, c=3)",
+  )
+}
+
+///|
+test "vm matches walker on keyword-only parameters" {
+  assert_vm_matches_walker(
+    "def f(a, *, b, c=5):\n  return a + b + c\n\nx = f(1, b=2)\ny = f(1, b=2, c=3)",
+  )
+}
+
+///|
+test "vm matches walker on the full parameter form" {
+  assert_vm_matches_walker(
+    "def f(a, b=2, *args, c, **kw):\n  return [a, b, args, c, kw]\n\nx = f(1, 9, 8, 7, c=3, d=4)",
+  )
+}
+
+///|
+test "vm matches walker on too many positional arguments error" {
+  assert_vm_matches_walker("def f(a, b):\n  return a\n\nx = f(1, 2, 3)")
+}
+
+///|
+test "vm matches walker on missing required argument error" {
+  assert_vm_matches_walker("def f(a, b, c):\n  return a\n\nx = f(1)")
+}
+
+///|
+test "vm matches walker on unexpected keyword argument error" {
+  assert_vm_matches_walker("def f(a, b):\n  return a\n\nx = f(1, zz=2)")
+}
+
+///|
+test "vm matches walker on multiple values for a parameter error" {
+  assert_vm_matches_walker("def f(a, b):\n  return a\n\nx = f(1, a=2)")
+}
+
+///|
+test "vm matches walker on a nullary function called with arguments" {
+  assert_vm_matches_walker("def f():\n  return 1\n\nx = f(2)")
+}
+
+///|
+test "vm matches walker on keyword args passed to a builtin" {
+  assert_vm_matches_walker("xs = sorted([3, 1, 2], reverse=True)")
+}

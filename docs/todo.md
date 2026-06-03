@@ -2717,7 +2717,7 @@ a validation-only pre-pass and `@syntax` stays immutable.
       differential tests. (Iterator release on the error-unwind path is deferred
       to the flip; not observable here. For-loop destructuring targets arrive with
       tuple unpacking.)
-- [~] **M6**: function defs + calls.
+- [x] **M6**: function defs + calls.
       - [x] **M6a**: `def`/`lambda` → nested funcodes with per-function local
         slots; positional `Call`, `Return`, `MakeFunc`; recursion/depth; live
         per-frame backtrace stamping (verified by full `to_string()` comparison
@@ -2736,11 +2736,16 @@ a validation-only pre-pass and `@syntax` stays immutable.
           `sorted(iterable, key)`) re-enters the VM via `ctx.vm`, so the callback
           runs on a VM frame with matching recursion/backtrace semantics;
           keyword/splat callbacks await M6b-2.
-        - [ ] **M6b-2**: full user-function argument binding — defaults, keyword
-          args, `*args`/`**kwargs`, keyword-only params (compiler param kinds +
-          `MakeTuple` defaults with MANDATORY sentinels; `CALL_KW`/`CALL_VAR`/
-          `CALL_VAR_KW`; a port of starlark-go `setArgs`), and arg-count error
-          message parity.
+        - [x] **M6b-2**: full user-function argument binding — defaults, keyword
+          args, `*args`/`**kwargs`, keyword-only params. Each funcode carries an
+          AST-free `ParamSpec` list; defaults are gathered at definition time and
+          aligned onto optional params at `MakeFunc`; keyword call arguments
+          compile to name/value pairs. The VM binds with a direct port of the
+          walker's `bind_args` over the param specs, so defaults, `*args`/
+          `**kwargs` collection, and all four arg-count error variants (too many
+          positional, missing required, unexpected keyword + did-you-mean,
+          multiple values) match. Keyword args reach builtins too. (Splat *call
+          sites* — `f(*xs)`/`f(**kw)` — remain pending; deferred to the flip.)
 - [ ] **M7**: closure cells (Cell, FREE/FREECELL/LOCALCELL/SETLOCALCELL,
       cell-promotion analysis; BUG-28 parity). Spike the capture analysis first.
 - [ ] **M8**: comprehensions (lowered to ITER loops with isolated scope).

@@ -161,6 +161,75 @@ test "toplevel always ends with NONE and RETURN" {
 }
 
 ///|
+/// `num_params` counts every named parameter that occupies a local slot,
+/// including `*args` and `**kwargs`, so it stays consistent with the `locals`
+/// ordering and the runtime function's `num_params` contract.
+test "num_params counts varargs and kwargs parameters" {
+  // def f(a, b=1, *args, **kw): pass
+  let def_ = @syntax.Stmt::SDef(
+    "f",
+    [
+      @syntax.Param::ParamIdent("a", p(1, 1)),
+      @syntax.Param::ParamDefault("b", lit_int(1), p(1, 1)),
+      @syntax.Param::ParamStarIdent("args", p(1, 1)),
+      @syntax.Param::ParamKwIdent("kw", p(1, 1)),
+    ],
+    [@syntax.Stmt::SPass(p(2, 3))],
+    p(1, 1),
+  )
+  let file = @syntax.File::new("t.star", [def_])
+  let prog = @compile.compile(
+    file,
+    fn(_) { false },
+    fn(n) { n == "None" || n == "True" || n == "False" },
+    true,
+  ) catch {
+    _ => abort("compile failed")
+  }
+  assert_eq(prog.functions[0].num_params, 4)
+}
+
+///|
+/// The `Call` operand packs the positional count in the high bits and the
+/// keyword count in the low 8 bits, so a call may carry at most 255 keyword
+/// arguments. Exceeding that must surface as a CompileErr rather than silently
+/// truncating the count and mis-popping the stack.
+test "call rejects more than 255 keyword arguments" {
+  let args : Array[@syntax.Arg] = []
+  for i in 0..<256 {
+    args.push(@syntax.Arg::ArgKw("k\{i}", lit_int(i), p(1, 1)))
+  }
+  let call = @syntax.Stmt::SExpr(
+    @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(1, 1)), args, p(1, 1)),
+  )
+  let file = @syntax.File::new("t.star", [call])
+  let r = try? @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true)
+  match r {
+    Err(CompileErr(msg)) => assert_true(msg.contains("limit is 255"))
+    _ => abort("expected a CompileErr")
+  }
+}
+
+///|
+/// The positional count shares the same 8-bit-per-field encoding, so a call may
+/// carry at most 255 positional arguments before the count must be rejected.
+test "call rejects more than 255 positional arguments" {
+  let args : Array[@syntax.Arg] = []
+  for i in 0..<256 {
+    args.push(@syntax.Arg::ArgPos(lit_int(i)))
+  }
+  let call = @syntax.Stmt::SExpr(
+    @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(1, 1)), args, p(1, 1)),
+  )
+  let file = @syntax.File::new("t.star", [call])
+  let r = try? @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true)
+  match r {
+    Err(CompileErr(msg)) => assert_true(msg.contains("limit is 255"))
+    _ => abort("expected a CompileErr")
+  }
+}
+
+///|
 test "line table maps a statement's instructions back to its source line" {
   // x = 42 placed on line 7
   let assign = @syntax.Stmt::SAssign(

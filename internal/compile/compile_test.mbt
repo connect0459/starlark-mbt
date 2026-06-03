@@ -61,6 +61,7 @@ test "funcode position recovers source line and column from pc" {
     num_kwonly_params: 0,
     has_varargs: false,
     has_kwargs: false,
+    params: [],
   }
   // exact hits
   assert_eq(fc.position(0).line(), 2)
@@ -94,6 +95,7 @@ test "funcode position falls back to def position with empty line table" {
     num_kwonly_params: 0,
     has_varargs: false,
     has_kwargs: false,
+    params: [],
   }
   assert_eq(fc.position(0).line(), 10)
   assert_eq(fc.position(50).col(), 2)
