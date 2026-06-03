@@ -682,8 +682,11 @@ fn collect_globals(
     for s in ss {
       match s {
         SAssign(EIdent(name, pos), _, _) => add(name, pos)
-        SFor(EIdent(name, pos), _, body, _) => {
-          add(name, pos)
+        SFor(target, _, body, _) => {
+          match target {
+            EIdent(name, pos) => add(name, pos)
+            _ => ()
+          }
           walk(body)
         }
         SIf(_, then_body, else_body, _) => {

@@ -206,3 +206,28 @@ test "an unsupported expression reports its own position in the error" {
     _ => abort("expected a CompileErr")
   }
 }
+
+///|
+test "an unsupported for-loop target reports its own position, not the enclosing statement" {
+  // A tuple-destructuring `for` target is not yet lowered; the error must
+  // pinpoint the target expression rather than fall back to the statement.
+  let target = @syntax.Expr::ETuple(
+    [@syntax.Expr::EIdent("k", p(1, 5)), @syntax.Expr::EIdent("v", p(1, 8))],
+    p(1, 5),
+  )
+  let for_stmt = @syntax.Stmt::SFor(
+    target,
+    @syntax.Expr::EList([], p(1, 14)),
+    [@syntax.Stmt::SPass(p(2, 3))],
+    p(1, 1),
+  )
+  let file = @syntax.File::new("t.star", [for_stmt])
+  let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
+  match r {
+    Err(CompileErr(msg)) => {
+      assert_true(msg.contains("for-loop target"))
+      assert_true(msg.contains("t.star:1:5"))
+    }
+    _ => abort("expected a CompileErr")
+  }
+}
