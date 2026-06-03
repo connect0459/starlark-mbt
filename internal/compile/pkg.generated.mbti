@@ -3,15 +3,21 @@ package "connect0459/starlark/internal/compile"
 
 import {
   "connect0459/starlark/errors",
+  "connect0459/starlark/syntax",
   "moonbitlang/core/bigint",
 }
 
 // Values
 pub fn all_opcodes() -> Array[Opcode]
 
+pub fn compile(@syntax.File, (String) -> Bool, (String) -> Bool, Bool) -> CompiledProgram raise CompileErr
+
 pub let op_arg_min : Int
 
 // Errors
+pub suberror CompileErr {
+  CompileErr(String)
+}
 
 // Types and methods
 pub(all) struct CompiledProgram {
@@ -48,7 +54,14 @@ pub(all) struct Funcode {
   has_varargs : Bool
   has_kwargs : Bool
 }
+pub fn Funcode::disasm(Self) -> Array[Instr]
 pub fn Funcode::position(Self, Int) -> @errors.Position
+
+pub(all) struct Instr {
+  pc : Int
+  op : Opcode
+  arg : Int
+} derive(Eq)
 
 pub(all) enum Opcode {
   Nop
