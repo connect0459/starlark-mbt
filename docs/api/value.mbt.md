@@ -179,8 +179,8 @@ pub struct StarlarkDict { /* private fields */ }  // in "connect0459/starlark/va
 | `length() -> Int` | Number of entries |
 | `keys() -> Array[Value]` | Keys in insertion order |
 | `each((Value, Value) -> Unit)` | Iterate all key–value pairs |
-| `iter() -> Iter[Value]` | Lazy iterator over keys |
-| `entries() -> Iter[(Value, Value)]` | Lazy iterator over key–value pairs |
+| `iter() -> Iter[Value]` | Iterator over a snapshot of keys in insertion order |
+| `entries() -> Iter[(Value, Value)]` | Iterator over a snapshot of key–value pairs in insertion order |
 | `popitem() -> Result[(Value, Value)?, String]` | Remove and return the last inserted pair |
 | `is_frozen() -> Bool` | Whether the dict is frozen |
 | `freeze() -> Unit` | Freeze the dict (and, transitively, its values) |
