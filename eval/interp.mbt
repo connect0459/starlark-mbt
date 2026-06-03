@@ -51,21 +51,26 @@ fn binop_of_opcode(op : @compile.Opcode) -> @syntax.BinaryOp? {
 
 ///|
 /// Reads a uvarint operand from `code` starting at `i`, returning the value and
-/// the offset just past it. The compiler guarantees well-formed operands.
+/// the offset just past it. The compiler guarantees well-formed operands; a
+/// truncated or over-long stream is an internal invariant violation and aborts
+/// with a clear message, mirroring the disassembler's bounded decode.
 fn vm_read_arg(code : Bytes, i : Int) -> (Int, Int) {
   let mut result = 0
   let mut shift = 0
   let mut pc = i
-  while true {
+  for _ in 0..<5 {
+    if pc >= code.length() {
+      abort("vm: truncated operand")
+    }
     let b = code[pc].to_int()
     pc += 1
     result = result | ((b & 0x7f) << shift)
     if (b & 0x80) == 0 {
-      break
+      return (result, pc)
     }
     shift += 7
   }
-  (result, pc)
+  abort("vm: operand too long")
 }
 
 ///|
