@@ -2857,10 +2857,6 @@ a validation-only pre-pass and `@syntax` stays immutable.
       halves of expr/stmt/eval, `EvalEnv` closure machinery, `captured_scope`);
       `StarlarkFunction` holds a `Funcode` only; **drop `syntax` from `value`**;
       slot-based `DebugFrame`.
-- [ ] **M11 + M12b** (cleanup — the goal): delete the walker (`signal.mbt`, AST
-      halves of expr/stmt/eval, `EvalEnv` closure machinery, `captured_scope`);
-      `StarlarkFunction` holds a `Funcode` only; **drop `syntax` from `value`**;
-      slot-based `DebugFrame`.
 - [ ] **M13** (optional): serialize programs as bytecode; bump `SerialVersion=2`.
 
 ---
