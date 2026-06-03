@@ -6,8 +6,8 @@
 
 - Issues:
   - <!-- <https://github.com/<organization>/<repository>/issues/xxx> -->
-- specs/WPT tests:
-  - <!-- URL or path -->
+- PRs
+  - <!-- <https://github.com/<organization>/<repository>/pull/xxx> -->
 
 ## [Required] Overview
 
@@ -50,10 +50,12 @@ without this information.
 - Note which backends were validated (js / wasm / wasm-gc / native).
 - If WPT test cases were added or updated, list them.
 
-## Quality Checklist (Required)
+## [Required] Quality Checklist
 
-### Please check all items before merging
+**Please check all items before merging.**
 
 - [ ] **CI Workflow Execution**: Full quality check completed by manually running `Run workflow` in [Actions](../actions/workflows/ci.yml)
+- [ ] **Code Comments**: Code comments and function/method-level doc-comments are in sync with the changes
+- [ ] **Reference Docs**: `README.mbt.md` and files under `docs/api/` are updated so they do not drift from the implementation
 
 > **Important**: Since this is a private repository, this checklist ensures quality. Please verify all items before requesting review.
