@@ -439,7 +439,7 @@ pub struct BuiltinCallCtx { /* private fields */ }  // in "connect0459/starlark/
 | `invoke(Value, Array[Value], Array[(String, Value)])` | `-> Result[Value, String]` | Call a Starlark callable from within the built-in |
 | `get_local(String)` | `-> Value?` | Read thread-local state set on the active `Thread` |
 
-See the `src/lib/struct/` and `src/lib/time/` extensions for idiomatic `CustomValue` usage.
+See the `lib/struct/` and `lib/time/` extensions for idiomatic `CustomValue` usage.
 
 ---
 

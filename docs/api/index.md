@@ -18,8 +18,8 @@ verified doc test (`.mbt.md`): the `mbt check` examples are compiled and run by
 | `connect0459/starlark/lib/struct` | `@struct` | [lib-struct.mbt.md](./lib-struct.mbt.md) | `struct`, `module`, and `gensym` extension (starlarkstruct) |
 | `connect0459/starlark/lib/time` | `@time` | [lib-time.mbt.md](./lib-time.mbt.md) | Time and duration extension (starlarktime) |
 
-All `src/internal/*` packages are implementation details and are not importable by consumers.
+All `internal/*` packages are implementation details and are not importable by consumers.
 The packages `eval`, `value`, `errors`, `syntax`, and `unpack` are public sub-packages; import
-them directly. There is **no** top-level `connect0459/starlark` facade — entry functions live in
-`@eval`, value types and inspection helpers in `@value`, error types in `@errors`, AST types in
-`@syntax`, and argument unpacking in `@unpack`.
+them directly. The root `connect0459/starlark` package adds zero-ceremony helpers (`exec`, `eval`)
+on top of these — full-control entry functions live in `@eval`, value types and inspection helpers
+in `@value`, error types in `@errors`, AST types in `@syntax`, and argument unpacking in `@unpack`.

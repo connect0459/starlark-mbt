@@ -96,6 +96,6 @@ tidy(hashtable): name initial_capacity constant
 
 - No code comments unless the **why** is genuinely non-obvious.
 - Prefer immutability; avoid mutable state unless necessary.
-- Internal packages under `src/internal/` are not part of the public API and
-  must not be re-exported through `src/starlark/`.
+- Internal packages under `internal/` are not part of the public API and
+  must not be re-exported through the root `connect0459/starlark` package.
 - All user-facing strings (test names, error messages, doc comments) must be in **English**.
