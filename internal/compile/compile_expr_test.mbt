@@ -190,6 +190,46 @@ test "num_params counts varargs and kwargs parameters" {
 }
 
 ///|
+/// The `Call` operand packs the positional count in the high bits and the
+/// keyword count in the low 8 bits, so a call may carry at most 255 keyword
+/// arguments. Exceeding that must surface as a CompileErr rather than silently
+/// truncating the count and mis-popping the stack.
+test "call rejects more than 255 keyword arguments" {
+  let args : Array[@syntax.Arg] = []
+  for i in 0..<256 {
+    args.push(@syntax.Arg::ArgKw("k\{i}", lit_int(i), p(1, 1)))
+  }
+  let call = @syntax.Stmt::SExpr(
+    @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(1, 1)), args, p(1, 1)),
+  )
+  let file = @syntax.File::new("t.star", [call])
+  let r = try? @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true)
+  match r {
+    Err(CompileErr(msg)) => assert_true(msg.contains("limit is 255"))
+    _ => abort("expected a CompileErr")
+  }
+}
+
+///|
+/// The positional count shares the same 8-bit-per-field encoding, so a call may
+/// carry at most 255 positional arguments before the count must be rejected.
+test "call rejects more than 255 positional arguments" {
+  let args : Array[@syntax.Arg] = []
+  for i in 0..<256 {
+    args.push(@syntax.Arg::ArgPos(lit_int(i)))
+  }
+  let call = @syntax.Stmt::SExpr(
+    @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(1, 1)), args, p(1, 1)),
+  )
+  let file = @syntax.File::new("t.star", [call])
+  let r = try? @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true)
+  match r {
+    Err(CompileErr(msg)) => assert_true(msg.contains("limit is 255"))
+    _ => abort("expected a CompileErr")
+  }
+}
+
+///|
 test "line table maps a statement's instructions back to its source line" {
   // x = 42 placed on line 7
   let assign = @syntax.Stmt::SAssign(

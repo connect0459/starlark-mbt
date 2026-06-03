@@ -432,6 +432,18 @@ fn Fcomp::compile_call(
         )
     }
   }
+  // The Call operand packs `(npos << 8) | nkw`; each field is 8 bits, so both
+  // counts must stay below 256 or they would corrupt one another at decode.
+  if npos >= 256 {
+    raise CompileErr(
+      "compile: \{npos} positional arguments in call, limit is 255 at \{pos.to_string()}",
+    )
+  }
+  if nkw >= 256 {
+    raise CompileErr(
+      "compile: \{nkw} keyword arguments in call, limit is 255 at \{pos.to_string()}",
+    )
+  }
   self.set_pos(pos)
   // pops callee + npos positional + nkw (name, value) pairs, pushes the result.
   self.emit1(Opcode::Call, (npos << 8) | nkw, 1 + npos + 2 * nkw, 1)
