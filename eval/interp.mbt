@@ -211,6 +211,15 @@ fn load_binds_name(prog : @compile.CompiledProgram, name : String) -> Bool {
 }
 
 ///|
+/// Formats the "accepts N positional arguments (M given)" portion of an
+/// arity-error message, matching the established interpreter's wording.
+fn pos_arg_count_msg(max_pos : Int, given : Int, has_opt : Bool) -> String {
+  let atmost = if has_opt { "at most " } else { "" }
+  let arg_word = if max_pos == 1 { "argument" } else { "arguments" }
+  "\{atmost}\{max_pos} positional \{arg_word} (\{given} given)"
+}
+
+///|
 /// Decodes an `AugApply` operand back into an augmented-assignment operator.
 fn augop_of_int(code : Int) -> @syntax.AugOp {
   match code {
@@ -776,8 +785,8 @@ fn VM::run_frame(
       Predeclared | Universal => {
         let name = m.prog.names[arg]
         match ctx.global_env.lookup(name) {
-          LFound(v) => push(v)
-          _ =>
+          Some(v) => push(v)
+          None =>
             raise EvalErr(
               make_eval_error(ctx, "\{pos.to_string()}: undefined: \{name}"),
             )
@@ -996,9 +1005,11 @@ fn VM::call_compiled(
   self.active.push(fc)
   // Record the frame for debugger inspection (`Thread::debug_frame`), referencing
   // the live local slots so locals read at their current values.
-  self.ctx.thread.debug_stack.push(
-    ActiveCallFrame::VmFrame(@value.Value::Function(f), fc, locals),
-  )
+  self.ctx.thread.debug_stack.push(ActiveCallFrame::{
+    func_val: @value.Value::Function(f),
+    funcode: fc,
+    slots: locals,
+  })
   let fidx = self.ctx.thread.call_stack.length() - 1
   let r = self.run_frame(m, fc, f.name(), locals, f.compiled_freevars(), fidx) catch {
     EvalErr(e) => {
