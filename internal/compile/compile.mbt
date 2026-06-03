@@ -134,6 +134,9 @@ fn Fcomp::emit1(
 
 ///|
 fn write_uvarint(code : Array[Byte], n : Int) -> Unit {
+  if n < 0 {
+    abort("compile: uvarint operand must be non-negative, got \{n}")
+  }
   let mut v = n
   while v >= 0x80 {
     code.push(((v & 0x7f) | 0x80).to_byte())
