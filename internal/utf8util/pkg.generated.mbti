@@ -2,6 +2,8 @@
 package "connect0459/starlark/internal/utf8util"
 
 // Values
+pub fn decode_utf8_lossy(Bytes) -> String
+
 pub fn hex_char(Int) -> Char
 
 pub fn is_cased_rune(Int) -> Bool
@@ -13,6 +15,8 @@ pub fn is_title_letter(Int) -> Bool
 pub fn is_unicode_printable(Int) -> Bool
 
 pub fn is_upper_letter(Int) -> Bool
+
+pub fn is_valid_utf8(Bytes) -> Bool
 
 pub fn spell_fold_chars(String) -> Array[Int]
 

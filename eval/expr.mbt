@@ -310,10 +310,10 @@ fn call_builtin(
       } else if pos_args.length() == 1 {
         match pos_args[0] {
           @value.Value::Bytes(b) =>
+            // starlark-go's str(bytes) replaces invalid encodings with U+FFFD
+            // using Go's per-byte decoder, not the WHATWG maximal-subpart rule.
             @value.Value::String(
-              @value.StarlarkString::new(
-                @value.StarlarkString::from_bytes(b).raw(),
-              ),
+              @value.StarlarkString::new(@utf8util.decode_utf8_lossy(b)),
             )
           v => @value.Value::String(@value.StarlarkString::new(v.to_str()))
         }
@@ -1341,25 +1341,14 @@ fn builtin_sorted(
   for i in 0..<items.length() {
     indices[i] = i
   }
-  let mut sort_err : @errors.EvalError? = None
+  let mut had_type_error = false
   indices.sort_by(fn(a, b) {
-    // Always compare keys in original-index order so that type-mismatch errors
-    // report "left_type < right_type" matching starlark-go's left-to-right
-    // comparison behaviour.
-    let (x, y, flipped) = if a <= b {
-      (keys[a], keys[b], false)
-    } else {
-      (keys[b], keys[a], true)
-    }
-    match @value.compare_values(x, y) {
-      Err(msg) => {
-        if sort_err is None {
-          sort_err = Some(make_eval_error(ctx, msg))
-        }
+    match @value.compare_values(keys[a], keys[b]) {
+      Err(_) => {
+        had_type_error = true
         0
       }
       Ok(c) => {
-        let c = if flipped { -c } else { c }
         let cc = if reverse { -c } else { c }
         // Break ties by original index so the sort is stable regardless of the
         // underlying sort_by's stability; reverse keeps equal-key order (not
@@ -1372,12 +1361,58 @@ fn builtin_sorted(
       }
     }
   })
-  match sort_err {
-    Some(e) => raise EvalErr(e)
-    None => {
-      let result : Array[@value.Value] = indices.map(fn(i) { items[i] })
-      @value.Value::List(@value.StarlarkList::new(result))
+  if had_type_error {
+    raise EvalErr(sorted_type_error(ctx, keys, reverse))
+  }
+  let result : Array[@value.Value] = indices.map(fn(i) { items[i] })
+  @value.Value::List(@value.StarlarkList::new(result))
+}
+
+///|
+// Reproduce starlark-go's type-mismatch error message for `sorted`. starlark-go
+// sorts with sort.Stable, whose insertion sort compares less(j, j-1) and keeps
+// the LAST failing comparison's error while sorting continues; sort.Reverse
+// swaps the comparison operands. Replaying that insertion sort over the keys
+// recovers the exact "<left> < <right> not implemented" message and direction.
+fn sorted_type_error(
+  ctx : EvalContext,
+  keys : Array[@value.Value],
+  reverse : Bool,
+) -> @errors.EvalError {
+  let n = keys.length()
+  let idx : Array[Int] = Array::make(n, 0)
+  for i in 0..<n {
+    idx[i] = i
+  }
+  let mut err : @errors.EvalError? = None
+  for i in 1..<n {
+    let mut j = i
+    while j > 0 {
+      let (l, r) = if reverse {
+        (keys[idx[j - 1]], keys[idx[j]])
+      } else {
+        (keys[idx[j]], keys[idx[j - 1]])
+      }
+      let less = match @value.compare_values(l, r) {
+        Err(msg) => {
+          err = Some(make_eval_error(ctx, msg))
+          false
+        }
+        Ok(c) => c < 0
+      }
+      if less {
+        let tmp = idx[j]
+        idx[j] = idx[j - 1]
+        idx[j - 1] = tmp
+        j -= 1
+      } else {
+        break
+      }
     }
+  }
+  match err {
+    Some(e) => e
+    None => make_eval_error(ctx, "sorted: comparison failed")
   }
 }
 
@@ -2491,7 +2526,18 @@ fn builtin_bytes(
   }
   match pos_args[0] {
     @value.Value::Bytes(b) => @value.Value::Bytes(b)
-    @value.Value::String(s) => @value.Value::Bytes(s.to_bytes())
+    @value.Value::String(s) => {
+      // starlark-go replaces invalid encodings with U+FFFD when converting a
+      // string to bytes (library.go utf8Transcode). When the bytes are already
+      // valid UTF-8 (the common case), the transcode is a no-op, so the raw
+      // bytes are returned unchanged to avoid an extra String/Bytes allocation.
+      let raw = s.to_bytes()
+      if @utf8util.is_valid_utf8(raw) {
+        @value.Value::Bytes(raw)
+      } else {
+        @value.Value::Bytes(@utf8.encode(@utf8util.decode_utf8_lossy(raw)))
+      }
+    }
     other => {
       let it = match @value.iterate(other) {
         Err(_) =>

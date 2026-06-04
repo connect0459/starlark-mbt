@@ -118,6 +118,61 @@ pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
 }
 
 ///|
+/// Reports whether `b` is entirely valid UTF-8.
+///
+/// Used to skip the decode/re-encode round-trip in `bytes(string)` when the
+/// underlying bytes are already valid (the common case), so the original byte
+/// sequence can be returned unchanged without allocating a new `String`.
+///
+/// Parameters:
+///
+/// - `b` : The byte sequence to validate.
+///
+/// Returns `true` when every byte is part of a well-formed UTF-8 sequence.
+pub fn is_valid_utf8(b : Bytes) -> Bool {
+  let len = b.length()
+  let mut i = 0
+  while i < len {
+    let (r, width) = utf8_decode_rune(b, i)
+    if r < 0 {
+      return false
+    }
+    i += width
+  }
+  true
+}
+
+///|
+/// Decodes `b` as UTF-8, replacing each invalid or truncated byte with U+FFFD.
+///
+/// Unlike `moonbitlang/core`'s `decode_lossy` (which follows the WHATWG
+/// "maximal subpart" rule, emitting one U+FFFD for a truncated-but-well-formed
+/// prefix), this follows Go's `utf8.DecodeRune` rule of consuming one byte per
+/// error. A truncated sequence such as `0xE7 0x95` therefore yields two U+FFFD,
+/// matching starlark-go's `str(bytes)` and `bytes(string)` behaviour.
+///
+/// Parameters:
+///
+/// - `b` : The byte sequence to decode.
+///
+/// Returns the decoded string with invalid sequences replaced by U+FFFD.
+pub fn decode_utf8_lossy(b : Bytes) -> String {
+  let buf = StringBuilder::new()
+  let len = b.length()
+  let mut i = 0
+  while i < len {
+    let (r, width) = utf8_decode_rune(b, i)
+    if r < 0 {
+      buf.write_char('\u{FFFD}')
+    } else {
+      buf.write_char(r.unsafe_to_char())
+    }
+    i += width
+  }
+  buf.to_string()
+}
+
+///|
 /// Reports whether a Unicode codepoint is printable, matching Go's
 /// `strconv.IsPrint`. Used by `repr` to decide whether to emit `\xNN` escapes.
 ///
