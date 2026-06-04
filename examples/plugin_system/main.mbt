@@ -80,7 +80,10 @@ fn main {
   ])
   universe.set(
     "fetch",
-    @value.Value::new_builtin("fetch", fn(_ctx, _args, _kws) {
+    @value.Value::new_builtin("fetch", fn(_ctx, args, _kws) {
+      if args.length() != 1 {
+        return Err("fetch: expected 1 argument (url), got \{args.length()}")
+      }
       Ok(mock_response)
     }),
   )
