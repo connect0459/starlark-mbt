@@ -195,12 +195,11 @@ fn pattern_unescape(pat : StringView) -> String {
   buf.to_string()
 }
 
-// Try to match `pat` at position `ti` in `tc`, where unescaped '.' matches any
-// single char and '\X' matches literal X.  Returns the position after the match
-// on success, or -1 on failure.
-// pattern_unescape has already resolved \X escapes before this function is
-// called.  Here, only unescaped '.' acts as a single-character wildcard; all
-// other characters (including '\') are matched literally.
+// Try to match `pat` at position `ti` in `tc`, where '.' matches any single
+// char.  Returns the position after the match on success, or -1 on failure.
+// pattern_unescape has already stripped every backslash before this function is
+// called, so '.' always acts as a single-character wildcard here; there is no
+// way to match a literal '.' (an escaped "\." also collapses to a wildcard).
 
 ///|
 fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
@@ -226,8 +225,8 @@ fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
   ti
 }
 
-// Find the first occurrence of `pat` (where unescaped '.' matches any single
-// char and '\X' matches literal X) in `text` starting at position `start_pos`.
+// Find the first occurrence of `pat` (where '.' matches any single char) in
+// `text` starting at position `start_pos`.
 // Returns the position immediately after the match, or None if not found.
 
 ///|
