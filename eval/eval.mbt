@@ -3,8 +3,8 @@ let default_max_recursion_depth : Int = 100
 
 ///|
 /// Feature-flag set controlling which optional Starlark dialect features are
-/// enabled. All flags default to `true` except `allow_recursion`, which
-/// defaults to `false` to match starlark-go.
+/// enabled. All flags default to `true` except `allow_recursion`
+/// (off to match starlark-go) and `load_binds_globally` (off; a legacy compatibility flag).
 pub struct Options {
   priv allow_set : Bool
   priv allow_recursion : Bool
@@ -19,7 +19,8 @@ pub struct Options {
 
 ///|
 /// Returns the default `Options`: every feature flag enabled except
-/// `allow_recursion`, which defaults to `false` to match starlark-go.
+/// `allow_recursion` (off to match starlark-go) and `load_binds_globally`
+/// (off; a legacy compatibility flag).
 pub fn Options::default() -> Options {
   {
     allow_set: true,
