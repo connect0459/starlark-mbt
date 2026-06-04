@@ -2662,7 +2662,14 @@ depend on publishing).
 
 ---
 
-## Bytecode Compiler + VM Migration
+## Bytecode Compiler + VM Migration ✅
+
+**Status: complete.** The flip has landed — the AST walker is deleted and the
+bytecode VM is the sole execution engine behind every public entry (`exec_file`,
+`eval_expr`, REPL, `Program`). `value` no longer imports `syntax`, programs
+serialize as bytecode (`SerialVersion=2`), and step counting is per-instruction
+on the VM dispatch loop. The planning narrative below is retained for history;
+the milestone checkboxes record what shipped.
 
 Replace the AST-walking interpreter with a bytecode compiler + VM, modeled on
 starlark-go (`internal/compile` + `interp.go`). **Motivation**: the runtime
@@ -2725,7 +2732,7 @@ a validation-only pre-pass and `@syntax` stays immutable.
         gained a private optional `funcode` + `#internal from_compiled` (M11
         representation introduced early); `value` now imports the AST-free
         `compile` (no syntax leak). Harness compares globals by `repr`.
-      - [~] **M6b**: builtin calls + full argument binding.
+      - [x] **M6b**: builtin calls + full argument binding.
         - [x] **M6b-1**: builtin calls from the VM — the VM intercepts compiled
           user functions (frames) and delegates all other callees (builtins,
           bound methods, custom values, non-callable errors) to the existing
@@ -2745,7 +2752,7 @@ a validation-only pre-pass and `@syntax` stays immutable.
           `**kwargs` collection, and all four arg-count error variants (too many
           positional, missing required, unexpected keyword + did-you-mean,
           multiple values) match. Keyword args reach builtins too. (Splat *call
-          sites* — `f(*xs)`/`f(**kw)` — remain pending; deferred to the flip.)
+          sites* — `f(*xs)`/`f(**kw)` — landed in PR-B.)
 - [x] **M7**: closures via captured cells. Free variables resolve up the
       enclosing-function chain; the originating local is promoted to a cell and
       the capture is threaded through intermediate functions (FromLocal/FromFree
@@ -2758,15 +2765,15 @@ a validation-only pre-pass and `@syntax` stays immutable.
       cell mutated in a loop, and same-named-global-is-not-captured. (Closures
       that index-assign a captured container await index/attribute assignment
       targets — a separate compiler feature, not closure-specific.)
-- [~] **M8**: comprehensions. List and dict comprehensions lower to an
+- [x] **M8**: comprehensions. List and dict comprehensions lower to an
       accumulator (`MakeList`/`MakeDict`) plus a nest of iterator loops and
       if-guards (`Append`/`SetDict`); comp variables are isolated comp-local
       slots (saved/restored), first iterable in the enclosing scope, all targets
       known in later iterables (BUG-28 scoping). The module-init frame now
       allocates locals (module-scope comp vars). Verified by differential tests
       (simple/guarded/nested/multi-guard/range/in-function list comps; dict comps
-      with/without guards; later-iterable-references-target). **Set
-      comprehensions deferred** (need a set-accumulator opcode).
+      with/without guards; later-iterable-references-target). Set comprehensions
+      landed in PR-B via the `MakeSet`/`SetAdd` accumulator opcodes.
 - [x] **M9**: `load` statements on the VM. Each `load` compiles to a `Load`
       opcode indexing a per-program load table (path + exports + module-global
       slots); the VM's handler invokes the thread loader, binds each export into
@@ -2780,8 +2787,8 @@ a validation-only pre-pass and `@syntax` stays immutable.
 - [x] **Flip prerequisites**: the remaining constructs the walker handles but the
       compiler did not, split into two PRs so the flip can switch the default
       with full coverage. The VM now lowers every walker construct. (M10
-      step-counting recalibration is deferred until the VM is the default
-      engine.)
+      step counting is per-instruction on the VM dispatch loop, now that the VM
+      is the default engine.)
   - [x] **PR-A**: assignment targets + augmented assignment. Plain assignment
         evaluates the right-hand side first, then assigns to the target;
         `compile_assign_target` handles identifier, index (`SetIndex`), attribute
@@ -2834,8 +2841,8 @@ a validation-only pre-pass and `@syntax` stays immutable.
       cannot see a loaded function's own module globals/siblings ("undefined");
       the VM is correct (verified against starlark-go/rust) and diverges there.
       The differential harness asserts equality only where the engines agree;
-      corrected cases are pinned by VM-only tests. `exec_file` still runs the
-      walker.
+      corrected cases are pinned by VM-only tests. (At this milestone `exec_file`
+      still ran the walker; the flip below moved every entry onto the VM.)
 - [x] **M12a** (flip): every public execution entry now runs on the VM, with the
       walker retained behind the flip for rollback and the differential harness.
   - [x] `exec_file` + `eval_expr`/`eval_expr_with_opts`/`eval_parsed_expr` (an
@@ -2890,8 +2897,8 @@ a validation-only pre-pass and `@syntax` stays immutable.
 - ~~`time` extension library~~ — implemented as `src/lib/time/`; non-UTC timezones via IANA tzdb (native) / static table (wasm/js); native-only DST tests in `time_tz_native_test.mbt`
 - `proto` extension library (`starlark-go/lib/proto`)
 - ~~`starlarkstruct`~~ — implemented as `src/lib/struct/`; `struct()` builtin, `gensym()` callable symbols, `+` merge, `make_struct` API
-- Bytecode compilation / interpreter — MISSING-62; **in progress**, see the
-  "Bytecode Compiler + VM Migration" section above
+- ~~Bytecode compilation / interpreter~~ — MISSING-62; **done**, see the
+  "Bytecode Compiler + VM Migration" section above (VM is the sole engine)
 - Profiling and debugging hooks (`starlark-go/starlark/profile.go`)
 - ~~Big-integer `Int`~~ — implemented; `Value::Int` now uses MoonBit `BigInt` (arbitrary precision)
 - Thread-local storage `Thread.set_local()` / `Thread.local()` for embedder context
