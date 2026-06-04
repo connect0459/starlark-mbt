@@ -13,21 +13,51 @@ fn resolve_load(base_dir : String, load_path : String) -> String {
 }
 
 ///|
+/// Parses a Go-style boolean flag value (`strconv.ParseBool` set).
+fn parse_bool_flag(value : String) -> Bool? {
+  match value {
+    "1" | "t" | "T" | "true" | "TRUE" | "True" => Some(true)
+    "0" | "f" | "F" | "false" | "FALSE" | "False" => Some(false)
+    _ => None
+  }
+}
+
+///|
 /// Parses the CLI arguments into the script path (if any) and the evaluation
-/// options. `--recursion` (or `-recursion`, matching starlark-go) enables
-/// recursive function calls, which are disabled by default.
-fn parse_cli_args(args : Array[String]) -> (String?, @eval.Options) {
+/// options. The `-recursion` boolean flag (also spelled `--recursion`, matching
+/// starlark-go) enables recursive function calls, which are disabled by
+/// default; it accepts the Go forms `-recursion`, `-recursion=true`, and
+/// `-recursion=false`. A bare `--` stops flag parsing so later arguments are
+/// treated as positional. Returns `Err` for an invalid flag value.
+fn parse_cli_args(
+  args : Array[String],
+) -> Result[(String?, @eval.Options), String] {
   let mut filepath : String? = None
   let mut opts = @eval.Options::default()
+  let mut flags_done = false
   for i in 1..<args.length() {
     let arg = args[i]
-    if arg == "--recursion" || arg == "-recursion" {
+    if flags_done {
+      if filepath is None {
+        filepath = Some(arg)
+      }
+      continue
+    }
+    if arg == "--" {
+      flags_done = true
+    } else if arg == "--recursion" || arg == "-recursion" {
       opts = opts.with_allow_recursion(true)
+    } else if arg.has_prefix("--recursion=") || arg.has_prefix("-recursion=") {
+      let value = arg[arg.find("=").unwrap() + 1:].to_owned()
+      match parse_bool_flag(value) {
+        Some(b) => opts = opts.with_allow_recursion(b)
+        None => return Err("invalid boolean value \"\{value}\" for -recursion")
+      }
     } else if filepath is None {
       filepath = Some(arg)
     }
   }
-  (filepath, opts)
+  Ok((filepath, opts))
 }
 
 ///|
@@ -93,14 +123,20 @@ fn run_repl(opts : @eval.Options) -> Unit {
 ///|
 fn main {
   let args = @sys.get_cli_args()
-  let (filepath, opts) = parse_cli_args(args)
-  match filepath {
-    None => run_repl(opts)
-    Some(fp) => {
-      let exit_code = run_file(fp, opts)
-      if exit_code != 0 {
-        @sys.exit(exit_code)
-      }
+  match parse_cli_args(args) {
+    Err(msg) => {
+      println("starlark: \{msg}")
+      @sys.exit(2)
     }
+    Ok((filepath, opts)) =>
+      match filepath {
+        None => run_repl(opts)
+        Some(fp) => {
+          let exit_code = run_file(fp, opts)
+          if exit_code != 0 {
+            @sys.exit(exit_code)
+          }
+        }
+      }
   }
 }
