@@ -444,6 +444,15 @@ fn Resolver::is_at_module_scope(self : Resolver) -> Bool {
   self.in_func == 0
 }
 
+///|
+/// Returns whether the current block is the file (module) block itself, i.e. we
+/// are not inside any nested block such as a function body or a comprehension.
+/// Bindings and uses are routed to module scope only here; a top-level
+/// comprehension pushes its own block, so its iteration variables stay local.
+fn Resolver::is_at_file_block(self : Resolver) -> Bool {
+  self.env.parent is None
+}
+
 // Push a new lexical block. Returns the saved outer block for restoration.
 
 ///|
@@ -603,7 +612,7 @@ fn Resolver::bind_name(
   name : String,
   pos : @errors.Position,
 ) -> Unit {
-  if self.is_at_module_scope() {
+  if self.is_at_file_block() {
     self.bind_global(name, pos)
   } else {
     self.bind_local(name, pos)
@@ -618,7 +627,7 @@ fn Resolver::use_name(
   name : String,
   pos : @errors.Position,
 ) -> Unit {
-  if self.is_at_module_scope() {
+  if self.is_at_file_block() {
     self.file_block.uses.push((name, pos))
   } else {
     self.env.uses.push((name, pos))
@@ -1201,6 +1210,7 @@ fn Resolver::walk_comprehension(
         Some(e) => self.walk_expr(e)
         None => ()
       }
+      self.resolve_function_uses(self.env, "")
       self.pop_block(saved)
     }
     _ => ()
