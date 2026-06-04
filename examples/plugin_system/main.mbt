@@ -50,8 +50,8 @@ fn main {
   universe.set(
     "log",
     @value.Value::new_builtin("log", fn(_ctx, args, _kws) {
-      if args.length() < 2 {
-        return Err("log: expected 2 arguments")
+      if args.length() != 2 {
+        return Err("log: expected 2 arguments, got \{args.length()}")
       }
       let level = match args[0] {
         @value.Value::String(s) => s.raw()
@@ -89,8 +89,8 @@ fn main {
   universe.set(
     "emit",
     @value.Value::new_builtin("emit", fn(_ctx, args, _kws) {
-      if args.length() < 2 {
-        return Err("emit: expected 2 arguments")
+      if args.length() != 2 {
+        return Err("emit: expected 2 arguments, got \{args.length()}")
       }
       let event = match args[0] {
         @value.Value::String(s) => s.raw()
