@@ -11,29 +11,19 @@ info-check:
 run-example path:
     #!/usr/bin/env bash
     set -euo pipefail
-    # Recursion is off by default; only opt in for scripts that need it so the
-    # examples still surface accidental reliance on recursion.
-    run_star() {
-        echo "==> $1"
-        if [[ "$1" == *fibonacci.star ]]; then
-            moon run cmd -- --recursion "$1"
-        else
-            moon run cmd -- "$1"
-        fi
-    }
     p="{{path}}"
     if [[ -d "$p" ]]; then
         name=$(basename "$p")
         for star in "$p"/*.star; do
             [[ -f "$star" ]] || continue
-            run_star "$star"
+            bash scripts/run-star.sh "$star"
         done
         if grep -q '"is-main": true' "$p/moon.pkg" 2>/dev/null; then
             echo "==> examples/$name (mbt)"
             (cd examples && moon run "$name")
         fi
     elif [[ "$p" == *.star ]]; then
-        run_star "$p"
+        bash scripts/run-star.sh "$p"
     elif [[ "$p" == *.mbt ]]; then
         dir=$(dirname "$p")
         name=$(basename "$dir")
@@ -48,21 +38,11 @@ run-example path:
 run-examples:
     #!/usr/bin/env bash
     set -uo pipefail
-    # Recursion is off by default; only opt in for scripts that need it so the
-    # examples still surface accidental reliance on recursion.
-    run_star() {
-        echo "==> $1"
-        if [[ "$1" == *fibonacci.star ]]; then
-            moon run cmd -- --recursion "$1"
-        else
-            moon run cmd -- "$1"
-        fi
-    }
     find examples -maxdepth 1 -mindepth 1 -type d -not -name '_*' -not -name 'mooncakes' | sort | while IFS= read -r dir; do
         name=$(basename "$dir")
         for star in "$dir"/*.star; do
             [[ -f "$star" ]] || continue
-            run_star "$star"
+            bash scripts/run-star.sh "$star"
         done
         if grep -q '"is-main": true' "$dir/moon.pkg" 2>/dev/null; then
             echo "==> examples/$name (mbt)"
