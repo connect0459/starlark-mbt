@@ -197,7 +197,7 @@ pub struct Options { /* private fields */ }  // in "connect0459/starlark/eval"
 | Accessor | Mutator | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `allow_set()` | `with_allow_set(Bool)` | `true` | Enable `set` literals and the `set()` built-in |
-| `allow_recursion()` | `with_allow_recursion(Bool)` | `true` | Allow recursive function calls |
+| `allow_recursion()` | `with_allow_recursion(Bool)` | `false` | Allow recursive function calls (off by default, matching starlark-go) |
 | `allow_lambda()` | `with_allow_lambda(Bool)` | `true` | Enable `lambda` expressions |
 | `allow_while()` | `with_allow_while(Bool)` | `true` | Enable `while` loops |
 | `allow_bytes()` | `with_allow_bytes(Bool)` | `true` | Enable `bytes` literals (`b"..."`) |
@@ -206,8 +206,9 @@ pub struct Options { /* private fields */ }  // in "connect0459/starlark/eval"
 | `allow_top_level_control()` | `with_allow_top_level_control(Bool)` | `true` | Allow `if` / `for` / `while` at module scope |
 | `load_binds_globally()` | `with_load_binds_globally(Bool)` | `false` | `load` imports are visible module-wide (legacy compatibility flag) |
 
-`Options::default()` returns the all-enabled defaults. Each `with_*` mutator returns a modified
-copy, so flags can be chained: `Options::default().with_allow_set(false).with_allow_while(false)`.
+`Options::default()` enables every flag except `allow_recursion` (off by default, matching
+starlark-go). Each `with_*` mutator returns a modified copy, so flags can be chained:
+`Options::default().with_allow_set(false).with_allow_while(false)`.
 
 ```mbt check
 ///|
