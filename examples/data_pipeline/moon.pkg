@@ -1,0 +1,8 @@
+import {
+  "connect0459/starlark/value",
+  "connect0459/starlark/eval",
+}
+
+options(
+  "is-main": true,
+)
