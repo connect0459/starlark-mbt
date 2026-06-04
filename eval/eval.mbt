@@ -3,8 +3,11 @@ let default_max_recursion_depth : Int = 100
 
 ///|
 /// Feature-flag set controlling which optional Starlark dialect features are
-/// enabled. All flags default to `true` except `allow_recursion`
-/// (off to match starlark-go) and `load_binds_globally` (off; a legacy compatibility flag).
+/// enabled. The default dialect matches the Starlark spec and starlark-go's
+/// zero-value `FileOptions`: the standard features `allow_set`, `allow_lambda`,
+/// `allow_bytes`, and `allow_float` default to `true`, while the non-standard
+/// extensions `allow_recursion`, `allow_while`, `allow_top_level_control`,
+/// `allow_global_reassign`, and `load_binds_globally` default to `false`.
 pub struct Options {
   priv allow_set : Bool
   priv allow_recursion : Bool
@@ -18,19 +21,22 @@ pub struct Options {
 }
 
 ///|
-/// Returns the default `Options`: every feature flag enabled except
-/// `allow_recursion` (off to match starlark-go) and `load_binds_globally`
-/// (off; a legacy compatibility flag).
+/// Returns the default `Options`: the spec-conformant Starlark dialect that
+/// matches starlark-go's zero-value `FileOptions`. The standard features
+/// (`allow_set`, `allow_lambda`, `allow_bytes`, `allow_float`) are enabled; the
+/// non-standard extensions (`allow_recursion`, `allow_while`,
+/// `allow_top_level_control`, `allow_global_reassign`, `load_binds_globally`)
+/// are disabled and must be opted into explicitly.
 pub fn Options::default() -> Options {
   {
     allow_set: true,
     allow_recursion: false,
     allow_lambda: true,
-    allow_while: true,
+    allow_while: false,
     allow_bytes: true,
     allow_float: true,
-    allow_global_reassign: true,
-    allow_top_level_control: true,
+    allow_global_reassign: false,
+    allow_top_level_control: false,
     load_binds_globally: false,
   }
 }

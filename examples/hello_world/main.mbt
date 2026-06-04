@@ -10,8 +10,12 @@ fn main {
     #|print(greeting)
     #|print("sum:", total)
     #|print("type:", type(numbers))
-  match
-    @eval.exec_file(thread, "hello.star", src, @eval.Options::default()) {
+  // This script uses a top-level `for` loop and reassigns a global, both
+  // non-standard extensions disabled by default; opt into them explicitly.
+  let opts = @eval.Options::default()
+    .with_allow_top_level_control(true)
+    .with_allow_global_reassign(true)
+  match @eval.exec_file(thread, "hello.star", src, opts) {
     Ok(_) => ()
     Err(e) => println(e.msg())
   }

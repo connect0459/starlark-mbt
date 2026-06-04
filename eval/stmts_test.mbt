@@ -3,7 +3,11 @@
 ///|
 fn exec_s(src : String) -> Result[Module, @errors.EvalError] {
   let t = Thread::new("test")
-  exec_file(t, "<test>", src, Options::default())
+  let opts = Options::default()
+    .with_allow_while(true)
+    .with_allow_top_level_control(true)
+    .with_allow_global_reassign(true)
+  exec_file(t, "<test>", src, opts)
 }
 
 ///|

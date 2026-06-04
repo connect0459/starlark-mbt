@@ -24,17 +24,32 @@ fn parse_bool_flag(value : String) -> Bool? {
 
 ///|
 /// Parses the CLI arguments into the script path (if any) and the evaluation
-/// options. The `-recursion` boolean flag (also spelled `--recursion`, matching
-/// starlark-go) enables recursive function calls, which are disabled by
-/// default; it accepts the Go forms `-recursion`, `-recursion=true`, and
-/// `-recursion=false`. A bare `--` stops flag parsing so later arguments are
-/// treated as positional. Returns `Err` for an invalid flag value.
+/// options. Two boolean flags (each also spelled with a leading `--`, matching
+/// starlark-go) toggle non-standard dialect features, all disabled by default:
+///
+/// - `-recursion` enables recursive function calls.
+/// - `-globalreassign` enables top-level reassignment, `while` loops, and
+///   `if`/`for`/`while` statements at top level — the same trio starlark-go's
+///   legacy `-globalreassign` flag controls.
+///
+/// Each accepts the Go forms `-flag`, `-flag=true`, and `-flag=false`. A bare
+/// `--` stops flag parsing so later arguments are treated as positional.
+/// Returns `Err` for an invalid flag value.
 fn parse_cli_args(
   args : Array[String],
 ) -> Result[(String?, @eval.Options), String] {
   let mut filepath : String? = None
   let mut opts = @eval.Options::default()
   let mut flags_done = false
+  // Apply starlark-go's legacy `-globalreassign`, which conflates three
+  // FileOptions: top-level reassignment, `while` loops, and top-level control.
+  fn set_global_reassign(o : @eval.Options, b : Bool) -> @eval.Options {
+    o
+    .with_allow_global_reassign(b)
+    .with_allow_while(b)
+    .with_allow_top_level_control(b)
+  }
+
   for i in 1..<args.length() {
     let arg = args[i]
     if flags_done {
@@ -52,6 +67,16 @@ fn parse_cli_args(
       match parse_bool_flag(value) {
         Some(b) => opts = opts.with_allow_recursion(b)
         None => return Err("invalid boolean value \"\{value}\" for -recursion")
+      }
+    } else if arg == "--globalreassign" || arg == "-globalreassign" {
+      opts = set_global_reassign(opts, true)
+    } else if arg.has_prefix("--globalreassign=") ||
+      arg.has_prefix("-globalreassign=") {
+      let value = arg[arg.find("=").unwrap() + 1:].to_owned()
+      match parse_bool_flag(value) {
+        Some(b) => opts = set_global_reassign(opts, b)
+        None =>
+          return Err("invalid boolean value \"\{value}\" for -globalreassign")
       }
     } else if filepath is None {
       filepath = Some(arg)

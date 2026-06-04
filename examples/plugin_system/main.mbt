@@ -115,14 +115,13 @@ fn main {
     #|
     #|log("info", "Done processing " + str(len(response["items"])) + " items")
   let thread = @eval.Thread::new("plugin")
+  // The plugin script drives top-level `for` loops and reuses loop variables,
+  // both non-standard extensions disabled by default; opt into them here.
+  let opts = @eval.Options::default()
+    .with_allow_top_level_control(true)
+    .with_allow_global_reassign(true)
   match
-    @eval.exec_file_with_universe(
-      thread,
-      "plugin.star",
-      src,
-      @eval.Options::default(),
-      universe,
-    ) {
+    @eval.exec_file_with_universe(thread, "plugin.star", src, opts, universe) {
     Err(e) => println("Plugin error: \{e.msg()}")
     Ok(_) => {
       println("=== Plugin Log ===")
