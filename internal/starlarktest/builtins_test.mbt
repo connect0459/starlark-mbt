@@ -247,14 +247,7 @@ let builtins_star : String =
 ///|
 test "builtins.star" {
   let errs = run_chunked_string(builtins_star)
-  // sorted([1, "one"]) raises "int < string not implemented" in our impl because
-  // MoonBit's sort_by compares the first element first for two-element arrays,
-  // while starlark-go's insertion sort compares last-vs-preceding, yielding
-  // "string < int not implemented".  Filter this known direction-only difference.
-  let filtered = errs.filter(fn(e) {
-    !e.contains("int < string not implemented")
-  })
-  if filtered.length() != 0 {
-    fail(filtered.join("\n"))
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
   }
 }
