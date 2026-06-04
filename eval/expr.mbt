@@ -2526,12 +2526,18 @@ fn builtin_bytes(
   }
   match pos_args[0] {
     @value.Value::Bytes(b) => @value.Value::Bytes(b)
-    @value.Value::String(s) =>
+    @value.Value::String(s) => {
       // starlark-go replaces invalid encodings with U+FFFD when converting a
-      // string to bytes (library.go utf8Transcode).
-      @value.Value::Bytes(
-        @utf8.encode(@utf8util.decode_utf8_lossy(s.to_bytes())),
-      )
+      // string to bytes (library.go utf8Transcode). When the bytes are already
+      // valid UTF-8 (the common case), the transcode is a no-op, so the raw
+      // bytes are returned unchanged to avoid an extra String/Bytes allocation.
+      let raw = s.to_bytes()
+      if @utf8util.is_valid_utf8(raw) {
+        @value.Value::Bytes(raw)
+      } else {
+        @value.Value::Bytes(@utf8.encode(@utf8util.decode_utf8_lossy(raw)))
+      }
+    }
     other => {
       let it = match @value.iterate(other) {
         Err(_) =>

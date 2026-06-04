@@ -118,6 +118,31 @@ pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
 }
 
 ///|
+/// Reports whether `b` is entirely valid UTF-8.
+///
+/// Used to skip the decode/re-encode round-trip in `bytes(string)` when the
+/// underlying bytes are already valid (the common case), so the original byte
+/// sequence can be returned unchanged without allocating a new `String`.
+///
+/// Parameters:
+///
+/// - `b` : The byte sequence to validate.
+///
+/// Returns `true` when every byte is part of a well-formed UTF-8 sequence.
+pub fn is_valid_utf8(b : Bytes) -> Bool {
+  let len = b.length()
+  let mut i = 0
+  while i < len {
+    let (r, width) = utf8_decode_rune(b, i)
+    if r < 0 {
+      return false
+    }
+    i += width
+  }
+  true
+}
+
+///|
 /// Decodes `b` as UTF-8, replacing each invalid or truncated byte with U+FFFD.
 ///
 /// Unlike `moonbitlang/core`'s `decode_lossy` (which follows the WHATWG

@@ -16,6 +16,8 @@ pub fn is_unicode_printable(Int) -> Bool
 
 pub fn is_upper_letter(Int) -> Bool
 
+pub fn is_valid_utf8(Bytes) -> Bool
+
 pub fn spell_fold_chars(String) -> Array[Int]
 
 pub fn spell_levenshtein(Array[Int], Array[Int], Int) -> Int

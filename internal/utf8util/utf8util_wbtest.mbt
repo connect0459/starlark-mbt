@@ -19,3 +19,23 @@ test "decode_utf8_lossy replaces an unpaired surrogate encoding" {
   let b = b"\xED\xB0\x80"
   assert_eq(decode_utf8_lossy(b), "\u{FFFD}\u{FFFD}\u{FFFD}")
 }
+
+///|
+test "is_valid_utf8 accepts valid UTF-8" {
+  // "hello, 世界"
+  let valid = b"hello, \xE4\xB8\x96\xE7\x95\x8C"
+  assert_true(is_valid_utf8(valid))
+}
+
+///|
+test "is_valid_utf8 rejects a truncated sequence" {
+  // "世界" with the final byte removed.
+  let truncated = b"\xE4\xB8\x96\xE7\x95"
+  assert_false(is_valid_utf8(truncated))
+}
+
+///|
+test "is_valid_utf8 rejects an unpaired surrogate encoding" {
+  let b = b"\xED\xB0\x80"
+  assert_false(is_valid_utf8(b))
+}
