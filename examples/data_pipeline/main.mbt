@@ -63,9 +63,6 @@ fn main {
     #|def filter_valid(records):
     #|    return [r for r in records if r["score"] >= 50]
     #|
-    #|def _get_score(r):
-    #|    return r["score"]
-    #|
     #|def summarize(records):
     #|    if not records:
     #|        return {"count": 0, "avg_score": 0, "top": ""}
