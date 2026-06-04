@@ -318,7 +318,9 @@ test "Thread.with_step_budget: halts when budget is exceeded" {
     thread,
     "test.star",
     "x = 0\nfor i in range(1000):\n  x = i",
-    @eval.Options::default(),
+    @eval.Options::default()
+    .with_allow_top_level_control(true)
+    .with_allow_global_reassign(true),
   )
   match result {
     Err(e) =>
