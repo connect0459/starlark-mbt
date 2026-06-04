@@ -1,9 +1,10 @@
-// Integration tests derived from control.star.
-// Tests Starlark control flow: if/elif/else, for loops with break/continue,
-// return semantics, and variable scoping.
+// Integration tests from starlark-go testdata/control.star.
+// ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
 
 ///|
-let control_star_src : String =
+let control_star : String =
+  #|# Tests of Starlark control flow
+  #|
   #|load("assert.star", "assert")
   #|
   #|def controlflow():
@@ -54,49 +55,22 @@ let control_star_src : String =
   #|    if g == x:
   #|      return g
   #|assert.eq(f(2), 2)
-  #|assert.eq(f(4), None)
-  #|assert.eq(g, 123)
-
-///|
-test "control.star: all assertions pass" {
-  let errs = run_star_string(control_star_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let control_fibonacci_src : String =
-  #|load("assert.star", "assert")
+  #|assert.eq(f(4), None) # falling off end => return None
+  #|assert.eq(g, 123) # unchanged by local use of g in function
+  #|
+  #|# infinite sequences
   #|def fib(n):
   #|  seq = []
-  #|  for x in fibonacci:
+  #|  for x in fibonacci: # fibonacci is an infinite iterable defined in eval_test.go
   #|    if len(seq) == n:
   #|      break
   #|    seq.append(x)
   #|  return seq
-  #|assert.eq(fib(10), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34])
+  #|assert.eq(fib(10),  [0, 1, 1, 2, 3, 5, 8, 13, 21, 34])
 
 ///|
-test "control.star: fibonacci infinite iterable via predeclared" {
-  let errs = run_star_string(control_fibonacci_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "single-element trailing-comma for/comprehension target unpacks one-tuple" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|out = []
-      #|for a, in [(1,), (2,)]:
-      #|    out.append(a)
-      #|assert.eq(out, [1, 2])
-      #|assert.eq([a for a, in [(1,), (2,)]], [1, 2])
-    ),
-  )
+test "control.star" {
+  let errs = run_chunked_string(control_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

@@ -12,6 +12,8 @@ pub fn run_star_string(String) -> Array[String]
 
 pub fn run_with_predeclared(@eval.Predeclared, String) -> Array[String]
 
+pub fn skip_chunks_containing(String, Array[String]) -> String
+
 // Errors
 
 // Types and methods

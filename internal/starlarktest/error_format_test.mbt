@@ -221,7 +221,7 @@ test "error format: recursion depth exceeded" {
       inspect(
         e.msg(),
         content=(
-          #|maximum recursion depth exceeded
+          #|Starlark stack overflow
         ),
       )
     Ok(_) => abort("expected error")

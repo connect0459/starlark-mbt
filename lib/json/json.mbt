@@ -524,7 +524,12 @@ fn parse_json_value(
     (c.to_int() >= '0'.to_int() && c.to_int() <= '9'.to_int()) {
     parse_json_number(chars, i)
   } else {
-    Err((i, "unexpected character '\{c}'"))
+    Err(
+      (
+        i,
+        "unexpected character '\{if c == '\'' { "\\'" } else { c.to_string() }}'",
+      ),
+    )
   }
 }
 
@@ -904,8 +909,9 @@ fn make_encode_indent_fn() -> @value.Value {
         _ => return Err("json.encode_indent: unexpected keyword argument \{k}")
       }
     }
-    match encode_to_json(pos_args[0]) {
-      Err(e) => Err(e)
+    let state = EncodeState::new()
+    match encode_inner(pos_args[0], state) {
+      Err(e) => Err("json.encode_indent: \{e}")
       Ok(json_str) =>
         indent_json(json_str, pfx, ind).map(fn(result) {
           @value.Value::String(@value.StarlarkString::new(result))

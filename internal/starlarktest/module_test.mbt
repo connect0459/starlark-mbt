@@ -1,110 +1,29 @@
-// Integration tests for Module value type.
-// Patterns adapted for substring matching (regex anchors and wildcards stripped).
+// Integration tests from starlark-go testdata/module.star.
+// ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
 
 ///|
-let module_type_src : String =
+let module_star : String =
+  #|# Tests of Module.
+  #|
   #|load("assert.star", "assert")
+  #|
   #|assert.eq(type(assert), "module")
-
-///|
-test "module.star: type(module) returns 'module'" {
-  let errs = run_star_string(module_type_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let module_str_src : String =
-  #|load("assert.star", "assert")
-  #|assert.eq(str(assert), "<module \"assert\">")
-
-///|
-test "module.star: str(module) returns '<module \"name\">'" {
-  let errs = run_star_string(module_str_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let module_dir_src : String =
-  #|load("assert.star", "assert")
+  #|assert.eq(str(assert), '<module "assert">')
   #|assert.eq(dir(assert), ["contains", "eq", "fail", "fails", "lt", "ne", "true"])
-
-///|
-test "module.star: dir(module) returns sorted attribute names" {
-  let errs = run_star_string(module_dir_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let module_unhashable_src : String =
-  #|load("assert.star", "assert")
   #|assert.fails(lambda : {assert: None}, "unhashable: module")
-
-///|
-test "module.star: module is not hashable" {
-  let errs = run_star_string(module_unhashable_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let module_assign_field_src : String =
-  #|load("assert.star", "assert")
+  #|
   #|def assignfield():
   #|    assert.foo = None
+  #|
   #|assert.fails(assignfield, "can't assign to .foo field of module")
+  #|
+  #|# no such field
+  #|assert.fails(lambda : assert.nonesuch, "module has no .nonesuch field or method$")
+  #|assert.fails(lambda : assert.falls, "module has no .falls field or method .did you mean .fails\\?")
 
 ///|
-test "module.star: assigning to module field raises error" {
-  let errs = run_star_string(module_assign_field_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let module_no_such_field_src : String =
-  #|load("assert.star", "assert")
-  #|assert.fails(lambda : assert.nonesuch, "module has no .nonesuch field or method")
-
-///|
-test "module.star: accessing missing field raises descriptive error" {
-  let errs = run_star_string(module_no_such_field_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let module_did_you_mean_src : String =
-  #|load("assert.star", "assert")
-  #|assert.fails(lambda : assert.falls, "module has no .falls field or method (did you mean .fails?)")
-
-///|
-test "module.star: missing field with similar name includes 'did you mean' hint" {
-  let errs = run_star_string(module_did_you_mean_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "dot-assign to non-module value omits 'value' suffix in error" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|x = [1, 2, 3]
-      #|def tryit():
-      #|    x.foo = 1
-      #|assert.fails(tryit, "can't assign to .foo field of list$")
-    ),
-  )
+test "module.star" {
+  let errs = run_chunked_string(module_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

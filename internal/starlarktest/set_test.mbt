@@ -1,8 +1,31 @@
-// Integration tests derived from set.star.
+// Integration tests from starlark-go testdata/set.star.
+// ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
 
 ///|
-let set_star_src : String =
+let set_star : String =
+  #|# Tests of Starlark 'set'
+  #|# option:set option:globalreassign
+  #|
+  #|# Sets are not a standard part of Starlark, so the features
+  #|# tested in this file must be enabled in the application by setting
+  #|# resolve.AllowSet.  (All sets are created by calls to the 'set'
+  #|# built-in or derived from operations on existing sets.)
+  #|# The semantics are subject to change as the spec evolves.
+  #|
+  #|# TODO(adonovan): support set mutation:
+  #|# - del set[k]
+  #|# - set += iterable, perhaps?
+  #|# Test iterator invalidation.
+  #|
   #|load("assert.star", "assert", "freeze")
+  #|
+  #|# literals
+  #|# Parser does not currently support {1, 2, 3}.
+  #|# TODO(adonovan): add test to syntax/testdata/errors.star.
+  #|
+  #|# set comprehensions
+  #|# Parser does not currently support {x for x in y}.
+  #|# See syntax/testdata/errors.star.
   #|
   #|# set constructor
   #|assert.eq(type(set()), "set")
@@ -25,7 +48,7 @@ let set_star_src : String =
   #|y = set([3, 4, 5])
   #|
   #|# set + any is not defined
-  #|assert.fails(lambda : x + y, "unknown")
+  #|assert.fails(lambda : x + y, "unknown.*: set \\+ set")
   #|
   #|# set | set
   #|assert.eq(list(set("a".elems()) | set("b".elems())), ["a", "b"])
@@ -49,86 +72,100 @@ let set_star_src : String =
   #|assert.fails(lambda : x.union([1, 2, {}]), "unhashable type: dict")
   #|assert.fails(lambda : x.union(1, 2, 3), "argument #1 is not iterable: int")
   #|
-  #|# set.update
+  #|# set.update (allows any iterable for the right operand)
+  #|# The update function will mutate the set so the tests below are
+  #|# scoped using a function.
+  #|
   #|def test_update_return_value():
   #|    assert.eq(set(x).update(y), None)
+  #|
   #|test_update_return_value()
   #|
   #|def test_update_elems_singular():
   #|    s = set("a".elems())
   #|    s.update("b".elems())
   #|    assert.eq(list(s), ["a", "b"])
+  #|
   #|test_update_elems_singular()
   #|
   #|def test_update_elems_multiple():
   #|    s = set("a".elems())
   #|    s.update("bc".elems())
   #|    assert.eq(list(s), ["a", "b", "c"])
+  #|
   #|test_update_elems_multiple()
   #|
   #|def test_update_empty():
   #|    s = set()
   #|    s.update([])
   #|    assert.eq(s, set())
+  #|
   #|test_update_empty()
   #|
   #|def test_update_set():
   #|    s = set(x)
   #|    s.update(y)
   #|    assert.eq(list(s), [1, 2, 3, 4, 5])
+  #|
   #|test_update_set()
   #|
   #|def test_update_set_multiple_args():
   #|    s = set(x)
   #|    s.update([11, 12], [11, 13, 14])
   #|    assert.eq(list(s), [1, 2, 3, 11, 12, 13, 14])
+  #|
   #|test_update_set_multiple_args()
   #|
   #|def test_update_list_intersecting():
   #|    s = set(x)
   #|    s.update([5, 1])
   #|    assert.eq(list(s), [1, 2, 3, 5])
+  #|
   #|test_update_list_intersecting()
   #|
   #|def test_update_list_non_intersecting():
   #|    s = set(x)
   #|    s.update([6, 5, 4])
   #|    assert.eq(list(s), [1, 2, 3, 6, 5, 4])
+  #|
   #|test_update_list_non_intersecting()
   #|
   #|def test_update_non_hashable():
   #|    s = set(x)
   #|    assert.fails(lambda: x.update([1, 2, {}]), "unhashable type: dict")
+  #|
   #|test_update_non_hashable()
   #|
   #|def test_update_non_iterable():
   #|    s = set(x)
   #|    assert.fails(lambda: x.update(9), "update: argument #1 is not iterable: int")
+  #|
   #|test_update_non_iterable()
   #|
   #|def test_update_kwargs():
   #|    s = set(x)
   #|    assert.fails(lambda: x.update(gee = [3, 4]), "update: does not accept keyword arguments")
+  #|
   #|test_update_kwargs()
   #|
   #|def test_update_no_arg():
   #|    s = set(x)
   #|    s.update()
   #|    assert.eq(list(s), [1, 2, 3])
+  #|
   #|test_update_no_arg()
   #|
-  #|# intersection
+  #|# intersection, set & set or set.intersection(iterable)
   #|assert.eq(list(set("a".elems()) & set("b".elems())), [])
   #|assert.eq(list(set("ab".elems()) & set("bc".elems())), ["b"])
   #|assert.eq(list(set("a".elems()).intersection("b".elems())), [])
   #|assert.eq(list(set("ab".elems()).intersection("bc".elems())), ["b"])
   #|
-  #|# symmetric difference
+  #|# symmetric difference, set ^ set or set.symmetric_difference(iterable)
   #|assert.eq(set([1, 2, 3]) ^ set([4, 5, 3]), set([1, 2, 4, 5]))
   #|assert.eq(set([1,2,3,4]).symmetric_difference([3,4,5,6]), set([1,2,5,6]))
   #|assert.eq(set([1,2,3,4]).symmetric_difference(set([])), set([1,2,3,4]))
   #|
-  #|# augmented assign
   #|def test_set_augmented_assign():
   #|    x = set([1, 2, 3])
   #|    x &= set([2, 3])
@@ -137,6 +174,7 @@ let set_star_src : String =
   #|    assert.eq(x, set([1, 2, 3]))
   #|    x ^= set([4, 5, 3])
   #|    assert.eq(x, set([1, 2, 4, 5]))
+  #|
   #|test_set_augmented_assign()
   #|
   #|# len
@@ -164,24 +202,25 @@ let set_star_src : String =
   #|    for elem in x:
   #|        list.append(elem)
   #|    return list
+  #|
   #|assert.eq(iter(), [1, 2, 3])
   #|
   #|# sets are not indexable
-  #|assert.fails(lambda : x[0], "unhandled")
+  #|assert.fails(lambda : x[0], "unhandled.*operation")
   #|
   #|# adding and removing
   #|add_set = set([1,2,3])
   #|add_set.add(4)
   #|assert.true(4 in add_set)
   #|add_set.add(1)
-  #|assert.eq(list(add_set), [1, 2, 3, 4])
+  #|assert.eq(list(add_set), [1, 2, 3, 4]) # adding existing element is a no-op and doesn't change iteration order
   #|assert.fails(lambda: add_set.add([5]), "add: unhashable type: list")
   #|def add_during_iteration(s, v):
   #|    for _ in s:
   #|        s.add(v)
   #|assert.fails(lambda: add_during_iteration(add_set, 4), "add: cannot insert into hash table during iteration")
   #|freeze(add_set)
-  #|assert.fails(lambda: add_set.add(4), "add: cannot insert into frozen hash table")
+  #|assert.fails(lambda: add_set.add(4), "add: cannot insert into frozen hash table") # even a no-op mutation on a frozen set is an error
   #|assert.fails(lambda: add_set.add(5), "add: cannot insert into frozen hash table")
   #|
   #|# remove
@@ -203,10 +242,10 @@ let set_star_src : String =
   #|        s.discard(v)
   #|assert.fails(lambda: discard_during_iteration(discard_set, 2), "discard: cannot delete from hash table during iteration")
   #|freeze(discard_set)
-  #|assert.fails(lambda: discard_set.discard(3), "discard: cannot delete from frozen hash table")
+  #|assert.fails(lambda: discard_set.discard(3), "discard: cannot delete from frozen hash table") # even a no-op mutation on a frozen set is an error
   #|assert.fails(lambda: discard_set.discard(1), "discard: cannot delete from frozen hash table")
   #|
-  #|# update frozen
+  #|# update
   #|update_set = set([1, 2, 3])
   #|update_set.update([4])
   #|assert.true(4 in update_set)
@@ -228,160 +267,47 @@ let set_star_src : String =
   #|clear_set = set([1,2,3])
   #|clear_set.clear()
   #|assert.eq(len(clear_set), 0)
-  #|freeze(clear_set)
+  #|freeze(clear_set) # no mutation of frozen set because its already empty
   #|assert.eq(clear_set.clear(), None)
   #|
   #|other_clear_set = set([1,2,3])
   #|freeze(other_clear_set)
   #|assert.fails(lambda: other_clear_set.clear(), "clear: cannot clear frozen hash table")
   #|
-  #|# difference
+  #|# difference: set - set or set.difference(iterable)
   #|assert.eq(set([1,2,3,4]).difference([1,2,3,4]), set([]))
   #|assert.eq(set([1,2,3,4]).difference([1,2]), set([3,4]))
   #|assert.eq(set([1,2,3,4]).difference([]), set([1,2,3,4]))
   #|assert.eq(set([1,2,3,4]).difference(set([1,2,3])), set([4]))
+  #|
   #|assert.eq(set([1,2,3,4]) - set([1,2,3,4]), set())
   #|assert.eq(set([1,2,3,4]) - set([1,2]), set([3,4]))
   #|
-  #|# issuperset
+  #|# issuperset: set >= set or set.issuperset(iterable)
   #|assert.true(set([1,2,3]).issuperset([1,2]))
   #|assert.true(not set([1,2,3]).issuperset(set([1,2,4])))
   #|assert.true(set([1,2,3]) >= set([1,2,3]))
   #|assert.true(set([1,2,3]) >= set([1,2]))
   #|assert.true(not set([1,2,3]) >= set([1,2,4]))
   #|
-  #|# proper superset
+  #|# proper superset: set > set
   #|assert.true(set([1, 2, 3]) > set([1, 2]))
   #|assert.true(not set([1,2, 3]) > set([1, 2, 3]))
   #|
-  #|# issubset
+  #|# issubset: set <= set or set.issubset(iterable)
   #|assert.true(set([1,2]).issubset([1,2,3]))
   #|assert.true(not set([1,2,3]).issubset(set([1,2,4])))
   #|assert.true(set([1,2,3]) <= set([1,2,3]))
   #|assert.true(set([1,2]) <= set([1,2,3]))
   #|assert.true(not set([1,2,3]) <= set([1,2,4]))
   #|
-  #|# proper subset
+  #|# proper subset: set < set
   #|assert.true(set([1,2]) < set([1,2,3]))
   #|assert.true(not set([1,2,3]) < set([1,2,3]))
 
 ///|
-test "set.star: all assertions pass" {
-  let errs = run_star_string(set_star_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let set_op_argerr_src : String =
-  #|load("assert.star", "assert")
-  #|s = set([1, 2])
-  #|assert.fails(lambda: s.intersection([2], [2, 3]), "intersection: got 2 arguments, want at most 1")
-  #|assert.fails(lambda: s.intersection(5), "intersection: for parameter 1: got int, want iterable")
-  #|assert.fails(lambda: s.difference(5), "difference: for parameter 1: got int, want iterable")
-  #|assert.fails(lambda: s.symmetric_difference(5), "symmetric_difference: for parameter 1: got int, want iterable")
-  #|assert.fails(lambda: s.issubset(5), "issubset: for parameter 1: got int, want iterable")
-  #|assert.fails(lambda: s.issuperset(5), "issuperset: for parameter 1: got int, want iterable")
-  #|assert.fails(lambda: s.difference([1], [2]), "difference: got 2 arguments, want at most 1")
-
-///|
-test "set ops arity and non-iterable errors use nameErr style" {
-  let errs = run_star_string(set_op_argerr_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let set_intersection_order_src : String =
-  #|load("assert.star", "assert")
-  #|# intersection emits elements in the OTHER operand's iteration order
-  #|assert.eq(list({1, 2, 3, 4}.intersection([4, 3, 2])), [4, 3, 2])
-  #|# the & operator emits elements in the RHS operand's iteration order
-  #|assert.eq(list({1, 2, 3} & {3, 2, 4}), [3, 2])
-
-///|
-test "set intersection yields the other operand's order" {
-  let errs = run_star_string(set_intersection_order_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "set.clear rejects excess positional arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: set([1]).clear(5), "clear: got 1 arguments, want 0")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "set.pop rejects excess positional arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: set([1]).pop(5), "pop: got 1 arguments, want 0")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "set.add rejects keyword arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: set([1]).add(1, x=2), "add: unexpected keyword arguments")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "set.discard rejects keyword arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: set([1]).discard(1, x=2), "discard: unexpected keyword arguments")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "set.remove rejects keyword arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: set([1]).remove(1, x=2), "remove: unexpected keyword arguments")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "set.union rejects keyword arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: set([1]).union(a=1), "union: does not accept keyword arguments")
-    ),
-  )
+test "set.star" {
+  let errs = run_chunked_string(set_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

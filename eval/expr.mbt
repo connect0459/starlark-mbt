@@ -1343,12 +1343,23 @@ fn builtin_sorted(
   }
   let mut sort_err : @errors.EvalError? = None
   indices.sort_by(fn(a, b) {
-    match @value.compare_values(keys[a], keys[b]) {
+    // Always compare keys in original-index order so that type-mismatch errors
+    // report "left_type < right_type" matching starlark-go's left-to-right
+    // comparison behaviour.
+    let (x, y, flipped) = if a <= b {
+      (keys[a], keys[b], false)
+    } else {
+      (keys[b], keys[a], true)
+    }
+    match @value.compare_values(x, y) {
       Err(msg) => {
-        sort_err = Some(make_eval_error(ctx, msg))
+        if sort_err is None {
+          sort_err = Some(make_eval_error(ctx, msg))
+        }
         0
       }
       Ok(c) => {
+        let c = if flipped { -c } else { c }
         let cc = if reverse { -c } else { c }
         // Break ties by original index so the sort is stable regardless of the
         // underlying sort_by's stability; reverse keeps equal-key order (not
@@ -2030,8 +2041,9 @@ fn call_str_method(
     "isalpha" =>
       all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
-        (n >= 'a'.to_int() && n <= 'z'.to_int())
+        @utf8util.is_upper_letter(n) ||
+        @utf8util.is_lower_letter(n) ||
+        @utf8util.is_title_letter(n)
       })
     "isdigit" =>
       all_chars_satisfy(s, fn(c) {
@@ -2041,8 +2053,9 @@ fn call_str_method(
     "isalnum" =>
       all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
-        (n >= 'a'.to_int() && n <= 'z'.to_int()) ||
+        @utf8util.is_upper_letter(n) ||
+        @utf8util.is_lower_letter(n) ||
+        @utf8util.is_title_letter(n) ||
         (n >= '0'.to_int() && n <= '9'.to_int())
       })
     "islower" => {
