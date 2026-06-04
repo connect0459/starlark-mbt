@@ -2030,8 +2030,9 @@ fn call_str_method(
     "isalpha" =>
       all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
-        (n >= 'a'.to_int() && n <= 'z'.to_int())
+        @utf8util.is_upper_letter(n) ||
+        @utf8util.is_lower_letter(n) ||
+        @utf8util.is_title_letter(n)
       })
     "isdigit" =>
       all_chars_satisfy(s, fn(c) {
@@ -2041,8 +2042,9 @@ fn call_str_method(
     "isalnum" =>
       all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        (n >= 'A'.to_int() && n <= 'Z'.to_int()) ||
-        (n >= 'a'.to_int() && n <= 'z'.to_int()) ||
+        @utf8util.is_upper_letter(n) ||
+        @utf8util.is_lower_letter(n) ||
+        @utf8util.is_title_letter(n) ||
         (n >= '0'.to_int() && n <= '9'.to_int())
       })
     "islower" => {
