@@ -1,6 +1,5 @@
 // Integration tests from starlark-go testdata/recursion.star.
 // ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
-// Omitted: Starlark stack overflow chunks (our impl says 'maximum recursion depth exceeded').
 
 ///|
 let recursion_star : String =
@@ -28,8 +27,7 @@ let recursion_star : String =
 
 ///|
 test "recursion.star" {
-  let src = skip_chunks_containing(recursion_star, ["Starlark stack overflow"])
-  let errs = run_chunked_string(src)
+  let errs = run_chunked_string(recursion_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

@@ -474,6 +474,7 @@ fn parse_chunk_options(src : String) -> @eval.Options {
           "globalreassign" => opts = opts.with_allow_global_reassign(true)
           "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
           "norecursion" => opts = opts.with_allow_recursion(false)
+          "recursion" => opts = opts.with_allow_recursion(true)
           _ => ()
         }
       }
@@ -484,6 +485,7 @@ fn parse_chunk_options(src : String) -> @eval.Options {
           "globalreassign" => opts = opts.with_allow_global_reassign(true)
           "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
           "norecursion" => opts = opts.with_allow_recursion(false)
+          "recursion" => opts = opts.with_allow_recursion(true)
           _ => ()
         }
       }
@@ -660,6 +662,7 @@ fn exec_chunk_raw(
   let predeclared = @eval.Predeclared::from_map({
     "hasfields": make_hasfields_fn(),
     "struct": @struct.struct_builtin(),
+    "fibonacci": make_fibonacci_list(),
   })
   match
     @eval.exec_file_with_predeclared(thread, "<test>", src, opts, predeclared) {
@@ -774,11 +777,18 @@ pub fn run_with_predeclared(
 
 ///|
 pub fn skip_chunks_containing(src : String, keywords : Array[String]) -> String {
-  split_chunks(src)
-  .iter()
-  .filter(fn(chunk) { !keywords.iter().any(fn(kw) { chunk.contains(kw) }) })
-  .to_array()
-  .join("\n---\n")
+  let kept = split_chunks(src)
+    .iter()
+    .filter(fn(chunk) { !keywords.iter().any(fn(kw) { chunk.contains(kw) }) })
+    .to_array()
+  if kept.is_empty() {
+    // All chunks were filtered: surface a clear runtime failure instead of
+    // silently passing with zero assertions.
+    abort(
+      "skip_chunks_containing: all chunks filtered — test would silently pass",
+    )
+  }
+  kept.join("\n---\n")
 }
 
 ///|

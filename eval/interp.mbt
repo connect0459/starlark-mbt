@@ -986,7 +986,7 @@ fn VM::call_compiled(
     }
   }
   if self.ctx.thread.call_stack.length() >= self.ctx.thread.max_recursion_depth {
-    raise EvalErr(make_eval_error(self.ctx, "maximum recursion depth exceeded"))
+    raise EvalErr(make_eval_error(self.ctx, "Starlark stack overflow"))
   }
   let locals : Array[LocalSlot] = Array::make(fc.locals.length(), LUnbound)
   self.bind_args(fc, f.name(), f.defaults(), args, kwargs, locals)

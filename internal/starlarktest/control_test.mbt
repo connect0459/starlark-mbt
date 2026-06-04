@@ -1,6 +1,5 @@
 // Integration tests from starlark-go testdata/control.star.
 // ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
-// Omitted: fibonacci chunks (application-defined predeclared variable).
 
 ///|
 let control_star : String =
@@ -71,8 +70,7 @@ let control_star : String =
 
 ///|
 test "control.star" {
-  let src = skip_chunks_containing(control_star, ["fibonacci"])
-  let errs = run_chunked_string(src)
+  let errs = run_chunked_string(control_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

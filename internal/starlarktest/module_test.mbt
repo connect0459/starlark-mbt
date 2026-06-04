@@ -25,8 +25,7 @@ let module_star : String =
 
 ///|
 test "module.star" {
-  let src = skip_chunks_containing(module_star, ["did you mean .fails"])
-  let errs = run_chunked_string(src)
+  let errs = run_chunked_string(module_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
