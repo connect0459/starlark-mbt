@@ -13,8 +13,27 @@ fn resolve_load(base_dir : String, load_path : String) -> String {
 }
 
 ///|
+/// Parses the CLI arguments into the script path (if any) and the evaluation
+/// options. `--recursion` (or `-recursion`, matching starlark-go) enables
+/// recursive function calls, which are disabled by default.
+fn parse_cli_args(args : Array[String]) -> (String?, @eval.Options) {
+  let mut filepath : String? = None
+  let mut opts = @eval.Options::default()
+  for i in 1..<args.length() {
+    let arg = args[i]
+    if arg == "--recursion" || arg == "-recursion" {
+      opts = opts.with_allow_recursion(true)
+    } else if filepath is None {
+      filepath = Some(arg)
+    }
+  }
+  (filepath, opts)
+}
+
+///|
 fn make_loader(
   base_dir : String,
+  opts : @eval.Options,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
   fn(_thread, load_path) {
     let resolved = resolve_load(base_dir, load_path)
@@ -27,10 +46,9 @@ fn make_loader(
     let inner_dir = dir_of(resolved)
     let load_thread = @eval.Thread::with_loader(
       "load:\{load_path}",
-      make_loader(inner_dir),
+      make_loader(inner_dir, opts),
     )
-    match
-      @eval.exec_file(load_thread, resolved, load_src, @eval.Options::default()) {
+    match @eval.exec_file(load_thread, resolved, load_src, opts) {
       Ok(m) => Ok(m)
       Err(e) =>
         Err(
@@ -41,7 +59,7 @@ fn make_loader(
 }
 
 ///|
-fn run_file(filepath : String) -> Int {
+fn run_file(filepath : String, opts : @eval.Options) -> Int {
   let src = @fs.read_file_to_string(filepath) catch {
     @fs.IOError(msg) => {
       println("starlark: \{msg}")
@@ -49,8 +67,8 @@ fn run_file(filepath : String) -> Int {
     }
   }
   let base_dir = dir_of(filepath)
-  let thread = @eval.Thread::with_loader(filepath, make_loader(base_dir))
-  match @eval.exec_file(thread, filepath, src, @eval.Options::default()) {
+  let thread = @eval.Thread::with_loader(filepath, make_loader(base_dir, opts))
+  match @eval.exec_file(thread, filepath, src, opts) {
     Ok(_) => 0
     Err(e) => {
       println(e.msg())
@@ -75,13 +93,14 @@ fn run_repl() -> Unit {
 ///|
 fn main {
   let args = @sys.get_cli_args()
-  if args.length() < 2 {
-    run_repl()
-    return
-  }
-  let filepath = args[1]
-  let exit_code = run_file(filepath)
-  if exit_code != 0 {
-    @sys.exit(exit_code)
+  let (filepath, opts) = parse_cli_args(args)
+  match filepath {
+    None => run_repl()
+    Some(fp) => {
+      let exit_code = run_file(fp, opts)
+      if exit_code != 0 {
+        @sys.exit(exit_code)
+      }
+    }
   }
 }
