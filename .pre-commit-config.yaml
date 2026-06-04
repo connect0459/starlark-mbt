@@ -23,17 +23,17 @@ repos:
         name: MoonBit Format
         entry: moon fmt
         language: system
-        files: '\.mbt$'
+        files: '\.mbt(\.md)?$'
         pass_filenames: false
       - id: moon-check
         name: MoonBit Check
         entry: moon check --deny-warn
         language: system
-        files: '\.mbt$'
+        files: '\.mbt(\.md)?$'
         pass_filenames: false
       - id: moon-test
         name: MoonBit Test
         entry: moon test
         language: system
-        files: '\.mbt$'
+        files: '\.mbt(\.md)?$'
         pass_filenames: false

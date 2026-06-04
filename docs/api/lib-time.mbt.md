@@ -3,7 +3,7 @@
 Time and duration types analogous to `starlark-go/lib/starlarktime`. Inject
 `time_module()` as a predeclared binding to expose the `time` namespace.
 
-```text
+```moonbit nocheck
 import {
   "connect0459/starlark/eval",
   "connect0459/starlark/value",

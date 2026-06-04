@@ -3,7 +3,7 @@
 Math extension providing floating-point functions. Inject `math_module()` as a predeclared
 binding to expose functions under the `math` namespace in Starlark scripts.
 
-```text
+```moonbit nocheck
 import {
   "connect0459/starlark/eval",
   "connect0459/starlark/value",

@@ -2,7 +2,7 @@
 
 Inject `json_module()` as a predeclared binding to make all functions available in Starlark scripts.
 
-```text
+```moonbit nocheck
 import {
   "connect0459/starlark/eval",
   "connect0459/starlark/value",

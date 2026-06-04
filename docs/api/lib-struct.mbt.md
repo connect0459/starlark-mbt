@@ -4,7 +4,7 @@ Provides `struct`, `module`, and `gensym` as Starlark extensions (analogous to
 `starlark-go/lib/starlarkstruct`). Import and inject the callables you need as
 predeclared bindings.
 
-```text
+```moonbit nocheck
 import {
   "connect0459/starlark/eval",
   "connect0459/starlark/value",
