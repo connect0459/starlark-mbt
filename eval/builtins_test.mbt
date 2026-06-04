@@ -1550,7 +1550,7 @@ test "exec_file: recursion limit prevents infinite recursion" {
     t,
     "<test>",
     "def f(n):\n  return f(n + 1)\nf(0)",
-    Options::default(),
+    Options::default().with_allow_recursion(true),
   )
   assert_true(result is Err(_))
 }

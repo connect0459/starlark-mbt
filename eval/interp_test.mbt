@@ -308,15 +308,17 @@ test "vm evaluates a loop inside a function" {
 
 ///|
 test "vm evaluates recursion (factorial)" {
-  assert_vm_result(
+  assert_vm_result_opts(
     "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\n\nx = fact(5)",
+    @eval.Options::default().with_allow_recursion(true),
   )
 }
 
 ///|
 test "vm evaluates recursion (fibonacci)" {
-  assert_vm_result(
+  assert_vm_result_opts(
     "def fib(n):\n  if n < 2:\n    return n\n  return fib(n - 1) + fib(n - 2)\n\nx = fib(10)",
+    @eval.Options::default().with_allow_recursion(true),
   )
 }
 
@@ -340,7 +342,10 @@ test "vm reports a deep error backtrace through several frames" {
 
 ///|
 test "vm reports maximum recursion depth" {
-  assert_vm_result("def f(n):\n  return f(n + 1)\n\nx = f(0)")
+  assert_vm_result_opts(
+    "def f(n):\n  return f(n + 1)\n\nx = f(0)",
+    @eval.Options::default().with_allow_recursion(true),
+  )
 }
 
 ///|

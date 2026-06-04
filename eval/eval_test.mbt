@@ -62,10 +62,10 @@ test "Predeclared: each, values, and delete round out the registry surface" {
 }
 
 ///|
-test "Options: all extension flags are enabled by default" {
+test "Options: extension flags default on, recursion defaults off" {
   let opts = Options::default()
   assert_eq(opts.allow_set(), true)
-  assert_eq(opts.allow_recursion(), true)
+  assert_eq(opts.allow_recursion(), false)
   assert_eq(opts.allow_lambda(), true)
   assert_eq(opts.allow_while(), true)
   assert_eq(opts.allow_bytes(), true)
