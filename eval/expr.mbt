@@ -310,10 +310,10 @@ fn call_builtin(
       } else if pos_args.length() == 1 {
         match pos_args[0] {
           @value.Value::Bytes(b) =>
+            // starlark-go's str(bytes) replaces invalid encodings with U+FFFD
+            // using Go's per-byte decoder, not the WHATWG maximal-subpart rule.
             @value.Value::String(
-              @value.StarlarkString::new(
-                @value.StarlarkString::from_bytes(b).raw(),
-              ),
+              @value.StarlarkString::new(@utf8util.decode_utf8_lossy(b)),
             )
           v => @value.Value::String(@value.StarlarkString::new(v.to_str()))
         }
@@ -2526,7 +2526,12 @@ fn builtin_bytes(
   }
   match pos_args[0] {
     @value.Value::Bytes(b) => @value.Value::Bytes(b)
-    @value.Value::String(s) => @value.Value::Bytes(s.to_bytes())
+    @value.Value::String(s) =>
+      // starlark-go replaces invalid encodings with U+FFFD when converting a
+      // string to bytes (library.go utf8Transcode).
+      @value.Value::Bytes(
+        @utf8.encode(@utf8util.decode_utf8_lossy(s.to_bytes())),
+      )
     other => {
       let it = match @value.iterate(other) {
         Err(_) =>

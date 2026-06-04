@@ -168,11 +168,7 @@ let bytes_star : String =
 ///|
 test "bytes.star" {
   let errs = run_chunked_string(bytes_star)
-  // Filter: bytes() on a string with truncated UTF-8 — our impl keeps raw
-  // bytes while starlark-go's repr replaces invalid sequences with U+FFFD.
-  // Tracked as a known implementation difference.
-  let filtered = errs.filter(fn(e) { !e.contains("��") })
-  if filtered.length() != 0 {
-    fail(filtered.join("\n"))
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
   }
 }

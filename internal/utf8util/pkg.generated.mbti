@@ -2,6 +2,8 @@
 package "connect0459/starlark/internal/utf8util"
 
 // Values
+pub fn decode_utf8_lossy(Bytes) -> String
+
 pub fn hex_char(Int) -> Char
 
 pub fn is_cased_rune(Int) -> Bool
