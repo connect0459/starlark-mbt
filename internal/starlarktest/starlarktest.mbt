@@ -259,13 +259,40 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
   } else {
     pattern
   }
-  // Normalise: treat "..." as the same multi-char wildcard as ".*"
+  // Normalise regex subsets to the wildcards we support:
+  //   "..."  → ".*"  (multi-char wildcard, already handled below)
+  //   ".+"   → ".*"  (one-or-more → zero-or-more; permissive but sufficient)
+  //   "[|]"  → "|"   (single-char class containing '|')
   let pat = {
     let buf = StringBuilder::new()
     let mut first = true
     for part in pat.split("...") {
       if !first {
         buf.write_string(".*")
+      }
+      buf.write_string(part.to_owned())
+      first = false
+    }
+    buf.to_string()
+  }
+  let pat = {
+    let buf = StringBuilder::new()
+    let mut first = true
+    for part in pat.split(".+") {
+      if !first {
+        buf.write_string(".*")
+      }
+      buf.write_string(part.to_owned())
+      first = false
+    }
+    buf.to_string()
+  }
+  let pat = {
+    let buf = StringBuilder::new()
+    let mut first = true
+    for part in pat.split("[|]") {
+      if !first {
+        buf.write_char('|')
       }
       buf.write_string(part.to_owned())
       first = false

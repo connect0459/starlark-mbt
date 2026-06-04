@@ -328,8 +328,7 @@ let dict_star : String =
 
 ///|
 test "dict.star" {
-  let src = skip_chunks_containing(dict_star, ["dict [|] list"])
-  let errs = run_chunked_string(src)
+  let errs = run_chunked_string(dict_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

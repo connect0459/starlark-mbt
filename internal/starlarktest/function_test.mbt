@@ -336,9 +336,7 @@ let function_star : String =
 
 ///|
 test "function.star" {
-  // skip chunk with ".+did you mean key\?" — .+ quantifier unsupported by pattern_matches
-  let src = skip_chunks_containing(function_star, ["did you mean key"])
-  let errs = run_chunked_string(src)
+  let errs = run_chunked_string(function_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
