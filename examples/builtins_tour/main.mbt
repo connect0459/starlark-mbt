@@ -13,7 +13,9 @@ fn main {
     #|has_even = any([x % 2 == 0 for x in nums])
     #|all_pos = all([x > 0 for x in nums])
     #|indexed = list(enumerate(["x", "y", "z"]))
-  match @eval.exec_file(thread, "builtins.star", src, @eval.Options::default()) {
+  // The top-level `for` loop is a non-standard extension disabled by default.
+  let opts = @eval.Options::default().with_allow_top_level_control(true)
+  match @eval.exec_file(thread, "builtins.star", src, opts) {
     Ok(m) => {
       match m.get("asc") {
         Some(v) => println("sorted asc  = \{v.repr()}")

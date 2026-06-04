@@ -109,10 +109,11 @@ test "Program round-trip preserves comprehensions, lambdas, slices and loops" {
     #|  n -= 1
     #|flag = 2 not in [1, 3] and -5 < 0
     #|raw = b"\x00\xff"
-  let prog = match
-    @eval.source_program("c.star", src, @eval.Options::default(), fn(_) {
-      false
-    }) {
+  let opts = @eval.Options::default()
+    .with_allow_while(true)
+    .with_allow_top_level_control(true)
+    .with_allow_global_reassign(true)
+  let prog = match @eval.source_program("c.star", src, opts, fn(_) { false }) {
     Ok(p) => p
     Err(e) => fail(e.msg())
   }
@@ -208,7 +209,7 @@ test "Options::with_allow_float toggles the allow_float flag" {
 test "Options::with_allow_lambda toggles the allow_lambda flag" {
   let opts = @eval.Options::default().with_allow_lambda(false)
   assert_eq(opts.allow_lambda(), false)
-  assert_eq(opts.allow_while(), true)
+  assert_eq(opts.allow_bytes(), true)
 }
 
 ///|
@@ -222,7 +223,7 @@ test "Options::with_allow_while toggles the allow_while flag" {
 test "Options::with_allow_top_level_control toggles the flag" {
   let opts = @eval.Options::default().with_allow_top_level_control(false)
   assert_eq(opts.allow_top_level_control(), false)
-  assert_eq(opts.allow_while(), true)
+  assert_eq(opts.allow_lambda(), true)
 }
 
 ///|
@@ -353,7 +354,10 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
       t,
       "<test>",
       "i = 0\nwhile i < 1000000:\n  i = i + 1",
-      @eval.Options::default(),
+      @eval.Options::default()
+      .with_allow_while(true)
+      .with_allow_top_level_control(true)
+      .with_allow_global_reassign(true),
     ) {
     Err(e) =>
       assert_true(
@@ -364,16 +368,18 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
 }
 
 ///|
-test "Options::default enables features but leaves recursion off" {
+test "Options::default enables standard features and disables non-standard extensions" {
   let opts = @eval.Options::default()
+  // Standard features are enabled.
   assert_eq(opts.allow_set(), true)
-  assert_eq(opts.allow_recursion(), false)
   assert_eq(opts.allow_lambda(), true)
-  assert_eq(opts.allow_while(), true)
   assert_eq(opts.allow_bytes(), true)
   assert_eq(opts.allow_float(), true)
-  assert_eq(opts.allow_global_reassign(), true)
-  assert_eq(opts.allow_top_level_control(), true)
+  // Non-standard extensions are disabled by default.
+  assert_eq(opts.allow_recursion(), false)
+  assert_eq(opts.allow_while(), false)
+  assert_eq(opts.allow_global_reassign(), false)
+  assert_eq(opts.allow_top_level_control(), false)
 }
 
 ///|

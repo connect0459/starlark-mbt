@@ -2975,8 +2975,12 @@ Track with `moon coverage analyze > uncovered.log` after each phase.
 ## Notes
 
 - Starlark strings are **byte** strings: `s[i]` returns the i-th byte, not Unicode codepoint
-- Feature gates default to **enabled** (this project's choice), except
-  `allow_recursion`, which defaults to **disabled** to match starlark-go (issue #22, item E)
+- Feature gates default to the **spec-conformant** dialect (issue #26): standard
+  features (`set`, `lambda`, `bytes`, `float`) are **enabled**; non-standard
+  extensions (`recursion`, `while`, `top_level_control`, `global_reassign`) are
+  **disabled** and must be opted into — matching starlark-go's zero-value
+  `FileOptions` for the extensions. `set` intentionally diverges from that zero
+  value (`Set = false`) because it is now part of the Starlark spec
 - Arbitrary-precision `Int`: start with `Int64`, plan upgrade when arithmetic overflow tests fail
 - `load` statement requires a pluggable loader; implement a no-op loader for testing
 - Mutable containers (List, Dict, Set) can self-reference; equality / repr / hash must handle cycles

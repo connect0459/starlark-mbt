@@ -149,6 +149,8 @@ fn validate_resolution(
   let resolve_opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(opts.allow_global_reassign)
     .with_allow_set(opts.allow_set)
+    .with_allow_while(opts.allow_while)
+    .with_allow_top_level_control(opts.allow_top_level_control)
     .with_load_binds_globally(opts.load_binds_globally)
   let resolved = @resolver.resolve(
     file,

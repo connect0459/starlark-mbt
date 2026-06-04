@@ -490,36 +490,21 @@ fn split_chunks(src : String) -> Array[String] {
 
 ///|
 fn parse_chunk_options(src : String) -> @eval.Options {
-  let mut opts = @eval.Options::default()
-  for line in src.split("\n") {
-    let trimmed = line.trim()
-    if trimmed.has_prefix("# option:") {
-      let rest = trimmed[9:]
-      for flag in rest.split(" ") {
-        match flag.trim() {
-          "globalreassign" => opts = opts.with_allow_global_reassign(true)
-          "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
-          "norecursion" => opts = opts.with_allow_recursion(false)
-          "recursion" => opts = opts.with_allow_recursion(true)
-          _ => ()
-        }
-      }
-    } else if trimmed.has_prefix("#option:") {
-      let rest = trimmed[8:]
-      for flag in rest.split(" ") {
-        match flag.trim() {
-          "globalreassign" => opts = opts.with_allow_global_reassign(true)
-          "loadbindsglobally" => opts = opts.with_load_binds_globally(true)
-          "norecursion" => opts = opts.with_allow_recursion(false)
-          "recursion" => opts = opts.with_allow_recursion(true)
-          _ => ()
-        }
-      }
-    } else if trimmed.length() > 0 && !trimmed.has_prefix("#") {
-      break
-    }
+  // Toggle the non-standard extensions from an `option:<name>` directive
+  // appearing anywhere in the chunk (mirroring starlark-go's `getOptions`). The
+  // standard features (`set`, `lambda`, `bytes`, `float`) have no gate here and
+  // keep their default — in particular `set` stays enabled, since this project
+  // enables it by default even though starlark-go's zero value does not.
+  fn has(name : String) -> Bool {
+    src.contains("option:" + name)
   }
-  opts
+
+  @eval.Options::default()
+  .with_allow_while(has("while"))
+  .with_allow_top_level_control(has("toplevelcontrol"))
+  .with_allow_global_reassign(has("globalreassign"))
+  .with_load_binds_globally(has("loadbindsglobally"))
+  .with_allow_recursion(has("recursion"))
 }
 
 ///|
@@ -797,7 +782,7 @@ pub fn run_with_predeclared(
       thread,
       "<test>",
       src,
-      @eval.Options::default(),
+      parse_chunk_options(src),
       predeclared,
     ) {
     Ok(_) => ()
@@ -866,7 +851,7 @@ pub fn run_star_string(src : String) -> Array[String] {
       thread,
       "<test>",
       src,
-      @eval.Options::default(),
+      parse_chunk_options(src),
       predeclared,
     ) {
     Ok(_) => ()

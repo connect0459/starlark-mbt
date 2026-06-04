@@ -187,34 +187,58 @@ test {
 
 ## `@eval.Options`
 
-Feature flags that control Starlark dialect. All flags default to `true` except
-`load_binds_globally` (default `false`).
+Feature flags that control the Starlark dialect. `Options::default()` is the
+spec-conformant dialect: the **standard** features are enabled, and the
+**non-standard** extensions are disabled and must be opted into explicitly —
+matching [starlark-go]'s zero-value `FileOptions` for the extensions. The one
+intentional divergence is `set`: starlark-go's zero value still has `Set = false`,
+but `set` is now part of the Starlark spec, so it is enabled by default here.
 
 ```moonbit nocheck
 pub struct Options { /* private fields */ }  // in "connect0459/starlark/eval"
 ```
 
+Standard features — part of the Starlark language spec, enabled by default:
+
 | Accessor | Mutator | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable `set` literals and the `set()` built-in |
-| `allow_recursion()` | `with_allow_recursion(Bool)` | `false` | Allow recursive function calls (off by default, matching starlark-go) |
+| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable `set` literals and the `set()` built-in (now in the spec) |
 | `allow_lambda()` | `with_allow_lambda(Bool)` | `true` | Enable `lambda` expressions |
-| `allow_while()` | `with_allow_while(Bool)` | `true` | Enable `while` loops |
 | `allow_bytes()` | `with_allow_bytes(Bool)` | `true` | Enable `bytes` literals (`b"..."`) |
 | `allow_float()` | `with_allow_float(Bool)` | `true` | Enable float literals and float arithmetic |
-| `allow_global_reassign()` | `with_allow_global_reassign(Bool)` | `true` | Allow re-assigning module-level names |
-| `allow_top_level_control()` | `with_allow_top_level_control(Bool)` | `true` | Allow `if` / `for` / `while` at module scope |
+
+Non-standard extensions — not part of standard Starlark, disabled by default:
+
+| Accessor | Mutator | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `allow_recursion()` | `with_allow_recursion(Bool)` | `false` | Allow recursive function calls (the spec forbids recursion) |
+| `allow_while()` | `with_allow_while(Bool)` | `false` | Enable `while` loops (not in the spec; the grammar reserves the word only) |
+| `allow_top_level_control()` | `with_allow_top_level_control(Bool)` | `false` | Allow `if` / `for` / `while` at module scope (the spec makes these a static error) |
+| `allow_global_reassign()` | `with_allow_global_reassign(Bool)` | `false` | Allow re-assigning module-level names (the spec permits a single top-level assignment) |
 | `load_binds_globally()` | `with_load_binds_globally(Bool)` | `false` | `load` imports are visible module-wide (legacy compatibility flag) |
 
-`Options::default()` enables every flag except `allow_recursion` (off by default, matching
-starlark-go). Each `with_*` mutator returns a modified copy, so flags can be chained:
-`Options::default().with_allow_set(false).with_allow_while(false)`.
+Each `with_*` mutator returns a modified copy, so flags can be chained. To
+recover the previous permissive behavior, opt the extensions back in:
+`Options::default().with_allow_while(true).with_allow_top_level_control(true).with_allow_global_reassign(true)`.
+
+> **Migration note.** Before this change `allow_while`, `allow_top_level_control`,
+> and `allow_global_reassign` defaulted to `true`. Scripts that use `while`
+> loops, top-level `if`/`for`/`while`, or top-level reassignment under
+> `Options::default()` now fail to resolve unless the matching flag is enabled.
+
+[starlark-go]: https://github.com/google/starlark-go/blob/master/syntax/options.go
 
 ```mbt check
 ///|
 test {
   let opts = @eval.Options::default()
+  // Standard features are enabled.
   assert_eq(opts.allow_set(), true)
+  assert_eq(opts.allow_float(), true)
+  // Non-standard extensions are disabled by default.
+  assert_eq(opts.allow_while(), false)
+  assert_eq(opts.allow_top_level_control(), false)
+  assert_eq(opts.allow_global_reassign(), false)
   assert_eq(opts.load_binds_globally(), false)
 }
 ```

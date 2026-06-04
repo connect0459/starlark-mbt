@@ -5,6 +5,7 @@
 
 ///|
 let iter_freeze_src : String =
+  #|# option:toplevelcontrol option:globalreassign
   #|load("assert.star", "assert")
   #|
   #|# List: appending during for loop raises error

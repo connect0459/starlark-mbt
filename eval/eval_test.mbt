@@ -62,16 +62,18 @@ test "Predeclared: each, values, and delete round out the registry surface" {
 }
 
 ///|
-test "Options: extension flags default on, recursion defaults off" {
+test "Options: default dialect enables standard features and disables non-standard extensions" {
   let opts = Options::default()
+  // Standard features are enabled.
   assert_eq(opts.allow_set(), true)
-  assert_eq(opts.allow_recursion(), false)
   assert_eq(opts.allow_lambda(), true)
-  assert_eq(opts.allow_while(), true)
   assert_eq(opts.allow_bytes(), true)
   assert_eq(opts.allow_float(), true)
-  assert_eq(opts.allow_global_reassign(), true)
-  assert_eq(opts.allow_top_level_control(), true)
+  // Non-standard extensions are disabled by default.
+  assert_eq(opts.allow_recursion(), false)
+  assert_eq(opts.allow_while(), false)
+  assert_eq(opts.allow_global_reassign(), false)
+  assert_eq(opts.allow_top_level_control(), false)
 }
 
 ///|
@@ -126,7 +128,7 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
       t,
       "<test>",
       "i = 0\nwhile i < 1000000:\n  i = i + 1",
-      Options::default(),
+      relaxed_opts(),
     ) {
     Err(e) =>
       assert_true(
@@ -178,7 +180,7 @@ test "Thread without step budget completes a long computation" {
       t,
       "<test>",
       "x = 0\nfor i in range(100):\n  x = x + i",
-      Options::default(),
+      relaxed_opts(),
     ) {
     Ok(m) => assert_true(get_global(m, "x") == Some(@value.Value::Int(4950N)))
     Err(_) => assert_true(false)
@@ -198,7 +200,7 @@ test "Thread::set_on_max_steps callback is invoked when step budget is exceeded"
       t,
       "<test>",
       "i = 0\nwhile i < 1000000:\n  i = i + 1",
-      Options::default(),
+      relaxed_opts(),
     ) {
     Err(e) => {
       assert_true(called.val)
@@ -225,7 +227,7 @@ test "Thread::set_on_max_steps callback can extend the step budget" {
       t,
       "<test>",
       "i = 0\nwhile i < 1000000:\n  i = i + 1",
-      Options::default(),
+      relaxed_opts(),
     ) {
     Err(e) => assert_true(e.msg().contains("budget exhausted"))
     Ok(_) => fail("expected error when budget exhausted")
@@ -323,7 +325,18 @@ fn eval_e(src : String) -> Result[@value.Value, @errors.EvalError] {
 ///|
 fn exec_src(src : String) -> Result[Module, @errors.EvalError] {
   let t = Thread::new("test")
-  exec_file(t, "<test>", src, Options::default())
+  exec_file(t, "<test>", src, relaxed_opts())
+}
+
+///|
+/// Options enabling the non-standard extensions (while loops, top-level control
+/// flow, top-level reassignment) needed by statement-behavior tests that drive
+/// loops and reassignment at module scope.
+fn relaxed_opts() -> Options {
+  Options::default()
+  .with_allow_while(true)
+  .with_allow_top_level_control(true)
+  .with_allow_global_reassign(true)
 }
 
 ///|

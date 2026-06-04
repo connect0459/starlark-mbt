@@ -123,9 +123,12 @@ test "Program: init tolerates a narrower predeclared dict for unreachable names"
     #|    sink = ghost
     #|y = 1
   let prog = match
-    source_program("broad.star", src, Options::default(), fn(name) {
-      name == "ghost"
-    }) {
+    source_program(
+      "broad.star",
+      src,
+      Options::default().with_allow_top_level_control(true),
+      fn(name) { name == "ghost" },
+    ) {
     Ok(p) => p
     Err(e) => fail("source_program failed: \{e.to_string()}")
   }
