@@ -598,9 +598,11 @@ fn spell_suggest(name : String, candidates : Array[String]) -> String? {
 fn make_hasfields_fn() -> @value.Value {
   @value.Value::new_builtin("hasfields", fn(_call_ctx, _pos_args, _kw_args) {
     let storage : Map[String, @value.Value] = {}
+    let frozen : Ref[Bool] = { val: false }
     let cv = @value.CustomValue::new(fn() { "hasfields" }, fn() { true }, fn() {
         "<hasfields>"
       })
+      .with_freeze(fn() { frozen.val = true })
       .with_attrs(
         fn(name) {
           match storage.get(name) {
@@ -620,6 +622,9 @@ fn make_hasfields_fn() -> @value.Value {
         fn() { storage.keys().collect() },
       )
       .with_set_field(fn(name, val) {
+        if frozen.val {
+          return Err("cannot set field on a frozen hasfields")
+        }
         // Fields starting with "no" simulate SetField returning NoSuchField,
         // matching the starlark-go eval_test.go hasfields() helper behaviour.
         if name.has_prefix("no") && name.length() > 2 {

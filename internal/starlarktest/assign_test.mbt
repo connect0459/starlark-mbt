@@ -1,6 +1,5 @@
 // Integration tests from starlark-go testdata/assign.star.
 // ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
-// Omitted: hasfields() chunks (application-defined type, not a standard built-in).
 
 ///|
 let assign_star : String =
@@ -361,8 +360,7 @@ let assign_star : String =
 
 ///|
 test "assign.star" {
-  let src = skip_chunks_containing(assign_star, ["hasfields()"])
-  let errs = run_chunked_string(src)
+  let errs = run_chunked_string(assign_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
