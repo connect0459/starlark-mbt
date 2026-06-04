@@ -490,16 +490,16 @@ fn split_chunks(src : String) -> Array[String] {
 
 ///|
 fn parse_chunk_options(src : String) -> @eval.Options {
-  // Mirror starlark-go's `getOptions`: each gated flag is enabled when the chunk
-  // contains the corresponding `option:<name>` directive anywhere in its text.
-  // The standard features (lambda, float, bytes) have no flag in starlark-go and
-  // stay enabled; the non-standard extensions follow their directive only.
+  // Toggle the non-standard extensions from an `option:<name>` directive
+  // appearing anywhere in the chunk (mirroring starlark-go's `getOptions`). The
+  // standard features (`set`, `lambda`, `bytes`, `float`) have no gate here and
+  // keep their default — in particular `set` stays enabled, since this project
+  // enables it by default even though starlark-go's zero value does not.
   fn has(name : String) -> Bool {
     src.contains("option:" + name)
   }
 
   @eval.Options::default()
-  .with_allow_set(has("set"))
   .with_allow_while(has("while"))
   .with_allow_top_level_control(has("toplevelcontrol"))
   .with_allow_global_reassign(has("globalreassign"))
