@@ -562,6 +562,15 @@ pub fn run_with_predeclared(
 }
 
 ///|
+pub fn skip_chunks_containing(src : String, keywords : Array[String]) -> String {
+  split_chunks(src)
+  .iter()
+  .filter(fn(chunk) { !keywords.iter().any(fn(kw) { chunk.contains(kw) }) })
+  .to_array()
+  .join("\n---\n")
+}
+
+///|
 pub fn run_star_string(src : String) -> Array[String] {
   let errors : Array[String] = []
   let assert_module = build_assert_module(errors)

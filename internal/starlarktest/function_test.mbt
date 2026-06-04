@@ -1,15 +1,23 @@
-// Integration tests derived from function.star.
-// Tests Starlark function semantics: lexical scope, closures, defaults, parameter binding.
-// Omitted: hasfields() (test-only application-defined type, not a standard built-in).
-// Fib/Y-combinator recursion-limit tests live in recursion_test.mbt.
+// Integration tests from starlark-go testdata/function.star.
+// Omitted: hasfields() chunks (application-defined type) and
+// Go-regex spell-check pattern chunks (not supported by pattern_matches).
 
 ///|
-let function_closures_src : String =
+let function_star : String =
+  #|# Tests of Starlark 'function'
+  #|# option:set
+  #|
+  #|# TODO(adonovan):
+  #|# - add some introspection functions for looking at function values
+  #|#   and test that functions have correct position, free vars, names of locals, etc.
+  #|# - move the hard-coded tests of parameter passing from eval_test.go to here.
+  #|
   #|load("assert.star", "assert", "freeze")
   #|
+  #|# Test lexical scope and closures:
   #|def outer(x):
   #|   def inner(y):
-  #|     return x + x + y
+  #|     return x + x + y # multiple occurrences of x should create only 1 freevar
   #|   return inner
   #|
   #|z = outer(3)
@@ -21,11 +29,13 @@ let function_closures_src : String =
   #|assert.eq(z(5), 11)
   #|assert.eq(z(7), 13)
   #|
+  #|# Function name
   #|assert.eq(str(outer), '<function outer>')
   #|assert.eq(str(z), '<function inner>')
   #|assert.eq(str(str), '<built-in function str>')
   #|assert.eq(str("".startswith), '<built-in method startswith of string value>')
   #|
+  #|# Stateful closure
   #|def squares():
   #|    x = [0]
   #|    def f():
@@ -39,19 +49,54 @@ let function_closures_src : String =
   #|assert.eq(sq(), 9)
   #|assert.eq(sq(), 16)
   #|
+  #|# Freezing a closure
   #|sq2 = freeze(sq)
   #|assert.fails(sq2, "frozen list")
   #|
+  #|# recursion detection, simple
+  #|def fib(x):
+  #|  if x < 2:
+  #|    return x
+  #|  return fib(x-2) + fib(x-1)
+  #|assert.fails(lambda: fib(10), "function fib called recursively")
+  #|
+  #|# recursion detection, advanced
+  #|#
+  #|# A simplistic recursion check that looks for repeated calls to the
+  #|# same function value will not detect recursion using the Y
+  #|# combinator, which creates a new closure at each step of the
+  #|# recursion.  To truly prohibit recursion, the dynamic check must look
+  #|# for repeated calls of the same syntactic function body.
+  #|Y = lambda f: (lambda x: x(x))(lambda y: f(lambda *args: y(y)(*args)))
+  #|fibgen = lambda fib: lambda x: (x if x<2 else fib(x-1)+fib(x-2))
+  #|fib2 = Y(fibgen)
+  #|assert.fails(lambda: [fib2(x) for x in range(10)], "function lambda called recursively")
+  #|
+  #|# However, this stricter check outlaws many useful programs
+  #|# that are still bounded, and creates a hazard because
+  #|# helper functions such as map below cannot be used to
+  #|# call functions that themselves use map:
   #|def map(f, seq): return [f(x) for x in seq]
   #|def double(x): return x+x
   #|assert.eq(map(double, [1, 2, 3]), [2, 4, 6])
   #|assert.eq(map(double, ["a", "b", "c"]), ["aa", "bb", "cc"])
+  #|def mapdouble(x): return map(double, x)
+  #|assert.fails(lambda: map(mapdouble, ([1, 2, 3], ["a", "b", "c"])),
+  #|             'function map called recursively')
+  #|# With the -recursion option it would yield [[2, 4, 6], ["aa", "bb", "cc"]].
   #|
+  #|# call of function not through its name
+  #|# (regression test for parsing suffixes of primary expressions)
+  #|hf = hasfields()
+  #|hf.x = [len]
+  #|assert.eq(hf.x[0]("abc"), 3)
   #|def f():
   #|   return lambda: 1
   #|assert.eq(f()(), 1)
   #|assert.eq(["abc"][0][0].upper(), "A")
   #|
+  #|# functions may be recursively defined,
+  #|# so long as they don't dynamically recur.
   #|calls = []
   #|def yin(x):
   #|  calls.append("yin")
@@ -69,17 +114,14 @@ let function_closures_src : String =
   #|calls.clear()
   #|yang(True)
   #|assert.eq(calls, ["yang", "yin"])
-
-///|
-test "function.star: closures and lexical scope" {
-  let errs = run_star_string(function_closures_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_defaults_src : String =
+  #|
+  #|
+  #|# builtin_function_or_method use identity equivalence.
+  #|closures = set(["".count for _ in range(10)])
+  #|assert.eq(len(closures), 10)
+  #|
+  #|---
+  #|# Default values of function parameters are mutable.
   #|load("assert.star", "assert", "freeze")
   #|
   #|def f(x=[0]):
@@ -90,19 +132,12 @@ let function_defaults_src : String =
   #|f().append(1)
   #|assert.eq(f(), [0, 1])
   #|
+  #|# Freezing a function value freezes its parameter defaults.
   #|freeze(f)
   #|assert.fails(lambda: f().append(2), "cannot append to frozen list")
-
-///|
-test "function.star: mutable default values and freeze" {
-  let errs = run_star_string(function_defaults_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_lambda_parse_src : String =
+  #|
+  #|---
+  #|# This is a well known corner case of parsing in Python.
   #|load("assert.star", "assert")
   #|
   #|f = lambda x: 1 if x else 0
@@ -116,75 +151,79 @@ let function_lambda_parse_src : String =
   #|tf = lambda: True, lambda: False
   #|assert.true(tf[0]())
   #|assert.true(not tf[1]())
-
-///|
-test "function.star: lambda parsing corner cases" {
-  let errs = run_star_string(function_lambda_parse_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_param_errors_src : String =
+  #|
+  #|---
+  #|# Missing parameters are correctly reported
+  #|# in functions of more than 64 parameters.
+  #|# (This tests a corner case of the implementation:
+  #|# we avoid a map allocation for <64 parameters)
+  #|
   #|load("assert.star", "assert")
   #|
-  #|def f(a, b, mm): pass
+  #|def f(a, b, c, d, e, f, g, h,
+  #|      i, j, k, l, m, n, o, p,
+  #|      q, r, s, t, u, v, w, x,
+  #|      y, z, A, B, C, D, E, F,
+  #|      G, H, I, J, K, L, M, N,
+  #|      O, P, Q, R, S, T, U, V,
+  #|      W, X, Y, Z, aa, bb, cc, dd,
+  #|      ee, ff, gg, hh, ii, jj, kk, ll,
+  #|      mm):
+  #|  pass
   #|
-  #|assert.fails(lambda: f(1, 2), "missing")
-  #|assert.fails(lambda: f(1, 2, 3, mm=4), "multiple values for parameter")
-
-///|
-test "function.star: missing and duplicate parameter errors" {
-  let errs = run_star_string(function_param_errors_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_dynamic_checks_src : String =
+  #|assert.fails(lambda: f(
+  #|    1, 2, 3, 4, 5, 6, 7, 8,
+  #|    9, 10, 11, 12, 13, 14, 15, 16,
+  #|    17, 18, 19, 20, 21, 22, 23, 24,
+  #|    25, 26, 27, 28, 29, 30, 31, 32,
+  #|    33, 34, 35, 36, 37, 38, 39, 40,
+  #|    41, 42, 43, 44, 45, 46, 47, 48,
+  #|    49, 50, 51, 52, 53, 54, 55, 56,
+  #|    57, 58, 59, 60, 61, 62, 63, 64), "missing 1 argument \\(mm\\)")
+  #|
+  #|assert.fails(lambda: f(
+  #|    1, 2, 3, 4, 5, 6, 7, 8,
+  #|    9, 10, 11, 12, 13, 14, 15, 16,
+  #|    17, 18, 19, 20, 21, 22, 23, 24,
+  #|    25, 26, 27, 28, 29, 30, 31, 32,
+  #|    33, 34, 35, 36, 37, 38, 39, 40,
+  #|    41, 42, 43, 44, 45, 46, 47, 48,
+  #|    49, 50, 51, 52, 53, 54, 55, 56,
+  #|    57, 58, 59, 60, 61, 62, 63, 64, 65,
+  #|    mm = 100), 'multiple values for parameter "mm"')
+  #|
+  #|---
+  #|# Regression test for github.com/google/starlark-go/issues/21,
+  #|# which concerns dynamic checks.
+  #|# Related: https://github.com/bazelbuild/starlark/issues/21,
+  #|# which concerns static checks.
+  #|
   #|load("assert.star", "assert")
   #|
   #|def f(*args, **kwargs):
   #|  return args, kwargs
   #|
   #|assert.eq(f(x=1, y=2), ((), {"x": 1, "y": 2}))
-  #|assert.fails(lambda: f(x=1, **dict(x=2)), "multiple values for parameter")
+  #|assert.fails(lambda: f(x=1, **dict(x=2)), 'multiple values for parameter "x"')
   #|
   #|def g(x, y):
   #|  return x, y
   #|
   #|assert.eq(g(1, y=2), (1, 2))
-  #|assert.fails(lambda: g(1, y=2, **{"y": 3}), "multiple values for parameter")
-
-///|
-test "function.star: dynamic multiple-values checks" {
-  let errs = run_star_string(function_dynamic_checks_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_call_var_kw_src : String =
+  #|assert.fails(lambda: g(1, y=2, **{'y': 3}), 'multiple values for parameter "y"')
+  #|
+  #|---
+  #|# Regression test for a bug in CALL_VAR_KW.
+  #|
   #|load("assert.star", "assert")
   #|
   #|def f(a, b, x, y):
   #|  return a+b+x+y
   #|
-  #|assert.eq(f(*("a", "b"), **dict(y="y", x="x")) + ".", "abxy.")
-
-///|
-test "function.star: CALL_VAR_KW with *args and **kwargs" {
-  let errs = run_star_string(function_call_var_kw_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_eval_order_src : String =
+  #|assert.eq(f(*("a", "b"), **dict(y="y", x="x")) + ".", 'abxy.')
+  #|---
+  #|# Order of evaluation of function arguments.
+  #|# Regression test for github.com/google/skylark/issues/135.
   #|load("assert.star", "assert")
   #|
   #|r = []
@@ -198,93 +237,51 @@ let function_eval_order_src : String =
   #|
   #|y = f(id(1), id(2), x=id(3), *[id(4)], **dict(z=id(5)))
   #|assert.eq(y, ((1, 2, 4), dict(x=3, z=5)))
+  #|
+  #|# This matches Python2 and Starlark-in-Java, but not Python3 [1 2 4 3 6].
+  #|# *args and *kwargs are evaluated last.
+  #|# (Python[23] also allows keyword arguments after *args.)
+  #|# See github.com/bazelbuild/starlark#13 for spec change.
   #|assert.eq(r, [1, 2, 3, 4, 5])
-
-///|
-test "function.star: order of argument evaluation" {
-  let errs = run_star_string(function_eval_order_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_recursion_closure_src : String =
+  #|
+  #|---
+  #|# option:recursion
+  #|# See github.com/bazelbuild/starlark#170
   #|load("assert.star", "assert")
   #|
   #|def a():
-  #|    lst = []
+  #|    list = []
   #|    def b(n):
-  #|        lst.append(n)
+  #|        list.append(n)
   #|        if n > 0:
-  #|            b(n - 1)
+  #|            b(n - 1) # recursive reference to b
+  #|
   #|    b(3)
-  #|    return lst
+  #|    return list
   #|
   #|assert.eq(a(), [3, 2, 1, 0])
   #|
   #|def c():
-  #|    lst = []
+  #|    list = []
   #|    x = 1
   #|    def d():
-  #|      lst.append(x)
+  #|      list.append(x) # this use of x observes both assignments
   #|    d()
   #|    x = 2
   #|    d()
-  #|    return lst
+  #|    return list
   #|
   #|assert.eq(c(), [1, 2])
   #|
   #|def e():
   #|    def f():
-  #|      return x
+  #|      return x # forward reference ok: x is a closure cell
   #|    x = 1
   #|    return f()
   #|
   #|assert.eq(e(), 1)
-
-///|
-test "function.star: recursive closure and live variable reference" {
-  let errs = run_star_string(function_recursion_closure_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_trailing_comma_src : String =
-  #|def a(x,): pass
-  #|def b(x, y=None, ): pass
-  #|def c(x, y=None, *args, ): pass
   #|
-  #|a(1,)
-  #|b(1, y=2, )
-
-///|
-test "function.star: trailing comma in defs and calls" {
-  let errs = run_star_string(function_trailing_comma_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_bound_method_identity_src : String =
-  #|load("assert.star", "assert")
-  #|# builtin_function_or_method use identity equivalence.
-  #|closures = set(["".count for _ in range(10)])
-  #|assert.eq(len(closures), 10)
-
-///|
-test "function.star: bound method identity in sets (each access is unique)" {
-  let errs = run_star_string(function_bound_method_identity_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_unbound_cell_src : String =
+  #|---
   #|load("assert.star", "assert")
   #|
   #|def e():
@@ -313,24 +310,36 @@ let function_unbound_cell_src : String =
   #|    return inner()
   #|
   #|assert.fails(g, "local variable x referenced before assignment")
-
-///|
-test "function.star: local variable referenced before assignment" {
-  let errs = run_star_string(function_unbound_cell_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let function_kwarg_spell_src : String =
-  #|load("assert.star", "assert")
+  #|
+  #|---
+  #|# A trailing comma is allowed in any function definition or call.
+  #|# This reduces the need to edit neighboring lines when editing defs
+  #|# or calls splayed across multiple lines.
+  #|
+  #|def a(x,): pass
+  #|def b(x, y=None, ): pass
+  #|def c(x, y=None, *args, ): pass
+  #|def d(x, y=None, *args, z=None, ): pass
+  #|def e(x, y=None, *args, z=None, **kwargs, ): pass
+  #|
+  #|a(1,)
+  #|b(1, y=2, )
+  #|#c(1, *[], )
+  #|#d(1, *[], z=None, )
+  #|#e(1, *[], z=None, *{}, )
+  #|
+  #|---
   #|# Unpack provides spell check for argument names.
-  #|assert.fails(lambda: min([], keg=1), "did you mean key\\?")
+  #|load("assert.star", "assert")
+  #|
+  #|assert.fails(lambda: min([], keg=1), ".+did you mean key\\?")
 
 ///|
-test "function.star: unexpected keyword argument suggests nearest valid param" {
-  let errs = run_star_string(function_kwarg_spell_src)
+test "function.star" {
+  let src = skip_chunks_containing(function_star, [
+    "hasfields()", "did you mean key",
+  ])
+  let errs = run_chunked_string(src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

@@ -1,8 +1,9 @@
-// Integration tests derived from tuple.star.
-// Regex patterns simplified to plain substrings.
+// Integration tests from starlark-go testdata/tuple.star.
 
 ///|
-let tuple_star_src : String =
+let tuple_star : String =
+  #|# Tests of Starlark 'tuple'
+  #|
   #|load("assert.star", "assert")
   #|
   #|# literal
@@ -23,20 +24,18 @@ let tuple_star_src : String =
   #|assert.eq(("a", "b")[0], "a")
   #|assert.eq(("a", "b")[1], "b")
   #|
-  #|# slicing, x[i:j] on strings
+  #|# slicing, x[i:j]
   #|assert.eq("abcd"[0:4:1], "abcd")
   #|assert.eq("abcd"[::2], "ac")
   #|assert.eq("abcd"[1::2], "bd")
   #|assert.eq("abcd"[4:0:-1], "dcb")
-  #|
-  #|# slicing on tuples
   #|banana = tuple("banana".elems())
   #|assert.eq(banana[7::-2], tuple("aaa".elems()))
   #|assert.eq(banana[6::-2], tuple("aaa".elems()))
   #|assert.eq(banana[5::-2], tuple("aaa".elems()))
   #|assert.eq(banana[4::-2], tuple("nnb".elems()))
   #|
-  #|# tuple constructor
+  #|# tuple
   #|assert.eq(tuple(), ())
   #|assert.eq(tuple("abc".elems()), ("a", "b", "c"))
   #|assert.eq(tuple(["a", "b", "c"]), ("a", "b", "c"))
@@ -54,11 +53,14 @@ let tuple_star_src : String =
   #|assert.eq(1 * abc, abc)
   #|assert.eq(3 * abc, ("a", "b", "c", "a", "b", "c", "a", "b", "c"))
   #|assert.fails(lambda: abc * (1000000 * 1000000), "repeat count 1000000000000 too large")
-  #|assert.fails(lambda: abc * 1000000 * 1000000, "excessive repeat (3000000 * 1000000 elements)")
+  #|assert.fails(lambda: abc * 1000000 * 1000000, "excessive repeat \\(3000000 \\* 1000000 elements")
+  #|
+  #|# TODO(adonovan): test use of tuple as sequence
+  #|# (for loop, comprehension, library functions).
 
 ///|
-test "tuple.star: all assertions pass" {
-  let errs = run_star_string(tuple_star_src)
+test "tuple.star" {
+  let errs = run_chunked_string(tuple_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

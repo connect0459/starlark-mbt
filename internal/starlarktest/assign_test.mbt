@@ -1,130 +1,72 @@
-// Integration tests derived from assign.star.
-// Omitted: hasfields() tests (test-only application-defined type, not a standard built-in).
+// Integration tests from starlark-go testdata/assign.star.
+// Omitted: hasfields() chunks (application-defined type, not a standard built-in).
 
 ///|
-let assign_tuple_success_src : String =
+let assign_star : String =
+  #|# Tests of Starlark assignment.
+  #|
+  #|# This is a "chunked" file: each "---" effectively starts a new file.
+  #|
+  #|# tuple assignment
   #|load("assert.star", "assert")
   #|
-  #|() = ()
+  #|() = () # empty ok
   #|
   #|a, b, c = 1, 2, 3
   #|assert.eq(a, 1)
   #|assert.eq(b, 2)
   #|assert.eq(c, 3)
   #|
-  #|(d, e, f,) = (1, 2, 3)
-  #|assert.eq(d, 1)
-  #|assert.eq(e, 2)
-  #|assert.eq(f, 3)
-
-///|
-test "assign.star: tuple assignment success" {
-  let errs = run_star_string(assign_tuple_success_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_tuple_errors_src : String =
+  #|(d, e, f,) = (1, 2, 3) # trailing comma ok
+  #|---
+  #|(a, b, c) = 1 ### "got int in sequence assignment"
+  #|---
+  #|(a, b) = () ### "too few values to unpack"
+  #|---
+  #|(a, b) = (1,) ### "too few values to unpack"
+  #|---
+  #|(a, b, c) = (1, 2) ### "too few values to unpack"
+  #|---
+  #|(a, b) = (1, 2, 3) ### "too many values to unpack"
+  #|---
+  #|() = 1 ### "got int in sequence assignment"
+  #|---
+  #|() = (1,) ### "too many values to unpack"
+  #|---
+  #|() = (1, 2) ### "too many values to unpack"
+  #|---
+  #|# list assignment
   #|load("assert.star", "assert")
   #|
-  #|def wrong_type(): (a, b, c) = 1
-  #|assert.fails(wrong_type, "got int in sequence assignment")
-  #|
-  #|def too_few_empty(): (a, b) = ()
-  #|assert.fails(too_few_empty, "too few values to unpack")
-  #|
-  #|def too_few_one(): (a, b) = (1,)
-  #|assert.fails(too_few_one, "too few values to unpack")
-  #|
-  #|def too_few_two(): (a, b, c) = (1, 2)
-  #|assert.fails(too_few_two, "too few values to unpack")
-  #|
-  #|def too_many(): (a, b) = (1, 2, 3)
-  #|assert.fails(too_many, "too many values to unpack")
-  #|
-  #|def empty_wrong_type(): () = 1
-  #|assert.fails(empty_wrong_type, "got int in sequence assignment")
-  #|
-  #|def empty_too_many_one(): () = (1,)
-  #|assert.fails(empty_too_many_one, "too many values to unpack")
-  #|
-  #|def empty_too_many_two(): () = (1, 2)
-  #|assert.fails(empty_too_many_two, "too many values to unpack")
-
-///|
-test "assign.star: tuple unpacking errors" {
-  let errs = run_star_string(assign_tuple_errors_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_list_success_src : String =
-  #|load("assert.star", "assert")
-  #|
-  #|[] = []
+  #|[] = [] # empty ok
   #|
   #|[a, b, c] = [1, 2, 3]
   #|assert.eq(a, 1)
   #|assert.eq(b, 2)
   #|assert.eq(c, 3)
   #|
-  #|[d, e, f,] = [1, 2, 3]
-  #|assert.eq(d, 1)
-  #|assert.eq(e, 2)
-  #|assert.eq(f, 3)
-
-///|
-test "assign.star: list assignment success" {
-  let errs = run_star_string(assign_list_success_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_list_errors_src : String =
+  #|[d, e, f,] = [1, 2, 3] # trailing comma ok
+  #|---
+  #|[a, b, c] = 1 ### "got int in sequence assignment"
+  #|---
+  #|[a, b] = [] ### "too few values to unpack"
+  #|---
+  #|[a, b] = [1] ### "too few values to unpack"
+  #|---
+  #|[a, b, c] = [1, 2] ### "too few values to unpack"
+  #|---
+  #|[a, b] = [1, 2, 3] ### "too many values to unpack"
+  #|---
+  #|[] = 1 ### "got int in sequence assignment"
+  #|---
+  #|[] = [1] ### "too many values to unpack"
+  #|---
+  #|[] = [1, 2] ### "too many values to unpack"
+  #|---
+  #|# list-tuple assignment
   #|load("assert.star", "assert")
   #|
-  #|def wrong_type(): [a, b, c] = 1
-  #|assert.fails(wrong_type, "got int in sequence assignment")
-  #|
-  #|def too_few_empty(): [a, b] = []
-  #|assert.fails(too_few_empty, "too few values to unpack")
-  #|
-  #|def too_few_one(): [a, b] = [1]
-  #|assert.fails(too_few_one, "too few values to unpack")
-  #|
-  #|def too_few_two(): [a, b, c] = [1, 2]
-  #|assert.fails(too_few_two, "too few values to unpack")
-  #|
-  #|def too_many(): [a, b] = [1, 2, 3]
-  #|assert.fails(too_many, "too many values to unpack")
-  #|
-  #|def empty_wrong_type(): [] = 1
-  #|assert.fails(empty_wrong_type, "got int in sequence assignment")
-  #|
-  #|def empty_too_many_one(): [] = [1]
-  #|assert.fails(empty_too_many_one, "too many values to unpack")
-  #|
-  #|def empty_too_many_two(): [] = [1, 2]
-  #|assert.fails(empty_too_many_two, "too many values to unpack")
-
-///|
-test "assign.star: list unpacking errors" {
-  let errs = run_star_string(assign_list_errors_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_cross_type_src : String =
-  #|load("assert.star", "assert")
-  #|
+  #|# empty ok
   #|[] = ()
   #|() = []
   #|
@@ -133,10 +75,7 @@ let assign_cross_type_src : String =
   #|assert.eq(b, 2)
   #|assert.eq(c, 3)
   #|
-  #|[a2, b2, c2] = 1, 2, 3
-  #|assert.eq(a2, 1)
-  #|assert.eq(b2, 2)
-  #|assert.eq(c2, 3)
+  #|[a2, b2, c2] = 1, 2, 3 # bare tuple ok
   #|
   #|(d, e, f) = [1, 2, 3]
   #|assert.eq(d, 1)
@@ -154,17 +93,9 @@ let assign_cross_type_src : String =
   #|assert.eq(l, 2)
   #|assert.eq(m, 3)
   #|assert.eq(n, 4)
-
-///|
-test "assign.star: cross-type list/tuple assignment" {
-  let errs = run_star_string(assign_cross_type_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_misc_src : String =
+  #|
+  #|---
+  #|# misc assignment
   #|load("assert.star", "assert")
   #|
   #|def assignment():
@@ -182,17 +113,10 @@ let assign_misc_src : String =
   #|  assert.fails(f12, "unhashable type: dict")
   #|
   #|assignment()
-
-///|
-test "assign.star: misc assignment (subscript, dict, augmented)" {
-  let errs = run_star_string(assign_misc_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_augmented_src : String =
+  #|
+  #|---
+  #|# augmented assignment
+  #|
   #|load("assert.star", "assert")
   #|
   #|def f():
@@ -202,20 +126,13 @@ let assign_augmented_src : String =
   #|  x *= 3
   #|  assert.eq(x, 6)
   #|f()
-
-///|
-test "assign.star: augmented assignment" {
-  let errs = run_star_string(assign_augmented_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_lhs_once_src : String =
+  #|
+  #|---
+  #|# effects of evaluating LHS occur only once
+  #|
   #|load("assert.star", "assert")
   #|
-  #|count = [0]
+  #|count = [0] # count[0] is the number of calls to f
   #|
   #|def f():
   #|  count[0] += 1
@@ -224,19 +141,12 @@ let assign_lhs_once_src : String =
   #|x = [1, 2, 3]
   #|x[f()] += 1
   #|
-  #|assert.eq(x, [1, 3, 3])
-  #|assert.eq(count[0], 1)
-
-///|
-test "assign.star: LHS evaluated only once in augmented assignment" {
-  let errs = run_star_string(assign_lhs_once_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_eval_order_src : String =
+  #|assert.eq(x, [1, 3, 3]) # sole call to f returned 1
+  #|assert.eq(count[0], 1) # f was called only once
+  #|
+  #|---
+  #|# Order of evaluation.
+  #|
   #|load("assert.star", "assert")
   #|
   #|calls = []
@@ -245,6 +155,7 @@ let assign_eval_order_src : String =
   #|  calls.append(name)
   #|  return result
   #|
+  #|# The right side is evaluated before the left in an ordinary assignment.
   #|calls.clear()
   #|f("array", [0])[f("index", 0)] = f("rhs", 0)
   #|assert.eq(calls, ["rhs", "array", "index"])
@@ -253,132 +164,138 @@ let assign_eval_order_src : String =
   #|f("lhs1", [0])[0], f("lhs2", [0])[0] = f("rhs1", 0), f("rhs2", 0)
   #|assert.eq(calls, ["rhs1", "rhs2", "lhs1", "lhs2"])
   #|
+  #|# Left side is evaluated first (and only once) in an augmented assignment.
   #|calls.clear()
   #|f("array", [0])[f("index", 0)] += f("addend", 1)
   #|assert.eq(calls, ["array", "index", "addend"])
-
-///|
-test "assign.star: order of evaluation in assignments" {
-  let errs = run_star_string(assign_eval_order_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_before_assignment_src : String =
+  #|
+  #|---
+  #|# global referenced before assignment
+  #|
+  #|def f():
+  #|   return g ### "global variable g referenced before assignment"
+  #|
+  #|f()
+  #|
+  #|g = 1
+  #|
+  #|---
+  #|# Free variables are captured by reference, so this is ok.
   #|load("assert.star", "assert")
   #|
   #|def f():
-  #|  return g
-  #|assert.fails(f, "global variable g referenced before assignment")
-  #|g = 1
+  #|   def g():
+  #|     return outer
+  #|   outer = 1
+  #|   return g()
+  #|
+  #|assert.eq(f(), 1)
+  #|
+  #|---
+  #|load("assert.star", "assert")
   #|
   #|printok = [False]
   #|
+  #|# This program should resolve successfully but fail dynamically.
+  #|# However, the Java implementation currently reports the dynamic
+  #|# error at the x=1 statement (b/33975425).  I think we need to simplify
+  #|# the resolver algorithm to what we have implemented.
   #|def use_before_def():
-  #|  print(x)
+  #|  print(x) # dynamic error: local var referenced before assignment
   #|  printok[0] = True
-  #|  x = 1
+  #|  x = 1  # makes 'x' local
   #|
   #|assert.fails(use_before_def, 'local variable x referenced before assignment')
-  #|assert.true(not printok[0])
+  #|assert.true(not printok[0]) # execution of print statement failed
   #|
-  #|def aug_before_assign():
-  #|  x += [4]
-  #|assert.fails(aug_before_assign, "local variable x referenced before assignment")
-
-///|
-test "assign.star: variable referenced before assignment errors" {
-  let errs = run_star_string(assign_before_assignment_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_closure_src : String =
-  #|load("assert.star", "assert")
+  #|---
+  #|x = [1]
+  #|x.extend([2]) # ok
   #|
   #|def f():
-  #|  def g():
-  #|    return outer
-  #|  outer = 1
-  #|  return g()
+  #|   x += [4] ### "local variable x referenced before assignment"
   #|
-  #|assert.eq(f(), 1)
-
-///|
-test "assign.star: free variables captured by reference" {
-  let errs = run_star_string(assign_closure_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-// Note: the Starlark spec resolver marks ALL uses of a name as local once it's assigned
-// in the same scope, even uses before the assignment textually. Our resolver does
-// not implement this; built-in names accessed before a later shadowing assignment
-// resolve to the built-in rather than raising an error. We only test the basic
-// shadowing case that our impl supports.
-let assign_shadow_builtin_src : String =
+  #|f()
+  #|
+  #|---
+  #|
+  #|z += 3 ### "global variable z referenced before assignment"
+  #|
+  #|---
   #|load("assert.star", "assert")
   #|
+  #|# It's ok to define a global that shadows a built-in...
   #|list = []
   #|assert.eq(type(list), "list")
-
-///|
-test "assign.star: shadowing built-in names" {
-  let errs = run_star_string(assign_shadow_builtin_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_comprehension_scope_src : String =
+  #|
+  #|# ...but then all uses refer to the global,
+  #|# even if they occur before the binding use.
+  #|# See github.com/google/skylark/issues/116.
+  #|assert.fails(lambda: tuple, "global variable tuple referenced before assignment")
+  #|tuple = ()
+  #|
+  #|---
+  #|# option:set
+  #|# Same as above, but set is dialect-specific;
+  #|# we shouldn't notice any difference.
   #|load("assert.star", "assert")
   #|
+  #|set = [1, 2, 3]
+  #|assert.eq(type(set), "list")
+  #|
+  #|# As in Python 2 and Python 3,
+  #|# all 'in x' expressions in a comprehension are evaluated
+  #|# in the comprehension's lexical block, except the first,
+  #|# which is resolved in the outer block.
   #|x = [[1, 2]]
   #|assert.eq([x for x in x for y in x],
   #|          [[1, 2], [1, 2]])
-
-///|
-test "assign.star: comprehension scope (first 'in' from outer block)" {
-  let errs = run_star_string(assign_comprehension_scope_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_singleton_seq_src : String =
+  #|
+  #|---
+  #|# A comprehension establishes a single new lexical block,
+  #|# not one per 'for' clause.
+  #|x = [1, 2]
+  #|_ = [x for _ in [3] for x in x] ### "local variable x referenced before assignment"
+  #|
+  #|---
   #|load("assert.star", "assert")
   #|
+  #|# assign singleton sequence to 1-tuple
   #|(x,) = (1,)
   #|assert.eq(x, 1)
   #|(y,) = [1]
   #|assert.eq(y, 1)
   #|
+  #|# assign 1-tuple to variable
   #|z = (1,)
   #|assert.eq(type(z), "tuple")
   #|assert.eq(len(z), 1)
   #|assert.eq(z[0], 1)
   #|
+  #|# assign value to parenthesized variable
   #|(a) = 1
   #|assert.eq(a, 1)
-
-///|
-test "assign.star: singleton sequence and 1-tuple assignment" {
-  let errs = run_star_string(assign_singleton_seq_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_for_loop_destructure_src : String =
+  #|
+  #|---
+  #|# assignment to/from fields.
+  #|load("assert.star", "assert", "freeze")
+  #|
+  #|hf = hasfields()
+  #|hf.x = 1
+  #|assert.eq(hf.x, 1)
+  #|hf.x = [1, 2]
+  #|hf.x += [3, 4]
+  #|assert.eq(hf.x, [1, 2, 3, 4])
+  #|freeze(hf)
+  #|def setX(hf):
+  #|  hf.x = 2
+  #|def setY(hf):
+  #|  hf.y = 3
+  #|assert.fails(lambda: setX(hf), "cannot set field on a frozen hasfields")
+  #|assert.fails(lambda: setY(hf), "cannot set field on a frozen hasfields")
+  #|
+  #|---
+  #|# destucturing assignment in a for loop.
   #|load("assert.star", "assert")
   #|
   #|def f():
@@ -394,212 +311,58 @@ let assign_for_loop_destructure_src : String =
   #|    pass
   #|  return a
   #|assert.eq(g(), {"one": 1, "two": 2})
-
-///|
-test "assign.star: destructuring assignment in for loop" {
-  let errs = run_star_string(assign_for_loop_destructure_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_forward_ref_src : String =
-  #|load("assert.star", "assert")
   #|
-  #|def f(): assert.eq(1, 1)
-  #|load("assert.star", "assert")
-  #|f()
-
-///|
-test "assign.star: forward reference to load binding is OK" {
-  let errs = run_star_string(assign_forward_ref_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let assign_tuple_errors_chunked : String =
-  #|(a, b, c) = 1 ### "got int in sequence assignment"
   #|---
-  #|(a, b) = () ### "too few values to unpack"
-  #|---
-  #|(a, b) = (1,) ### "too few values to unpack"
-  #|---
-  #|(a, b, c) = (1, 2) ### "too few values to unpack"
-  #|---
-  #|(a, b) = (1, 2, 3) ### "too many values to unpack"
-  #|---
-  #|() = 1 ### "got int in sequence assignment"
-  #|---
-  #|() = (1,) ### "too many values to unpack"
-  #|---
-  #|() = (1, 2) ### "too many values to unpack"
-
-///|
-test "assign.star: tuple sequence assignment errors (chunked)" {
-  let failures = run_chunked_string(assign_tuple_errors_chunked)
-  if failures.length() != 0 {
-    fail(failures.join("\n"))
-  }
-}
-
-///|
-let assign_list_errors_chunked : String =
-  #|[a, b, c] = 1 ### "got int in sequence assignment"
-  #|---
-  #|[a, b] = [] ### "too few values to unpack"
-  #|---
-  #|[a, b] = [1] ### "too few values to unpack"
-  #|---
-  #|[a, b, c] = [1, 2] ### "too few values to unpack"
-  #|---
-  #|[a, b] = [1, 2, 3] ### "too many values to unpack"
-  #|---
-  #|[] = 1 ### "got int in sequence assignment"
-  #|---
-  #|[] = [1] ### "too many values to unpack"
-  #|---
-  #|[] = [1, 2] ### "too many values to unpack"
-
-///|
-test "assign.star: list sequence assignment errors (chunked)" {
-  let failures = run_chunked_string(assign_list_errors_chunked)
-  if failures.length() != 0 {
-    fail(failures.join("\n"))
-  }
-}
-
-///|
-let assign_before_assign_errors_chunked : String =
-  #|z += 3 ### "global variable z referenced before assignment"
-  #|---
-  #|(a) += 5 ### "global variable a referenced before assignment"
-  #|---
-  #|load("assert.star", "assert")
-  #|list = []
-  #|assert.eq(type(list), "list")
-  #|assert.fails(lambda: tuple, "global variable tuple referenced before assignment")
-  #|tuple = ()
-  #|---
-  #|load("assert.star", "assert")
-  #|assert.fails(lambda: set, "global variable set referenced before assignment")
-  #|set = [1, 2, 3]
-
-///|
-test "assign.star: module-scope variable-before-assignment errors (chunked)" {
-  let failures = run_chunked_string(assign_before_assign_errors_chunked)
-  if failures.length() != 0 {
-    fail(failures.join("\n"))
-  }
-}
-
-///|
-let assign_dialect_chunked : String =
+  #|# parenthesized LHS in augmented assignment (success)
   #|# option:globalreassign
   #|load("assert.star", "assert")
+  #|
   #|a = 5
   #|(a) += 3
   #|assert.eq(a, 8)
+  #|
+  #|---
+  #|# parenthesized LHS in augmented assignment (error)
+  #|
+  #|(a) += 5 ### "global variable a referenced before assignment"
+  #|
   #|---
   #|# option:globalreassign
   #|load("assert.star", "assert")
   #|assert = 1
   #|load("assert.star", "assert")
+  #|
   #|---
   #|# option:globalreassign option:loadbindsglobally
   #|load("assert.star", "assert")
   #|assert = 1
   #|load("assert.star", "assert")
+  #|
   #|---
   #|# option:loadbindsglobally
-  #|def f(): assert.eq(1, 1)
+  #|_ = assert ### "global variable assert referenced before assignment"
+  #|load("assert.star", "assert")
+  #|
+  #|---
+  #|_ = assert ### "local variable assert referenced before assignment"
+  #|load("assert.star", "assert")
+  #|
+  #|---
+  #|def f(): assert.eq(1, 1) # forward ref OK
+  #|load("assert.star", "assert")
+  #|f()
+  #|
+  #|---
+  #|# option:loadbindsglobally
+  #|def f(): assert.eq(1, 1) # forward ref OK
   #|load("assert.star", "assert")
   #|f()
 
 ///|
-test "assign.star: dialect option chunks (globalreassign / loadbindsglobally)" {
-  let failures = run_chunked_string(assign_dialect_chunked)
-  if failures.length() != 0 {
-    fail(failures.join("\n"))
-  }
-}
-
-///|
-let assign_load_binding_before_stmt_chunked : String =
-  #|# option:loadbindsglobally
-  #|_ = assert ### "global variable assert referenced before assignment"
-  #|load("assert.star", "assert")
-  #|---
-  #|_ = assert ### "local variable assert referenced before assignment"
-  #|load("assert.star", "assert")
-
-///|
-test "assign.star lines 337-343: load binding used before load stmt (chunked)" {
-  let failures = run_chunked_string(assign_load_binding_before_stmt_chunked)
-  if failures.length() != 0 {
-    fail(failures.join("\n"))
-  }
-}
-
-///|
-let assign_comp_scope_chunked : String =
-  #|x = [1, 2]
-  #|_ = [x for _ in [3] for x in x] ### "local variable x referenced before assignment"
-
-///|
-test "assign.star line 253: comprehension scope unbound variable" {
-  let failures = run_chunked_string(assign_comp_scope_chunked)
-  if failures.length() != 0 {
-    fail(failures.join("\n"))
-  }
-}
-
-///|
-test "load: per-symbol errors reported at symbol position, not load keyword" {
-  let thread = @eval.Thread::new("test")
-  // Source: load("foo", "")
-  // "load" at col 1, "" at col 13 → error should say :1:13:
-  let result = @eval.exec_file(
-    thread,
-    "test.star",
-    (
-      #|load("foo", "")
-    ),
-    @eval.Options::default(),
-  )
-  match result {
-    Err(e) => {
-      assert_true(e.msg().contains("load: empty identifier"))
-      assert_true(e.msg().contains("test.star:1:13:"))
-    }
-    Ok(_) => abort("expected error")
-  }
-}
-
-///|
-test "load: leading-underscore error reported at symbol position, not load keyword" {
-  let thread = @eval.Thread::new("test")
-  // Source: load("foo", "_priv")
-  // "_priv" at col 13 → error should say :1:13:
-  let result = @eval.exec_file(
-    thread,
-    "test.star",
-    (
-      #|load("foo", "_priv")
-    ),
-    @eval.Options::default(),
-  )
-  match result {
-    Err(e) => {
-      assert_true(
-        e
-        .msg()
-        .contains("load: names with leading underscores are not exported"),
-      )
-      assert_true(e.msg().contains("test.star:1:13:"))
-    }
-    Ok(_) => abort("expected error")
+test "assign.star" {
+  let src = skip_chunks_containing(assign_star, ["hasfields()"])
+  let errs = run_chunked_string(src)
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
   }
 }

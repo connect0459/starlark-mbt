@@ -1,14 +1,15 @@
-// Integration tests derived from list.star.
-// Error patterns simplified to substrings; regex-style patterns are not supported.
-// f7 (hasfields) is omitted: hasfields() is a test-only type not in the standard built-ins.
-// Error message differences are noted inline.
+// Integration tests from starlark-go testdata/list.star.
+// Omitted: hasfields() chunks (application-defined type, not a standard built-in).
 
 ///|
-let list_star_src : String =
+let list_star : String =
+  #|# Tests of Starlark 'list'
+  #|
   #|load("assert.star", "assert", "freeze")
   #|
   #|# literals
   #|assert.eq([], [])
+  #|assert.eq([1], [1])
   #|assert.eq([1], [1])
   #|assert.eq([1, 2], [1, 2])
   #|assert.ne([1, 2, 3], [1, 2, 4])
@@ -19,14 +20,14 @@ let list_star_src : String =
   #|
   #|# indexing, x[i]
   #|abc = list("abc".elems())
-  #|assert.fails(lambda: abc[-4], "out of range")
+  #|assert.fails(lambda: abc[-4], "list index -4 out of range \\[-3:2]")
   #|assert.eq(abc[-3], "a")
   #|assert.eq(abc[-2], "b")
   #|assert.eq(abc[-1], "c")
   #|assert.eq(abc[0], "a")
   #|assert.eq(abc[1], "b")
   #|assert.eq(abc[2], "c")
-  #|assert.fails(lambda: abc[3], "out of range")
+  #|assert.fails(lambda: abc[3], "list index 3 out of range \\[-3:2]")
   #|
   #|# x[i] = ...
   #|x3 = [0, 1, 2]
@@ -43,13 +44,13 @@ let list_star_src : String =
   #|def f3():
   #|    x3[0] = 0
   #|
-  #|assert.fails(f3, "cannot assign to element of")
+  #|assert.fails(f3, "cannot assign to element of frozen list")
   #|assert.fails(x3.clear, "cannot clear frozen list")
   #|
   #|# list + list
   #|assert.eq([1, 2, 3] + [3, 4, 5], [1, 2, 3, 3, 4, 5])
-  #|assert.fails(lambda: [1, 2] + (3, 4), "unknown binary op")
-  #|assert.fails(lambda: (1, 2) + [3, 4], "unknown binary op")
+  #|assert.fails(lambda: [1, 2] + (3, 4), "unknown.*list \\+ tuple")
+  #|assert.fails(lambda: (1, 2) + [3, 4], "unknown.*tuple \\+ list")
   #|
   #|# list * int,  int * list
   #|assert.eq(abc * 0, [])
@@ -74,20 +75,23 @@ let list_star_src : String =
   #|assert.eq([x for x in {"a": 1, "b": 2}], ["a", "b"])
   #|assert.eq([(y, x) for x, y in {1: 2, 3: 4}.items()], [(2, 1), (4, 3)])
   #|
-  #|# corner cases of parsing
+  #|# corner cases of parsing:
   #|assert.eq([x for x in range(12) if x % 2 == 0 if x % 3 == 0], [0, 6])
+  #|assert.eq([x for x in [1, 2] if lambda: None], [1, 2])
+  #|assert.eq([x for x in [1, 2] if (lambda: 3 if True else 4)], [1, 2])
   #|
   #|# list function
   #|assert.eq(list(), [])
   #|assert.eq(list("ab".elems()), ["a", "b"])
   #|
-  #|# list comprehension defines a separate lexical block at top-level
+  #|# A list comprehension defines a separate lexical block,
+  #|# whether at top-level...
   #|a = [1, 2]
   #|b = [a for a in [3, 4]]
   #|assert.eq(a, [1, 2])
   #|assert.eq(b, [3, 4])
   #|
-  #|# and local to a function
+  #|# ...or local to a function.
   #|def listcompblock():
   #|    c = [1, 2]
   #|    d = [c for c in [3, 4]]
@@ -98,8 +102,8 @@ let list_star_src : String =
   #|
   #|# list.pop
   #|x4 = [1, 2, 3, 4, 5]
-  #|assert.fails(lambda: x4.pop(-6), "out of range")
-  #|assert.fails(lambda: x4.pop(6), "out of range")
+  #|assert.fails(lambda: x4.pop(-6), "index -6 out of range \\[-5:4]")
+  #|assert.fails(lambda: x4.pop(6), "index 6 out of range \\[-5:4]")
   #|assert.eq(x4.pop(), 5)
   #|assert.eq(x4, [1, 2, 3, 4])
   #|assert.eq(x4.pop(1), 2)
@@ -111,7 +115,12 @@ let list_star_src : String =
   #|assert.eq(x4.pop(-1), 4)
   #|assert.eq(x4, [])
   #|
-  #|# x += y for lists is equivalent to x.extend(y) in place
+  #|# TODO(adonovan): test uses of list as sequence
+  #|# (for loop, comprehension, library functions).
+  #|
+  #|# x += y for lists is equivalent to x.extend(y).
+  #|# y may be a sequence.
+  #|# TODO: Test that side-effects of 'x' occur only once.
   #|def list_extend():
   #|    a = [1, 2, 3]
   #|    b = a
@@ -133,12 +142,20 @@ let list_star_src : String =
   #|
   #|list_extend()
   #|
+  #|# Unlike list.extend(iterable), list += iterable makes its LHS name local.
+  #|a_list = []
+  #|
+  #|def f4():
+  #|    a_list += [1]  # binding use => a_list is a local var
+  #|
+  #|assert.fails(f4, "local variable a_list referenced before assignment")
+  #|
   #|# list += <not iterable>
   #|def f5():
   #|    x = []
   #|    x += 1
   #|
-  #|assert.fails(f5, "unknown binary op")
+  #|assert.fails(f5, "unknown binary op: list \\+ int")
   #|
   #|# frozen list += iterable
   #|def f6():
@@ -146,7 +163,15 @@ let list_star_src : String =
   #|    freeze(x)
   #|    x += [1]
   #|
-  #|assert.fails(f6, "cannot apply")
+  #|assert.fails(f6, "cannot apply \\+= to frozen list")
+  #|
+  #|# list += hasfields (hasfields is not iterable but defines list+hasfields)
+  #|def f7():
+  #|    x = []
+  #|    x += hasfields()
+  #|    return x
+  #|
+  #|assert.eq(f7(), 42)  # weird, but exercises a corner case in list+=x.
   #|
   #|# append
   #|x5 = [1, 2, 3]
@@ -156,7 +181,7 @@ let list_star_src : String =
   #|
   #|# extend
   #|x5a = [1, 2, 3]
-  #|x5a.extend("abc".elems())  # string elems
+  #|x5a.extend("abc".elems())  # string
   #|x5a.extend((True, False))  # tuple
   #|assert.eq(x5a, [1, 2, 3, "a", "b", "c", True, False])
   #|
@@ -184,300 +209,81 @@ let list_star_src : String =
   #|assert.eq(remove(3), [1, 4, 1])
   #|assert.eq(remove(1), [3, 4, 1])
   #|assert.eq(remove(4), [3, 1, 1])
-  #|assert.fails(lambda: [3, 1, 4, 1].remove(42), "not found")
+  #|assert.fails(lambda: [3, 1, 4, 1].remove(42), "remove: element not found")
   #|
   #|# list.index
   #|bananas = list("bananas".elems())
-  #|assert.eq(bananas.index("a"), 1)
-  #|assert.fails(lambda: bananas.index("d"), "not in list")
+  #|assert.eq(bananas.index("a"), 1)  # bAnanas
+  #|assert.fails(lambda: bananas.index("d"), "value not in list")
   #|
-  #|# with start
-  #|assert.eq(bananas.index("a", -1000), 1)
-  #|assert.eq(bananas.index("a", 0), 1)
-  #|assert.eq(bananas.index("a", 1), 1)
-  #|assert.eq(bananas.index("a", 2), 3)
-  #|assert.eq(bananas.index("a", 3), 3)
-  #|assert.eq(bananas.index("b", 0), 0)
-  #|assert.eq(bananas.index("n", -3), 4)
-  #|assert.fails(lambda: bananas.index("n", -2), "not in list")
-  #|assert.eq(bananas.index("s", -2), 6)
-  #|assert.fails(lambda: bananas.index("b", 1), "not in list")
+  #|# start
+  #|assert.eq(bananas.index("a", -1000), 1)  # bAnanas
+  #|assert.eq(bananas.index("a", 0), 1)  # bAnanas
+  #|assert.eq(bananas.index("a", 1), 1)  # bAnanas
+  #|assert.eq(bananas.index("a", 2), 3)  # banAnas
+  #|assert.eq(bananas.index("a", 3), 3)  # banAnas
+  #|assert.eq(bananas.index("b", 0), 0)  # Bananas
+  #|assert.eq(bananas.index("n", -3), 4)  # banaNas
+  #|assert.fails(lambda: bananas.index("n", -2), "value not in list")
+  #|assert.eq(bananas.index("s", -2), 6)  # bananaS
+  #|assert.fails(lambda: bananas.index("b", 1), "value not in list")
   #|
-  #|# with start and end
-  #|assert.eq(bananas.index("s", -1000, 7), 6)
-  #|assert.fails(lambda: bananas.index("s", -1000, 6), "not in list")
-  #|assert.fails(lambda: bananas.index("d", -1000, 1000), "not in list")
+  #|# start, end
+  #|assert.eq(bananas.index("s", -1000, 7), 6)  # bananaS
+  #|assert.fails(lambda: bananas.index("s", -1000, 6), "value not in list")
+  #|assert.fails(lambda: bananas.index("d", -1000, 1000), "value not in list")
   #|
-  #|# slicing
+  #|# slicing, x[i:j:k]
   #|assert.eq(bananas[6::-2], list("snnb".elems()))
   #|assert.eq(bananas[5::-2], list("aaa".elems()))
   #|assert.eq(bananas[4::-2], list("nnb".elems()))
   #|assert.eq(bananas[99::-2], list("snnb".elems()))
   #|assert.eq(bananas[100::-2], list("snnb".elems()))
+  #|# TODO(adonovan): many more tests
   #|
-  #|# iterator invalidation: assignment during for loop
+  #|# iterator invalidation
   #|def iterator1():
-  #|    lst = [0, 1, 2]
-  #|    for x in lst:
-  #|        lst[x] = 2 * x
-  #|    return lst
+  #|    list = [0, 1, 2]
+  #|    for x in list:
+  #|        list[x] = 2 * x
+  #|    return list
   #|
-  #|assert.fails(iterator1, "assign to element")
+  #|assert.fails(iterator1, "assign to element.* during iteration")
   #|
-  #|# iterator invalidation: remove during for loop
   #|def iterator2():
-  #|    lst = [0, 1, 2]
-  #|    for x in lst:
-  #|        lst.remove(x)
+  #|    list = [0, 1, 2]
+  #|    for x in list:
+  #|        list.remove(x)
   #|
-  #|assert.fails(iterator2, "remove")
+  #|assert.fails(iterator2, "remove.*during iteration")
   #|
-  #|# iterator invalidation: append during for loop
   #|def iterator3():
-  #|    lst = [0, 1, 2]
-  #|    for x in lst:
-  #|        lst.append(3)
+  #|    list = [0, 1, 2]
+  #|    for x in list:
+  #|        list.append(3)
   #|
-  #|assert.fails(iterator3, "append")
+  #|assert.fails(iterator3, "append.*during iteration")
   #|
-  #|# iterator invalidation: extend during for loop
   #|def iterator4():
-  #|    lst = [0, 1, 2]
-  #|    for x in lst:
-  #|        lst.extend([3, 4])
+  #|    list = [0, 1, 2]
+  #|    for x in list:
+  #|        list.extend([3, 4])
   #|
-  #|assert.fails(iterator4, "extend")
+  #|assert.fails(iterator4, "extend.*during iteration")
   #|
-  #|# iterator invalidation: append inside list comprehension
   #|def iterator5():
   #|    def f(x):
   #|        x.append(4)
   #|
-  #|    lst = [1, 2, 3]
-  #|    _ = [f(lst) for x in lst]
+  #|    list = [1, 2, 3]
+  #|    _ = [f(list) for x in list]
   #|
-  #|assert.fails(iterator5, "append")
+  #|assert.fails(iterator5, "append.*during iteration")
 
 ///|
-test "list.star: all assertions pass" {
-  let errs = run_star_string(list_star_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let list_unbound_local_src : String =
-  #|load("assert.star", "assert")
-  #|
-  #|# Unlike list.extend(iterable), list += iterable makes its LHS name local.
-  #|a_list = []
-  #|
-  #|def f4():
-  #|    a_list += [1]  # binding use => a_list is a local var
-  #|
-  #|assert.fails(f4, "local variable a_list referenced before assignment")
-
-///|
-test "list augmented-assign to global name raises unbound local error" {
-  let errs = run_star_string(list_unbound_local_src)
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "lambda in comprehension if-clause is truthy and filters correctly" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.eq([x for x in [1, 2] if lambda: None], [1, 2])
-      #|assert.eq([x for x in [1, 2] if (lambda: 3 if True else 4)], [1, 2])
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "list.extend(self) doubles the list without error" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|xs = [1, 2, 3]
-      #|xs.extend(xs)
-      #|assert.eq(xs, [1, 2, 3, 1, 2, 3])
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "list += self doubles the list without error" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|xs = [1, 2, 3]
-      #|xs += xs
-      #|assert.eq(xs, [1, 2, 3, 1, 2, 3])
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "non-integer subscript reports a <type> index error" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [10, 20, 30][True], "list index: got bool, want int")
-      #|assert.fails(lambda: (1, 2)[True], "tuple index: got bool, want int")
-      #|assert.fails(lambda: "abc"[True], "string index: got bool, want int")
-      #|assert.fails(lambda: b"abc"[1.0], "bytes index: got float, want int")
-      #|assert.fails(lambda: range(3)[True], "range index: got bool, want int")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "non-integer subscript assignment reports got/want int" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|def f():
-      #|    xs = [1, 2, 3]
-      #|    xs[True] = 9
-      #|assert.fails(f, "got bool, want int")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "list.append rejects keyword arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [].append(x=1), "append: unexpected keyword arguments")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "list.extend rejects keyword arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [].extend(x=[]), "extend: unexpected keyword arguments")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "list.append arity error matches starlark-go UnpackPositionalArgs wording" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [].append(1, 2), "append: got 2 arguments, want 1")
-      #|assert.fails(lambda: [].append(), "append: got 0 arguments, want 1")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "list.extend arity error matches starlark-go UnpackPositionalArgs wording" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [].extend([1], [2]), "extend: got 2 arguments, want 1")
-      #|assert.fails(lambda: [].extend(), "extend: got 0 arguments, want 1")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "list.clear rejects excess positional arguments" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [1].clear(5), "clear: got 1 arguments, want 0")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "BigInt subscript index error uses conversion format, not range bounds" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [1,2,3][10000000000], "list index: 10000000000 out of range")
-      #|assert.fails(lambda: (1,2,3)[10000000000], "tuple index: 10000000000 out of range")
-      #|assert.fails(lambda: "abc"[10000000000], "string index: 10000000000 out of range")
-      #|assert.fails(lambda: b"abc"[10000000000], "bytes index: 10000000000 out of range")
-      #|assert.fails(lambda: range(10)[10000000000], "range index: 10000000000 out of range")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-test "BigInt slice bounds outside int32 range raise out-of-range error" {
-  let errs = run_star_string(
-    (
-      #|load("assert.star", "assert")
-      #|assert.fails(lambda: [1,2,3,4,5][4294967296:], "invalid start index: 4294967296 out of range")
-      #|assert.fails(lambda: [1,2,3,4,5][:4294967296], "invalid end index: 4294967296 out of range")
-      #|assert.fails(lambda: [1,2,3,4,5][::10000000000], "invalid slice step: 10000000000 out of range")
-    ),
-  )
-  if errs.length() != 0 {
-    fail(errs.join("\n"))
-  }
-}
-
-///|
-let list_pop_insert_param_src : String =
-  #|load("assert.star", "assert")
-  #|x = [1, 2, 3]
-  #|# pop with non-int argument uses "for parameter 1:" prefix
-  #|assert.fails(lambda: x.pop("a"), "pop: for parameter 1: got string, want int")
-  #|# insert with non-int index uses "for parameter 1:" prefix
-  #|assert.fails(lambda: x.insert("a", 9), "insert: for parameter 1: got string, want int")
-  #|# pop with BigInt out of int64 range
-  #|assert.fails(lambda: x.pop(99999999999999999999), "pop: for parameter 1: 99999999999999999999 out of range")
-  #|# insert with BigInt out of int64 range silently clamped -> now errors
-  #|assert.fails(lambda: x.insert(99999999999999999999, 9), "insert: for parameter 1: 99999999999999999999 out of range")
-
-///|
-test "list.pop and list.insert use 'for parameter 1:' error prefix" {
-  let errs = run_star_string(list_pop_insert_param_src)
+test "list.star" {
+  let src = skip_chunks_containing(list_star, ["hasfields()"])
+  let errs = run_chunked_string(src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
