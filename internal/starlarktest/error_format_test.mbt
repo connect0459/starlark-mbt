@@ -214,7 +214,7 @@ test "error format: recursion depth exceeded" {
     thread,
     "test.star",
     src,
-    @eval.Options::default(),
+    @eval.Options::default().with_allow_recursion(true),
   )
   match result {
     Err(e) =>

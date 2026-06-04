@@ -3,7 +3,6 @@
 
 ///|
 let function_star : String =
-  #|# option:norecursion
   #|# Tests of Starlark 'function'
   #|# option:set
   #|

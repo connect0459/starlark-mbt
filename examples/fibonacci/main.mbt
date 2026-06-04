@@ -8,7 +8,8 @@ fn main {
     #|
     #|result = fib(15)
     #|sequence = [fib(i) for i in range(10)]
-  match @eval.exec_file(thread, "fibonacci.star", src, @eval.Options::default()) {
+  let opts = @eval.Options::default().with_allow_recursion(true)
+  match @eval.exec_file(thread, "fibonacci.star", src, opts) {
     Ok(m) => {
       match m.get("result") {
         Some(v) =>

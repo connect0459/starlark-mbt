@@ -62,9 +62,12 @@ test "Program round-trips through write/compiled_program and executes equally" {
     #|pi = 3.14159
     #|text = "hello\nworld"
   let prog = match
-    @eval.source_program("t.star", src, @eval.Options::default(), fn(_) {
-      false
-    }) {
+    @eval.source_program(
+      "t.star",
+      src,
+      @eval.Options::default().with_allow_recursion(true),
+      fn(_) { false },
+    ) {
     Ok(p) => p
     Err(e) => fail(e.msg())
   }
@@ -180,10 +183,10 @@ test "Program::options exposes the file-level dialect options it was built with"
 }
 
 ///|
-test "default_options returns Options with all feature flags enabled" {
+test "default_options enables features but leaves recursion off" {
   let opts = @eval.Options::default()
   assert_eq(opts.allow_set(), true)
-  assert_eq(opts.allow_recursion(), true)
+  assert_eq(opts.allow_recursion(), false)
   assert_eq(opts.allow_float(), true)
 }
 
@@ -361,10 +364,10 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
 }
 
 ///|
-test "Options::default enables all feature flags" {
+test "Options::default enables features but leaves recursion off" {
   let opts = @eval.Options::default()
   assert_eq(opts.allow_set(), true)
-  assert_eq(opts.allow_recursion(), true)
+  assert_eq(opts.allow_recursion(), false)
   assert_eq(opts.allow_lambda(), true)
   assert_eq(opts.allow_while(), true)
   assert_eq(opts.allow_bytes(), true)

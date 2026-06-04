@@ -6,7 +6,7 @@
 A MoonBit implementation of the [Starlark](https://github.com/bazelbuild/starlark/blob/master/spec.md)
 scripting language interpreter.
 
-All optional features (`set`, `lambda`, `while`, `bytes`, `float`, recursion) are **enabled by default**.
+All optional features (`set`, `lambda`, `while`, `bytes`, `float`) are **enabled by default**. Recursive function calls are **disabled by default** (matching starlark-go); enable them with `Options::default().with_allow_recursion(true)`.
 
 ## Packages
 

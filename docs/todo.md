@@ -2920,10 +2920,12 @@ embed, so upstream testdata updates stay copy-paste.
       using Go's per-byte decoder (`utf8util.decode_utf8_lossy`) rather than
       `moonbitlang/core`'s WHATWG maximal-subpart `decode_lossy`. The
       `errs.filter` workaround in `bytes_test.mbt` is removed.
-- [ ] **E**: change `AllowRecursion` default to `false` (breaking) and drop the
-      `# option:norecursion` prepend in `function_test.mbt`. Deferred to a
-      separate branch because it changes public `Options::default()` behaviour
-      and needs a migration note.
+- [x] **E** (breaking): `Options::default()` now defaults `allow_recursion` to
+      `false`, matching starlark-go. The `# option:norecursion` prepend in
+      `function_test.mbt` is removed; `# option:recursion` is supported for the
+      chunks that need it. Tests that exercise recursion now opt in explicitly
+      via `with_allow_recursion(true)`. README, API docs, and the feature-gate
+      note above are updated as the migration note.
 
 ---
 
@@ -2973,7 +2975,8 @@ Track with `moon coverage analyze > uncovered.log` after each phase.
 ## Notes
 
 - Starlark strings are **byte** strings: `s[i]` returns the i-th byte, not Unicode codepoint
-- All non-default feature gates default to **enabled** (this project's choice)
+- Feature gates default to **enabled** (this project's choice), except
+  `allow_recursion`, which defaults to **disabled** to match starlark-go (issue #22, item E)
 - Arbitrary-precision `Int`: start with `Int64`, plan upgrade when arithmetic overflow tests fail
 - `load` statement requires a pluggable loader; implement a no-op loader for testing
 - Mutable containers (List, Dict, Set) can self-reference; equality / repr / hash must handle cycles

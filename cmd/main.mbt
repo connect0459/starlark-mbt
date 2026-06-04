@@ -13,8 +13,57 @@ fn resolve_load(base_dir : String, load_path : String) -> String {
 }
 
 ///|
+/// Parses a Go-style boolean flag value (`strconv.ParseBool` set).
+fn parse_bool_flag(value : String) -> Bool? {
+  match value {
+    "1" | "t" | "T" | "true" | "TRUE" | "True" => Some(true)
+    "0" | "f" | "F" | "false" | "FALSE" | "False" => Some(false)
+    _ => None
+  }
+}
+
+///|
+/// Parses the CLI arguments into the script path (if any) and the evaluation
+/// options. The `-recursion` boolean flag (also spelled `--recursion`, matching
+/// starlark-go) enables recursive function calls, which are disabled by
+/// default; it accepts the Go forms `-recursion`, `-recursion=true`, and
+/// `-recursion=false`. A bare `--` stops flag parsing so later arguments are
+/// treated as positional. Returns `Err` for an invalid flag value.
+fn parse_cli_args(
+  args : Array[String],
+) -> Result[(String?, @eval.Options), String] {
+  let mut filepath : String? = None
+  let mut opts = @eval.Options::default()
+  let mut flags_done = false
+  for i in 1..<args.length() {
+    let arg = args[i]
+    if flags_done {
+      if filepath is None {
+        filepath = Some(arg)
+      }
+      continue
+    }
+    if arg == "--" {
+      flags_done = true
+    } else if arg == "--recursion" || arg == "-recursion" {
+      opts = opts.with_allow_recursion(true)
+    } else if arg.has_prefix("--recursion=") || arg.has_prefix("-recursion=") {
+      let value = arg[arg.find("=").unwrap() + 1:].to_owned()
+      match parse_bool_flag(value) {
+        Some(b) => opts = opts.with_allow_recursion(b)
+        None => return Err("invalid boolean value \"\{value}\" for -recursion")
+      }
+    } else if filepath is None {
+      filepath = Some(arg)
+    }
+  }
+  Ok((filepath, opts))
+}
+
+///|
 fn make_loader(
   base_dir : String,
+  opts : @eval.Options,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
   fn(_thread, load_path) {
     let resolved = resolve_load(base_dir, load_path)
@@ -27,10 +76,9 @@ fn make_loader(
     let inner_dir = dir_of(resolved)
     let load_thread = @eval.Thread::with_loader(
       "load:\{load_path}",
-      make_loader(inner_dir),
+      make_loader(inner_dir, opts),
     )
-    match
-      @eval.exec_file(load_thread, resolved, load_src, @eval.Options::default()) {
+    match @eval.exec_file(load_thread, resolved, load_src, opts) {
       Ok(m) => Ok(m)
       Err(e) =>
         Err(
@@ -41,7 +89,7 @@ fn make_loader(
 }
 
 ///|
-fn run_file(filepath : String) -> Int {
+fn run_file(filepath : String, opts : @eval.Options) -> Int {
   let src = @fs.read_file_to_string(filepath) catch {
     @fs.IOError(msg) => {
       println("starlark: \{msg}")
@@ -49,8 +97,8 @@ fn run_file(filepath : String) -> Int {
     }
   }
   let base_dir = dir_of(filepath)
-  let thread = @eval.Thread::with_loader(filepath, make_loader(base_dir))
-  match @eval.exec_file(thread, filepath, src, @eval.Options::default()) {
+  let thread = @eval.Thread::with_loader(filepath, make_loader(base_dir, opts))
+  match @eval.exec_file(thread, filepath, src, opts) {
     Ok(_) => 0
     Err(e) => {
       println(e.msg())
@@ -60,13 +108,13 @@ fn run_file(filepath : String) -> Int {
 }
 
 ///|
-fn run_repl() -> Unit {
+fn run_repl(opts : @eval.Options) -> Unit {
   let thread = @eval.Thread::with_loader("REPL", @repl.make_load("."))
   let globals = @value.StringDict::new()
   if @repl.is_terminal() {
     println("Welcome to Starlark (connect0459/starlark)")
   }
-  @repl.run(thread, globals)
+  @repl.run(thread, globals, opts~)
   if @repl.is_terminal() {
     println("")
   }
@@ -75,13 +123,20 @@ fn run_repl() -> Unit {
 ///|
 fn main {
   let args = @sys.get_cli_args()
-  if args.length() < 2 {
-    run_repl()
-    return
-  }
-  let filepath = args[1]
-  let exit_code = run_file(filepath)
-  if exit_code != 0 {
-    @sys.exit(exit_code)
+  match parse_cli_args(args) {
+    Err(msg) => {
+      println("starlark: \{msg}")
+      @sys.exit(2)
+    }
+    Ok((filepath, opts)) =>
+      match filepath {
+        None => run_repl(opts)
+        Some(fp) => {
+          let exit_code = run_file(fp, opts)
+          if exit_code != 0 {
+            @sys.exit(exit_code)
+          }
+        }
+      }
   }
 }

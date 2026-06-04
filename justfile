@@ -16,16 +16,14 @@ run-example path:
         name=$(basename "$p")
         for star in "$p"/*.star; do
             [[ -f "$star" ]] || continue
-            echo "==> $star"
-            moon run cmd -- "$star"
+            bash scripts/run-star.sh "$star"
         done
         if grep -q '"is-main": true' "$p/moon.pkg" 2>/dev/null; then
             echo "==> examples/$name (mbt)"
             (cd examples && moon run "$name")
         fi
     elif [[ "$p" == *.star ]]; then
-        echo "==> $p"
-        moon run cmd -- "$p"
+        bash scripts/run-star.sh "$p"
     elif [[ "$p" == *.mbt ]]; then
         dir=$(dirname "$p")
         name=$(basename "$dir")
@@ -44,8 +42,7 @@ run-examples:
         name=$(basename "$dir")
         for star in "$dir"/*.star; do
             [[ -f "$star" ]] || continue
-            echo "==> $star"
-            moon run cmd -- "$star"
+            bash scripts/run-star.sh "$star"
         done
         if grep -q '"is-main": true' "$dir/moon.pkg" 2>/dev/null; then
             echo "==> examples/$name (mbt)"
