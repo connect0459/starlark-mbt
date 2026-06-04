@@ -252,10 +252,11 @@ fn pop_n(stack : Array[@value.Value], n : Int) -> Array[@value.Value] {
 
 ///|
 /// Compiles and runs `src` on the bytecode VM, returning a `Module` of the
-/// resulting globals. The public `exec_file` delegates here; it is exposed as an
-/// `#internal` entry so tests can run the VM directly. Resolution is performed by
-/// `compile_and_run_vm` via `validate_resolution`.
-#internal(unsafe, "bytecode VM entry; not part of the public embedding API")
+/// resulting globals. This is the execution engine behind the public
+/// `exec_file`, which delegates here; it stays `#internal` because embedders
+/// should call `exec_file` rather than this lower-level entry. Resolution is
+/// performed by `compile_and_run_vm` via `validate_resolution`.
+#internal(unsafe, "execution engine behind exec_file; call exec_file instead")
 pub fn exec_file_vm(
   thread : Thread,
   filename : String,
@@ -384,11 +385,14 @@ fn run_program_vm(
 
 ///|
 /// Compiles and evaluates a single expression on the bytecode VM, returning its
-/// value. The expression is lowered as a synthetic `<result> = <expr>` module
-/// (named after the expression's source file) so the VM can run it; `env`
-/// bindings are bound into the context (and treated as predeclared) so they
-/// resolve, and the result is read back from its global.
-#internal(unsafe, "bytecode VM only; not part of the public embedding API")
+/// value. This is the execution engine behind the public `eval_expr`, which
+/// delegates here; it stays `#internal` because embedders should call
+/// `eval_expr` rather than this lower-level entry. The expression is lowered as
+/// a synthetic `<result> = <expr>` module (named after the expression's source
+/// file) so the VM can run it; `env` bindings are bound into the context (and
+/// treated as predeclared) so they resolve, and the result is read back from
+/// its global.
+#internal(unsafe, "execution engine behind eval_expr; call eval_expr instead")
 pub fn eval_expr_vm(
   thread : Thread,
   expr : @syntax.Expr,
