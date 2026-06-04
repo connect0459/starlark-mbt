@@ -2907,6 +2907,26 @@ a validation-only pre-pass and `@syntax` stays immutable.
 
 ---
 
+## Follow-up: starlark-go verbatim embed (issue #22)
+
+Removing the remaining test-level workarounds left after the PR #21 verbatim
+embed, so upstream testdata updates stay copy-paste.
+
+- [x] **F**: `sorted([1, "one"])` now reports `string < int not implemented`,
+      matching starlark-go's `sort.Stable` insertion sort (compares
+      `less(j, j-1)`, keeps the last failing comparison's error). The
+      `errs.filter` workaround in `builtins_test.mbt` is removed.
+- [x] **H**: `bytes(string)` and `str(bytes)` replace invalid UTF-8 with U+FFFD
+      using Go's per-byte decoder (`utf8util.decode_utf8_lossy`) rather than
+      `moonbitlang/core`'s WHATWG maximal-subpart `decode_lossy`. The
+      `errs.filter` workaround in `bytes_test.mbt` is removed.
+- [ ] **E**: change `AllowRecursion` default to `false` (breaking) and drop the
+      `# option:norecursion` prepend in `function_test.mbt`. Deferred to a
+      separate branch because it changes public `Options::default()` behaviour
+      and needs a migration note.
+
+---
+
 ## Coverage Targets
 
 **Overall target: 80%** (agreed before implementation).
