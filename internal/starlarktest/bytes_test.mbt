@@ -1,4 +1,5 @@
 // Integration tests from starlark-go testdata/bytes.star.
+// ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
 // Omitted: repr comparison for partial UTF-8 and Go-regex pattern assertions
 // (implementation differences; single-chunk file cannot be partially filtered).
 

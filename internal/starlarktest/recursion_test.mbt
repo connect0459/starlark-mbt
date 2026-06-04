@@ -1,4 +1,5 @@
 // Integration tests from starlark-go testdata/recursion.star.
+// ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
 // Omitted: Starlark stack overflow chunks (our impl says 'maximum recursion depth exceeded').
 
 ///|

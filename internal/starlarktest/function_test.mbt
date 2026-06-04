@@ -1,4 +1,5 @@
 // Integration tests from starlark-go testdata/function.star.
+// ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
 // Omitted: hasfields() chunks (application-defined type) and
 // Go-regex spell-check pattern chunks (not supported by pattern_matches).
 
