@@ -1,6 +1,5 @@
 // Integration tests from starlark-go testdata/dict.star.
 // ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
-// Omitted: dict [|] list chunks (Go-regex character class in assert.fails pattern, not supported by pattern_matches).
 
 ///|
 let dict_star : String =
