@@ -1,6 +1,5 @@
 // Integration tests from starlark-go testdata/json.star.
 // ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
-// Omitted: struct() chunks (Go-specific predeclared builtin, not available without struct.star load).
 
 ///|
 let json_star : String =
@@ -201,8 +200,7 @@ let json_star : String =
 
 ///|
 test "json.star" {
-  let src = skip_chunks_containing(json_star, ["struct("])
-  let errs = run_chunked_string(src)
+  let errs = run_chunked_string(json_star)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

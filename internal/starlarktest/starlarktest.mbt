@@ -157,6 +157,13 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
       @value.Value::Range(r) =>
         match item {
           @value.Value::Int(n) => r.contains(n.to_int64())
+          @value.Value::Float(f) =>
+            if f.is_nan() || f.is_inf() {
+              false
+            } else {
+              let as_int = f.to_int64()
+              as_int.to_double() == f && r.contains(as_int)
+            }
           _ => false
         }
       _ =>
@@ -188,6 +195,62 @@ fn pattern_unescape(pat : StringView) -> String {
   buf.to_string()
 }
 
+// Try to match `pat` at position `ti` in `tc`, where unescaped '.' matches any
+// single char and '\X' matches literal X.  Returns the position after the match
+// on success, or -1 on failure.
+// pattern_unescape has already resolved \X escapes before this function is
+// called.  Here, only unescaped '.' acts as a single-character wildcard; all
+// other characters (including '\') are matched literally.
+
+///|
+fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
+  let plen = pc.length()
+  let tlen = tc.length()
+  let mut pi = 0
+  let mut ti = ti_start
+  while pi < plen {
+    if ti >= tlen {
+      return -1
+    }
+    if pc[pi] == '.' {
+      pi += 1
+      ti += 1
+    } else {
+      if tc[ti] != pc[pi] {
+        return -1
+      }
+      pi += 1
+      ti += 1
+    }
+  }
+  ti
+}
+
+// Find the first occurrence of `pat` (where unescaped '.' matches any single
+// char and '\X' matches literal X) in `text` starting at position `start_pos`.
+// Returns the position immediately after the match, or None if not found.
+
+///|
+fn find_mini_pattern(pat : String, text : String, start_pos : Int) -> Int? {
+  let pc = pat.to_array()
+  let tc = text.to_array()
+  let plen = pc.length()
+  let tlen = tc.length()
+  if plen == 0 {
+    return Some(start_pos)
+  }
+  let max_start = tlen - plen + 1
+  let mut i = start_pos
+  while i < max_start {
+    let end_pos = try_match_at(pc, tc, i)
+    if end_pos >= 0 {
+      return Some(end_pos)
+    }
+    i += 1
+  }
+  None
+}
+
 ///|
 fn pattern_matches(pattern : String, text : String) -> Bool {
   let anchor_end = pattern.has_suffix("$")
@@ -196,13 +259,32 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
   } else {
     pattern
   }
+  // Normalise: treat "..." as the same multi-char wildcard as ".*"
+  let pat = {
+    let buf = StringBuilder::new()
+    let mut first = true
+    for part in pat.split("...") {
+      if !first {
+        buf.write_string(".*")
+      }
+      buf.write_string(part.to_owned())
+      first = false
+    }
+    buf.to_string()
+  }
   let parts : Array[StringView] = pat.split(".*").collect()
   if parts.length() == 1 {
-    let s = pattern_unescape(parts[0])
+    // No multi-char wildcard: scan for the part using single-char '.' wildcards.
+    let part = pattern_unescape(parts[0])
     if anchor_end {
-      text.has_suffix(s)
+      // Must match at the very end of text.
+      let start = text.length() - part.length()
+      if start < 0 {
+        return false
+      }
+      find_mini_pattern(part, text, start) == Some(text.length())
     } else {
-      text.contains(s)
+      find_mini_pattern(part, text, 0) != None
     }
   } else {
     let mut pos = 0
@@ -211,9 +293,9 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
       if part.is_empty() {
         continue
       }
-      match text[pos:].find(part) {
+      match find_mini_pattern(part, text, pos) {
         None => return false
-        Some(idx) => pos = pos + idx + part.length()
+        Some(end_pos) => pos = end_pos
       }
     }
     if anchor_end {
@@ -413,6 +495,130 @@ fn parse_chunk_options(src : String) -> @eval.Options {
 }
 
 ///|
+fn levenshtein(a : String, b : String) -> Int {
+  let m = a.length()
+  let n = b.length()
+  if m == 0 {
+    return n
+  }
+  if n == 0 {
+    return m
+  }
+  let ac = a.to_array()
+  let bc = b.to_array()
+  let row : Array[Int] = Array::make(n + 1, 0)
+  for j in 0..<(n + 1) {
+    row[j] = j
+  }
+  for i in 1..<(m + 1) {
+    let mut prev = i - 1
+    row[0] = i
+    for j in 1..<(n + 1) {
+      let old = row[j]
+      let cost = if ac[i - 1] == bc[j - 1] { 0 } else { 1 }
+      let ins = row[j - 1] + 1
+      let del = old + 1
+      let sub = prev + cost
+      row[j] = if ins < del {
+        if ins < sub {
+          ins
+        } else {
+          sub
+        }
+      } else if del < sub {
+        del
+      } else {
+        sub
+      }
+      prev = old
+    }
+  }
+  row[n]
+}
+
+///|
+fn norm_field_name(s : String) -> String {
+  let buf = StringBuilder::new()
+  for c in s.iter() {
+    let code = c.to_int()
+    if code >= 'A'.to_int() && code <= 'Z'.to_int() {
+      buf.write_char(Int::unsafe_to_char(code + 32))
+    } else if c != '_' {
+      buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn spell_suggest(name : String, candidates : Array[String]) -> String? {
+  let name_norm = norm_field_name(name)
+  let mut best : String? = None
+  let mut best_dist = 3
+  for c in candidates {
+    let d = levenshtein(name_norm, norm_field_name(c))
+    if d < best_dist {
+      best = Some(c)
+      best_dist = d
+    }
+  }
+  best
+}
+
+///|
+fn make_hasfields_fn() -> @value.Value {
+  @value.Value::new_builtin("hasfields", fn(_call_ctx, _pos_args, _kw_args) {
+    let storage : Map[String, @value.Value] = {}
+    let cv = @value.CustomValue::new(fn() { "hasfields" }, fn() { true }, fn() {
+        "<hasfields>"
+      })
+      .with_attrs(
+        fn(name) {
+          match storage.get(name) {
+            Some(v) => Ok(Some(v))
+            None => {
+              let keys = storage.keys().collect()
+              match spell_suggest(name, keys) {
+                Some(s) =>
+                  Err(
+                    "hasfields has no .\{name} field or method (did you mean .\{s}?)",
+                  )
+                None => Ok(None)
+              }
+            }
+          }
+        },
+        fn() { storage.keys().collect() },
+      )
+      .with_set_field(fn(name, val) {
+        // Fields starting with "no" simulate SetField returning NoSuchField,
+        // matching the starlark-go eval_test.go hasfields() helper behaviour.
+        if name.has_prefix("no") && name.length() > 2 {
+          let rest = name[2:].to_owned()
+          match spell_suggest(rest, storage.keys().collect()) {
+            Some(s) =>
+              Err(
+                "hasfields has no .\{name} field or method (did you mean .\{s}?)",
+              )
+            None => Err("hasfields has no .\{name} field or method")
+          }
+        } else {
+          storage.set(name, val)
+          Ok(())
+        }
+      })
+      .with_binary(fn(op, _other, _is_left) {
+        if op == "+" {
+          Some(Ok(@value.Value::Int(42N)))
+        } else {
+          None
+        }
+      })
+    Ok(@value.Value::ExtVal(cv))
+  })
+}
+
+///|
 fn exec_chunk_raw(
   src : String,
 ) -> Result[Array[String], (String, Array[String])] {
@@ -451,7 +657,12 @@ fn exec_chunk_raw(
     }
   }
   let thread = @eval.Thread::with_loader("test", loader)
-  match @eval.exec_file(thread, "<test>", src, opts) {
+  let predeclared = @eval.Predeclared::from_map({
+    "hasfields": make_hasfields_fn(),
+    "struct": @struct.struct_builtin(),
+  })
+  match
+    @eval.exec_file_with_predeclared(thread, "<test>", src, opts, predeclared) {
     Ok(_) => Ok(assert_errors)
     Err(e) => Err((e.msg(), assert_errors))
   }

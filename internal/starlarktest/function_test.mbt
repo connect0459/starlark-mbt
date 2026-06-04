@@ -1,10 +1,9 @@
 // Integration tests from starlark-go testdata/function.star.
 // ref: <https://github.com/google/starlark-go/blob/ec58d4b459e2866ed51124596d888ed7aa4f90b8/starlark/testdata/>
-// Omitted: hasfields() chunks (application-defined type) and
-// Go-regex spell-check pattern chunks (not supported by pattern_matches).
 
 ///|
 let function_star : String =
+  #|# option:norecursion
   #|# Tests of Starlark 'function'
   #|# option:set
   #|
@@ -337,9 +336,8 @@ let function_star : String =
 
 ///|
 test "function.star" {
-  let src = skip_chunks_containing(function_star, [
-    "hasfields()", "did you mean key",
-  ])
+  // skip chunk with ".+did you mean key\?" — .+ quantifier unsupported by pattern_matches
+  let src = skip_chunks_containing(function_star, ["did you mean key"])
   let errs = run_chunked_string(src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
