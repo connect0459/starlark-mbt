@@ -29,7 +29,7 @@ moon add connect0459/starlark
 
 Then declare the packages you need in your `moon.pkg` (add extension packages as needed):
 
-```text
+```moonbit nocheck
 import {
   "connect0459/starlark",               // exec, eval — quick-start helpers with default thread and options
   "connect0459/starlark/eval",          // exec_file, eval_expr, call, parse_file, Thread, Module, Options, …
