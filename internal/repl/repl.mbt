@@ -26,12 +26,14 @@ pub impl Show for ReplOutput with fn output(self, logger) {
 /// - `thread` : The evaluation thread providing the execution context.
 /// - `globals` : The global variable dictionary for the REPL session.
 /// - `input` : The raw source text entered by the user.
+/// - `opts` : Feature flags controlling which dialect features are active.
 ///
 /// Returns the evaluation result as a `ReplOutput` variant.
 pub fn eval_input(
   thread : @eval.Thread,
   globals : @value.StringDict,
   input : String,
+  opts? : @eval.Options = @eval.Options::default(),
 ) -> ReplOutput {
   let file = match @parser.parse_file("<repl>", input) {
     Ok(f) => f
@@ -41,7 +43,7 @@ pub fn eval_input(
   // Only a lone bare expression is echoed back; anything else (multiple
   // statements, or a single non-expression statement) runs as a chunk.
   if stmts.length() == 1 && stmts[0] is @syntax.Stmt::SExpr(_) {
-    match @eval.eval_expr(thread, "<repl>", input, globals) {
+    match @eval.eval_expr_with_opts(thread, "<repl>", input, opts, globals) {
       Ok(v) =>
         if v is @value.Value::None {
           Empty
@@ -53,14 +55,7 @@ pub fn eval_input(
       Err(e) => EvalError(e.msg())
     }
   } else {
-    match
-      @eval.exec_repl_chunk(
-        thread,
-        "<repl>",
-        input,
-        globals,
-        @eval.Options::default(),
-      ) {
+    match @eval.exec_repl_chunk(thread, "<repl>", input, globals, opts) {
       Ok(_) => Empty
       Err(e) => EvalError(e.msg())
     }
@@ -135,7 +130,12 @@ fn dir_of(path : String) -> String {
 ///
 /// - `thread` : The evaluation thread used for all input evaluation.
 /// - `globals` : The global variable dictionary shared across all REPL inputs.
-pub fn run(thread : @eval.Thread, globals : @value.StringDict) -> Unit {
+/// - `opts` : Feature flags controlling which dialect features are active.
+pub fn run(
+  thread : @eval.Thread,
+  globals : @value.StringDict,
+  opts? : @eval.Options = @eval.Options::default(),
+) -> Unit {
   while true {
     match read_line(">>> ") {
       None => break
@@ -144,7 +144,7 @@ pub fn run(thread : @eval.Thread, globals : @value.StringDict) -> Unit {
         if trimmed.is_empty() {
           continue
         }
-        match eval_input(thread, globals, trimmed) {
+        match eval_input(thread, globals, trimmed, opts~) {
           Value(s) => println(s)
           Empty => ()
           EvalError(msg) => println(msg)

@@ -58,6 +58,42 @@ test "eval_input: runtime error returns EvalError output" {
 }
 
 ///|
+test "eval_input: rejects recursive calls by default" {
+  let t = make_thread()
+  let g = empty_globals()
+  let _ = eval_input(
+    t, g, "def f(n):\n  if n <= 0:\n    return 0\n  return f(n - 1)",
+  )
+  match eval_input(t, g, "f(3)") {
+    EvalError(msg) => assert_true(msg.contains("called recursively"))
+    other => {
+      println(other)
+      assert_true(false)
+    }
+  }
+}
+
+///|
+test "eval_input: honors allow_recursion when opts enable it" {
+  let t = make_thread()
+  let g = empty_globals()
+  let opts = @eval.Options::default().with_allow_recursion(true)
+  let _ = eval_input(
+    t,
+    g,
+    "def f(n):\n  if n <= 0:\n    return 0\n  return f(n - 1)",
+    opts~,
+  )
+  match eval_input(t, g, "f(3)", opts~) {
+    Value(s) => assert_eq(s, "0")
+    other => {
+      println(other)
+      assert_true(false)
+    }
+  }
+}
+
+///|
 test "eval_input: stores last expression result in _ variable" {
   let t = make_thread()
   let g = empty_globals()

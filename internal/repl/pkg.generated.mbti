@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn eval_input(@eval.Thread, @value.StringDict, String) -> ReplOutput
+pub fn eval_input(@eval.Thread, @value.StringDict, String, opts? : @eval.Options) -> ReplOutput
 
 pub fn format_error(@errors.EvalError) -> String
 
@@ -16,7 +16,7 @@ pub fn is_terminal() -> Bool
 
 pub fn make_load(String) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError]
 
-pub fn run(@eval.Thread, @value.StringDict) -> Unit
+pub fn run(@eval.Thread, @value.StringDict, opts? : @eval.Options) -> Unit
 
 // Errors
 

@@ -78,13 +78,13 @@ fn run_file(filepath : String, opts : @eval.Options) -> Int {
 }
 
 ///|
-fn run_repl() -> Unit {
+fn run_repl(opts : @eval.Options) -> Unit {
   let thread = @eval.Thread::with_loader("REPL", @repl.make_load("."))
   let globals = @value.StringDict::new()
   if @repl.is_terminal() {
     println("Welcome to Starlark (connect0459/starlark)")
   }
-  @repl.run(thread, globals)
+  @repl.run(thread, globals, opts~)
   if @repl.is_terminal() {
     println("")
   }
@@ -95,7 +95,7 @@ fn main {
   let args = @sys.get_cli_args()
   let (filepath, opts) = parse_cli_args(args)
   match filepath {
-    None => run_repl()
+    None => run_repl(opts)
     Some(fp) => {
       let exit_code = run_file(fp, opts)
       if exit_code != 0 {
