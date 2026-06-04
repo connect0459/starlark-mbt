@@ -368,7 +368,7 @@ test "Thread::with_step_budget halts computation that exceeds limit" {
 }
 
 ///|
-test "Options::default matches the Starlark spec and starlark-go" {
+test "Options::default enables standard features and disables non-standard extensions" {
   let opts = @eval.Options::default()
   // Standard features are enabled.
   assert_eq(opts.allow_set(), true)

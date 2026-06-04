@@ -188,9 +188,11 @@ test {
 ## `@eval.Options`
 
 Feature flags that control the Starlark dialect. `Options::default()` is the
-spec-conformant dialect that matches [starlark-go]'s zero-value `FileOptions`:
-the **standard** features are enabled, and the **non-standard** extensions are
-disabled and must be opted into explicitly.
+spec-conformant dialect: the **standard** features are enabled, and the
+**non-standard** extensions are disabled and must be opted into explicitly —
+matching [starlark-go]'s zero-value `FileOptions` for the extensions. The one
+intentional divergence is `set`: starlark-go's zero value still has `Set = false`,
+but `set` is now part of the Starlark spec, so it is enabled by default here.
 
 ```moonbit nocheck
 pub struct Options { /* private fields */ }  // in "connect0459/starlark/eval"

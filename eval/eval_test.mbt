@@ -62,7 +62,7 @@ test "Predeclared: each, values, and delete round out the registry surface" {
 }
 
 ///|
-test "Options: default dialect matches the Starlark spec and starlark-go" {
+test "Options: default dialect enables standard features and disables non-standard extensions" {
   let opts = Options::default()
   // Standard features are enabled.
   assert_eq(opts.allow_set(), true)

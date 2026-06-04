@@ -3,11 +3,14 @@ let default_max_recursion_depth : Int = 100
 
 ///|
 /// Feature-flag set controlling which optional Starlark dialect features are
-/// enabled. The default dialect matches the Starlark spec and starlark-go's
-/// zero-value `FileOptions`: the standard features `allow_set`, `allow_lambda`,
-/// `allow_bytes`, and `allow_float` default to `true`, while the non-standard
-/// extensions `allow_recursion`, `allow_while`, `allow_top_level_control`,
-/// `allow_global_reassign`, and `load_binds_globally` default to `false`.
+/// enabled. The default dialect is spec-conformant: the standard features
+/// `allow_set`, `allow_lambda`, `allow_bytes`, and `allow_float` default to
+/// `true`, while the non-standard extensions `allow_recursion`, `allow_while`,
+/// `allow_top_level_control`, `allow_global_reassign`, and `load_binds_globally`
+/// default to `false` — matching starlark-go's zero-value `FileOptions` for the
+/// extensions. The one intentional divergence is `allow_set`: starlark-go's
+/// zero value still has `Set = false`, but `set` is now part of the Starlark
+/// spec, so it is enabled by default here.
 pub struct Options {
   priv allow_set : Bool
   priv allow_recursion : Bool
@@ -21,12 +24,13 @@ pub struct Options {
 }
 
 ///|
-/// Returns the default `Options`: the spec-conformant Starlark dialect that
-/// matches starlark-go's zero-value `FileOptions`. The standard features
-/// (`allow_set`, `allow_lambda`, `allow_bytes`, `allow_float`) are enabled; the
-/// non-standard extensions (`allow_recursion`, `allow_while`,
+/// Returns the default `Options`: the spec-conformant Starlark dialect. The
+/// standard features (`allow_set`, `allow_lambda`, `allow_bytes`, `allow_float`)
+/// are enabled; the non-standard extensions (`allow_recursion`, `allow_while`,
 /// `allow_top_level_control`, `allow_global_reassign`, `load_binds_globally`)
-/// are disabled and must be opted into explicitly.
+/// are disabled and must be opted into explicitly, matching starlark-go's
+/// zero-value `FileOptions` for those extensions. `allow_set` intentionally
+/// diverges from that zero value (`Set = false`) because `set` is now standard.
 pub fn Options::default() -> Options {
   {
     allow_set: true,
