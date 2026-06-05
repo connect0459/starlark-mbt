@@ -32,8 +32,8 @@ are not part of the published API.
 
 - `src/starlark/` — public façade: re-exports `Thread`, `Module`, `Value`,
   `Options`, `exec_file`, `eval`, error types
-- `src/internal/errors/` — `Position`, `Span`, `SyntaxError`,
-  `ResolveError`, `EvalError`, `CallFrame`, `CallStack`, `Halt`
+- `src/internal/errors/` — `Position`, `SyntaxError`,
+  `ResolveError`, `EvalError`, `CallFrame`, `CallStack`
 - `src/internal/hashtable/` — insertion-ordered hashtable for `Dict` and `Set`
   (doubly-linked list + open-addressing hash table; required because Starlark
   dicts must preserve insertion order and support iteration-safe freezing).
@@ -99,7 +99,8 @@ Foundational error types and position tracking needed by all subsequent phases.
 
 - [x] `Position` — filename, line, column. **Decision: 1-based line, 1-based col;
       0 means unknown (matches starlark-go)**. Implemented in `src/internal/errors/`.
-- [x] `Span` — start + end `Position` for ranged diagnostics
+- [x] ~~`Span` — start + end `Position` for ranged diagnostics~~ (removed:
+      attached to no AST node and no public API; see API hygiene pass)
 - [x] `SyntaxError` — lexer/parser errors with `Position`
 - [x] `ResolveError` — resolver errors with `Position`
 - [x] `EvalError` — runtime errors with `Position` and call stack; `cause: String?` for chaining
@@ -108,7 +109,9 @@ Foundational error types and position tracking needed by all subsequent phases.
 - [ ] Error severity / category enum (deferred: no use case yet)
 - [x] Error chaining (carry inner cause for wrapped errors) — `cause: String?` in `EvalError`
 - [x] Error formatting: `"<filename>:<line>:<col>: <message>"` plus backtrace
-- [x] `Halt` / cancellation signal distinct from `EvalError`
+- [x] ~~`Halt` / cancellation signal distinct from `EvalError`~~ (removed:
+      cancellation flows through `Thread.cancel_reason` + `EvalError`, matching
+      starlark-go which has no `Halt` type; see API hygiene pass)
 
 ### TDD scope
 
@@ -391,7 +394,7 @@ Execute resolved AST nodes with an environment (binding stack).
 
 - [x] `Thread` — holds print callback, load callback, call stack, recursion depth limit (default 100), max execution steps (optional)
 - [x] Recursion depth check — `max_recursion_depth` enforced in `call_func`
-- [x] Step budget check (Halt when exceeded) — raises EvalError("step budget exceeded")
+- [x] Step budget check when exceeded — raises EvalError("step budget exceeded")
 - [x] Print output routed through `Thread.print`
 
 ### Expression evaluation
@@ -713,6 +716,17 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
       of `StarlarkString` to drop its value-type dependency. Compared against
       starlark-go (~85 exported symbols in the core `starlark` package) the
       public surface is now in the same ballpark, well below starlark-rust.
+- [x] **[LOW]** Ninth-pass dead-API audit — removed two orphan public types from
+      the `errors` package: `Halt` (never raised or constructed; cancellation
+      flows through `Thread.cancel_reason` + `EvalError`, and starlark-go has no
+      `Halt` type — its doc comment described a non-existent code path) and
+      `Span` (attached to no AST node, which carry `Position`; produced/consumed
+      by no public API; no starlark-go counterpart). Added
+      `EvalError::call_stack()` to expose the captured stack as structured data
+      (previously reachable only as the `backtrace()` string), mirroring
+      starlark-go's public `EvalError.CallStack`. Re-confirmed that the
+      `CallStack`/`CallFrame` family is a live contract reachable via
+      `Thread.call_stack()` / `Thread.call_frame()`, not dead code.
 
 ### Deferred API hardening (requires large eval refactoring)
 
