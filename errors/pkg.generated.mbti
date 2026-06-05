@@ -40,12 +40,6 @@ pub fn EvalError::to_string(Self) -> String
 pub fn EvalError::with_cause(String, CallStack, Self) -> Self
 pub fn EvalError::with_stack(String, CallStack) -> Self
 
-pub struct Halt {
-  // private fields
-}
-pub fn Halt::new(String) -> Self
-pub fn Halt::reason(Self) -> String
-
 pub struct Position {
   // private fields
 }
@@ -64,14 +58,6 @@ pub fn ResolveError::msg(Self) -> String
 pub fn ResolveError::new(Position, String) -> Self
 pub fn ResolveError::pos(Self) -> Position
 pub fn ResolveError::to_string(Self) -> String
-
-pub struct Span {
-  // private fields
-}
-pub fn Span::end_pos(Self) -> Position
-pub fn Span::new(Position, Position) -> Self
-pub fn Span::start(Self) -> Position
-pub fn Span::to_string(Self) -> String
 
 pub struct SyntaxError {
   // private fields

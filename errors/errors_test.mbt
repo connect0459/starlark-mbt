@@ -39,14 +39,6 @@ test "Position: is_before compares line then col" {
 }
 
 ///|
-test "Span: to_string shows start and end" {
-  let start = Position::new("f.star", 1, 1)
-  let end_ = Position::new("f.star", 1, 5)
-  let span = Span::new(start, end_)
-  inspect(span.to_string(), content="f.star:1:1-f.star:1:5")
-}
-
-///|
 test "SyntaxError: format as position plus message" {
   let pos = Position::new("bad.star", 4, 2)
   let err = SyntaxError::new(pos, "unexpected token '}'")
@@ -100,12 +92,6 @@ test "EvalError: to_string returns just the message" {
   let stack = CallStack::new([])
   let err = EvalError::with_stack("oops", stack)
   assert_eq(err.to_string(), "oops")
-}
-
-///|
-test "Halt: is distinct from EvalError" {
-  let h = Halt::new("cancelled")
-  assert_eq(h.reason(), "cancelled")
 }
 
 ///|

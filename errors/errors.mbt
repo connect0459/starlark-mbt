@@ -88,50 +88,6 @@ pub fn Position::is_before(self : Position, other : Position) -> Bool {
 }
 
 ///|
-/// A half-open source range `[start, end)`.
-pub struct Span {
-  priv start : Position
-  priv end_ : Position
-}
-
-///|
-/// Creates a `Span` from two positions.
-///
-/// Parameters:
-///
-/// - `start` : The inclusive start position.
-/// - `end_` : The exclusive end position.
-///
-/// Returns a new `Span` value.
-pub fn Span::new(start : Position, end_ : Position) -> Span {
-  { start, end_ }
-}
-
-///|
-/// Returns the start position of the span.
-///
-/// Returns the inclusive start `Position`.
-pub fn Span::start(self : Span) -> Position {
-  self.start
-}
-
-///|
-/// Returns the end position of the span.
-///
-/// Returns the exclusive end `Position`.
-pub fn Span::end_pos(self : Span) -> Position {
-  self.end_
-}
-
-///|
-/// Formats the span as `"start-end"`.
-///
-/// Returns the formatted span string.
-pub fn Span::to_string(self : Span) -> String {
-  "\{self.start.to_string()}-\{self.end_.to_string()}"
-}
-
-///|
 /// A parse-time error with a source position and a human-readable message.
 pub struct SyntaxError {
   priv pos : Position
@@ -464,31 +420,4 @@ pub fn EvalError::backtrace(self : EvalError) -> String {
     (self.call_stack.to_string(), "")
   }
   "\{stack_str}Error\{suffix}: \{self.msg}"
-}
-
-///|
-/// A cancellation signal that stops execution without producing an error.
-/// Raised by `Thread.cancel` and caught by the evaluator's step-check loop.
-pub struct Halt {
-  priv reason : String
-}
-
-///|
-/// Creates a `Halt` with the given reason string.
-///
-/// Parameters:
-///
-/// - `reason` : A string describing why execution was halted.
-///
-/// Returns a new `Halt` value.
-pub fn Halt::new(reason : String) -> Halt {
-  { reason, }
-}
-
-///|
-/// Returns the reason string passed to `Halt::new`.
-///
-/// Returns the reason string.
-pub fn Halt::reason(self : Halt) -> String {
-  self.reason
 }
