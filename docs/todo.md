@@ -2510,7 +2510,8 @@ compiled and had drifted. All fixed (commit `<api>`):
       compose via `set_print`/`set_loader`/`set_max_steps`/`set_on_max_steps`.
       Also fixed stale `on_max_steps` → `set_on_max_steps`, `set_max_steps(Int?)` →
       `(Int)`, added `reset_steps`, `call_frame`, and a Mutators subsection.
-- [x] Documented `@errors.Span` and `@errors.Halt`.
+- [x] ~~Documented `@errors.Span` and `@errors.Halt`~~ (both removed as dead
+      API; doc sections deleted accordingly — see API hygiene pass)
 - [x] Repointed every `@starlark.*` example to `@eval.*`/`@value.*`/`@unpack.*`;
       removed the facade row + section; reorganized the helper tables under the
       package that now owns them (`@eval`/`@value`/`@unpack`).

@@ -13,6 +13,7 @@ Runtime errors raised during evaluation.
 | `msg()` | `String` | Error message |
 | `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
 | `backtrace()` | `String` | Formatted call stack |
+| `call_stack()` | `CallStack` | The captured call stack as structured frames |
 | `cause()` | `EvalError?` | The wrapped inner error, if this error chains one |
 | `EvalError::simple(String)` | `EvalError` | Construct with no position (for host code) |
 | `EvalError::with_stack(String, CallStack)` | `EvalError` | Construct with a call stack |
@@ -53,27 +54,6 @@ A source location: filename, 1-based line, 1-based column. Column 0 means unknow
 | `is_valid()` | `Bool` | `true` if line > 0 |
 | `is_before(Position)` | `Bool` | Positional comparison |
 | `to_string()` | `String` | `"<file>:<line>:<col>"` |
-
-## `@errors.Span`
-
-A start–end pair of `Position`s for ranged diagnostics.
-
-| Method | Returns | Description |
-| :--- | :--- | :--- |
-| `Span::new(Position, Position)` | `Span` | Construct from start and end positions |
-| `start()` | `Position` | Start position |
-| `end_pos()` | `Position` | End position |
-| `to_string()` | `String` | `"<start>-<end>"` |
-
-## `@errors.Halt`
-
-A cancellation signal, distinct from `EvalError`, used to unwind execution when a thread is
-cancelled or its step budget is exhausted.
-
-| Method | Returns | Description |
-| :--- | :--- | :--- |
-| `Halt::new(String)` | `Halt` | Construct with a reason |
-| `reason()` | `String` | Why execution was halted |
 
 ## `@errors.Binding`
 
