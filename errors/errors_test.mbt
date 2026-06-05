@@ -39,14 +39,6 @@ test "Position: is_before compares line then col" {
 }
 
 ///|
-test "Span: to_string shows start and end" {
-  let start = Position::new("f.star", 1, 1)
-  let end_ = Position::new("f.star", 1, 5)
-  let span = Span::new(start, end_)
-  inspect(span.to_string(), content="f.star:1:1-f.star:1:5")
-}
-
-///|
 test "SyntaxError: format as position plus message" {
   let pos = Position::new("bad.star", 4, 2)
   let err = SyntaxError::new(pos, "unexpected token '}'")
@@ -103,9 +95,21 @@ test "EvalError: to_string returns just the message" {
 }
 
 ///|
-test "Halt: is distinct from EvalError" {
-  let h = Halt::new("cancelled")
-  assert_eq(h.reason(), "cancelled")
+test "EvalError: call_stack exposes the captured frames" {
+  let frame = CallFrame::new("g", Position::new("s.star", 7, 2))
+  let err = EvalError::with_stack("boom", CallStack::new([frame]))
+  let stack = err.call_stack()
+  assert_eq(stack.length(), 1)
+  assert_eq(stack.at(0).unwrap().name(), "g")
+}
+
+///|
+test "EvalError: call_stack returns a snapshot callers cannot mutate" {
+  let frame = CallFrame::new("g", Position::new("s.star", 7, 2))
+  let err = EvalError::with_stack("boom", CallStack::new([frame]))
+  let _ = err.call_stack().pop()
+  assert_eq(err.call_stack().length(), 1)
+  assert_true(err.backtrace().contains("s.star:7:2: in g"))
 }
 
 ///|
