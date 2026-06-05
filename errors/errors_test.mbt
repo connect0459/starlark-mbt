@@ -95,6 +95,15 @@ test "EvalError: to_string returns just the message" {
 }
 
 ///|
+test "EvalError: call_stack exposes the captured frames" {
+  let frame = CallFrame::new("g", Position::new("s.star", 7, 2))
+  let err = EvalError::with_stack("boom", CallStack::new([frame]))
+  let stack = err.call_stack()
+  assert_eq(stack.length(), 1)
+  assert_eq(stack.at(0).unwrap().name(), "g")
+}
+
+///|
 test "CallStack: length returns frame count" {
   let f1 = CallFrame::new("a", Position::new("f.star", 1, 1))
   let f2 = CallFrame::new("b", Position::new("f.star", 2, 1))

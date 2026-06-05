@@ -33,6 +33,7 @@ pub struct EvalError {
   // private fields
 }
 pub fn EvalError::backtrace(Self) -> String
+pub fn EvalError::call_stack(Self) -> CallStack
 pub fn EvalError::cause(Self) -> Self?
 pub fn EvalError::msg(Self) -> String
 pub fn EvalError::simple(String) -> Self
