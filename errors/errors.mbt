@@ -388,7 +388,7 @@ pub fn EvalError::msg(self : EvalError) -> String {
 /// Returns the `CallStack` recorded at the point of the error; empty for
 /// errors created with `simple`.
 pub fn EvalError::call_stack(self : EvalError) -> CallStack {
-  self.call_stack
+  CallStack::new(self.call_stack.frames.copy())
 }
 
 ///|

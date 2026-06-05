@@ -104,6 +104,15 @@ test "EvalError: call_stack exposes the captured frames" {
 }
 
 ///|
+test "EvalError: call_stack returns a snapshot callers cannot mutate" {
+  let frame = CallFrame::new("g", Position::new("s.star", 7, 2))
+  let err = EvalError::with_stack("boom", CallStack::new([frame]))
+  let _ = err.call_stack().pop()
+  assert_eq(err.call_stack().length(), 1)
+  assert_true(err.backtrace().contains("s.star:7:2: in g"))
+}
+
+///|
 test "CallStack: length returns frame count" {
   let f1 = CallFrame::new("a", Position::new("f.star", 1, 1))
   let f2 = CallFrame::new("b", Position::new("f.star", 2, 1))
