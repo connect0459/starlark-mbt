@@ -10,7 +10,7 @@ license = "Apache-2.0"
 
 keywords = [ "starlark", "interpreter" ]
 
-description = "A MoonBit implementation of the Starlark interpreter"
+description = "The Starlark configuration language, implemented in Moonbit"
 
 import {
   "moonbitlang/x@0.4.43",
