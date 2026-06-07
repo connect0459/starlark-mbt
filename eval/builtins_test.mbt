@@ -2183,3 +2183,93 @@ test "exec_file: split and strip treat Unicode whitespace as separators" {
     Err(e) => fail(e.to_string())
   }
 }
+
+///|
+test "exec_file: int with more than two positional arguments raises error" {
+  assert_true(
+    emsg("int(1, 10, \"extra\")").contains(
+      "int: got 3 arguments, want at most 2",
+    ),
+  )
+}
+
+///|
+test "exec_file: int with x keyword and positional argument raises conflict error" {
+  assert_true(
+    emsg("int(1, x=2)").contains(
+      "int: got multiple values for keyword argument x",
+    ),
+  )
+}
+
+///|
+test "exec_file: int with unknown keyword argument raises error" {
+  assert_true(emsg("int(y=1)").contains("int: unexpected keyword argument y"))
+}
+
+///|
+test "exec_file: int with x as keyword argument converts the value" {
+  match exec_b("n = int(x=\"42\")") {
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(42N)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: int with base out of the 2-36 range raises error" {
+  assert_true(
+    emsg("int(\"5\", 37)").contains(
+      "int: base must be an integer >= 2 && <= 36",
+    ),
+  )
+  assert_true(
+    emsg("int(\"5\", 1)").contains("int: base must be an integer >= 2 && <= 36"),
+  )
+}
+
+///|
+test "exec_file: int on a non-numeric non-string type raises a TypeError" {
+  assert_true(emsg("int([1, 2])").contains("int: cannot convert list to int"))
+}
+
+///|
+test "exec_file: float rejects keyword arguments" {
+  assert_true(
+    emsg("float(x=1)").contains("float does not accept keyword arguments"),
+  )
+}
+
+///|
+test "exec_file: float with more than one positional argument raises error" {
+  assert_true(emsg("float(1, 2)").contains("float got 2 arguments, wants 1"))
+}
+
+///|
+test "exec_file: float rejects an empty string" {
+  assert_true(emsg("float(\"\")").contains("float: empty string"))
+}
+
+///|
+test "exec_file: float rejects a string that overflows to infinity" {
+  assert_true(
+    emsg("float(\"1e99999\")").contains("floating-point number too large"),
+  )
+}
+
+///|
+test "exec_file: fail with non-string sep raises a TypeError" {
+  assert_true(
+    emsg("fail(\"msg\", sep=123)").contains(
+      "fail: for parameter \"sep\": got int, want string",
+    ),
+  )
+}
+
+///|
+test "exec_file: fail with unknown keyword argument raises error" {
+  assert_true(
+    emsg("fail(\"msg\", x=1)").contains(
+      "fail: unexpected keyword argument \"x\"",
+    ),
+  )
+}

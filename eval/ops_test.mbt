@@ -586,3 +586,78 @@ test "eval_expr: ExtVal without slice raises error on slice" {
   let v = @value.Value::ExtVal(cv)
   assert_true(eval_with_env("x[0:1]", [("x", v)]) is Err(_))
 }
+
+// --- Bytes concatenation ---
+
+///|
+test "eval_expr: bytes concatenation joins two byte sequences" {
+  match eval_op("b\"abc\" + b\"def\"") {
+    Ok(@value.Value::Bytes(b)) => {
+      assert_eq(b.length(), 6)
+      assert_eq(b[0], b'a')
+      assert_eq(b[5], b'f')
+    }
+    Ok(other) => fail("expected Bytes, got \{other.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: bytes concatenated with empty bytes yields the original" {
+  match eval_op("b\"abc\" + b\"\"") {
+    Ok(@value.Value::Bytes(b)) => assert_eq(b.length(), 3)
+    Ok(other) => fail("expected Bytes, got \{other.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+// --- Float true-division ---
+
+///|
+test "eval_expr: float divided by float zero raises an error" {
+  assert_true(eval_op("1.0 / 0.0") is Err(_))
+}
+
+///|
+test "eval_expr: int divided by float zero raises an error" {
+  assert_true(eval_op("1 / 0.0") is Err(_))
+}
+
+///|
+test "eval_expr: real division is rejected when allow_float option is disabled" {
+  let t = Thread::new("test")
+  let opts = Options::default().with_allow_float(false)
+  let env = @value.StringDict::new()
+  let result = eval_expr_with_opts(t, "<test>", "1 / 2", opts, env)
+  assert_true(result is Err(_))
+  match result {
+    Err(e) => assert_true(e.msg().contains("real division is not allowed"))
+    _ => ()
+  }
+}
+
+// --- adjust_index: BigInt out of int32 range ---
+
+///|
+test "eval_expr: list subscript with index larger than int32 max raises error" {
+  let err = op_err("[1][1 << 33]")
+  assert_true(err.contains("out of range"))
+}
+
+///|
+test "eval_expr: list subscript with index smaller than int32 min raises error" {
+  let err = op_err("[1][-(1 << 33)]")
+  assert_true(err.contains("out of range"))
+}
+
+// --- unary op type errors ---
+
+///|
+test "eval_expr: unary plus on string reports unknown-unary-op" {
+  assert_eq(op_err("+\"x\""), "unknown unary op: + string")
+}
+
+///|
+test "eval_expr: bitwise not on string reports unknown-unary-op" {
+  assert_eq(op_err("~\"x\""), "unknown unary op: ~ string")
+}
