@@ -18,15 +18,11 @@ pub fn compiled_program(Bytes) -> Result[Program, @errors.EvalError]
 
 pub fn eval_expr(Thread, String, String, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
 
-pub fn eval_expr_vm(Thread, @syntax.Expr, Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
-
 pub fn eval_expr_with_opts(Thread, String, String, Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
 
 pub fn eval_parsed_expr(Thread, @syntax.Expr, Options, @value.StringDict) -> Result[@value.Value, @errors.EvalError]
 
 pub fn exec_file(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
-
-pub fn exec_file_vm(Thread, String, String, Options) -> Result[Module, @errors.EvalError]
 
 pub fn exec_file_with_predeclared(Thread, String, String, Options, Predeclared) -> Result[Module, @errors.EvalError]
 

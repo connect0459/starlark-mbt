@@ -257,7 +257,7 @@ fn pop_n(stack : Array[@value.Value], n : Int) -> Array[@value.Value] {
 /// should call `exec_file` rather than this lower-level entry. Resolution is
 /// performed by `compile_and_run_vm` via `validate_resolution`.
 #internal(unsafe, "execution engine behind exec_file; call exec_file instead")
-pub fn exec_file_vm(
+fn exec_file_vm(
   thread : Thread,
   filename : String,
   src : String,
@@ -393,7 +393,7 @@ fn run_program_vm(
 /// treated as predeclared) so they resolve, and the result is read back from
 /// its global.
 #internal(unsafe, "execution engine behind eval_expr; call eval_expr instead")
-pub fn eval_expr_vm(
+fn eval_expr_vm(
   thread : Thread,
   expr : @syntax.Expr,
   opts : Options,

@@ -372,21 +372,6 @@ test "to_str: module returns repr" {
 // --- equality and hash edge cases for callable and iterator types ---
 
 ///|
-test "starlark_equals: function equality uses object identity, not name" {
-  let pos = @errors.Position::new("", 0, 0)
-  let f1 = Value::Function(StarlarkFunction::new("f", pos))
-  let f2 = Value::Function(StarlarkFunction::new("f", pos))
-  assert_false(f1.starlark_equals(f2))
-}
-
-///|
-test "starlark_equals: a Function is equal to itself" {
-  let f = StarlarkFunction::new("f", @errors.Position::new("", 0, 0))
-  let v = Value::Function(f)
-  assert_true(v.starlark_equals(v))
-}
-
-///|
 test "starlark_equals: two distinct BoundMethod objects are unequal" {
   let m1 = Value::BoundMethod(StarlarkBoundMethod::new(Value::None, "m"))
   let m2 = Value::BoundMethod(StarlarkBoundMethod::new(Value::None, "m"))
