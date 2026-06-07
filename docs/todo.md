@@ -1849,14 +1849,14 @@ gaps (implementations were already correct). Commit: `190d060`
       package-private (`fn`). Tests in `eval/interp_test.mbt` migrated to the
       public façade functions.
 - [x] **Annotate `StarlarkFunction::new` + `::defaults`** — marked both with
-      `#internal(unsafe, "bytecode VM only; not part of the public embedding API")`.
-      `StarlarkFunction::new` stays `pub fn` to avoid a spurious `unused_value`
-      warning under `moon check --deny-warn` (MoonBit does not see wbtest callers
-      during check). Tests that called `StarlarkFunction::new` migrated into
-      `value/function_wbtest.mbt`.
-- [x] **Fix stale `lib-json.mbt.md` description** — line 26 incorrectly claimed
-      `json.encode` emits non-ASCII as `\uXXXX`; updated to "raw UTF-8"
-      (Go-faithful behavior, unchanged since the ninth-pass fix).
+      `#internal(unsafe, ...)` to signal they are not part of the public embedding
+      API. `StarlarkFunction::new` stays `pub fn` to avoid a spurious
+      `unused_value` warning under `moon check --deny-warn` (MoonBit does not see
+      wbtest callers during check). Tests that called `StarlarkFunction::new`
+      migrated into `value/function_wbtest.mbt`.
+- [x] **Fix stale `lib-json.mbt.md` description** — updated `json.encode` entry to
+      accurately reflect Go-faithful behavior: non-ASCII Unicode as raw UTF-8,
+      with U+2028/U+2029 and `<`/`>`/`&` escaped for HTML/JS safety.
 
 ### Post-R4 API consistency pass
 
