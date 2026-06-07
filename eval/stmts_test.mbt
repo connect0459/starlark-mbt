@@ -137,6 +137,53 @@ test "exec_file: augmented list extend adds elements" {
   }
 }
 
+///|
+test "exec_file: augmented list extend from range iterable" {
+  match exec_s("lst = [1, 2]\nlst += range(3)") {
+    Ok(m) =>
+      match get_s(m, "lst") {
+        Some(@value.Value::List(l)) => assert_eq(l.length(), 5)
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: augmented list extend from tuple iterable" {
+  match exec_s("lst = [10]\nlst += (20, 30)") {
+    Ok(m) =>
+      match get_s(m, "lst") {
+        Some(@value.Value::List(l)) => assert_eq(l.length(), 3)
+        _ => assert_true(false)
+      }
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "exec_file: augmented extend from range on frozen list raises error" {
+  let items : Array[@value.Value] = [
+    @value.Value::Int(1N),
+    @value.Value::Int(2N),
+  ]
+  let frozen = @value.Value::new_list(items)
+  if frozen is @value.Value::List(l) {
+    l.freeze()
+  }
+  let pre : Map[String, @value.Value] = {}
+  pre["frozen_lst"] = frozen
+  let t = Thread::new("test")
+  let result = exec_file_with_predeclared(
+    t,
+    "<test>",
+    "def f(x):\n  x += range(3)\nf(frozen_lst)",
+    Options::default(),
+    Predeclared::from_map(pre),
+  )
+  assert_true(result is Err(_))
+}
+
 // --- Tuple unpacking assignment ---
 
 ///|
