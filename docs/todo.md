@@ -1777,6 +1777,20 @@ gaps (implementations were already correct). Commit: `190d060`
       Output matches starlark-go's `eval_test.go:462`.
       (`starlarktest/error_format_test.mbt`).
 
+### Pre-v0.1.0 gap fixes (time extension, M.4 items)
+
+Previously-unverified lower-confidence notes from the ninth-pass (M.4), now
+confirmed and fixed via TDD. Commit: `e6e1935`
+
+- [x] **M.4-A** [behavioral]: `time.from_timestamp` with 3+ positional args
+      silently ignored excess arguments instead of erroring. Added max-arity guard:
+      raises "from_timestamp: got N arguments, want at most 2", matching
+      starlark-go's `UnpackPositionalArgs("from_timestamp", args, kwargs, 1, &sec, &nsec)`.
+- [x] **M.4-B** [message]: `duration_attr` returned `Ok(None)` for unknown
+      attribute names, deferring to the generic evaluator message. Changed to
+      `Err("unrecognized time.duration attribute \"name\"")`, matching
+      starlark-go's `Duration.Attr` (`time.go:227`).
+
 ### Resolved post-release API additions
 
 - [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
