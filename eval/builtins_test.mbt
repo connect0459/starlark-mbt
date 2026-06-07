@@ -1947,45 +1947,6 @@ test "exec_file: str.codepoints on empty string returns empty list" {
 }
 
 ///|
-test "exec_file: module() creates a named module with attributes" {
-  match exec_b("m = module(\"mymod\", x=1, y=2)") {
-    Ok(m) =>
-      match g(m, "m") {
-        Some(@value.Value::Module(mod)) => {
-          assert_eq(@value.Value::Module(mod).type_name(), "module")
-          assert_eq(mod.name(), "mymod")
-        }
-        _ => assert_true(false)
-      }
-    Err(e) => fail(e.to_string())
-  }
-}
-
-///|
-test "exec_file: module attribute access via dot returns correct value" {
-  match exec_b("m = module(\"mymod\", x=42)\nr = m.x") {
-    Ok(m) =>
-      match g(m, "r") {
-        Some(@value.Value::Int(n)) => assert_eq(n, 42N)
-        _ => assert_true(false)
-      }
-    Err(e) => fail(e.to_string())
-  }
-}
-
-///|
-test "exec_file: module type_name is module" {
-  match exec_b("r = type(module(\"m\"))") {
-    Ok(m) =>
-      match g(m, "r") {
-        Some(@value.Value::String(s)) => assert_eq(s.raw(), "module")
-        _ => assert_true(false)
-      }
-    Err(e) => fail(e.to_string())
-  }
-}
-
-///|
 test "exec_file: str.splitlines without keepends splits at newlines" {
   match exec_b("r = \"a\\nb\\nc\".splitlines()") {
     Ok(m) =>

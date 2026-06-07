@@ -912,7 +912,6 @@ let builtin_names : Array[String] = [
   "print", "len", "str", "repr", "type", "range", "list", "tuple", "dict", "bool",
   "int", "float", "abs", "min", "max", "set", "enumerate", "zip", "sorted", "reversed",
   "hasattr", "getattr", "fail", "any", "all", "hash", "dir", "chr", "ord", "bytes",
-  "module",
 ]
 
 ///|
