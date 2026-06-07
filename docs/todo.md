@@ -1834,13 +1834,29 @@ gaps (implementations were already correct). Commit: `190d060`
       fluent setters.
 - [x] **`StringDict` extended** — added `delete(key) -> Bool`,
       `each((String, Value) -> Unit)`, and `values() -> Array[Value]`.
-- [ ] **Remaining `#internal` visibility** — `java_string_hash`, `starlark_equals_depth`,
+- [x] **Remaining `#internal` visibility** — `java_string_hash`, `starlark_equals_depth`,
       `bigint_to_*`, `floor_div`, `starlark_mod`, `check_mutable`, `copy_items`,
       `pop_at`, `BuiltinCallCtx::new`, `StarlarkBuiltinFunc::dispatch/call_body`,
       `StarlarkFunction::body/params/captured_scope/globals/with_module_globals/new`
       appear in `.mbti` due to MoonBit package visibility constraints (no
       module-internal visibility like Go's `internal/`); accepted as-is —
       `#internal` warnings protect embedders at compile time.
+
+### Pre-v0.1.0 API hygiene pass (issue #41)
+
+- [x] **Depublicize `exec_file_vm` / `eval_expr_vm`** — both were bytecode VM
+      entry points behind the public `exec_file` / `eval_expr` façades; made
+      package-private (`fn`). Tests in `eval/interp_test.mbt` migrated to the
+      public façade functions.
+- [x] **Annotate `StarlarkFunction::new` + `::defaults`** — marked both with
+      `#internal(unsafe, "bytecode VM only; not part of the public embedding API")`.
+      `StarlarkFunction::new` stays `pub fn` to avoid a spurious `unused_value`
+      warning under `moon check --deny-warn` (MoonBit does not see wbtest callers
+      during check). Tests that called `StarlarkFunction::new` migrated into
+      `value/function_wbtest.mbt`.
+- [x] **Fix stale `lib-json.mbt.md` description** — line 26 incorrectly claimed
+      `json.encode` emits non-ASCII as `\uXXXX`; updated to "raw UTF-8"
+      (Go-faithful behavior, unchanged since the ninth-pass fix).
 
 ### Post-R4 API consistency pass
 
