@@ -254,7 +254,7 @@ test "StarlarkRange: contains with negative step includes aligned elements" {
 }
 
 ///|
-test "StarlarkRange: a zero-step range contains no elements" {
+test "StarlarkRange: contains treats a zero-step range as having no elements, guarding against a constructor precondition violation" {
   let r = StarlarkRange::new(0L, 10L, 0L)
   assert_false(r.contains(0L))
   assert_false(r.contains(5L))
