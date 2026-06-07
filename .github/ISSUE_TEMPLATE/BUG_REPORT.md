@@ -3,24 +3,24 @@ name: Bug Report
 about: Report a bug
 ---
 
-## Bug Summary (Required)
+## [Required] Bug Summary
 
-## Affected Package (Required)
+## [Required] Affected Package
 
 - [ ] `xxx` package
 - [ ] Other
 
-## Minimal Reproduction (Required)
+## [Required] Minimal Reproduction
 
 ```moonbit
 // Paste the smallest MoonBit snippet that demonstrates the bug
 ```
 
-## Expected Behavior (Required)
+## [Required] Expected Behavior
 
-<!-- What does the WHATWG spec or WPT test say should happen? -->
+<!-- What does the spec or reference say should happen? -->
 
-## Actual Behavior (Required)
+## [Required] Actual Behavior
 
 ## Environment
 
@@ -28,9 +28,9 @@ about: Report a bug
 - Target backend (js / wasm / wasm-gc / native):
 - OS:
 
-## Relevant Spec or WPT Reference
+## Relevant specs or references
 
-<!-- Link to the WHATWG URL spec section or WPT test file if applicable -->
+<!-- Link to the relevant spec section or reference, if applicable -->
 
 ## Impact
 
