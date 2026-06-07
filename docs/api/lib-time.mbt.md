@@ -18,7 +18,20 @@ import {
 | `time_module()` | `() -> @value.Value` | Returns the `time` module value to inject |
 | `time_value(sec, nsec)` | `(Int64, Int) -> @value.Value` | Create a `time.time` value from Unix seconds + nanoseconds |
 | `now_override_key` | `String` | Thread-local key for overriding `time.now()` in tests |
-| `get_unix_time_now()` | `() -> (Int64, Int)` | Read the real system clock (seconds, nanoseconds) |
+| `get_unix_time_now()` | `() -> (Int64, Int)` | Read the system clock; precision and availability are target-dependent (see table below) |
+
+### Per-backend clock availability
+
+| Build target | Clock source | Precision | Notes |
+| :--- | :--- | :--- | :--- |
+| `native` / `llvm` | OS clock via C FFI | Nanosecond | Full real-time access |
+| `js` | `Date.now()` via JS FFI | Millisecond | Real-time; nanosecond field is derived from the ms remainder |
+| `wasm-gc` | Stub | — | Returns epoch; `extern "js"` is not supported for this target by the compiler |
+| `wasm` | Stub | — | Returns epoch; real-time requires a WASI or custom host import not provided by default |
+
+When the stub is active, `time.now()` always returns the Unix epoch. Tests on any
+backend can override this by storing a fixed value under `now_override_key` in the
+thread-local store.
 
 ## Starlark-level API (inside scripts)
 
