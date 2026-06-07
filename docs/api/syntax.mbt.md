@@ -26,6 +26,21 @@ pub struct File { /* private fields */ }  // in "connect0459/starlark/syntax"
 | `path()` | `-> String` | Source path |
 | `stmts()` | `-> Array[Stmt]` | Top-level statements |
 
+Obtain a `File` by calling `@eval.parse_file`; use `path()` and `stmts()` to inspect the result.
+
+```mbt check
+///|
+test {
+  match @eval.parse_file("<test>", "x = 1\ny = 2") {
+    Ok(file) => {
+      assert_eq(file.path(), "<test>")
+      assert_eq(file.stmts().length(), 2)
+    }
+    Err(e) => fail(e.msg())
+  }
+}
+```
+
 ## AST node enums
 
 Every node carries a trailing `@errors.Position`.
@@ -159,5 +174,47 @@ pub(all) enum Node {
   NParam(Param)
   NArg(Arg)
   NCompClause(CompClause)
+}
+```
+
+### `walk_file`
+
+Traverse every AST node depth-first. The visitor receives the current node on entry and `None`
+after all children have been visited (exit signal). Return `false` to skip the subtree.
+
+```mbt check
+///|
+test {
+  match @eval.parse_file("<walk>", "x = 1 + y") {
+    Ok(file) => {
+      let idents : Array[String] = []
+      @syntax.walk_file(file, fn(node) {
+        match node {
+          Some(@syntax.Node::NExpr(@syntax.Expr::EIdent(name, _))) =>
+            idents.push(name)
+          _ => ()
+        }
+        true
+      })
+      assert_true(idents.contains("x"))
+      assert_true(idents.contains("y"))
+    }
+    Err(e) => fail(e.msg())
+  }
+}
+```
+
+### `expr_pos`
+
+```mbt check
+///|
+test {
+  match @eval.parse_expr("<expr>", "a + b") {
+    Ok(expr) => {
+      let pos = @syntax.expr_pos(expr)
+      assert_eq(pos.filename(), "<expr>")
+    }
+    Err(e) => fail(e.msg())
+  }
 }
 ```

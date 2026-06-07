@@ -1,9 +1,11 @@
 # Starlark.mbt Implementation Plan
 
-Reference target: **starlark-go** semantics. All non-default features
-(`AllowSet`, `AllowRecursion`, `AllowGlobalReassign`, `AllowLambda`,
-`AllowBytes`, `AllowFloat`, `AllowWhile`) are implemented behind option
-flags and **enabled by default**.
+Reference target: **starlark-go** semantics. Standard features
+(`allow_set`, `allow_lambda`, `allow_bytes`, `allow_float`) default to
+`true`. Non-standard extensions (`allow_recursion`, `allow_while`,
+`allow_top_level_control`, `allow_global_reassign`, `load_binds_globally`)
+default to `false`, matching starlark-go's zero-value `FileOptions`.
+(`allow_set` diverges intentionally: sets are now part of the Starlark spec.)
 
 ## Phase 0: Project Setup ✅
 
