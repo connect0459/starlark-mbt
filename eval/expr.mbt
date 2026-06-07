@@ -762,35 +762,9 @@ fn call_builtin(
           }
       }
     }
-    "module" => builtin_module(ctx, pos_args, kw_args)
     _ =>
       raise EvalErr(make_eval_error(ctx, "unknown built-in function '\{name}'"))
   }
-}
-
-///|
-fn builtin_module(
-  ctx : EvalContext,
-  pos_args : Array[@value.Value],
-  kw_args : Array[(String, @value.Value)],
-) -> @value.Value raise EvalErr {
-  let mod_name = if pos_args.length() > 0 {
-    match pos_args[0] {
-      @value.Value::String(s) => s.raw()
-      _ =>
-        raise EvalErr(
-          make_eval_error(ctx, "module() name argument must be a string"),
-        )
-    }
-  } else {
-    ""
-  }
-  let attrs : Map[String, @value.Value] = {}
-  for pair in kw_args {
-    let (k, v) = pair
-    attrs[k] = v
-  }
-  @value.Value::Module(@value.StarlarkModule::new(mod_name, attrs))
 }
 
 ///|
