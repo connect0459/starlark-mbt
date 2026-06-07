@@ -1954,7 +1954,7 @@ confirmed and fixed via TDD. Commit: `e6e1935`
       flags. A separate `FileOptions` type was deliberately **not** added: it
       would duplicate `Options`, and `syntax.File` cannot depend on
       `eval.Options` (layer boundary), so `Program` is the correct owner.
-- [ ] **MISSING-64 (thread-local)**: already implemented earlier
+- [x] **MISSING-64 (thread-local)**: already implemented earlier
       (`Thread::set_local`/`get_local`). No work remaining.
 
 ---
