@@ -325,7 +325,6 @@ pub struct StarlarkFunction { /* private fields */ }  // in "connect0459/starlar
 | :--- | :--- | :--- |
 | `num_free_vars()` | `Int` | Number of captured (closure) variables |
 | `free_var(Int)` | `(String, Value)?` | Name and current value of the i-th free variable |
-| `globals()` | `Map[String, Value]` | Module globals visible when the function was defined |
 | `defining_module()` | `StarlarkModule?` | Module that defined this function; `None` for functions not created via `exec_file` |
 
 ```mbt check
@@ -345,9 +344,11 @@ test {
           assert_eq(f.name(), "greet")
           assert_eq(f.num_params(), 1)
           assert_eq(f.doc(), "Say hello.")
-          assert_true(f.globals().contains("CONST"))
           match f.defining_module() {
-            Some(mod_ref) => assert_eq(mod_ref.name(), "lib.star")
+            Some(mod_ref) => {
+              assert_eq(mod_ref.name(), "lib.star")
+              assert_true(mod_ref.get("CONST") is Some(_))
+            }
             None => fail("expected module")
           }
         }

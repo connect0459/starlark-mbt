@@ -1857,6 +1857,13 @@ gaps (implementations were already correct). Commit: `190d060`
 - [x] **Fix stale `lib-json.mbt.md` description** — updated `json.encode` entry to
       accurately reflect Go-faithful behavior: non-ASCII Unicode as raw UTF-8,
       with U+2028/U+2029 and `<`/`>`/`&` escaped for HTML/JS safety.
+- [x] **Remove `globals()` from `value.mbt.md`** — `StarlarkFunction::globals()`
+      was marked `#internal(unsafe, "eval engine only")` when the bytecode VM
+      was introduced (it builds a name→value map from raw module slots), but the
+      docs were not updated. Removed the method row from the "Closure / module"
+      table and replaced the `f.globals().contains("CONST")` assertion in the
+      code example with `f.defining_module()` + `StarlarkModule::get()`, which is
+      the intended public path. Commit: `e9323d5`
 
 ### Post-R4 API consistency pass
 
