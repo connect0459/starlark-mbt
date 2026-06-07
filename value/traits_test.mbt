@@ -368,3 +368,78 @@ test "to_str: module returns repr" {
   let m = StarlarkModule::new("assert", {})
   assert_eq(Value::Module(m).to_str(), "<module \"assert\">")
 }
+
+// --- identity-based equality ---
+
+///|
+test "starlark_equals: function equality uses object identity, not name" {
+  let pos = @errors.Position::new("", 0, 0)
+  let f1 = Value::Function(StarlarkFunction::new("f", pos))
+  let f2 = Value::Function(StarlarkFunction::new("f", pos))
+  assert_false(f1.starlark_equals(f2))
+}
+
+///|
+test "starlark_equals: a Function is equal to itself" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("", 0, 0))
+  let v = Value::Function(f)
+  assert_true(v.starlark_equals(v))
+}
+
+///|
+test "starlark_equals: two distinct BoundMethod objects are unequal" {
+  let m1 = Value::BoundMethod(StarlarkBoundMethod::new(Value::None, "m"))
+  let m2 = Value::BoundMethod(StarlarkBoundMethod::new(Value::None, "m"))
+  assert_false(m1.starlark_equals(m2))
+}
+
+///|
+test "starlark_equals: Module is never equal to another Module" {
+  let m1 = Value::Module(StarlarkModule::new("a", {}))
+  let m2 = Value::Module(StarlarkModule::new("a", {}))
+  assert_false(m1.starlark_equals(m2))
+}
+
+///|
+test "starlark_equals: StringElems is never equal to another StringElems" {
+  let s = StarlarkString::new("abc")
+  let e1 = Value::StringElems(StarlarkStringElems::new(s, false))
+  let e2 = Value::StringElems(StarlarkStringElems::new(s, false))
+  assert_false(e1.starlark_equals(e2))
+}
+
+///|
+test "starlark_hash: StringElems is unhashable" {
+  let s = StarlarkString::new("hello")
+  let e = Value::StringElems(StarlarkStringElems::new(s, false))
+  assert_true(Value::hash(e) is Err(_))
+}
+
+///|
+test "starlark_equals: two Builtin functions with the same name are equal" {
+  let f1 = Value::Builtin(StarlarkBuiltinFunc::dispatch("len"))
+  let f2 = Value::Builtin(StarlarkBuiltinFunc::dispatch("len"))
+  assert_true(f1.starlark_equals(f2))
+}
+
+///|
+test "starlark_equals: two Builtin functions with different names are unequal" {
+  let f1 = Value::Builtin(StarlarkBuiltinFunc::dispatch("len"))
+  let f2 = Value::Builtin(StarlarkBuiltinFunc::dispatch("str"))
+  assert_false(f1.starlark_equals(f2))
+}
+
+///|
+test "starlark_equals: two distinct StringCodepoints iterators are always unequal" {
+  let s = StarlarkString::new("abc")
+  let c1 = Value::StringCodepoints(StarlarkStringCodepoints::new(s, false))
+  let c2 = Value::StringCodepoints(StarlarkStringCodepoints::new(s, false))
+  assert_false(c1.starlark_equals(c2))
+}
+
+///|
+test "starlark_hash: StringCodepoints is unhashable" {
+  let s = StarlarkString::new("hello")
+  let c = Value::StringCodepoints(StarlarkStringCodepoints::new(s, false))
+  assert_true(Value::hash(c) is Err(_))
+}
