@@ -1,8 +1,7 @@
 // Regression tests for the bytecode VM (issue #1): every program is executed
-// twice by the VM (`exec_file_vm`) and the two runs must agree on
-// success/failure, on the resulting module globals, and on error messages.
-// This is the safety net that guards the VM's behavior against regressions as
-// it evolves.
+// twice via `exec_file` and the two runs must agree on success/failure, on the
+// resulting module globals, and on error messages. This is the safety net that
+// guards the VM's behavior against regressions as it evolves.
 
 ///|
 /// Extracts a module's globals as a name -> value map.
@@ -63,8 +62,8 @@ fn compare_results(
 ///|
 /// Runs `src` through both engines under `opts` and asserts they agree.
 fn assert_vm_result_opts(src : String, opts : @eval.Options) -> Unit raise {
-  let wr = @eval.exec_file_vm(@eval.Thread::new("w"), "t.star", src, opts)
-  let vr = @eval.exec_file_vm(@eval.Thread::new("v"), "t.star", src, opts)
+  let wr = @eval.exec_file(@eval.Thread::new("w"), "t.star", src, opts)
+  let vr = @eval.exec_file(@eval.Thread::new("v"), "t.star", src, opts)
   compare_results(wr, vr, src)
 }
 
@@ -91,12 +90,12 @@ fn assert_vm_result_load(
   }
 
   let wlib = match
-    @eval.exec_file_vm(@eval.Thread::new("wlib"), "lib.star", lib_src, opts) {
+    @eval.exec_file(@eval.Thread::new("wlib"), "lib.star", lib_src, opts) {
     Ok(m) => m
     Err(e) => abort("test library failed to compile (first run): \{e.msg()}")
   }
   let vlib = match
-    @eval.exec_file_vm(@eval.Thread::new("vlib"), "lib.star", lib_src, opts) {
+    @eval.exec_file(@eval.Thread::new("vlib"), "lib.star", lib_src, opts) {
     Ok(m) => m
     Err(e) => abort("test library failed to compile (second run): \{e.msg()}")
   }
@@ -104,8 +103,8 @@ fn assert_vm_result_load(
   wt.set_loader(make_loader(wlib))
   let vt = @eval.Thread::new("v")
   vt.set_loader(make_loader(vlib))
-  let wr = @eval.exec_file_vm(wt, "t.star", src, opts)
-  let vr = @eval.exec_file_vm(vt, "t.star", src, opts)
+  let wr = @eval.exec_file(wt, "t.star", src, opts)
+  let vr = @eval.exec_file(vt, "t.star", src, opts)
   compare_results(wr, vr, src)
 }
 
@@ -114,13 +113,13 @@ fn assert_vm_result_load(
 /// the resulting cancellation error.
 fn assert_vm_result_under_budget(src : String, max_steps : Int) -> Unit raise {
   let opts = @eval.Options::default()
-  let wr = @eval.exec_file_vm(
+  let wr = @eval.exec_file(
     @eval.Thread::with_step_budget("w", max_steps),
     "t.star",
     src,
     opts,
   )
-  let vr = @eval.exec_file_vm(
+  let vr = @eval.exec_file(
     @eval.Thread::with_step_budget("v", max_steps),
     "t.star",
     src,
@@ -431,7 +430,7 @@ test "vm evaluates a non-recursive call when recursion is disabled" {
 test "vm leaves no call frame behind after an error on a reused thread" {
   let thread = @eval.Thread::new("v")
   let opts = @eval.Options::default()
-  let r = @eval.exec_file_vm(thread, "t.star", "x = 1 + \"oops\"", opts)
+  let r = @eval.exec_file(thread, "t.star", "x = 1 + \"oops\"", opts)
   assert_true(r is Err(_))
   assert_eq(thread.call_stack_depth(), 0)
 }
@@ -661,7 +660,7 @@ fn vm_load_run(
   lib_src : String,
 ) -> Result[@eval.Module, @errors.EvalError] {
   let lib = match
-    @eval.exec_file_vm(
+    @eval.exec_file(
       @eval.Thread::new("lib"),
       "lib.star",
       lib_src,
@@ -678,7 +677,7 @@ fn vm_load_run(
       Err(@errors.EvalError::simple("no such module: \{path}"))
     }
   })
-  @eval.exec_file_vm(t, "main.star", main_src, @eval.Options::default())
+  @eval.exec_file(t, "main.star", main_src, @eval.Options::default())
 }
 
 // These two cases assert the VM's behavior directly rather than through the
@@ -689,7 +688,7 @@ fn vm_load_run(
 ///|
 test "host call runs a bytecode-compiled function" {
   let m = match
-    @eval.exec_file_vm(
+    @eval.exec_file(
       @eval.Thread::new("t"),
       "t.star",
       "def add(a, b):\n  return a + b",
@@ -727,7 +726,7 @@ test "host call runs a bytecode-compiled function" {
 ///|
 test "reflection works on a bytecode-compiled function" {
   let m = match
-    @eval.exec_file_vm(
+    @eval.exec_file(
       @eval.Thread::new("t"),
       "refl.star",
       "G = 1\ndef f(x, y):\n  \"the doc\"\n  return x + y",
@@ -758,7 +757,7 @@ test "reflection works on a bytecode-compiled function" {
 ///|
 test "reflection reports free variables of a bytecode-compiled closure" {
   let m = match
-    @eval.exec_file_vm(
+    @eval.exec_file(
       @eval.Thread::new("t"),
       "t.star",
       "def outer():\n  c = 99\n  def inner():\n    return c\n  return inner\n\nf = outer()",
