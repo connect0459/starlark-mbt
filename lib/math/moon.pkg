@@ -1,6 +1,6 @@
 import {
   "moonbitlang/core/double",
-  "connect0459/starlark/internal/std_math",
   "connect0459/starlark/value",
   "connect0459/starlark/internal/numeric",
+  "connect0459/starlark/internal/std_math",
 }
