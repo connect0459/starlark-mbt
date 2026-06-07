@@ -1138,7 +1138,7 @@ test "parser: bare * followed by non-comma token reports 'want ,'" {
 }
 
 ///|
-test "if statement with elif chain selects the first matching branch" {
+test "if statement with multiple elif branches is parsed as a single top-level SIf node" {
   // Exercises the recursive elif-branch parse path in the parser.
   let f = parse_f(
     "if False:\n  r = 1\nelif False:\n  r = 2\nelif True:\n  r = 3\nelse:\n  r = 4\n",
