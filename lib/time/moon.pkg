@@ -7,7 +7,8 @@ options(
   "native-stub": [ "time_now_native.c" ],
   targets: {
     "time_now_native.mbt": [ "native", "llvm" ],
-    "time_now_stub.mbt": [ "wasm", "wasm-gc", "js" ],
+    "time_now_js.mbt": [ "js" ],
+    "time_now_stub.mbt": [ "wasm", "wasm-gc" ],
     "tz_native.mbt": [ "native", "llvm" ],
     "tz_stub.mbt": [ "wasm", "wasm-gc", "js" ],
   },
