@@ -10,9 +10,15 @@ run-example path:
 run-examples:
     bash scripts/run-examples.sh
 
-# Verify code quality and examples run without error
+# Run tests for a single target (e.g. `just test-target wasm-gc`)
+test-target target:
+    moon check --deny-warn --target {{target}}
+    moon test --target {{target}}
+
+# Verify code quality and all targets (matches CI)
 verify:
-    moon check --deny-warn
     moon fmt --check
-    moon test
+    for t in js wasm wasm-gc native; do \
+        just test-target $t; \
+    done
     just run-examples > /dev/null 2>&1

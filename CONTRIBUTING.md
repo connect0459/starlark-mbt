@@ -39,13 +39,23 @@ pre-commit run --all-files
 | `moon fmt` | Format all source files |
 | `moon check` | Type-check without building |
 | `moon info` | Regenerate `.mbti` interface files |
+| `just verify` | Run the full CI-equivalent check locally |
 
-Before opening a pull request:
+The pre-commit hooks enforce formatting and lint checks on every commit. To
+run them manually across all files:
 
 ```sh
-moon fmt && moon check && moon test && moon info
-git diff -- '*.mbti'  # review interface changes
+pre-commit run --all-files
 ```
+
+Before opening a pull request, run the full verification suite:
+
+```sh
+just verify
+```
+
+This mirrors the CI matrix: it checks all four backends (`js`, `wasm`,
+`wasm-gc`, `native`) and runs the example suite.
 
 ## Testing guidelines
 
@@ -89,8 +99,10 @@ tidy(hashtable): name initial_capacity constant
 
 1. Fork the repository and create a branch: `feature/xxx`, `fix/xxx`, `docs/xxx`.
 2. Follow the Red → Green → Refactor cycle.
-3. Run `moon fmt && moon check && moon test && moon info` and commit any resulting diffs.
-4. Open a pull request — the CI matrix tests `js`, `wasm`, `wasm-gc`, and `native`.
+3. Run `just verify` and commit any resulting diffs.
+4. If the change touches the public API, update the corresponding file(s)
+   under `docs/api/` so the documentation reflects the new behaviour.
+5. Open a pull request — the CI matrix tests `js`, `wasm`, `wasm-gc`, and `native`.
 
 ## Code style
 
