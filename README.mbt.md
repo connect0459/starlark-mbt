@@ -93,6 +93,14 @@ the [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/a
 
 - [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api/README.md) — Per-package API reference for all packages
 
+## Compatibility
+
+This is an **unofficial** MoonBit implementation of Starlark — it is not
+associated with the Bazel team.
+
+The implementation targets the
+[Starlark specification](https://github.com/bazelbuild/starlark/blob/master/spec.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/connect0459/starlark-mbt/blob/main/CONTRIBUTING.md).
