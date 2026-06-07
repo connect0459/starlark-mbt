@@ -33,3 +33,15 @@ test "starlark_equals: a Function is equal to itself" {
   let v = Value::Function(f)
   assert_true(v.starlark_equals(v))
 }
+
+///|
+test "iterate: Value::Function is not iterable" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("", 0, 0))
+  assert_true(iterate(Value::Function(f)) is Err(_))
+}
+
+///|
+test "length_of: Value::Function has no sequence length" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("", 0, 0))
+  assert_true(length_of(Value::Function(f)) is Err(_))
+}
