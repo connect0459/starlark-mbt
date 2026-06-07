@@ -653,6 +653,7 @@ pub fn StarlarkFunction::position(self : StarlarkFunction) -> @errors.Position {
 ///
 /// Returns an array of `Value?`, where `None` indicates no default for that
 /// parameter position.
+#internal(unsafe, "bytecode VM only; not part of the public embedding API")
 pub fn StarlarkFunction::defaults(self : StarlarkFunction) -> Array[Value?] {
   self.defaults
 }

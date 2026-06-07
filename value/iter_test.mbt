@@ -136,10 +136,8 @@ test "iterate: non-iterable None returns error" {
 }
 
 ///|
-test "iterate: non-iterable function returns error" {
-  let f = Value::Function(
-    StarlarkFunction::new("f", @errors.Position::new("", 0, 0)),
-  )
+test "iterate: non-iterable callable returns error" {
+  let f = Value::Builtin(StarlarkBuiltinFunc::dispatch("f"))
   assert_true(iterate(f) is Err(_))
 }
 
@@ -272,11 +270,6 @@ test "length_of: non-sized type returns error" {
   assert_true(length_of(Value::Int(42N)) is Err(_))
   assert_true(length_of(Value::None) is Err(_))
   assert_true(
-    length_of(
-      Value::Function(
-        StarlarkFunction::new("f", @errors.Position::new("", 0, 0)),
-      ),
-    )
-    is Err(_),
+    length_of(Value::Builtin(StarlarkBuiltinFunc::dispatch("f"))) is Err(_),
   )
 }
