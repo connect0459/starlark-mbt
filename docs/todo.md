@@ -2663,7 +2663,7 @@ depend on publishing).
       the existing top-level `docs/` tree.
 - [x] Updated path references in `justfile` (`moon run src/cmd` → `moon run cmd`),
       `README.mbt.md`, `CONTRIBUTING.md`, `docs/README.md`, and the doc-test pages.
-      Also corrected stale `docs/api/index.md` prose claiming "no top-level
+      Also corrected stale `docs/api/index.md` (now renamed to `docs/api/README.md`) prose claiming "no top-level
       facade" (superseded by R6).
 - [x] Verified no scan hazards: `examples/` and `.connect0459/ref-repos/*` are
       nested modules (own `moon.mod`) and `apm_modules/` carries no packages, so
