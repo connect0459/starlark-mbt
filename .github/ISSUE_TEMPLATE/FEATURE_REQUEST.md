@@ -5,19 +5,19 @@ about: Request a new feature or enhancement
 
 ## Related Links
 
-- WHATWG spec section:
-- WPT test file(s):
-- Related Issues or PRs:
-- Other references:
+- Issues
+  - <!-- <https://github.com/<organization>/<repository>/issues/xxx> -->
+- Other references
+  - <!-- <https://example.com/ref-1> -->
 
-## Overview
+## [Required] Overview
 
 - Brief description of what you want and why.
 
 ## Background, Purpose, and Goals
 
 - Why is this needed?
-- Which WHATWG spec section or WPT test covers this, if applicable?
+- Which spec section or reference covers this, if applicable?
 - What goals are we trying to achieve?
 
 ## Requirements and Specifications
