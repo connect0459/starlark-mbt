@@ -87,11 +87,19 @@ test {
 
 For full usage examples — print capture, expression evaluation, host bindings, module
 loading, error handling, extensions, and calling Starlark functions from host code — see
-the [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api/index.md).
+the [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api/README.md).
 
 ## Documentation
 
-- [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api/index.md) — Per-package API reference for all packages
+- [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api/README.md) — Per-package API reference for all packages
+
+## Compatibility
+
+This is an **unofficial** MoonBit implementation of Starlark — it is not
+associated with the Bazel team.
+
+The implementation targets the
+[Starlark specification](https://github.com/bazelbuild/starlark/blob/master/spec.md).
 
 ## Contributing
 
