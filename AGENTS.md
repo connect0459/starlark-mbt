@@ -54,6 +54,16 @@ This project may be released publicly. All of the following must be written in *
 - Run `moon test` to check tests pass. MoonBit supports snapshot testing; when
   changes affect outputs, run `moon test --update` to refresh snapshots.
 
+- For local quality verification, use two mechanisms:
+  - **pre-commit hooks** — catch formatting and lint issues on every commit
+    (`pre-commit run --all-files` to run manually).
+  - **`just verify`** — run the full CI-equivalent check across all four
+    backends (`js`, `wasm`, `wasm-gc`, `native`) before opening a PR.
+
+- When a change affects the public API, update the corresponding file(s) under
+  `docs/api/` in the same PR so documentation stays in sync with the
+  implementation.
+
 - Prefer `assert_eq` or `assert_true(pattern is Pattern(...))` for results that
   are stable or very unlikely to change. Use snapshot tests to record current
   behavior. For solid, well-defined results (e.g. scientific computations),
