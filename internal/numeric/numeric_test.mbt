@@ -50,3 +50,10 @@ test "format_float keeps decimal form below magnitude 1e6" {
   assert_eq(@numeric.format_float(123456.7), "123456.7")
   assert_eq(@numeric.format_float(100000.0), "100000.0")
 }
+
+///|
+test "format_float: numbers well below 1e-4 switch to scientific notation" {
+  assert_eq(@numeric.format_float(1.0e-5), "1e-05")
+  assert_eq(@numeric.format_float(1.5e-5), "1.5e-05")
+  assert_eq(@numeric.format_float(-1.0e-5), "-1e-05")
+}
