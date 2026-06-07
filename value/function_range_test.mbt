@@ -235,3 +235,27 @@ test "freeze_value: primitives are not mutable, freeze is no-op" {
   Value::freeze(Value::String(StarlarkString::new("hello")))
   Value::freeze(Value::None)
 }
+
+///|
+test "StarlarkRange: stop reports the exclusive upper bound" {
+  let r = StarlarkRange::new(3L, 10L, 1L)
+  assert_eq(r.stop(), 10L)
+}
+
+///|
+test "StarlarkRange: contains with negative step includes aligned elements" {
+  let r = StarlarkRange::new(10L, 0L, -2L)
+  assert_true(r.contains(10L))
+  assert_true(r.contains(8L))
+  assert_true(r.contains(2L))
+  assert_false(r.contains(9L))
+  assert_false(r.contains(1L))
+  assert_false(r.contains(0L))
+}
+
+///|
+test "StarlarkRange: contains treats a zero-step range as having no elements, guarding against a constructor precondition violation" {
+  let r = StarlarkRange::new(0L, 10L, 0L)
+  assert_false(r.contains(0L))
+  assert_false(r.contains(5L))
+}

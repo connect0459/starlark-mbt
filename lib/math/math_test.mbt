@@ -53,6 +53,32 @@ fn call2(
 }
 
 ///|
+fn call_raw(
+  m : @value.Value,
+  attr : String,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] raise Error {
+  match m {
+    @value.Value::Module(mod) =>
+      match mod.get(attr) {
+        Some(@value.Value::Builtin(f)) =>
+          match
+            f.call_body(
+              @value.BuiltinCallCtx::new(fn(_, _, _) { Ok(@value.Value::None) }),
+              pos_args,
+              kw_args,
+            ) {
+            Some(r) => r
+            None => fail("no body")
+          }
+        _ => fail("attr not found: \{attr}")
+      }
+    _ => fail("not a module")
+  }
+}
+
+///|
 fn fv(x : Double) -> @value.Value {
   @value.Value::Float(x)
 }
@@ -263,6 +289,14 @@ test "math_module: pow" {
 }
 
 ///|
+test "math_module: pow(-1, ±inf) equals 1 per IEEE 754 Annex F" {
+  let m = math_module()
+  let inf = @double.infinity
+  expect_float(call2(m, "pow", fv(-1.0), fv(inf)), 1.0)
+  expect_float(call2(m, "pow", fv(-1.0), fv(-inf)), 1.0)
+}
+
+///|
 test "math_module: sin and cos" {
   let m = math_module()
   expect_float(call1(m, "sin", fv(pi)), 0.0)
@@ -314,4 +348,65 @@ test "math_module: type error for non-numeric arg" {
     Err(msg) => assert_true(msg.contains("want float or int"))
     Ok(_) => fail("expected error")
   }
+}
+
+///|
+test "math_module: unary function rejects wrong argument counts and keyword args" {
+  let m = math_module()
+  expect_err(call_raw(m, "sin", [], []), "got 0 arguments, want 1")
+  expect_err(
+    call_raw(m, "sin", [fv(1.0), fv(2.0)], []),
+    "got 2 arguments, want 1",
+  )
+  expect_err(
+    call_raw(m, "sin", [fv(1.0)], [("x", fv(1.0))]),
+    "unexpected keyword arguments",
+  )
+}
+
+///|
+test "math_module: binary function rejects wrong argument counts and keyword args" {
+  let m = math_module()
+  expect_err(call_raw(m, "pow", [fv(2.0)], []), "got 1 arguments, want 2")
+  expect_err(
+    call_raw(m, "pow", [fv(2.0), fv(3.0), fv(4.0)], []),
+    "got 3 arguments, want 2",
+  )
+  expect_err(
+    call_raw(m, "pow", [fv(2.0), fv(3.0)], [("x", fv(1.0))]),
+    "unexpected keyword arguments",
+  )
+}
+
+///|
+test "math_module: log rejects wrong argument counts and keyword args" {
+  let m = math_module()
+  expect_err(call_raw(m, "log", [], []), "got 0 arguments, want at least 1")
+  expect_err(
+    call_raw(m, "log", [fv(2.0), fv(10.0), fv(1.0)], []),
+    "got 3 arguments, want at most 2",
+  )
+  expect_err(
+    call_raw(m, "log", [fv(2.0)], [("base", fv(10.0))]),
+    "unexpected keyword arguments",
+  )
+}
+
+///|
+test "math_module: rounding functions reject wrong argument counts and keyword args" {
+  let m = math_module()
+  expect_err(call_raw(m, "ceil", [], []), "got 0 arguments, want 1")
+  expect_err(
+    call_raw(m, "ceil", [fv(1.0), fv(2.0)], []),
+    "got 2 arguments, want 1",
+  )
+  expect_err(
+    call_raw(m, "ceil", [fv(1.0)], [("x", fv(1.0))]),
+    "unexpected keyword arguments",
+  )
+  expect_err(call_raw(m, "floor", [], []), "got 0 arguments, want 1")
+  expect_err(
+    call_raw(m, "floor", [fv(1.0)], [("x", fv(1.0))]),
+    "unexpected keyword arguments",
+  )
 }

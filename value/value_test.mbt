@@ -319,3 +319,108 @@ test "StarlarkList::iter allows for-in iteration over elements" {
   assert_true(elems[0] == Value::Int(10N))
   assert_true(elems[2] == Value::Int(30N))
 }
+
+///|
+test "StarlarkList: empty list is empty" {
+  let l = StarlarkList::new([])
+  assert_true(l.is_empty())
+}
+
+///|
+test "StarlarkList: nonempty list is not empty" {
+  let l = StarlarkList::new([Value::Int(1N)])
+  assert_false(l.is_empty())
+}
+
+///|
+test "StarlarkList::eachi visits each index-value pair in order" {
+  let l = StarlarkList::new([Value::Int(10N), Value::Int(20N), Value::Int(30N)])
+  let pairs : Array[(Int, Value)] = []
+  l.eachi(fn(i, v) { pairs.push((i, v)) })
+  assert_eq(pairs.length(), 3)
+  assert_eq(pairs[0].0, 0)
+  assert_true(pairs[0].1 == Value::Int(10N))
+  assert_eq(pairs[2].0, 2)
+  assert_true(pairs[2].1 == Value::Int(30N))
+}
+
+///|
+test "StarlarkList: popping from a frozen list raises an error" {
+  let l = StarlarkList::new([Value::Int(1N)])
+  l.freeze()
+  let result = l.pop()
+  assert_true(result is Err(_))
+  match result {
+    Err(msg) => assert_true(msg.contains("frozen"))
+    _ => ()
+  }
+}
+
+///|
+test "StarlarkList: sorting a frozen list raises an error" {
+  let l = StarlarkList::new([Value::Int(2N), Value::Int(1N)])
+  l.freeze()
+  let result = l.sort_by(fn(_a, _b) { 0 })
+  assert_true(result is Err(_))
+  match result {
+    Err(msg) => assert_true(msg.contains("frozen"))
+    _ => ()
+  }
+}
+
+///|
+test "StarlarkList: reversing a frozen list raises an error" {
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N)])
+  l.freeze()
+  let result = l.reverse()
+  assert_true(result is Err(_))
+  match result {
+    Err(msg) => assert_true(msg.contains("frozen"))
+    _ => ()
+  }
+}
+
+///|
+test "StarlarkList: pop removes and returns the last element" {
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N), Value::Int(3N)])
+  let result = l.pop()
+  assert_true(result == Ok(Some(Value::Int(3N))))
+  assert_eq(l.length(), 2)
+}
+
+///|
+test "StarlarkList: pop on empty list returns None" {
+  let l = StarlarkList::new([])
+  let result = l.pop()
+  assert_true(result == Ok(None))
+}
+
+///|
+test "StarlarkList: sort_by reorders elements according to the comparator" {
+  let l = StarlarkList::new([Value::Int(3N), Value::Int(1N), Value::Int(2N)])
+  let _ = l.sort_by(fn(a, b) {
+    match (a, b) {
+      (Value::Int(x), Value::Int(y)) =>
+        if x < y {
+          -1
+        } else if x > y {
+          1
+        } else {
+          0
+        }
+      _ => 0
+    }
+  })
+  assert_true(l[0] == Value::Int(1N))
+  assert_true(l[1] == Value::Int(2N))
+  assert_true(l[2] == Value::Int(3N))
+}
+
+///|
+test "StarlarkList: reverse swaps the element order in place" {
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N), Value::Int(3N)])
+  let _ = l.reverse()
+  assert_true(l[0] == Value::Int(3N))
+  assert_true(l[1] == Value::Int(2N))
+  assert_true(l[2] == Value::Int(1N))
+}

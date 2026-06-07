@@ -1136,3 +1136,58 @@ test "parser: bare * followed by non-comma token reports 'want ,'" {
     Ok(_) => fail("expected error")
   }
 }
+
+///|
+test "if statement with multiple elif branches is parsed as a single top-level SIf node" {
+  // Exercises the recursive elif-branch parse path in the parser.
+  let f = parse_f(
+    "if False:\n  r = 1\nelif False:\n  r = 2\nelif True:\n  r = 3\nelse:\n  r = 4\n",
+  )
+  assert_eq(f.stmts().length(), 1)
+  match f.stmts()[0] {
+    @syntax.Stmt::SIf(_, _, _, _) => ()
+    _ => fail("expected SIf")
+  }
+}
+
+///|
+test "Python keywords not allowed in Starlark are each rejected" {
+  let cases = [
+    ("nonlocal x\n", "nonlocal"),
+    ("try:\n  pass\n", "try"),
+    ("with x:\n  pass\n", "with"),
+    ("async def f(): pass\n", "async"),
+    ("yield 1\n", "yield"),
+  ]
+  for pair in cases {
+    let (src, kw) = pair
+    match @parser.parse_file("test.star", src) {
+      Err(_) => ()
+      Ok(_) => fail("expected parse error for keyword: \{kw}")
+    }
+  }
+}
+
+///|
+test "semicolon separates two small statements on one line" {
+  let f = parse_f("a = 1; b = 2\n")
+  assert_eq(f.stmts().length(), 2)
+}
+
+///|
+test "trailing semicolon before end of line is accepted and does not add a statement" {
+  let f = parse_f("a = 1; b = 2;\n")
+  assert_eq(f.stmts().length(), 2)
+}
+
+///|
+test "load statement accepts trailing comma before closing paren" {
+  match @parser.parse_file("test.star", "load(\"m.star\", \"x\",)\n") {
+    Ok(f) =>
+      match f.stmts()[0] {
+        @syntax.Stmt::SLoad(_, bindings, _) => assert_eq(bindings.length(), 1)
+        _ => fail("expected SLoad")
+      }
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
