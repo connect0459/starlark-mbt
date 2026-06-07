@@ -80,7 +80,7 @@ Built-in methods:
   `globals_count`, `predeclared_names`, `is_frozen`
 - `Options` — nine dialect flags with fluent `with_allow_*` setters
 - `Program` — pre-parsed compiled program; serializable to `Bytes` via `write()`;
-  `compiled_program()` deserializes without re-compilation; `init` executes without freezing
+  `compiled_program(data)` deserializes without re-compilation; `init` executes without freezing
 - `Universe` / `Predeclared` — named-value registries; `new`, `from_map`, `set`, `get`,
   `has`, `keys`, `values`, `each`, `delete`
 - `DebugFrame` — snapshot of an active call frame; `callable`, `num_locals`, `frame_local`,
