@@ -1,7 +1,7 @@
 # Documentation
 
 > **Where are the API docs?**
-> Start at [`api/index.md`](./api/index.md) — one verified reference page per
+> Start at [`api/README.md`](./api/README.md) — one verified reference page per
 > public package.
 
 ## Verified doc tests
