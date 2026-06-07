@@ -369,7 +369,7 @@ test "to_str: module returns repr" {
   assert_eq(Value::Module(m).to_str(), "<module \"assert\">")
 }
 
-// --- identity-based equality ---
+// --- equality and hash edge cases for callable and iterator types ---
 
 ///|
 test "starlark_equals: function equality uses object identity, not name" {
