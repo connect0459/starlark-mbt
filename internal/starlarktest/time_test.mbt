@@ -508,6 +508,35 @@ test "time.parse_duration: accepts existing time.duration value" {
 }
 
 ///|
+test "time.from_timestamp: rejects more than 2 positional args" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.from_timestamp(1, 0, 99), "from_timestamp: got 3 arguments, want at most 2")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.duration: unknown attribute raises unrecognized error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|d = time.parse_duration("1s")
+      #|assert.fails(lambda: d.bogus, "unrecognized time.duration attribute \"bogus\"")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time.parse_duration: type error uses Go format" {
   let errs = run_star_string(
     (

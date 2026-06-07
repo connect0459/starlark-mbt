@@ -105,7 +105,7 @@ fn duration_attr(ns : Int64, name : String) -> Result[@value.Value?, String] {
     "microseconds" =>
       Ok(Some(@value.Value::Int(BigInt::from_int64(ns / ns_per_microsecond))))
     "nanoseconds" => Ok(Some(@value.Value::Int(BigInt::from_int64(ns))))
-    _ => Ok(None)
+    _ => Err("unrecognized time.duration attribute \"\{name}\"")
   }
 }
 
@@ -1657,6 +1657,11 @@ fn make_from_timestamp_fn() -> @value.Value {
   @value.Value::new_builtin("from_timestamp", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() < 1 {
       return Err("time.from_timestamp: missing required argument 'sec'")
+    }
+    if pos_args.length() > 2 {
+      return Err(
+        "from_timestamp: got \{pos_args.length()} arguments, want at most 2",
+      )
     }
     if kw_args.length() != 0 {
       return Err("time.from_timestamp: unexpected keyword arguments")
