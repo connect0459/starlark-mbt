@@ -164,6 +164,22 @@ test "encode unrepresentable type returns error" {
 }
 
 ///|
+test "encode set with a single element produces a single-element JSON array" {
+  let s = @value.StarlarkSet::new()
+  s.add(@value.Value::Int(42N)) |> ignore
+  match encode_to_json(@value.Value::Set(s)) {
+    Ok(json) => assert_eq(json, "[42]")
+    Err(e) => fail("encode set failed: \{e}")
+  }
+}
+
+///|
+test "encode empty set produces an empty JSON array" {
+  let s = @value.StarlarkSet::new()
+  check_encode(@value.Value::Set(s), "[]")
+}
+
+///|
 test "decode null" {
   assert_decode("null", @value.Value::None, "null")
 }
@@ -243,6 +259,16 @@ test "decode rejects invalid numbers" {
   assert_true(decode_from_json("00", None) is Err(_))
   assert_true(decode_from_json("1.2.3", None) is Err(_))
   assert_true(decode_from_json("-00", None) is Err(_))
+}
+
+///|
+test "decode rejects truncated unicode escape with fewer than four hex digits" {
+  assert_true(decode_from_json("\"\\u00\"", None) is Err(_))
+}
+
+///|
+test "decode rejects unicode escape containing non-hex characters" {
+  assert_true(decode_from_json("\"\\uGGGG\"", None) is Err(_))
 }
 
 ///|
