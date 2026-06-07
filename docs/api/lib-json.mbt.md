@@ -23,7 +23,7 @@ import {
 
 | Function | Description |
 | :--- | :--- |
-| `json.encode(value)` | Serialize to JSON; dict keys sorted; non-ASCII output as raw UTF-8 |
+| `json.encode(value)` | Serialize to JSON; dict keys sorted; non-ASCII Unicode as raw UTF-8 (U+2028/U+2029 and `<`/`>`/`&` escaped) |
 | `json.encode_indent(value, prefix=, indent=)` | Serialize with indentation |
 | `json.decode(x, default=)` | Parse JSON; returns `default` on error if provided |
 | `json.indent(x, prefix=, indent=)` | Pretty-print a JSON string |
