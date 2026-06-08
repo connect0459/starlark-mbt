@@ -487,7 +487,11 @@ fn write_pad2(buf : StringBuilder, n : Int) -> Unit {
 }
 
 ///|
-fn write_tz_offset(buf : StringBuilder, tz_offset : Int) -> Unit {
+fn write_tz_offset(
+  buf : StringBuilder,
+  tz_offset : Int,
+  colon? : Bool = false,
+) -> Unit {
   let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
   if tz_offset >= 0 {
     buf.write_char('+')
@@ -495,6 +499,9 @@ fn write_tz_offset(buf : StringBuilder, tz_offset : Int) -> Unit {
     buf.write_char('-')
   }
   write_pad2(buf, abs_off / secs_per_hour)
+  if colon {
+    buf.write_char(':')
+  }
   write_pad2(buf, abs_off % secs_per_hour / secs_per_minute)
 }
 
@@ -588,13 +595,13 @@ fn weekday_index(year : Int, month : Int, day : Int) -> Int {
 
 ///|
 fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
-  let ns9 = fmt_frac9(nsec.to_int64())
+  let s = nsec.to_string()
   let padded = StringBuilder::new()
-  let pad_len = 9 - ns9.length()
+  let pad_len = 9 - s.length()
   for _ in 0..<pad_len {
     padded.write_char('0')
   }
-  padded.write_string(ns9)
+  padded.write_string(s)
   let full = padded.to_string()
   let trunc = if digits >= 9 {
     full
@@ -759,6 +766,28 @@ fn fmt_go_layout(
         buf.write_string(fmt_nsec_frac(nsec, frac_digits, is_trimmed))
       }
       i = j
+    } else if c == '-' &&
+      i + 5 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' &&
+      lchars[i + 3] == ':' &&
+      lchars[i + 4] == '0' &&
+      lchars[i + 5] == '0' {
+      write_tz_offset(buf, tz_offset, colon=true)
+      i += 6
+    } else if c == 'Z' &&
+      i + 5 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' &&
+      lchars[i + 3] == ':' &&
+      lchars[i + 4] == '0' &&
+      lchars[i + 5] == '0' {
+      if tz_offset == 0 {
+        buf.write_char('Z')
+      } else {
+        write_tz_offset(buf, tz_offset, colon=true)
+      }
+      i += 6
     } else if c == '-' &&
       i + 4 < n &&
       lchars[i + 1] == '0' &&
