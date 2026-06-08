@@ -428,3 +428,94 @@ test "starlark_hash: StringCodepoints is unhashable" {
   let c = Value::StringCodepoints(StarlarkStringCodepoints::new(s, false))
   assert_true(Value::hash(c) is Err(_))
 }
+
+///|
+test "starlark_equals: two distinct BytesElems iterators are always unequal" {
+  let b = @utf8.encode("hello")
+  let e1 = Value::BytesElems(StarlarkBytesElems::new(b))
+  let e2 = Value::BytesElems(StarlarkBytesElems::new(b))
+  assert_false(e1.starlark_equals(e2))
+}
+
+///|
+test "starlark_hash: Builtin function produces a deterministic hash based on its name" {
+  let f1 = Value::Builtin(StarlarkBuiltinFunc::dispatch("len"))
+  let f2 = Value::Builtin(StarlarkBuiltinFunc::dispatch("len"))
+  assert_true(Value::hash(f1) is Ok(_))
+  assert_true(Value::hash(f1) == Value::hash(f2))
+}
+
+///|
+test "starlark_hash: BytesElems is unhashable" {
+  let b = @utf8.encode("hello")
+  let e = Value::BytesElems(StarlarkBytesElems::new(b))
+  assert_true(Value::hash(e) is Err(_))
+}
+
+// --- starlark_equals_depth ---
+
+///|
+test "starlark_equals_depth: Bytes equal when same content" {
+  let a = @utf8.encode("abc")
+  let b = @utf8.encode("abc")
+  let c = @utf8.encode("xyz")
+  assert_true(
+    starlark_equals_depth(Value::Bytes(a), Value::Bytes(b), 10) == Ok(true),
+  )
+  assert_true(
+    starlark_equals_depth(Value::Bytes(a), Value::Bytes(c), 10) == Ok(false),
+  )
+}
+
+///|
+test "starlark_equals_depth: Tuple equal when same elements" {
+  let a = Value::Tuple([Value::Int(1N), Value::Int(2N)])
+  let b = Value::Tuple([Value::Int(1N), Value::Int(2N)])
+  let c = Value::Tuple([Value::Int(1N), Value::Int(3N)])
+  assert_true(starlark_equals_depth(a, b, 10) == Ok(true))
+  assert_true(starlark_equals_depth(a, c, 10) == Ok(false))
+}
+
+///|
+test "starlark_equals_depth: Range equal when start stop step match" {
+  let r1 = Value::Range(StarlarkRange::new(0L, 5L, 1L))
+  let r2 = Value::Range(StarlarkRange::new(0L, 5L, 1L))
+  let r3 = Value::Range(StarlarkRange::new(0L, 4L, 1L))
+  assert_true(starlark_equals_depth(r1, r2, 10) == Ok(true))
+  assert_true(starlark_equals_depth(r1, r3, 10) == Ok(false))
+}
+
+///|
+test "starlark_equals_depth: returns error when recursion limit is reached" {
+  let a = Value::Bytes(@utf8.encode("x"))
+  let b = Value::Bytes(@utf8.encode("x"))
+  assert_true(starlark_equals_depth(a, b, 0) is Err(_))
+}
+
+///|
+test "starlark_equals_depth: ranges with same length but different start are not equal" {
+  let r1 = Value::Range(StarlarkRange::new(0L, 5L, 1L))
+  let r2 = Value::Range(StarlarkRange::new(1L, 6L, 1L))
+  assert_true(starlark_equals_depth(r1, r2, 10) == Ok(false))
+}
+
+///|
+test "compare_values: longer Bytes with common prefix is greater than shorter Bytes" {
+  let prefix = @utf8.encode("ab")
+  let longer = @utf8.encode("abc")
+  assert_true(
+    compare_values(Value::Bytes(longer), Value::Bytes(prefix)) == Ok(1),
+  )
+  assert_true(
+    compare_values(Value::Bytes(prefix), Value::Bytes(longer)) == Ok(-1),
+  )
+}
+
+///|
+test "starlark_equals_depth: Builtin functions equal when same name" {
+  let f1 = Value::Builtin(StarlarkBuiltinFunc::dispatch("len"))
+  let f2 = Value::Builtin(StarlarkBuiltinFunc::dispatch("len"))
+  let f3 = Value::Builtin(StarlarkBuiltinFunc::dispatch("str"))
+  assert_true(starlark_equals_depth(f1, f2, 10) == Ok(true))
+  assert_true(starlark_equals_depth(f1, f3, 10) == Ok(false))
+}

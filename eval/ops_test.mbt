@@ -661,3 +661,109 @@ test "eval_expr: unary plus on string reports unknown-unary-op" {
 test "eval_expr: bitwise not on string reports unknown-unary-op" {
   assert_eq(op_err("~\"x\""), "unknown unary op: ~ string")
 }
+
+// --- Dict and Set equality ---
+
+///|
+test "eval_expr: dicts with same key and same value are equal" {
+  assert_true(eval_op("{1: 2} == {1: 2}") is Ok(@value.Value::Bool(true)))
+}
+
+///|
+test "eval_expr: dicts with same key but different value are not equal" {
+  assert_true(eval_op("{1: 2} == {1: 3}") is Ok(@value.Value::Bool(false)))
+}
+
+///|
+test "eval_expr: dicts with same size but different keys are not equal" {
+  assert_true(eval_op("{1: 2} == {3: 2}") is Ok(@value.Value::Bool(false)))
+}
+
+///|
+test "eval_expr: dicts with different sizes are not equal" {
+  assert_true(
+    eval_op("{1: 2} == {1: 2, 3: 4}") is Ok(@value.Value::Bool(false)),
+  )
+}
+
+///|
+test "eval_expr: sets with same elements are equal" {
+  assert_true(eval_op("{1, 2} == {2, 1}") is Ok(@value.Value::Bool(true)))
+}
+
+///|
+test "eval_expr: sets with different sizes are not equal" {
+  assert_true(eval_op("{1} == {1, 2}") is Ok(@value.Value::Bool(false)))
+}
+
+// --- Type-error and arithmetic-error paths ---
+
+///|
+test "eval_expr: true division of integer by zero raises floating-point division by zero" {
+  assert_true(op_err("1 / 0").contains("division by zero"))
+}
+
+///|
+test "eval_expr: true division with non-numeric operands raises type error" {
+  assert_true(op_err("True / False").contains("unknown binary op"))
+}
+
+///|
+test "eval_expr: floor division with non-numeric operands raises type error" {
+  assert_true(op_err("True // False").contains("unknown binary op"))
+}
+
+///|
+test "eval_expr: modulo with non-numeric and non-string operands raises type error" {
+  assert_true(op_err("True % False").contains("unknown binary op"))
+}
+
+///|
+test "eval_expr: list repeat with count exceeding int32 range raises error" {
+  assert_true(op_err("[1] * 9999999999").contains("too large"))
+}
+
+///|
+test "eval_expr: bytes repeat with count exceeding int32 range raises error" {
+  assert_true(op_err("b\"x\" * 9999999999").contains("too large"))
+}
+
+// --- percent_format (string %) edge cases ---
+
+///|
+test "eval_expr: percent format with unterminated named key raises error" {
+  assert_true(op_err("\"%(k\" % {}").contains("incomplete format key"))
+}
+
+///|
+test "eval_expr: percent format with named key but no format spec raises error" {
+  assert_true(op_err("\"%(k)\" % {}").contains("incomplete format"))
+}
+
+///|
+test "eval_expr: percent format with named key not present in dict raises error" {
+  assert_true(op_err("\"%(k)s\" % {}").contains("key not found"))
+}
+
+///|
+test "eval_expr: percent format with named key but non-dict argument raises error" {
+  assert_true(op_err("\"%(k)s\" % 42").contains("format requires a mapping"))
+}
+
+///|
+test "eval_expr: percent octal format with non-integer argument raises error" {
+  assert_true(op_err("\"%o\" % \"abc\"").contains("%o format requires integer"))
+}
+
+///|
+test "eval_expr: percent uppercase hex format with non-integer argument raises error" {
+  assert_true(op_err("\"%X\" % \"abc\"").contains("%X format requires integer"))
+}
+
+///|
+test "eval_expr: percent uppercase G format uses uppercase E as exponent marker" {
+  match eval_op("\"%G\" % 1.5e10") {
+    Ok(@value.Value::String(s)) => assert_true(s.raw().contains("E"))
+    _ => fail("expected String result")
+  }
+}
