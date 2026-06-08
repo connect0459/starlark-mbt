@@ -39,3 +39,86 @@ test "is_valid_utf8 rejects an unpaired surrogate encoding" {
   let b = b"\xED\xB0\x80"
   assert_false(is_valid_utf8(b))
 }
+
+///|
+test "printability: ASCII control characters are not printable" {
+  // C0 controls below U+0020 and DEL (U+007F) are non-printable.
+  assert_false(is_unicode_printable(0x00))
+  assert_false(is_unicode_printable(0x1F))
+  assert_false(is_unicode_printable(0x7F))
+}
+
+///|
+test "printability: visible ASCII characters are printable" {
+  // Space and the rest of printable ASCII (U+0020..U+007E) are printable.
+  assert_true(is_unicode_printable(0x20))
+  assert_true(is_unicode_printable('A'.to_int()))
+  assert_true(is_unicode_printable(0x7E))
+}
+
+///|
+test "printability: C1 controls and no-break space are not printable" {
+  assert_false(is_unicode_printable(0x80))
+  assert_false(is_unicode_printable(0x9F))
+  assert_false(is_unicode_printable(0xA0))
+}
+
+///|
+test "printability: soft hyphen is not printable" {
+  assert_false(is_unicode_printable(0xAD))
+}
+
+///|
+test "printability: line and paragraph separators are not printable" {
+  assert_false(is_unicode_printable(0x2028))
+  assert_false(is_unicode_printable(0x2029))
+}
+
+///|
+test "printability: bidirectional and zero-width format characters are not printable" {
+  // Zero-width and directional marks (U+200B..U+200F).
+  assert_false(is_unicode_printable(0x200B))
+  assert_false(is_unicode_printable(0x200F))
+  // Explicit bidi embedding/override controls (U+202A..U+202E).
+  assert_false(is_unicode_printable(0x202A))
+  assert_false(is_unicode_printable(0x202E))
+  // Word joiner and invisible math operators (U+2060..U+2064).
+  assert_false(is_unicode_printable(0x2060))
+  assert_false(is_unicode_printable(0x2064))
+  // Bidi isolate controls and deprecated format chars (U+2066..U+206F).
+  assert_false(is_unicode_printable(0x2066))
+  assert_false(is_unicode_printable(0x206F))
+}
+
+///|
+test "printability: byte-order mark and interlinear annotation marks are not printable" {
+  assert_false(is_unicode_printable(0xFEFF))
+  assert_false(is_unicode_printable(0xFFF9))
+  assert_false(is_unicode_printable(0xFFFB))
+}
+
+///|
+test "printability: noncharacters are not printable" {
+  // BMP sentinel noncharacters.
+  assert_false(is_unicode_printable(0xFFFE))
+  assert_false(is_unicode_printable(0xFFFF))
+  // The contiguous noncharacter block U+FDD0..U+FDEF.
+  assert_false(is_unicode_printable(0xFDD0))
+  assert_false(is_unicode_printable(0xFDEF))
+}
+
+///|
+test "printability: private-use areas are not printable" {
+  // BMP private-use area.
+  assert_false(is_unicode_printable(0xE000))
+  assert_false(is_unicode_printable(0xF8FF))
+  // Supplementary private-use planes.
+  assert_false(is_unicode_printable(0xF0000))
+}
+
+///|
+test "printability: ordinary letters and symbols above ASCII are printable" {
+  assert_true(is_unicode_printable(0xE9)) // é
+  assert_true(is_unicode_printable(0x4E16)) // 世
+  assert_true(is_unicode_printable(0x1F600)) // 😀
+}
