@@ -13,7 +13,7 @@ inject the callables you need as predeclared bindings.
 | `gensym_builtin()` | `() -> @value.Value` | Returns the `gensym(name=…)` Starlark callable |
 | `make_struct(ctor, entries)` | `(@value.Value, Array[(String, @value.Value)]) -> @value.Value` | Construct a struct value directly from MoonBit |
 | `make_module(name, members)` | `(String, Array[(String, @value.Value)]) -> @value.Value` | Construct a module value directly from MoonBit |
-| `default_ctor` | `@value.Value` | The default constructor string `"struct"` |
+| `default_ctor` | `@value.Value` | A `Value::String("struct")` constant; pass as the `ctor` argument to `make_struct` |
 
 ## Quick start
 
