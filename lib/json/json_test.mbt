@@ -390,3 +390,33 @@ test "encode then decode round-trips values" {
     }
   }
 }
+
+///|
+test "encode dict reports the first non-string key when several are present" {
+  // Once a non-string key is seen the encoder stops scanning further keys, so
+  // the reported error reflects the first offending key only.
+  let d = @value.StarlarkDict::new()
+  let _ = d.set(int_val(1L), str_val("one"))
+  let _ = d.set(int_val(2L), str_val("two"))
+  check_encode_err(@value.Value::Dict(d), "dict has int key, want string")
+}
+
+///|
+test "encode surfaces an attribute that dir() advertises but cannot be read" {
+  let unreadable = @value.Value::ExtVal(
+    @value.CustomValue::new(fn() { "widget" }, fn() { true }, fn() {
+      "widget()"
+    }).with_attrs(fn(_name) { Err("boom") }, fn() { ["x"] }),
+  )
+  check_encode_err(unreadable, "cannot access attribute widget.x: boom")
+}
+
+///|
+test "encode surfaces an advertised attribute that resolves to nothing" {
+  let missing = @value.Value::ExtVal(
+    @value.CustomValue::new(fn() { "widget" }, fn() { true }, fn() {
+      "widget()"
+    }).with_attrs(fn(_name) { Ok(None) }, fn() { ["x"] }),
+  )
+  check_encode_err(missing, "missing attribute widget.x")
+}
