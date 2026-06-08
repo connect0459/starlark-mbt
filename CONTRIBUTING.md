@@ -100,8 +100,11 @@ tidy(hashtable): name initial_capacity constant
 1. Fork the repository and create a branch: `feature/xxx`, `fix/xxx`, `docs/xxx`.
 2. Follow the Red → Green → Refactor cycle.
 3. Run `just verify` and commit any resulting diffs.
-4. If the change touches the public API, update the corresponding file(s)
-   under `docs/api/` so the documentation reflects the new behaviour.
+4. If the change touches the public API, update both documentation layers so
+   they reflect the new behaviour:
+   - **`docs/api/`** — the comprehensive API reference (one file per public package).
+   - **Per-package `README.mbt.md`** — the mooncakes.io quick-start in each public
+     package directory; update if the overview, key types, or examples are affected.
 5. Open a pull request — the CI matrix tests `js`, `wasm`, `wasm-gc`, and `native`.
 
 ## Code style
