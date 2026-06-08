@@ -21,14 +21,41 @@ constants under the `math` namespace in Starlark scripts.
 
 ### Unary functions
 
-`math.ceil`, `math.floor`, `math.round`, `math.fabs`, `math.exp`, `math.sqrt`,
-`math.log`, `math.acos`, `math.asin`, `math.atan`, `math.cos`, `math.sin`,
-`math.tan`, `math.acosh`, `math.asinh`, `math.atanh`, `math.cosh`, `math.sinh`,
-`math.tanh`, `math.degrees`, `math.radians`, `math.gamma`
+| Function | Description |
+| :--- | :--- |
+| `math.ceil(x)` | Smallest integer ≥ x |
+| `math.floor(x)` | Largest integer ≤ x |
+| `math.round(x)` | Round to nearest integer |
+| `math.fabs(x)` | Absolute value |
+| `math.exp(x)` | `e ** x` |
+| `math.sqrt(x)` | Square root |
+| `math.log(x)` / `math.log(x, base)` | Natural log or log base `base` |
+| `math.acos(x)` | Arc cosine |
+| `math.asin(x)` | Arc sine |
+| `math.atan(x)` | Arc tangent |
+| `math.cos(x)` | Cosine |
+| `math.sin(x)` | Sine |
+| `math.tan(x)` | Tangent |
+| `math.acosh(x)` | Inverse hyperbolic cosine |
+| `math.asinh(x)` | Inverse hyperbolic sine |
+| `math.atanh(x)` | Inverse hyperbolic tangent |
+| `math.cosh(x)` | Hyperbolic cosine |
+| `math.sinh(x)` | Hyperbolic sine |
+| `math.tanh(x)` | Hyperbolic tangent |
+| `math.degrees(x)` | Radians → degrees |
+| `math.radians(x)` | Degrees → radians |
+| `math.gamma(x)` | Gamma function |
 
 ### Binary functions
 
-`math.atan2`, `math.copysign`, `math.hypot`, `math.mod`, `math.pow`, `math.remainder`
+| Function | Description |
+| :--- | :--- |
+| `math.atan2(y, x)` | Arc tangent of y/x |
+| `math.copysign(x, y)` | Magnitude of x with sign of y |
+| `math.hypot(x, y)` | `sqrt(x**2 + y**2)` |
+| `math.mod(x, y)` | Floating-point modulo |
+| `math.pow(x, y)` | `x ** y` (float) |
+| `math.remainder(x, y)` | IEEE 754 remainder |
 
 ## Quick start
 

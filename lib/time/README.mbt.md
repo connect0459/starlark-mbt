@@ -15,19 +15,52 @@ binding to expose the `time` namespace in Starlark scripts.
 
 ### Per-backend clock availability
 
-| Target | Source | Precision |
-| :--- | :--- | :--- |
-| `native` / `llvm` | OS clock via C FFI | Nanosecond |
-| `js` | `Date.now()` | Millisecond |
-| `wasm-gc` / `wasm` | Stub (returns epoch) | — |
+| Target | Source | Precision | Notes |
+| :--- | :--- | :--- | :--- |
+| `native` / `llvm` | OS clock via C FFI | Nanosecond | Full real-time access |
+| `js` | `Date.now()` | Millisecond | Nanosecond field derived from ms remainder |
+| `wasm-gc` | Stub | — | `extern "js"` not supported for this target |
+| `wasm` | Stub | — | Real-time requires WASI or a custom host import |
+
+When the stub is active, `time.now()` always returns the Unix epoch. Override via
+`now_override_key` in thread-local storage for deterministic tests.
 
 ## Starlark-level API (inside scripts)
 
-`time.now()`, `time.from_timestamp(sec, nsec=0)`, `time.parse_time(x)`,
-`time.parse_duration(x)`, `time.time(year=, month=, …)`, `time.is_valid_timezone(tz)`
+### Module-level functions and constants
 
-Duration constants: `time.nanosecond`, `time.microsecond`, `time.millisecond`,
-`time.second`, `time.minute`, `time.hour`
+| Name | Description |
+| :--- | :--- |
+| `time.now()` | Current time as `time.time`; overridable via `now_override_key` |
+| `time.from_timestamp(sec, nsec=0)` | Construct a `time.time` from a Unix timestamp |
+| `time.parse_time(x, format=…, location=…)` | Parse an RFC 3339 (or Go layout) string |
+| `time.parse_duration(x)` | Parse a duration string (`"1h30m"`, `"500ms"`, etc.) |
+| `time.time(year=, month=, …, location=)` | Construct a `time.time` from date/time components |
+| `time.is_valid_timezone(tz)` | Test whether a timezone string is supported |
+| `time.nanosecond` … `time.hour` | Duration constants (nanosecond, microsecond, millisecond, second, minute, hour) |
+
+### `time.time` attributes
+
+| Attribute | Type | Description |
+| :--- | :--- | :--- |
+| `t.unix` | `int` | Unix timestamp in whole seconds |
+| `t.unix_nano` | `int` | Unix timestamp in nanoseconds |
+| `t.year` / `.month` / `.day` | `int` | Calendar fields in the time's timezone |
+| `t.hour` / `.minute` / `.second` / `.nanosecond` | `int` | Time-of-day fields |
+| `t.in_location(tz)` | `time.time` | Re-express the time in the given timezone |
+| `t.format(layout)` | `string` | Format using a Go reference-time layout string |
+
+### `time.duration` attributes and arithmetic
+
+| Expression | Type | Description |
+| :--- | :--- | :--- |
+| `d.hours` / `.minutes` / `.seconds` | `float` | Duration as fractional units |
+| `d.milliseconds` / `.microseconds` / `.nanoseconds` | `int` | Duration in integer units |
+| `d1 + d2` | `time.duration` | Add durations |
+| `d - d2` | `time.duration` | Subtract durations |
+| `d * n` | `time.duration` | Scale by integer |
+| `d / n` | `time.duration` | Divide by integer or float |
+| `d // d2` | `int` | Integer floor-division of two durations |
 
 ## Quick start
 

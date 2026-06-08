@@ -87,11 +87,12 @@ test {
 
 For full usage examples — print capture, expression evaluation, host bindings, module
 loading, error handling, extensions, and calling Starlark functions from host code — see
-the [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api/README.md).
+the per-package documentation (e.g. [`eval`](./eval), [`value`](./value)).
 
 ## Documentation
 
-- [API Reference](https://github.com/connect0459/starlark-mbt/blob/main/docs/api/README.md) — Per-package API reference for all packages
+Each public package has a `README.mbt.md` with a key-types overview, usage examples,
+and a full API reference. Start with [`eval`](./eval) for the main entry points.
 
 ## Compatibility
 
