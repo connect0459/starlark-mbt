@@ -761,6 +761,9 @@ test "eval_expr: percent uppercase hex format with non-integer argument raises e
 }
 
 ///|
-test "eval_expr: percent uppercase G format produces uppercase scientific notation" {
-  assert_true(eval_op("\"%G\" % 1.5") is Ok(@value.Value::String(_)))
+test "eval_expr: percent uppercase G format uses uppercase E as exponent marker" {
+  match eval_op("\"%G\" % 1.5e10") {
+    Ok(@value.Value::String(s)) => assert_true(s.raw().contains("E"))
+    _ => fail("expected String result")
+  }
 }
