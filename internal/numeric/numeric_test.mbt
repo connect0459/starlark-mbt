@@ -57,3 +57,23 @@ test "format_float: numbers well below 1e-4 switch to scientific notation" {
   assert_eq(@numeric.format_float(1.5e-5), "1.5e-05")
   assert_eq(@numeric.format_float(-1.0e-5), "-1e-05")
 }
+
+///|
+test "format_float pads single-digit exponents to two digits" {
+  // Go's 'g' format always emits at least two exponent digits.
+  assert_eq(@numeric.format_float(1.0e-7), "1e-07")
+  assert_eq(@numeric.format_float(1.0e-6), "1e-06")
+}
+
+///|
+test "format_float keeps two-or-more digit exponents intact" {
+  assert_eq(@numeric.format_float(1.0e-10), "1e-10")
+  assert_eq(@numeric.format_float(1.0e20), "1e+20")
+  assert_eq(@numeric.format_float(1.5e22), "1.5e+22")
+}
+
+///|
+test "format_float renders large values with a fractional part in scientific notation" {
+  assert_eq(@numeric.format_float(1234567.5), "1.2345675e+06")
+  assert_eq(@numeric.format_float(123456789012.0), "1.23456789012e+11")
+}
