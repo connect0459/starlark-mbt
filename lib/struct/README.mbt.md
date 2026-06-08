@@ -34,7 +34,7 @@ test {
 
 Injecting into Starlark scripts:
 
-```moonbit nocheck
+```mbt nocheck
 let predeclared = @eval.Predeclared::from_map({
   "struct": @struct.struct_builtin(),
   "module": @struct.module_builtin(),

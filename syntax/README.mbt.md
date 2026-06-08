@@ -82,7 +82,7 @@ Parsing from source requires `@eval.parse_file` / `@eval.parse_expr`.
 
 Every node carries a trailing `@errors.Position`.
 
-```moonbit nocheck
+```mbt nocheck
 ///|
 pub(all) enum Expr {
   EIdent(String, Position)

@@ -76,7 +76,7 @@ test {
 
 Injecting into Starlark scripts with a fixed clock for determinism:
 
-```moonbit nocheck
+```mbt nocheck
 let predeclared = @eval.Predeclared::from_map({ "time": @time.time_module() })
 let thread = @eval.Thread::new("main")
 // Override the clock so the test is deterministic.

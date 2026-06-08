@@ -70,7 +70,7 @@ test {
 
 Injecting into Starlark scripts:
 
-```moonbit nocheck
+```mbt nocheck
 let thread = @eval.Thread::new("main")
 let predeclared = @eval.Predeclared::from_map({ "json": @json.json_module() })
 let src = "payload = json.encode({\"key\": [1, 2, 3]})"
