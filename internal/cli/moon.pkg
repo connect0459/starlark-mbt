@@ -1,13 +1,8 @@
 import {
   "moonbitlang/x/fs",
   "moonbitlang/x/path",
-  "moonbitlang/x/sys",
   "connect0459/starlark/errors",
   "connect0459/starlark/eval",
   "connect0459/starlark/value",
   "connect0459/starlark/internal/repl",
 }
-
-options(
-  "is-main": true,
-)

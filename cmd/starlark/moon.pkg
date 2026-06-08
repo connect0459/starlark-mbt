@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/x/sys",
+  "connect0459/starlark/internal/cli",
+}
+
+options(
+  "is-main": true,
+)

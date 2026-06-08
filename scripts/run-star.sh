@@ -11,7 +11,7 @@
 #                     statements at top level (mirrors starlark-go's flag)
 #
 # Expects to be invoked from the repository root (as the justfile recipes do),
-# since `moon run cmd` resolves the package relative to the current directory.
+# since `moon run cmd/starlark` resolves the package relative to the current directory.
 set -euo pipefail
 
 star="$1"
@@ -28,4 +28,4 @@ case "$star" in
         ;;
 esac
 
-moon run cmd -- ${flags[@]+"${flags[@]}"} "$star"
+moon run cmd/starlark -- ${flags[@]+"${flags[@]}"} "$star"
