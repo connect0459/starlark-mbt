@@ -72,7 +72,7 @@ context.
 | `EvalError::with_stack(String, CallStack)` | `EvalError` | Construct with a call stack |
 | `EvalError::with_cause(String, CallStack, EvalError)` | `EvalError` | Construct wrapping an inner cause |
 | `msg()` | `String` | Error message |
-| `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
+| `to_string()` | `String` | Error message string (same as `msg()`) |
 | `backtrace()` | `String` | Formatted call stack |
 | `call_stack()` | `CallStack` | The captured call stack as structured frames |
 | `cause()` | `EvalError?` | The wrapped inner error, if this error chains one |

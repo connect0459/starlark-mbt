@@ -25,7 +25,7 @@ constants under the `math` namespace in Starlark scripts.
 | :--- | :--- |
 | `math.ceil(x)` | Smallest integer ≥ x |
 | `math.floor(x)` | Largest integer ≤ x |
-| `math.round(x)` | Round to nearest integer |
+| `math.round(x)` | Round to nearest integer, returns `float` |
 | `math.fabs(x)` | Absolute value |
 | `math.exp(x)` | `e ** x` |
 | `math.sqrt(x)` | Square root |

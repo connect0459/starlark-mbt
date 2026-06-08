@@ -339,4 +339,4 @@ A read-only snapshot of an active Starlark call frame. Obtain via `Thread::debug
 | `num_locals()` | `Int` | Total number of local variables |
 | `frame_local(Int)` | `(@errors.Binding, @value.Value?)` | Binding descriptor and current value of the i-th local |
 | `local_by_name(String)` | `@value.Value?` | Current value of the named local; `None` if absent |
-| `position()` | `@errors.Position` | Current execution position within the frame |
+| `position()` | `@errors.Position` | Current execution position within the frame (stub: always returns an invalid position) |

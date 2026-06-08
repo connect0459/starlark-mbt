@@ -33,8 +33,9 @@ After injecting `json_module()` as `"json"` in predeclared:
 | `int` | number |
 | `float` | number |
 | `string` | string |
-| `list` / `tuple` / `range` | array |
+| `list` / `tuple` / `range` / `set` | array |
 | `dict` | object (keys must be strings) |
+| `ExtVal` with `get_attr_names()` | object (attribute names sorted, values encoded recursively) |
 
 ## Quick start
 
