@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-08
+
+### Fixed
+
+- `lib/time`: correct fractional-seconds and colon-separated timezone offset
+  formatting (#57)
+
+### Documentation
+
+- Add per-package `README.mbt.md` files for mooncakes.io display; add docs
+  badge to root README (#52, #55)
+- Fix literate MoonBit code-fence syntax in all `README.mbt.md` files (#59, #60)
+- Correct API description drift and add missing entries across `value`,
+  `errors`, `eval`, `syntax`, `unpack`, and `lib/json` packages (#53, #61)
+- Improve test coverage across `eval`, `value`, `time`, `json`, `struct`,
+  `numeric`, and `utf8util` packages (#54, #58)
+
 ## [0.1.0] - 2026-06-07
 
 ### Added
@@ -137,5 +154,6 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 | `allow_global_reassign` | `false` | Module-level variable reassignment |
 | `load_binds_globally` | `false` | `load`-imported names visible globally |
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.0...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.1...HEAD>
+[0.1.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.0...v0.1.1>
 [0.1.0]: <https://github.com/connect0459/starlark-mbt/releases/tag/v0.1.0>
