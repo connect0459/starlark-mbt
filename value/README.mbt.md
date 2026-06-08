@@ -212,7 +212,7 @@ Insertion-ordered mutable mapping; keys are any hashable `Value`.
 | `each((Value, Value) -> Unit)` | Iterate all key–value pairs |
 | `iter() -> Iter[Value]` | Iterator over a snapshot of keys in insertion order |
 | `entries() -> Iter[(Value, Value)]` | Iterator over key–value pairs in insertion order |
-| `popitem() -> Result[(Value, Value)?, String]` | Remove and return the last inserted pair |
+| `popitem() -> Result[(Value, Value)?, String]` | Remove and return the first inserted pair |
 | `is_frozen() -> Bool` | Whether the dict is frozen |
 | `freeze() -> Unit` | Freeze the dict and its contents |
 

@@ -11,7 +11,7 @@ to analyse or transform it.
 | Symbol | Description |
 | :--- | :--- |
 | `File` | Top-level parsed file (path + statement list) |
-| `Expr` | Expression node (24 variants) |
+| `Expr` | Expression node (17 variants) |
 | `Stmt` | Statement node (12 variants) |
 | `Param` / `Arg` / `CompClause` | Parameter, call argument, comprehension clause |
 | `LiteralVal` / `BinaryOp` / `UnaryOp` / `AugOp` | Leaf enums |
@@ -85,62 +85,62 @@ Every node carries a trailing `@errors.Position`.
 ```mbt nocheck
 ///|
 pub(all) enum Expr {
-  EIdent(String, Position)
-  ELiteral(LiteralVal, Position)
-  EUnary(UnaryOp, Expr, Position)
-  EBinary(Expr, BinaryOp, Expr, Position)
-  ECond(Expr, Expr, Expr, Position) // x if cond else y
-  EIndex(Expr, Expr, Position) // a[i]
-  ESlice(Expr, Expr?, Expr?, Expr?, Position) // a[start:end:step]
-  EDot(Expr, String, Position) // x.attr
-  ECall(Expr, Array[Arg], Position) // f(args…)
-  EList(Array[Expr], Position)
-  ETuple(Array[Expr], Position)
-  EDict(Array[(Expr, Expr)], Position)
-  ESet(Array[Expr], Position)
-  ELambda(Array[Param], Expr, Position)
-  EListComp(Expr, Array[CompClause], Position)
-  ESetComp(Expr, Array[CompClause], Position)
-  EDictComp(Expr, Expr, Array[CompClause], Position)
+  EIdent(String, @errors.Position)
+  ELiteral(LiteralVal, @errors.Position)
+  EUnary(UnaryOp, Expr, @errors.Position)
+  EBinary(Expr, BinaryOp, Expr, @errors.Position)
+  ECond(Expr, Expr, Expr, @errors.Position) // x if cond else y
+  EIndex(Expr, Expr, @errors.Position) // a[i]
+  ESlice(Expr, Expr?, Expr?, Expr?, @errors.Position) // a[start:end:step]
+  EDot(Expr, String, @errors.Position) // x.attr
+  ECall(Expr, Array[Arg], @errors.Position) // f(args…)
+  EList(Array[Expr], @errors.Position)
+  ETuple(Array[Expr], @errors.Position)
+  EDict(Array[(Expr, Expr)], @errors.Position)
+  ESet(Array[Expr], @errors.Position)
+  ELambda(Array[Param], Expr, @errors.Position)
+  EListComp(Expr, Array[CompClause], @errors.Position)
+  ESetComp(Expr, Array[CompClause], @errors.Position)
+  EDictComp(Expr, Expr, Array[CompClause], @errors.Position)
 }
 
 ///|
 pub(all) enum Stmt {
   SExpr(Expr)
-  SAssign(Expr, Expr, Position)
-  SAugAssign(Expr, AugOp, Expr, Position)
-  SIf(Expr, Array[Stmt], Array[Stmt], Position)
-  SFor(Expr, Expr, Array[Stmt], Position)
-  SWhile(Expr, Array[Stmt], Position)
-  SDef(String, Array[Param], Array[Stmt], Position)
-  SReturn(Expr?, Position)
-  SBreak(Position)
-  SContinue(Position)
-  SPass(Position)
-  SLoad(String, Array[(String, String, Position)], Position)
+  SAssign(Expr, Expr, @errors.Position)
+  SAugAssign(Expr, AugOp, Expr, @errors.Position)
+  SIf(Expr, Array[Stmt], Array[Stmt], @errors.Position)
+  SFor(Expr, Expr, Array[Stmt], @errors.Position)
+  SWhile(Expr, Array[Stmt], @errors.Position)
+  SDef(String, Array[Param], Array[Stmt], @errors.Position)
+  SReturn(Expr?, @errors.Position)
+  SBreak(@errors.Position)
+  SContinue(@errors.Position)
+  SPass(@errors.Position)
+  SLoad(String, Array[(String, String, @errors.Position)], @errors.Position)
 }
 
 ///|
 pub(all) enum Param {
-  ParamIdent(String, Position) // x
-  ParamDefault(String, Expr, Position) // x=expr
-  ParamStarBare(Position) // *
-  ParamStarIdent(String, Position) // *args
-  ParamKwIdent(String, Position) // **kwargs
+  ParamIdent(String, @errors.Position) // x
+  ParamDefault(String, Expr, @errors.Position) // x=expr
+  ParamStarBare(@errors.Position) // *
+  ParamStarIdent(String, @errors.Position) // *args
+  ParamKwIdent(String, @errors.Position) // **kwargs
 }
 
 ///|
 pub(all) enum Arg {
   ArgPos(Expr) // positional
-  ArgKw(String, Expr, Position) // name=expr
+  ArgKw(String, Expr, @errors.Position) // name=expr
   ArgStarArgs(Expr) // *args
   ArgKwArgs(Expr) // **kwargs
 }
 
 ///|
 pub(all) enum CompClause {
-  ClauseFor(Expr, Expr, Position) // for target in iterable
-  ClauseIf(Expr, Position) // if guard
+  ClauseFor(Expr, Expr, @errors.Position) // for target in iterable
+  ClauseIf(Expr, @errors.Position) // if guard
 }
 
 ///|
