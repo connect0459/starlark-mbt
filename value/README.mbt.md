@@ -116,7 +116,7 @@ pub enum Value {
 | `Value::new_list(Array[Value])` | `-> Value` | Construct a `List` value |
 | `Value::new_dict()` | `-> Value` | Construct an empty `Dict` value |
 | `Value::new_set()` | `-> Value` | Construct an empty `Set` value |
-| `Value::new_builtin(String, fn)` | `-> Value` | Construct a host-provided callable built-in |
+| `Value::new_builtin(String, (BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[Value, String])` | `-> Value` | Construct a host-provided callable built-in |
 | `repr()` | `-> String` | `repr()` form (the Starlark literal) |
 | `to_str()` | `-> String` | `str()` form (unquoted for strings) |
 | `type_name()` | `-> String` | `type()` name |
