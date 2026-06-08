@@ -57,5 +57,7 @@ test {
 }
 ```
 
-Errors returned from `@eval.exec_file` always carry a position and call stack.
-See `@eval` for usage in execution context.
+Errors returned from `@eval.exec_file` include source location information.
+Runtime errors carry a structured call stack; parse and resolve failures embed
+the position in the error message string. See `@eval` for usage in execution
+context.
