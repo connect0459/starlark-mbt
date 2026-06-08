@@ -61,3 +61,66 @@ Errors returned from `@eval.exec_file` include source location information.
 Runtime errors carry a structured call stack; parse and resolve failures embed
 the position in the error message string. See `@eval` for usage in execution
 context.
+
+## API reference
+
+### `EvalError`
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `EvalError::simple(String)` | `EvalError` | Construct with no position (for host code) |
+| `EvalError::with_stack(String, CallStack)` | `EvalError` | Construct with a call stack |
+| `EvalError::with_cause(String, CallStack, EvalError)` | `EvalError` | Construct wrapping an inner cause |
+| `msg()` | `String` | Error message |
+| `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
+| `backtrace()` | `String` | Formatted call stack |
+| `call_stack()` | `CallStack` | The captured call stack as structured frames |
+| `cause()` | `EvalError?` | The wrapped inner error, if this error chains one |
+
+### `SyntaxError` and `ResolveError`
+
+Both carry a `Position` and a message; `exec_file` wraps these into `EvalError`
+before returning.
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `SyntaxError::new(Position, String)` | `SyntaxError` | Construct from a position and message |
+| `ResolveError::new(Position, String)` | `ResolveError` | Construct from a position and message |
+| `msg()` | `String` | Error message |
+| `pos()` | `Position` | Source position |
+| `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
+
+### `Position`
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `Position::new(String, Int, Int)` | `Position` | Construct from filename, line, column |
+| `filename()` | `String` | Source file name |
+| `line()` | `Int` | 1-based line number |
+| `col()` | `Int` | 1-based column (0 = unknown) |
+| `is_valid()` | `Bool` | `true` if line > 0 |
+| `is_before(Position)` | `Bool` | Positional comparison |
+| `to_string()` | `String` | `"<file>:<line>:<col>"` |
+
+### `Binding`
+
+A local variable name with its definition position; used by the debugger API.
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `Binding::new(String, Position)` | `Binding` | Construct from a name and position |
+| `name()` | `String` | Variable name |
+| `pos()` | `Position` | Declaration position in source |
+
+### `CallStack` and `CallFrame`
+
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `CallStack::new(Array[CallFrame])` | `CallStack` | Construct from frames (0 = outermost) |
+| `length()` | `Int` | Number of frames |
+| `at(Int)` | `CallFrame?` | Frame at index; `None` if out of range |
+| `pop()` | `CallFrame?` | Remove and return the innermost frame |
+| `to_string()` | `String` | Human-readable backtrace |
+| `CallFrame::new(String, Position)` | `CallFrame` | Construct from a name and call-site position |
+| `name()` | `String` | Function name at this frame |
+| `pos()` | `Position` | Call-site position |
