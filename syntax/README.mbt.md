@@ -64,9 +64,9 @@ Parsing from source requires `@eval.parse_file` / `@eval.parse_expr`.
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `walk_file` | `(File, (Node?) -> Bool) -> Unit` | Depth-first traversal of a file; visitor returns `false` to stop descending |
-| `walk_stmt` | `(Stmt, (Node?) -> Bool) -> Unit` | Depth-first traversal of a statement |
-| `walk_expr` | `(Expr, (Node?) -> Bool) -> Unit` | Depth-first traversal of an expression |
+| `walk_file` | `(File, (Node?) -> Bool) -> Unit` | Depth-first traversal of a file; visitor called with `Some(node)` on entry and `None` on exit after each parent's last child; return `false` to stop descending |
+| `walk_stmt` | `(Stmt, (Node?) -> Bool) -> Unit` | Depth-first traversal of a statement; same `Some`/`None` entry/exit contract as `walk_file` |
+| `walk_expr` | `(Expr, (Node?) -> Bool) -> Unit` | Depth-first traversal of an expression; same `Some`/`None` entry/exit contract as `walk_file` |
 | `stmt_pos` | `(Stmt) -> @errors.Position` | Source position of a statement node |
 | `expr_pos` | `(Expr) -> @errors.Position` | Source position of an expression node |
 
