@@ -322,6 +322,19 @@ test {
 
 ---
 
+### String and bytes iterables
+
+The lazy iterables returned by `str.elems()`, `str.codepoints()`, and `bytes.elems()`.
+Each appears as a dedicated `Value` variant and reports its own `type()` string.
+
+| Type | Constructor | Accessors | Description |
+| :--- | :--- | :--- | :--- |
+| `StarlarkStringElems` | `new(StarlarkString, Bool)` | `source_string()`, `is_ords()` | `str.elems()`; `is_ords=true` yields integer ordinals, `false` yields one-char substrings |
+| `StarlarkStringCodepoints` | `new(StarlarkString, Bool)` | `source_string()`, `is_ords()` | `str.codepoints()`; `is_ords=true` yields codepoint integers, `false` yields substrings |
+| `StarlarkBytesElems` | `new(Bytes)` | `raw_bytes()` | `bytes.elems()`; yields integer byte values |
+
+---
+
 ### `StarlarkModule`, `StarlarkIterator`, `StarlarkBuiltinFunc`, `StarlarkBoundMethod`
 
 | Type | Key methods | Description |
