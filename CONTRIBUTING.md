@@ -102,9 +102,10 @@ tidy(hashtable): name initial_capacity constant
 3. Run `just verify` and commit any resulting diffs.
 4. If the change touches the public API, update both documentation layers so
    they reflect the new behaviour:
-   - **`docs/api/`** — the comprehensive API reference (one file per public package).
-   - **Per-package `README.mbt.md`** — the mooncakes.io quick-start in each public
-     package directory; update if the overview, key types, or examples are affected.
+   - **Per-package `README.mbt.md`** — the sole documentation source for each public
+     package; update the API reference tables, key types, or examples as needed.
+   - Run `moon info` and verify the `.mbti` diff is expected (it is the authoritative
+     formal spec for signatures).
 5. Open a pull request — the CI matrix tests `js`, `wasm`, `wasm-gc`, and `native`.
 
 ## Code style
