@@ -1777,6 +1777,30 @@ gaps (implementations were already correct). Commit: `190d060`
       Output matches starlark-go's `eval_test.go:462`.
       (`starlarktest/error_format_test.mbt`).
 
+### `lib/time` formatter bug fixes & coverage pass (BUG-35..36)
+
+Found while raising `lib/time` coverage: the Go reference-time formatter
+diverged from `parse_time` and Go semantics in two places. Fixed via TDD
+(failing tests first). Fix commit: `1a0601d`; tests: `fdef52d`.
+
+- [x] **BUG-35** [behavioral]: `time.time.format()` with a fixed-width
+      fractional verb (e.g. `.000`) corrupted the digits when the nanosecond
+      value had trailing zeros — `fmt_nsec_frac` fed the trailing-trimmed
+      output of `fmt_frac9` back through left zero-padding. Now pads the raw
+      nanosecond value to nine digits directly: `0.12s` formats as `.120`
+      (was `.000`).
+- [x] **BUG-36** [behavioral]: `time.time.format()` emitted the colon
+      timezone layouts `Z07:00` / `-07:00` literally, although `parse_go_layout`
+      already accepted them. Added colon-form branches to `fmt_go_layout` and a
+      `colon~` option to `write_tz_offset`, restoring parse/format symmetry.
+- [x] **Coverage** [test]: added `time_format_test.mbt`, `time_parse_test.mbt`,
+      and `time_zone_test.mbt` in `starlarktest`. `lib/time/time.mbt` 718/1187
+      → 1110/1195 (~93%); `tz_stub.mbt` 6/78 → 77/78; overall 88.0% → 92.1%.
+      Offset assertions use only daylight-saving-free zones so they hold on all
+      four backends (DST-aware native vs. fixed-offset wasm/js table); broader
+      region coverage relies on the instant-preserving invariant of
+      `in_location`.
+
 ### Pre-v0.1.0 gap fixes (time extension, M.4 items)
 
 Previously-unverified lower-confidence notes from the ninth-pass (M.4), now
