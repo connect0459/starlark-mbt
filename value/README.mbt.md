@@ -359,6 +359,7 @@ type_name_fn)` and attach optional protocol implementations via fluent `.with_*`
 
 | Method | Signature | Description |
 | :--- | :--- | :--- |
+| `BuiltinCallCtx::new((Value, Array[Value], Array[(String, Value)]) -> Result[Value, String], get_local? : (String) -> Value?)` | `-> BuiltinCallCtx` | Construct a call context with an invoke body and optional thread-local reader |
 | `invoke(Value, Array[Value], Array[(String, Value)])` | `-> Result[Value, String]` | Call a Starlark callable from within the built-in |
 | `get_local(String)` | `-> Value?` | Read thread-local state set on the active `Thread` |
 
