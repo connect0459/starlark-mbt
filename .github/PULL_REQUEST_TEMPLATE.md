@@ -56,6 +56,6 @@ without this information.
 
 - [ ] **CI Workflow Execution**: Full quality check completed by manually running `Run workflow` in [Actions](../actions/workflows/ci.yml)
 - [ ] **Code Comments**: Code comments and function/method-level doc-comments are in sync with the changes
-- [ ] **Reference Docs**: `README.mbt.md` and files under `docs/api/` are updated so they do not drift from the implementation
+- [ ] **Reference Docs**: both documentation layers are updated for any public API change — the per-package quick-start (`README.mbt.md` in each package directory) and the comprehensive reference (`docs/api/`)
 
 > **Important**: This checklist ensures quality. Please verify all items before requesting review.

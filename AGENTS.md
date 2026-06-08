@@ -60,9 +60,13 @@ This project may be released publicly. All of the following must be written in *
   - **`just verify`** — run the full CI-equivalent check across all four
     backends (`js`, `wasm`, `wasm-gc`, `native`) before opening a PR.
 
-- When a change affects the public API, update the corresponding file(s) under
-  `docs/api/` in the same PR so documentation stays in sync with the
-  implementation.
+- When a change affects the public API, update both documentation layers in the
+  same PR so they stay in sync with the implementation:
+  - **`docs/api/`** — the comprehensive cross-package API reference; update the
+    corresponding file for each affected package.
+  - **Per-package `README.mbt.md`** — the mooncakes.io-facing quick-start in each
+    public package directory; update if the overview, key types, or representative
+    examples are affected.
 
 - Prefer `assert_eq` or `assert_true(pattern is Pattern(...))` for results that
   are stable or very unlikely to change. Use snapshot tests to record current
