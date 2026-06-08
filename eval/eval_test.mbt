@@ -807,6 +807,37 @@ test "binary: arithmetic operations on integers" {
 }
 
 ///|
+test "binary: real division produces a float result" {
+  let ten = @value.Value::Int(10)
+  let two = @value.Value::Int(2)
+  assert_true(ok_value(binary("/", ten, two)) == @value.Value::Float(5.0))
+}
+
+///|
+test "binary: bitwise operators produce correct integer results" {
+  let six = @value.Value::Int(6)
+  let three = @value.Value::Int(3)
+  assert_true(ok_value(binary("&", six, three)) == @value.Value::Int(2))
+  assert_true(ok_value(binary("|", six, three)) == @value.Value::Int(7))
+  assert_true(ok_value(binary("^", six, three)) == @value.Value::Int(5))
+  assert_true(
+    ok_value(binary("<<", @value.Value::Int(1), @value.Value::Int(3))) ==
+    @value.Value::Int(8),
+  )
+  assert_true(
+    ok_value(binary(">>", @value.Value::Int(8), @value.Value::Int(2))) ==
+    @value.Value::Int(2),
+  )
+}
+
+///|
+test "binary: returns error when the operation raises" {
+  let one = @value.Value::Int(1)
+  let zero = @value.Value::Int(0)
+  assert_true(binary("//", one, zero) is Err(_))
+}
+
+///|
 test "binary: power operator is not a known operator" {
   let two = @value.Value::Int(2)
   let three = @value.Value::Int(3)
@@ -838,11 +869,53 @@ test "unary: numeric operations" {
 }
 
 ///|
+test "unary: bitwise not operator" {
+  let five = @value.Value::Int(5)
+  assert_true(ok_value(unary("~", five)) == @value.Value::Int(-6))
+}
+
+///|
+test "unary: returns error when operation raises" {
+  assert_true(
+    unary("+", @value.Value::String(@value.StarlarkString::new("x"))) is Err(_),
+  )
+}
+
+///|
 test "unary: unknown operator returns error" {
   match unary("??", @value.Value::Int(1)) {
     Err(e) => assert_true(e.msg().contains("unknown unary operator"))
     Ok(_) => assert_true(false)
   }
+}
+
+///|
+test "Thread::call_frame: returns None when index is out of range" {
+  let t = Thread::new("test")
+  assert_true(t.call_frame(100) is None)
+}
+
+///|
+test "Thread::reset_steps: resets the execution step counter to zero" {
+  let t = Thread::with_step_budget("test", 1000)
+  ignore(exec_file(t, "<test>", "x = 1 + 1", Options::default()))
+  assert_true(t.execution_steps() > 0)
+  t.reset_steps()
+  assert_eq(t.execution_steps(), 0)
+}
+
+///|
+test "Universe::get: returns the value bound to a name" {
+  let u = Universe::from_map({ "x": @value.Value::Int(42) })
+  assert_true(u.get("x") == Some(@value.Value::Int(42)))
+  assert_true(u.get("missing") is None)
+}
+
+///|
+test "Predeclared::get: returns the value bound to a name" {
+  let p = Predeclared::from_map({ "x": @value.Value::Int(7) })
+  assert_true(p.get("x") == Some(@value.Value::Int(7)))
+  assert_true(p.get("missing") is None)
 }
 
 ///|
@@ -988,4 +1061,118 @@ test "bind_args: kwonly star path uses singular and no 'at most' for required pa
       assert_eq(e.msg(), "function f accepts 1 positional argument (2 given)")
     Ok(_) => fail("expected error")
   }
+}
+
+///|
+test "call: returns error when calling a non-callable value" {
+  let t = Thread::new("test")
+  assert_true(call(t, @value.Value::Int(42N), [], []) is Err(_))
+}
+
+///|
+test "call: successfully invokes a Starlark function defined via exec_file" {
+  let t = Thread::new("test")
+  match
+    exec_file(t, "<test>", "def add(a, b): return a + b", Options::default()) {
+    Ok(m) =>
+      match m.get("add") {
+        Some(func) => {
+          let t2 = Thread::new("test2")
+          let r = call(
+            t2,
+            func,
+            [@value.Value::Int(3N), @value.Value::Int(4N)],
+            [],
+          )
+          assert_true(r is Ok(@value.Value::Int(7N)))
+        }
+        None => fail("add not found")
+      }
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
+test "call: propagates error when the Starlark function raises" {
+  let t = Thread::new("test")
+  match exec_file(t, "<test>", "def boom(): fail('oops')", Options::default()) {
+    Ok(m) =>
+      match m.get("boom") {
+        Some(func) => {
+          let t2 = Thread::new("test2")
+          assert_true(call(t2, func, [], []) is Err(_))
+        }
+        None => fail("boom not found")
+      }
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
+test "compare: returns error when types do not support ordering" {
+  assert_true(compare("<", @value.Value::None, @value.Value::None) is Err(_))
+}
+
+///|
+test "exec_file_with_universe: returns error on parse failure" {
+  let t = Thread::new("test")
+  let u = Universe::new()
+  assert_true(
+    exec_file_with_universe(t, "<test>", "!!!invalid!!!", Options::default(), u)
+    is Err(_),
+  )
+}
+
+///|
+test "exec_file_with_universe: successfully runs script with custom universe binding" {
+  let t = Thread::new("test")
+  let u = Universe::from_map({ "MY_VAL": @value.Value::Int(99N) })
+  match
+    exec_file_with_universe(t, "<test>", "x = MY_VAL", Options::default(), u) {
+    Ok(m) => assert_true(m.get("x") == Some(@value.Value::Int(99N)))
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
+test "exec_file_with_predeclared: returns error on parse failure" {
+  let t = Thread::new("test")
+  let p = Predeclared::new()
+  assert_true(
+    exec_file_with_predeclared(
+      t,
+      "<test>",
+      "!!!invalid!!!",
+      Options::default(),
+      p,
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "exec_file_with_predeclared: successfully runs script with injected bindings" {
+  let t = Thread::new("test")
+  let p = Predeclared::from_map({ "PRE": @value.Value::Int(7N) })
+  match
+    exec_file_with_predeclared(t, "<test>", "x = PRE", Options::default(), p) {
+    Ok(m) => assert_true(m.get("x") == Some(@value.Value::Int(7N)))
+    Err(e) => fail(e.msg())
+  }
+}
+
+///|
+test "exec_file_with_universe: returns error when script references an undefined name" {
+  let t = Thread::new("test")
+  let u = Universe::new()
+  assert_true(
+    exec_file_with_universe(
+      t,
+      "<test>",
+      "x = __undefined_xyz__",
+      Options::default(),
+      u,
+    )
+    is Err(_),
+  )
 }

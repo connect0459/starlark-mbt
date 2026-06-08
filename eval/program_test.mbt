@@ -157,3 +157,21 @@ test "Program: init result is not frozen" {
     Ok(m) => assert_eq(m.is_frozen(), false)
   }
 }
+
+///|
+test "parse_file: returns error for invalid Starlark syntax" {
+  assert_true(parse_file("<test>", "!!!invalid!!!") is Err(_))
+}
+
+///|
+test "Program::load: returns empty tuple when index is out of range" {
+  let prog = match
+    source_program("<test>", "x = 1", Options::default(), fn(_) { false }) {
+    Ok(p) => p
+    Err(e) => fail(e.to_string())
+  }
+  let (path, _pos) = prog.load(0)
+  assert_eq(path, "")
+  let (path2, _pos2) = prog.load(-1)
+  assert_eq(path2, "")
+}

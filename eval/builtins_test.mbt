@@ -2234,3 +2234,116 @@ test "exec_file: fail with unknown keyword argument raises error" {
     ),
   )
 }
+
+// --- str edge cases ---
+
+///|
+test "exec_file: str with no arguments raises error" {
+  assert_eq(emsg("str()"), "str: got 0 arguments, want exactly 1")
+}
+
+// --- print keyword argument errors ---
+
+///|
+test "exec_file: print with non-string sep raises TypeError" {
+  assert_true(emsg("print(1, sep=123)").contains("want string"))
+}
+
+///|
+test "exec_file: print with unknown keyword argument raises error" {
+  assert_true(emsg("print(foo=1)").contains("unexpected keyword argument"))
+}
+
+// --- string.rindex ---
+
+///|
+test "exec_file: string.rindex returns position of last occurrence" {
+  match exec_b("i = \"hello\".rindex(\"l\")") {
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(3N)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.rindex raises error when substring is not present" {
+  assert_true(emsg("\"hello\".rindex(\"x\")").contains("substring not found"))
+}
+
+///|
+test "exec_file: string.rindex with end bound limits the search range" {
+  match exec_b("i = \"hello\".rindex(\"l\", 0, 3)") {
+    Ok(m) => assert_true(g(m, "i") == Some(@value.Value::Int(2N)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+// --- string.replace with count ---
+
+///|
+test "exec_file: string.replace with count stops after the given number of substitutions" {
+  match exec_b("s = \"aaa\".replace(\"a\", \"b\", 2)") {
+    Ok(m) =>
+      assert_true(
+        g(m, "s") ==
+        Some(@value.Value::String(@value.StarlarkString::new("bba"))),
+      )
+    Err(e) => fail(e.to_string())
+  }
+}
+
+// --- function hash ---
+
+///|
+test "exec_file: function value is hashable and can be stored in a set" {
+  assert_true(exec_b("def f(): pass\ns = {f}") is Ok(_))
+}
+
+///|
+test "exec_file: two distinct functions compared for equality always return false" {
+  match exec_b("def f(): pass\ndef g(): pass\nr = (f == g)") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(false)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+// --- type() arity error ---
+
+///|
+test "exec_file: type with no arguments raises error" {
+  assert_true(emsg("type()").contains("one argument"))
+}
+
+///|
+test "exec_file: type with two arguments raises error" {
+  assert_true(emsg("type(1, 2)").contains("one argument"))
+}
+
+// --- slice index out of int32 range ---
+
+///|
+test "exec_file: slice with start index larger than int32 max raises out-of-range error" {
+  assert_true(emsg("x = 'hello'[9999999999:]").contains("out of range"))
+}
+
+// --- float() with out-of-range literal string ---
+
+///|
+test "exec_file: float string that parses to infinity raises floating-point-too-large error" {
+  assert_true(
+    emsg("float('1e400')").contains("floating-point number too large"),
+  )
+}
+
+// --- range() type error ---
+
+///|
+test "exec_file: range with non-integer argument raises type error" {
+  assert_true(emsg("range('hello')").contains("want int"))
+}
+
+// --- dict() arity error ---
+
+///|
+test "exec_file: dict with more than one positional argument raises error" {
+  assert_true(emsg("dict(1, 2)").contains("want at most 1"))
+}
