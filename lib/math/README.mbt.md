@@ -71,7 +71,7 @@ test {
 
 Injecting into Starlark scripts:
 
-```moonbit nocheck
+```mbt nocheck
 let thread = @eval.Thread::new("main")
 let predeclared = @eval.Predeclared::from_map({ "math": @math.math_module() })
 let _ = @eval.exec_file_with_predeclared(thread, "trig.star",

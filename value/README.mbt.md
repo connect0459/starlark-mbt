@@ -81,7 +81,7 @@ test {
 
 ### `Value` enum
 
-```moonbit nocheck
+```mbt nocheck
 ///|
 pub enum Value {
   None
@@ -291,7 +291,7 @@ A user-defined (Starlark-source) function. Obtain via `Value::Function(f)` patte
 | `free_var(Int)` | `(String, Value)?` | Name and current value of the i-th free variable |
 | `defining_module()` | `StarlarkModule?` | Module that defined this function |
 
-```moonbit nocheck
+```mbt nocheck
 ///|
 test {
   let thread = @eval.Thread::new("main")
