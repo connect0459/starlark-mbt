@@ -394,11 +394,13 @@ test "encode then decode round-trips values" {
 ///|
 test "encode dict reports the first non-string key when several are present" {
   // Once a non-string key is seen the encoder stops scanning further keys, so
-  // the reported error reflects the first offending key only.
+  // the reported error reflects the first offending key only. Keys of distinct
+  // types are inserted so the error type distinguishes "first key" from "any
+  // non-string key"; dicts iterate in insertion order, so the float comes first.
   let d = @value.StarlarkDict::new()
-  let _ = d.set(int_val(1L), str_val("one"))
+  let _ = d.set(float_val(1.0), str_val("one"))
   let _ = d.set(int_val(2L), str_val("two"))
-  check_encode_err(@value.Value::Dict(d), "dict has int key, want string")
+  check_encode_err(@value.Value::Dict(d), "dict has float key, want string")
 }
 
 ///|
