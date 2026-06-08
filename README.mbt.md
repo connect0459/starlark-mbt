@@ -1,6 +1,7 @@
 # starlark-mbt
 
 [![CI](https://github.com/connect0459/starlark-mbt/actions/workflows/ci.yml/badge.svg)](https://github.com/connect0459/starlark-mbt/actions/workflows/ci.yml)
+[![docs](https://img.shields.io/badge/docs-mooncakes.io-green)](https://mooncakes.io/docs/connect0459/starlark)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/connect0459/starlark-mbt/blob/main/LICENSE)
 
 A MoonBit implementation of the [Starlark](https://github.com/bazelbuild/starlark/blob/master/spec.md)
