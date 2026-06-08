@@ -300,3 +300,22 @@ test "StarlarkSet::iter yields all elements" {
   }
   assert_eq(elems.length(), 3)
 }
+
+///|
+test "StarlarkDict: starlark_equals same size but disjoint keys returns false" {
+  let d1 = StarlarkDict::new()
+  d1.set(Value::Int(1N), Value::Int(10N)) |> ignore
+  let d2 = StarlarkDict::new()
+  d2.set(Value::Int(2N), Value::Int(10N)) |> ignore
+  assert_false(Value::Dict(d1).starlark_equals(Value::Dict(d2)))
+}
+
+///|
+test "StarlarkSet: starlark_equals different sizes returns false" {
+  let s1 = StarlarkSet::new()
+  s1.add(Value::Int(1N)) |> ignore
+  let s2 = StarlarkSet::new()
+  s2.add(Value::Int(1N)) |> ignore
+  s2.add(Value::Int(2N)) |> ignore
+  assert_false(Value::Set(s1).starlark_equals(Value::Set(s2)))
+}

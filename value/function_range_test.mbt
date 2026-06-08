@@ -239,3 +239,59 @@ test "StarlarkRange: contains treats a zero-step range as having no elements, gu
   assert_false(r.contains(0L))
   assert_false(r.contains(5L))
 }
+
+// --- StarlarkFunction::new reflection API (no bytecode) ---
+
+///|
+test "StarlarkFunction::new: globals returns empty map when no module is bound" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_eq(f.globals().length(), 0)
+}
+
+///|
+test "StarlarkFunction::new: defining_module returns None when no module is bound" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_true(f.defining_module() is None)
+}
+
+///|
+test "StarlarkFunction::new: doc returns empty string when no bytecode is present" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_eq(f.doc(), "")
+}
+
+///|
+test "StarlarkFunction::new: has_varargs returns false when no bytecode is present" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_false(f.has_varargs())
+}
+
+///|
+test "StarlarkFunction::new: has_kwargs returns false when no bytecode is present" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_false(f.has_kwargs())
+}
+
+///|
+test "StarlarkFunction::new: num_params returns 0 when no bytecode is present" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_eq(f.num_params(), 0)
+}
+
+///|
+test "StarlarkFunction::new: num_kwonly_params returns 0 when no bytecode is present" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_eq(f.num_kwonly_params(), 0)
+}
+
+///|
+test "StarlarkFunction::new: num_free_vars returns 0 when no bytecode is present" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_eq(f.num_free_vars(), 0)
+}
+
+///|
+test "StarlarkFunction::new: free_var returns None when no bytecode is present" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("<test>", 1, 0))
+  assert_true(f.free_var(0) is None)
+}
