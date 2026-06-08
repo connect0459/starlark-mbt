@@ -2724,7 +2724,7 @@ depend on publishing).
       `src/docs/README.mbt.md` symlink. The verified API reference pages moved to
       `docs/api/` (package `connect0459/starlark/docs/api`), merging cleanly into
       the existing top-level `docs/` tree.
-- [x] Updated path references in `justfile` (`moon run src/cmd` → `moon run cmd`),
+- [x] Updated path references in `justfile` (`moon run src/cmd` → `moon run cmd` → `moon run cmd/starlark` in #64),
       `README.mbt.md`, `CONTRIBUTING.md`, `docs/README.md`, and the doc-test pages.
       Also corrected stale `docs/api/index.md` (now renamed to `docs/api/README.md`) prose claiming "no top-level
       facade" (superseded by R6).

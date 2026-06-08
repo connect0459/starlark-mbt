@@ -35,7 +35,7 @@ fn parse_bool_flag(value : String) -> Bool? {
 /// Each accepts the Go forms `-flag`, `-flag=true`, and `-flag=false`. A bare
 /// `--` stops flag parsing so later arguments are treated as positional.
 /// Returns `Err` for an invalid flag value.
-fn parse_cli_args(
+pub fn parse_cli_args(
   args : Array[String],
 ) -> Result[(String?, @eval.Options), String] {
   let mut filepath : String? = None
@@ -114,7 +114,7 @@ fn make_loader(
 }
 
 ///|
-fn run_file(filepath : String, opts : @eval.Options) -> Int {
+pub fn run_file(filepath : String, opts : @eval.Options) -> Int {
   let src = @fs.read_file_to_string(filepath) catch {
     @fs.IOError(msg) => {
       println("starlark: \{msg}")
@@ -133,7 +133,7 @@ fn run_file(filepath : String, opts : @eval.Options) -> Int {
 }
 
 ///|
-fn run_repl(opts : @eval.Options) -> Unit {
+pub fn run_repl(opts : @eval.Options) -> Unit {
   let thread = @eval.Thread::with_loader("REPL", @repl.make_load("."))
   let globals = @value.StringDict::new()
   if @repl.is_terminal() {
@@ -142,26 +142,5 @@ fn run_repl(opts : @eval.Options) -> Unit {
   @repl.run(thread, globals, opts~)
   if @repl.is_terminal() {
     println("")
-  }
-}
-
-///|
-fn main {
-  let args = @sys.get_cli_args()
-  match parse_cli_args(args) {
-    Err(msg) => {
-      println("starlark: \{msg}")
-      @sys.exit(2)
-    }
-    Ok((filepath, opts)) =>
-      match filepath {
-        None => run_repl(opts)
-        Some(fp) => {
-          let exit_code = run_file(fp, opts)
-          if exit_code != 0 {
-            @sys.exit(exit_code)
-          }
-        }
-      }
   }
 }
