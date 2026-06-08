@@ -155,19 +155,50 @@ pub(all) enum LiteralVal {
 
 ///|
 pub(all) enum BinaryOp {
-  OpAdd | OpSub | OpMul | OpDiv | OpFloorDiv | OpMod
-  OpBitAnd | OpBitOr | OpBitXor | OpLShift | OpRShift
-  OpEq | OpNe | OpLt | OpLe | OpGt | OpGe
-  OpIn | OpNotIn | OpAnd | OpOr
+  OpAdd
+  OpSub
+  OpMul
+  OpDiv
+  OpFloorDiv
+  OpMod
+  OpBitAnd
+  OpBitOr
+  OpBitXor
+  OpLShift
+  OpRShift
+  OpEq
+  OpNe
+  OpLt
+  OpLe
+  OpGt
+  OpGe
+  OpIn
+  OpNotIn
+  OpAnd
+  OpOr
 }
 
 ///|
-pub(all) enum UnaryOp { OpPlus | OpMinus | OpBitNot | OpNot }
+pub(all) enum UnaryOp {
+  OpPlus
+  OpMinus
+  OpBitNot
+  OpNot
+}
 
 ///|
 pub(all) enum AugOp {
-  AugAdd | AugSub | AugMul | AugDiv | AugFloorDiv | AugMod
-  AugBitAnd | AugBitOr | AugBitXor | AugLShift | AugRShift
+  AugAdd
+  AugSub
+  AugMul
+  AugDiv
+  AugFloorDiv
+  AugMod
+  AugBitAnd
+  AugBitOr
+  AugBitXor
+  AugLShift
+  AugRShift
 }
 
 // Visitor wrapper passed to walk_*; one variant per node kind.
