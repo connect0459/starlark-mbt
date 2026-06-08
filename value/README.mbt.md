@@ -192,6 +192,7 @@ These guard against infinite recursion on cyclic data structures.
 | `iter() -> Iter[Value]` | Lazy iterator |
 | `is_frozen() -> Bool` | Whether the list is frozen |
 | `freeze() -> Unit` | Freeze the list (and transitively its values) |
+| `check_mutable(String) -> Result[Unit, String]` | `Err` if frozen or being iterated; `verb` names the operation |
 
 ---
 
