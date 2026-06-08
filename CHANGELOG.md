@@ -136,7 +136,7 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 #### CLI and REPL
 
-- `cmd` package — run `.star` files from the command line (`moon run cmd -- <file>`)
+- `cmd/starlark` package — run `.star` files from the command line (`moon run cmd/starlark -- <file>`)
 - REPL support via `exec_repl_chunk` in `eval` — incremental state is maintained in
   a `StringDict` passed across calls
 
