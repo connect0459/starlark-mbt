@@ -210,6 +210,7 @@ Insertion-ordered mutable mapping; keys are any hashable `Value`.
 | `length() -> Int` | Number of entries |
 | `keys() -> Array[Value]` | Keys in insertion order |
 | `each((Value, Value) -> Unit)` | Iterate all key–value pairs |
+| `iter() -> Iter[Value]` | Iterator over a snapshot of keys in insertion order |
 | `entries() -> Iter[(Value, Value)]` | Iterator over key–value pairs in insertion order |
 | `popitem() -> Result[(Value, Value)?, String]` | Remove and return the last inserted pair |
 | `is_frozen() -> Bool` | Whether the dict is frozen |
