@@ -519,3 +519,84 @@ test "starlark_equals_depth: Builtin functions equal when same name" {
   assert_true(starlark_equals_depth(f1, f2, 10) == Ok(true))
   assert_true(starlark_equals_depth(f1, f3, 10) == Ok(false))
 }
+
+///|
+test "compare_depth: inequality operator negates structural equality" {
+  assert_true(
+    compare_depth("!=", Value::Int(1N), Value::Int(2N), 10) == Ok(true),
+  )
+  assert_true(
+    compare_depth("!=", Value::Int(1N), Value::Int(1N), 10) == Ok(false),
+  )
+}
+
+///|
+test "compare_depth: less-than-or-equal holds for smaller and equal operands" {
+  assert_true(
+    compare_depth("<=", Value::Int(1N), Value::Int(2N), 10) == Ok(true),
+  )
+  assert_true(
+    compare_depth("<=", Value::Int(2N), Value::Int(2N), 10) == Ok(true),
+  )
+  assert_true(
+    compare_depth("<=", Value::Int(3N), Value::Int(2N), 10) == Ok(false),
+  )
+}
+
+///|
+test "compare_depth: greater-than comparisons report strict ordering" {
+  assert_true(
+    compare_depth(">", Value::Int(3N), Value::Int(2N), 10) == Ok(true),
+  )
+  assert_true(
+    compare_depth(">=", Value::Int(2N), Value::Int(2N), 10) == Ok(true),
+  )
+}
+
+///|
+test "compare_depth: ordering incomparable types reports the underlying error" {
+  let result = compare_depth(
+    "<",
+    Value::Int(1N),
+    Value::String(StarlarkString::new("a")),
+    10,
+  )
+  assert_true(result is Err(_))
+}
+
+///|
+test "compare_depth: an unrecognized operator is rejected" {
+  assert_true(
+    compare_depth("<>", Value::Int(1N), Value::Int(2N), 10) ==
+    Err("unknown comparison operator: <>"),
+  )
+}
+
+///|
+test "compare_values_depth: an extension value without a comparator cannot be ordered" {
+  let ext = Value::ExtVal(
+    CustomValue::new(fn() { "widget" }, fn() { true }, fn() { "widget()" }),
+  )
+  // The extension value as the left operand.
+  assert_true(compare_values_depth(ext, Value::Int(1N), 10) is Err(_))
+  // The extension value as the right operand.
+  assert_true(compare_values_depth(Value::Int(1N), ext, 10) is Err(_))
+}
+
+///|
+test "starlark_equals_depth: bound methods are equal only when they share identity" {
+  let bound = StarlarkBoundMethod::new(
+    Value::String(StarlarkString::new("hello")),
+    "upper",
+  )
+  let same = Value::BoundMethod(bound)
+  let same_again = Value::BoundMethod(bound)
+  let other = Value::BoundMethod(
+    StarlarkBoundMethod::new(
+      Value::String(StarlarkString::new("hello")),
+      "upper",
+    ),
+  )
+  assert_true(starlark_equals_depth(same, same_again, 10) == Ok(true))
+  assert_true(starlark_equals_depth(same, other, 10) == Ok(false))
+}
