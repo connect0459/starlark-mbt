@@ -130,8 +130,11 @@ fn dir_of(path : String) -> String {
 ///
 /// Ctrl-C has two distinct roles. During evaluation it interrupts the running
 /// computation (via the SIGINT handler and step poll). During interactive line
-/// editing it is handled by the line editor, which cancels the current line and
-/// returns an empty string — it does not abort a multi-line chunk in progress.
+/// editing it is handled by the line editor, which clears the current line and
+/// returns an empty string (not EOF). At the primary `>>>` prompt that is a
+/// no-op; within a pending multi-line chunk the empty string is indistinguishable
+/// from a blank-line terminator, so it ends the chunk (which is then evaluated or
+/// reported as an error) rather than discarding it.
 ///
 /// Parameters:
 ///
