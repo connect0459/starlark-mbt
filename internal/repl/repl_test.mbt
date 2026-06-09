@@ -49,7 +49,7 @@ test "eval_input: runtime error returns EvalError output" {
   let t = make_thread()
   let g = empty_globals()
   match eval_input(t, g, "1 // 0") {
-    EvalError(msg) => assert_true(msg.contains("zero"))
+    EvalError(e) => assert_true(e.msg().contains("zero"))
     other => {
       println(other)
       assert_true(false)
@@ -65,7 +65,7 @@ test "eval_input: rejects recursive calls by default" {
     t, g, "def f(n):\n  if n <= 0:\n    return 0\n  return f(n - 1)",
   )
   match eval_input(t, g, "f(3)") {
-    EvalError(msg) => assert_true(msg.contains("called recursively"))
+    EvalError(e) => assert_true(e.msg().contains("called recursively"))
     other => {
       println(other)
       assert_true(false)
@@ -113,6 +113,32 @@ test "eval_input: string expression returns quoted repr" {
   let g = empty_globals()
   match eval_input(t, g, "\"hello\"") {
     Value(s) => assert_eq(s, "\"hello\"")
+    other => {
+      println(other)
+      assert_true(false)
+    }
+  }
+}
+
+///|
+test "eval_input: syntax error is reported as EvalError" {
+  let t = make_thread()
+  let g = empty_globals()
+  match eval_input(t, g, "1 +") {
+    EvalError(e) => assert_true(e.msg().contains("primary expression"))
+    other => {
+      println(other)
+      assert_true(false)
+    }
+  }
+}
+
+///|
+test "eval_input: EvalError payload exposes a backtrace for display" {
+  let t = make_thread()
+  let g = empty_globals()
+  match eval_input(t, g, "1 // 0") {
+    EvalError(e) => assert_true(e.backtrace().contains("Error:"))
     other => {
       println(other)
       assert_true(false)

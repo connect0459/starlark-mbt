@@ -24,7 +24,7 @@ pub fn run(@eval.Thread, @value.StringDict, opts? : @eval.Options) -> Unit
 pub enum ReplOutput {
   Value(String)
   Empty
-  EvalError(String)
+  EvalError(@errors.EvalError)
 }
 pub impl Show for ReplOutput
 

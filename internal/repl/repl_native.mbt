@@ -6,8 +6,19 @@ extern "C" fn isatty_ffi() -> Int = "starlark_repl_isatty"
 extern "C" fn read_line_ffi(prompt : Bytes) -> Bytes? = "starlark_repl_read_line"
 
 ///|
+#borrow(s)
+extern "C" fn write_stderr_ffi(s : Bytes) = "starlark_repl_write_stderr"
+
+///|
 pub fn is_terminal() -> Bool {
   isatty_ffi() != 0
+}
+
+///|
+/// Writes `s` followed by a newline to stderr, so diagnostics stay separate
+/// from value output on stdout.
+fn write_err_line(s : String) -> Unit {
+  write_stderr_ffi(@utf8.encode(s + "\n"))
 }
 
 ///|

@@ -3,7 +3,7 @@
 pub enum ReplOutput {
   Value(String)
   Empty
-  EvalError(String)
+  EvalError(@errors.EvalError)
 }
 
 ///|
@@ -11,7 +11,7 @@ pub impl Show for ReplOutput with fn output(self, logger) {
   match self {
     Value(s) => logger.write_string("Value(\{s})")
     Empty => logger.write_string("Empty")
-    EvalError(s) => logger.write_string("EvalError(\{s})")
+    EvalError(e) => logger.write_string("EvalError(\{e.msg()})")
   }
 }
 
@@ -37,7 +37,7 @@ pub fn eval_input(
 ) -> ReplOutput {
   let file = match @parser.parse_file("<repl>", input) {
     Ok(f) => f
-    Err(e) => return EvalError(e.to_string())
+    Err(e) => return EvalError(@errors.EvalError::simple(e.to_string()))
   }
   let stmts = file.stmts()
   // Only a lone bare expression is echoed back; anything else (multiple
@@ -52,12 +52,12 @@ pub fn eval_input(
           globals.set("_", v)
           Value(v.repr())
         }
-      Err(e) => EvalError(e.msg())
+      Err(e) => EvalError(e)
     }
   } else {
     match @eval.exec_repl_chunk(thread, "<repl>", input, globals, opts) {
       Ok(_) => Empty
-      Err(e) => EvalError(e.msg())
+      Err(e) => EvalError(e)
     }
   }
 }
@@ -147,7 +147,7 @@ pub fn run(
         match eval_input(thread, globals, trimmed, opts~) {
           Value(s) => println(s)
           Empty => ()
-          EvalError(msg) => println(msg)
+          EvalError(e) => write_err_line(e.backtrace())
         }
       }
     }

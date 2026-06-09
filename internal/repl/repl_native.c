@@ -14,10 +14,18 @@ MOONBIT_FFI_EXPORT int starlark_repl_isatty(void) {
   return isatty(STDIN_FILENO);
 }
 
+MOONBIT_FFI_EXPORT void starlark_repl_write_stderr(moonbit_bytes_t s) {
+  if (s != NULL) {
+    fputs((const char *)s, stderr);
+  }
+  fflush(stderr);
+}
+
 MOONBIT_FFI_EXPORT moonbit_bytes_t starlark_repl_read_line(moonbit_bytes_t prompt) {
   if (prompt != NULL && prompt[0] != '\0') {
-    fputs((const char *)prompt, stdout);
-    fflush(stdout);
+    // Prompts go to stderr so piped stdout stays clean (as starlark-go does).
+    fputs((const char *)prompt, stderr);
+    fflush(stderr);
   }
   char buf[4096];
   if (fgets(buf, sizeof(buf), stdin) == NULL) {

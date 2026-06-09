@@ -14,6 +14,13 @@ fn read_line(_prompt : String) -> String? {
 }
 
 ///|
+/// No-op on backends without a stderr surface. The interactive `run` loop never
+/// reaches this on these targets because `read_line` returns `None` immediately.
+fn write_err_line(_s : String) -> Unit {
+
+}
+
+///|
 fn load_file(
   _thread : @eval.Thread,
   path : String,
