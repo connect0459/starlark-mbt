@@ -128,6 +128,11 @@ fn dir_of(path : String) -> String {
 /// gathered under a `...` continuation prompt until the chunk is complete.
 /// Exits when stdin is closed (a mid-chunk buffer is discarded).
 ///
+/// Ctrl-C has two distinct roles. During evaluation it interrupts the running
+/// computation (via the SIGINT handler and step poll). During interactive line
+/// editing it is handled by the line editor, which cancels the current line and
+/// returns an empty string — it does not abort a multi-line chunk in progress.
+///
 /// Parameters:
 ///
 /// - `thread` : The evaluation thread used for all input evaluation.
@@ -155,9 +160,12 @@ pub fn run(
     }
     match read_line(prompt) {
       None =>
-        // A NULL read is either genuine end-of-input or a Ctrl-C during input.
+        // A null read means end of input: Ctrl-D at a terminal, or genuine EOF
+        // when piped. Interactive Ctrl-C never lands here — the line editor
+        // cancels the line and returns an empty string instead. The interrupt
+        // flag can still be set when a signal interrupts a piped read, in which
+        // case the partial chunk is discarded and the loop continues.
         if interrupted() {
-          // Abandon the partial chunk and return to the primary prompt.
           state.discard()
           write_err_line("")
           continue
