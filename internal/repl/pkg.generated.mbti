@@ -16,6 +16,8 @@ pub fn is_terminal() -> Bool
 
 pub fn make_load(String) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError]
 
+pub fn repl_available() -> Bool
+
 pub fn run(@eval.Thread, @value.StringDict, opts? : @eval.Options) -> Unit
 
 // Errors
