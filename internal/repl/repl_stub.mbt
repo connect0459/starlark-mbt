@@ -34,6 +34,12 @@ fn interrupted() -> Bool {
 }
 
 ///|
+/// No-op: no line editor on these backends.
+fn init_editor() -> Unit {
+
+}
+
+///|
 fn load_file(
   _thread : @eval.Thread,
   path : String,

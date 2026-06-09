@@ -16,6 +16,15 @@ extern "C" fn setup_interrupt_ffi() = "starlark_repl_setup_interrupt"
 extern "C" fn interrupted_ffi() -> Int = "starlark_repl_interrupted"
 
 ///|
+extern "C" fn init_editor_ffi() = "starlark_repl_init_editor"
+
+///|
+/// Configures the line editor (history, prompt marker) once before the loop.
+fn init_editor() -> Unit {
+  init_editor_ffi()
+}
+
+///|
 /// Step interval between interrupt polls. The evaluation step counter is reset
 /// every interval, so the REPL imposes no step ceiling and relies on Ctrl-C to
 /// stop a runaway computation, as starlark-go does.

@@ -139,6 +139,7 @@ pub fn run(
   opts? : @eval.Options = @eval.Options::default(),
 ) -> Unit {
   let state = ReplState::new()
+  init_editor()
   setup_interrupt(thread)
   // Prompts are only useful at a terminal; when stdin is piped (e.g.
   // `cat script.star | starlark`) they would just be noise on stderr, so they
