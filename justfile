@@ -10,6 +10,10 @@ run-example path:
 run-examples:
     bash scripts/run-examples.sh
 
+# Integration tests for the REPL on piped (non-terminal) stdin
+test-repl-piped:
+    bash scripts/test-repl-piped.sh
+
 # Run tests for a single target (e.g. `just test-target wasm-gc`)
 test-target target:
     moon check --deny-warn --target {{target}}
@@ -22,3 +26,4 @@ verify:
         just test-target $t; \
     done
     just run-examples > /dev/null 2>&1
+    just test-repl-piped
