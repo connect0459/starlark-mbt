@@ -124,7 +124,9 @@ fn dir_of(path : String) -> String {
 
 ///|
 /// Runs an interactive REPL loop, reading input from stdin and printing
-/// results. Exits when stdin is closed.
+/// results. Multi-line compound statements and unclosed brackets/strings are
+/// gathered under a `...` continuation prompt until the chunk is complete.
+/// Exits when stdin is closed (a mid-chunk buffer is discarded).
 ///
 /// Parameters:
 ///
@@ -136,20 +138,26 @@ pub fn run(
   globals : @value.StringDict,
   opts? : @eval.Options = @eval.Options::default(),
 ) -> Unit {
+  let state = ReplState::new()
   while true {
-    match read_line(">>> ") {
+    let prompt = if state.pending() { "... " } else { ">>> " }
+    match read_line(prompt) {
       None => break
-      Some(raw) => {
-        let trimmed = raw.trim_end().to_owned()
-        if trimmed.is_empty() {
-          continue
+      Some(raw) =>
+        // Trailing whitespace is insignificant; leading indentation is not, so
+        // only the right side is trimmed before feeding the state machine.
+        match state.feed(raw.trim_end().to_owned()) {
+          NeedMore => continue
+          Complete(src) =>
+            if src != "" {
+              match eval_input(thread, globals, src, opts~) {
+                Value(s) => println(s)
+                Empty => ()
+                EvalError(e) => write_err_line(e.backtrace())
+              }
+            }
+          Invalid(e) => write_err_line(e.backtrace())
         }
-        match eval_input(thread, globals, trimmed, opts~) {
-          Value(s) => println(s)
-          Empty => ()
-          EvalError(e) => write_err_line(e.backtrace())
-        }
-      }
     }
   }
 }
