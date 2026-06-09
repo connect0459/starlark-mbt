@@ -3046,9 +3046,21 @@ deferred.
 - [x] **Adjacent fix** — `read_line` decoded stdin bytes as UTF-16 via
       `to_unchecked_string`, garbling every line; now decodes as UTF-8
       (`@utf8.decode_lossy`). This FFI path was never covered by unit tests.
-- [ ] **Phase 3** (deferred) — line editing / history via vendored linenoise;
-      also resolves the 4096-byte line-truncation bug. POSIX-only; needs a
-      `_WIN32` guard keeping the `fgets` fallback.
+- [x] **Phase 3** — line editing / history via vendored **isocline** (MIT,
+      pinned commit) under `internal/repl/vendor/isocline/`, chosen over
+      linenoise because it has native Windows console support (no `_WIN32`
+      fgets fallback needed) and proper UTF-8 handling. On a terminal, input
+      goes through `ic_readline` (readline-style editing + in-session history,
+      `↑`/`↓`); isocline's own multi-line editing is disabled so the existing
+      continuation state machine still assembles chunks. Non-terminal stdin
+      uses a small dynamic getline instead — isocline's non-tty reader
+      conflates a blank line with EOF, which would truncate piped multi-line
+      input; the custom reader returns "" for a blank line and NULL only at
+      genuine EOF, also resolving the 4096-byte truncation bug on both paths.
+      The Ctrl-C eval interrupt is preserved (isocline saves/restores the
+      SIGINT handler around each read). Vendored as a self-contained tarball
+      requirement for `moon publish` (submodule / external C package manager
+      are not resolved by mooncakes packaging).
 
 ---
 
