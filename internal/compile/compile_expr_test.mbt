@@ -227,9 +227,9 @@ test "call rejects more than 255 keyword arguments" {
     @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(1, 1)), args, p(1, 1)),
   )
   let file = @syntax.File::new("t.star", [call])
-  let r = try? @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true)
-  match r {
-    Err(CompileErr(msg)) => assert_true(msg.contains("limit is 255"))
+  try @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true) catch {
+    CompileErr(msg) => assert_true(msg.contains("limit is 255"))
+  } noraise {
     _ => abort("expected a CompileErr")
   }
 }
@@ -246,9 +246,9 @@ test "call rejects more than 255 positional arguments" {
     @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(1, 1)), args, p(1, 1)),
   )
   let file = @syntax.File::new("t.star", [call])
-  let r = try? @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true)
-  match r {
-    Err(CompileErr(msg)) => assert_true(msg.contains("limit is 255"))
+  try @compile.compile(file, fn(n) { n == "f" }, fn(_) { false }, true) catch {
+    CompileErr(msg) => assert_true(msg.contains("limit is 255"))
+  } noraise {
     _ => abort("expected a CompileErr")
   }
 }
@@ -309,9 +309,9 @@ test "unsupported constructs surface as a CompileErr that pinpoints the source p
   // the target.
   let stmt = @syntax.Stmt::SAugAssign(lit_int(0), AugAdd, lit_int(1), p(1, 3))
   let file = @syntax.File::new("t.star", [stmt])
-  let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
-  match r {
-    Err(CompileErr(msg)) => assert_true(msg.contains("t.star:1:1"))
+  try @compile.compile(file, fn(_) { false }, fn(_) { false }, true) catch {
+    CompileErr(msg) => assert_true(msg.contains("t.star:1:1"))
+  } noraise {
     _ => abort("expected a CompileErr")
   }
 }
@@ -323,9 +323,9 @@ test "an invalid augmented-assignment target reports its own position in the err
   let lhs = @syntax.Expr::ECall(@syntax.Expr::EIdent("f", p(3, 9)), [], p(3, 9))
   let stmt = @syntax.Stmt::SAugAssign(lhs, AugAdd, lit_int(1), p(3, 1))
   let file = @syntax.File::new("t.star", [stmt])
-  let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
-  match r {
-    Err(CompileErr(msg)) => assert_true(msg.contains("t.star:3:9"))
+  try @compile.compile(file, fn(_) { false }, fn(_) { false }, true) catch {
+    CompileErr(msg) => assert_true(msg.contains("t.star:3:9"))
+  } noraise {
     _ => abort("expected a CompileErr")
   }
 }
@@ -345,12 +345,12 @@ test "an invalid for-loop target reports its own position, not the enclosing sta
     p(1, 1),
   )
   let file = @syntax.File::new("t.star", [for_stmt])
-  let r = try? @compile.compile(file, fn(_) { false }, fn(_) { false }, true)
-  match r {
-    Err(CompileErr(msg)) => {
+  try @compile.compile(file, fn(_) { false }, fn(_) { false }, true) catch {
+    CompileErr(msg) => {
       assert_true(msg.contains("invalid assignment target"))
       assert_true(msg.contains("t.star:1:5"))
     }
+  } noraise {
     _ => abort("expected a CompileErr")
   }
 }

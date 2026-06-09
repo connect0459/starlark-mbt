@@ -52,9 +52,9 @@ test "an invalid augmented-assignment target reports its position" {
     ),
     @errors.Position::new("t.star", 7, 2),
   )
-  let r = try? fc.compile_stmt(stmt)
-  match r {
-    Err(CompileErr(msg)) => assert_true(msg.contains("t.star:7:1"))
+  try fc.compile_stmt(stmt) catch {
+    CompileErr(msg) => assert_true(msg.contains("t.star:7:1"))
+  } noraise {
     _ => abort("expected a CompileErr")
   }
 }
@@ -76,9 +76,9 @@ test "an unsupported assignment target reports the target position" {
     rhs,
     @errors.Position::new("t.star", 4, 1),
   )
-  let r = try? fc.compile_stmt(stmt)
-  match r {
-    Err(CompileErr(msg)) => assert_true(msg.contains("t.star:4:1"))
+  try fc.compile_stmt(stmt) catch {
+    CompileErr(msg) => assert_true(msg.contains("t.star:4:1"))
+  } noraise {
     _ => abort("expected a CompileErr")
   }
 }
