@@ -10,7 +10,7 @@ pub fn parse_cli_args(Array[String]) -> Result[(String?, @eval.Options), String]
 
 pub fn run_file(String, @eval.Options) -> Int
 
-pub fn run_repl(@eval.Options) -> Unit
+pub fn run_repl(@eval.Options) -> Int
 
 // Errors
 

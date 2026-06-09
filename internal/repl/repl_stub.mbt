@@ -4,6 +4,13 @@ pub fn is_terminal() -> Bool {
 }
 
 ///|
+/// Whether this build provides an interactive REPL. False on backends without a
+/// stdin reader (wasm, wasm-gc, js), where `read_line` returns `None` at once.
+pub fn repl_available() -> Bool {
+  false
+}
+
+///|
 fn _use_fs(_e : @fs.IOError) -> Unit {
   ignore(_e)
 }

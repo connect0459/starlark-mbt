@@ -6,3 +6,7 @@ import {
   "connect0459/starlark/value",
   "connect0459/starlark/internal/repl",
 }
+
+options(
+  targets: { "cli_repl_test.mbt": [ "wasm", "wasm-gc", "js" ] },
+)

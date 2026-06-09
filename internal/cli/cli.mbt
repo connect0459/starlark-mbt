@@ -133,7 +133,13 @@ pub fn run_file(filepath : String, opts : @eval.Options) -> Int {
 }
 
 ///|
-pub fn run_repl(opts : @eval.Options) -> Unit {
+pub fn run_repl(opts : @eval.Options) -> Int {
+  if !@repl.repl_available() {
+    println(
+      "starlark: interactive REPL is not available on this build target; rebuild with `--target native`",
+    )
+    return 1
+  }
   let thread = @eval.Thread::with_loader("REPL", @repl.make_load("."))
   let globals = @value.StringDict::new()
   if @repl.is_terminal() {
@@ -143,4 +149,5 @@ pub fn run_repl(opts : @eval.Options) -> Unit {
   if @repl.is_terminal() {
     println("")
   }
+  0
 }

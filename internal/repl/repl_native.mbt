@@ -36,6 +36,13 @@ pub fn is_terminal() -> Bool {
 }
 
 ///|
+/// Whether this build provides an interactive REPL. True on native/llvm, where
+/// the isocline-backed line editor and stdin reader are linked in.
+pub fn repl_available() -> Bool {
+  true
+}
+
+///|
 /// Writes `s` followed by a newline to stderr, so diagnostics stay separate
 /// from value output on stdout.
 fn write_err_line(s : String) -> Unit {
