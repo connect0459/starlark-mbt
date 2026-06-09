@@ -107,6 +107,15 @@ static moonbit_bytes_t starlark_repl_read_piped_line(void) {
     }
     buf[len++] = (char)c;
   }
+  if (ferror(stdin)) {
+    // A recoverable error (e.g. EINTR from a Ctrl-C) left the stream flagged.
+    // Clear it and discard any partial line so the read is not resumed; the
+    // caller consults interrupted() to tell this apart from genuine EOF. Left
+    // uncleared, the error flag would make every later fgetc return EOF.
+    clearerr(stdin);
+    free(buf);
+    return NULL;
+  }
   if (!saw_any) {
     free(buf); // EOF before any character on this line
     return NULL;
