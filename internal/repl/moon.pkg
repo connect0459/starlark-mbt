@@ -13,5 +13,7 @@ options(
   targets: {
     "repl_native.mbt": [ "native", "llvm" ],
     "repl_stub.mbt": [ "wasm", "wasm-gc", "js" ],
+    "repl_available_native_test.mbt": [ "native", "llvm" ],
+    "repl_available_stub_test.mbt": [ "wasm", "wasm-gc", "js" ],
   },
 )
