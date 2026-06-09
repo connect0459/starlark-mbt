@@ -109,6 +109,7 @@ Foundational error types and position tracking needed by all subsequent phases.
 - [x] `CallFrame` — function name + call site `Position`
 - [x] `CallStack` — ordered list of `CallFrame` (for stack traces)
 - [ ] Error severity / category enum (deferred: no use case yet)
+  - starlark-go has no equivalent — starlark-rust has `ErrorKind` for programmatic error classification; implement if embedder demand arises
 - [x] Error chaining (carry inner cause for wrapped errors) — `cause: String?` in `EvalError`
 - [x] Error formatting: `"<filename>:<line>:<col>: <message>"` plus backtrace
 - [x] ~~`Halt` / cancellation signal distinct from `EvalError`~~ (removed:
@@ -758,10 +759,10 @@ Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
 - [x] CLI implementation in `src/cmd/` — run `.star` files; `src/main/` renamed to `src/cmd/`
 - [x] Optional REPL — interactive `read → eval → print` loop (public `src/repl/` library)
 - [x] Usage examples as doc tests in `README.mbt.md`; detailed API reference in `docs/api.md`
-- [ ] Mooncakes publish prep
+- [x] Mooncakes publish prep
   - [x] API docs updated (docs/api.md) — Phase 9 additions documented
   - [x] README updated with `call()` usage example
-  - [ ] `moon publish` — publish to mooncakes.io
+  - [x] `moon publish` — publish to mooncakes.io
 
 ---
 
