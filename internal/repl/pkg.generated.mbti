@@ -38,6 +38,7 @@ pub impl Show for ReplOutput
 pub struct ReplState {
   // private fields
 }
+pub fn ReplState::discard(Self) -> Unit
 pub fn ReplState::feed(Self, String) -> FeedResult
 pub fn ReplState::new() -> Self
 pub fn ReplState::pending(Self) -> Bool

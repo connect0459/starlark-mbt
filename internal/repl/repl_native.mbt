@@ -10,6 +10,18 @@ extern "C" fn read_line_ffi(prompt : Bytes) -> Bytes? = "starlark_repl_read_line
 extern "C" fn write_stderr_ffi(s : Bytes) = "starlark_repl_write_stderr"
 
 ///|
+extern "C" fn setup_interrupt_ffi() = "starlark_repl_setup_interrupt"
+
+///|
+extern "C" fn interrupted_ffi() -> Int = "starlark_repl_interrupted"
+
+///|
+/// Step interval between interrupt polls. The evaluation step counter is reset
+/// every interval, so the REPL imposes no step ceiling and relies on Ctrl-C to
+/// stop a runaway computation, as starlark-go does.
+let poll_interval : Int = 100_000
+
+///|
 pub fn is_terminal() -> Bool {
   isatty_ffi() != 0
 }
@@ -19,6 +31,27 @@ pub fn is_terminal() -> Bool {
 /// from value output on stdout.
 fn write_err_line(s : String) -> Unit {
   write_stderr_ffi(@utf8.encode(s + "\n"))
+}
+
+///|
+/// Installs the SIGINT handler and arms a step-budget poll that cancels the
+/// thread when an interrupt has been signalled, otherwise re-arms the budget.
+fn setup_interrupt(thread : @eval.Thread) -> Unit {
+  setup_interrupt_ffi()
+  thread.set_max_steps(poll_interval)
+  thread.set_on_max_steps(fn(th) {
+    if interrupted_ffi() != 0 {
+      th.cancel("interrupted")
+    } else {
+      th.reset_steps()
+    }
+  })
+}
+
+///|
+/// Reads and clears the pending-interrupt flag.
+fn interrupted() -> Bool {
+  interrupted_ffi() != 0
 }
 
 ///|

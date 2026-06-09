@@ -139,10 +139,20 @@ pub fn run(
   opts? : @eval.Options = @eval.Options::default(),
 ) -> Unit {
   let state = ReplState::new()
+  setup_interrupt(thread)
   while true {
     let prompt = if state.pending() { "... " } else { ">>> " }
     match read_line(prompt) {
-      None => break
+      None =>
+        // A NULL read is either genuine end-of-input or a Ctrl-C during input.
+        if interrupted() {
+          // Abandon the partial chunk and return to the primary prompt.
+          state.discard()
+          write_err_line("")
+          continue
+        } else {
+          break
+        }
       Some(raw) =>
         // Trailing whitespace is insignificant; leading indentation is not, so
         // only the right side is trimmed before feeding the state machine.
@@ -150,6 +160,12 @@ pub fn run(
           NeedMore => continue
           Complete(src) =>
             if src != "" {
+              // Re-arm the thread after any prior cancellation and drop a stale
+              // interrupt signalled while idle, so Ctrl-C only aborts the
+              // evaluation it is pressed during.
+              thread.uncancel()
+              thread.reset_steps()
+              interrupted() |> ignore
               match eval_input(thread, globals, src, opts~) {
                 Value(s) => println(s)
                 Empty => ()

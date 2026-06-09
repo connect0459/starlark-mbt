@@ -49,6 +49,13 @@ fn ReplState::reset(self : ReplState) -> Unit {
 }
 
 ///|
+/// Discards any partially accumulated chunk, returning to the primary prompt.
+/// Used when an interrupt abandons the current input.
+pub fn ReplState::discard(self : ReplState) -> Unit {
+  self.reset()
+}
+
+///|
 fn ReplState::buffer(self : ReplState) -> String {
   let sb = StringBuilder::new()
   for i, line in self.lines {

@@ -21,6 +21,19 @@ fn write_err_line(_s : String) -> Unit {
 }
 
 ///|
+/// No-op: these backends have no signal handling. The interactive loop is
+/// unreachable because `read_line` returns `None`.
+fn setup_interrupt(_thread : @eval.Thread) -> Unit {
+
+}
+
+///|
+/// Always false: no interrupt source on these backends.
+fn interrupted() -> Bool {
+  false
+}
+
+///|
 fn load_file(
   _thread : @eval.Thread,
   path : String,
