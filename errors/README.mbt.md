@@ -84,11 +84,23 @@ before returning.
 
 | Method | Returns | Description |
 | :--- | :--- | :--- |
-| `SyntaxError::new(Position, String)` | `SyntaxError` | Construct from a position and message |
+| `SyntaxError::new(Position, String)` | `SyntaxError` | Construct from a position and message (kind `Other`) |
+| `SyntaxError::with_kind(Position, String, SyntaxErrorKind)` | `SyntaxError` | Construct with an explicit `kind` |
 | `ResolveError::new(Position, String)` | `ResolveError` | Construct from a position and message |
 | `msg()` | `String` | Error message |
 | `pos()` | `Position` | Source position |
+| `SyntaxError::kind()` | `SyntaxErrorKind` | Structural classification of the error |
 | `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
+
+`SyntaxErrorKind` classifies a `SyntaxError` by structural cause so consumers
+(such as the REPL's continuation detector) can branch on the kind instead of
+matching the English message text:
+
+| Variant | Meaning |
+| :--- | :--- |
+| `UnexpectedEof` | Input ended while a construct was still open (e.g. a compound opener or unclosed bracket) — may complete with more input |
+| `UnterminatedString` | A string literal was not closed before end of input — may complete with more input |
+| `Other` | Any other syntax error — genuinely invalid input |
 
 ### `Position`
 

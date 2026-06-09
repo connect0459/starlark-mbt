@@ -46,6 +46,36 @@ test "SyntaxError: format as position plus message" {
 }
 
 ///|
+test "SyntaxError: default kind is Other" {
+  let pos = Position::new("bad.star", 1, 1)
+  let err = SyntaxError::new(pos, "unexpected token")
+  assert_true(err.kind() is Other)
+}
+
+///|
+test "SyntaxError: carries an explicit kind without altering the message" {
+  let pos = Position::new("bad.star", 1, 1)
+  let err = SyntaxError::with_kind(
+    pos,
+    "got end of file, want primary expression",
+    UnexpectedEof,
+  )
+  assert_true(err.kind() is UnexpectedEof)
+  inspect(err.msg(), content="got end of file, want primary expression")
+}
+
+///|
+test "SyntaxError: unterminated string kind is preserved" {
+  let pos = Position::new("bad.star", 1, 1)
+  let err = SyntaxError::with_kind(
+    pos,
+    "unexpected EOF in string",
+    UnterminatedString,
+  )
+  assert_true(err.kind() is UnterminatedString)
+}
+
+///|
 test "ResolveError: format as position plus message" {
   let pos = Position::new("x.star", 10, 1)
   let err = ResolveError::new(pos, "undefined variable 'foo'")

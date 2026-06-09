@@ -63,10 +63,18 @@ pub fn ResolveError::to_string(Self) -> String
 pub struct SyntaxError {
   // private fields
 }
+pub fn SyntaxError::kind(Self) -> SyntaxErrorKind
 pub fn SyntaxError::msg(Self) -> String
 pub fn SyntaxError::new(Position, String) -> Self
 pub fn SyntaxError::pos(Self) -> Position
 pub fn SyntaxError::to_string(Self) -> String
+pub fn SyntaxError::with_kind(Position, String, SyntaxErrorKind) -> Self
+
+pub(all) enum SyntaxErrorKind {
+  UnexpectedEof
+  UnterminatedString
+  Other
+} derive(Eq)
 
 // Type aliases
 
