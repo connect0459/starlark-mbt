@@ -22,6 +22,16 @@ MOONBIT_FFI_EXPORT int starlark_repl_isatty(void) {
 // disabled so each read returns exactly one physical line — multi-line chunk
 // assembly is handled by the MoonBit-side continuation state machine.
 MOONBIT_FFI_EXPORT void starlark_repl_init_editor(void) {
+  // Initialize isocline to write the prompt and editor output to stderr,
+  // keeping stdout for evaluated values only. Without this, the first ic_* call
+  // lazily initializes isocline against stdout, which would pollute a redirected
+  // stdout (e.g. `starlark >out.txt`) at an interactive terminal. The guard
+  // keeps a repeated run() from tripping ic_init's `assert(rpenv == NULL)`.
+  static int editor_initialized = 0;
+  if (!editor_initialized) {
+    ic_init(true);
+    editor_initialized = 1;
+  }
   ic_set_history(NULL, -1);
   ic_set_prompt_marker("", "");
   ic_enable_multiline(false);
