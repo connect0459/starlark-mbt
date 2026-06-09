@@ -43,14 +43,26 @@ fn Parser::advance(self : Parser) -> Unit raise ParseErr {
 
 ///|
 fn Parser::syntax_error(self : Parser, msg : String) -> @errors.SyntaxError {
-  @errors.SyntaxError::new(self.pos, msg)
+  @errors.SyntaxError::with_kind(self.pos, msg, self.eof_kind())
 }
 
 ///|
 /// Builds a syntax error at the scanner's current read position (one past the
 /// current token), matching starlark-go errors that use `scanner.pos`.
 fn Parser::scanner_error(self : Parser, msg : String) -> @errors.SyntaxError {
-  @errors.SyntaxError::new(self.scanner.position(), msg)
+  @errors.SyntaxError::with_kind(self.scanner.position(), msg, self.eof_kind())
+}
+
+///|
+/// Classifies an error raised at the current token: `UnexpectedEof` when the
+/// parser has reached the end of input (the input may complete with more
+/// lines), otherwise `Other`.
+fn Parser::eof_kind(self : Parser) -> @errors.SyntaxErrorKind {
+  if self.tok == @lexer.Token::EOF {
+    @errors.SyntaxErrorKind::UnexpectedEof
+  } else {
+    @errors.SyntaxErrorKind::Other
+  }
 }
 
 ///|

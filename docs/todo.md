@@ -3014,6 +3014,44 @@ embed, so upstream testdata updates stay copy-paste.
 
 ---
 
+## Follow-up: enhance `internal/repl` (issue #67)
+
+Close the interactive-experience gap against starlark-go's `repl` package.
+Scope agreed with the user: Phases 0–2 (output parity, structured error kind,
+multi-line input, Ctrl-C); line editing / history (Phase 3, linenoise) is
+deferred.
+
+- [x] **Phase 0.5** — structured `SyntaxErrorKind` (`UnexpectedEof`,
+      `UnterminatedString`, `Other`) on `@errors.SyntaxError`, so the REPL
+      branches on the structural cause rather than the English message text.
+      The parser tags errors raised at the EOF token; the lexer tags
+      unterminated-string errors. Message text is unchanged.
+- [x] **Phase 0** — output semantics parity: prompts and error backtraces go to
+      stderr (piped stdout stays clean), value output stays on stdout.
+      `ReplOutput::EvalError` now carries `@errors.EvalError` (not a lossy
+      message string), so the loop displays the full `backtrace()`. Native
+      stderr FFI (`starlark_repl_write_stderr`); no-op stub on other backends.
+- [x] **Phase 1** — multi-line input with a `...` continuation prompt, driven by
+      a pure, IO-free `ReplState::feed` state machine
+      (`Complete | NeedMore | Invalid`). Compound openers (`def`/`if`/`for`/
+      `while`) read their suite until a blank line; unclosed brackets/strings
+      complete as soon as they parse. Backend-independent tests.
+- [x] **Phase 2** — Ctrl-C interrupts a running evaluation: native SIGINT
+      handler sets a read-and-clear flag, polled via `set_max_steps` +
+      `set_on_max_steps` (cancel when set, else re-arm — unbounded but
+      interruptible, as starlark-go does). The thread is uncancelled before each
+      line so one Ctrl-C does not brick the session. The handler omits
+      `SA_RESTART` so a Ctrl-C during input returns EINTR and discards the
+      partial chunk instead of exiting. No-op stubs on non-native backends.
+- [x] **Adjacent fix** — `read_line` decoded stdin bytes as UTF-16 via
+      `to_unchecked_string`, garbling every line; now decodes as UTF-8
+      (`@utf8.decode_lossy`). This FFI path was never covered by unit tests.
+- [ ] **Phase 3** (deferred) — line editing / history via vendored linenoise;
+      also resolves the 4096-byte line-truncation bug. POSIX-only; needs a
+      `_WIN32` guard keeping the `fgets` fallback.
+
+---
+
 ## Coverage Targets
 
 **Overall target: 80%** (agreed before implementation).

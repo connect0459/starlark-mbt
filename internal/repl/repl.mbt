@@ -3,7 +3,7 @@
 pub enum ReplOutput {
   Value(String)
   Empty
-  EvalError(String)
+  EvalError(@errors.EvalError)
 }
 
 ///|
@@ -11,7 +11,7 @@ pub impl Show for ReplOutput with fn output(self, logger) {
   match self {
     Value(s) => logger.write_string("Value(\{s})")
     Empty => logger.write_string("Empty")
-    EvalError(s) => logger.write_string("EvalError(\{s})")
+    EvalError(e) => logger.write_string("EvalError(\{e.msg()})")
   }
 }
 
@@ -37,7 +37,7 @@ pub fn eval_input(
 ) -> ReplOutput {
   let file = match @parser.parse_file("<repl>", input) {
     Ok(f) => f
-    Err(e) => return EvalError(e.to_string())
+    Err(e) => return EvalError(@errors.EvalError::simple(e.to_string()))
   }
   let stmts = file.stmts()
   // Only a lone bare expression is echoed back; anything else (multiple
@@ -52,12 +52,12 @@ pub fn eval_input(
           globals.set("_", v)
           Value(v.repr())
         }
-      Err(e) => EvalError(e.msg())
+      Err(e) => EvalError(e)
     }
   } else {
     match @eval.exec_repl_chunk(thread, "<repl>", input, globals, opts) {
       Ok(_) => Empty
-      Err(e) => EvalError(e.msg())
+      Err(e) => EvalError(e)
     }
   }
 }
@@ -124,7 +124,9 @@ fn dir_of(path : String) -> String {
 
 ///|
 /// Runs an interactive REPL loop, reading input from stdin and printing
-/// results. Exits when stdin is closed.
+/// results. Multi-line compound statements and unclosed brackets/strings are
+/// gathered under a `...` continuation prompt until the chunk is complete.
+/// Exits when stdin is closed (a mid-chunk buffer is discarded).
 ///
 /// Parameters:
 ///
@@ -136,20 +138,52 @@ pub fn run(
   globals : @value.StringDict,
   opts? : @eval.Options = @eval.Options::default(),
 ) -> Unit {
+  let state = ReplState::new()
+  setup_interrupt(thread)
+  // Prompts are only useful at a terminal; when stdin is piped (e.g.
+  // `cat script.star | starlark`) they would just be noise on stderr, so they
+  // are suppressed, matching starlark-go and the Python REPL.
+  let interactive = is_terminal()
   while true {
-    match read_line(">>> ") {
-      None => break
-      Some(raw) => {
-        let trimmed = raw.trim_end().to_owned()
-        if trimmed.is_empty() {
+    let prompt = if !interactive {
+      ""
+    } else if state.pending() {
+      "... "
+    } else {
+      ">>> "
+    }
+    match read_line(prompt) {
+      None =>
+        // A NULL read is either genuine end-of-input or a Ctrl-C during input.
+        if interrupted() {
+          // Abandon the partial chunk and return to the primary prompt.
+          state.discard()
+          write_err_line("")
           continue
+        } else {
+          break
         }
-        match eval_input(thread, globals, trimmed, opts~) {
-          Value(s) => println(s)
-          Empty => ()
-          EvalError(msg) => println(msg)
+      Some(raw) =>
+        // Trailing whitespace is insignificant; leading indentation is not, so
+        // only the right side is trimmed before feeding the state machine.
+        match state.feed(raw.trim_end().to_owned()) {
+          NeedMore => continue
+          Complete(src) =>
+            if src != "" {
+              // Re-arm the thread after any prior cancellation and drop a stale
+              // interrupt signalled while idle, so Ctrl-C only aborts the
+              // evaluation it is pressed during.
+              thread.uncancel()
+              thread.reset_steps()
+              interrupted() |> ignore
+              match eval_input(thread, globals, src, opts~) {
+                Value(s) => println(s)
+                Empty => ()
+                EvalError(e) => write_err_line(e.backtrace())
+              }
+            }
+          Invalid(e) => write_err_line(e.backtrace())
         }
-      }
     }
   }
 }

@@ -1020,6 +1020,43 @@ test "parser: expect uses single-quoted ] in error message" {
 }
 
 ///|
+test "parser: compound opener at EOF is classified UnexpectedEof" {
+  for src in ["def f():", "if True:", "for x in y:"] {
+    match @parser.parse_file("<repl>", src) {
+      Err(e) => assert_true(e.kind() is UnexpectedEof)
+      Ok(_) => fail("expected error for \{src}")
+    }
+  }
+}
+
+///|
+test "parser: unclosed bracket at EOF is classified UnexpectedEof" {
+  for src in ["(1 +", "[1,"] {
+    match @parser.parse_file("<repl>", src) {
+      Err(e) => assert_true(e.kind() is UnexpectedEof)
+      Ok(_) => fail("expected error for \{src}")
+    }
+  }
+}
+
+///|
+test "parser: unterminated string is classified UnterminatedString" {
+  match @parser.parse_file("<repl>", "'''abc") {
+    Err(e) => assert_true(e.kind() is UnterminatedString)
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: a genuine non-EOF syntax error is classified Other" {
+  // got '*', want primary expression — the offending token is not EOF.
+  match @parser.parse_file("<repl>", "1 + * 2") {
+    Err(e) => assert_true(e.kind() is Other)
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
 test "parser: newline expectation uses got-want order" {
   // print 1 2 → got int literal, want newline
   match @parser.parse_file("test.star", "print 1 2\n") {

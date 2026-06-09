@@ -92,10 +92,22 @@ pub fn Position::is_before(self : Position, other : Position) -> Bool {
 pub struct SyntaxError {
   priv pos : Position
   priv msg : String
+  priv kind : SyntaxErrorKind
 }
 
 ///|
-/// Creates a `SyntaxError` at `pos` with message `msg`.
+/// Classifies a `SyntaxError` so consumers can branch on the structural cause
+/// instead of matching the English message text. `UnexpectedEof` and
+/// `UnterminatedString` mark input that may become valid with more lines (used
+/// by the REPL to request a continuation); every other error is `Other`.
+pub(all) enum SyntaxErrorKind {
+  UnexpectedEof
+  UnterminatedString
+  Other
+} derive(Eq)
+
+///|
+/// Creates a `SyntaxError` at `pos` with message `msg` and kind `Other`.
 ///
 /// Parameters:
 ///
@@ -104,7 +116,25 @@ pub struct SyntaxError {
 ///
 /// Returns a new `SyntaxError` value.
 pub fn SyntaxError::new(pos : Position, msg : String) -> SyntaxError {
-  { pos, msg }
+  { pos, msg, kind: Other }
+}
+
+///|
+/// Creates a `SyntaxError` at `pos` with message `msg` and an explicit `kind`.
+///
+/// Parameters:
+///
+/// - `pos` : The source position where the error was detected.
+/// - `msg` : The human-readable error message.
+/// - `kind` : The structural classification of the error.
+///
+/// Returns a new `SyntaxError` value.
+pub fn SyntaxError::with_kind(
+  pos : Position,
+  msg : String,
+  kind : SyntaxErrorKind,
+) -> SyntaxError {
+  { pos, msg, kind }
 }
 
 ///|
@@ -121,6 +151,14 @@ pub fn SyntaxError::pos(self : SyntaxError) -> Position {
 /// Returns the error message string.
 pub fn SyntaxError::msg(self : SyntaxError) -> String {
   self.msg
+}
+
+///|
+/// Returns the structural classification of the error.
+///
+/// Returns the `SyntaxErrorKind` associated with this error.
+pub fn SyntaxError::kind(self : SyntaxError) -> SyntaxErrorKind {
+  self.kind
 }
 
 ///|

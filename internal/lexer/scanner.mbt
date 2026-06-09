@@ -171,6 +171,20 @@ fn Scanner::make_error(
   @errors.SyntaxError::new(pos, msg)
 }
 
+///|
+/// Builds the "unexpected EOF in string" error tagged as `UnterminatedString`,
+/// so the REPL can recognise an unterminated literal as incomplete input.
+fn Scanner::unterminated_string_error(
+  _self : Scanner,
+  pos : @errors.Position,
+) -> @errors.SyntaxError {
+  @errors.SyntaxError::with_kind(
+    pos,
+    "unexpected EOF in string",
+    UnterminatedString,
+  )
+}
+
 // count_indent counts indentation at the start of a line (tab = 8 spaces).
 // Consumes leading spaces and tabs; stops at any other character.
 
@@ -843,7 +857,7 @@ fn Scanner::scan_string_single(
 ) -> Result[Unit, @errors.SyntaxError] {
   while true {
     if self.peek_byte() == b'\x00' {
-      return Err(self.make_error(start, "unexpected EOF in string"))
+      return Err(self.unterminated_string_error(start))
     }
     let ch = self.read_byte()
     if ch == quote {
@@ -857,7 +871,7 @@ fn Scanner::scan_string_single(
         // Raw: backslash is kept literally; next char too (except \<newline>)
         buf.push(b'\\')
         if self.peek_byte() == b'\x00' {
-          return Err(self.make_error(start, "unexpected EOF in string"))
+          return Err(self.unterminated_string_error(start))
         }
         let next = self.read_byte()
         if next == b'\r' {
@@ -867,7 +881,7 @@ fn Scanner::scan_string_single(
         }
       } else {
         if self.peek_byte() == b'\x00' {
-          return Err(self.make_error(start, "unexpected EOF in string"))
+          return Err(self.unterminated_string_error(start))
         }
         let next = self.read_byte()
         match self.decode_escape(start, next, is_bytes, buf) {
@@ -894,7 +908,7 @@ fn Scanner::scan_string_triple(
   let mut quote_count = 0
   while true {
     if self.peek_byte() == b'\x00' {
-      return Err(self.make_error(start, "unexpected EOF in string"))
+      return Err(self.unterminated_string_error(start))
     }
     let ch = self.read_byte()
     if ch == quote {
@@ -913,7 +927,7 @@ fn Scanner::scan_string_triple(
         if is_raw {
           buf.push(b'\\')
           if self.peek_byte() == b'\x00' {
-            return Err(self.make_error(start, "unexpected EOF in string"))
+            return Err(self.unterminated_string_error(start))
           }
           let next = self.read_byte()
           if next == b'\r' {
@@ -923,7 +937,7 @@ fn Scanner::scan_string_triple(
           }
         } else {
           if self.peek_byte() == b'\x00' {
-            return Err(self.make_error(start, "unexpected EOF in string"))
+            return Err(self.unterminated_string_error(start))
           }
           let next = self.read_byte()
           match self.decode_escape(start, next, is_bytes, buf) {
