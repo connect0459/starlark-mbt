@@ -44,19 +44,8 @@ jobs:
       - name: Verify generated interfaces are current
         run: moon info && git diff --exit-code
 
-      - name: Run examples
-        run: bash scripts/run-examples.sh > /dev/null
-
-      - name: Run REPL piped integration tests
-        run: bash scripts/test-repl-piped.sh
-
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [js, wasm, wasm-gc, native]
-    name: test (${{ matrix.target }})
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -73,8 +62,25 @@ jobs:
       - name: Update package registry
         run: moon update
 
-      - name: Check
-        run: moon check --target ${{ matrix.target }}
+      # Targets run sequentially within one job (one toolchain setup) rather
+      # than as a matrix, trading a little wall-clock for fewer independent
+      # network setups. All targets run even if one fails (matching the former
+      # matrix `fail-fast: false`), and the job fails if any did.
+      - name: Check and test all targets
+        run: |
+          rc=0
+          for t in js wasm wasm-gc native; do
+            echo "::group::$t"
+            if ! (moon check --deny-warn --target "$t" && moon test --target "$t"); then
+              echo "::error::target $t failed (check/test)"
+              rc=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $rc
 
-      - name: Test
-        run: moon test --target ${{ matrix.target }}
+      - name: Run examples
+        run: bash scripts/run-examples.sh > /dev/null
+
+      - name: Run REPL piped integration tests
+        run: bash scripts/test-repl-piped.sh > /dev/null
