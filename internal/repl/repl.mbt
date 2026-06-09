@@ -128,6 +128,14 @@ fn dir_of(path : String) -> String {
 /// gathered under a `...` continuation prompt until the chunk is complete.
 /// Exits when stdin is closed (a mid-chunk buffer is discarded).
 ///
+/// Ctrl-C has two distinct roles. During evaluation it interrupts the running
+/// computation (via the SIGINT handler and step poll). During interactive line
+/// editing it is handled by the line editor, which clears the current line and
+/// returns an empty string (not EOF). At the primary `>>>` prompt that is a
+/// no-op; within a pending multi-line chunk the empty string is indistinguishable
+/// from a blank-line terminator, so it ends the chunk (which is then evaluated or
+/// reported as an error) rather than discarding it.
+///
 /// Parameters:
 ///
 /// - `thread` : The evaluation thread used for all input evaluation.
@@ -139,6 +147,7 @@ pub fn run(
   opts? : @eval.Options = @eval.Options::default(),
 ) -> Unit {
   let state = ReplState::new()
+  init_editor()
   setup_interrupt(thread)
   // Prompts are only useful at a terminal; when stdin is piped (e.g.
   // `cat script.star | starlark`) they would just be noise on stderr, so they
@@ -154,9 +163,12 @@ pub fn run(
     }
     match read_line(prompt) {
       None =>
-        // A NULL read is either genuine end-of-input or a Ctrl-C during input.
+        // A null read means end of input: Ctrl-D at a terminal, or genuine EOF
+        // when piped. Interactive Ctrl-C never lands here — the line editor
+        // cancels the line and returns an empty string instead. The interrupt
+        // flag can still be set when a signal interrupts a piped read, in which
+        // case the partial chunk is discarded and the loop continues.
         if interrupted() {
-          // Abandon the partial chunk and return to the primary prompt.
           state.discard()
           write_err_line("")
           continue

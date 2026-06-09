@@ -9,7 +9,7 @@ import {
 }
 
 options(
-  "native-stub": [ "repl_native.c" ],
+  "native-stub": [ "repl_native.c", "vendor/isocline/src/isocline.c" ],
   targets: {
     "repl_native.mbt": [ "native", "llvm" ],
     "repl_stub.mbt": [ "wasm", "wasm-gc", "js" ],

@@ -47,6 +47,9 @@ jobs:
       - name: Run examples
         run: bash scripts/run-examples.sh > /dev/null
 
+      - name: Run REPL piped integration tests
+        run: bash scripts/test-repl-piped.sh
+
   test:
     runs-on: ubuntu-latest
     strategy:
