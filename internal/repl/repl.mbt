@@ -140,8 +140,18 @@ pub fn run(
 ) -> Unit {
   let state = ReplState::new()
   setup_interrupt(thread)
+  // Prompts are only useful at a terminal; when stdin is piped (e.g.
+  // `cat script.star | starlark`) they would just be noise on stderr, so they
+  // are suppressed, matching starlark-go and the Python REPL.
+  let interactive = is_terminal()
   while true {
-    let prompt = if state.pending() { "... " } else { ">>> " }
+    let prompt = if !interactive {
+      ""
+    } else if state.pending() {
+      "... "
+    } else {
+      ">>> "
+    }
     match read_line(prompt) {
       None =>
         // A NULL read is either genuine end-of-input or a Ctrl-C during input.
