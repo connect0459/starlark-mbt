@@ -34,7 +34,7 @@ fn read_line(prompt : String) -> String? {
   })
   match read_line_ffi(Bytes::from_array(arr)) {
     None => None
-    Some(bytes) => Some(bytes.to_unchecked_string())
+    Some(bytes) => Some(@utf8.decode_lossy(bytes[:]))
   }
 }
 
