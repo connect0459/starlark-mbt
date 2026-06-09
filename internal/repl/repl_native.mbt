@@ -66,7 +66,9 @@ fn interrupted() -> Bool {
 ///|
 fn read_line(prompt : String) -> String? {
   let n = prompt.length()
-  let arr : Array[Byte] = Array::make(n, b'\x00')
+  // One extra byte, left as 0x00, so the buffer is an explicit NUL-terminated C
+  // string for the FFI rather than relying on the runtime to pad it.
+  let arr : Array[Byte] = Array::make(n + 1, b'\x00')
   let mut i = 0
   prompt
   .iter()
