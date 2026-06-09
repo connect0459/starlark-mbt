@@ -4,8 +4,9 @@ repos:
     hooks:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        exclude: '^internal/repl/vendor/'
       - id: end-of-file-fixer
-        exclude: '(moon\.pkg$|pkg\.generated\.mbti$)'
+        exclude: '(moon\.pkg$|pkg\.generated\.mbti$|^internal/repl/vendor/)'
       - id: check-json
       - id: check-yaml
       - id: check-added-large-files
