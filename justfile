@@ -26,4 +26,4 @@ verify:
         just test-target $t; \
     done
     just run-examples > /dev/null 2>&1
-    just test-repl-piped
+    just test-repl-piped > /dev/null 2>&1
