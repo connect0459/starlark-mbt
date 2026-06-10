@@ -6,11 +6,11 @@ test "time module: duration str renders sub-second magnitudes like Go" {
       #|load("time.star", "time")
       #|assert.eq("0s", str(time.parse_duration("0")))
       #|assert.eq("500ns", str(time.parse_duration("500ns")))
-      #|assert.eq("1500ns", str(time.parse_duration("1500ns")))
+      #|assert.eq("1.5µs", str(time.parse_duration("1500ns")))
       #|assert.eq("2µs", str(time.parse_duration("2us")))
       #|assert.eq("2ms", str(time.parse_duration("2ms")))
-      #|assert.eq("2500µs", str(time.parse_duration("2500us")))
-      #|assert.eq("1000500ns", str(time.parse_duration("1000500ns")))
+      #|assert.eq("2.5ms", str(time.parse_duration("2500us")))
+      #|assert.eq("1.0005ms", str(time.parse_duration("1000500ns")))
     ),
   )
   if errs.length() != 0 {
