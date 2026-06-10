@@ -1152,4 +1152,20 @@ test "vm top-level lambda capture nested comprehension with free variable" {
     #|fns = [lambda: n + i for i in range(3)]
     #|vals = [f() for f in fns]
   assert_vm_result(src)
+  match
+    @eval.exec_file(
+      @eval.Thread::new("t"),
+      "t.star",
+      src,
+      @eval.Options::default(),
+    ) {
+    Err(e) => fail(e.to_string())
+    Ok(m) =>
+      match m.get("vals") {
+        None => fail("global 'vals' missing")
+        // `i` ends on 2 (last value from range(3)), `n` is 10, so every
+        // lambda returns 12.
+        Some(v) => assert_eq(v.repr(), "[12, 12, 12]")
+      }
+  }
 }
