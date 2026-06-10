@@ -1075,7 +1075,7 @@ fn Parser::parse_call_arg(self : Parser) -> @syntax.Arg raise ParseErr {
       } else {
         let ident_expr = @syntax.Expr::EIdent(name, p)
         let e = self.finish_primary_from_expr(ident_expr)
-        let full = self.finish_full_expr(e, p)
+        let full = self.finish_test_from(e, p)
         self.reject_malformed_kwarg()
         @syntax.Arg::ArgPos(full)
       }
@@ -1144,6 +1144,29 @@ fn Parser::finish_full_expr(
   let e7 = self.finish_comparison_from(e6, p)
   let e8 = self.finish_and_from(e7, p)
   self.finish_or_from(e8, p)
+}
+
+///|
+fn Parser::finish_test_from(
+  self : Parser,
+  e : @syntax.Expr,
+  p : @errors.Position,
+) -> @syntax.Expr raise ParseErr {
+  let or_e = self.finish_full_expr(e, p)
+  if self.tok == @lexer.Token::If {
+    self.advance()
+    let cond = self.parse_or_test()
+    if self.tok != @lexer.Token::Else {
+      raise ParseErr(
+        self.syntax_error("conditional expression without else clause"),
+      )
+    }
+    self.advance()
+    let else_e = self.parse_test()
+    @syntax.Expr::ECond(or_e, cond, else_e, p)
+  } else {
+    or_e
+  }
 }
 
 ///|
