@@ -820,7 +820,11 @@ test "eval_expr: list.index with a deeply nested element raises comparison depth
 test "exec_file: list.remove with a deeply nested element raises comparison depth error" {
   let x = make_nested_list(11)
   let lst = @value.Value::List(@value.StarlarkList::new([x]))
-  assert_true(
-    exec_with_predeclared("lst.remove(x)", [("lst", lst), ("x", x)]) is Err(_),
-  )
+  match exec_with_predeclared("lst.remove(x)", [("lst", lst), ("x", x)]) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
 }
