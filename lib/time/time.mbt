@@ -53,6 +53,17 @@ fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
 }
 
 ///|
+fn normalize_time_parts(sec : Int64, raw_nsec : Int) -> (Int64, Int) {
+  if raw_nsec >= 1_000_000_000 {
+    (sec + 1L, raw_nsec - 1_000_000_000)
+  } else if raw_nsec < 0 {
+    (sec - 1L, raw_nsec + 1_000_000_000)
+  } else {
+    (sec, raw_nsec)
+  }
+}
+
+///|
 /// Folds a 64-bit value into a 32-bit hash by XOR-ing its high and low halves,
 /// so both word boundaries contribute to the result (a bare truncation would
 /// drop the high 32 bits entirely).
@@ -128,9 +139,12 @@ fn duration_binary(
         None =>
           match extract_time_parts(rhs) {
             Some((sec, nsec)) => {
-              let total_ns = sec * ns_per_second + nsec.to_int64() + ns
-              let new_sec = total_ns / ns_per_second
-              let new_nsec = (total_ns % ns_per_second).to_int()
+              let extra_sec = ns / ns_per_second
+              let extra_nsec = (ns % ns_per_second).to_int()
+              let (new_sec, new_nsec) = normalize_time_parts(
+                sec + extra_sec,
+                nsec + extra_nsec,
+              )
               Some(Ok(make_time(new_sec, new_nsec)))
             }
             None => None
@@ -944,9 +958,12 @@ fn time_binary(
     "+" =>
       match extract_duration_ns(rhs) {
         Some(dns) => {
-          let total_ns = sec * ns_per_second + nsec.to_int64() + dns
-          let new_sec = total_ns / ns_per_second
-          let new_nsec = (total_ns % ns_per_second).to_int()
+          let extra_sec = dns / ns_per_second
+          let extra_nsec = (dns % ns_per_second).to_int()
+          let (new_sec, new_nsec) = normalize_time_parts(
+            sec + extra_sec,
+            nsec + extra_nsec,
+          )
           Some(Ok(make_time(new_sec, new_nsec)))
         }
         None => None
@@ -954,9 +971,12 @@ fn time_binary(
     "-" =>
       match extract_duration_ns(rhs) {
         Some(dns) => {
-          let total_ns = sec * ns_per_second + nsec.to_int64() - dns
-          let new_sec = total_ns / ns_per_second
-          let new_nsec = (total_ns % ns_per_second).to_int()
+          let extra_sec = dns / ns_per_second
+          let extra_nsec = (dns % ns_per_second).to_int()
+          let (new_sec, new_nsec) = normalize_time_parts(
+            sec - extra_sec,
+            nsec - extra_nsec,
+          )
           Some(Ok(make_time(new_sec, new_nsec)))
         }
         None =>
@@ -1699,15 +1719,22 @@ fn make_from_timestamp_fn() -> @value.Value {
       @value.Value::Int(n) => n.to_int64()
       _ => return Err("time.from_timestamp: sec must be an integer")
     }
-    let nsec = if pos_args.length() >= 2 {
+    let nsec64 = if pos_args.length() >= 2 {
       match pos_args[1] {
-        @value.Value::Int(n) => n.to_int()
+        @value.Value::Int(n) => n.to_int64()
         _ => return Err("time.from_timestamp: nsec must be an integer")
       }
     } else {
-      0
+      0L
     }
-    Ok(make_time(sec, nsec))
+    let extra_sec = nsec64 / ns_per_second
+    let norm_nsec = nsec64 % ns_per_second
+    let (final_sec, final_nsec) = if norm_nsec < 0L {
+      (sec + extra_sec - 1L, (norm_nsec + ns_per_second).to_int())
+    } else {
+      (sec + extra_sec, norm_nsec.to_int())
+    }
+    Ok(make_time(final_sec, final_nsec))
   })
 }
 

@@ -563,3 +563,88 @@ test "time: duration * BigInt outside int64 range raises out-of-range error" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "time: time + duration does not overflow Int64 for year 2500" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.time(year=2500)
+      #|t2 = t + time.second
+      #|assert.true(bool(t2))
+      #|assert.eq(t2.unix - t.unix, 1)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time: time - duration crossing epoch produces valid sub-second result" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(0)
+      #|t2 = t - time.parse_duration("100ms")
+      #|assert.true(bool(t2))
+      #|assert.eq(t2.unix, -1)
+      #|assert.eq(t2.nanosecond, 900000000)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time: duration + time does not overflow Int64 for far-future dates" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.time(year=2500)
+      #|t2 = time.second + t
+      #|assert.true(bool(t2))
+      #|assert.eq(t2.unix - t.unix, 1)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time: from_timestamp normalizes nsec >= 1e9 by carrying into seconds" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(0, 1500000000)
+      #|assert.true(bool(t))
+      #|assert.eq(t.unix, 1)
+      #|assert.eq(t.nanosecond, 500000000)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time: from_timestamp normalizes negative nsec by borrowing from seconds" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(1, -500000000)
+      #|assert.eq(t.unix, 0)
+      #|assert.eq(t.nanosecond, 500000000)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
