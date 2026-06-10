@@ -828,3 +828,15 @@ test "exec_file: list.remove with a deeply nested element raises comparison dept
     Ok(_) => fail("expected depth error")
   }
 }
+
+///|
+test "exec_file: in raises comparison depth error on a cyclic dict (issue #78 original scenario)" {
+  let src = "d = {}\nd[\"x\"] = d\nresult = d in [d]"
+  match exec_with_predeclared(src, []) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
+}
