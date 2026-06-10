@@ -58,14 +58,12 @@ test "iterate: string with multibyte is not iterable" {
 }
 
 ///|
-test "iterate: bytes yields integer value of each byte" {
+test "iterate: bytes is not iterable" {
   let b = Value::Bytes(Bytes::from_array([b'\x01', b'\x02', b'\x03']))
-  let it = must_iterate(b)
-  assert_true(it.next() == Some(Value::Int(1N)))
-  assert_true(it.next() == Some(Value::Int(2N)))
-  assert_true(it.next() == Some(Value::Int(3N)))
-  assert_true(it.next() == None)
-  it.done()
+  match iterate(b) {
+    Err(msg) => assert_eq(msg, "bytes value is not iterable")
+    Ok(_) => panic()
+  }
 }
 
 ///|
