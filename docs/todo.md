@@ -3065,6 +3065,77 @@ deferred.
 
 ---
 
+## Follow-up: coverage-driven bug audit (issue #76)
+
+Coverage-driven + semantic audit run on 2026-06-10 (`.connect0459/tmp.md`).
+10 HIGH / 18 MEDIUM / 17+ LOW findings. Tracked via issue #76.
+
+### HIGH — wrong results or crashes
+
+- [x] **H-1** (issue #77): `==` returned `False` for identical function / module /
+  iterator-view objects. `starlark_equals_depth` missed the `physical_equal`
+  fallback that `starlark_equals` already had for `Function`; `Module` and the
+  three iterator types (`StringElems`, `StringCodepoints`, `BytesElems`) lacked
+  it in both functions. Fixed in commit `b0889da`.
+- [ ] **H-2**: `load` cycle → segfault; CLI loader has no cache; REPL cycle
+  sentinel not shared across nested loaders.
+- [ ] **H-3**: Top-level comprehension `lambda` capture aborts VM (`SetLocalCell`
+  reaches `abort` because toplevel frame skips `cells` initialization).
+- [ ] **H-4**: Ident-leading ternary `x if c else y` fails as a call argument
+  (`finish_or_from` stops before the `if/else` tail).
+- [ ] **H-5**: `deep_freeze` cycle guard uses function name, not identity —
+  same-named closures in the same object graph escape freeze.
+- [ ] **H-6**: `freeze` does not propagate into `BoundMethod` receiver or
+  receiver-carrying `Builtin`.
+- [ ] **H-7**: `range` length truncated to `Int32` — `len`, `bool`, iteration,
+  and equality all broken for `range` of size > 2³¹.
+- [ ] **H-8**: `time ± duration` overflows for dates far from epoch; negative
+  result not normalized.
+- [ ] **H-9**: `time.from_timestamp` passes raw `nsec` without normalization;
+  `nsec` is silently truncated to `Int32`.
+- [ ] **H-10**: `starlark_equals` (used by `in` / hashtable) has no depth limit —
+  cyclic operand causes uncaught stack overflow.
+
+### MEDIUM — edge-case divergence
+
+- [ ] **M-1**: `x in range(...)` wraps BigInt via `to_int64()` instead of
+  rejecting out-of-range integers.
+- [ ] **M-2**: `list.index(x, start, end)` silently truncates `start`/`end` to
+  `Int32`; sibling methods already error-check.
+- [ ] **M-3**: `unhashable value in dict` swallows the error and returns `False`.
+- [ ] **M-4**: Empty-needle string search with `start > end` diverges from go
+  (`find`, `rfind`, `index`, `count`).
+- [ ] **M-5**: `time − time` wraps instead of saturating to ±max Duration.
+- [ ] **M-6**: `time.parse_duration` has no overflow detection.
+- [ ] **M-7**: RFC3339 parser ignores trailing garbage after timezone.
+- [ ] **M-8**: JSON / struct key sort uses MoonBit `String::compare`
+  (length-first) instead of lexicographic order.
+- [ ] **M-9**: Duration `to_string` falls back to lower units instead of decimal
+  fractions (e.g. `1.5ms` → `"1500µs"`).
+- [ ] **M-10**: `math.remainder` rounds half-away-from-zero instead of
+  half-to-even (IEEE 754).
+- [ ] **M-11**: `time.time()` constructor rejects out-of-range month/day instead
+  of normalizing (intentional dialect difference — needs policy decision).
+- [ ] **M-12**: `bigint_to_double` returns `0.0` on overflow instead of `±Inf`.
+- [ ] **M-13**: Parser / resolver / compiler have no recursion depth limit;
+  deeply nested expressions crash on the JS backend.
+- [ ] **M-14**: Subscript trailing comma `a[1,]` accepted as `a[(1,)]` instead
+  of a syntax error.
+- [ ] **M-15**: REPL: empty line inside an unterminated triple-quoted string
+  kills the suite buffer irrecoverably.
+- [ ] **M-16**: REPL: backslash line continuation `x = 1 + \` not recognized.
+- [ ] **M-17**: CLI flag parser: unknown flag treated as a file path; extra
+  positional arguments silently ignored.
+- [ ] **M-18**: Test harness silently ignores malformed `###` expected-error
+  lines, masking future test failures.
+
+### LOW — limited impact or policy decisions needed
+
+Items L-1 through L-17 are documented in `.connect0459/tmp.md`. Address
+opportunistically; most require a policy decision or affect only embedder APIs.
+
+---
+
 ## Coverage Targets
 
 **Overall target: 80%** (agreed before implementation).
