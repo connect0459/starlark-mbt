@@ -62,6 +62,20 @@ When the stub is active, `time.now()` always returns the Unix epoch. Override vi
 | `d / n` | `time.duration` | Divide by integer or float |
 | `d // d2` | `int` | Integer floor-division of two durations |
 
+## RFC 3339 parsing behavior
+
+The default `parse_time` format follows RFC 3339 with the following intentional
+lenient extensions:
+
+| Input form | Example | Behavior |
+| :--- | :--- | :--- |
+| Hour value 24 | `"2021-03-23T24:00:00Z"` | accepted, treated as midnight of next day |
+| Lowercase `t` separator | `"2021-03-22t23:20:50Z"` | accepted |
+| Space separator | `"2021-03-22 23:20:50Z"` | accepted |
+
+Trailing text after the timezone is rejected:
+`"2021-03-22T23:20:50Zgarbage"` → error `"extra text after date"`.
+
 ## Quick start
 
 Creating a fixed time value from MoonBit (useful for deterministic tests):

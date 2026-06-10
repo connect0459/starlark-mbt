@@ -204,7 +204,6 @@ test "time module: time constructor validates argument types and names" {
       #|assert.fails(lambda: time.time(location=5), "location must be a string")
       #|assert.fails(lambda: time.time(foo=1), "unexpected keyword argument")
       #|assert.fails(lambda: time.time(2021), "unexpected positional arguments")
-      #|assert.fails(lambda: time.time(year=2021, month=13), "invalid date/time parameters")
       #|assert.fails(lambda: time.time(year=2021, location="Mars/Olympus"), "unsupported timezone")
     ),
   )

@@ -648,3 +648,48 @@ test "time: from_timestamp normalizes negative nsec by borrowing from seconds" {
     fail(errs.join("\n"))
   }
 }
+
+///|
+test "time.time: normalizes month=13 to next year January" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(time.time(year=2021, month=13), time.time(year=2022, month=1))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.time: normalizes month=0 to previous year December" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(time.time(year=2021, month=0), time.time(year=2020, month=12))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.time: month=0 with default day=0 produces Go-equivalent normalized date" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.time(month=0)
+      #|assert.eq(t.year, -1)
+      #|assert.eq(t.month, 11)
+      #|assert.eq(t.day, 30)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
