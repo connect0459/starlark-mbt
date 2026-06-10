@@ -370,6 +370,9 @@ fn run_program_vm(
       prog.toplevel.locals.length(),
       LUnbound,
     )
+    for ci in prog.toplevel.cells {
+      top_locals[ci] = LBoxed(@value.Cell::new())
+    }
     let no_freevars : Array[@value.Cell] = []
     vm.run_frame(m, prog.toplevel, "<toplevel>", top_locals, no_freevars, idx)
     |> ignore
