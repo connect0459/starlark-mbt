@@ -536,7 +536,7 @@ pub fn Value::freeze(self : Value) -> Unit {
 }
 
 ///|
-fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
+fn freeze_value_inner(v : Value, seen_funcs : Array[StarlarkFunction]) -> Unit {
   match v {
     List(l) => {
       if l.is_frozen() {
@@ -569,10 +569,10 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
         freeze_value_inner(item, seen_funcs)
       }
     Function(f) => {
-      if seen_funcs.contains(f.name) {
+      if seen_funcs.iter().any(fn(g) { physical_equal(g, f) }) {
         return
       }
-      seen_funcs.push(f.name)
+      seen_funcs.push(f)
       for default_opt in f.defaults {
         match default_opt {
           Some(dv) => freeze_value_inner(dv, seen_funcs)
@@ -588,6 +588,12 @@ fn freeze_value_inner(v : Value, seen_funcs : Array[String]) -> Unit {
         }
       }
     }
+    BoundMethod(m) => freeze_value_inner(m.recv, seen_funcs)
+    Builtin(f) =>
+      match f.receiver() {
+        Some(r) => freeze_value_inner(r, seen_funcs)
+        None => ()
+      }
     Module(_) => ()
     ExtVal(c) => c.do_freeze()
     _ => ()

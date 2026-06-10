@@ -52,3 +52,38 @@ test "length_of: Value::Function has no sequence length" {
   let f = StarlarkFunction::new("f", @errors.Position::new("", 0, 0))
   assert_true(length_of(Value::Function(f)) is Err(_))
 }
+
+///|
+test "freeze_value: distinct closures sharing a name are both frozen" {
+  let pos = @errors.Position::new("", 0, 0)
+  let l1 = StarlarkList::new([])
+  let l2 = StarlarkList::new([])
+  let f1 = {
+    ..StarlarkFunction::new("f", pos),
+    defaults: [Some(Value::List(l1))],
+  }
+  let f2 = {
+    ..StarlarkFunction::new("f", pos),
+    defaults: [Some(Value::List(l2))],
+  }
+  let outer = StarlarkList::new([Value::Function(f1), Value::Function(f2)])
+  Value::freeze(Value::List(outer))
+  assert_true(l1.is_frozen())
+  assert_true(l2.is_frozen())
+}
+
+///|
+test "freeze_value: BoundMethod receiver is transitively frozen" {
+  let l = StarlarkList::new([])
+  let m = StarlarkBoundMethod::new(Value::List(l), "append")
+  Value::freeze(Value::BoundMethod(m))
+  assert_true(l.is_frozen())
+}
+
+///|
+test "freeze_value: Builtin with receiver is transitively frozen" {
+  let l = StarlarkList::new([])
+  let b = StarlarkBuiltinFunc::dispatch("append").bind_receiver(Value::List(l))
+  Value::freeze(Value::Builtin(b))
+  assert_true(l.is_frozen())
+}
