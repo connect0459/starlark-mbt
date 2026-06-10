@@ -125,6 +125,18 @@ fn make_loader_with_cache(
 }
 
 ///|
+/// Returns a load function that resolves load paths relative to `base_dir`
+/// and caches previously loaded modules. A shared cache is maintained across
+/// all nesting levels so that diamond dependencies load each module once and
+/// cross-directory cycles are detected cleanly.
+///
+/// Parameters:
+///
+/// - `base_dir` : The filesystem directory used as the resolution root for
+///   relative load paths.
+/// - `opts` : Feature flags forwarded to `exec_file` for each loaded module.
+///
+/// Returns a load handler compatible with `@eval.Thread::with_loader`.
 fn make_loader(
   base_dir : String,
   opts : @eval.Options,
