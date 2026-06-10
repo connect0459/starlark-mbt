@@ -83,10 +83,10 @@ pub fn compare_depth(
 /// - `v` : The value whose length to retrieve.
 ///
 /// Returns the non-negative length, or `-1` if `v` does not support `len`.
-pub fn len_of(v : Value) -> Int {
+pub fn len_of(v : Value) -> Int64 {
   match length_of(v) {
     Ok(n) => n
-    Err(_) => -1
+    Err(_) => -1L
   }
 }
 

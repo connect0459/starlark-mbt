@@ -41,6 +41,9 @@ let surrogate_high_scale : Int = 0x400
 let json_replacement_rune : Int = 0xFFFD
 
 ///|
+let max_materialise_len : Int64 = 2147483647L
+
+///|
 // Quotes a printable-ASCII string the way Go's `strconv.AppendQuote` does:
 // only `"`, `\`, and the DEL byte (0x7f) are escaped; everything else is
 // written verbatim.
@@ -195,9 +198,15 @@ fn encode_inner(
     }
     @value.Value::Range(r) => {
       let len = r.length()
-      let items : Array[@value.Value] = Array::make(len, @value.Value::None)
-      for i in 0..<len {
-        items[i] = @value.Value::Int(BigInt::from_int64(r.index_at(i)))
+      if len > max_materialise_len {
+        return Err("cannot encode range of length \{len} as JSON: too large")
+      }
+      let n = len.to_int()
+      let items : Array[@value.Value] = Array::make(n, @value.Value::None)
+      for i in 0..<n {
+        items[i] = @value.Value::Int(
+          BigInt::from_int64(r.index_at(i.to_int64())),
+        )
       }
       encode_sequence(items.iter(), "range", state)
     }

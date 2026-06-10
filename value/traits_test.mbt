@@ -500,6 +500,13 @@ test "starlark_equals_depth: ranges with same length but different start are not
 }
 
 ///|
+test "starlark_equals_depth: range(0, 1<<32) is not equal to empty range" {
+  let big = Value::Range(StarlarkRange::new(0L, 4294967296L, 1L))
+  let empty = Value::Range(StarlarkRange::new(0L, 0L, 1L))
+  assert_true(starlark_equals_depth(big, empty, 10) == Ok(false))
+}
+
+///|
 test "compare_values: longer Bytes with common prefix is greater than shorter Bytes" {
   let prefix = @utf8.encode("ab")
   let longer = @utf8.encode("abc")

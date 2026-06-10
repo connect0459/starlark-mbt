@@ -260,9 +260,19 @@ test "length_of: set returns number of elements" {
 ///|
 test "length_of: range returns computed length" {
   assert_true(
-    length_of(Value::Range(StarlarkRange::new(0L, 10L, 1L))) == Ok(10),
+    length_of(Value::Range(StarlarkRange::new(0L, 10L, 1L))) == Ok(10L),
   )
-  assert_true(length_of(Value::Range(StarlarkRange::new(0L, 10L, 2L))) == Ok(5))
+  assert_true(
+    length_of(Value::Range(StarlarkRange::new(0L, 10L, 2L))) == Ok(5L),
+  )
+}
+
+///|
+test "length_of: range with 2^32 elements returns 4294967296 without truncation" {
+  assert_true(
+    length_of(Value::Range(StarlarkRange::new(0L, 4294967296L, 1L))) ==
+    Ok(4294967296L),
+  )
 }
 
 ///|

@@ -466,17 +466,17 @@ pub fn StarlarkRange::step(self : StarlarkRange) -> Int64 {
 /// Returns the number of elements in the range.
 ///
 /// Returns the count of integers produced by iterating the range.
-pub fn StarlarkRange::length(self : StarlarkRange) -> Int {
+pub fn StarlarkRange::length(self : StarlarkRange) -> Int64 {
   if self.step > 0L {
     if self.stop > self.start {
-      return ((self.stop - self.start - 1L) / self.step + 1L).to_int()
+      return (self.stop - self.start - 1L) / self.step + 1L
     }
   } else if self.step < 0L {
     if self.start > self.stop {
-      return ((self.start - self.stop - 1L) / -self.step + 1L).to_int()
+      return (self.start - self.stop - 1L) / -self.step + 1L
     }
   }
-  0
+  0L
 }
 
 ///|
@@ -488,8 +488,8 @@ pub fn StarlarkRange::length(self : StarlarkRange) -> Int {
 /// - `i` : The zero-based position within the range.
 ///
 /// Returns the arithmetic value at position `i` (i.e. `start + step * i`).
-pub fn StarlarkRange::index_at(self : StarlarkRange, i : Int) -> Int64 {
-  self.start + self.step * i.to_int64()
+pub fn StarlarkRange::index_at(self : StarlarkRange, i : Int64) -> Int64 {
+  self.start + self.step * i
 }
 
 ///|
@@ -1360,7 +1360,7 @@ pub fn Value::truth(v : Value) -> Bool {
     Tuple(t) => t.is_empty() == false
     Dict(d) => d.length() > 0
     Set(s) => s.length() > 0
-    Range(r) => r.length() > 0
+    Range(r) => r.length() > 0L
     Function(_) => true
     Builtin(_) => true
     BoundMethod(_) => true
