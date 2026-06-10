@@ -11,14 +11,16 @@ test "cycle in load graph is detected via sentinel already in cache" {
 }
 
 ///|
-test "failed module load is cached so the file is not re-attempted" {
+test "failed load result is written to cache and returned on subsequent calls" {
+  // load_file always returns an error on non-native targets; starting
+  // from an empty cache exercises the full sentinel -> load -> cache path.
   let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
-  cache["/missing.star"] = Err(@errors.EvalError::simple("cannot load"))
   let loader = make_load_with_cache(".", cache)
   let thread = @eval.Thread::new("test")
-  let r1 = loader(thread, "/missing.star")
-  let r2 = loader(thread, "/missing.star")
+  let r1 = loader(thread, "/any.star")
   assert_true(r1 is Err(_))
+  assert_true(cache.get("/any.star") is Some(Err(_)))
+  let r2 = loader(thread, "/any.star")
   assert_true(r2 is Err(_))
 }
 
