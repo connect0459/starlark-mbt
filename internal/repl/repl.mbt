@@ -75,18 +75,17 @@ pub fn format_error(err : @errors.EvalError) -> String {
 }
 
 ///|
+fn resolve_load(base_dir : String, load_path : String) -> String {
+  @path.Path(base_dir).join(@path.Path(load_path)).normalize().to_string()
+}
+
+///|
 fn make_load_with_cache(
   base_dir : String,
   cache : Map[String, Result[@eval.Module, @errors.EvalError]],
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
   fn(_thread, load_path) {
-    let resolved = if load_path.has_prefix("/") ||
-      load_path.has_prefix("./") ||
-      load_path.has_prefix("../") {
-      load_path
-    } else {
-      base_dir + "/" + load_path
-    }
+    let resolved = resolve_load(base_dir, load_path)
     match cache.get(resolved) {
       Some(cached) => return cached
       None => ()
@@ -124,10 +123,7 @@ pub fn make_load(
 
 ///|
 fn dir_of(path : String) -> String {
-  match path.rev_find("/") {
-    Some(i) => path[:i].to_owned()
-    None => "."
-  }
+  @path.Path(path).dirname().to_string()
 }
 
 ///|

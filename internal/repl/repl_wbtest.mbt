@@ -37,3 +37,47 @@ test "inner loader shares same cache as outer loader" {
     Ok(_) => fail("expected cycle error from shared cache")
   }
 }
+
+///|
+test "dot-slash prefix resolves to same cache key as bare name" {
+  // "./foo.star" and "foo.star" loaded from the same base_dir must
+  // both resolve to the same absolute cache key ("/dir/foo.star"),
+  // so the module is loaded at most once.
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  cache["/dir/foo.star"] = Err(@errors.EvalError::simple("cycle in load graph"))
+  let loader = make_load_with_cache("/dir", cache)
+  let thread = @eval.Thread::new("test")
+  match loader(thread, "./foo.star") {
+    Err(e) => assert_true(e.msg().contains("cycle in load graph"))
+    Ok(_) =>
+      fail("expected ./foo.star to resolve to /dir/foo.star and hit cache")
+  }
+}
+
+///|
+test "dot-dot prefix resolves to parent directory" {
+  // "../foo.star" loaded from "/dir/sub" must resolve to "/dir/foo.star".
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  cache["/dir/foo.star"] = Err(@errors.EvalError::simple("cycle in load graph"))
+  let loader = make_load_with_cache("/dir/sub", cache)
+  let thread = @eval.Thread::new("test")
+  match loader(thread, "../foo.star") {
+    Err(e) => assert_true(e.msg().contains("cycle in load graph"))
+    Ok(_) =>
+      fail("expected ../foo.star to resolve to /dir/foo.star and hit cache")
+  }
+}
+
+///|
+test "absolute path with dot-dot segments is normalized before use as cache key" {
+  // /dir/../foo.star must resolve to /foo.star, not be stored verbatim.
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  cache["/foo.star"] = Err(@errors.EvalError::simple("cycle in load graph"))
+  let loader = make_load_with_cache("/base", cache)
+  let thread = @eval.Thread::new("test")
+  match loader(thread, "/dir/../foo.star") {
+    Err(e) => assert_true(e.msg().contains("cycle in load graph"))
+    Ok(_) =>
+      fail("expected /dir/../foo.star to normalize to /foo.star and hit cache")
+  }
+}
