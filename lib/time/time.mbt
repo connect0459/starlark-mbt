@@ -223,9 +223,9 @@ fn duration_binary(
 }
 
 ///|
-fn fmt_frac9(ns_frac : Int64) -> String {
-  let s = ns_frac.to_string()
-  let pad_len = 9 - s.length()
+fn fmt_frac_digits(frac : Int64, prec : Int) -> String {
+  let s = frac.to_string()
+  let pad_len = prec - s.length()
   let buf = StringBuilder::new()
   for _ in 0..<pad_len {
     buf.write_char('0')
@@ -256,31 +256,22 @@ fn fmt_duration(ns : Int64) -> String {
       buf.write_string("ns")
     } else if abs_ns < ns_per_millisecond {
       let us = abs_ns / ns_per_microsecond
-      let frac = abs_ns % ns_per_microsecond
-      if frac == 0L {
-        buf.write_string(us.to_string())
-        buf.write_string("µs")
-      } else {
-        buf.write_string(abs_ns.to_string())
-        buf.write_string("ns")
+      let frac_ns = abs_ns % ns_per_microsecond
+      buf.write_string(us.to_string())
+      if frac_ns != 0L {
+        buf.write_char('.')
+        buf.write_string(fmt_frac_digits(frac_ns, 3))
       }
+      buf.write_string("µs")
     } else {
       let ms = abs_ns / ns_per_millisecond
-      let frac = abs_ns % ns_per_millisecond
-      if frac == 0L {
-        buf.write_string(ms.to_string())
-        buf.write_string("ms")
-      } else {
-        let us = abs_ns / ns_per_microsecond
-        let ns_frac = abs_ns % ns_per_microsecond
-        if ns_frac == 0L {
-          buf.write_string(us.to_string())
-          buf.write_string("µs")
-        } else {
-          buf.write_string(abs_ns.to_string())
-          buf.write_string("ns")
-        }
+      let frac_ns = abs_ns % ns_per_millisecond
+      buf.write_string(ms.to_string())
+      if frac_ns != 0L {
+        buf.write_char('.')
+        buf.write_string(fmt_frac_digits(frac_ns, 6))
       }
+      buf.write_string("ms")
     }
   } else {
     let total_sec = abs_ns / ns_per_second
@@ -305,7 +296,7 @@ fn fmt_duration(ns : Int64) -> String {
     } else {
       buf.write_string(secs.to_string())
       buf.write_char('.')
-      buf.write_string(fmt_frac9(ns_frac))
+      buf.write_string(fmt_frac_digits(ns_frac, 9))
       buf.write_char('s')
     }
   }
@@ -551,7 +542,7 @@ fn fmt_time_at_zone(
   write_pad2(buf, dt.second())
   if nsec != 0 {
     buf.write_char('.')
-    buf.write_string(fmt_frac9(nsec.to_int64()))
+    buf.write_string(fmt_frac_digits(nsec.to_int64(), 9))
   }
   buf.write_char(' ')
   let off = dt.offset().seconds()
