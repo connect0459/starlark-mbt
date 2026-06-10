@@ -300,7 +300,7 @@ fn call_builtin(
     "len" => {
       check_positional(ctx, "len", pos_args, kw_args, 1, 1)
       let n = check(ctx, @value.length_of(pos_args[0]))
-      @value.Value::Int(BigInt::from_int(n))
+      @value.Value::Int(BigInt::from_int64(n))
     }
     "str" =>
       if pos_args.length() == 0 {
@@ -1575,11 +1575,11 @@ fn call_list_method(
       } else {
         BigInt::from_int(n - 1)
       }
-      let idx = match adjust_index(i, n, "list") {
+      let idx = match adjust_index(i, n.to_int64(), "list") {
         Ok(j) => j
         Err(msg) => raise EvalErr(make_eval_error(ctx, "pop: " + msg))
       }
-      check(ctx, l.pop_at(idx, "pop from"))
+      check(ctx, l.pop_at(idx.to_int(), "pop from"))
     }
     "remove" => {
       check_positional(ctx, "remove", pos_args, kw_args, 1, 1)

@@ -1,24 +1,24 @@
 ///|
 fn adjust_index(
   i : BigInt,
-  length : Int,
+  length : Int64,
   type_name : String,
-) -> Result[Int, String] {
+) -> Result[Int64, String] {
   // Go's AsInt32: fail if value doesn't fit int32 range.
   // Produces "<type> index: N out of range" (no range bounds).
   if i > max_int32 || i < min_int32 {
     return Err("\{type_name} index: \{i} out of range")
   }
-  let len = BigInt::from_int(length)
+  let len = BigInt::from_int64(length)
   let j = if i < 0N { i + len } else { i }
   if j < 0N || j >= len {
-    if length == 0 {
+    if length == 0L {
       Err("index \{i} out of range: empty \{type_name}")
     } else {
-      Err("\{type_name} index \{i} out of range [\{-length}:\{length - 1}]")
+      Err("\{type_name} index \{i} out of range [\{-length}:\{length - 1L}]")
     }
   } else {
-    Ok(j.to_int())
+    Ok(j.to_int64())
   }
 }
 
@@ -1341,8 +1341,8 @@ fn eval_index(
     @value.Value::List(l) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, l.length(), "list"))
-          l[j]
+          let j = check(ctx, adjust_index(i, l.length().to_int64(), "list"))
+          l[j.to_int()]
         }
         _ =>
           raise EvalErr(
@@ -1352,8 +1352,8 @@ fn eval_index(
     @value.Value::Tuple(t) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, t.length(), "tuple"))
-          t[j]
+          let j = check(ctx, adjust_index(i, t.length().to_int64(), "tuple"))
+          t[j.to_int()]
         }
         _ =>
           raise EvalErr(
@@ -1366,8 +1366,8 @@ fn eval_index(
     @value.Value::String(s) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, s.byte_len(), "string"))
-          let one_byte = Bytes::from_array([s.byte_at(j)])
+          let j = check(ctx, adjust_index(i, s.byte_len().to_int64(), "string"))
+          let one_byte = Bytes::from_array([s.byte_at(j.to_int())])
           @value.Value::String(@value.StarlarkString::from_bytes(one_byte))
         }
         _ =>
@@ -1381,8 +1381,8 @@ fn eval_index(
     @value.Value::Bytes(b) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, b.length(), "bytes"))
-          @value.Value::Bytes(Bytes::from_array([b[j]]))
+          let j = check(ctx, adjust_index(i, b.length().to_int64(), "bytes"))
+          @value.Value::Bytes(Bytes::from_array([b[j.to_int()]]))
         }
         _ =>
           raise EvalErr(
@@ -1416,11 +1416,14 @@ fn eval_index(
       match idx {
         @value.Value::Int(i) => {
           let bytes = e.source_string().to_bytes()
-          let j = check(ctx, adjust_index(i, bytes.length(), "string.elems"))
+          let j = check(
+            ctx,
+            adjust_index(i, bytes.length().to_int64(), "string.elems"),
+          )
           if e.is_ords() {
-            @value.Value::Int(BigInt::from_int(bytes[j].to_int()))
+            @value.Value::Int(BigInt::from_int(bytes[j.to_int()].to_int()))
           } else {
-            let one = Bytes::from_array([bytes[j]])
+            let one = Bytes::from_array([bytes[j.to_int()]])
             @value.Value::String(@value.StarlarkString::from_bytes(one))
           }
         }
@@ -1439,8 +1442,8 @@ fn eval_index(
             Ok(n) => n
             Err(e) => raise EvalErr(make_eval_error(ctx, e))
           }
-          let j = check(ctx, adjust_index(i, len, obj.type_name()))
-          match c.get_index(j) {
+          let j = check(ctx, adjust_index(i, len.to_int64(), obj.type_name()))
+          match c.get_index(j.to_int()) {
             Ok(v) => v
             Err(e) => raise EvalErr(make_eval_error(ctx, e))
           }
@@ -1475,8 +1478,8 @@ fn set_index(
     @value.Value::List(l) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, l.length(), "list"))
-          check(ctx, l.set(j, val))
+          let j = check(ctx, adjust_index(i, l.length().to_int64(), "list"))
+          check(ctx, l.set(j.to_int(), val))
         }
         _ =>
           raise EvalErr(
@@ -1497,8 +1500,11 @@ fn set_index(
                 Ok(n) => n
                 Err(e) => raise EvalErr(make_eval_error(ctx, e))
               }
-              let j = check(ctx, adjust_index(i, len, obj.type_name()))
-              match c.do_set_index(j, val) {
+              let j = check(
+                ctx,
+                adjust_index(i, len.to_int64(), obj.type_name()),
+              )
+              match c.do_set_index(j.to_int(), val) {
                 Some(Ok(_)) => ()
                 Some(Err(e)) => raise EvalErr(make_eval_error(ctx, e))
                 None =>
@@ -1603,9 +1609,9 @@ fn eval_slice(
     }
     @value.Value::Range(r) => {
       let len = r.length()
-      let (start, end_idx) = normalize_slice(lo_opt, hi_opt, len, step)
-      let new_start = r.start() + r.step() * start.to_int64()
-      let new_stop = r.start() + r.step() * end_idx.to_int64()
+      let (start, end_idx) = normalize_slice_64(lo_opt, hi_opt, len, step)
+      let new_start = r.start() + r.step() * start
+      let new_stop = r.start() + r.step() * end_idx
       let new_step = r.step() * step.to_int64()
       @value.Value::Range(
         @value.StarlarkRange::new(new_start, new_stop, new_step),
@@ -1709,6 +1715,72 @@ fn normalize_slice(
           -1
         } else if j >= len {
           len - 1
+        } else {
+          j
+        }
+      }
+    }
+    (start, stop)
+  }
+}
+
+///|
+fn normalize_slice_64(
+  lo_opt : Int?,
+  hi_opt : Int?,
+  len : Int64,
+  step : Int,
+) -> (Int64, Int64) {
+  if step > 0 {
+    let start = match lo_opt {
+      None => 0L
+      Some(i) => {
+        let j = if i < 0 { i.to_int64() + len } else { i.to_int64() }
+        if j < 0L {
+          0L
+        } else if j > len {
+          len
+        } else {
+          j
+        }
+      }
+    }
+    let stop = match hi_opt {
+      None => len
+      Some(i) => {
+        let j = if i < 0 { i.to_int64() + len } else { i.to_int64() }
+        if j < 0L {
+          0L
+        } else if j > len {
+          len
+        } else {
+          j
+        }
+      }
+    }
+    (start, stop)
+  } else {
+    let start = match lo_opt {
+      None => len - 1L
+      Some(i) => {
+        let j = if i < 0 { i.to_int64() + len } else { i.to_int64() }
+        if j < 0L {
+          -1L
+        } else if j >= len {
+          len - 1L
+        } else {
+          j
+        }
+      }
+    }
+    let stop = match hi_opt {
+      None => -1L
+      Some(i) => {
+        let j = if i < 0 { i.to_int64() + len } else { i.to_int64() }
+        if j < -1L {
+          -1L
+        } else if j >= len {
+          len - 1L
         } else {
           j
         }

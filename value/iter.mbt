@@ -90,20 +90,20 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
 /// Returns `Ok(n)` with the element count, or `Err` with a message like
 /// `"len: value of type int has no len"` for types without a length.
 #internal(unsafe, "eval engine only; embedders use len_of")
-pub fn length_of(v : Value) -> Result[Int, String] {
+pub fn length_of(v : Value) -> Result[Int64, String] {
   match v {
-    String(s) => Ok(s.byte_len())
-    Bytes(b) => Ok(b.length())
-    List(l) => Ok(l.items.length())
-    Tuple(t) => Ok(t.length())
-    Dict(d) => Ok(d.length())
-    Set(s) => Ok(s.length())
+    String(s) => Ok(s.byte_len().to_int64())
+    Bytes(b) => Ok(b.length().to_int64())
+    List(l) => Ok(l.items.length().to_int64())
+    Tuple(t) => Ok(t.length().to_int64())
+    Dict(d) => Ok(d.length().to_int64())
+    Set(s) => Ok(s.length().to_int64())
     Range(r) => Ok(r.length())
-    StringElems(e) => Ok(e.s.byte_len())
+    StringElems(e) => Ok(e.s.byte_len().to_int64())
     BytesElems(_) => Err("len: value of type bytes.elems has no len")
     StringCodepoints(_) =>
       Err("len: value of type string.codepoints has no len")
-    ExtVal(c) => c.get_length()
+    ExtVal(c) => c.get_length().map(fn(n) { n.to_int64() })
     _ => Err("len: value of type \{v.type_name()} has no len")
   }
 }
@@ -203,13 +203,13 @@ fn set_key_iter(s : StarlarkSet) -> StarlarkIterator {
 
 ///|
 fn range_iter(r : StarlarkRange) -> StarlarkIterator {
-  let cur = IterCursor::{ pos: 0 }
   let len = r.length()
+  let mut pos = 0L
   {
     next_fn: fn() -> Value? {
-      if cur.pos < len {
-        let v = BigInt::from_int64(r.index_at(cur.pos))
-        cur.pos += 1
+      if pos < len {
+        let v = BigInt::from_int64(r.index_at(pos))
+        pos += 1L
         Some(Int(v))
       } else {
         None

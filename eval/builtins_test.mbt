@@ -58,6 +58,30 @@ test "exec_file: range with step of zero raises error" {
   assert_true(exec_b("range(0, 10, 0)") is Err(_))
 }
 
+///|
+test "exec_file: len of range exceeding Int32 max is computed without truncation" {
+  match exec_b("n = len(range(0, 1 << 32))") {
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(4294967296N)))
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "exec_file: bool of large range is true" {
+  match exec_b("b = bool(range(0, 1 << 32))") {
+    Ok(m) => assert_true(g(m, "b") == Some(@value.Value::Bool(true)))
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "exec_file: large range is not equal to empty range" {
+  match exec_b("eq = (range(0, 1 << 32) == range(0))") {
+    Ok(m) => assert_true(g(m, "eq") == Some(@value.Value::Bool(false)))
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
 // --- len ---
 
 ///|

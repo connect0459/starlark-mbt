@@ -607,13 +607,13 @@ fn range_equals(x : StarlarkRange, y : StarlarkRange) -> Bool {
   if xl != yl {
     return false
   }
-  if xl == 0 {
+  if xl == 0L {
     return true
   }
   if x.start != y.start {
     return false
   }
-  xl == 1 || x.step == y.step
+  xl == 1L || x.step == y.step
 }
 
 ///|

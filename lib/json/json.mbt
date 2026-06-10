@@ -195,9 +195,14 @@ fn encode_inner(
     }
     @value.Value::Range(r) => {
       let len = r.length()
-      let items : Array[@value.Value] = Array::make(len, @value.Value::None)
-      for i in 0..<len {
-        items[i] = @value.Value::Int(BigInt::from_int64(r.index_at(i)))
+      let items : Array[@value.Value] = Array::make(
+        len.to_int(),
+        @value.Value::None,
+      )
+      for i in 0..<len.to_int() {
+        items[i] = @value.Value::Int(
+          BigInt::from_int64(r.index_at(i.to_int64())),
+        )
       }
       encode_sequence(items.iter(), "range", state)
     }

@@ -6,7 +6,25 @@
 ///|
 test "StarlarkRange: length of range(10) is 10" {
   let r = StarlarkRange::new(0L, 10L, 1L)
-  assert_eq(r.length(), 10)
+  assert_eq(r.length(), 10L)
+}
+
+///|
+test "StarlarkRange: length of range(0, 1<<32) is 4294967296 without truncation" {
+  let r = StarlarkRange::new(0L, 4294967296L, 1L)
+  assert_eq(r.length(), 4294967296L)
+}
+
+///|
+test "StarlarkRange: length of range(0, 1<<31) is 2147483648 without truncation" {
+  let r = StarlarkRange::new(0L, 2147483648L, 1L)
+  assert_eq(r.length(), 2147483648L)
+}
+
+///|
+test "Value: truth of range(0, 1<<32) is true" {
+  let r = StarlarkRange::new(0L, 4294967296L, 1L)
+  assert_true(Value::Range(r).truth())
 }
 
 ///|
