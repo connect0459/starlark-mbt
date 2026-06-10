@@ -1,6 +1,5 @@
 // Iterator protocol for Starlark values.
-// Supports: List, Tuple, String (bytes), Bytes (ints), Dict (keys),
-//           Set (keys), Range.
+// Supports: List, Tuple, Dict (keys), Set (keys), Range.
 
 ///|
 priv struct IterCursor {
@@ -52,7 +51,7 @@ pub fn StarlarkIterator::collect(self : StarlarkIterator) -> Array[Value] {
 
 ///|
 /// Returns a `StarlarkIterator` over `v`. Returns `Err` if `v` is not iterable.
-/// Supported types: `List`, `Tuple`, `Bytes`, `Dict` (keys), `Set` (keys),
+/// Supported types: `List`, `Tuple`, `Dict` (keys), `Set` (keys),
 /// `Range`, string `elems`/`codepoints`, bytes `elems`, and `ExtVal` with an
 /// `iterate` callback.
 ///
@@ -66,7 +65,7 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
   match v {
     List(l) => Ok(list_iter(l))
     Tuple(t) => Ok(tuple_iter(t))
-    Bytes(b) => Ok(bytes_elem_iter(b))
+    Bytes(_) => Err("bytes value is not iterable; use b.elems()")
     Dict(d) => Ok(dict_key_iter(d))
     Set(s) => Ok(set_key_iter(s))
     Range(r) => Ok(range_iter(r))
@@ -137,23 +136,6 @@ fn tuple_iter(t : Array[Value]) -> StarlarkIterator {
         let v = t[cur.pos]
         cur.pos += 1
         Some(v)
-      } else {
-        None
-      }
-    },
-    done_fn: fn() { () },
-  }
-}
-
-///|
-fn bytes_elem_iter(b : Bytes) -> StarlarkIterator {
-  let cur = IterCursor::{ pos: 0 }
-  {
-    next_fn: fn() -> Value? {
-      if cur.pos < b.length() {
-        let byte_int = BigInt::from_int(b[cur.pos].to_int())
-        cur.pos += 1
-        Some(Int(byte_int))
       } else {
         None
       }
