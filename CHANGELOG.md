@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-10
+
+### Added
+
+- **REPL**: multi-line input with continuation prompt (`...`), Ctrl-C line
+  interruption, and errors routed to stderr (#68)
+- **REPL**: readline-style line editing and in-session history at a terminal on
+  native targets via vendored isocline; non-terminal stdin uses plain line
+  reading (#69)
+
+### Fixed
+
+- `cmd/starlark`: requesting the interactive REPL on a backend where the reader
+  is unavailable (e.g. `wasm-gc`) now prints a diagnostic instead of exiting
+  silently (#72)
+
+### Changed
+
+- `cmd` package reorganised to `cmd/starlark/` to match starlark-go conventions;
+  run with `moon run cmd/starlark -- <file>` (#64)
+
+### Documentation
+
+- Remove broken relative package links from root `README.mbt.md` (#66)
+
 ## [0.1.1] - 2026-06-08
 
 ### Fixed
@@ -154,6 +179,9 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 | `allow_global_reassign` | `false` | Module-level variable reassignment |
 | `load_binds_globally` | `false` | `load`-imported names visible globally |
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.1...HEAD>
+---
+
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.0...HEAD>
+[0.2.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.1...v0.2.0>
 [0.1.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.0...v0.1.1>
 [0.1.0]: <https://github.com/connect0459/starlark-mbt/releases/tag/v0.1.0>
