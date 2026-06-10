@@ -11,7 +11,7 @@ test "cycle in load graph is detected via sentinel already in cache" {
 }
 
 ///|
-test "failed module load is cached so the file is not re-attempted" {
+test "pre-populated failure in cache is returned without re-loading" {
   let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
   cache["/missing.star"] = Err(@errors.EvalError::simple("cannot load"))
   let loader = make_loader_with_cache(".", @eval.Options::default(), cache)
