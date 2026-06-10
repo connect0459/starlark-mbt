@@ -3093,8 +3093,11 @@ Coverage-driven + semantic audit run on 2026-06-10 (`.connect0459/tmp.md`).
   result not normalized.
 - [ ] **H-9**: `time.from_timestamp` passes raw `nsec` without normalization;
   `nsec` is silently truncated to `Int32`.
-- [ ] **H-10**: `starlark_equals` (used by `in` / hashtable) has no depth limit —
-  cyclic operand causes uncaught stack overflow.
+- [x] **H-10** (issue #78): `in` on List/Tuple, `list.remove`, and `list.index`
+  used `starlark_equals` (no depth limit); cyclic or deeply nested operands
+  caused uncaught stack overflow. All four paths now use
+  `starlark_equals_depth(compare_limit)`, matching the `==` operator path.
+  Fixed in commit `3190203`.
 
 ### MEDIUM — edge-case divergence
 
