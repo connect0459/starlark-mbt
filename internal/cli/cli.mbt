@@ -101,7 +101,7 @@ fn make_loader_with_cache(
     let load_src = @fs.read_file_to_string(resolved) catch {
       @fs.IOError(msg) => {
         let err = Err(
-          @errors.EvalError::simple("cannot load \"\{load_path}\": \{msg}"),
+          @errors.EvalError::simple("cannot load \"\{resolved}\": \{msg}"),
         )
         cache[resolved] = err
         return err
@@ -116,7 +116,7 @@ fn make_loader_with_cache(
       Ok(m) => Ok(m)
       Err(e) =>
         Err(
-          @errors.EvalError::simple("cannot load \"\{load_path}\": \{e.msg()}"),
+          @errors.EvalError::simple("cannot load \"\{resolved}\": \{e.msg()}"),
         )
     }
     cache[resolved] = result
