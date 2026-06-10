@@ -1290,7 +1290,14 @@ test "ternary arg with method call on ident parses as ECond" {
     ECall(_, args, _) => {
       assert_eq(args.length(), 1)
       match args[0] {
-        ArgPos(ECond(_, EIdent("flag", _), EIdent("s", _), _)) => ()
+        ArgPos(
+          ECond(
+            ECall(EDot(EIdent("s", _), "upper", _), upper_args, _),
+            EIdent("flag", _),
+            EIdent("s", _),
+            _
+          )
+        ) => assert_eq(upper_args.length(), 0)
         _ => fail("expected ArgPos(ECond(s.upper(), flag, s))")
       }
     }
