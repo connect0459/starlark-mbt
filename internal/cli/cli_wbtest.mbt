@@ -36,3 +36,17 @@ test "failed load result is written to cache and returned on subsequent calls" {
   let r2 = loader(thread, "/any.star")
   assert_true(r2 is Err(_))
 }
+
+///|
+test "absolute path with dot-dot segments is normalized before use as cache key" {
+  // /dir/../foo.star must resolve to /foo.star, not be stored verbatim.
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  cache["/foo.star"] = Err(@errors.EvalError::simple("cycle in load graph"))
+  let loader = make_loader_with_cache("/base", @eval.Options::default(), cache)
+  let thread = @eval.Thread::new("test")
+  match loader(thread, "/dir/../foo.star") {
+    Err(e) => assert_true(e.msg().contains("cycle in load graph"))
+    Ok(_) =>
+      fail("expected /dir/../foo.star to normalize to /foo.star and hit cache")
+  }
+}
