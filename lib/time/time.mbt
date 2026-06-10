@@ -54,10 +54,11 @@ fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
 
 ///|
 fn normalize_time_parts(sec : Int64, raw_nsec : Int) -> (Int64, Int) {
-  if raw_nsec >= 1_000_000_000 {
-    (sec + 1L, raw_nsec - 1_000_000_000)
+  let nps = ns_per_second.to_int()
+  if raw_nsec >= nps {
+    (sec + 1L, raw_nsec - nps)
   } else if raw_nsec < 0 {
-    (sec - 1L, raw_nsec + 1_000_000_000)
+    (sec - 1L, raw_nsec + nps)
   } else {
     (sec, raw_nsec)
   }
