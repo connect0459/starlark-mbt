@@ -1586,13 +1586,12 @@ fn call_list_method(
       let item = pos_args[0]
       let mut found = -1
       for i in 0..<l.length() {
-        match @value.starlark_equals_depth(l[i], item, @value.compare_limit) {
-          Ok(true) => {
-            found = i
-            break
-          }
-          Ok(false) => ()
-          Err(e) => raise EvalErr(make_eval_error(ctx, e))
+        if check(
+            ctx,
+            @value.starlark_equals_depth(l[i], item, @value.compare_limit),
+          ) {
+          found = i
+          break
         }
       }
       if found < 0 {
@@ -1674,10 +1673,11 @@ fn call_list_method(
         n
       }
       for i in start..<end {
-        match @value.starlark_equals_depth(l[i], item, @value.compare_limit) {
-          Ok(true) => return @value.Value::Int(BigInt::from_int(i))
-          Ok(false) => ()
-          Err(e) => raise EvalErr(make_eval_error(ctx, e))
+        if check(
+            ctx,
+            @value.starlark_equals_depth(l[i], item, @value.compare_limit),
+          ) {
+          return @value.Value::Int(BigInt::from_int(i))
         }
       }
       raise EvalErr(make_eval_error(ctx, "index: value not in list"))
