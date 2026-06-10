@@ -58,10 +58,10 @@ test "iterate: string with multibyte is not iterable" {
 }
 
 ///|
-test "iterate: bytes is not iterable; use elems()" {
+test "iterate: bytes is not iterable" {
   let b = Value::Bytes(Bytes::from_array([b'\x01', b'\x02', b'\x03']))
   match iterate(b) {
-    Err(msg) => assert_true(msg.contains("not iterable"))
+    Err(msg) => assert_eq(msg, "bytes value is not iterable")
     Ok(_) => panic()
   }
 }

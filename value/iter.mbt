@@ -1,5 +1,6 @@
 // Iterator protocol for Starlark values.
-// Supports: List, Tuple, Dict (keys), Set (keys), Range.
+// Supports: List, Tuple, Dict (keys), Set (keys), Range,
+//           StringElems, StringCodepoints, BytesElems, ExtVal.
 
 ///|
 priv struct IterCursor {
@@ -65,7 +66,6 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
   match v {
     List(l) => Ok(list_iter(l))
     Tuple(t) => Ok(tuple_iter(t))
-    Bytes(_) => Err("bytes value is not iterable; use b.elems()")
     Dict(d) => Ok(dict_key_iter(d))
     Set(s) => Ok(set_key_iter(s))
     Range(r) => Ok(range_iter(r))
