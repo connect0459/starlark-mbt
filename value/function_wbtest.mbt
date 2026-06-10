@@ -35,6 +35,13 @@ test "starlark_equals: a Function is equal to itself" {
 }
 
 ///|
+test "starlark_equals_depth: a Function is equal to itself" {
+  let f = StarlarkFunction::new("f", @errors.Position::new("", 0, 0))
+  let v = Value::Function(f)
+  assert_true(starlark_equals_depth(v, v, 10) == Ok(true))
+}
+
+///|
 test "iterate: Value::Function is not iterable" {
   let f = StarlarkFunction::new("f", @errors.Position::new("", 0, 0))
   assert_true(iterate(Value::Function(f)) is Err(_))

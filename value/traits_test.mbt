@@ -600,3 +600,70 @@ test "starlark_equals_depth: bound methods are equal only when they share identi
   assert_true(starlark_equals_depth(same, same_again, 10) == Ok(true))
   assert_true(starlark_equals_depth(same, other, 10) == Ok(false))
 }
+
+// --- identity equality: same object is always equal to itself ---
+
+///|
+test "starlark_equals: same Module object is equal to itself" {
+  let m = StarlarkModule::new("a", {})
+  assert_true(Value::Module(m).starlark_equals(Value::Module(m)))
+}
+
+///|
+test "starlark_equals: same StringElems is equal to itself" {
+  let e = StarlarkStringElems::new(StarlarkString::new("abc"), false)
+  assert_true(Value::StringElems(e).starlark_equals(Value::StringElems(e)))
+}
+
+///|
+test "starlark_equals: same StringCodepoints is equal to itself" {
+  let c = StarlarkStringCodepoints::new(StarlarkString::new("abc"), false)
+  assert_true(
+    Value::StringCodepoints(c).starlark_equals(Value::StringCodepoints(c)),
+  )
+}
+
+///|
+test "starlark_equals: same BytesElems is equal to itself" {
+  let e = StarlarkBytesElems::new(@utf8.encode("hello"))
+  assert_true(Value::BytesElems(e).starlark_equals(Value::BytesElems(e)))
+}
+
+///|
+test "starlark_equals_depth: same Module object is equal to itself" {
+  let m = StarlarkModule::new("a", {})
+  assert_true(
+    starlark_equals_depth(Value::Module(m), Value::Module(m), 10) == Ok(true),
+  )
+}
+
+///|
+test "starlark_equals_depth: same StringElems is equal to itself" {
+  let e = StarlarkStringElems::new(StarlarkString::new("abc"), false)
+  assert_true(
+    starlark_equals_depth(Value::StringElems(e), Value::StringElems(e), 10) ==
+    Ok(true),
+  )
+}
+
+///|
+test "starlark_equals_depth: same StringCodepoints is equal to itself" {
+  let c = StarlarkStringCodepoints::new(StarlarkString::new("abc"), false)
+  assert_true(
+    starlark_equals_depth(
+      Value::StringCodepoints(c),
+      Value::StringCodepoints(c),
+      10,
+    ) ==
+    Ok(true),
+  )
+}
+
+///|
+test "starlark_equals_depth: same BytesElems is equal to itself" {
+  let e = StarlarkBytesElems::new(@utf8.encode("hello"))
+  assert_true(
+    starlark_equals_depth(Value::BytesElems(e), Value::BytesElems(e), 10) ==
+    Ok(true),
+  )
+}
