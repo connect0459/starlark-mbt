@@ -1,5 +1,6 @@
 import {
   "moonbitlang/x/fs",
+  "moonbitlang/x/path",
   "moonbitlang/core/encoding/utf8",
   "connect0459/starlark/errors",
   "connect0459/starlark/eval",

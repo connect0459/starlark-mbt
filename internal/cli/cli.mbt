@@ -8,7 +8,7 @@ fn resolve_load(base_dir : String, load_path : String) -> String {
   if @path.Path(load_path).is_absolute() {
     load_path
   } else {
-    @path.Path(base_dir).join(@path.Path(load_path)).to_string()
+    @path.Path(base_dir).join(@path.Path(load_path)).normalize().to_string()
   }
 }
 
