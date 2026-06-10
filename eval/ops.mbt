@@ -1198,7 +1198,10 @@ fn in_op(
   match haystack {
     @value.Value::List(l) => {
       for item in l.iter() {
-        if needle.starlark_equals(item) {
+        if check(
+            ctx,
+            @value.starlark_equals_depth(needle, item, @value.compare_limit),
+          ) {
           return @value.Value::Bool(true)
         }
       }
@@ -1206,7 +1209,10 @@ fn in_op(
     }
     @value.Value::Tuple(t) => {
       for item in t {
-        if needle.starlark_equals(item) {
+        if check(
+            ctx,
+            @value.starlark_equals_depth(needle, item, @value.compare_limit),
+          ) {
           return @value.Value::Bool(true)
         }
       }
