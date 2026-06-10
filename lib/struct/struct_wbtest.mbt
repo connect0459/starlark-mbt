@@ -173,3 +173,12 @@ test "struct: only the plus operator participates in binary dispatch" {
   let right = make_struct(default_ctor, [("b", @value.Value::Int(2N))])
   assert_true(custom_of(left).get_binary("-", right, true) == None)
 }
+
+///|
+test "struct: field names are sorted lexicographically not by length" {
+  let s = make_struct(default_ctor, [
+    ("b", @value.Value::Int(1N)),
+    ("aa", @value.Value::Int(2N)),
+  ])
+  assert_eq(custom_of(s).get_repr(), "struct(aa = 2, b = 1)")
+}

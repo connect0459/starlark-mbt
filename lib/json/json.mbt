@@ -1,4 +1,19 @@
 ///|
+fn str_lex_cmp(a : String, b : String) -> Int {
+  let la = a.length()
+  let lb = b.length()
+  let len = if la < lb { la } else { lb }
+  for i in 0..<len {
+    let ca = a[i].to_int()
+    let cb = b[i].to_int()
+    if ca != cb {
+      return ca - cb
+    }
+  }
+  la - lb
+}
+
+///|
 // Reports whether every byte is printable ASCII (0x20..0x7f). Matches
 // starlark-go's `isPrintableASCII` (`b >= 0x20 && b < 0x80`).
 fn is_printable_ascii(bytes : Bytes) -> Bool {
@@ -231,7 +246,7 @@ fn encode_ext_val_as_object(
   state : EncodeState,
 ) -> Result[String, String] {
   let sorted = names.copy()
-  sorted.sort()
+  sorted.sort_by(fn(a, b) { str_lex_cmp(a, b) })
   let buf = StringBuilder::new()
   buf.write_char('{')
   let mut first = true
@@ -307,7 +322,7 @@ fn encode_dict_val(
   if first_err is Some(e) {
     return Err(e)
   }
-  pairs.sort_by(fn(a, b) { a.0.compare(b.0) })
+  pairs.sort_by(fn(a, b) { str_lex_cmp(a.0, b.0) })
   let buf = StringBuilder::new()
   buf.write_char('{')
   let mut first = true
