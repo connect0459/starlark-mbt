@@ -6,11 +6,20 @@ fn str_lex_cmp(a : String, b : String) -> Int {
   for i in 0..<len {
     let ca = a[i].to_int()
     let cb = b[i].to_int()
-    if ca != cb {
-      return ca - cb
+    if ca < cb {
+      return -1
+    }
+    if ca > cb {
+      return 1
     }
   }
-  la - lb
+  if la < lb {
+    -1
+  } else if la > lb {
+    1
+  } else {
+    0
+  }
 }
 
 ///|
