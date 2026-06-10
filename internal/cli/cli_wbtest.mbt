@@ -23,9 +23,7 @@ test "pre-populated failure in cache is returned without re-loading" {
 }
 
 ///|
-test "make_loader produces a shared cache across nested loads" {
-  // Verifies that make_loader returns a closure whose cache is
-  // accessible to inner loaders created from the same root.
+test "make_loader returns a callable loader" {
   let loader = make_loader(".", @eval.Options::default())
   assert_true(loader is _)
 }
