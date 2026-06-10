@@ -688,6 +688,15 @@ pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
   }
   let p = self.pos
   let e = self.parse_or_test()
+  self.finish_cond_tail_from(e, p)
+}
+
+///|
+fn Parser::finish_cond_tail_from(
+  self : Parser,
+  e : @syntax.Expr,
+  p : @errors.Position,
+) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::If {
     self.advance()
     let cond = self.parse_or_test()
@@ -698,9 +707,10 @@ pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
     }
     self.advance()
     let else_e = self.parse_test()
-    return @syntax.Expr::ECond(e, cond, else_e, p)
+    @syntax.Expr::ECond(e, cond, else_e, p)
+  } else {
+    e
   }
-  e
 }
 
 ///|
@@ -1075,7 +1085,7 @@ fn Parser::parse_call_arg(self : Parser) -> @syntax.Arg raise ParseErr {
       } else {
         let ident_expr = @syntax.Expr::EIdent(name, p)
         let e = self.finish_primary_from_expr(ident_expr)
-        let full = self.finish_full_expr(e, p)
+        let full = self.finish_test_from(e, p)
         self.reject_malformed_kwarg()
         @syntax.Arg::ArgPos(full)
       }
@@ -1144,6 +1154,16 @@ fn Parser::finish_full_expr(
   let e7 = self.finish_comparison_from(e6, p)
   let e8 = self.finish_and_from(e7, p)
   self.finish_or_from(e8, p)
+}
+
+///|
+fn Parser::finish_test_from(
+  self : Parser,
+  e : @syntax.Expr,
+  p : @errors.Position,
+) -> @syntax.Expr raise ParseErr {
+  let or_e = self.finish_full_expr(e, p)
+  self.finish_cond_tail_from(or_e, p)
 }
 
 ///|

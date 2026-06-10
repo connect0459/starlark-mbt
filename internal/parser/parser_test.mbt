@@ -1228,3 +1228,79 @@ test "load statement accepts trailing comma before closing paren" {
     Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
+
+// --- Ternary expression as call argument ---
+
+///|
+test "ternary arg starting with ident parses as ECond" {
+  match parse_e("f(x if True else 0)") {
+    ECall(_, args, _) => {
+      assert_eq(args.length(), 1)
+      match args[0] {
+        ArgPos(
+          ECond(
+            EIdent("x", _),
+            ELiteral(LitBool(true), _),
+            ELiteral(LitInt(0N), _),
+            _
+          )
+        ) => ()
+        _ => fail("expected ArgPos(ECond(x, True, 0))")
+      }
+    }
+    _ => fail("expected ECall")
+  }
+}
+
+///|
+test "ternary arg starting with ident followed by binary expr parses as ECond" {
+  match parse_e("f(a if a < b else b)") {
+    ECall(_, args, _) => {
+      assert_eq(args.length(), 1)
+      match args[0] {
+        ArgPos(ECond(EIdent("a", _), _, EIdent("b", _), _)) => ()
+        _ => fail("expected ArgPos(ECond(a, a < b, b))")
+      }
+    }
+    _ => fail("expected ECall")
+  }
+}
+
+///|
+test "ternary arg as first of multiple args parses correctly" {
+  match parse_e("f(x if c else y, 5)") {
+    ECall(_, args, _) => {
+      assert_eq(args.length(), 2)
+      match args[0] {
+        ArgPos(ECond(EIdent("x", _), _, EIdent("y", _), _)) => ()
+        _ => fail("expected first arg to be ECond")
+      }
+      match args[1] {
+        ArgPos(ELiteral(LitInt(5N), _)) => ()
+        _ => fail("expected second arg to be 5")
+      }
+    }
+    _ => fail("expected ECall")
+  }
+}
+
+///|
+test "ternary arg with method call on ident parses as ECond" {
+  match parse_e("f(s.upper() if flag else s)") {
+    ECall(_, args, _) => {
+      assert_eq(args.length(), 1)
+      match args[0] {
+        ArgPos(
+          ECond(
+            ECall(EDot(EIdent("s", _), "upper", _), upper_args, _),
+            EIdent("flag", _),
+            EIdent("s", _),
+            _
+          )
+        ) => assert_eq(upper_args.length(), 0)
+        _ => fail("expected ArgPos(ECond(s.upper(), flag, s))")
+      }
+    }
+    _ => fail("expected ECall")
+  }
+}
