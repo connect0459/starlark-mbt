@@ -647,7 +647,9 @@ fn Parser::parse_expr_list_as_expr(
   while self.tok == @lexer.Token::Comma {
     self.advance()
     if self.tok == @lexer.Token::In || is_stmt_terminator(self.tok) {
-      break
+      raise ParseErr(
+        self.syntax_error("unparenthesized tuple with trailing comma"),
+      )
     }
     items.push(self.parse_primary())
   }
@@ -735,9 +737,6 @@ fn Parser::parse_lambda_params(
   params.push(self.parse_param())
   while self.tok == @lexer.Token::Comma {
     self.advance()
-    if self.tok == @lexer.Token::Colon {
-      break
-    }
     params.push(self.parse_param())
   }
   params
@@ -1004,7 +1003,9 @@ fn Parser::parse_subscript_tail(
       while self.tok == @lexer.Token::Comma {
         self.advance()
         if self.tok == @lexer.Token::RBrack {
-          break
+          raise ParseErr(
+            self.syntax_error("unparenthesized tuple with trailing comma"),
+          )
         }
         elems.push(self.parse_test())
       }

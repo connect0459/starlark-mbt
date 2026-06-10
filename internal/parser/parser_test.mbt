@@ -1284,6 +1284,109 @@ test "ternary arg as first of multiple args parses correctly" {
   }
 }
 
+// --- Trailing comma rejection ---
+
+///|
+test "subscript trailing comma is rejected" {
+  match @parser.parse_expr("test.star", "a[1,]") {
+    Err(e) =>
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+    Ok(_) => fail("expected error for trailing comma in subscript")
+  }
+}
+
+///|
+test "subscript multi-index tuple key is accepted" {
+  match @parser.parse_expr("test.star", "a[1, 2]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "subscript multi-index with trailing comma is rejected" {
+  match @parser.parse_expr("test.star", "a[1, 2,]") {
+    Err(e) =>
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+    Ok(_) => fail("expected error for trailing comma in subscript")
+  }
+}
+
+///|
+test "subscript single index is accepted" {
+  match @parser.parse_expr("test.star", "a[1]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "subscript slice is accepted" {
+  match @parser.parse_expr("test.star", "a[1:2]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "lambda trailing comma before colon is rejected" {
+  match @parser.parse_expr("test.star", "lambda x,: x") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for trailing comma in lambda params")
+  }
+}
+
+///|
+test "lambda multi-param trailing comma before colon is rejected" {
+  match @parser.parse_expr("test.star", "lambda x, y,: x") {
+    Err(_) => ()
+    Ok(_) => fail("expected error for trailing comma in lambda params")
+  }
+}
+
+///|
+test "lambda without trailing comma is accepted" {
+  match @parser.parse_expr("test.star", "lambda x, y: x") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "for-loop target with trailing comma is rejected" {
+  match @parser.parse_file("test.star", "for x, in xs:\n  pass\n") {
+    Err(e) =>
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+    Ok(_) => fail("expected error for trailing comma in for-target")
+  }
+}
+
+///|
+test "for-loop multi-target with trailing comma is rejected" {
+  match @parser.parse_file("test.star", "for x, y, in xs:\n  pass\n") {
+    Err(e) =>
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+    Ok(_) => fail("expected error for trailing comma in for-target")
+  }
+}
+
+///|
+test "for-loop multi-target without trailing comma is accepted" {
+  match @parser.parse_file("test.star", "for x, y in xs:\n  pass\n") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "comprehension target with trailing comma is rejected" {
+  match @parser.parse_expr("test.star", "[x for y, in xs]") {
+    Err(e) =>
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+    Ok(_) => fail("expected error for trailing comma in comprehension target")
+  }
+}
+
 ///|
 test "ternary arg with method call on ident parses as ECond" {
   match parse_e("f(s.upper() if flag else s)") {
