@@ -767,3 +767,60 @@ test "eval_expr: percent uppercase G format uses uppercase E as exponent marker"
     _ => fail("expected String result")
   }
 }
+
+// --- comparison depth limit: `in` / list.index / list.remove ---
+
+///|
+fn make_nested_list(depth : Int) -> @value.Value {
+  let mut v : @value.Value = @value.Value::Int(1N)
+  for _ in 0..<depth {
+    v = @value.Value::List(@value.StarlarkList::new([v]))
+  }
+  v
+}
+
+///|
+test "eval_expr: `in` on a list with a deeply nested element raises comparison depth error" {
+  let x = make_nested_list(11)
+  match eval_with_env("x in [x]", [("x", x)]) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
+}
+
+///|
+test "eval_expr: `in` on a tuple with a deeply nested element raises comparison depth error" {
+  let x = make_nested_list(11)
+  match eval_with_env("x in (x,)", [("x", x)]) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
+}
+
+///|
+test "eval_expr: list.index with a deeply nested element raises comparison depth error" {
+  let x = make_nested_list(11)
+  let lst = @value.Value::List(@value.StarlarkList::new([x]))
+  match eval_with_env("lst.index(x)", [("lst", lst), ("x", x)]) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
+}
+
+///|
+test "exec_file: list.remove with a deeply nested element raises comparison depth error" {
+  let x = make_nested_list(11)
+  let lst = @value.Value::List(@value.StarlarkList::new([x]))
+  assert_true(
+    exec_with_predeclared("lst.remove(x)", [("lst", lst), ("x", x)]) is Err(_),
+  )
+}

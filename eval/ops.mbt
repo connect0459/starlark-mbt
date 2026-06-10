@@ -1198,16 +1198,20 @@ fn in_op(
   match haystack {
     @value.Value::List(l) => {
       for item in l.iter() {
-        if needle.starlark_equals(item) {
-          return @value.Value::Bool(true)
+        match @value.starlark_equals_depth(needle, item, @value.compare_limit) {
+          Ok(true) => return @value.Value::Bool(true)
+          Ok(false) => ()
+          Err(e) => raise EvalErr(make_eval_error(ctx, e))
         }
       }
       @value.Value::Bool(false)
     }
     @value.Value::Tuple(t) => {
       for item in t {
-        if needle.starlark_equals(item) {
-          return @value.Value::Bool(true)
+        match @value.starlark_equals_depth(needle, item, @value.compare_limit) {
+          Ok(true) => return @value.Value::Bool(true)
+          Ok(false) => ()
+          Err(e) => raise EvalErr(make_eval_error(ctx, e))
         }
       }
       @value.Value::Bool(false)
