@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **REPL**: multi-line input with continuation prompt (`...`), Ctrl-C line
   interruption, and errors routed to stderr (#68)
-- **REPL**: readline-style line editing and persistent history on native targets
-  via vendored isocline; non-TTY and non-native builds fall back to plain line
+- **REPL**: readline-style line editing and in-session history at a terminal on
+  native targets via vendored isocline; non-terminal stdin uses plain line
   reading (#69)
 
 ### Fixed
