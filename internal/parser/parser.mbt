@@ -688,6 +688,15 @@ pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
   }
   let p = self.pos
   let e = self.parse_or_test()
+  self.finish_cond_tail_from(e, p)
+}
+
+///|
+fn Parser::finish_cond_tail_from(
+  self : Parser,
+  e : @syntax.Expr,
+  p : @errors.Position,
+) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::If {
     self.advance()
     let cond = self.parse_or_test()
@@ -698,9 +707,10 @@ pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
     }
     self.advance()
     let else_e = self.parse_test()
-    return @syntax.Expr::ECond(e, cond, else_e, p)
+    @syntax.Expr::ECond(e, cond, else_e, p)
+  } else {
+    e
   }
-  e
 }
 
 ///|
@@ -1153,20 +1163,7 @@ fn Parser::finish_test_from(
   p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let or_e = self.finish_full_expr(e, p)
-  if self.tok == @lexer.Token::If {
-    self.advance()
-    let cond = self.parse_or_test()
-    if self.tok != @lexer.Token::Else {
-      raise ParseErr(
-        self.syntax_error("conditional expression without else clause"),
-      )
-    }
-    self.advance()
-    let else_e = self.parse_test()
-    @syntax.Expr::ECond(or_e, cond, else_e, p)
-  } else {
-    or_e
-  }
+  self.finish_cond_tail_from(or_e, p)
 }
 
 ///|
