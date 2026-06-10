@@ -176,6 +176,53 @@ test "time module: parse_time reports malformed RFC3339 input" {
 }
 
 ///|
+test "time module: parse_time rejects RFC3339 trailing garbage after Z" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50Zgarbage"), "extra text")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50Z "), "extra text")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time rejects RFC3339 trailing garbage after numeric timezone" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50+00:00garbage"), "extra text")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50+00:00 "), "extra text")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time still accepts valid RFC3339 without trailing garbage" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22T23:20:50Z"),
+      #|  time.parse_time("2021-03-22T23:20:50+00:00"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: parse_time normalizes fractional precision in RFC3339" {
   let errs = run_star_string(
     (

@@ -65,6 +65,64 @@ fn normalize_time_parts(sec : Int64, raw_nsec : Int) -> (Int64, Int) {
 }
 
 ///|
+fn floor_div_int64(a : Int64, b : Int64) -> Int64 {
+  let q = a / b
+  let r = a - q * b
+  if r < 0L {
+    q - 1L
+  } else {
+    q
+  }
+}
+
+///|
+fn floor_div(a : Int, b : Int) -> Int {
+  let q = a / b
+  let r = a - q * b
+  if r < 0 {
+    q - 1
+  } else {
+    q
+  }
+}
+
+///|
+fn normalize_to_unix_sec(
+  year : Int,
+  month : Int,
+  day : Int,
+  hour : Int,
+  minute : Int,
+  second : Int,
+  nanosecond : Int,
+) -> Result[(Int64, Int), String] {
+  let ns = nanosecond.to_int64()
+  let carry_s = floor_div_int64(ns, ns_per_second)
+  let ns_norm = (ns - carry_s * ns_per_second).to_int()
+  let total_sec = hour.to_int64() * 3600L +
+    minute.to_int64() * 60L +
+    second.to_int64() +
+    carry_s
+  let carry_d = floor_div_int64(total_sec, 86400L)
+  let sec_of_day = total_sec - carry_d * 86400L
+  let m0 = month - 1
+  let extra_years = floor_div(m0, 12)
+  let month_norm = m0 - extra_years * 12 + 1
+  let year_norm_64 = year.to_int64() + extra_years.to_int64()
+  if year_norm_64 < -9999L || year_norm_64 > 9999L {
+    return Err("time.time: date/time out of supported range")
+  }
+  let year_norm = year_norm_64.to_int()
+  let first_of_month = @x_time.PlainDate::of(year_norm, month_norm, 1) catch {
+    _ => return Err("time.time: date/time out of supported range")
+  }
+  let first_unix_day = first_of_month.to_unix_day()
+  let unix_day = first_unix_day + (day - 1).to_int64() + carry_d
+  let unix_sec = unix_day * 86400L + sec_of_day
+  Ok((unix_sec, ns_norm))
+}
+
+///|
 /// Folds a 64-bit value into a 32-bit hash by XOR-ing its high and low halves,
 /// so both word boundaries contribute to the result (a bare truncation would
 /// drop the high 32 bits entirely).
@@ -1170,8 +1228,11 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
   } else {
     (0, i)
   }
-  let tz_offset_sec = if i >= len || chars[i] == 'Z' || chars[i] == 'z' {
-    0
+  let (tz_offset_sec, tz_end) = if i >= len ||
+    chars[i] == 'Z' ||
+    chars[i] == 'z' {
+    let end = if i >= len { i } else { i + 1 }
+    (0, end)
   } else if chars[i] == '+' || chars[i] == '-' {
     let sign = if chars[i] == '+' { 1 } else { -1 }
     let j = i + 1
@@ -1183,13 +1244,16 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
       return Err("time: invalid timezone in \"\{s}\"")
     }
     let j = j + 1
-    let (tz_minute, _j) = match parse_2digits(chars, j) {
+    let (tz_minute, j) = match parse_2digits(chars, j) {
       Some(v) => v
       None => return Err("time: invalid timezone in \"\{s}\"")
     }
-    sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute)
+    (sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute), j)
   } else {
     return Err("time: invalid timezone in \"\{s}\"")
+  }
+  if tz_end != len {
+    return Err("time: extra text after date \"\{s}\"")
   }
   let dt = @x_time.ZonedDateTime::of(
     year,
@@ -1873,8 +1937,8 @@ fn make_time_constructor_fn() -> @value.Value {
       return Err("time: unexpected positional arguments")
     }
     let mut year = 0
-    let mut month = 1
-    let mut day = 1
+    let mut month = 0
+    let mut day = 0
     let mut hour = 0
     let mut minute = 0
     let mut second = 0
@@ -1927,52 +1991,37 @@ fn make_time_constructor_fn() -> @value.Value {
       }
     }
     if location == "UTC" || location == "" {
-      let dt = @x_time.ZonedDateTime::of(
-        year,
-        month,
-        day,
-        hour~,
-        minute~,
-        second~,
-        nanosecond~,
-        zone=@x_time.utc_zone,
-      ) catch {
-        _ => return Err("time.time: invalid date/time parameters")
+      let (unix_sec, ns_norm) = match
+        normalize_to_unix_sec(
+          year, month, day, hour, minute, second, nanosecond,
+        ) {
+        Ok(v) => v
+        Err(e) => return Err(e)
       }
-      Ok(make_time(dt.to_unix_second(), nanosecond))
+      Ok(make_time(unix_sec, ns_norm))
     } else {
       if !is_valid_timezone_impl(location) {
         return Err("time.time: unsupported timezone \"\{location}\"")
       }
-      // Compute "local time as UTC" unix timestamp
-      let dt_as_utc = @x_time.ZonedDateTime::of(
-        year,
-        month,
-        day,
-        hour~,
-        minute~,
-        second~,
-        nanosecond~,
-        zone=@x_time.utc_zone,
-      ) catch {
-        _ => return Err("time.time: invalid date/time parameters")
+      let (local_sec, ns_norm) = match
+        normalize_to_unix_sec(
+          year, month, day, hour, minute, second, nanosecond,
+        ) {
+        Ok(v) => v
+        Err(e) => return Err(e)
       }
-      let local_sec = dt_as_utc.to_unix_second()
-      // Get timezone offset at local_sec (as an estimate)
       let offset = match get_tz_offset_at_impl(location, local_sec) {
         Some(o) => o
         None =>
           return Err("time.time: cannot determine offset for \"\{location}\"")
       }
-      // UTC = local_time - offset (since local = UTC + offset)
       let utc_sec = local_sec - offset.to_int64()
-      // Re-check offset at the computed UTC time
       let final_offset = match get_tz_offset_at_impl(location, utc_sec) {
         Some(o) => o
         None => offset
       }
       let final_sec = local_sec - final_offset.to_int64()
-      Ok(make_time_at_zone(final_sec, nanosecond, final_offset, location))
+      Ok(make_time_at_zone(final_sec, ns_norm, final_offset, location))
     }
   })
 }
