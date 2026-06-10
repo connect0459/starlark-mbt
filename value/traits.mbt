@@ -62,11 +62,11 @@ pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
     // Bound methods use identity: each access creates a new unique object
     (BoundMethod(x), BoundMethod(y)) => x.id == y.id
     // Modules use identity equality
-    (Module(_), Module(_)) => false
+    (Module(x), Module(y)) => physical_equal(x, y)
     // Lazy iterators use identity equality
-    (StringElems(_), StringElems(_)) => false
-    (StringCodepoints(_), StringCodepoints(_)) => false
-    (BytesElems(_), BytesElems(_)) => false
+    (StringElems(x), StringElems(y)) => physical_equal(x, y)
+    (StringCodepoints(x), StringCodepoints(y)) => physical_equal(x, y)
+    (BytesElems(x), BytesElems(y)) => physical_equal(x, y)
     (ExtVal(a), ExtVal(b)) => a.get_equals(ExtVal(b))
     _ => false
   }
@@ -428,13 +428,13 @@ pub fn starlark_equals_depth(
     (Dict(x), Dict(y)) => dict_equals_depth(x, y, depth - 1)
     (Set(x), Set(y)) => set_equals_depth(x, y, depth - 1)
     (Range(x), Range(y)) => Ok(range_equals(x, y))
-    (Function(_), Function(_)) => Ok(false)
+    (Function(x), Function(y)) => Ok(physical_equal(x, y))
     (Builtin(x), Builtin(y)) => Ok(x.name == y.name)
     (BoundMethod(x), BoundMethod(y)) => Ok(x.id == y.id)
-    (Module(_), Module(_)) => Ok(false)
-    (StringElems(_), StringElems(_)) => Ok(false)
-    (StringCodepoints(_), StringCodepoints(_)) => Ok(false)
-    (BytesElems(_), BytesElems(_)) => Ok(false)
+    (Module(x), Module(y)) => Ok(physical_equal(x, y))
+    (StringElems(x), StringElems(y)) => Ok(physical_equal(x, y))
+    (StringCodepoints(x), StringCodepoints(y)) => Ok(physical_equal(x, y))
+    (BytesElems(x), BytesElems(y)) => Ok(physical_equal(x, y))
     (ExtVal(a), ExtVal(b)) => Ok(a.get_equals(ExtVal(b)))
     _ => Ok(false)
   }
