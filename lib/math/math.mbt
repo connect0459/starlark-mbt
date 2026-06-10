@@ -79,8 +79,26 @@ fn float_mod(x : Double, y : Double) -> Double {
 }
 
 ///|
+fn float_rint(x : Double) -> Double {
+  let f = @std_math.floor(x)
+  let diff = x - f
+  if diff < 0.5 {
+    f
+  } else if diff > 0.5 {
+    f + 1.0
+  } else {
+    let half_f = @std_math.floor(f / 2.0)
+    if half_f * 2.0 == f {
+      f
+    } else {
+      f + 1.0
+    }
+  }
+}
+
+///|
 fn float_remainder(x : Double, y : Double) -> Double {
-  let n = @std_math.round(x / y)
+  let n = float_rint(x / y)
   if n == 0.0 {
     x
   } else {

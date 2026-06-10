@@ -393,6 +393,22 @@ test "math_module: log rejects wrong argument counts and keyword args" {
 }
 
 ///|
+test "math_module: remainder uses round-half-to-even for non-tie cases" {
+  let m = math_module()
+  expect_float(call2(m, "remainder", fv(3.0), fv(5.0)), -2.0)
+  expect_float(call2(m, "remainder", fv(3.5), fv(2.0)), -0.5)
+}
+
+///|
+test "math_module: remainder applies IEEE 754 round-half-to-even on tie" {
+  let m = math_module()
+  expect_float(call2(m, "remainder", fv(5.0), fv(2.0)), 1.0)
+  expect_float(call2(m, "remainder", fv(7.0), fv(2.0)), -1.0)
+  expect_float(call2(m, "remainder", fv(-5.0), fv(2.0)), -1.0)
+  expect_float(call2(m, "remainder", fv(-7.0), fv(2.0)), 1.0)
+}
+
+///|
 test "math_module: rounding functions reject wrong argument counts and keyword args" {
   let m = math_module()
   expect_err(call_raw(m, "ceil", [], []), "got 0 arguments, want 1")
