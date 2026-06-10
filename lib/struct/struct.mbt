@@ -1,4 +1,28 @@
 ///|
+fn str_lex_cmp(a : String, b : String) -> Int {
+  let la = a.length()
+  let lb = b.length()
+  let len = if la < lb { la } else { lb }
+  for i in 0..<len {
+    let ca = a[i].to_int()
+    let cb = b[i].to_int()
+    if ca < cb {
+      return -1
+    }
+    if ca > cb {
+      return 1
+    }
+  }
+  if la < lb {
+    -1
+  } else if la > lb {
+    1
+  } else {
+    0
+  }
+}
+
+///|
 fn parse_uint_str(s : String) -> Int? {
   if s.is_empty() {
     return None
@@ -111,7 +135,7 @@ fn struct_get_attr(
   let mut hi = n
   while lo < hi {
     let mid = (lo + hi) / 2
-    if entries[mid].0 < name {
+    if str_lex_cmp(entries[mid].0, name) < 0 {
       lo = mid + 1
     } else {
       hi = mid
@@ -280,7 +304,7 @@ pub fn make_struct(
   entries : Array[(String, @value.Value)],
 ) -> @value.Value {
   let sorted = entries.copy()
-  sorted.sort_by(fn(a, b) { a.0.compare(b.0) })
+  sorted.sort_by(fn(a, b) { str_lex_cmp(a.0, b.0) })
   let frozen_ref : Ref[Bool] = { val: false }
   @value.Value::ExtVal(
     @value.CustomValue::new(fn() { "struct" }, fn() { true }, fn() {

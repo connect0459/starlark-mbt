@@ -143,6 +143,31 @@ test "encode dict with sorted string keys" {
 }
 
 ///|
+test "encode dict sorts keys lexicographically not by length" {
+  let d = @value.StarlarkDict::new()
+  let _ = d.set(str_val("b"), int_val(1L))
+  let _ = d.set(str_val("aa"), int_val(2L))
+  check_encode(@value.Value::Dict(d), "{\"aa\":2,\"b\":1}")
+}
+
+///|
+test "encode ExtVal attrs sorts keys lexicographically not by length" {
+  let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
+    "myobj()"
+  }).with_attrs(
+    fn(name) {
+      match name {
+        "b" => Ok(Some(int_val(1L)))
+        "aa" => Ok(Some(int_val(2L)))
+        _ => Ok(None)
+      }
+    },
+    fn() { ["b", "aa"] },
+  )
+  check_encode(@value.Value::ExtVal(cv), "{\"aa\":2,\"b\":1}")
+}
+
+///|
 test "encode dict rejects non-string keys" {
   let d = @value.StarlarkDict::new()
   let _ = d.set(int_val(1L), str_val("two"))
