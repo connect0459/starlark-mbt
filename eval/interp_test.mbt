@@ -1098,3 +1098,25 @@ test "vm evaluates a guarded set comprehension" {
 test "vm evaluates a dict comprehension with a tuple target" {
   assert_vm_result("d = {k: v for k, v in [(\"a\", 1), (\"b\", 2)]}")
 }
+
+///|
+test "vm evaluates top-level list comprehension with lambda capturing loop variable" {
+  assert_vm_result("fs = [lambda: i for i in [1, 2, 3]]")
+}
+
+///|
+test "vm top-level lambda capture produces late-binding values like function scope" {
+  let src =
+    #|fs = [lambda: i for i in range(3)]
+    #|result = [f() for f in fs]
+  assert_vm_result(src)
+}
+
+///|
+test "vm top-level lambda capture nested comprehension with free variable" {
+  let src =
+    #|n = 10
+    #|fns = [lambda: n + i for i in range(3)]
+    #|vals = [f() for f in fns]
+  assert_vm_result(src)
+}
