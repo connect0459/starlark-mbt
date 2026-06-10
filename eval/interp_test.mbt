@@ -1101,7 +1101,24 @@ test "vm evaluates a dict comprehension with a tuple target" {
 
 ///|
 test "vm evaluates top-level list comprehension with lambda capturing loop variable" {
-  assert_vm_result("fs = [lambda: i for i in [1, 2, 3]]")
+  let src =
+    #|fs = [lambda: i for i in [1, 2, 3]]
+    #|vals = [f() for f in fs]
+  assert_vm_result(src)
+  match
+    @eval.exec_file(
+      @eval.Thread::new("t"),
+      "t.star",
+      src,
+      @eval.Options::default(),
+    ) {
+    Err(e) => fail(e.to_string())
+    Ok(m) =>
+      match m.get("vals") {
+        None => fail("global 'vals' missing")
+        Some(v) => assert_eq(v.repr(), "[3, 3, 3]")
+      }
+  }
 }
 
 ///|
