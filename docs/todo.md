@@ -3079,7 +3079,7 @@ Coverage-driven + semantic audit run on 2026-06-10 (`.connect0459/tmp.md`).
   it in both functions. Fixed in commit `b0889da`.
 - [ ] **H-2**: `load` cycle → segfault; CLI loader has no cache; REPL cycle
   sentinel not shared across nested loaders.
-- [ ] **H-3**: Top-level comprehension `lambda` capture aborts VM (`SetLocalCell`
+- [x] **H-3**: Top-level comprehension `lambda` capture aborts VM (`SetLocalCell`
   reaches `abort` because toplevel frame skips `cells` initialization).
 - [ ] **H-4**: Ident-leading ternary `x if c else y` fails as a call argument
   (`finish_or_from` stops before the `if/else` tail).

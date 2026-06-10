@@ -1098,3 +1098,74 @@ test "vm evaluates a guarded set comprehension" {
 test "vm evaluates a dict comprehension with a tuple target" {
   assert_vm_result("d = {k: v for k, v in [(\"a\", 1), (\"b\", 2)]}")
 }
+
+///|
+test "vm evaluates top-level list comprehension with lambda capturing loop variable" {
+  let src =
+    #|fs = [lambda: i for i in [1, 2, 3]]
+    #|vals = [f() for f in fs]
+  assert_vm_result(src)
+  match
+    @eval.exec_file(
+      @eval.Thread::new("t"),
+      "t.star",
+      src,
+      @eval.Options::default(),
+    ) {
+    Err(e) => fail(e.to_string())
+    Ok(m) =>
+      match m.get("vals") {
+        None => fail("global 'vals' missing")
+        Some(v) => assert_eq(v.repr(), "[3, 3, 3]")
+      }
+  }
+}
+
+///|
+test "vm top-level lambda capture produces late-binding values like function scope" {
+  let src =
+    #|fs = [lambda: i for i in range(3)]
+    #|result = [f() for f in fs]
+  assert_vm_result(src)
+  match
+    @eval.exec_file(
+      @eval.Thread::new("t"),
+      "t.star",
+      src,
+      @eval.Options::default(),
+    ) {
+    Err(e) => fail(e.to_string())
+    Ok(m) =>
+      match m.get("result") {
+        None => fail("global 'result' missing")
+        // All lambdas close over the same cell for `i`; after the loop i==2,
+        // so every lambda returns 2.
+        Some(v) => assert_eq(v.repr(), "[2, 2, 2]")
+      }
+  }
+}
+
+///|
+test "vm top-level lambda capture nested comprehension with free variable" {
+  let src =
+    #|n = 10
+    #|fns = [lambda: n + i for i in range(3)]
+    #|vals = [f() for f in fns]
+  assert_vm_result(src)
+  match
+    @eval.exec_file(
+      @eval.Thread::new("t"),
+      "t.star",
+      src,
+      @eval.Options::default(),
+    ) {
+    Err(e) => fail(e.to_string())
+    Ok(m) =>
+      match m.get("vals") {
+        None => fail("global 'vals' missing")
+        // `i` ends on 2 (last value from range(3)), `n` is 10, so every
+        // lambda returns 12.
+        Some(v) => assert_eq(v.repr(), "[12, 12, 12]")
+      }
+  }
+}
