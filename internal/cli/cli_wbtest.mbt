@@ -23,7 +23,16 @@ test "pre-populated failure in cache is returned without re-loading" {
 }
 
 ///|
-test "make_loader returns a callable loader" {
-  let loader = make_loader(".", @eval.Options::default())
-  assert_true(loader is _)
+test "failed load result is written to cache and returned on subsequent calls" {
+  // @fs.read_file_to_string raises IOError for missing files on all targets;
+  // starting from an empty cache exercises the full
+  // sentinel -> IOError -> cache write path.
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  let loader = make_loader_with_cache(".", @eval.Options::default(), cache)
+  let thread = @eval.Thread::new("test")
+  let r1 = loader(thread, "/any.star")
+  assert_true(r1 is Err(_))
+  assert_true(cache.get("/any.star") is Some(Err(_)))
+  let r2 = loader(thread, "/any.star")
+  assert_true(r2 is Err(_))
 }
