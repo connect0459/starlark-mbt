@@ -75,9 +75,39 @@ pub fn format_error(err : @errors.EvalError) -> String {
 }
 
 ///|
+fn make_load_with_cache(
+  base_dir : String,
+  cache : Map[String, Result[@eval.Module, @errors.EvalError]],
+) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
+  fn(_thread, load_path) {
+    let resolved = if load_path.has_prefix("/") ||
+      load_path.has_prefix("./") ||
+      load_path.has_prefix("../") {
+      load_path
+    } else {
+      base_dir + "/" + load_path
+    }
+    match cache.get(resolved) {
+      Some(cached) => return cached
+      None => ()
+    }
+    cache[resolved] = Err(@errors.EvalError::simple("cycle in load graph"))
+    let inner_dir = dir_of(resolved)
+    let inner_thread = @eval.Thread::with_loader(
+      "load:\{load_path}",
+      make_load_with_cache(inner_dir, cache),
+    )
+    let result = load_file(inner_thread, resolved)
+    cache[resolved] = result
+    result
+  }
+}
+
+///|
 /// Returns a load function that resolves load paths relative to `base_dir`
-/// and caches previously loaded modules. Nested loads are handled recursively
-/// with their own cache; cycle detection uses a sentinel error.
+/// and caches previously loaded modules. A shared cache is maintained across
+/// all nesting levels so that diamond dependencies load each module once and
+/// cross-directory cycles are detected cleanly.
 ///
 /// Parameters:
 ///
@@ -89,29 +119,7 @@ pub fn make_load(
   base_dir : String,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
   let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
-  fn(_thread, load_path) {
-    let resolved = if load_path.has_prefix("/") ||
-      load_path.has_prefix("./") ||
-      load_path.has_prefix("../") {
-      load_path
-    } else {
-      base_dir + "/" + load_path
-    }
-    match cache.get(resolved) {
-      Some(cached) => cached
-      None => {
-        cache[resolved] = Err(@errors.EvalError::simple("cycle in load graph"))
-        let inner_dir = dir_of(resolved)
-        let inner_thread = @eval.Thread::with_loader(
-          "load:\{load_path}",
-          make_load(inner_dir),
-        )
-        let result = load_file(inner_thread, resolved)
-        cache[resolved] = result
-        result
-      }
-    }
-  }
+  make_load_with_cache(base_dir, cache)
 }
 
 ///|

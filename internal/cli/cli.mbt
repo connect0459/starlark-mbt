@@ -86,31 +86,63 @@ pub fn parse_cli_args(
 }
 
 ///|
-fn make_loader(
+fn make_loader_with_cache(
   base_dir : String,
   opts : @eval.Options,
+  cache : Map[String, Result[@eval.Module, @errors.EvalError]],
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
   fn(_thread, load_path) {
     let resolved = resolve_load(base_dir, load_path)
+    match cache.get(resolved) {
+      Some(cached) => return cached
+      None => ()
+    }
+    cache[resolved] = Err(@errors.EvalError::simple("cycle in load graph"))
     let load_src = @fs.read_file_to_string(resolved) catch {
-      @fs.IOError(msg) =>
-        return Err(
-          @errors.EvalError::simple("cannot load \"\{load_path}\": \{msg}"),
+      @fs.IOError(msg) => {
+        let err = Err(
+          @errors.EvalError::simple("cannot load \"\{resolved}\": \{msg}"),
         )
+        cache[resolved] = err
+        return err
+      }
     }
     let inner_dir = dir_of(resolved)
     let load_thread = @eval.Thread::with_loader(
       "load:\{load_path}",
-      make_loader(inner_dir, opts),
+      make_loader_with_cache(inner_dir, opts, cache),
     )
-    match @eval.exec_file(load_thread, resolved, load_src, opts) {
+    let result = match @eval.exec_file(load_thread, resolved, load_src, opts) {
       Ok(m) => Ok(m)
       Err(e) =>
         Err(
-          @errors.EvalError::simple("cannot load \"\{load_path}\": \{e.msg()}"),
+          @errors.EvalError::simple("cannot load \"\{resolved}\": \{e.msg()}"),
         )
     }
+    cache[resolved] = result
+    result
   }
+}
+
+///|
+/// Returns a load function that resolves load paths relative to `base_dir`
+/// and caches previously loaded modules. A shared cache is maintained across
+/// all nesting levels so that diamond dependencies load each module once and
+/// cross-directory cycles are detected cleanly.
+///
+/// Parameters:
+///
+/// - `base_dir` : The filesystem directory used as the resolution root for
+///   relative load paths.
+/// - `opts` : Feature flags forwarded to `exec_file` for each loaded module.
+///
+/// Returns a load handler compatible with `@eval.Thread::with_loader`.
+fn make_loader(
+  base_dir : String,
+  opts : @eval.Options,
+) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  make_loader_with_cache(base_dir, opts, cache)
 }
 
 ///|
