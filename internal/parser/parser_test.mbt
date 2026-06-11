@@ -1388,6 +1388,50 @@ test "comprehension target with trailing comma is rejected" {
 }
 
 ///|
+test "for-loop bare-tuple iterable parses correctly" {
+  match @parser.parse_file("test.star", "for x in 1, 2, 3:\n  pass\n") {
+    Ok(f) =>
+      match f.stmts()[0] {
+        @syntax.Stmt::SFor(_, @syntax.Expr::ETuple(items, _), _, _) =>
+          assert_eq(items.length(), 3)
+        _ => fail("expected SFor with ETuple iterable")
+      }
+    Err(e) => fail("unexpected parse error: \{e.msg()}")
+  }
+}
+
+///|
+test "for-loop tuple-unpacking over bare-tuple iterable parses correctly" {
+  match
+    @parser.parse_file("test.star", "for x, y in (1, 2), (3, 4):\n  pass\n") {
+    Ok(f) =>
+      match f.stmts()[0] {
+        @syntax.Stmt::SFor(_, @syntax.Expr::ETuple(items, _), _, _) =>
+          assert_eq(items.length(), 2)
+        _ => fail("expected SFor with ETuple iterable")
+      }
+    Err(e) => fail("unexpected parse error: \{e.msg()}")
+  }
+}
+
+///|
+test "for-loop bare-tuple iterable with trailing comma is rejected" {
+  match @parser.parse_file("test.star", "for x in 1, 2,:\n  pass\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected parse error for trailing comma in for-iterable")
+  }
+}
+
+///|
+test "comprehension bare-tuple iterable is still rejected" {
+  match @parser.parse_expr("test.star", "[x for x in 1, 2, 3]") {
+    Err(_) => ()
+    Ok(_) =>
+      fail("expected parse error for bare tuple in comprehension iterable")
+  }
+}
+
+///|
 test "ternary arg with method call on ident parses as ECond" {
   match parse_e("f(s.upper() if flag else s)") {
     ECall(_, args, _) => {
