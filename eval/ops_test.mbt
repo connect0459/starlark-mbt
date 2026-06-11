@@ -874,7 +874,7 @@ fn make_nested_tuple(depth : Int) -> @value.Value {
 
 ///|
 test "eval_expr: dict subscript lookup with deeply nested key raises comparison depth error" {
-  let t = make_nested_tuple(12)
+  let t = make_nested_tuple(@value.compare_limit + 2)
   let d = @value.StarlarkDict::new()
   assert_true(d.set(t, @value.Value::Int(1N)) is Ok(_))
   match eval_with_env("d[t]", [("d", @value.Value::Dict(d)), ("t", t)]) {
@@ -888,7 +888,7 @@ test "eval_expr: dict subscript lookup with deeply nested key raises comparison 
 
 ///|
 test "eval_expr: dict update with same deeply nested key raises comparison depth error" {
-  let t = make_nested_tuple(12)
+  let t = make_nested_tuple(@value.compare_limit + 2)
   let d = @value.StarlarkDict::new()
   assert_true(d.set(t, @value.Value::Int(1N)) is Ok(_))
   match
@@ -903,7 +903,7 @@ test "eval_expr: dict update with same deeply nested key raises comparison depth
 
 ///|
 test "eval_expr: t in dict squashes comparison depth error to False" {
-  let t = make_nested_tuple(12)
+  let t = make_nested_tuple(@value.compare_limit + 2)
   let d = @value.StarlarkDict::new()
   assert_true(d.set(t, @value.Value::Int(1N)) is Ok(_))
   match eval_with_env("t in d", [("d", @value.Value::Dict(d)), ("t", t)]) {
@@ -915,7 +915,7 @@ test "eval_expr: t in dict squashes comparison depth error to False" {
 
 ///|
 test "eval_expr: set add with deeply nested element raises comparison depth error" {
-  let t = make_nested_tuple(12)
+  let t = make_nested_tuple(@value.compare_limit + 2)
   let s = @value.StarlarkSet::new()
   assert_true(s.add(t) is Ok(_))
   match
