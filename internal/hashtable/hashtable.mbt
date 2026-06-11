@@ -50,7 +50,7 @@ pub struct Hashtable[K, V] {
   priv mut itercount : Int
   priv mut frozen : Bool
   priv hash_fn : (K) -> Result[UInt, String]
-  priv eq_fn : (K, K) -> Bool
+  priv eq_fn : (K, K) -> Result[Bool, String]
   priv zero_key : K
   priv zero_val : V
 }
@@ -70,7 +70,7 @@ pub struct Hashtable[K, V] {
 /// Returns a new empty `Hashtable`.
 pub fn[K, V] Hashtable::new(
   hash_fn : (K) -> Result[UInt, String],
-  eq_fn : (K, K) -> Bool,
+  eq_fn : (K, K) -> Result[Bool, String],
   zero_key : K,
   zero_val : V,
 ) -> Hashtable[K, V] {
@@ -302,9 +302,15 @@ pub fn[K, V] Hashtable::insert(
   let s = slot_of(h, self.slots.length())
   let mut idx = self.slots[s]
   while idx != empty_idx {
-    if self.entries[idx].hash == h && (self.eq_fn)(self.entries[idx].key, key) {
-      self.entries[idx].value = value
-      return Ok(())
+    if self.entries[idx].hash == h {
+      match (self.eq_fn)(self.entries[idx].key, key) {
+        Err(e) => return Err(e)
+        Ok(true) => {
+          self.entries[idx].value = value
+          return Ok(())
+        }
+        Ok(false) => ()
+      }
     }
     idx = self.entries[idx].slot_next
   }
@@ -350,8 +356,12 @@ pub fn[K, V] Hashtable::lookup(
   let s = slot_of(h, self.slots.length())
   let mut idx = self.slots[s]
   while idx != empty_idx {
-    if self.entries[idx].hash == h && (self.eq_fn)(self.entries[idx].key, key) {
-      return Ok(Some(self.entries[idx].value))
+    if self.entries[idx].hash == h {
+      match (self.eq_fn)(self.entries[idx].key, key) {
+        Err(e) => return Err(e)
+        Ok(true) => return Ok(Some(self.entries[idx].value))
+        Ok(false) => ()
+      }
     }
     idx = self.entries[idx].slot_next
   }
@@ -407,30 +417,36 @@ pub fn[K, V] Hashtable::delete(
   let mut prev_chain = empty_idx
   let mut idx = self.slots[s]
   while idx != empty_idx {
-    if self.entries[idx].hash == h && (self.eq_fn)(self.entries[idx].key, key) {
-      let next_chain = self.entries[idx].slot_next
-      if prev_chain == empty_idx {
-        self.slots[s] = next_chain
-      } else {
-        self.entries[prev_chain].slot_next = next_chain
+    if self.entries[idx].hash == h {
+      match (self.eq_fn)(self.entries[idx].key, key) {
+        Err(e) => return Err(e)
+        Ok(true) => {
+          let next_chain = self.entries[idx].slot_next
+          if prev_chain == empty_idx {
+            self.slots[s] = next_chain
+          } else {
+            self.entries[prev_chain].slot_next = next_chain
+          }
+          let op = self.entries[idx].ord_prev
+          let on = self.entries[idx].ord_next
+          if op != empty_idx {
+            self.entries[op].ord_next = on
+          } else {
+            self.head = on
+          }
+          if on != empty_idx {
+            self.entries[on].ord_prev = op
+          } else {
+            self.tail = op
+          }
+          self.entries[idx].hash = 0U
+          self.entries[idx].slot_next = self.free_head
+          self.free_head = idx
+          self.live_count -= 1
+          return Ok(true)
+        }
+        Ok(false) => ()
       }
-      let op = self.entries[idx].ord_prev
-      let on = self.entries[idx].ord_next
-      if op != empty_idx {
-        self.entries[op].ord_next = on
-      } else {
-        self.head = on
-      }
-      if on != empty_idx {
-        self.entries[on].ord_prev = op
-      } else {
-        self.tail = op
-      }
-      self.entries[idx].hash = 0U
-      self.entries[idx].slot_next = self.free_head
-      self.free_head = idx
-      self.live_count -= 1
-      return Ok(true)
     }
     prev_chain = idx
     idx = self.entries[idx].slot_next

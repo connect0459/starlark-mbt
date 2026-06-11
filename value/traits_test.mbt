@@ -386,10 +386,29 @@ test "starlark_equals: Module is never equal to another Module" {
 }
 
 ///|
-test "starlark_equals: StringElems is never equal to another StringElems" {
+test "starlark_equals: StringElems with same source string and ords flag are equal" {
   let s = StarlarkString::new("abc")
   let e1 = Value::StringElems(StarlarkStringElems::new(s, false))
   let e2 = Value::StringElems(StarlarkStringElems::new(s, false))
+  assert_true(e1.starlark_equals(e2))
+}
+
+///|
+test "starlark_equals: StringElems with different source strings are unequal" {
+  let e1 = Value::StringElems(
+    StarlarkStringElems::new(StarlarkString::new("ab"), false),
+  )
+  let e2 = Value::StringElems(
+    StarlarkStringElems::new(StarlarkString::new("cd"), false),
+  )
+  assert_false(e1.starlark_equals(e2))
+}
+
+///|
+test "starlark_equals: StringElems with same string but different ords flags are unequal" {
+  let s = StarlarkString::new("abc")
+  let e1 = Value::StringElems(StarlarkStringElems::new(s, false))
+  let e2 = Value::StringElems(StarlarkStringElems::new(s, true))
   assert_false(e1.starlark_equals(e2))
 }
 
@@ -415,10 +434,21 @@ test "starlark_equals: two Builtin functions with different names are unequal" {
 }
 
 ///|
-test "starlark_equals: two distinct StringCodepoints iterators are always unequal" {
+test "starlark_equals: StringCodepoints with same source string and ords flag are equal" {
   let s = StarlarkString::new("abc")
   let c1 = Value::StringCodepoints(StarlarkStringCodepoints::new(s, false))
   let c2 = Value::StringCodepoints(StarlarkStringCodepoints::new(s, false))
+  assert_true(c1.starlark_equals(c2))
+}
+
+///|
+test "starlark_equals: StringCodepoints with different source strings are unequal" {
+  let c1 = Value::StringCodepoints(
+    StarlarkStringCodepoints::new(StarlarkString::new("ab"), false),
+  )
+  let c2 = Value::StringCodepoints(
+    StarlarkStringCodepoints::new(StarlarkString::new("cd"), false),
+  )
   assert_false(c1.starlark_equals(c2))
 }
 
@@ -430,10 +460,17 @@ test "starlark_hash: StringCodepoints is unhashable" {
 }
 
 ///|
-test "starlark_equals: two distinct BytesElems iterators are always unequal" {
+test "starlark_equals: BytesElems with same bytes content are equal" {
   let b = @utf8.encode("hello")
   let e1 = Value::BytesElems(StarlarkBytesElems::new(b))
   let e2 = Value::BytesElems(StarlarkBytesElems::new(b))
+  assert_true(e1.starlark_equals(e2))
+}
+
+///|
+test "starlark_equals: BytesElems with different bytes content are unequal" {
+  let e1 = Value::BytesElems(StarlarkBytesElems::new(@utf8.encode("hello")))
+  let e2 = Value::BytesElems(StarlarkBytesElems::new(@utf8.encode("world")))
   assert_false(e1.starlark_equals(e2))
 }
 

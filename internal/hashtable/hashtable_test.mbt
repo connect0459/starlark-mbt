@@ -4,7 +4,7 @@
 fn new_dict() -> Hashtable[@value.Value, @value.Value] {
   Hashtable::new(
     @value.Value::hash,
-    fn(a, b) { a.starlark_equals(b) },
+    fn(a, b) { @value.starlark_equals_depth(a, b, @value.compare_limit) },
     @value.Value::None,
     @value.Value::None,
   )

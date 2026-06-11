@@ -860,3 +860,108 @@ test "exec_file: in raises comparison depth error on a cyclic dict (issue #78 or
     Ok(_) => fail("expected depth error")
   }
 }
+
+// --- comparison depth limit: dict/set hashtable (M-1) ---
+
+///|
+fn make_nested_tuple(depth : Int) -> @value.Value {
+  let mut v : @value.Value = @value.Value::Int(1N)
+  for _ in 0..<depth {
+    v = @value.Value::Tuple([v])
+  }
+  v
+}
+
+///|
+test "eval_expr: dict subscript lookup with deeply nested key raises comparison depth error" {
+  let t = make_nested_tuple(12)
+  let d = @value.StarlarkDict::new()
+  d.set(t, @value.Value::Int(1N)) |> ignore
+  match eval_with_env("d[t]", [("d", @value.Value::Dict(d)), ("t", t)]) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
+}
+
+///|
+test "eval_expr: dict update with same deeply nested key raises comparison depth error" {
+  let t = make_nested_tuple(12)
+  let d = @value.StarlarkDict::new()
+  d.set(t, @value.Value::Int(1N)) |> ignore
+  match
+    exec_with_predeclared("d[t] = 2", [("d", @value.Value::Dict(d)), ("t", t)]) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
+}
+
+///|
+test "eval_expr: t in dict squashes comparison depth error to False" {
+  let t = make_nested_tuple(12)
+  let d = @value.StarlarkDict::new()
+  d.set(t, @value.Value::Int(1N)) |> ignore
+  match eval_with_env("t in d", [("d", @value.Value::Dict(d)), ("t", t)]) {
+    Ok(@value.Value::Bool(false)) => ()
+    Ok(v) => fail("expected False, got \{v.repr()}")
+    Err(e) => fail("expected False but got error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: set add with deeply nested element raises comparison depth error" {
+  let t = make_nested_tuple(12)
+  let s = @value.StarlarkSet::new()
+  s.add(t) |> ignore
+  match
+    exec_with_predeclared("s.add(t)", [("s", @value.Value::Set(s)), ("t", t)]) {
+    Err(e) =>
+      assert_true(
+        e.msg().contains("comparison exceeded maximum recursion depth"),
+      )
+    Ok(_) => fail("expected depth error")
+  }
+}
+
+// --- StringElems / StringCodepoints value equality (M-2) ---
+
+///|
+test "eval_expr: string.elems() == string.elems() for same string returns True" {
+  match eval_op("\"ab\".elems() == \"ab\".elems()") {
+    Ok(@value.Value::Bool(true)) => ()
+    Ok(v) => fail("expected True, got \{v.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: string.elems() != string.elems() for different strings returns True" {
+  match eval_op("\"ab\".elems() != \"cd\".elems()") {
+    Ok(@value.Value::Bool(true)) => ()
+    Ok(v) => fail("expected True, got \{v.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: string.elems() == string.elems() for different strings returns False" {
+  match eval_op("\"ab\".elems() == \"cd\".elems()") {
+    Ok(@value.Value::Bool(false)) => ()
+    Ok(v) => fail("expected False, got \{v.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: string.codepoints() == string.codepoints() for same string returns True" {
+  match eval_op("\"ab\".codepoints() == \"ab\".codepoints()") {
+    Ok(@value.Value::Bool(true)) => ()
+    Ok(v) => fail("expected True, got \{v.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}

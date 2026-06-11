@@ -14,7 +14,7 @@ pub fn StarlarkDict::new() -> StarlarkDict {
   {
     ht: @hashtable.Hashtable::new(
       Value::hash,
-      fn(a, b) { a.starlark_equals(b) },
+      fn(a, b) { starlark_equals_depth(a, b, compare_limit) },
       Value::None,
       Value::None,
     ),
@@ -204,7 +204,7 @@ pub fn StarlarkSet::new() -> StarlarkSet {
   {
     ht: @hashtable.Hashtable::new(
       Value::hash,
-      fn(a, b) { a.starlark_equals(b) },
+      fn(a, b) { starlark_equals_depth(a, b, compare_limit) },
       Value::None,
       Value::None,
     ),

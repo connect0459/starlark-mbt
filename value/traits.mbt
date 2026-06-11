@@ -63,10 +63,11 @@ pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
     (BoundMethod(x), BoundMethod(y)) => x.id == y.id
     // Modules use identity equality
     (Module(x), Module(y)) => physical_equal(x, y)
-    // Lazy iterators use identity equality
-    (StringElems(x), StringElems(y)) => physical_equal(x, y)
-    (StringCodepoints(x), StringCodepoints(y)) => physical_equal(x, y)
-    (BytesElems(x), BytesElems(y)) => physical_equal(x, y)
+    // Iterators compare by source value: two views over the same data are equal
+    (StringElems(x), StringElems(y)) => x.s.equals(y.s) && x.ords == y.ords
+    (StringCodepoints(x), StringCodepoints(y)) =>
+      x.s.equals(y.s) && x.ords == y.ords
+    (BytesElems(x), BytesElems(y)) => x.b.equal(y.b)
     (ExtVal(a), ExtVal(b)) => a.get_equals(ExtVal(b))
     _ => false
   }
@@ -432,9 +433,10 @@ pub fn starlark_equals_depth(
     (Builtin(x), Builtin(y)) => Ok(x.name == y.name)
     (BoundMethod(x), BoundMethod(y)) => Ok(x.id == y.id)
     (Module(x), Module(y)) => Ok(physical_equal(x, y))
-    (StringElems(x), StringElems(y)) => Ok(physical_equal(x, y))
-    (StringCodepoints(x), StringCodepoints(y)) => Ok(physical_equal(x, y))
-    (BytesElems(x), BytesElems(y)) => Ok(physical_equal(x, y))
+    (StringElems(x), StringElems(y)) => Ok(x.s.equals(y.s) && x.ords == y.ords)
+    (StringCodepoints(x), StringCodepoints(y)) =>
+      Ok(x.s.equals(y.s) && x.ords == y.ords)
+    (BytesElems(x), BytesElems(y)) => Ok(x.b.equal(y.b))
     (ExtVal(a), ExtVal(b)) => Ok(a.get_equals(ExtVal(b)))
     _ => Ok(false)
   }
