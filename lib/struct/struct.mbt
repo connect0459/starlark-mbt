@@ -198,36 +198,37 @@ fn struct_equals(
   ctor : @value.Value,
   entries : Array[(String, @value.Value)],
   other : @value.Value,
-) -> Bool {
+) -> Result[Bool, String] {
   match other {
     @value.Value::ExtVal(c) if c.get_type_name() == "struct" => {
       let other_ctor = match c.get_attr("__ctor") {
         Ok(Some(v)) => v
-        _ => return false
+        _ => return Ok(false)
       }
       match
         @value.starlark_equals_depth(ctor, other_ctor, @value.compare_limit) {
-        Ok(false) | Err(_) => return false
+        Ok(false) => return Ok(false)
+        Err(e) => return Err(e)
         Ok(true) => ()
       }
       let other_n = match c.get_attr("__n") {
         Ok(Some(@value.Value::Int(n))) => n.to_int()
-        _ => return false
+        _ => return Ok(false)
       }
       if entries.length() != other_n {
-        return false
+        return Ok(false)
       }
       for i in 0..<entries.length() {
         let other_name = match c.get_attr("__name_\{i}") {
           Ok(Some(@value.Value::String(s))) => s.raw()
-          _ => return false
+          _ => return Ok(false)
         }
         if entries[i].0 != other_name {
-          return false
+          return Ok(false)
         }
         let other_val = match c.get_attr("__val_\{i}") {
           Ok(Some(v)) => v
-          _ => return false
+          _ => return Ok(false)
         }
         match
           @value.starlark_equals_depth(
@@ -235,13 +236,14 @@ fn struct_equals(
             other_val,
             @value.compare_limit,
           ) {
-          Ok(false) | Err(_) => return false
+          Ok(false) => return Ok(false)
+          Err(e) => return Err(e)
           Ok(true) => ()
         }
       }
-      true
+      Ok(true)
     }
-    _ => false
+    _ => Ok(false)
   }
 }
 
@@ -407,15 +409,17 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
     @value.CustomValue::new(fn() { "symbol" }, fn() { true }, fn() { name })
     .with_hash(fn() { Err("unhashable: symbol") })
     .with_equals(fn(other) {
-      match other {
-        @value.Value::ExtVal(c) if c.get_type_name() == "symbol" =>
-          match c.get_attr("__id") {
-            Ok(Some(@value.Value::Int(oid))) =>
-              oid == BigInt::from_int64(sym_id.to_int64())
-            _ => false
-          }
-        _ => false
-      }
+      Ok(
+        match other {
+          @value.Value::ExtVal(c) if c.get_type_name() == "symbol" =>
+            match c.get_attr("__id") {
+              Ok(Some(@value.Value::Int(oid))) =>
+                oid == BigInt::from_int64(sym_id.to_int64())
+              _ => false
+            }
+          _ => false
+        },
+      )
     })
     .with_attrs(
       fn(attr) {

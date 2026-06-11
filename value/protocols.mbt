@@ -130,7 +130,7 @@ pub struct CustomValue {
   priv truth_fn : () -> Bool
   priv repr_fn : () -> String
   priv hash_fn : (() -> Result[UInt, String])?
-  priv equals_fn : ((Value) -> Bool)?
+  priv equals_fn : ((Value) -> Result[Bool, String])?
   priv get_attr_fn : ((String) -> Result[Value?, String])?
   priv attr_names_fn : (() -> Array[String])?
   priv set_field_fn : ((String, Value) -> Result[Unit, String])?
@@ -224,7 +224,7 @@ pub fn CustomValue::with_hash(
 /// Returns a new `CustomValue` with the equality callback registered.
 pub fn CustomValue::with_equals(
   self : CustomValue,
-  equals_fn : (Value) -> Bool,
+  equals_fn : (Value) -> Result[Bool, String],
 ) -> CustomValue {
   { ..self, equals_fn: Some(equals_fn) }
 }
@@ -437,10 +437,13 @@ pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
 ///
 /// Returns `true` if the equality callback returns `true`, or `false` if no
 /// callback was registered or the callback returns `false`.
-pub fn CustomValue::get_equals(self : CustomValue, other : Value) -> Bool {
+pub fn CustomValue::get_equals(
+  self : CustomValue,
+  other : Value,
+) -> Result[Bool, String] {
   match self.equals_fn {
     Some(f) => f(other)
-    None => false
+    None => Ok(false)
   }
 }
 
