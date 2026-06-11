@@ -477,6 +477,8 @@ fn parse_json_string(
             } else {
               json_replacement_rune
             }
+          } else if code >= low_surrogate_lo && code <= low_surrogate_hi {
+            json_replacement_rune
           } else {
             code
           }

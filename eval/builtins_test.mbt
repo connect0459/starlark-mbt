@@ -1477,6 +1477,42 @@ test "exec_file: chr/ord error messages use nameErr style" {
   }
 }
 
+///|
+test "exec_file: chr maps surrogate codepoints to replacement character U+FFFD" {
+  // codepoints in 0xD800–0xDFFF must return U+FFFD, not abort
+  let cases = [0xD800, 0xDBFF, 0xDC00, 0xDFFF]
+  for cp in cases {
+    match exec_b("s = chr(\{cp})") {
+      Ok(m) =>
+        match g(m, "s") {
+          Some(@value.Value::String(s)) => assert_eq(s.raw(), "\u{FFFD}")
+          _ => assert_true(false)
+        }
+      Err(e) => fail(e.to_string())
+    }
+  }
+}
+
+///|
+test "exec_file: chr codepoints adjacent to surrogate block are returned as-is" {
+  match exec_b("s = chr(0xD7FF)") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::String(s)) => assert_eq(s.raw(), "\u{D7FF}")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+  match exec_b("s = chr(0xE000)") {
+    Ok(m) =>
+      match g(m, "s") {
+        Some(@value.Value::String(s)) => assert_eq(s.raw(), "\u{E000}")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
 // --- Lambda ---
 
 ///|

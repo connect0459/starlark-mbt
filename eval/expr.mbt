@@ -643,7 +643,12 @@ fn call_builtin(
               ),
             )
           }
-          let c = n.to_int().unsafe_to_char()
+          let cp = n.to_int()
+          let c = if cp >= unicode_surr_first && cp <= unicode_surr_last {
+            '\u{FFFD}'
+          } else {
+            cp.unsafe_to_char()
+          }
           let buf = StringBuilder::new()
           buf.write_char(c)
           @value.Value::String(@value.StarlarkString::new(buf.to_string()))
