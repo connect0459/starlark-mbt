@@ -79,30 +79,135 @@ fn float_mod(x : Double, y : Double) -> Double {
 }
 
 ///|
-fn float_rint(x : Double) -> Double {
-  let f = @std_math.floor(x)
-  let diff = x - f
-  if diff < 0.5 {
-    f
-  } else if diff > 0.5 {
-    f + 1.0
+// Precise truncation-based fmod: same sign as x, |result| < |y|.
+// Uses a fixed-point binary subtraction loop to avoid the precision loss of
+// computing x/y directly when x >> y. Equivalent to C fmod / Go math.Mod.
+fn precise_fmod(x : Double, y : Double) -> Double {
+  let xb = x.reinterpret_as_uint64()
+  let yb = y.reinterpret_as_uint64()
+  let sx = xb & 0x8000000000000000_UL
+  let ax = xb ^ sx
+  let ay = yb & 0x7FFFFFFFFFFFFFFF_UL
+  // NaN, ±Inf x, or y == 0
+  if ay == 0_UL || ax >= 0x7FF0000000000000_UL || ay > 0x7FF0000000000000_UL {
+    return x * y / (x * y)
+  }
+  if ax < ay {
+    return x
+  }
+  if ax == ay {
+    return if sx != 0_UL { -0.0 } else { 0.0 }
+  }
+  // Exponent and normalized mantissa for |x| (with implicit leading 1 at bit 52)
+  let ix_e = ((ax >> 52) & 0x7FF_UL).to_int()
+  let mut ix = 0
+  let mut mx = 0_UL
+  if ix_e != 0 {
+    ix = ix_e - 1023
+    mx = 0x0010000000000000_UL | (ax & 0x000FFFFFFFFFFFFF_UL)
   } else {
-    let half_f = @std_math.floor(f / 2.0)
-    if half_f * 2.0 == f {
-      f
+    let mut m = ax & 0x000FFFFFFFFFFFFF_UL
+    ix = -1022
+    while m < 0x0010000000000000_UL {
+      m = m << 1
+      ix -= 1
+    }
+    mx = m
+  }
+  // Exponent and normalized mantissa for |y|
+  let iy_e = ((ay >> 52) & 0x7FF_UL).to_int()
+  let mut iy = 0
+  let mut my = 0_UL
+  if iy_e != 0 {
+    iy = iy_e - 1023
+    my = 0x0010000000000000_UL | (ay & 0x000FFFFFFFFFFFFF_UL)
+  } else {
+    let mut m = ay & 0x000FFFFFFFFFFFFF_UL
+    iy = -1022
+    while m < 0x0010000000000000_UL {
+      m = m << 1
+      iy -= 1
+    }
+    my = m
+  }
+  // Binary fixed-point reduction: ix - iy iterations, each doubles mx and
+  // conditionally subtracts my, reducing mx modulo my in the scaled domain.
+  let mut n = ix - iy
+  while n > 0 {
+    if mx >= my {
+      let hz = mx - my
+      if hz == 0_UL {
+        return if sx != 0_UL { -0.0 } else { 0.0 }
+      }
+      mx = hz << 1
     } else {
-      f + 1.0
+      mx = mx << 1
+    }
+    n -= 1
+  }
+  if mx >= my {
+    mx = mx - my
+  }
+  if mx == 0_UL {
+    return if sx != 0_UL { -0.0 } else { 0.0 }
+  }
+  // Normalize: shift left until the leading bit is at position 52
+  let mut cur_iy = iy
+  while mx < 0x0010000000000000_UL {
+    mx = mx << 1
+    cur_iy -= 1
+  }
+  // Reconstruct float64 from sign, exponent, and mantissa
+  let result_bits = if cur_iy >= -1022 {
+    let exp_bits = (cur_iy + 1023).to_int64().reinterpret_as_uint64()
+    sx | (exp_bits << 52) | (mx & 0x000FFFFFFFFFFFFF_UL)
+  } else {
+    // Subnormal result: right-shift mantissa, exponent field stays 0
+    let shift = -1022 - cur_iy
+    if shift >= 53 {
+      sx
+    } else {
+      sx | (mx >> shift)
     }
   }
+  result_bits.reinterpret_as_double()
 }
 
 ///|
+// IEEE 754-2008 §5.3.1 remainder: x - n*y where n is the nearest integer to
+// x/y (ties rounded to even). Ported from Go math/remainder.go. Uses
+// precise_fmod for the modular-reduction step so that precision is preserved
+// even when x >> y (the naive x - rint(x/y)*y loses all bits of x mod y).
 fn float_remainder(x : Double, y : Double) -> Double {
-  let n = float_rint(x / y)
-  if n == 0.0 {
-    x
+  if x.is_nan() || y.is_nan() || x.is_inf() || y == 0.0 {
+    return 0.0 / 0.0
+  }
+  if y.is_inf() {
+    return x
+  }
+  let sign = x < 0.0
+  let mut rx = if sign { -x } else { x }
+  let ry = if y < 0.0 { -y } else { y }
+  if rx == ry {
+    return if sign { -0.0 } else { 0.0 }
+  }
+  // Reduce rx into [0, 2*ry) via precise_fmod, avoiding x/y precision loss
+  if ry <= 8.98846567431158e+307 {
+    rx = precise_fmod(rx, ry + ry)
+  }
+  // Shift into (-ry/2, ry/2] with tie-to-even (two-step for y < 2^52)
+  if ry < 4503599627370496.0 {
+    if rx + rx > ry {
+      rx -= ry
+      if rx + rx >= ry {
+        rx -= ry
+      }
+    }
+  }
+  if sign {
+    -rx
   } else {
-    x - n * y
+    rx
   }
 }
 
