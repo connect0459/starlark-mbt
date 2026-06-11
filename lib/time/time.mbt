@@ -76,39 +76,24 @@ fn floor_div_int64(a : Int64, b : Int64) -> Int64 {
 }
 
 ///|
-fn floor_div(a : Int, b : Int) -> Int {
-  let q = a / b
-  let r = a - q * b
-  if r < 0 {
-    q - 1
-  } else {
-    q
-  }
-}
-
-///|
 fn normalize_to_unix_sec(
-  year : Int,
-  month : Int,
-  day : Int,
-  hour : Int,
-  minute : Int,
-  second : Int,
-  nanosecond : Int,
+  year : Int64,
+  month : Int64,
+  day : Int64,
+  hour : Int64,
+  minute : Int64,
+  second : Int64,
+  nanosecond : Int64,
 ) -> Result[(Int64, Int), String] {
-  let ns = nanosecond.to_int64()
-  let carry_s = floor_div_int64(ns, ns_per_second)
-  let ns_norm = (ns - carry_s * ns_per_second).to_int()
-  let total_sec = hour.to_int64() * 3600L +
-    minute.to_int64() * 60L +
-    second.to_int64() +
-    carry_s
+  let carry_s = floor_div_int64(nanosecond, ns_per_second)
+  let ns_norm = (nanosecond - carry_s * ns_per_second).to_int()
+  let total_sec = hour * 3600L + minute * 60L + second + carry_s
   let carry_d = floor_div_int64(total_sec, 86400L)
   let sec_of_day = total_sec - carry_d * 86400L
-  let m0 = month - 1
-  let extra_years = floor_div(m0, 12)
-  let month_norm = m0 - extra_years * 12 + 1
-  let year_norm_64 = year.to_int64() + extra_years.to_int64()
+  let m0 = month - 1L
+  let extra_years = floor_div_int64(m0, 12L)
+  let month_norm = (m0 - extra_years * 12L + 1L).to_int()
+  let year_norm_64 = year + extra_years
   if year_norm_64 < -9999L || year_norm_64 > 9999L {
     return Err("time.time: date/time out of supported range")
   }
@@ -117,7 +102,7 @@ fn normalize_to_unix_sec(
     _ => return Err("time.time: date/time out of supported range")
   }
   let first_unix_day = first_of_month.to_unix_day()
-  let unix_day = first_unix_day + (day - 1).to_int64() + carry_d
+  let unix_day = first_unix_day + (day - 1L) + carry_d
   let unix_sec = unix_day * 86400L + sec_of_day
   Ok((unix_sec, ns_norm))
 }
@@ -399,7 +384,13 @@ fn parse_int64_str(s : String) -> Int64? {
     if c < '0' || c > '9' {
       return None
     }
+    if result > 922337203685477580L {
+      return None
+    }
     result = result * 10L + (c.to_int() - '0'.to_int()).to_int64()
+    if result < 0L {
+      return None
+    }
   }
   Some(result)
 }
@@ -413,7 +404,12 @@ fn parse_duration_number(
   match num_str.find(".") {
     None =>
       match parse_int64_str(num_str) {
-        Some(n) => Ok(n * scale)
+        Some(n) => {
+          if n != 0L && scale > 9223372036854775807L / n {
+            return Err("time: invalid duration \"\{orig}\"")
+          }
+          Ok(n * scale)
+        }
         None => Err("time: invalid duration \"\{orig}\"")
       }
     Some(dot_pos) => {
@@ -426,6 +422,9 @@ fn parse_duration_number(
           Some(n) => n
           None => return Err("time: invalid duration \"\{orig}\"")
         }
+      }
+      if int_val != 0L && scale > 9223372036854775807L / int_val {
+        return Err("time: invalid duration \"\{orig}\"")
       }
       let int_ns = int_val * scale
       let frac_ns = if frac_part.is_empty() {
@@ -445,6 +444,9 @@ fn parse_duration_number(
           }
         }
         frac_val
+      }
+      if int_ns > 9223372036854775807L - frac_ns {
+        return Err("time: invalid duration \"\{orig}\"")
       }
       Ok(int_ns + frac_ns)
     }
@@ -528,6 +530,9 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
         match parse_duration_number(num_str, scale, orig) {
           Err(e) => return Err(e)
           Ok(ns_val) => {
+            if total_ns > 9223372036854775807L - ns_val {
+              return Err("time: invalid duration \"\{orig}\"")
+            }
             total_ns = total_ns + ns_val
             rest = remaining
           }
@@ -1032,10 +1037,23 @@ fn time_binary(
         None =>
           match extract_time_parts(rhs) {
             Some((other_sec, other_nsec)) => {
-              let diff_ns = sec * ns_per_second +
-                nsec.to_int64() -
-                (other_sec * ns_per_second + other_nsec.to_int64())
-              Some(Ok(make_duration(diff_ns)))
+              let d_ns = (sec - other_sec) * ns_per_second +
+                (nsec.to_int64() - other_nsec.to_int64())
+              let d_sec = d_ns / ns_per_second
+              let d_nsec_part = (d_ns % ns_per_second).to_int()
+              let (check_sec, check_nsec) = normalize_time_parts(
+                other_sec + d_sec,
+                other_nsec + d_nsec_part,
+              )
+              let result_ns = if check_sec == sec && check_nsec == nsec {
+                d_ns
+              } else if sec < other_sec ||
+                (sec == other_sec && nsec < other_nsec) {
+                -9223372036854775808L
+              } else {
+                9223372036854775807L
+              }
+              Some(Ok(make_duration(result_ns)))
             }
             None => None
           }
@@ -1154,7 +1172,18 @@ fn parse_2digits(chars : Array[Char], i : Int) -> (Int, Int)? {
 }
 
 ///|
-fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
+fn tz_name_from_offset(offset_sec : Int) -> String {
+  if offset_sec == 0 {
+    "UTC"
+  } else {
+    let buf = StringBuilder::new()
+    write_tz_offset(buf, offset_sec)
+    buf.to_string()
+  }
+}
+
+///|
+fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   let chars = s.to_array()
   let len = chars.length()
   if len < 10 {
@@ -1268,7 +1297,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int), String] {
     _ => return Err("time: invalid time \"\{s}\"")
   }
   let unix_sec = dt.to_unix_second() - tz_offset_sec.to_int64()
-  Ok((unix_sec, nsec))
+  Ok((unix_sec, nsec, tz_offset_sec))
 }
 
 ///|
@@ -1836,13 +1865,14 @@ fn make_parse_time_fn() -> @value.Value {
     }
     // The default layout is parsed by the lenient RFC3339 reader; any other
     // layout is parsed with the Go reference-time interpreter.
-    // Both yield (parsed_sec, nsec, has_explicit_tz) where parsed_sec is the
-    // wall-clock instant treated as UTC (already offset-adjusted when the
-    // value carried an explicit zone).
-    let (parsed_sec, nsec, has_tz) : (Int64, Int, Bool) = if fmt ==
+    // Both yield (parsed_sec, nsec, has_explicit_tz, tz_offset_sec) where
+    // parsed_sec is the UTC instant (already offset-adjusted when the value
+    // carried an explicit zone), and tz_offset_sec is the explicit zone offset
+    // in seconds (0 for UTC or when no zone was present).
+    let (parsed_sec, nsec, has_tz, tz_off) : (Int64, Int, Bool, Int) = if fmt ==
       default_parse_time_layout {
       match parse_rfc3339(x) {
-        Ok((sec, ns)) => (sec, ns, parse_time_has_tz_suffix(x))
+        Ok((sec, ns, tz)) => (sec, ns, parse_time_has_tz_suffix(x), tz)
         Err(e) => return Err(e)
       }
     } else {
@@ -1863,21 +1893,28 @@ fn make_parse_time_fn() -> @value.Value {
           }
           let base = dt.to_unix_second()
           match ptz {
-            Some(off) => (base - off.to_int64(), pns, true)
-            None => (base, pns, false)
+            Some(off) => (base - off.to_int64(), pns, true, off)
+            None => (base, pns, false, 0)
           }
         }
       }
     }
+    let make_zoned = fn(sec : Int64, ns : Int, off : Int) -> @value.Value {
+      if off == 0 {
+        make_time(sec, ns)
+      } else {
+        make_time_at_zone(sec, ns, off, tz_name_from_offset(off))
+      }
+    }
     if location == "UTC" || location == "" {
-      Ok(make_time(parsed_sec, nsec))
+      Ok(make_zoned(parsed_sec, nsec, tz_off))
     } else {
       if !is_valid_timezone_impl(location) {
         return Err("time.parse_time: unsupported timezone \"\{location}\"")
       }
       if has_tz {
         // Value carried an explicit timezone → parsed_sec is already UTC.
-        Ok(make_time(parsed_sec, nsec))
+        Ok(make_zoned(parsed_sec, nsec, tz_off))
       } else {
         // parsed_sec is "local time treated as UTC" → adjust for location.
         let offset = match get_tz_offset_at_impl(location, parsed_sec) {
@@ -1936,50 +1973,106 @@ fn make_time_constructor_fn() -> @value.Value {
     if pos_args.length() > 0 {
       return Err("time: unexpected positional arguments")
     }
-    let mut year = 0
-    let mut month = 0
-    let mut day = 0
-    let mut hour = 0
-    let mut minute = 0
-    let mut second = 0
-    let mut nanosecond = 0
+    let mut year = 0L
+    let mut month = 0L
+    let mut day = 0L
+    let mut hour = 0L
+    let mut minute = 0L
+    let mut second = 0L
+    let mut nanosecond = 0L
     let mut location = "UTC"
     for kw in kw_args {
       let (k, v) = kw
       match k {
         "year" =>
           match v {
-            @value.Value::Int(n) => year = n.to_int()
+            @value.Value::Int(n) =>
+              if n.compare_int64(9223372036854775807L) > 0 ||
+                n.compare_int64(-9223372036854775808L) < 0 {
+                return Err(
+                  "time.time: year value out of range (want signed 64-bit value)",
+                )
+              } else {
+                year = n.to_int64()
+              }
             _ => return Err("time.time: year must be an integer")
           }
         "month" =>
           match v {
-            @value.Value::Int(n) => month = n.to_int()
+            @value.Value::Int(n) =>
+              if n.compare_int64(9223372036854775807L) > 0 ||
+                n.compare_int64(-9223372036854775808L) < 0 {
+                return Err(
+                  "time.time: month value out of range (want signed 64-bit value)",
+                )
+              } else {
+                month = n.to_int64()
+              }
             _ => return Err("time.time: month must be an integer")
           }
         "day" =>
           match v {
-            @value.Value::Int(n) => day = n.to_int()
+            @value.Value::Int(n) =>
+              if n.compare_int64(9223372036854775807L) > 0 ||
+                n.compare_int64(-9223372036854775808L) < 0 {
+                return Err(
+                  "time.time: day value out of range (want signed 64-bit value)",
+                )
+              } else {
+                day = n.to_int64()
+              }
             _ => return Err("time.time: day must be an integer")
           }
         "hour" =>
           match v {
-            @value.Value::Int(n) => hour = n.to_int()
+            @value.Value::Int(n) =>
+              if n.compare_int64(9223372036854775807L) > 0 ||
+                n.compare_int64(-9223372036854775808L) < 0 {
+                return Err(
+                  "time.time: hour value out of range (want signed 64-bit value)",
+                )
+              } else {
+                hour = n.to_int64()
+              }
             _ => return Err("time.time: hour must be an integer")
           }
         "minute" =>
           match v {
-            @value.Value::Int(n) => minute = n.to_int()
+            @value.Value::Int(n) =>
+              if n.compare_int64(9223372036854775807L) > 0 ||
+                n.compare_int64(-9223372036854775808L) < 0 {
+                return Err(
+                  "time.time: minute value out of range (want signed 64-bit value)",
+                )
+              } else {
+                minute = n.to_int64()
+              }
             _ => return Err("time.time: minute must be an integer")
           }
         "second" =>
           match v {
-            @value.Value::Int(n) => second = n.to_int()
+            @value.Value::Int(n) =>
+              if n.compare_int64(9223372036854775807L) > 0 ||
+                n.compare_int64(-9223372036854775808L) < 0 {
+                return Err(
+                  "time.time: second value out of range (want signed 64-bit value)",
+                )
+              } else {
+                second = n.to_int64()
+              }
             _ => return Err("time.time: second must be an integer")
           }
         "nanosecond" =>
           match v {
-            @value.Value::Int(n) => nanosecond = n.to_int()
+            @value.Value::Int(n) =>
+              if n.compare_int64(9223372036854775807L) > 0 ||
+                n.compare_int64(-9223372036854775808L) < 0 {
+                return Err(
+                  "time.time: nanosecond value out of range (want signed 64-bit value)",
+                )
+              } else {
+                nanosecond = n.to_int64()
+              }
             _ => return Err("time.time: nanosecond must be an integer")
           }
         "location" =>
