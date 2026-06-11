@@ -63,7 +63,11 @@ pub struct Hashtable[K, V] {
 ///
 /// - `hash_fn` : Function that computes a hash for a key, returning `Err` if
 ///   the key is not hashable.
-/// - `eq_fn` : Function that tests two keys for equality.
+/// - `eq_fn` : Function that tests two keys for equality. Returns
+///   `Ok(true)` if the keys are equal, `Ok(false)` if they are not, or
+///   `Err(msg)` if the comparison itself fails (e.g., recursion-depth
+///   exceeded). When `eq_fn` returns `Err`, `insert`, `lookup`, and
+///   `delete` propagate the error immediately.
 /// - `zero_key` : Placeholder key used to initialise recycled entry slots.
 /// - `zero_val` : Placeholder value used to initialise recycled entry slots.
 ///
