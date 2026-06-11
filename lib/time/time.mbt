@@ -20,6 +20,12 @@ let secs_per_hour : Int = 3600
 let secs_per_minute : Int = 60
 
 ///|
+let max_int64 : Int64 = 9223372036854775807L
+
+///|
+let min_int64 : Int64 = -9223372036854775808L
+
+///|
 fn extract_duration_ns(v : @value.Value) -> Int64? {
   match v {
     @value.Value::ExtVal(c) =>
@@ -250,15 +256,12 @@ fn duration_binary(
       }
     "*" =>
       match rhs {
-        @value.Value::Int(i) => {
-          let max_int64 = 9223372036854775807L
-          let min_int64 = -9223372036854775808L
+        @value.Value::Int(i) =>
           if i.compare_int64(max_int64) > 0 || i.compare_int64(min_int64) < 0 {
             Some(Err("int value out of range (want signed 64-bit value)"))
           } else {
             Some(Ok(make_duration(ns * i.to_int64())))
           }
-        }
         _ => None
       }
     _ => None
@@ -405,7 +408,7 @@ fn parse_duration_number(
     None =>
       match parse_int64_str(num_str) {
         Some(n) => {
-          if n != 0L && scale > 9223372036854775807L / n {
+          if n != 0L && scale > max_int64 / n {
             return Err("time: invalid duration \"\{orig}\"")
           }
           Ok(n * scale)
@@ -423,7 +426,7 @@ fn parse_duration_number(
           None => return Err("time: invalid duration \"\{orig}\"")
         }
       }
-      if int_val != 0L && scale > 9223372036854775807L / int_val {
+      if int_val != 0L && scale > max_int64 / int_val {
         return Err("time: invalid duration \"\{orig}\"")
       }
       let int_ns = int_val * scale
@@ -445,7 +448,7 @@ fn parse_duration_number(
         }
         frac_val
       }
-      if int_ns > 9223372036854775807L - frac_ns {
+      if int_ns > max_int64 - frac_ns {
         return Err("time: invalid duration \"\{orig}\"")
       }
       Ok(int_ns + frac_ns)
@@ -530,7 +533,7 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
         match parse_duration_number(num_str, scale, orig) {
           Err(e) => return Err(e)
           Ok(ns_val) => {
-            if total_ns > 9223372036854775807L - ns_val {
+            if total_ns > max_int64 - ns_val {
               return Err("time: invalid duration \"\{orig}\"")
             }
             total_ns = total_ns + ns_val
@@ -1049,9 +1052,9 @@ fn time_binary(
                 d_ns
               } else if sec < other_sec ||
                 (sec == other_sec && nsec < other_nsec) {
-                -9223372036854775808L
+                min_int64
               } else {
-                9223372036854775807L
+                max_int64
               }
               Some(Ok(make_duration(result_ns)))
             }
@@ -1987,8 +1990,8 @@ fn make_time_constructor_fn() -> @value.Value {
         "year" =>
           match v {
             @value.Value::Int(n) =>
-              if n.compare_int64(9223372036854775807L) > 0 ||
-                n.compare_int64(-9223372036854775808L) < 0 {
+              if n.compare_int64(max_int64) > 0 ||
+                n.compare_int64(min_int64) < 0 {
                 return Err(
                   "time.time: year value out of range (want signed 64-bit value)",
                 )
@@ -2000,8 +2003,8 @@ fn make_time_constructor_fn() -> @value.Value {
         "month" =>
           match v {
             @value.Value::Int(n) =>
-              if n.compare_int64(9223372036854775807L) > 0 ||
-                n.compare_int64(-9223372036854775808L) < 0 {
+              if n.compare_int64(max_int64) > 0 ||
+                n.compare_int64(min_int64) < 0 {
                 return Err(
                   "time.time: month value out of range (want signed 64-bit value)",
                 )
@@ -2013,8 +2016,8 @@ fn make_time_constructor_fn() -> @value.Value {
         "day" =>
           match v {
             @value.Value::Int(n) =>
-              if n.compare_int64(9223372036854775807L) > 0 ||
-                n.compare_int64(-9223372036854775808L) < 0 {
+              if n.compare_int64(max_int64) > 0 ||
+                n.compare_int64(min_int64) < 0 {
                 return Err(
                   "time.time: day value out of range (want signed 64-bit value)",
                 )
@@ -2026,8 +2029,8 @@ fn make_time_constructor_fn() -> @value.Value {
         "hour" =>
           match v {
             @value.Value::Int(n) =>
-              if n.compare_int64(9223372036854775807L) > 0 ||
-                n.compare_int64(-9223372036854775808L) < 0 {
+              if n.compare_int64(max_int64) > 0 ||
+                n.compare_int64(min_int64) < 0 {
                 return Err(
                   "time.time: hour value out of range (want signed 64-bit value)",
                 )
@@ -2039,8 +2042,8 @@ fn make_time_constructor_fn() -> @value.Value {
         "minute" =>
           match v {
             @value.Value::Int(n) =>
-              if n.compare_int64(9223372036854775807L) > 0 ||
-                n.compare_int64(-9223372036854775808L) < 0 {
+              if n.compare_int64(max_int64) > 0 ||
+                n.compare_int64(min_int64) < 0 {
                 return Err(
                   "time.time: minute value out of range (want signed 64-bit value)",
                 )
@@ -2052,8 +2055,8 @@ fn make_time_constructor_fn() -> @value.Value {
         "second" =>
           match v {
             @value.Value::Int(n) =>
-              if n.compare_int64(9223372036854775807L) > 0 ||
-                n.compare_int64(-9223372036854775808L) < 0 {
+              if n.compare_int64(max_int64) > 0 ||
+                n.compare_int64(min_int64) < 0 {
                 return Err(
                   "time.time: second value out of range (want signed 64-bit value)",
                 )
@@ -2065,8 +2068,8 @@ fn make_time_constructor_fn() -> @value.Value {
         "nanosecond" =>
           match v {
             @value.Value::Int(n) =>
-              if n.compare_int64(9223372036854775807L) > 0 ||
-                n.compare_int64(-9223372036854775808L) < 0 {
+              if n.compare_int64(max_int64) > 0 ||
+                n.compare_int64(min_int64) < 0 {
                 return Err(
                   "time.time: nanosecond value out of range (want signed 64-bit value)",
                 )
