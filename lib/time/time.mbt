@@ -20,6 +20,12 @@ let secs_per_hour : Int = 3600
 let secs_per_minute : Int = 60
 
 ///|
+let secs_per_day : Int64 = 86400L
+
+///|
+let int64_digits_cutoff : Int64 = 922337203685477580L
+
+///|
 let max_int64 : Int64 = 9223372036854775807L
 
 ///|
@@ -93,9 +99,12 @@ fn normalize_to_unix_sec(
 ) -> Result[(Int64, Int), String] {
   let carry_s = floor_div_int64(nanosecond, ns_per_second)
   let ns_norm = (nanosecond - carry_s * ns_per_second).to_int()
-  let total_sec = hour * 3600L + minute * 60L + second + carry_s
-  let carry_d = floor_div_int64(total_sec, 86400L)
-  let sec_of_day = total_sec - carry_d * 86400L
+  let total_sec = hour * secs_per_hour.to_int64() +
+    minute * secs_per_minute.to_int64() +
+    second +
+    carry_s
+  let carry_d = floor_div_int64(total_sec, secs_per_day)
+  let sec_of_day = total_sec - carry_d * secs_per_day
   let m0 = month - 1L
   let extra_years = floor_div_int64(m0, 12L)
   let month_norm = (m0 - extra_years * 12L + 1L).to_int()
@@ -109,7 +118,7 @@ fn normalize_to_unix_sec(
   }
   let first_unix_day = first_of_month.to_unix_day()
   let unix_day = first_unix_day + (day - 1L) + carry_d
-  let unix_sec = unix_day * 86400L + sec_of_day
+  let unix_sec = unix_day * secs_per_day + sec_of_day
   Ok((unix_sec, ns_norm))
 }
 
@@ -387,7 +396,7 @@ fn parse_int64_str(s : String) -> Int64? {
     if c < '0' || c > '9' {
       return None
     }
-    if result > 922337203685477580L {
+    if result > int64_digits_cutoff {
       return None
     }
     result = result * 10L + (c.to_int() - '0'.to_int()).to_int64()
