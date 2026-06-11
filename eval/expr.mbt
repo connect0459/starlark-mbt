@@ -1127,7 +1127,7 @@ fn builtin_enumerate(
 ) -> @value.Value raise EvalErr {
   check_positional(ctx, "enumerate", pos_args, kw_args, 1, 2)
   let start = if pos_args.length() >= 2 {
-    BigInt::from_int64(arg_as_int(ctx, "enumerate", pos_args, 1))
+    BigInt::from_int64(arg_as_int64(ctx, "enumerate", pos_args, 1))
   } else {
     0N
   }
@@ -1891,7 +1891,7 @@ fn call_str_method(
       let old = arg_as_string(ctx, "replace", pos_args, 0)
       let new_s = arg_as_string(ctx, "replace", pos_args, 1)
       let max_count = if pos_args.length() >= 3 {
-        int64_to_count(arg_as_int(ctx, "replace", pos_args, 2))
+        int64_to_count(arg_as_int64(ctx, "replace", pos_args, 2))
       } else {
         -1
       }
@@ -1925,7 +1925,7 @@ fn call_str_method(
         }
       }
       let maxsplit = if pos_args.length() >= 2 {
-        int64_to_count(arg_as_int(ctx, method_name, pos_args, 1))
+        int64_to_count(arg_as_int64(ctx, method_name, pos_args, 1))
       } else {
         -1
       }
@@ -2722,7 +2722,7 @@ fn int64_to_count(n : Int64) -> Int {
 ///|
 // Coerce the `idx`-th (0-based) positional argument to an int64, raising an
 // error on type mismatch or if the value is outside the signed 64-bit range.
-fn arg_as_int(
+fn arg_as_int64(
   ctx : EvalContext,
   name : String,
   pos_args : Array[@value.Value],
