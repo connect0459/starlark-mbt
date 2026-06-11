@@ -466,3 +466,30 @@ test "encode surfaces an advertised attribute that resolves to nothing" {
   )
   check_encode_err(missing, "missing attribute widget.x")
 }
+
+///|
+test "decode nesting depth limit: moderate nesting (100 levels) succeeds" {
+  let buf = StringBuilder::new()
+  for _ in 0..<100 {
+    buf.write_char('[')
+  }
+  for _ in 0..<100 {
+    buf.write_char(']')
+  }
+  match decode_from_json(buf.to_string(), None) {
+    Ok(_) => ()
+    Err(e) => fail("100-level decode should succeed: \{e}")
+  }
+}
+
+///|
+test "encode nesting depth limit: moderate nesting (100 levels) succeeds" {
+  let mut v : @value.Value = @value.Value::None
+  for _ in 0..<100 {
+    v = @value.Value::List(@value.StarlarkList::new([v]))
+  }
+  match encode_to_json(v) {
+    Ok(_) => ()
+    Err(e) => fail("100-level encode should succeed: \{e}")
+  }
+}
