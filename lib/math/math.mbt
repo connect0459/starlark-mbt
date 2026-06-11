@@ -79,16 +79,12 @@ fn float_mod(x : Double, y : Double) -> Double {
 }
 
 ///|
-// Precise truncation-based fmod: same sign as x, |result| < |y|.
-// Uses a fixed-point binary subtraction loop to avoid the precision loss of
-// computing x/y directly when x >> y. Equivalent to C fmod / Go math.Mod.
 fn precise_fmod(x : Double, y : Double) -> Double {
   let xb = x.reinterpret_as_uint64()
   let yb = y.reinterpret_as_uint64()
   let sx = xb & 0x8000000000000000_UL
   let ax = xb ^ sx
   let ay = yb & 0x7FFFFFFFFFFFFFFF_UL
-  // NaN, ±Inf x, or y == 0
   if ay == 0_UL || ax >= 0x7FF0000000000000_UL || ay > 0x7FF0000000000000_UL {
     return x * y / (x * y)
   }
@@ -98,7 +94,6 @@ fn precise_fmod(x : Double, y : Double) -> Double {
   if ax == ay {
     return if sx != 0_UL { -0.0 } else { 0.0 }
   }
-  // Exponent and normalized mantissa for |x| (with implicit leading 1 at bit 52)
   let ix_e = ((ax >> 52) & 0x7FF_UL).to_int()
   let mut ix = 0
   let mut mx = 0_UL
@@ -114,7 +109,6 @@ fn precise_fmod(x : Double, y : Double) -> Double {
     }
     mx = m
   }
-  // Exponent and normalized mantissa for |y|
   let iy_e = ((ay >> 52) & 0x7FF_UL).to_int()
   let mut iy = 0
   let mut my = 0_UL
@@ -130,8 +124,6 @@ fn precise_fmod(x : Double, y : Double) -> Double {
     }
     my = m
   }
-  // Binary fixed-point reduction: ix - iy iterations, each doubles mx and
-  // conditionally subtracts my, reducing mx modulo my in the scaled domain.
   let mut n = ix - iy
   while n > 0 {
     if mx >= my {
@@ -151,18 +143,15 @@ fn precise_fmod(x : Double, y : Double) -> Double {
   if mx == 0_UL {
     return if sx != 0_UL { -0.0 } else { 0.0 }
   }
-  // Normalize: shift left until the leading bit is at position 52
   let mut cur_iy = iy
   while mx < 0x0010000000000000_UL {
     mx = mx << 1
     cur_iy -= 1
   }
-  // Reconstruct float64 from sign, exponent, and mantissa
   let result_bits = if cur_iy >= -1022 {
     let exp_bits = (cur_iy + 1023).to_int64().reinterpret_as_uint64()
     sx | (exp_bits << 52) | (mx & 0x000FFFFFFFFFFFFF_UL)
   } else {
-    // Subnormal result: right-shift mantissa, exponent field stays 0
     let shift = -1022 - cur_iy
     if shift >= 53 {
       sx
@@ -174,10 +163,6 @@ fn precise_fmod(x : Double, y : Double) -> Double {
 }
 
 ///|
-// IEEE 754-2008 §5.3.1 remainder: x - n*y where n is the nearest integer to
-// x/y (ties rounded to even). Ported from Go math/remainder.go. Uses
-// precise_fmod for the modular-reduction step so that precision is preserved
-// even when x >> y (the naive x - rint(x/y)*y loses all bits of x mod y).
 fn float_remainder(x : Double, y : Double) -> Double {
   if x.is_nan() || y.is_nan() || x.is_inf() || y == 0.0 {
     return 0.0 / 0.0
