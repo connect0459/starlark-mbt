@@ -254,6 +254,25 @@ test "decode surrogate pairs" {
 }
 
 ///|
+test "decode lone low surrogate maps to U+FFFD" {
+  // lone low surrogates (0xDC00–0xDFFF) without a preceding high surrogate
+  // must be replaced with U+FFFD, not abort
+  assert_decode("\"\\udd1e\"", str_val("\u{FFFD}"), "lone low surrogate U+DD1E")
+  assert_decode("\"\\udc00\"", str_val("\u{FFFD}"), "lone low surrogate U+DC00")
+  assert_decode("\"\\udfff\"", str_val("\u{FFFD}"), "lone low surrogate U+DFFF")
+}
+
+///|
+test "decode reversed surrogate pair maps both halves to U+FFFD" {
+  // reversed pair (low-then-high) — both halves are lone surrogates → U+FFFD each
+  assert_decode(
+    "\"\\udc00\\ud800\"",
+    str_val("\u{FFFD}\u{FFFD}"),
+    "reversed surrogate pair",
+  )
+}
+
+///|
 test "decode array" {
   assert_decode(
     "[1,2,3]",
