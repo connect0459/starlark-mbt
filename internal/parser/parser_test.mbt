@@ -1401,7 +1401,7 @@ test "for-loop bare-tuple iterable parses correctly" {
 }
 
 ///|
-test "for-loop bare-tuple multi-target and tuple iterable parses correctly" {
+test "for-loop tuple-unpacking over bare-tuple iterable parses correctly" {
   match
     @parser.parse_file("test.star", "for x, y in (1, 2), (3, 4):\n  pass\n") {
     Ok(f) =>
@@ -1411,6 +1411,14 @@ test "for-loop bare-tuple multi-target and tuple iterable parses correctly" {
         _ => fail("expected SFor with ETuple iterable")
       }
     Err(e) => fail("unexpected parse error: \{e.msg()}")
+  }
+}
+
+///|
+test "for-loop bare-tuple iterable with trailing comma is rejected" {
+  match @parser.parse_file("test.star", "for x in 1, 2,:\n  pass\n") {
+    Err(_) => ()
+    Ok(_) => fail("expected parse error for trailing comma in for-iterable")
   }
 }
 

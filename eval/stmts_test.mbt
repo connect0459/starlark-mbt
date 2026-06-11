@@ -231,7 +231,7 @@ test "exec_file: for loop with bare-tuple iterable iterates over all elements" {
 }
 
 ///|
-test "exec_file: for loop with bare-tuple iterable and tuple unpacking" {
+test "exec_file: for loop with tuple unpacking over bare-tuple iterable" {
   match exec_s("s = 0\nfor a, b in (1, 2), (3, 4):\n  s = s + a + b") {
     Ok(m) => assert_true(get_s(m, "s") == Some(@value.Value::Int(10N)))
     Err(e) => fail("unexpected error: \{e.msg()}")
