@@ -427,6 +427,15 @@ test "math_module: remainder preserves precision when x >> y (large ratio)" {
 }
 
 ///|
+test "math_module: remainder applies round-half-to-even on tie when y = 2^52" {
+  let m = math_module()
+  expect_float(
+    call2(m, "remainder", fv(6755399441055744.0), fv(4503599627370496.0)),
+    -2251799813685248.0,
+  )
+}
+
+///|
 test "math_module: rounding functions reject wrong argument counts and keyword args" {
   let m = math_module()
   expect_err(call_raw(m, "ceil", [], []), "got 0 arguments, want 1")

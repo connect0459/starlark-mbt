@@ -191,15 +191,21 @@ fn float_remainder(x : Double, y : Double) -> Double {
   if rx == ry {
     return if sign { -0.0 } else { 0.0 }
   }
-  // Reduce rx into [0, 2*ry) via precise_fmod, avoiding x/y precision loss
   if ry <= 8.98846567431158e+307 {
     rx = precise_fmod(rx, ry + ry)
   }
-  // Shift into (-ry/2, ry/2] with tie-to-even (two-step for y < 2^52)
-  if ry < 4503599627370496.0 {
+  if ry < 4.45014771701440276618e-308 {
     if rx + rx > ry {
       rx -= ry
       if rx + rx >= ry {
+        rx -= ry
+      }
+    }
+  } else {
+    let ry_half = ry * 0.5
+    if rx > ry_half {
+      rx -= ry
+      if rx >= ry_half {
         rx -= ry
       }
     }
