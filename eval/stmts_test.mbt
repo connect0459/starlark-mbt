@@ -244,6 +244,73 @@ test "exec_file: for loop continue skips rest of body for matching iterations" {
   }
 }
 
+// --- iterator drain on early frame exit ---
+
+///|
+test "exec_file: return from inside for loop does not permanently lock the iterated list" {
+  let src =
+    #|def first(L):
+    #|    for x in L:
+    #|        return x
+    #|
+    #|L = [1, 2, 3]
+    #|first(L)
+    #|L.append(4)
+  match exec_s(src) {
+    Ok(m) =>
+      match get_s(m, "L") {
+        Some(@value.Value::List(l)) => assert_eq(l.length(), 4)
+        _ => fail("expected L to be a list")
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: return from nested for loops drains all active iterators" {
+  let src =
+    #|def first_pair(L, M):
+    #|    for x in L:
+    #|        for y in M:
+    #|            return (x, y)
+    #|
+    #|L = [1, 2]
+    #|M = [3, 4]
+    #|first_pair(L, M)
+    #|L.append(5)
+    #|M.append(6)
+  match exec_s(src) {
+    Ok(m) => {
+      match get_s(m, "L") {
+        Some(@value.Value::List(l)) => assert_eq(l.length(), 3)
+        _ => fail("expected L to be a list")
+      }
+      match get_s(m, "M") {
+        Some(@value.Value::List(ml)) => assert_eq(ml.length(), 3)
+        _ => fail("expected M to be a list")
+      }
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: runtime error inside for loop does not permanently lock the iterated list" {
+  let lst = @value.StarlarkList::new([
+    @value.Value::Int(1N),
+    @value.Value::Int(2N),
+  ])
+  let t = Thread::new("test")
+  let _err = exec_file_with_predeclared(
+    t,
+    "<test>",
+    "for x in my_list:\n  [][0]",
+    Options::default(),
+    Predeclared::from_map({ "my_list": @value.Value::List(lst) }),
+  )
+  assert_true(lst.push(@value.Value::Int(3N)) is Ok(_))
+}
+
 // --- dict subscript assignment ---
 
 ///|
