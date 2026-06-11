@@ -209,6 +209,26 @@ test "eval_expr: in operator checks membership in range" {
   assert_true(eval_op("3 in range(0, 10, 2)") is Ok(@value.Value::Bool(false)))
 }
 
+///|
+test "eval_expr: BigInt needle beyond Int64 range in range returns false" {
+  assert_true(eval_op("(1 << 70) in range(5)") is Ok(@value.Value::Bool(false)))
+  assert_true(
+    eval_op("-(1 << 70) in range(-5, 0)") is Ok(@value.Value::Bool(false)),
+  )
+}
+
+///|
+test "eval_expr: float above Int64 max saturates to Int64 max, which is in range — must return false" {
+  assert_true(
+    eval_op("1e19 in range(9223372036854775807, 9223372036854775806, -1)")
+    is Ok(@value.Value::Bool(false)),
+  )
+  assert_true(
+    eval_op("-1e19 in range(-9223372036854775808, 0)")
+    is Ok(@value.Value::Bool(false)),
+  )
+}
+
 // --- Subscript / index access ---
 
 ///|

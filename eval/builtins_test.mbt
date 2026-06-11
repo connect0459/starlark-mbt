@@ -349,6 +349,59 @@ test "exec_file: enumerate wraps each element with its index" {
 }
 
 ///|
+test "exec_file: enumerate start in Int64 but not Int32 range returns correct index" {
+  match exec_b("r = list(enumerate([1], 5000000000))") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::List(l)) => {
+          assert_eq(l.length(), 1)
+          match l[0] {
+            @value.Value::Tuple(t) =>
+              assert_true(t[0] == @value.Value::Int(5000000000N))
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: enumerate start beyond Int64 raises out-of-range error" {
+  assert_true(
+    emsg("list(enumerate([1], 10000000000000000000))").contains("out of range"),
+  )
+}
+
+///|
+test "exec_file: str.replace count beyond Int64 raises out-of-range error" {
+  assert_true(
+    emsg("\"abc\".replace(\"a\", \"b\", 10000000000000000000)").contains(
+      "out of range",
+    ),
+  )
+}
+
+///|
+test "exec_file: str.split maxsplit beyond Int64 raises out-of-range error" {
+  assert_true(
+    emsg("\"a,b,c\".split(\",\", 10000000000000000000)").contains(
+      "out of range",
+    ),
+  )
+}
+
+///|
+test "exec_file: str.rsplit maxsplit beyond Int64 raises out-of-range error" {
+  assert_true(
+    emsg("\"a,b,c\".rsplit(\",\", 10000000000000000000)").contains(
+      "out of range",
+    ),
+  )
+}
+
+///|
 test "exec_file: zip pairs elements from two sequences" {
   match exec_b("r = zip([1, 2], [\"a\", \"b\"])") {
     Ok(m) =>
