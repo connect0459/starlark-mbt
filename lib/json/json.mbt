@@ -561,9 +561,6 @@ fn parse_json_value(
   i : Int,
   depth : Int,
 ) -> Result[(@value.Value, Int), (Int, String)] {
-  if depth >= json_max_nesting_depth {
-    return Err((i, "nesting depth limit exceeded"))
-  }
   let i = skip_ws(chars, i)
   let len = chars.length()
   if i >= len {
@@ -583,8 +580,14 @@ fn parse_json_value(
   } else if starts_with_at(chars, i, "false") {
     Ok((@value.Value::Bool(false), i + 5))
   } else if c == '[' {
+    if depth >= json_max_nesting_depth {
+      return Err((i, "nesting depth limit exceeded"))
+    }
     parse_json_array(chars, i, depth)
   } else if c == '{' {
+    if depth >= json_max_nesting_depth {
+      return Err((i, "nesting depth limit exceeded"))
+    }
     parse_json_object(chars, i, depth)
   } else if c == '-' ||
     (c.to_int() >= '0'.to_int() && c.to_int() <= '9'.to_int()) {
