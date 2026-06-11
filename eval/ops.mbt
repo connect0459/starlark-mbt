@@ -1253,7 +1253,12 @@ fn in_op(
               ),
             )
           }
-          @value.Value::Bool(r.contains(f.to_int64()))
+          if f >= @int64.MAX_VALUE.to_double() ||
+            f < @int64.MIN_VALUE.to_double() {
+            @value.Value::Bool(false)
+          } else {
+            @value.Value::Bool(r.contains(f.to_int64()))
+          }
         }
         _ =>
           raise EvalErr(
