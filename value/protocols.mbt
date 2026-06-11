@@ -213,13 +213,17 @@ pub fn CustomValue::with_hash(
 }
 
 ///|
-/// Attaches a custom equality function. Invoked by `starlark_equals` for
-/// `Value::ExtVal`. Without this, two `ExtVal`s compare unequal by default.
+/// Attaches a custom equality function. Invoked by `starlark_equals` and
+/// `starlark_equals_depth` for `Value::ExtVal`. Without this, two `ExtVal`s
+/// compare unequal by default.
 ///
 /// Parameters:
 ///
 /// - `self` : The `CustomValue` to extend.
 /// - `equals_fn` : Callback that tests equality against another `Value`.
+///   Returns `Ok(true)` if equal, `Ok(false)` if not, or `Err(msg)` if the
+///   comparison fails (e.g., recursion depth exceeded). Errors are propagated
+///   by `starlark_equals_depth` and squashed to `false` by `starlark_equals`.
 ///
 /// Returns a new `CustomValue` with the equality callback registered.
 pub fn CustomValue::with_equals(
@@ -427,7 +431,7 @@ pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
 }
 
 ///|
-/// Invokes the equality callback against `other`, or returns `false` if no
+/// Invokes the equality callback against `other`, or returns `Ok(false)` if no
 /// callback was registered.
 ///
 /// Parameters:
@@ -435,8 +439,8 @@ pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
 /// - `self` : The custom value to test equality for.
 /// - `other` : The value to compare against.
 ///
-/// Returns `true` if the equality callback returns `true`, or `false` if no
-/// callback was registered or the callback returns `false`.
+/// Returns `Ok(true)` if equal, `Ok(false)` if not equal or no callback is
+/// registered, or `Err(msg)` if the callback reports a comparison error.
 pub fn CustomValue::get_equals(
   self : CustomValue,
   other : Value,
