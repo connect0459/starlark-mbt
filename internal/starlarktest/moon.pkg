@@ -12,4 +12,101 @@ import {
 
 options(
   targets: { "time_tz_native_test.mbt": [ "native", "llvm" ] },
+  "pre-build": [
+    {
+      "command": ":embed --text --name assign_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/assign.star",
+      "output": "assign_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name bool_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/bool.star",
+      "output": "bool_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name builtins_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/builtins.star",
+      "output": "builtins_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name bytes_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/bytes.star",
+      "output": "bytes_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name control_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/control.star",
+      "output": "control_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name dict_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/dict.star",
+      "output": "dict_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name float_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/float.star",
+      "output": "float_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name function_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/function.star",
+      "output": "function_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name int_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/int.star",
+      "output": "int_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name json_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/json.star",
+      "output": "json_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name list_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/list.star",
+      "output": "list_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name math_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/math.star",
+      "output": "math_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name misc_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/misc.star",
+      "output": "misc_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name module_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/module.star",
+      "output": "module_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name recursion_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/recursion.star",
+      "output": "recursion_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name set_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/set.star",
+      "output": "set_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name string_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/string.star",
+      "output": "string_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name tuple_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/tuple.star",
+      "output": "tuple_star_test.mbt",
+    },
+    {
+      "command": ":embed --text --name while_star -i $input -o $output",
+      "input": "vendor/starlark-go/starlark/testdata/while.star",
+      "output": "while_star_test.mbt",
+    },
+  ],
 )
