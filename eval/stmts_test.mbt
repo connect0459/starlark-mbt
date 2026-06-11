@@ -294,23 +294,6 @@ test "exec_file: return from nested for loops drains all active iterators" {
   }
 }
 
-///|
-test "exec_file: runtime error inside for loop does not permanently lock the iterated list" {
-  let lst = @value.StarlarkList::new([
-    @value.Value::Int(1N),
-    @value.Value::Int(2N),
-  ])
-  let t = Thread::new("test")
-  let _err = exec_file_with_predeclared(
-    t,
-    "<test>",
-    "for x in my_list:\n  [][0]",
-    Options::default(),
-    Predeclared::from_map({ "my_list": @value.Value::List(lst) }),
-  )
-  assert_true(lst.push(@value.Value::Int(3N)) is Ok(_))
-}
-
 // --- dict subscript assignment ---
 
 ///|

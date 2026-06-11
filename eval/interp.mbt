@@ -541,392 +541,381 @@ fn VM::run_frame(
 
   let mut result = @value.Value::None
   let mut pc = 0
-  try {
-    while pc < code.length() {
-      check_steps(ctx)
-      let op = match @compile.Opcode::from_byte(code[pc]) {
-        Some(o) => o
-        None => abort("vm: invalid opcode byte \{code[pc].to_int()}")
+  while pc < code.length() {
+    check_steps(ctx)
+    let op = match @compile.Opcode::from_byte(code[pc]) {
+      Some(o) => o
+      None => abort("vm: invalid opcode byte \{code[pc].to_int()}")
+    }
+    let cur_pc = pc
+    pc += 1
+    let arg = if op.has_arg() {
+      let (v, next) = vm_read_arg(code, pc)
+      pc = next
+      v
+    } else {
+      0
+    }
+    let pos = fc.position(cur_pc)
+    // Keep this frame's backtrace position current. An outer frame stops
+    // advancing at its Call instruction, so it naturally shows the call site.
+    ctx.thread.call_stack[frame_idx] = @errors.CallFrame::new(name, pos)
+    match op {
+      NoneOp => push(@value.Value::None)
+      TrueOp => push(@value.Value::Bool(true))
+      FalseOp => push(@value.Value::Bool(false))
+      Constant => push(const_to_value(m.prog.constants[arg]))
+      Pop => pop() |> ignore
+      Dup =>
+        if stack.is_empty() {
+          abort("vm: operand stack underflow")
+        } else {
+          push(stack[stack.length() - 1])
+        }
+      Dup2 => {
+        // [.., x, y] -> [.., x, y, x, y]
+        let n = stack.length()
+        if n < 2 {
+          abort("vm: operand stack underflow")
+        }
+        push(stack[n - 2])
+        push(stack[n - 1])
       }
-      let cur_pc = pc
-      pc += 1
-      let arg = if op.has_arg() {
-        let (v, next) = vm_read_arg(code, pc)
-        pc = next
-        v
-      } else {
-        0
+      Exch => {
+        // [.., x, y] -> [.., y, x]
+        let y = pop()
+        let x = pop()
+        push(y)
+        push(x)
       }
-      let pos = fc.position(cur_pc)
-      // Keep this frame's backtrace position current. An outer frame stops
-      // advancing at its Call instruction, so it naturally shows the call site.
-      ctx.thread.call_stack[frame_idx] = @errors.CallFrame::new(name, pos)
-      match op {
-        NoneOp => push(@value.Value::None)
-        TrueOp => push(@value.Value::Bool(true))
-        FalseOp => push(@value.Value::Bool(false))
-        Constant => push(const_to_value(m.prog.constants[arg]))
-        Pop => pop() |> ignore
-        Dup =>
-          if stack.is_empty() {
-            abort("vm: operand stack underflow")
-          } else {
-            push(stack[stack.length() - 1])
-          }
-        Dup2 => {
-          // [.., x, y] -> [.., x, y, x, y]
-          let n = stack.length()
-          if n < 2 {
-            abort("vm: operand stack underflow")
-          }
-          push(stack[n - 2])
-          push(stack[n - 1])
+      UPlus => push(eval_unary(ctx, OpPlus, pop(), pos))
+      UMinus => push(eval_unary(ctx, OpMinus, pop(), pos))
+      Tilde => push(eval_unary(ctx, OpBitNot, pop(), pos))
+      Not => push(eval_unary(ctx, OpNot, pop(), pos))
+      Index => {
+        let idx = pop()
+        let obj = pop()
+        push(eval_index(ctx, obj, idx, pos))
+      }
+      Attr => {
+        let obj = pop()
+        push(eval_getattr(ctx, obj, m.prog.names[arg], pos))
+      }
+      Slice => {
+        // stack: [obj, lo, hi, step] (omitted bounds pushed as None). The
+        // bound conversion order matches the established interpreter for identical errors.
+        let step_v = pop()
+        let hi_v = pop()
+        let lo_v = pop()
+        let obj = pop()
+        let step = slice_int_arg(ctx, step_v, "slice step")
+        let lo = slice_int_arg(ctx, lo_v, "start index")
+        let hi = slice_int_arg(ctx, hi_v, "end index")
+        push(eval_slice(ctx, obj, lo, hi, step))
+      }
+      MakeList =>
+        push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
+      MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
+      MakeDict => push(@value.Value::Dict(@value.StarlarkDict::new()))
+      MakeSet => push(@value.Value::Set(@value.StarlarkSet::new()))
+      Append => {
+        // [.., list, elem] -> append elem to the accumulator list, which stays.
+        let elem = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::List(l) => check(ctx, l.push(elem))
+          other => abort("vm: Append expects a list, got \{other.type_name()}")
         }
-        Exch => {
-          // [.., x, y] -> [.., y, x]
-          let y = pop()
-          let x = pop()
-          push(y)
-          push(x)
+      }
+      SetAdd => {
+        // [.., set, elem] -> add elem to the accumulator set, which stays.
+        let elem = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Set(s) => check(ctx, s.add(elem))
+          other => abort("vm: SetAdd expects a set, got \{other.type_name()}")
         }
-        UPlus => push(eval_unary(ctx, OpPlus, pop(), pos))
-        UMinus => push(eval_unary(ctx, OpMinus, pop(), pos))
-        Tilde => push(eval_unary(ctx, OpBitNot, pop(), pos))
-        Not => push(eval_unary(ctx, OpNot, pop(), pos))
-        Index => {
-          let idx = pop()
-          let obj = pop()
-          push(eval_index(ctx, obj, idx, pos))
+      }
+      SetDict => {
+        // [.., dict, key, value] -> dict[key] = value; the dict stays.
+        let value = pop()
+        let key = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Dict(d) => check(ctx, d.set(key, value))
+          other => abort("vm: SetDict expects a dict, got \{other.type_name()}")
         }
-        Attr => {
-          let obj = pop()
-          push(eval_getattr(ctx, obj, m.prog.names[arg], pos))
-        }
-        Slice => {
-          // stack: [obj, lo, hi, step] (omitted bounds pushed as None). The
-          // bound conversion order matches the established interpreter for identical errors.
-          let step_v = pop()
-          let hi_v = pop()
-          let lo_v = pop()
-          let obj = pop()
-          let step = slice_int_arg(ctx, step_v, "slice step")
-          let lo = slice_int_arg(ctx, lo_v, "start index")
-          let hi = slice_int_arg(ctx, hi_v, "end index")
-          push(eval_slice(ctx, obj, lo, hi, step))
-        }
-        MakeList =>
-          push(@value.Value::List(@value.StarlarkList::new(pop_n(stack, arg))))
-        MakeTuple => push(@value.Value::Tuple(pop_n(stack, arg)))
-        MakeDict => push(@value.Value::Dict(@value.StarlarkDict::new()))
-        MakeSet => push(@value.Value::Set(@value.StarlarkSet::new()))
-        Append => {
-          // [.., list, elem] -> append elem to the accumulator list, which stays.
-          let elem = pop()
-          match stack[stack.length() - 1] {
-            @value.Value::List(l) => check(ctx, l.push(elem))
-            other =>
-              abort("vm: Append expects a list, got \{other.type_name()}")
-          }
-        }
-        SetAdd => {
-          // [.., set, elem] -> add elem to the accumulator set, which stays.
-          let elem = pop()
-          match stack[stack.length() - 1] {
-            @value.Value::Set(s) => check(ctx, s.add(elem))
-            other => abort("vm: SetAdd expects a set, got \{other.type_name()}")
-          }
-        }
-        SetDict => {
-          // [.., dict, key, value] -> dict[key] = value; the dict stays.
-          let value = pop()
-          let key = pop()
-          match stack[stack.length() - 1] {
-            @value.Value::Dict(d) => check(ctx, d.set(key, value))
-            other =>
-              abort("vm: SetDict expects a dict, got \{other.type_name()}")
-          }
-        }
-        SetDictUniq => {
-          // [.., dict, key, value] -> dict[key] = value, but error if the key
-          // already appears (dict-literal semantics); the dict stays.
-          let value = pop()
-          let key = pop()
-          match stack[stack.length() - 1] {
-            @value.Value::Dict(d) =>
-              match check(ctx, d.get(key)) {
-                Some(_) =>
-                  raise EvalErr(
-                    make_eval_error(ctx, "duplicate key: \{key.repr()}"),
-                  )
-                None => check(ctx, d.set(key, value))
-              }
-            other =>
-              abort("vm: SetDictUniq expects a dict, got \{other.type_name()}")
-          }
-        }
-        Local =>
-          match locals[arg] {
-            LVal(v) => push(v)
-            LUnbound =>
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "local variable \{fc.locals[arg].name()} referenced before assignment",
-                ),
-              )
-            LBoxed(_) => abort("vm: Local on a cell slot")
-          }
-        SetLocal => locals[arg] = LVal(pop())
-        LocalCell =>
-          match locals[arg] {
-            LBoxed(c) =>
-              match c.get() {
-                Some(v) => push(v)
-                None =>
-                  raise EvalErr(
-                    make_eval_error(
-                      ctx,
-                      "local variable \{fc.locals[arg].name()} referenced before assignment",
-                    ),
-                  )
-              }
-            _ => abort("vm: LocalCell on a non-cell slot")
-          }
-        SetLocalCell =>
-          match locals[arg] {
-            LBoxed(c) => c.set(pop())
-            _ => abort("vm: SetLocalCell on a non-cell slot")
-          }
-        FreeCell =>
-          match freevars[arg].get() {
-            Some(v) => push(v)
-            None =>
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "local variable \{fc.freevars[arg].name()} referenced before assignment",
-                ),
-              )
-          }
-        SetGlobal => m.globals[arg] = Some(pop())
-        SetIndex => {
-          // stack: [obj, idx, value]
-          let value = pop()
-          let idx = pop()
-          let obj = pop()
-          set_index(ctx, obj, idx, value, pos)
-        }
-        SetField => {
-          // stack: [obj, value]
-          let value = pop()
-          let obj = pop()
-          let attr = m.prog.names[arg]
-          match obj {
-            @value.Value::Module(_) =>
-              raise EvalErr(
-                make_eval_error(ctx, "can't assign to .\{attr} field of module"),
-              )
-            @value.Value::ExtVal(c) =>
-              match c.get_set_field(attr, value) {
-                Some(Ok(_)) => ()
-                Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
-                None =>
-                  raise EvalErr(
-                    make_eval_error(
-                      ctx,
-                      "can't assign to .\{attr} field of \{obj.type_name()}",
-                    ),
-                  )
-              }
-            _ =>
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "can't assign to .\{attr} field of \{obj.type_name()}",
-                ),
-              )
-          }
-        }
-        Unpack => {
-          let items = unpack_items(ctx, pop(), arg)
-          // push elements so element 0 ends up on top of the stack
-          for i = items.length() - 1; i >= 0; i = i - 1 {
-            push(items[i])
-          }
-        }
-        AugApply => {
-          let rv = pop()
-          let lv = pop()
-          push(eval_aug_val(ctx, lv, augop_of_int(arg), rv, pos))
-        }
-        Global =>
-          match m.globals[arg] {
-            Some(v) => push(v)
-            None => {
-              // A name bound by `load` is module-local unless `load_binds_globally`,
-              // so referencing it before its load reports "local variable", matching
-              // the established interpreter.
-              let gname = m.prog.globals[arg].name()
-              let kind = if !ctx.opts.load_binds_globally &&
-                load_binds_name(m.prog, gname) {
-                "local"
-              } else {
-                "global"
-              }
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "\{kind} variable \{gname} referenced before assignment",
-                ),
-              )
+      }
+      SetDictUniq => {
+        // [.., dict, key, value] -> dict[key] = value, but error if the key
+        // already appears (dict-literal semantics); the dict stays.
+        let value = pop()
+        let key = pop()
+        match stack[stack.length() - 1] {
+          @value.Value::Dict(d) =>
+            match check(ctx, d.get(key)) {
+              Some(_) =>
+                raise EvalErr(
+                  make_eval_error(ctx, "duplicate key: \{key.repr()}"),
+                )
+              None => check(ctx, d.set(key, value))
             }
-          }
-        // Resolve predeclared/universal names against the context's base
-        // environment, which holds the builtins, the universal `None`/`True`/
-        // `False`, and embedder-supplied bindings (a custom universe, per-call
-        // predeclared values, or `eval_expr`'s `env`). A name with no binding
-        // there is undefined and raises the same error the established interpreter reports,
-        // rather than resolving to a fabricated builtin.
-        Predeclared | Universal => {
-          let name = m.prog.names[arg]
-          match ctx.global_env.lookup(name) {
-            Some(v) => push(v)
-            None =>
-              raise EvalErr(
-                make_eval_error(ctx, "\{pos.to_string()}: undefined: \{name}"),
-              )
-          }
+          other =>
+            abort("vm: SetDictUniq expects a dict, got \{other.type_name()}")
         }
-        Load => self.exec_load(m, m.prog.load_stmts[arg])
-        MakeFunc => {
-          let funcode = m.prog.functions[arg]
-          let provided : Array[@value.Value] = match pop() {
-            @value.Value::Tuple(items) => items
-            other =>
-              abort(
-                "vm: MakeFunc expected a defaults tuple, got \{other.type_name()}",
-              )
-          }
-          // Align the supplied defaults onto the optional parameters (in order);
-          // every other parameter slot has no default.
-          let defaults : Array[@value.Value?] = Array::make(
-            funcode.params.length(),
-            None,
-          )
-          let mut di = 0
-          for i, spec in funcode.params {
-            if spec is POptional(_) {
-              defaults[i] = Some(provided[di])
-              di += 1
-            }
-          }
-          // Gather the closure's captured cells from this (the defining) frame.
-          let fvs : Array[@value.Cell] = Array::make(
-            funcode.freevar_sources.length(),
-            @value.Cell::new(),
-          )
-          for k, src in funcode.freevar_sources {
-            fvs[k] = match src {
-              FromLocal(li) =>
-                match locals[li] {
-                  LBoxed(c) => c
-                  _ => abort("vm: MakeFunc free variable expects a cell slot")
-                }
-              FromFree(fi) => freevars[fi]
-            }
-          }
-          push(
-            @value.Value::Function(
-              @value.StarlarkFunction::from_compiled(
-                funcode.name,
-                funcode,
-                m.prog,
-                m.globals,
-                defaults,
-                fvs,
+      }
+      Local =>
+        match locals[arg] {
+          LVal(v) => push(v)
+          LUnbound =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "local variable \{fc.locals[arg].name()} referenced before assignment",
               ),
-            ),
-          )
+            )
+          LBoxed(_) => abort("vm: Local on a cell slot")
         }
-        Call => {
-          let (callee, args, kwargs) = pop_call_fixed(arg)
-          push(self.call_value(callee, args, kwargs, pos))
-        }
-        CallVar => {
-          // [.., callee, pos.., kw pairs.., *args]
-          let star = pop()
-          let (callee, args, kwargs) = pop_call_fixed(arg)
-          expand_star_args(ctx, star, args)
-          push(self.call_value(callee, args, kwargs, pos))
-        }
-        CallKw => {
-          // [.., callee, pos.., kw pairs.., **kwargs]
-          let kwstar = pop()
-          let (callee, args, kwargs) = pop_call_fixed(arg)
-          expand_kwargs(ctx, kwstar, kwargs)
-          push(self.call_value(callee, args, kwargs, pos))
-        }
-        CallVarKw => {
-          // [.., callee, pos.., kw pairs.., *args, **kwargs]
-          let kwstar = pop()
-          let star = pop()
-          let (callee, args, kwargs) = pop_call_fixed(arg)
-          // Expand `*args` before `**kwargs` so the iteration order (and thus the
-          // order any error surfaces) matches the established interpreter's left-to-right argument
-          // expansion.
-          expand_star_args(ctx, star, args)
-          expand_kwargs(ctx, kwstar, kwargs)
-          push(self.call_value(callee, args, kwargs, pos))
-        }
-        Jmp => pc = arg
-        CJmp => if pop().truth() { pc = arg }
-        IterPush =>
-          match @value.iterate(pop()) {
-            Ok(it) => iterstack.push(it)
-            Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
-          }
-        IterJmp =>
-          match iterstack.last() {
-            Some(it) =>
-              match it.next() {
-                Some(elem) => push(elem) // fall through with the next element
-                None => pc = arg // exhausted: jump past the loop body
-              }
-            None => abort("vm: iterator stack underflow")
-          }
-        IterPop =>
-          match iterstack.pop() {
-            Some(it) => it.done()
-            None => abort("vm: iterator stack underflow")
-          }
-        Return => {
-          result = pop()
-          break
-        }
-        _ =>
-          match binop_of_opcode(op) {
-            Some(binop) => {
-              let rv = pop()
-              let lv = pop()
-              push(eval_binary(ctx, lv, binop, rv, pos))
+      SetLocal => locals[arg] = LVal(pop())
+      LocalCell =>
+        match locals[arg] {
+          LBoxed(c) =>
+            match c.get() {
+              Some(v) => push(v)
+              None =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "local variable \{fc.locals[arg].name()} referenced before assignment",
+                  ),
+                )
             }
-            None =>
-              abort(
-                "vm: opcode byte \{op.to_byte().to_int()} not yet implemented",
-              )
+          _ => abort("vm: LocalCell on a non-cell slot")
+        }
+      SetLocalCell =>
+        match locals[arg] {
+          LBoxed(c) => c.set(pop())
+          _ => abort("vm: SetLocalCell on a non-cell slot")
+        }
+      FreeCell =>
+        match freevars[arg].get() {
+          Some(v) => push(v)
+          None =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "local variable \{fc.freevars[arg].name()} referenced before assignment",
+              ),
+            )
+        }
+      SetGlobal => m.globals[arg] = Some(pop())
+      SetIndex => {
+        // stack: [obj, idx, value]
+        let value = pop()
+        let idx = pop()
+        let obj = pop()
+        set_index(ctx, obj, idx, value, pos)
+      }
+      SetField => {
+        // stack: [obj, value]
+        let value = pop()
+        let obj = pop()
+        let attr = m.prog.names[arg]
+        match obj {
+          @value.Value::Module(_) =>
+            raise EvalErr(
+              make_eval_error(ctx, "can't assign to .\{attr} field of module"),
+            )
+          @value.Value::ExtVal(c) =>
+            match c.get_set_field(attr, value) {
+              Some(Ok(_)) => ()
+              Some(Err(msg)) => raise EvalErr(make_eval_error(ctx, msg))
+              None =>
+                raise EvalErr(
+                  make_eval_error(
+                    ctx,
+                    "can't assign to .\{attr} field of \{obj.type_name()}",
+                  ),
+                )
+            }
+          _ =>
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "can't assign to .\{attr} field of \{obj.type_name()}",
+              ),
+            )
+        }
+      }
+      Unpack => {
+        let items = unpack_items(ctx, pop(), arg)
+        // push elements so element 0 ends up on top of the stack
+        for i = items.length() - 1; i >= 0; i = i - 1 {
+          push(items[i])
+        }
+      }
+      AugApply => {
+        let rv = pop()
+        let lv = pop()
+        push(eval_aug_val(ctx, lv, augop_of_int(arg), rv, pos))
+      }
+      Global =>
+        match m.globals[arg] {
+          Some(v) => push(v)
+          None => {
+            // A name bound by `load` is module-local unless `load_binds_globally`,
+            // so referencing it before its load reports "local variable", matching
+            // the established interpreter.
+            let gname = m.prog.globals[arg].name()
+            let kind = if !ctx.opts.load_binds_globally &&
+              load_binds_name(m.prog, gname) {
+              "local"
+            } else {
+              "global"
+            }
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "\{kind} variable \{gname} referenced before assignment",
+              ),
+            )
           }
+        }
+      // Resolve predeclared/universal names against the context's base
+      // environment, which holds the builtins, the universal `None`/`True`/
+      // `False`, and embedder-supplied bindings (a custom universe, per-call
+      // predeclared values, or `eval_expr`'s `env`). A name with no binding
+      // there is undefined and raises the same error the established interpreter reports,
+      // rather than resolving to a fabricated builtin.
+      Predeclared | Universal => {
+        let name = m.prog.names[arg]
+        match ctx.global_env.lookup(name) {
+          Some(v) => push(v)
+          None =>
+            raise EvalErr(
+              make_eval_error(ctx, "\{pos.to_string()}: undefined: \{name}"),
+            )
+        }
       }
-    }
-  } catch {
-    EvalErr(e) => {
-      for it in iterstack {
-        it.done()
+      Load => self.exec_load(m, m.prog.load_stmts[arg])
+      MakeFunc => {
+        let funcode = m.prog.functions[arg]
+        let provided : Array[@value.Value] = match pop() {
+          @value.Value::Tuple(items) => items
+          other =>
+            abort(
+              "vm: MakeFunc expected a defaults tuple, got \{other.type_name()}",
+            )
+        }
+        // Align the supplied defaults onto the optional parameters (in order);
+        // every other parameter slot has no default.
+        let defaults : Array[@value.Value?] = Array::make(
+          funcode.params.length(),
+          None,
+        )
+        let mut di = 0
+        for i, spec in funcode.params {
+          if spec is POptional(_) {
+            defaults[i] = Some(provided[di])
+            di += 1
+          }
+        }
+        // Gather the closure's captured cells from this (the defining) frame.
+        let fvs : Array[@value.Cell] = Array::make(
+          funcode.freevar_sources.length(),
+          @value.Cell::new(),
+        )
+        for k, src in funcode.freevar_sources {
+          fvs[k] = match src {
+            FromLocal(li) =>
+              match locals[li] {
+                LBoxed(c) => c
+                _ => abort("vm: MakeFunc free variable expects a cell slot")
+              }
+            FromFree(fi) => freevars[fi]
+          }
+        }
+        push(
+          @value.Value::Function(
+            @value.StarlarkFunction::from_compiled(
+              funcode.name,
+              funcode,
+              m.prog,
+              m.globals,
+              defaults,
+              fvs,
+            ),
+          ),
+        )
       }
-      raise EvalErr(e)
+      Call => {
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        push(self.call_value(callee, args, kwargs, pos))
+      }
+      CallVar => {
+        // [.., callee, pos.., kw pairs.., *args]
+        let star = pop()
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        expand_star_args(ctx, star, args)
+        push(self.call_value(callee, args, kwargs, pos))
+      }
+      CallKw => {
+        // [.., callee, pos.., kw pairs.., **kwargs]
+        let kwstar = pop()
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        expand_kwargs(ctx, kwstar, kwargs)
+        push(self.call_value(callee, args, kwargs, pos))
+      }
+      CallVarKw => {
+        // [.., callee, pos.., kw pairs.., *args, **kwargs]
+        let kwstar = pop()
+        let star = pop()
+        let (callee, args, kwargs) = pop_call_fixed(arg)
+        // Expand `*args` before `**kwargs` so the iteration order (and thus the
+        // order any error surfaces) matches the established interpreter's left-to-right argument
+        // expansion.
+        expand_star_args(ctx, star, args)
+        expand_kwargs(ctx, kwstar, kwargs)
+        push(self.call_value(callee, args, kwargs, pos))
+      }
+      Jmp => pc = arg
+      CJmp => if pop().truth() { pc = arg }
+      IterPush =>
+        match @value.iterate(pop()) {
+          Ok(it) => iterstack.push(it)
+          Err(msg) => raise EvalErr(make_eval_error(ctx, msg))
+        }
+      IterJmp =>
+        match iterstack.last() {
+          Some(it) =>
+            match it.next() {
+              Some(elem) => push(elem) // fall through with the next element
+              None => pc = arg // exhausted: jump past the loop body
+            }
+          None => abort("vm: iterator stack underflow")
+        }
+      IterPop =>
+        match iterstack.pop() {
+          Some(it) => it.done()
+          None => abort("vm: iterator stack underflow")
+        }
+      Return => {
+        result = pop()
+        for it in iterstack {
+          it.done()
+        }
+        break
+      }
+      _ =>
+        match binop_of_opcode(op) {
+          Some(binop) => {
+            let rv = pop()
+            let lv = pop()
+            push(eval_binary(ctx, lv, binop, rv, pos))
+          }
+          None =>
+            abort(
+              "vm: opcode byte \{op.to_byte().to_int()} not yet implemented",
+            )
+        }
     }
-  }
-  for it in iterstack {
-    it.done()
   }
   result
 }
