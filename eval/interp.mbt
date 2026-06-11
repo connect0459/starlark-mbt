@@ -497,8 +497,6 @@ fn VM::run_frame(
   let ctx = self.ctx
   let code = fc.code
   let stack : Array[@value.Value] = []
-  // See note in exec_file_vm: iterator release on the error-unwind path is
-  // deferred until the engine flip; it is not observable here.
   let iterstack : Array[@value.StarlarkIterator] = []
   fn push(v : @value.Value) -> Unit {
     stack.push(v)
@@ -900,6 +898,9 @@ fn VM::run_frame(
         }
       Return => {
         result = pop()
+        for it in iterstack {
+          it.done()
+        }
         break
       }
       _ =>
