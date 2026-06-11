@@ -79,30 +79,126 @@ fn float_mod(x : Double, y : Double) -> Double {
 }
 
 ///|
-fn float_rint(x : Double) -> Double {
-  let f = @std_math.floor(x)
-  let diff = x - f
-  if diff < 0.5 {
-    f
-  } else if diff > 0.5 {
-    f + 1.0
+fn precise_fmod(x : Double, y : Double) -> Double {
+  let xb = x.reinterpret_as_uint64()
+  let yb = y.reinterpret_as_uint64()
+  let sx = xb & 0x8000000000000000_UL
+  let ax = xb ^ sx
+  let ay = yb & 0x7FFFFFFFFFFFFFFF_UL
+  if ay == 0_UL || ax >= 0x7FF0000000000000_UL || ay > 0x7FF0000000000000_UL {
+    return x * y / (x * y)
+  }
+  if ax < ay {
+    return x
+  }
+  if ax == ay {
+    return if sx != 0_UL { -0.0 } else { 0.0 }
+  }
+  let ix_e = ((ax >> 52) & 0x7FF_UL).to_int()
+  let mut ix = 0
+  let mut mx = 0_UL
+  if ix_e != 0 {
+    ix = ix_e - 1023
+    mx = 0x0010000000000000_UL | (ax & 0x000FFFFFFFFFFFFF_UL)
   } else {
-    let half_f = @std_math.floor(f / 2.0)
-    if half_f * 2.0 == f {
-      f
+    let mut m = ax & 0x000FFFFFFFFFFFFF_UL
+    ix = -1022
+    while m < 0x0010000000000000_UL {
+      m = m << 1
+      ix -= 1
+    }
+    mx = m
+  }
+  let iy_e = ((ay >> 52) & 0x7FF_UL).to_int()
+  let mut iy = 0
+  let mut my = 0_UL
+  if iy_e != 0 {
+    iy = iy_e - 1023
+    my = 0x0010000000000000_UL | (ay & 0x000FFFFFFFFFFFFF_UL)
+  } else {
+    let mut m = ay & 0x000FFFFFFFFFFFFF_UL
+    iy = -1022
+    while m < 0x0010000000000000_UL {
+      m = m << 1
+      iy -= 1
+    }
+    my = m
+  }
+  let mut n = ix - iy
+  while n > 0 {
+    if mx >= my {
+      let hz = mx - my
+      if hz == 0_UL {
+        return if sx != 0_UL { -0.0 } else { 0.0 }
+      }
+      mx = hz << 1
     } else {
-      f + 1.0
+      mx = mx << 1
+    }
+    n -= 1
+  }
+  if mx >= my {
+    mx = mx - my
+  }
+  if mx == 0_UL {
+    return if sx != 0_UL { -0.0 } else { 0.0 }
+  }
+  let mut cur_iy = iy
+  while mx < 0x0010000000000000_UL {
+    mx = mx << 1
+    cur_iy -= 1
+  }
+  let result_bits = if cur_iy >= -1022 {
+    let exp_bits = (cur_iy + 1023).to_int64().reinterpret_as_uint64()
+    sx | (exp_bits << 52) | (mx & 0x000FFFFFFFFFFFFF_UL)
+  } else {
+    let shift = -1022 - cur_iy
+    if shift >= 53 {
+      sx
+    } else {
+      sx | (mx >> shift)
     }
   }
+  result_bits.reinterpret_as_double()
 }
 
 ///|
 fn float_remainder(x : Double, y : Double) -> Double {
-  let n = float_rint(x / y)
-  if n == 0.0 {
-    x
+  if x.is_nan() || y.is_nan() || x.is_inf() || y == 0.0 {
+    return 0.0 / 0.0
+  }
+  if y.is_inf() {
+    return x
+  }
+  let sign = x < 0.0
+  let mut rx = if sign { -x } else { x }
+  let ry = if y < 0.0 { -y } else { y }
+  if rx == ry {
+    return if sign { -0.0 } else { 0.0 }
+  }
+  if ry <= 8.98846567431158e+307 {
+    rx = precise_fmod(rx, ry + ry)
+  }
+  if ry < 4.45014771701440276618e-308 {
+    if rx + rx > ry {
+      rx -= ry
+      if rx + rx >= ry {
+        rx -= ry
+      }
+    }
   } else {
-    x - n * y
+    let ry_half = ry * 0.5
+    if rx > ry_half {
+      rx -= ry
+      if rx >= ry_half {
+        rx -= ry
+      }
+    }
+  }
+  if sign {
+    -rx
+  } else {
+    rx
   }
 }
 

@@ -409,6 +409,33 @@ test "math_module: remainder applies IEEE 754 round-half-to-even on tie" {
 }
 
 ///|
+test "math_module: remainder preserves precision when x >> y (large ratio)" {
+  let m = math_module()
+  // 1e17 mod 3 = 1 exactly; naive x - rint(x/y)*y rounds to 0
+  expect_float(call2(m, "remainder", fv(1.0e17), fv(3.0)), 1.0)
+  expect_float(call2(m, "remainder", fv(-1.0e17), fv(3.0)), -1.0)
+  expect_float(call2(m, "remainder", fv(1.0e17), fv(-3.0)), 1.0)
+  // 1e308 mod 1e-308 must be finite, not ±Inf (naive formula overflows)
+  match call2(m, "remainder", fv(1.0e308), fv(1.0e-308)) {
+    Ok(@value.Value::Float(f)) =>
+      if f.is_inf() || f.is_nan() {
+        fail("expected finite result, got \{f}")
+      }
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
+    Err(e) => fail("expected Ok Float, got Err: \{e}")
+  }
+}
+
+///|
+test "math_module: remainder applies round-half-to-even on tie when y = 2^52" {
+  let m = math_module()
+  expect_float(
+    call2(m, "remainder", fv(6755399441055744.0), fv(4503599627370496.0)),
+    -2251799813685248.0,
+  )
+}
+
+///|
 test "math_module: rounding functions reject wrong argument counts and keyword args" {
   let m = math_module()
   expect_err(call_raw(m, "ceil", [], []), "got 0 arguments, want 1")
