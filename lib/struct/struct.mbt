@@ -268,37 +268,26 @@ fn struct_binary(
         Some(es) => es
         None => return Some(Err("struct: cannot add, could not read entries"))
       }
+      let ctors_equal = match
+        @value.starlark_equals_depth(ctor, other_ctor, @value.compare_limit) {
+        Ok(eq) => eq
+        Err(_) => false
+      }
+      if !ctors_equal {
+        let (lname, rname) = if is_left {
+          (ctor_display(ctor), ctor_display(other_ctor))
+        } else {
+          (ctor_display(other_ctor), ctor_display(ctor))
+        }
+        return Some(
+          Err(
+            "cannot add structs of different constructors: \{lname} + \{rname}",
+          ),
+        )
+      }
       if is_left {
-        let ctors_equal = match
-          @value.starlark_equals_depth(ctor, other_ctor, @value.compare_limit) {
-          Ok(eq) => eq
-          Err(_) => false
-        }
-        if !ctors_equal {
-          let lname = ctor_display(ctor)
-          let rname = ctor_display(other_ctor)
-          return Some(
-            Err(
-              "cannot add structs of different constructors: \{lname} + \{rname}",
-            ),
-          )
-        }
         Some(Ok(make_struct(ctor, merge_entries(entries, other_entries))))
       } else {
-        let ctors_equal = match
-          @value.starlark_equals_depth(other_ctor, ctor, @value.compare_limit) {
-          Ok(eq) => eq
-          Err(_) => false
-        }
-        if !ctors_equal {
-          let lname = ctor_display(other_ctor)
-          let rname = ctor_display(ctor)
-          return Some(
-            Err(
-              "cannot add structs of different constructors: \{lname} + \{rname}",
-            ),
-          )
-        }
         Some(Ok(make_struct(other_ctor, merge_entries(other_entries, entries))))
       }
     }
