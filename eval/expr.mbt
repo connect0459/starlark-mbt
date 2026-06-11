@@ -1127,7 +1127,7 @@ fn builtin_enumerate(
 ) -> @value.Value raise EvalErr {
   check_positional(ctx, "enumerate", pos_args, kw_args, 1, 2)
   let start = if pos_args.length() >= 2 {
-    BigInt::from_int(arg_as_int(ctx, "enumerate", pos_args, 1))
+    BigInt::from_int64(arg_as_int(ctx, "enumerate", pos_args, 1))
   } else {
     0N
   }
@@ -1891,7 +1891,14 @@ fn call_str_method(
       let old = arg_as_string(ctx, "replace", pos_args, 0)
       let new_s = arg_as_string(ctx, "replace", pos_args, 1)
       let max_count = if pos_args.length() >= 3 {
-        arg_as_int(ctx, "replace", pos_args, 2)
+        let n = arg_as_int(ctx, "replace", pos_args, 2)
+        if n < 0L {
+          -1
+        } else if n > 2147483647L {
+          2147483647
+        } else {
+          n.to_int()
+        }
       } else {
         -1
       }
@@ -1925,7 +1932,14 @@ fn call_str_method(
         }
       }
       let maxsplit = if pos_args.length() >= 2 {
-        arg_as_int(ctx, method_name, pos_args, 1)
+        let n = arg_as_int(ctx, method_name, pos_args, 1)
+        if n < 0L {
+          -1
+        } else if n > 2147483647L {
+          2147483647
+        } else {
+          n.to_int()
+        }
       } else {
         -1
       }
@@ -2709,16 +2723,27 @@ fn arg_as_string(
 }
 
 ///|
-// Coerce the `idx`-th (0-based) positional argument to an int, raising the
-// unpack error on type mismatch.
+// Coerce the `idx`-th (0-based) positional argument to an int64, raising an
+// error on type mismatch or if the value is outside the signed 64-bit range.
 fn arg_as_int(
   ctx : EvalContext,
   name : String,
   pos_args : Array[@value.Value],
   idx : Int,
-) -> Int raise EvalErr {
+) -> Int64 raise EvalErr {
   match pos_args[idx] {
-    @value.Value::Int(n) => n.to_int()
+    @value.Value::Int(n) => {
+      if n.compare_int64(@int64.MAX_VALUE) > 0 ||
+        n.compare_int64(@int64.MIN_VALUE) < 0 {
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "\{name}: for parameter \{idx + 1}: \{n} out of range (want value in signed 64-bit range)",
+          ),
+        )
+      }
+      n.to_int64()
+    }
     v =>
       raise EvalErr(
         make_eval_error(

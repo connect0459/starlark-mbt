@@ -209,6 +209,14 @@ test "eval_expr: in operator checks membership in range" {
   assert_true(eval_op("3 in range(0, 10, 2)") is Ok(@value.Value::Bool(false)))
 }
 
+///|
+test "eval_expr: BigInt needle beyond Int64 range in range returns false" {
+  assert_true(eval_op("(1 << 70) in range(5)") is Ok(@value.Value::Bool(false)))
+  assert_true(
+    eval_op("-(1 << 70) in range(-5, 0)") is Ok(@value.Value::Bool(false)),
+  )
+}
+
 // --- Subscript / index access ---
 
 ///|
