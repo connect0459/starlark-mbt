@@ -481,7 +481,7 @@ fn Parser::parse_for_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
   let vars = self.parse_expr_list_as_expr()
   self.no_in = saved_no_in
   self.expect(@lexer.Token::In)
-  let iter = self.parse_test()
+  let iter = self.parse_test_list_as_expr()
   self.expect(@lexer.Token::Colon)
   let body = self.parse_suite()
   @syntax.Stmt::SFor(vars, iter, body, p)
