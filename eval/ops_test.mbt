@@ -876,7 +876,7 @@ fn make_nested_tuple(depth : Int) -> @value.Value {
 test "eval_expr: dict subscript lookup with deeply nested key raises comparison depth error" {
   let t = make_nested_tuple(12)
   let d = @value.StarlarkDict::new()
-  d.set(t, @value.Value::Int(1N)) |> ignore
+  assert_true(d.set(t, @value.Value::Int(1N)) is Ok(_))
   match eval_with_env("d[t]", [("d", @value.Value::Dict(d)), ("t", t)]) {
     Err(e) =>
       assert_true(
@@ -890,7 +890,7 @@ test "eval_expr: dict subscript lookup with deeply nested key raises comparison 
 test "eval_expr: dict update with same deeply nested key raises comparison depth error" {
   let t = make_nested_tuple(12)
   let d = @value.StarlarkDict::new()
-  d.set(t, @value.Value::Int(1N)) |> ignore
+  assert_true(d.set(t, @value.Value::Int(1N)) is Ok(_))
   match
     exec_with_predeclared("d[t] = 2", [("d", @value.Value::Dict(d)), ("t", t)]) {
     Err(e) =>
@@ -905,7 +905,7 @@ test "eval_expr: dict update with same deeply nested key raises comparison depth
 test "eval_expr: t in dict squashes comparison depth error to False" {
   let t = make_nested_tuple(12)
   let d = @value.StarlarkDict::new()
-  d.set(t, @value.Value::Int(1N)) |> ignore
+  assert_true(d.set(t, @value.Value::Int(1N)) is Ok(_))
   match eval_with_env("t in d", [("d", @value.Value::Dict(d)), ("t", t)]) {
     Ok(@value.Value::Bool(false)) => ()
     Ok(v) => fail("expected False, got \{v.repr()}")
@@ -917,7 +917,7 @@ test "eval_expr: t in dict squashes comparison depth error to False" {
 test "eval_expr: set add with deeply nested element raises comparison depth error" {
   let t = make_nested_tuple(12)
   let s = @value.StarlarkSet::new()
-  s.add(t) |> ignore
+  assert_true(s.add(t) is Ok(_))
   match
     exec_with_predeclared("s.add(t)", [("s", @value.Value::Set(s)), ("t", t)]) {
     Err(e) =>
@@ -960,6 +960,24 @@ test "eval_expr: string.elems() == string.elems() for different strings returns 
 ///|
 test "eval_expr: string.codepoints() == string.codepoints() for same string returns True" {
   match eval_op("\"ab\".codepoints() == \"ab\".codepoints()") {
+    Ok(@value.Value::Bool(true)) => ()
+    Ok(v) => fail("expected True, got \{v.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: bytes.elems() == bytes.elems() for same bytes returns True" {
+  match eval_op("b\"ab\".elems() == b\"ab\".elems()") {
+    Ok(@value.Value::Bool(true)) => ()
+    Ok(v) => fail("expected True, got \{v.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: bytes.elems() != bytes.elems() for different bytes returns True" {
+  match eval_op("b\"ab\".elems() != b\"cd\".elems()") {
     Ok(@value.Value::Bool(true)) => ()
     Ok(v) => fail("expected True, got \{v.repr()}")
     Err(e) => fail("unexpected error: \{e.msg()}")
