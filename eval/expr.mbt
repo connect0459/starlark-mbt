@@ -2712,8 +2712,8 @@ fn arg_as_string(
 fn int64_to_count(n : Int64) -> Int {
   if n < 0L {
     -1
-  } else if n > 2147483647L {
-    2147483647
+  } else if n > max_int32.to_int64() {
+    max_int32.to_int()
   } else {
     n.to_int()
   }
