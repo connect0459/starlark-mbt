@@ -205,8 +205,10 @@ fn struct_equals(
         Ok(Some(v)) => v
         _ => return false
       }
-      if !ctor.starlark_equals(other_ctor) {
-        return false
+      match
+        @value.starlark_equals_depth(ctor, other_ctor, @value.compare_limit) {
+        Ok(false) | Err(_) => return false
+        Ok(true) => ()
       }
       let other_n = match c.get_attr("__n") {
         Ok(Some(@value.Value::Int(n))) => n.to_int()
@@ -227,8 +229,14 @@ fn struct_equals(
           Ok(Some(v)) => v
           _ => return false
         }
-        if !entries[i].1.starlark_equals(other_val) {
-          return false
+        match
+          @value.starlark_equals_depth(
+            entries[i].1,
+            other_val,
+            @value.compare_limit,
+          ) {
+          Ok(false) | Err(_) => return false
+          Ok(true) => ()
         }
       }
       true
@@ -259,7 +267,12 @@ fn struct_binary(
         None => return Some(Err("struct: cannot add, could not read entries"))
       }
       if is_left {
-        if !ctor.starlark_equals(other_ctor) {
+        let ctors_equal = match
+          @value.starlark_equals_depth(ctor, other_ctor, @value.compare_limit) {
+          Ok(eq) => eq
+          Err(_) => false
+        }
+        if !ctors_equal {
           let lname = ctor_display(ctor)
           let rname = ctor_display(other_ctor)
           return Some(
@@ -270,7 +283,12 @@ fn struct_binary(
         }
         Some(Ok(make_struct(ctor, merge_entries(entries, other_entries))))
       } else {
-        if !other_ctor.starlark_equals(ctor) {
+        let ctors_equal = match
+          @value.starlark_equals_depth(other_ctor, ctor, @value.compare_limit) {
+          Ok(eq) => eq
+          Err(_) => false
+        }
+        if !ctors_equal {
           let lname = ctor_display(other_ctor)
           let rname = ctor_display(ctor)
           return Some(
