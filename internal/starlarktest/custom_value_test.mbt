@@ -211,7 +211,7 @@ test "ExtVal compare_fn: < operator dispatches to compare_fn" {
           _ => None
         }
       })
-      .with_equals(fn(other) { other is @value.Value::ExtVal(_) })
+      .with_equals(fn(other) { Ok(other is @value.Value::ExtVal(_)) })
       .with_binary(fn(op, rhs, _is_left) {
         if op == "-" {
           match rhs {

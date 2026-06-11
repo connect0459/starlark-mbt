@@ -168,7 +168,7 @@ test "CustomValue: hash delegates to hash_fn" {
 ///|
 test "CustomValue: equals returns false by default" {
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" })
-  assert_eq(cv.get_equals(Value::None), false)
+  assert_true(cv.get_equals(Value::None) is Ok(false))
 }
 
 ///|
@@ -176,11 +176,11 @@ test "CustomValue: equals delegates to equals_fn" {
   let cv = CustomValue::new(fn() { "t" }, fn() { true }, fn() { "" }).with_equals(fn(
       other,
     ) {
-      other is Value::None
+      Ok(other is Value::None)
     },
   )
-  assert_eq(cv.get_equals(Value::None), true)
-  assert_eq(cv.get_equals(Value::Bool(true)), false)
+  assert_true(cv.get_equals(Value::None) is Ok(true))
+  assert_true(cv.get_equals(Value::Bool(true)) is Ok(false))
 }
 
 ///|

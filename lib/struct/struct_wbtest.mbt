@@ -65,7 +65,7 @@ test "symbol: a symbol never equals a non-symbol value" {
     ("name", @value.Value::String(@value.StarlarkString::new("S"))),
   ]).unwrap()
   let c = custom_of(sym)
-  assert_false(c.get_equals(@value.Value::Int(1N)))
+  assert_true(c.get_equals(@value.Value::Int(1N)) is Ok(false))
 }
 
 ///|
@@ -77,7 +77,7 @@ test "symbol: distinct symbols are unequal even with the same name" {
   }
   let first = make()
   let second = make()
-  assert_false(custom_of(first).get_equals(second))
+  assert_true(custom_of(first).get_equals(second) is Ok(false))
 }
 
 ///|
@@ -126,7 +126,7 @@ test "struct: synthetic positional accessors return None when out of range" {
 test "struct: a struct never equals a non-struct value" {
   let s = make_struct(default_ctor, [("a", @value.Value::Int(1N))])
   let c = custom_of(s)
-  assert_false(c.get_equals(@value.Value::Int(1N)))
+  assert_true(c.get_equals(@value.Value::Int(1N)) is Ok(false))
 }
 
 ///|
@@ -181,4 +181,40 @@ test "struct: field names are sorted lexicographically not by length" {
     ("aa", @value.Value::Int(2N)),
   ])
   assert_eq(custom_of(s).get_repr(), "struct(aa = 2, b = 1)")
+}
+
+// --- struct equality with deeply nested values (M-27) ---
+
+///|
+fn make_nested_tuple_val(depth : Int) -> @value.Value {
+  let mut v : @value.Value = @value.Value::Int(1N)
+  for _ in 0..<depth {
+    v = @value.Value::Tuple([v])
+  }
+  v
+}
+
+///|
+test "struct: structs with same shallow value compare as equal" {
+  let a = make_struct(default_ctor, [("x", @value.Value::Int(42N))])
+  let b = make_struct(default_ctor, [("x", @value.Value::Int(42N))])
+  assert_true(custom_of(a).get_equals(b) is Ok(true))
+}
+
+///|
+test "struct: structs with different values compare as not equal" {
+  let a = make_struct(default_ctor, [("x", @value.Value::Int(1N))])
+  let b = make_struct(default_ctor, [("x", @value.Value::Int(2N))])
+  assert_true(custom_of(a).get_equals(b) is Ok(false))
+}
+
+///|
+test "struct: structs with values nesting beyond compare_limit propagate comparison depth error" {
+  let deep = make_nested_tuple_val(@value.compare_limit + 2)
+  let a = make_struct(default_ctor, [("x", deep)])
+  let b = make_struct(default_ctor, [("x", deep)])
+  assert_true(
+    custom_of(a).get_equals(b) ==
+    Err("comparison exceeded maximum recursion depth"),
+  )
 }

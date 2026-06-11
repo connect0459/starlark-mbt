@@ -21,7 +21,7 @@ pub fn[K, V] Hashtable::iter_begin(Self[K, V]) -> Unit
 pub fn[K, V] Hashtable::iter_end(Self[K, V]) -> Unit
 pub fn[K, V] Hashtable::length(Self[K, V]) -> Int
 pub fn[K, V] Hashtable::lookup(Self[K, V], K) -> Result[V?, String]
-pub fn[K, V] Hashtable::new((K) -> Result[UInt, String], (K, K) -> Bool, K, V) -> Self[K, V]
+pub fn[K, V] Hashtable::new((K) -> Result[UInt, String], (K, K) -> Result[Bool, String], K, V) -> Self[K, V]
 pub fn[K, V] Hashtable::pop_first(Self[K, V]) -> Result[(K, V)?, String]
 
 // Type aliases
