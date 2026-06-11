@@ -68,6 +68,9 @@ let json_replacement_rune : Int = 0xFFFD
 let max_materialise_len : Int64 = 2147483647L
 
 ///|
+let json_max_nesting_depth : Int = 10000
+
+///|
 // Quotes a printable-ASCII string the way Go's `strconv.AppendQuote` does:
 // only `"`, `\`, and the DEL byte (0x7f) are escaped; everything else is
 // written verbatim.
@@ -181,6 +184,7 @@ fn EncodeState::new() -> EncodeState {
 fn encode_inner(
   v : @value.Value,
   state : EncodeState,
+  depth : Int,
 ) -> Result[String, String] {
   match v {
     @value.Value::None => Ok("null")
@@ -194,33 +198,45 @@ fn encode_inner(
       }
     @value.Value::String(s) => Ok(json_quote_string(s))
     @value.Value::List(l) => {
+      if depth >= json_max_nesting_depth {
+        return Err("nesting depth limit exceeded")
+      }
       if state.list_path.iter().any(fn(pl) { physical_equal(l, pl) }) {
         return Err("cycle in JSON structure")
       }
       state.list_path.push(l)
-      let result = encode_sequence(l.iter(), "list", state)
+      let result = encode_sequence(l.iter(), "list", state, depth + 1)
       let _ = state.list_path.pop()
       result
     }
     @value.Value::Tuple(t) => {
+      if depth >= json_max_nesting_depth {
+        return Err("nesting depth limit exceeded")
+      }
       if state.tuple_path.iter().any(fn(pt) { physical_equal(pt, t) }) {
         return Err("cycle in JSON structure")
       }
       state.tuple_path.push(t)
-      let result = encode_sequence(t.iter(), "tuple", state)
+      let result = encode_sequence(t.iter(), "tuple", state, depth + 1)
       let _ = state.tuple_path.pop()
       result
     }
     @value.Value::Dict(d) => {
+      if depth >= json_max_nesting_depth {
+        return Err("nesting depth limit exceeded")
+      }
       if state.dict_path.iter().any(fn(pd) { physical_equal(pd, d) }) {
         return Err("cycle in JSON structure")
       }
       state.dict_path.push(d)
-      let result = encode_dict_val(d, state)
+      let result = encode_dict_val(d, state, depth + 1)
       let _ = state.dict_path.pop()
       result
     }
     @value.Value::Range(r) => {
+      if depth >= json_max_nesting_depth {
+        return Err("nesting depth limit exceeded")
+      }
       let len = r.length()
       if len > max_materialise_len {
         return Err("cannot encode range of length \{len} as JSON: too large")
@@ -232,16 +248,24 @@ fn encode_inner(
           BigInt::from_int64(r.index_at(i.to_int64())),
         )
       }
-      encode_sequence(items.iter(), "range", state)
+      encode_sequence(items.iter(), "range", state, depth + 1)
     }
     @value.Value::Set(s) => {
+      if depth >= json_max_nesting_depth {
+        return Err("nesting depth limit exceeded")
+      }
       let items : Array[@value.Value] = []
       s.each(fn(k) { items.push(k) })
-      encode_sequence(items.iter(), "set", state)
+      encode_sequence(items.iter(), "set", state, depth + 1)
     }
     @value.Value::ExtVal(c) =>
       match c.get_attr_names() {
-        Some(names) => encode_ext_val_as_object(c, names, state)
+        Some(names) => {
+          if depth >= json_max_nesting_depth {
+            return Err("nesting depth limit exceeded")
+          }
+          encode_ext_val_as_object(c, names, state, depth + 1)
+        }
         None => Err("cannot encode \{v.type_name()} as JSON")
       }
     _ => Err("cannot encode \{v.type_name()} as JSON")
@@ -253,6 +277,7 @@ fn encode_ext_val_as_object(
   c : @value.CustomValue,
   names : Array[String],
   state : EncodeState,
+  depth : Int,
 ) -> Result[String, String] {
   let sorted = names.copy()
   sorted.sort_by(fn(a, b) { str_lex_cmp(a, b) })
@@ -275,7 +300,7 @@ fn encode_ext_val_as_object(
         }
         buf.write_string(json_quote_string(@value.StarlarkString::new(name)))
         buf.write_char(':')
-        match encode_inner(v, state) {
+        match encode_inner(v, state, depth) {
           Err(e) => return Err("in field .\{name}: \{e}")
           Ok(s) => buf.write_string(s)
         }
@@ -291,6 +316,7 @@ fn encode_sequence(
   items : Iter[@value.Value],
   kind : String,
   state : EncodeState,
+  depth : Int,
 ) -> Result[String, String] {
   let buf = StringBuilder::new()
   buf.write_char('[')
@@ -302,7 +328,7 @@ fn encode_sequence(
     } else {
       buf.write_char(',')
     }
-    match encode_inner(elem, state) {
+    match encode_inner(elem, state, depth) {
       Ok(s) => buf.write_string(s)
       Err(e) => return Err("at \{kind} index \{i}: \{e}")
     }
@@ -316,6 +342,7 @@ fn encode_sequence(
 fn encode_dict_val(
   d : @value.StarlarkDict,
   state : EncodeState,
+  depth : Int,
 ) -> Result[String, String] {
   let pairs : Array[(String, @value.Value)] = []
   let mut first_err : String? = None
@@ -344,7 +371,7 @@ fn encode_dict_val(
     }
     buf.write_string(json_quote_string(@value.StarlarkString::new(k)))
     buf.write_char(':')
-    match encode_inner(v, state) {
+    match encode_inner(v, state, depth) {
       Ok(s) => buf.write_string(s)
       Err(e) => return Err("in dict key \"\{k}\": \{e}")
     }
@@ -366,7 +393,7 @@ fn encode_dict_val(
 /// cannot be represented as JSON.
 pub fn encode_to_json(v : @value.Value) -> Result[String, String] {
   let state = EncodeState::new()
-  match encode_inner(v, state) {
+  match encode_inner(v, state, 0) {
     Ok(s) => Ok(s)
     Err(e) => Err("json.encode: \{e}")
   }
@@ -532,6 +559,7 @@ fn starts_with_at(chars : Array[Char], pos : Int, prefix : String) -> Bool {
 fn parse_json_value(
   chars : Array[Char],
   i : Int,
+  depth : Int,
 ) -> Result[(@value.Value, Int), (Int, String)] {
   let i = skip_ws(chars, i)
   let len = chars.length()
@@ -552,9 +580,15 @@ fn parse_json_value(
   } else if starts_with_at(chars, i, "false") {
     Ok((@value.Value::Bool(false), i + 5))
   } else if c == '[' {
-    parse_json_array(chars, i)
+    if depth >= json_max_nesting_depth {
+      return Err((i, "nesting depth limit exceeded"))
+    }
+    parse_json_array(chars, i, depth)
   } else if c == '{' {
-    parse_json_object(chars, i)
+    if depth >= json_max_nesting_depth {
+      return Err((i, "nesting depth limit exceeded"))
+    }
+    parse_json_object(chars, i, depth)
   } else if c == '-' ||
     (c.to_int() >= '0'.to_int() && c.to_int() <= '9'.to_int()) {
     parse_json_number(chars, i)
@@ -572,6 +606,7 @@ fn parse_json_value(
 fn parse_json_array(
   chars : Array[Char],
   i : Int,
+  depth : Int,
 ) -> Result[(@value.Value, Int), (Int, String)] {
   let len = chars.length()
   let elems : Array[@value.Value] = []
@@ -580,7 +615,7 @@ fn parse_json_array(
     return Ok((@value.Value::List(@value.StarlarkList::new(elems)), j + 1))
   }
   while true {
-    match parse_json_value(chars, j) {
+    match parse_json_value(chars, j, depth + 1) {
       Err(e) => return Err(e)
       Ok((v, next_j)) => {
         elems.push(v)
@@ -611,6 +646,7 @@ fn parse_json_array(
 fn parse_json_object(
   chars : Array[Char],
   i : Int,
+  depth : Int,
 ) -> Result[(@value.Value, Int), (Int, String)] {
   let len = chars.length()
   let dict = @value.StarlarkDict::new()
@@ -623,7 +659,7 @@ fn parse_json_object(
     if j >= len {
       return Err((j, "unexpected end of file"))
     }
-    match parse_json_value(chars, j) {
+    match parse_json_value(chars, j, depth + 1) {
       Err(e) => return Err(e)
       Ok((key, next_j)) => {
         match key {
@@ -641,7 +677,7 @@ fn parse_json_object(
           return Err((j, "after object key, got '\{chars[j]}', want ':' "))
         }
         j += 1
-        match parse_json_value(chars, j) {
+        match parse_json_value(chars, j, depth + 1) {
           Err(e) => return Err(e)
           Ok((val, next_j2)) => {
             let _ = dict.set(key, val)
@@ -751,7 +787,7 @@ pub fn decode_from_json(
   default : @value.Value?,
 ) -> Result[@value.Value, String] {
   let chars = s.to_array()
-  match parse_json_value(chars, 0) {
+  match parse_json_value(chars, 0, 0) {
     Err((offset, msg)) =>
       match default {
         Some(d) => Ok(d)
@@ -777,7 +813,7 @@ pub fn decode_from_json(
 // data, mirroring the strict validation Go's encoding/json.Indent performs.
 fn validate_json(s : String) -> Result[Unit, String] {
   let chars = s.to_array()
-  match parse_json_value(chars, 0) {
+  match parse_json_value(chars, 0, 0) {
     Err((offset, _)) =>
       if offset < chars.length() {
         Err("invalid character '\{chars[offset]}' in JSON")
@@ -945,7 +981,7 @@ fn make_encode_indent_fn() -> @value.Value {
       }
     }
     let state = EncodeState::new()
-    match encode_inner(pos_args[0], state) {
+    match encode_inner(pos_args[0], state, 0) {
       Err(e) => Err("json.encode_indent: \{e}")
       Ok(json_str) =>
         indent_json(json_str, pfx, ind).map(fn(result) {
