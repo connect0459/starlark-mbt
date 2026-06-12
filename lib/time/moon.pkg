@@ -11,5 +11,6 @@ options(
     "time_now_stub.mbt": [ "wasm", "wasm-gc" ],
     "tz_native.mbt": [ "native", "llvm" ],
     "tz_stub.mbt": [ "wasm", "wasm-gc", "js" ],
+    "time_tz_native_wbtest.mbt": [ "native", "llvm" ],
   },
 )
