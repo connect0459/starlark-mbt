@@ -2564,6 +2564,42 @@ test "exec_file: slicing range with overflowing length raises no-len error" {
   }
 }
 
+// double-overflow: range(Int64::MIN, Int64::MAX, 2) wraps twice to 0,
+// bypassing the len < 0 guard; the overflow guard in length() must catch it.
+
+///|
+test "exec_file: len of double-overflow range raises no-len error" {
+  match exec_b("n = len(range(-(1<<63), (1<<63)-1, 2))") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("has no len"))
+  }
+}
+
+///|
+test "exec_file: iterating double-overflow range raises no-len error" {
+  match
+    exec_b("def f():\n  for x in range(-(1<<63), (1<<63)-1, 2): pass\nf()") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("has no len"))
+  }
+}
+
+///|
+test "exec_file: indexing double-overflow range raises no-len error" {
+  match exec_b("range(-(1<<63), (1<<63)-1, 2)[0]") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("has no len"))
+  }
+}
+
+///|
+test "exec_file: slicing double-overflow range raises no-len error" {
+  match exec_b("range(-(1<<63), (1<<63)-1, 2)[0:2]") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("has no len"))
+  }
+}
+
 // --- dict() arity error ---
 
 ///|
