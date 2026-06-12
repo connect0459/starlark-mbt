@@ -666,6 +666,17 @@ fn write_tz_offset(
 }
 
 ///|
+fn write_tz_offset_hour_only(buf : StringBuilder, tz_offset : Int) -> Unit {
+  let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
+  if tz_offset >= 0 {
+    buf.write_char('+')
+  } else {
+    buf.write_char('-')
+  }
+  write_pad2(buf, abs_off / secs_per_hour)
+}
+
+///|
 fn fmt_time_at_zone(
   sec : Int64,
   nsec : Int,
@@ -961,6 +972,22 @@ fn fmt_go_layout(
         write_tz_offset(buf, tz_offset)
       }
       i += 5
+    } else if c == '-' &&
+      i + 2 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' {
+      write_tz_offset_hour_only(buf, tz_offset)
+      i += 3
+    } else if c == 'Z' &&
+      i + 2 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' {
+      if tz_offset == 0 {
+        buf.write_char('Z')
+      } else {
+        write_tz_offset_hour_only(buf, tz_offset)
+      }
+      i += 3
     } else {
       buf.write_char(c)
       i += 1
@@ -1519,6 +1546,28 @@ fn parse_go_layout(
     }
   }
 
+  // Parse a numeric/sign timezone of the form ±hh (hour offset only);
+  // `allow_z` accepts a literal `Z` meaning offset 0.
+  fn parse_zone_hour_only(allow_z : Bool) -> Bool {
+    if allow_z && vi < vn && (vc[vi] == 'Z' || vc[vi] == 'z') {
+      tz_offset = Some(0)
+      vi += 1
+      return true
+    }
+    if vi >= vn || (vc[vi] != '+' && vc[vi] != '-') {
+      return false
+    }
+    let sign = if vc[vi] == '+' { 1 } else { -1 }
+    match read_fixed_digits(vc, vi + 1, 2) {
+      None => false
+      Some((hh, j)) => {
+        tz_offset = Some(sign * hh * secs_per_hour)
+        vi = j
+        true
+      }
+    }
+  }
+
   while li < ln {
     if starts("2006") {
       match read_fixed_digits(vc, vi, 4) {
@@ -1672,6 +1721,16 @@ fn parse_go_layout(
         return err()
       }
       li += 5
+    } else if starts("Z07") {
+      if !parse_zone_hour_only(true) {
+        return err()
+      }
+      li += 3
+    } else if starts("-07") {
+      if !parse_zone_hour_only(false) {
+        return err()
+      }
+      li += 3
     } else if starts("MST") {
       // Timezone abbreviation: consume the alphabetic run but ignore it
       // (abbreviations cannot be resolved to a fixed offset).

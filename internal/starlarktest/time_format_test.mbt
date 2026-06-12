@@ -109,6 +109,53 @@ test "time module: format renders numeric timezone offsets" {
 }
 
 ///|
+test "time module: format renders hour-only timezone offset with Z07 and -07" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|utc = time.parse_time("2020-06-26T17:38:36Z")
+      #|assert.eq("Z", utc.format("Z07"))
+      #|assert.eq("+00", utc.format("-07"))
+      #|east = utc.in_location("Asia/Tokyo")
+      #|assert.eq("+09", east.format("Z07"))
+      #|assert.eq("+09", east.format("-07"))
+      #|west = utc.in_location("Pacific/Honolulu")
+      #|assert.eq("-10", west.format("Z07"))
+      #|assert.eq("-10", west.format("-07"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time accepts hour-only timezone with Z07 and -07" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22 14:30 Z", format="2006-01-02 15:04 Z07"),
+      #|  time.parse_time("2021-03-22T14:30:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22 14:30 +09", format="2006-01-02 15:04 Z07"),
+      #|  time.parse_time("2021-03-22T05:30:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22 14:30 -10", format="2006-01-02 15:04 -07"),
+      #|  time.parse_time("2021-03-23T00:30:00Z"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: format renders space-padded day-of-month with _2 verb" {
   let errs = run_star_string(
     (
