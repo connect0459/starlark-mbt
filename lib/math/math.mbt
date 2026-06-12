@@ -49,7 +49,8 @@ fn make_binary(name : String, f : (Double, Double) -> Double) -> @value.Value {
 
 ///|
 fn float_abs(x : Double) -> Double {
-  if x < 0.0 {
+  // `1.0 / x < 0.0` detects -0.0: dividing by -0.0 yields -inf.
+  if x < 0.0 || (x == 0.0 && 1.0 / x < 0.0) {
     -x
   } else {
     x
@@ -357,6 +358,9 @@ pub fn math_module() -> @value.Value {
   attrs["sqrt"] = make_unary("sqrt", fn(x) {
     if x < 0.0 {
       0.0 / 0.0
+    } else if x == 0.0 {
+      // IEEE 754: sqrt(±0) = ±0; preserve the sign rather than going through pow.
+      x
     } else {
       @std_math.pow(x, 0.5)
     }

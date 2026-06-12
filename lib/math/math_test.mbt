@@ -436,6 +436,36 @@ test "math_module: remainder applies round-half-to-even on tie when y = 2^52" {
 }
 
 ///|
+test "math_module: fabs(-0.0) returns positive zero" {
+  let m = math_module()
+  let neg_zero = -0.0
+  match call1(m, "fabs", fv(neg_zero)) {
+    Ok(@value.Value::Float(f)) => {
+      assert_eq(f, 0.0)
+      // Verify the result is +0.0, not -0.0
+      assert_true(1.0 / f > 0.0)
+    }
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+test "math_module: sqrt(-0.0) returns negative zero" {
+  let m = math_module()
+  let neg_zero = -0.0
+  match call1(m, "sqrt", fv(neg_zero)) {
+    Ok(@value.Value::Float(f)) => {
+      assert_eq(f, 0.0)
+      // Verify the result is -0.0, not +0.0
+      assert_true(1.0 / f < 0.0)
+    }
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
 test "math_module: rounding functions reject wrong argument counts and keyword args" {
   let m = math_module()
   expect_err(call_raw(m, "ceil", [], []), "got 0 arguments, want 1")
