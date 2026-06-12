@@ -44,11 +44,12 @@ fn eval_aug_val(
     (@value.Value::Dict(ld), @syntax.AugOp::AugBitOr) =>
       match rv {
         @value.Value::Dict(rd) => {
+          check(ctx, ld.check_mutable("apply |= to"))
           let pairs : Array[(@value.Value, @value.Value)] = []
           rd.each(fn(k, v) { pairs.push((k, v)) })
           for pair in pairs {
             let (k, v) = pair
-            check(ctx, ld.set(k, v))
+            ignore(check(ctx, ld.set(k, v)))
           }
           lv
         }
