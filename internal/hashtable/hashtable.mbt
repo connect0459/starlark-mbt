@@ -49,6 +49,7 @@ pub struct Hashtable[K, V] {
   priv mut live_count : Int
   priv mut itercount : Int
   priv mut frozen : Bool
+  priv mut ever_inserted : Bool
   priv hash_fn : (K) -> Result[UInt, String]
   priv eq_fn : (K, K) -> Result[Bool, String]
   priv zero_key : K
@@ -87,6 +88,7 @@ pub fn[K, V] Hashtable::new(
     live_count: 0,
     itercount: 0,
     frozen: false,
+    ever_inserted: false,
     hash_fn,
     eq_fn,
     zero_key,
@@ -120,7 +122,7 @@ pub fn[K, V] Hashtable::freeze(self : Hashtable[K, V]) -> Unit {
 // Returns `Err` when the table may not be mutated — either it is frozen or it
 // is currently being iterated. `verb` names the attempted operation
 // ("insert into", "delete from", "clear") so the message matches starlark-go.
-fn[K, V] Hashtable::check_mutable(
+pub fn[K, V] Hashtable::check_mutable(
   self : Hashtable[K, V],
   verb : String,
 ) -> Result[Unit, String] {
@@ -335,6 +337,7 @@ pub fn[K, V] Hashtable::insert(
   }
   self.tail = new_idx
   self.live_count += 1
+  self.ever_inserted = true
   Ok(())
 }
 
@@ -409,9 +412,31 @@ pub fn[K, V] Hashtable::delete(
   self : Hashtable[K, V],
   key : K,
 ) -> Result[Bool, String] {
+  match self.pop_entry(key) {
+    Err(e) => Err(e)
+    Ok(None) => Ok(false)
+    Ok(Some(_)) => Ok(true)
+  }
+}
+
+///|
+/// Removes `key` and returns its associated value, or `None` if absent.
+/// Returns `Err` if the table is frozen, being iterated, or the key is
+/// unhashable. A table that has never had any entry inserted returns
+/// `Ok(None)` without hashing the key, matching starlark-go's behaviour
+/// where `ht.table == nil` (lazily allocated) skips the hash computation.
+/// A table that was populated and then fully emptied (or cleared) DOES hash
+/// the key, also matching starlark-go.
+pub fn[K, V] Hashtable::pop_entry(
+  self : Hashtable[K, V],
+  key : K,
+) -> Result[V?, String] {
   match self.check_mutable("delete from") {
     Err(e) => return Err(e)
     Ok(_) => ()
+  }
+  if !self.ever_inserted {
+    return Ok(None)
   }
   let h = match (self.hash_fn)(key) {
     Err(e) => return Err(e)
@@ -443,11 +468,12 @@ pub fn[K, V] Hashtable::delete(
           } else {
             self.tail = op
           }
+          let v = self.entries[idx].value
           self.entries[idx].hash = 0U
           self.entries[idx].slot_next = self.free_head
           self.free_head = idx
           self.live_count -= 1
-          return Ok(true)
+          return Ok(Some(v))
         }
         Ok(false) => ()
       }
@@ -455,7 +481,7 @@ pub fn[K, V] Hashtable::delete(
     prev_chain = idx
     idx = self.entries[idx].slot_next
   }
-  Ok(false)
+  Ok(None)
 }
 
 ///|

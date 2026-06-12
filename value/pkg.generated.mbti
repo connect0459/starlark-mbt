@@ -119,6 +119,7 @@ pub fn StarlarkBytesElems::raw_bytes(Self) -> Bytes
 pub struct StarlarkDict {
   // private fields
 }
+pub fn StarlarkDict::check_mutable(Self, String) -> Result[Unit, String]
 pub fn StarlarkDict::clear(Self) -> Result[Unit, String]
 pub fn StarlarkDict::delete(Self, Value) -> Result[Bool, String]
 pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
@@ -130,6 +131,7 @@ pub fn StarlarkDict::iter(Self) -> Iter[Value]
 pub fn StarlarkDict::keys(Self) -> Array[Value]
 pub fn StarlarkDict::length(Self) -> Int
 pub fn StarlarkDict::new() -> Self
+pub fn StarlarkDict::pop_entry(Self, Value) -> Result[Value?, String]
 pub fn StarlarkDict::popitem(Self) -> Result[(Value, Value)?, String]
 pub fn StarlarkDict::set(Self, Value, Value) -> Result[Unit, String]
 

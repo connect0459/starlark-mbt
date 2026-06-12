@@ -97,7 +97,14 @@ pub fn length_of(v : Value) -> Result[Int64, String] {
     Tuple(t) => Ok(t.length().to_int64())
     Dict(d) => Ok(d.length().to_int64())
     Set(s) => Ok(s.length().to_int64())
-    Range(r) => Ok(r.length())
+    Range(r) => {
+      let n = r.length()
+      if n < 0L {
+        Err("len: value of type range has no len")
+      } else {
+        Ok(n)
+      }
+    }
     StringElems(e) => Ok(e.s.byte_len().to_int64())
     BytesElems(_) => Err("len: value of type bytes.elems has no len")
     StringCodepoints(_) =>

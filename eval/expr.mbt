@@ -1066,6 +1066,15 @@ fn builtin_minmax(
       }
     None => ()
   }
+  let key_of : (@value.Value) -> @value.Value raise EvalErr = fn(
+    v,
+  ) raise EvalErr {
+    match key_fn {
+      None => v
+      Some(f) =>
+        call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
+    }
+  }
   let items : Array[@value.Value] = []
   if pos_args.length() == 1 {
     let it = match @value.iterate(pos_args[0]) {
@@ -1080,43 +1089,52 @@ fn builtin_minmax(
     }
     while true {
       match it.next() {
-        None => {
-          it.done()
-          break
-        }
+        None => break
         Some(v) => items.push(v)
       }
     }
     if items.is_empty() {
+      it.done()
       raise EvalErr(
         make_eval_error(ctx, "\{fn_name}: argument is an empty sequence"),
       )
     }
+    let result = try {
+      let mut best = items[0]
+      let mut best_key = key_of(best)
+      for i in 1..<items.length() {
+        let item_key = key_of(items[i])
+        let c = check(ctx, @value.compare_values(item_key, best_key))
+        if (want_max && c > 0) || (!want_max && c < 0) {
+          best = items[i]
+          best_key = item_key
+        }
+      }
+      best
+    } catch {
+      e => {
+        it.done()
+        raise e
+      }
+    }
+    it.done()
+    result
   } else {
     for v in pos_args {
       items.push(v)
     }
-  }
-  let key_of : (@value.Value) -> @value.Value raise EvalErr = fn(
-    v,
-  ) raise EvalErr {
-    match key_fn {
-      None => v
-      Some(f) =>
-        call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
+    let mut result = items[0]
+    let mut result_key = key_of(result)
+    for i in 1..<items.length() {
+      let item_key = key_of(items[i])
+      let c = check(ctx, @value.compare_values(item_key, result_key))
+      if (want_max && c > 0) || (!want_max && c < 0) {
+        result = items[i]
+        result_key = item_key
+      }
     }
+    result
   }
-  let mut result = items[0]
-  let mut result_key = key_of(result)
-  for i in 1..<items.length() {
-    let item_key = key_of(items[i])
-    let c = check(ctx, @value.compare_values(item_key, result_key))
-    if (want_max && c > 0) || (!want_max && c < 0) {
-      result = items[i]
-      result_key = item_key
-    }
-  }
-  result
 }
 
 ///|
@@ -1270,81 +1288,96 @@ fn builtin_sorted(
       )
     }
   }
-  let items = it.collect()
-  match key_fn {
-    Some(f) =>
-      match f {
-        @value.Value::Function(_)
-        | @value.Value::Builtin(_)
-        | @value.Value::BoundMethod(_)
-        | @value.Value::ExtVal(_) => ()
-        v => {
-          let pname = if key_from_kwarg { "\"key\"" } else { "key" }
-          raise EvalErr(
-            make_eval_error(
-              ctx,
-              "sorted: for parameter \{pname}: got \{v.type_name()}, want callable",
-            ),
-          )
-        }
-      }
-    None => ()
-  }
-  let reverse = match reverse_arg {
-    None => false
-    Some(@value.Value::Bool(b)) => b
-    Some(v) => {
-      let pname = if reverse_from_kwarg { "\"reverse\"" } else { "reverse" }
-      raise EvalErr(
-        make_eval_error(
-          ctx,
-          "sorted: for parameter \{pname}: got \{v.type_name()}, want bool",
-        ),
-      )
+  let items : Array[@value.Value] = []
+  while true {
+    match it.next() {
+      None => break
+      Some(v) => items.push(v)
     }
   }
-  let keys : Array[@value.Value] = match key_fn {
-    None => items
-    Some(@value.Value::None) =>
-      raise EvalErr(
-        make_eval_error(
-          ctx, "sorted: for parameter key: got NoneType, want callable",
-        ),
-      )
-    Some(f) =>
-      items.map(fn(v) raise EvalErr {
-        call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
-      })
-  }
-  let indices : Array[Int] = Array::make(items.length(), 0)
-  for i in 0..<items.length() {
-    indices[i] = i
-  }
-  let mut had_type_error = false
-  indices.sort_by(fn(a, b) {
-    match @value.compare_values(keys[a], keys[b]) {
-      Err(_) => {
-        had_type_error = true
-        0
-      }
-      Ok(c) => {
-        let cc = if reverse { -c } else { c }
-        // Break ties by original index so the sort is stable regardless of the
-        // underlying sort_by's stability; reverse keeps equal-key order (not
-        // reversed).
-        if cc != 0 {
-          cc
-        } else {
-          a - b
+  let sorted_result = try {
+    match key_fn {
+      Some(f) =>
+        match f {
+          @value.Value::Function(_)
+          | @value.Value::Builtin(_)
+          | @value.Value::BoundMethod(_)
+          | @value.Value::ExtVal(_) => ()
+          v => {
+            let pname = if key_from_kwarg { "\"key\"" } else { "key" }
+            raise EvalErr(
+              make_eval_error(
+                ctx,
+                "sorted: for parameter \{pname}: got \{v.type_name()}, want callable",
+              ),
+            )
+          }
         }
+      None => ()
+    }
+    let reverse = match reverse_arg {
+      None => false
+      Some(@value.Value::Bool(b)) => b
+      Some(v) => {
+        let pname = if reverse_from_kwarg { "\"reverse\"" } else { "reverse" }
+        raise EvalErr(
+          make_eval_error(
+            ctx,
+            "sorted: for parameter \{pname}: got \{v.type_name()}, want bool",
+          ),
+        )
       }
     }
-  })
-  if had_type_error {
-    raise EvalErr(sorted_type_error(ctx, keys, reverse))
+    let keys : Array[@value.Value] = match key_fn {
+      None => items
+      Some(@value.Value::None) =>
+        raise EvalErr(
+          make_eval_error(
+            ctx, "sorted: for parameter key: got NoneType, want callable",
+          ),
+        )
+      Some(f) =>
+        items.map(fn(v) raise EvalErr {
+          call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
+        })
+    }
+    let indices : Array[Int] = Array::make(items.length(), 0)
+    for i in 0..<items.length() {
+      indices[i] = i
+    }
+    let mut had_type_error = false
+    indices.sort_by(fn(a, b) {
+      match @value.compare_values(keys[a], keys[b]) {
+        Err(_) => {
+          had_type_error = true
+          0
+        }
+        Ok(c) => {
+          let cc = if reverse { -c } else { c }
+          // Break ties by original index so the sort is stable regardless of the
+          // underlying sort_by's stability; reverse keeps equal-key order (not
+          // reversed).
+          if cc != 0 {
+            cc
+          } else {
+            a - b
+          }
+        }
+      }
+    })
+    if had_type_error {
+      raise EvalErr(sorted_type_error(ctx, keys, reverse))
+    }
+    let result : Array[@value.Value] = indices.map(fn(i) { items[i] })
+    @value.Value::List(@value.StarlarkList::new(result))
+  } catch {
+    e => {
+      it.done()
+      raise e
+    }
   }
-  let result : Array[@value.Value] = indices.map(fn(i) { items[i] })
-  @value.Value::List(@value.StarlarkList::new(result))
+  it.done()
+  sorted_result
 }
 
 ///|
@@ -1649,7 +1682,14 @@ fn call_list_method(
       let n = l.length()
       let start = if pos_args.length() >= 2 {
         match pos_args[1] {
-          @value.Value::Int(i) => clamp_slice_index(i.to_int(), n)
+          @value.Value::Int(i) => {
+            check_int64_range(
+              ctx,
+              i,
+              "index: invalid start index: \{i} out of range",
+            )
+            clamp_slice_index_i64(i.to_int64(), n)
+          }
           @value.Value::None => 0
           v =>
             raise EvalErr(
@@ -1664,7 +1704,14 @@ fn call_list_method(
       }
       let end = if pos_args.length() >= 3 {
         match pos_args[2] {
-          @value.Value::Int(i) => clamp_slice_index(i.to_int(), n)
+          @value.Value::Int(i) => {
+            check_int64_range(
+              ctx,
+              i,
+              "index: invalid end index: \{i} out of range",
+            )
+            clamp_slice_index_i64(i.to_int64(), n)
+          }
           @value.Value::None => n
           v =>
             raise EvalErr(
@@ -1733,17 +1780,14 @@ fn call_dict_method(
     "pop" => {
       check_positional(ctx, "pop", pos_args, kw_args, 1, 2)
       let key = pos_args[0]
-      match check(ctx, d.get(key)) {
+      match check(ctx, d.pop_entry(key)) {
         None =>
           if pos_args.length() >= 2 {
             pos_args[1]
           } else {
             raise EvalErr(make_eval_error(ctx, "pop: missing key"))
           }
-        Some(v) => {
-          ignore(check(ctx, d.delete(key)))
-          v
-        }
+        Some(v) => v
       }
     }
     "update" => {
@@ -2592,14 +2636,15 @@ fn call_bytes_method(
 // arguments.
 // Normalize a possibly-negative index against length `n` and clamp it into
 // `[0, n]`, the half-open bound used by `list.index`'s start/end parameters.
-fn clamp_slice_index(raw : Int, n : Int) -> Int {
-  let j = if raw < 0 { raw + n } else { raw }
-  if j < 0 {
+fn clamp_slice_index_i64(raw : Int64, n : Int) -> Int {
+  let n64 = n.to_int64()
+  let j = if raw < 0L { raw + n64 } else { raw }
+  if j < 0L {
     0
-  } else if j > n {
+  } else if j > n64 {
     n
   } else {
-    j
+    j.to_int()
   }
 }
 

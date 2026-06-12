@@ -123,6 +123,25 @@ pub fn StarlarkDict::each(
 }
 
 ///|
+/// Removes `key` and returns its associated value, or `None` if absent.
+/// Returns `Err` if frozen, under active iteration, or the key is unhashable.
+/// An empty dict returns `Ok(None)` without attempting to hash the key.
+pub fn StarlarkDict::pop_entry(
+  self : StarlarkDict,
+  key : Value,
+) -> Result[Value?, String] {
+  self.ht.pop_entry(key)
+}
+
+///|
+pub fn StarlarkDict::check_mutable(
+  self : StarlarkDict,
+  verb : String,
+) -> Result[Unit, String] {
+  self.ht.check_mutable(verb)
+}
+
+///|
 fn StarlarkDict::iter_begin(self : StarlarkDict) -> Unit {
   self.ht.iter_begin()
 }

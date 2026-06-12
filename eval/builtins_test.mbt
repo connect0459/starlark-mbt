@@ -2454,6 +2454,92 @@ test "exec_file: range with non-integer argument raises type error" {
   assert_true(emsg("range('hello')").contains("want int"))
 }
 
+// --- dict.pop guard order ---
+
+///|
+test "exec_file: dict.pop on empty dict with unhashable key and default returns default" {
+  match exec_b("v = {}.pop([9], \"d\")") {
+    Ok(m) =>
+      match g(m, "v") {
+        Some(@value.Value::String(s)) => assert_eq(s.raw(), "d")
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: dict.pop on frozen dict with missing key and default raises frozen error" {
+  let pre : Map[String, @value.Value] = {}
+  let d_val = @value.Value::new_dict()
+  if d_val is @value.Value::Dict(d) {
+    ignore(d.set(@value.Value::Int(1N), @value.Value::Int(2N)))
+    d.freeze()
+  }
+  pre["frozen_d"] = d_val
+  let t = Thread::new("test")
+  let result = exec_file_with_predeclared(
+    t,
+    "<test>",
+    "v = frozen_d.pop(99, \"x\")",
+    Options::default(),
+    Predeclared::from_map(pre),
+  )
+  match result {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("frozen"))
+  }
+}
+
+///|
+test "exec_file: dict.pop on emptied dict with unhashable key raises unhashable error" {
+  match exec_b("d = {1: 'a'}\nd.pop(1)\nv = d.pop([], 'x')") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("unhashable"))
+  }
+}
+
+// --- sorted key= mutation guard ---
+
+///|
+test "exec_file: sorted key= that mutates source list raises during-iteration error" {
+  let src =
+    #|xs = [3, 1, 2]
+    #|r = sorted(xs, key=lambda x: xs.append(x) or x)
+  match exec_b(src) {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("during iteration"))
+  }
+}
+
+// --- list.index BigInt bounds ---
+
+///|
+test "exec_file: list.index with BigInt start below Int64 min raises invalid start index" {
+  match exec_b("[1, 2, 3].index(2, -9999999999999999999)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("invalid start index"))
+  }
+}
+
+///|
+test "exec_file: list.index with BigInt end above Int64 max raises invalid end index" {
+  match exec_b("[1, 2, 3].index(2, 0, 9999999999999999999)") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("invalid end index"))
+  }
+}
+
+// --- range length overflow ---
+
+///|
+test "exec_file: len of range with overflowing length raises no-len error" {
+  match exec_b("n = len(range(-(1<<62), 1<<62))") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("has no len"))
+  }
+}
+
 // --- dict() arity error ---
 
 ///|
