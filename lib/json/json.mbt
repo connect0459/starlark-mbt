@@ -5,30 +5,8 @@ fn str_lex_cmp(a : String, b : String) -> Int {
   let mut ia = 0
   let mut ib = 0
   while ia < la && ib < lb {
-    let ua = a[ia].to_int()
-    let mut cp_a = ua
-    let mut step_a = 1
-    if ua >= high_surrogate_lo && ua <= high_surrogate_hi && ia + 1 < la {
-      let lo = a[ia + 1].to_int()
-      if lo >= low_surrogate_lo && lo <= low_surrogate_hi {
-        cp_a = supplementary_plane_base +
-          (ua - high_surrogate_lo) * surrogate_high_scale +
-          (lo - low_surrogate_lo)
-        step_a = 2
-      }
-    }
-    let ub = b[ib].to_int()
-    let mut cp_b = ub
-    let mut step_b = 1
-    if ub >= high_surrogate_lo && ub <= high_surrogate_hi && ib + 1 < lb {
-      let lo = b[ib + 1].to_int()
-      if lo >= low_surrogate_lo && lo <= low_surrogate_hi {
-        cp_b = supplementary_plane_base +
-          (ub - high_surrogate_lo) * surrogate_high_scale +
-          (lo - low_surrogate_lo)
-        step_b = 2
-      }
-    }
+    let (cp_a, step_a) = @utf8util.utf16_decode_cp(a, ia, la)
+    let (cp_b, step_b) = @utf8util.utf16_decode_cp(b, ib, lb)
     if cp_a < cp_b {
       return -1
     }
