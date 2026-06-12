@@ -469,7 +469,6 @@ pub fn StarlarkRange::step(self : StarlarkRange) -> Int64 {
 pub fn StarlarkRange::length(self : StarlarkRange) -> Int64 {
   if self.step > 0L {
     if self.stop > self.start {
-      // stop - start overflows Int64 when start < 0 and stop > Int64::MAX + start.
       if self.start < 0L && self.stop > @int64.MAX_VALUE + self.start {
         return -1L
       }
@@ -477,7 +476,6 @@ pub fn StarlarkRange::length(self : StarlarkRange) -> Int64 {
     }
   } else if self.step < 0L {
     if self.start > self.stop {
-      // start - stop overflows Int64 when stop < 0 and start > Int64::MAX + stop.
       if self.stop < 0L && self.start > @int64.MAX_VALUE + self.stop {
         return -1L
       }
