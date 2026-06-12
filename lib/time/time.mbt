@@ -1467,7 +1467,6 @@ fn parse_go_layout(
   let mut nsec = 0
   let mut tz_offset : Int? = None
   let mut pm : Bool? = None
-  let mut hour_is_12 = false
   let err = fn() -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
     Err("time: parsing time \"\{value}\" as \"\{layout}\": cannot parse")
   }
@@ -1612,7 +1611,6 @@ fn parse_go_layout(
       match read_fixed_digits(vc, vi, 2) {
         Some((v, j)) => {
           hour = v
-          hour_is_12 = true
           vi = j
         }
         None => return err()
@@ -1689,7 +1687,6 @@ fn parse_go_layout(
       match read_flex_digits(vc, vi) {
         Some((v, j)) => {
           hour = v
-          hour_is_12 = true
           vi = j
         }
         None => return err()
@@ -1774,12 +1771,10 @@ fn parse_go_layout(
   if vi != vn {
     return err()
   }
-  if hour_is_12 {
-    match pm {
-      Some(true) => if hour < 12 { hour += 12 }
-      Some(false) => if hour == 12 { hour = 0 }
-      None => ()
-    }
+  match pm {
+    Some(true) => if hour < 12 { hour += 12 }
+    Some(false) => if hour == 12 { hour = 0 }
+    None => ()
   }
   Ok((year, month, day, hour, minute, second, nsec, tz_offset))
 }

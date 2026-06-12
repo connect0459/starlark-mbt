@@ -221,6 +221,34 @@ test "time module: parse_time matches month and weekday names case-insensitively
 }
 
 ///|
+test "time module: parse_time applies PM adjustment with 24-hour hour token" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|# PM with 24-hour "15" token: hour < 12 → add 12
+      #|assert.eq(
+      #|  "17:00",
+      #|  time.parse_time("05 PM", format="15 PM").format("15:04"),
+      #|)
+      #|# AM with 24-hour "15" token: hour == 12 → set to 0
+      #|assert.eq(
+      #|  "00:00",
+      #|  time.parse_time("12 AM", format="15 PM").format("15:04"),
+      #|)
+      #|# hour >= 12 with PM: no change
+      #|assert.eq(
+      #|  "17:00",
+      #|  time.parse_time("17 PM", format="15 PM").format("15:04"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: parse_time rejects values that do not match the layout" {
   let errs = run_star_string(
     (
