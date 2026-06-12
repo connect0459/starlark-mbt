@@ -365,7 +365,7 @@ fn make_duration(ns : Int64) -> @value.Value {
       fmt_duration(ns)
     })
     .with_hash(fn() { duration_hash(ns) })
-    .with_equals(fn(other) { Ok(duration_equals(ns, other)) })
+    .with_equals(fn(other, _depth) { Ok(duration_equals(ns, other)) })
     .with_compare(fn(other) { duration_compare(ns, other) })
     .with_binary(fn(op, rhs, is_left) { duration_binary(ns, op, rhs, is_left) })
     .with_attrs(fn(name) { duration_attr(ns, name) }, fn() {
@@ -1088,7 +1088,7 @@ fn make_time_at_zone(
       fn() { fmt_time_at_zone(sec, nsec, tz_offset, tz_name) },
     )
     .with_hash(fn() { time_hash(sec, nsec) })
-    .with_equals(fn(other) { Ok(time_equals(sec, nsec, other)) })
+    .with_equals(fn(other, _depth) { Ok(time_equals(sec, nsec, other)) })
     .with_compare(fn(other) { time_compare(sec, nsec, other) })
     .with_binary(fn(op, rhs, is_left) {
       time_binary(sec, nsec, op, rhs, is_left)

@@ -198,6 +198,7 @@ fn struct_equals(
   ctor : @value.Value,
   entries : Array[(String, @value.Value)],
   other : @value.Value,
+  depth : Int,
 ) -> Result[Bool, String] {
   match other {
     @value.Value::ExtVal(c) if c.get_type_name() == "struct" => {
@@ -205,8 +206,7 @@ fn struct_equals(
         Ok(Some(v)) => v
         _ => return Ok(false)
       }
-      match
-        @value.starlark_equals_depth(ctor, other_ctor, @value.compare_limit) {
+      match @value.starlark_equals_depth(ctor, other_ctor, depth) {
         Ok(false) => return Ok(false)
         Err(e) => return Err(e)
         Ok(true) => ()
@@ -230,12 +230,7 @@ fn struct_equals(
           Ok(Some(v)) => v
           _ => return Ok(false)
         }
-        match
-          @value.starlark_equals_depth(
-            entries[i].1,
-            other_val,
-            @value.compare_limit,
-          ) {
+        match @value.starlark_equals_depth(entries[i].1, other_val, depth) {
           Ok(false) => return Ok(false)
           Err(e) => return Err(e)
           Ok(true) => ()
@@ -320,7 +315,7 @@ pub fn make_struct(
       struct_repr(ctor, sorted)
     })
     .with_hash(fn() { struct_hash(sorted) })
-    .with_equals(fn(other) { struct_equals(ctor, sorted, other) })
+    .with_equals(fn(other, depth) { struct_equals(ctor, sorted, other, depth) })
     .with_attrs(fn(name) { struct_get_attr(ctor, sorted, name) }, fn() {
       sorted.map(fn(e) { e.0 })
     })
@@ -397,7 +392,7 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
   @value.Value::ExtVal(
     @value.CustomValue::new(fn() { "symbol" }, fn() { true }, fn() { name })
     .with_hash(fn() { Err("unhashable: symbol") })
-    .with_equals(fn(other) {
+    .with_equals(fn(other, _depth) {
       Ok(
         match other {
           @value.Value::ExtVal(c) if c.get_type_name() == "symbol" =>

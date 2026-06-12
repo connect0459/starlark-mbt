@@ -130,7 +130,7 @@ pub struct CustomValue {
   priv truth_fn : () -> Bool
   priv repr_fn : () -> String
   priv hash_fn : (() -> Result[UInt, String])?
-  priv equals_fn : ((Value) -> Result[Bool, String])?
+  priv equals_fn : ((Value, Int) -> Result[Bool, String])?
   priv get_attr_fn : ((String) -> Result[Value?, String])?
   priv attr_names_fn : (() -> Array[String])?
   priv set_field_fn : ((String, Value) -> Result[Unit, String])?
@@ -220,15 +220,17 @@ pub fn CustomValue::with_hash(
 /// Parameters:
 ///
 /// - `self` : The `CustomValue` to extend.
-/// - `equals_fn` : Callback that tests equality against another `Value`.
-///   Returns `Ok(true)` if equal, `Ok(false)` if not, or `Err(msg)` if the
-///   comparison fails (e.g., recursion depth exceeded). Errors are propagated
-///   by `starlark_equals_depth` and squashed to `false` by `starlark_equals`.
+/// - `equals_fn` : Callback that tests equality against another `Value` and
+///   the remaining recursion budget. Returns `Ok(true)` if equal, `Ok(false)`
+///   if not, or `Err(msg)` if the comparison fails (e.g., recursion depth
+///   exceeded). Errors are propagated by `starlark_equals_depth` and squashed
+///   to `false` by `starlark_equals`. Pass the received depth to any nested
+///   `starlark_equals_depth` calls to compose the depth guard correctly.
 ///
 /// Returns a new `CustomValue` with the equality callback registered.
 pub fn CustomValue::with_equals(
   self : CustomValue,
-  equals_fn : (Value) -> Result[Bool, String],
+  equals_fn : (Value, Int) -> Result[Bool, String],
 ) -> CustomValue {
   { ..self, equals_fn: Some(equals_fn) }
 }
@@ -431,22 +433,26 @@ pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
 }
 
 ///|
-/// Invokes the equality callback against `other`, or returns `Ok(false)` if no
-/// callback was registered.
+/// Invokes the equality callback against `other` with the given recursion
+/// budget, or returns `Ok(false)` if no callback was registered.
 ///
 /// Parameters:
 ///
 /// - `self` : The custom value to test equality for.
 /// - `other` : The value to compare against.
+/// - `depth` : Remaining recursion budget, threaded from the caller's
+///   `starlark_equals_depth` invocation. Pass this value unchanged to any
+///   nested `starlark_equals_depth` calls inside the callback.
 ///
 /// Returns `Ok(true)` if equal, `Ok(false)` if not equal or no callback is
 /// registered, or `Err(msg)` if the callback reports a comparison error.
 pub fn CustomValue::get_equals(
   self : CustomValue,
   other : Value,
+  depth : Int,
 ) -> Result[Bool, String] {
   match self.equals_fn {
-    Some(f) => f(other)
+    Some(f) => f(other, depth)
     None => Ok(false)
   }
 }
