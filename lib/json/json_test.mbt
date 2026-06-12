@@ -151,6 +151,18 @@ test "encode dict sorts keys lexicographically not by length" {
 }
 
 ///|
+test "encode dict: non-BMP key sorts after BMP keys by codepoint order" {
+  let d = @value.StarlarkDict::new()
+  let _ = d.set(str_val("\u{FFFF}"), int_val(3L))
+  let _ = d.set(str_val("\u{10000}"), int_val(1L))
+  let _ = d.set(str_val("\u{E000}"), int_val(2L))
+  check_encode(
+    @value.Value::Dict(d),
+    "{\"\u{E000}\":2,\"\u{FFFF}\":3,\"\u{10000}\":1}",
+  )
+}
+
+///|
 test "encode ExtVal attrs sorts keys lexicographically not by length" {
   let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
     "myobj()"

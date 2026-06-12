@@ -2,21 +2,46 @@
 fn str_lex_cmp(a : String, b : String) -> Int {
   let la = a.length()
   let lb = b.length()
-  let len = if la < lb { la } else { lb }
-  for i in 0..<len {
-    let ca = a[i].to_int()
-    let cb = b[i].to_int()
-    if ca < cb {
+  let mut ia = 0
+  let mut ib = 0
+  while ia < la && ib < lb {
+    let ua = a[ia].to_int()
+    let mut cp_a = ua
+    let mut step_a = 1
+    if ua >= high_surrogate_lo && ua <= high_surrogate_hi && ia + 1 < la {
+      let lo = a[ia + 1].to_int()
+      if lo >= low_surrogate_lo && lo <= low_surrogate_hi {
+        cp_a = supplementary_plane_base +
+          (ua - high_surrogate_lo) * surrogate_high_scale +
+          (lo - low_surrogate_lo)
+        step_a = 2
+      }
+    }
+    let ub = b[ib].to_int()
+    let mut cp_b = ub
+    let mut step_b = 1
+    if ub >= high_surrogate_lo && ub <= high_surrogate_hi && ib + 1 < lb {
+      let lo = b[ib + 1].to_int()
+      if lo >= low_surrogate_lo && lo <= low_surrogate_hi {
+        cp_b = supplementary_plane_base +
+          (ub - high_surrogate_lo) * surrogate_high_scale +
+          (lo - low_surrogate_lo)
+        step_b = 2
+      }
+    }
+    if cp_a < cp_b {
       return -1
     }
-    if ca > cb {
+    if cp_a > cp_b {
       return 1
     }
+    ia += step_a
+    ib += step_b
   }
-  if la < lb {
-    -1
-  } else if la > lb {
+  if ia < la {
     1
+  } else if ib < lb {
+    -1
   } else {
     0
   }
