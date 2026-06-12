@@ -468,6 +468,21 @@ test "math_module: hypot(±inf, nan) returns +inf" {
 }
 
 ///|
+test "math_module: gamma(171) returns finite value" {
+  let m = math_module()
+  match call1(m, "gamma", fv(171.0)) {
+    Ok(@value.Value::Float(f)) => {
+      assert_true(!f.is_inf())
+      assert_true(!f.is_nan())
+      // go: ~7.257e+306; verify it's in the right ballpark
+      assert_true(f > 7.0e+306 && f < 8.0e+306)
+    }
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
 test "math_module: fabs(-0.0) returns positive zero" {
   let m = math_module()
   let neg_zero = -0.0

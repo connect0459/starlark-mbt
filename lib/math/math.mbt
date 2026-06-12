@@ -278,7 +278,10 @@ fn float_gamma(x : Double) -> Double {
     }
     // t = z + g + 0.5 per the Lanczos approximation.
     let t = z + lanczos_g + 0.5
-    sqrt_2pi * @std_math.pow(t, z + 0.5) * @std_math.exp(-t) * a
+    // Compute in log-space to avoid intermediate overflow for large arguments
+    // (e.g. gamma(171)): pow(t, z+0.5) alone overflows even though the full
+    // product is finite.
+    @std_math.exp((z + 0.5) * @std_math.ln(t) - t + @std_math.ln(sqrt_2pi * a))
   }
 }
 
