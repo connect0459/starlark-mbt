@@ -64,6 +64,18 @@ test "StarlarkRange: negative step with large step size" {
 }
 
 ///|
+test "StarlarkRange: length of range(Int64::MIN, Int64::MAX, 2) is negative overflow sentinel" {
+  let r = StarlarkRange::new(@int64.MIN_VALUE, @int64.MAX_VALUE, 2L)
+  assert_true(r.length() < 0L)
+}
+
+///|
+test "StarlarkRange: length of range(Int64::MAX, Int64::MIN, -2) is negative overflow sentinel" {
+  let r = StarlarkRange::new(@int64.MAX_VALUE, @int64.MIN_VALUE, -2L)
+  assert_true(r.length() < 0L)
+}
+
+///|
 test "StarlarkRange: index_at returns correct element" {
   let r = StarlarkRange::new(0L, 10L, 2L)
   assert_eq(r.index_at(0), 0L)
