@@ -243,3 +243,15 @@ pub fn is_unicode_printable(r : Int) -> Bool {
   }
   true
 }
+
+///|
+pub fn utf16_decode_cp(s : String, i : Int, len : Int) -> (Int, Int) {
+  let u = s[i].to_int()
+  if u >= 0xD800 && u <= 0xDBFF && i + 1 < len {
+    let lo = s[i + 1].to_int()
+    if lo >= 0xDC00 && lo <= 0xDFFF {
+      return (0x10000 + (u - 0xD800) * 0x400 + (lo - 0xDC00), 2)
+    }
+  }
+  (u, 1)
+}
