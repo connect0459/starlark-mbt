@@ -135,8 +135,8 @@ Mirrors of starlark-go's package-level helpers; errors are plain `String`
 | Function | Signature | Description |
 | :--- | :--- | :--- |
 | `equal` | `(Value, Value) -> Result[Bool, String]` | Structural equality (depth-capped) |
-| `len_of` | `(Value) -> Int` | Sequence length; returns `-1` for non-sequences |
-| `length_of` | `(Value) -> Result[Int, String]` | Sequence length; `Err` for non-sequences |
+| `len_of` | `(Value) -> Int64` | Sequence length; returns `-1` for non-sequences |
+| `length_of` | `(Value) -> Result[Int64, String]` | Sequence length; `Err` for non-sequences |
 | `iterate` | `(Value) -> Result[StarlarkIterator, String]` | Obtain an iterator over a Starlark iterable |
 | `number_to_int` | `(Value) -> Int64?` | Convert `Int` or `Float` to `Int64` |
 | `as_float` | `(Value) -> (Double, Bool)` | Extract `Float` or convert `Int`; second is `true` on success |
@@ -212,6 +212,7 @@ Insertion-ordered mutable mapping; keys are any hashable `Value`.
 | `each((Value, Value) -> Unit)` | Iterate all key–value pairs |
 | `iter() -> Iter[Value]` | Iterator over a snapshot of keys in insertion order |
 | `entries() -> Iter[(Value, Value)]` | Iterator over key–value pairs in insertion order |
+| `pop_entry(Value) -> Result[Value?, String]` | Remove and return the value for a key; `None` if absent |
 | `popitem() -> Result[(Value, Value)?, String]` | Remove and return the first inserted pair |
 | `is_frozen() -> Bool` | Whether the dict is frozen |
 | `freeze() -> Unit` | Freeze the dict and its contents |
@@ -246,8 +247,8 @@ The lazy integer sequence returned by `range()`; not a list.
 | :--- | :--- | :--- |
 | `StarlarkRange::new(Int64, Int64, Int64)` | `-> StarlarkRange` | Construct from `start`, `stop`, `step` |
 | `start()` / `stop()` / `step()` | `-> Int64` | The three range parameters |
-| `length()` | `-> Int` | Number of elements |
-| `index_at(Int)` | `-> Int64` | The value at the i-th position |
+| `length()` | `-> Int64` | Number of elements |
+| `index_at(Int64)` | `-> Int64` | The value at the i-th position |
 | `contains(Int64)` | `-> Bool` | Membership test |
 
 ---
