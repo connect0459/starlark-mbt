@@ -218,17 +218,17 @@ test "time module: parse_time interprets values relative to a location" {
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|wall = time.parse_time("2021-03-22T14:30:00", location="Asia/Tokyo")
-      #|assert.eq("14:30", wall.format("15:04"))
-      #|assert.eq("+0900", wall.format("-0700"))
-      #|assert.eq(wall, time.parse_time("2021-03-22T05:30:00Z"))
       #|instant = time.parse_time("2021-03-22T14:30:00Z", location="Asia/Tokyo")
       #|assert.eq("14:30", instant.format("15:04"))
       #|assert.eq(instant, time.parse_time("2021-03-22T14:30:00Z"))
       #|offset = time.parse_time("2021-03-22T14:30:00+09:00", location="Asia/Tokyo")
       #|assert.eq(offset, time.parse_time("2021-03-22T05:30:00Z"))
+      #|wall = time.parse_time("2021-03-22T14:30:00", format="2006-01-02T15:04:05", location="Asia/Tokyo")
+      #|assert.eq("14:30", wall.format("15:04"))
+      #|assert.eq("+0900", wall.format("-0700"))
+      #|assert.eq(wall, time.parse_time("2021-03-22T05:30:00Z"))
       #|assert.fails(
-      #|  lambda: time.parse_time("2021-03-22T14:30:00", location="Mars/Olympus"),
+      #|  lambda: time.parse_time("2021-03-22T14:30:00Z", location="Mars/Olympus"),
       #|  "unsupported timezone",
       #|)
     ),
