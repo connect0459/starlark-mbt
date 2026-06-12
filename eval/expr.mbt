@@ -1066,6 +1066,15 @@ fn builtin_minmax(
       }
     None => ()
   }
+  let key_of : (@value.Value) -> @value.Value raise EvalErr = fn(
+    v,
+  ) raise EvalErr {
+    match key_fn {
+      None => v
+      Some(f) =>
+        call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
+    }
+  }
   let items : Array[@value.Value] = []
   if pos_args.length() == 1 {
     let it = match @value.iterate(pos_args[0]) {
@@ -1090,15 +1099,6 @@ fn builtin_minmax(
         make_eval_error(ctx, "\{fn_name}: argument is an empty sequence"),
       )
     }
-    let key_of : (@value.Value) -> @value.Value raise EvalErr = fn(
-      v,
-    ) raise EvalErr {
-      match key_fn {
-        None => v
-        Some(f) =>
-          call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
-      }
-    }
     let result = try {
       let mut best = items[0]
       let mut best_key = key_of(best)
@@ -1122,15 +1122,6 @@ fn builtin_minmax(
   } else {
     for v in pos_args {
       items.push(v)
-    }
-    let key_of : (@value.Value) -> @value.Value raise EvalErr = fn(
-      v,
-    ) raise EvalErr {
-      match key_fn {
-        None => v
-        Some(f) =>
-          call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
-      }
     }
     let mut result = items[0]
     let mut result_key = key_of(result)
