@@ -180,6 +180,47 @@ test "time module: format renders comma fractional-second separator from layout"
 }
 
 ///|
+test "time module: parse_time matches month and weekday names case-insensitively" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("march 22, 2021", format="January 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("MARCH 22, 2021", format="January 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("mar 22, 2021", format="Jan 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("MAR 22, 2021", format="Jan 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("monday 2021-03-22", format="Monday 2006-01-02"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("MONDAY 2021-03-22", format="Monday 2006-01-02"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("mon 2021-03-22", format="Mon 2006-01-02"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: parse_time rejects values that do not match the layout" {
   let errs = run_star_string(
     (

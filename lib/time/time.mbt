@@ -1374,7 +1374,16 @@ fn read_flex_digits(chars : Array[Char], i : Int) -> (Int, Int)? {
 }
 
 ///|
-// Match one of `names[1..=count]` (1-indexed) as a prefix of `chars` at `i`.
+fn ascii_lower(c : Char) -> Char {
+  if c >= 'A' && c <= 'Z' {
+    (c.to_int() + 32).unsafe_to_char()
+  } else {
+    c
+  }
+}
+
+///|
+// Match one of `names[start..start+count]` as a prefix of `chars` at `i`.
 // Returns the matched index and the next value position.
 fn match_name(
   chars : Array[Char],
@@ -1391,6 +1400,36 @@ fn match_name(
       let mut ok = true
       for k in 0..<nlen {
         if chars[i + k] != nchars[k] {
+          ok = false
+          break
+        }
+      }
+      if ok {
+        return Some((idx, i + nlen))
+      }
+    }
+  }
+  None
+}
+
+///|
+// Case-insensitive variant of match_name: compares each character after
+// lowercasing so that e.g. "JANUARY" matches "January".
+fn match_name_ci(
+  chars : Array[Char],
+  i : Int,
+  names : FixedArray[String],
+  start : Int,
+  count : Int,
+) -> (Int, Int)? {
+  for idx in start..<(start + count) {
+    let name = names[idx]
+    let nchars = name.to_array()
+    let nlen = nchars.length()
+    if i + nlen <= chars.length() {
+      let mut ok = true
+      for k in 0..<nlen {
+        if ascii_lower(chars[i + k]) != ascii_lower(nchars[k]) {
           ok = false
           break
         }
@@ -1501,7 +1540,7 @@ fn parse_go_layout(
       }
       li += 2
     } else if starts("January") {
-      match match_name(vc, vi, month_full_names, 1, 12) {
+      match match_name_ci(vc, vi, month_full_names, 1, 12) {
         Some((idx, j)) => {
           month = idx
           vi = j
@@ -1510,7 +1549,7 @@ fn parse_go_layout(
       }
       li += 7
     } else if starts("Jan") {
-      match match_name(vc, vi, month_abbrev_names, 1, 12) {
+      match match_name_ci(vc, vi, month_abbrev_names, 1, 12) {
         Some((idx, j)) => {
           month = idx
           vi = j
@@ -1519,13 +1558,13 @@ fn parse_go_layout(
       }
       li += 3
     } else if starts("Monday") {
-      match match_name(vc, vi, weekday_full_names, 0, 7) {
+      match match_name_ci(vc, vi, weekday_full_names, 0, 7) {
         Some((_, j)) => vi = j
         None => return err()
       }
       li += 6
     } else if starts("Mon") {
-      match match_name(vc, vi, weekday_abbrev_names, 0, 7) {
+      match match_name_ci(vc, vi, weekday_abbrev_names, 0, 7) {
         Some((_, j)) => vi = j
         None => return err()
       }
