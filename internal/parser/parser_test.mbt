@@ -1329,6 +1329,22 @@ test "subscript slice is accepted" {
 }
 
 ///|
+test "subscript tuple lower-bound slice is accepted" {
+  match @parser.parse_expr("test.star", "a[1, 2:]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "subscript tuple lower-bound slice with end is accepted" {
+  match @parser.parse_expr("test.star", "a[1, 2:3]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
 test "lambda trailing comma before colon is rejected" {
   match @parser.parse_expr("test.star", "lambda x,: x") {
     Err(_) => ()

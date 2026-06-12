@@ -1009,9 +1009,16 @@ fn Parser::parse_subscript_tail(
         }
         elems.push(self.parse_test())
       }
-      self.expect(@lexer.Token::RBrack)
-      let tuple_key = @syntax.Expr::ETuple(elems, p)
-      @syntax.Expr::EIndex(obj, tuple_key, p)
+      if self.tok == @lexer.Token::Colon {
+        let tuple_lo = @syntax.Expr::ETuple(elems, p)
+        let slice = self.parse_slice_from_colon(obj, Some(tuple_lo), p)
+        self.expect(@lexer.Token::RBrack)
+        slice
+      } else {
+        self.expect(@lexer.Token::RBrack)
+        let tuple_key = @syntax.Expr::ETuple(elems, p)
+        @syntax.Expr::EIndex(obj, tuple_key, p)
+      }
     } else {
       self.expect(@lexer.Token::RBrack)
       @syntax.Expr::EIndex(obj, idx, p)
