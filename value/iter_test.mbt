@@ -281,3 +281,12 @@ test "length_of: non-sized type returns error" {
     length_of(Value::Builtin(StarlarkBuiltinFunc::dispatch("f"))) is Err(_),
   )
 }
+
+///|
+test "iterate: range with overflowing length returns no-len error" {
+  let r = StarlarkRange::new(-4611686018427387904L, 4611686018427387904L, 1L)
+  match iterate(Value::Range(r)) {
+    Err(msg) => assert_true(msg.contains("has no len"))
+    Ok(_) => assert_true(false)
+  }
+}

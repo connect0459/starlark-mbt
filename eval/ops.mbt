@@ -1412,7 +1412,11 @@ fn eval_index(
     @value.Value::Range(r) =>
       match idx {
         @value.Value::Int(i) => {
-          let j = check(ctx, adjust_index(i, r.length(), "range"))
+          let len = r.length()
+          if len < 0L {
+            raise EvalErr(make_eval_error(ctx, "range has no len"))
+          }
+          let j = check(ctx, adjust_index(i, len, "range"))
           @value.Value::Int(BigInt::from_int64(r.index_at(j)))
         }
         _ =>
@@ -1620,6 +1624,9 @@ fn eval_slice(
     }
     @value.Value::Range(r) => {
       let len = r.length()
+      if len < 0L {
+        raise EvalErr(make_eval_error(ctx, "range has no len"))
+      }
       let (start, end_idx) = normalize_slice_64(lo_opt, hi_opt, len, step)
       let new_start = r.start() + r.step() * start
       let new_stop = r.start() + r.step() * end_idx
