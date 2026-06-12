@@ -130,6 +130,18 @@ fn[T] check(ctx : EvalContext, r : Result[T, String]) -> T raise EvalErr {
 }
 
 ///|
+fn[T] check_pfx(
+  ctx : EvalContext,
+  prefix : String,
+  r : Result[T, String],
+) -> T raise EvalErr {
+  match r {
+    Ok(v) => v
+    Err(msg) => raise EvalErr(make_eval_error(ctx, "\{prefix}: \{msg}"))
+  }
+}
+
+///|
 fn require_seq(
   ctx : EvalContext,
   name : String,

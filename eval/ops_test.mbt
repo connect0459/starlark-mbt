@@ -983,3 +983,19 @@ test "eval_expr: bytes.elems() != bytes.elems() for different bytes returns True
     Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
+
+///|
+test "eval_expr: percent format with dict as single positional argument formats correctly" {
+  match eval_op("\"%s\" % {\"a\": 1}") {
+    Ok(@value.Value::String(s)) =>
+      assert_true(s.raw().contains("a") && s.raw().contains("1"))
+    Ok(other) => fail("expected String, got \{other.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "eval_expr: empty range slice repr is normalized with stop equal to start" {
+  assert_eq(op_ok_str("repr(range(5)[2:1])"), "range(2, 2)")
+  assert_eq(op_ok_str("repr(range(10)[5:3])"), "range(5, 5)")
+}

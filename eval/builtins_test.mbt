@@ -2176,6 +2176,25 @@ test "exec_file: str and bytes report excess args as want exactly 1" {
 }
 
 ///|
+test "exec_file: str rejects keyword arguments" {
+  assert_eq(emsg("str(1, x=2)"), "str does not accept keyword arguments")
+}
+
+///|
+test "exec_file: list method errors include method name prefix" {
+  assert_true(emsg("l=[1,2]; l.pop(5)").contains("pop:"))
+  assert_true(emsg("l=[1,2]; l.extend(1)").contains("extend:"))
+  assert_true(emsg("l=[1,2]; l.insert('bad', 3)").contains("insert:"))
+  assert_true(emsg("l=[1,2]; l.remove(3)").contains("remove:"))
+}
+
+///|
+test "exec_file: dict method errors include method name prefix" {
+  assert_true(emsg("d={}; d.pop('k')").contains("pop:"))
+  assert_true(emsg("d={}; d.get([])").contains("get:"))
+}
+
+///|
 test "exec_file: sorted accepts iterable passed by keyword" {
   match exec_b("r = sorted(iterable=[3, 1, 2])") {
     Ok(m) =>

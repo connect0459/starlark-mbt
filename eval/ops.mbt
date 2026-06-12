@@ -614,7 +614,7 @@ fn percent_format(
   }
   let arg_list : Array[@value.Value] = match args {
     @value.Value::Tuple(t) => t
-    _ => if is_mapping { [] } else { [args] }
+    _ => [args]
   }
   let buf = StringBuilder::new()
   let chars = fmt.to_array()
@@ -1627,7 +1627,16 @@ fn eval_slice(
       if len < 0L {
         raise EvalErr(make_eval_error(ctx, "range has no len"))
       }
-      let (start, end_idx) = normalize_slice_64(lo_opt, hi_opt, len, step)
+      let (start, end_idx_raw) = normalize_slice_64(lo_opt, hi_opt, len, step)
+      // Normalize empty slices so the repr matches go: when indices imply no
+      // elements, clamp end to start (e.g. range(2, 2) not range(2, 1)).
+      let end_idx = if step > 0 && end_idx_raw < start {
+        start
+      } else if step < 0 && end_idx_raw > start {
+        start
+      } else {
+        end_idx_raw
+      }
       let new_start = r.start() + r.step() * start
       let new_stop = r.start() + r.step() * end_idx
       let new_step = r.step() * step.to_int64()
