@@ -136,6 +136,50 @@ test "time module: parse_time reads fractional seconds of any width" {
 }
 
 ///|
+test "time module: parse_time accepts comma as fractional-second separator" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  0,
+      #|  time.parse_time("10:20:30,000", format="15:04:05,000").nanosecond,
+      #|)
+      #|assert.eq(
+      #|  500000000,
+      #|  time.parse_time("10:20:30,5", format="15:04:05,999").nanosecond,
+      #|)
+      #|assert.eq(
+      #|  123000000,
+      #|  time.parse_time("10:20:30,123", format="15:04:05,000000000").nanosecond,
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: format renders comma fractional-second separator from layout" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(0, 123000000)
+      #|assert.eq(",123", t.format(",000"))
+      #|assert.eq(",123", t.format(",999"))
+      #|whole = time.from_timestamp(0)
+      #|assert.eq("", whole.format(",999"))
+      #|assert.eq(",000", whole.format(",000"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: parse_time rejects values that do not match the layout" {
   let errs = run_star_string(
     (

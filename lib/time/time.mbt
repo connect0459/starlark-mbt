@@ -905,7 +905,7 @@ fn fmt_go_layout(
     } else if c == '2' {
       buf.write_string(day.to_string())
       i += 1
-    } else if c == '.' &&
+    } else if (c == '.' || c == ',') &&
       i + 1 < n &&
       (lchars[i + 1] == '9' || lchars[i + 1] == '0') {
       let is_trimmed = lchars[i + 1] == '9'
@@ -915,7 +915,7 @@ fn fmt_go_layout(
       }
       let frac_digits = j - i - 1
       if nsec != 0 || !is_trimmed {
-        buf.write_char('.')
+        buf.write_char(c)
         buf.write_string(fmt_nsec_frac(nsec, frac_digits, is_trimmed))
       }
       i = j
@@ -1692,7 +1692,7 @@ fn parse_go_layout(
         None => return err()
       }
       li += 1
-    } else if lc[li] == '.' &&
+    } else if (lc[li] == '.' || lc[li] == ',') &&
       li + 1 < ln &&
       (lc[li + 1] == '0' || lc[li + 1] == '9') {
       let is_trimmed = lc[li + 1] == '9'
@@ -1701,8 +1701,7 @@ fn parse_go_layout(
         lj += 1
       }
       let max_digits = lj - li - 1
-      // Consume the fractional seconds from the value if present.
-      if vi < vn && vc[vi] == '.' {
+      if vi < vn && (vc[vi] == '.' || vc[vi] == ',') {
         let (frac_str, end) = parse_digits_at(vc, vi + 1)
         let flen = frac_str.length()
         if flen > 0 {
