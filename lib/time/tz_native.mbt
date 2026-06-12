@@ -37,8 +37,31 @@ fn string_to_c_bytes(s : String) -> Bytes {
 extern "C" fn ffi_is_valid_timezone(name_bytes : Bytes) -> Bool = "starlark_is_valid_timezone"
 
 ///|
-#borrow(name_bytes)
-extern "C" fn ffi_get_tz_offset(name_bytes : Bytes, unix_time : Int64) -> Int = "starlark_get_tz_offset"
+#borrow(name_bytes, abbr_out)
+extern "C" fn ffi_get_tz_abbr(
+  name_bytes : Bytes,
+  unix_time : Int64,
+  abbr_out : Bytes,
+) -> Int = "starlark_get_tz_abbr"
+
+///|
+#borrow(abbr_out)
+extern "C" fn ffi_get_local_tz_at(unix_time : Int64, abbr_out : Bytes) -> Int = "starlark_get_local_tz_at"
+
+///|
+fn bytes_to_ascii_string(buf : Bytes) -> String {
+  let sb = StringBuilder::new()
+  let mut i = 0
+  while i < buf.length() {
+    let b = buf[i].to_int()
+    if b == 0 {
+      break
+    }
+    sb.write_char(b.unsafe_to_char())
+    i += 1
+  }
+  sb.to_string()
+}
 
 ///|
 fn is_valid_timezone_impl(name : String) -> Bool {
@@ -47,13 +70,44 @@ fn is_valid_timezone_impl(name : String) -> Bool {
 }
 
 ///|
-fn get_tz_offset_at_impl(name : String, unix_time : Int64) -> Int? {
-  let bytes = string_to_c_bytes(name)
-  let offset = ffi_get_tz_offset(bytes, unix_time)
-  // INT32_MIN (-2147483648) is the sentinel for "error"
+fn get_tz_abbr_at_impl(name : String, unix_time : Int64) -> (Int, String)? {
+  let name_bytes = string_to_c_bytes(name)
+  let abbr_buf = Bytes::make(16, b'\x00')
+  let offset = ffi_get_tz_abbr(name_bytes, unix_time, abbr_buf)
   if offset == -2147483648 {
     None
   } else {
-    Some(offset)
+    let abbr = bytes_to_ascii_string(abbr_buf)
+    Some(
+      (
+        offset,
+        if abbr.length() > 0 {
+          abbr
+        } else {
+          tz_name_from_offset(offset)
+        },
+      ),
+    )
+  }
+}
+
+///|
+fn get_local_tz_at_impl(unix_time : Int64) -> (Int, String)? {
+  let abbr_buf = Bytes::make(16, b'\x00')
+  let offset = ffi_get_local_tz_at(unix_time, abbr_buf)
+  if offset == -2147483648 {
+    None
+  } else {
+    let abbr = bytes_to_ascii_string(abbr_buf)
+    Some(
+      (
+        offset,
+        if abbr.length() > 0 {
+          abbr
+        } else {
+          tz_name_from_offset(offset)
+        },
+      ),
+    )
   }
 }

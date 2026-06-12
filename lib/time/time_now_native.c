@@ -29,10 +29,12 @@ MOONBIT_FFI_EXPORT int32_t starlark_is_valid_timezone(moonbit_bytes_t name) {
     return 0;
 }
 
-/* Returns UTC offset in seconds at the given Unix timestamp for the named
- * timezone. Returns INT32_MIN (0x80000000) on error or invalid timezone. */
-MOONBIT_FFI_EXPORT int32_t starlark_get_tz_offset(moonbit_bytes_t name,
-                                                    int64_t unix_time) {
+/* Returns UTC offset for the named timezone at unix_time, writing the zone
+ * abbreviation (at most 15 chars + NUL) into abbr_out.
+ * Returns INT32_MIN on error or invalid timezone. */
+MOONBIT_FFI_EXPORT int32_t starlark_get_tz_abbr(moonbit_bytes_t name,
+                                                  int64_t unix_time,
+                                                  moonbit_bytes_t abbr_out) {
     const char* tz_name = (const char*)name;
     const char* old_tz = getenv("TZ");
     char* old_tz_copy = old_tz ? strdup(old_tz) : NULL;
@@ -46,8 +48,15 @@ MOONBIT_FFI_EXPORT int32_t starlark_get_tz_offset(moonbit_bytes_t name,
     int32_t offset;
     if (result != NULL) {
         offset = (int32_t)tm_info.tm_gmtoff;
+        if (tm_info.tm_zone) {
+            strncpy((char*)abbr_out, tm_info.tm_zone, 15);
+            ((char*)abbr_out)[15] = '\0';
+        } else {
+            ((char*)abbr_out)[0] = '\0';
+        }
     } else {
-        offset = (int32_t)0x80000000; /* INT32_MIN = invalid */
+        offset = (int32_t)0x80000000;
+        ((char*)abbr_out)[0] = '\0';
     }
 
     if (old_tz_copy) {
@@ -59,4 +68,25 @@ MOONBIT_FFI_EXPORT int32_t starlark_get_tz_offset(moonbit_bytes_t name,
     tzset();
 
     return offset;
+}
+
+/* Returns UTC offset for the host's local timezone at unix_time, writing the
+ * zone abbreviation into abbr_out.
+ * Returns INT32_MIN on error. */
+MOONBIT_FFI_EXPORT int32_t starlark_get_local_tz_at(int64_t unix_time,
+                                                      moonbit_bytes_t abbr_out) {
+    time_t t = (time_t)unix_time;
+    struct tm tm_info;
+    struct tm* result = localtime_r(&t, &tm_info);
+    if (result != NULL) {
+        if (tm_info.tm_zone) {
+            strncpy((char*)abbr_out, tm_info.tm_zone, 15);
+            ((char*)abbr_out)[15] = '\0';
+        } else {
+            ((char*)abbr_out)[0] = '\0';
+        }
+        return (int32_t)tm_info.tm_gmtoff;
+    }
+    ((char*)abbr_out)[0] = '\0';
+    return (int32_t)0x80000000;
 }

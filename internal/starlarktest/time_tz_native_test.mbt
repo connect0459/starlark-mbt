@@ -39,6 +39,54 @@ test "time module: DST-aware in_location converts UTC to EDT" {
 }
 
 ///|
+test "time module: in_location shows zone abbreviation for Asia/Tokyo" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(0).in_location("Asia/Tokyo")
+      #|s = str(t)
+      #|assert.eq(s, "1970-01-01 09:00:00 +0900 JST")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: in_location shows EST abbreviation for US/Eastern at epoch" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(0).in_location("US/Eastern")
+      #|s = str(t)
+      #|assert.eq(s, "1969-12-31 19:00:00 -0500 EST")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: from_timestamp preserves unix instant" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(1593193116)
+      #|assert.eq(t.unix, 1593193116)
+      #|assert.eq(t, time.parse_time("2020-06-26T17:38:36Z"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: now is after a known past date" {
   let errs = run_star_string(
     (

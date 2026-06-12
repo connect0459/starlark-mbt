@@ -473,3 +473,16 @@ let iana_sorted : FixedArray[String] = [
   "US/Indiana-Starke", "US/Michigan", "US/Mountain", "US/Pacific", "US/Samoa", "UTC",
   "Universal", "W-SU", "WET", "Zulu",
 ]
+
+///|
+fn get_tz_abbr_at_impl(name : String, unix_time : Int64) -> (Int, String)? {
+  match get_tz_offset_at_impl(name, unix_time) {
+    Some(offset) => Some((offset, tz_name_from_offset(offset)))
+    None => None
+  }
+}
+
+///|
+fn get_local_tz_at_impl(_unix_time : Int64) -> (Int, String)? {
+  Some((0, "UTC"))
+}

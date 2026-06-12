@@ -1160,11 +1160,11 @@ fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
     if !is_valid_timezone_impl(loc) {
       return Err("in_location: unsupported timezone \"\{loc}\"")
     }
-    let offset = match get_tz_offset_at_impl(loc, sec) {
-      Some(o) => o
+    let (offset, abbr) = match get_tz_abbr_at_impl(loc, sec) {
+      Some(v) => v
       None => return Err("in_location: cannot determine offset for \"\{loc}\"")
     }
-    Ok(make_time_at_zone(sec, nsec, offset, loc))
+    Ok(make_time_at_zone(sec, nsec, offset, abbr))
   })
 }
 
@@ -1854,7 +1854,11 @@ fn make_from_timestamp_fn() -> @value.Value {
     } else {
       (sec + extra_sec, norm_nsec.to_int())
     }
-    Ok(make_time(final_sec, final_nsec))
+    let (local_offset, local_abbr) = match get_local_tz_at_impl(final_sec) {
+      Some(v) => v
+      None => (0, "UTC")
+    }
+    Ok(make_time_at_zone(final_sec, final_nsec, local_offset, local_abbr))
   })
 }
 
@@ -1952,20 +1956,21 @@ fn make_parse_time_fn() -> @value.Value {
         Ok(make_zoned(parsed_sec, nsec, tz_off))
       } else {
         // parsed_sec is "local time treated as UTC" → adjust for location.
-        let offset = match get_tz_offset_at_impl(location, parsed_sec) {
-          Some(o) => o
+        let (offset, _) = match get_tz_abbr_at_impl(location, parsed_sec) {
+          Some(v) => v
           None =>
             return Err(
               "time.parse_time: cannot determine offset for \"\{location}\"",
             )
         }
         let utc_sec = parsed_sec - offset.to_int64()
-        let final_offset = match get_tz_offset_at_impl(location, utc_sec) {
-          Some(o) => o
-          None => offset
+        let (final_offset, final_abbr) = match
+          get_tz_abbr_at_impl(location, utc_sec) {
+          Some(v) => v
+          None => (offset, tz_name_from_offset(offset))
         }
         let final_sec = parsed_sec - final_offset.to_int64()
-        Ok(make_time_at_zone(final_sec, nsec, final_offset, location))
+        Ok(make_time_at_zone(final_sec, nsec, final_offset, final_abbr))
       }
     }
   })
@@ -2138,18 +2143,19 @@ fn make_time_constructor_fn() -> @value.Value {
         Ok(v) => v
         Err(e) => return Err(e)
       }
-      let offset = match get_tz_offset_at_impl(location, local_sec) {
-        Some(o) => o
+      let (offset, _) = match get_tz_abbr_at_impl(location, local_sec) {
+        Some(v) => v
         None =>
           return Err("time.time: cannot determine offset for \"\{location}\"")
       }
       let utc_sec = local_sec - offset.to_int64()
-      let final_offset = match get_tz_offset_at_impl(location, utc_sec) {
-        Some(o) => o
-        None => offset
+      let (final_offset, final_abbr) = match
+        get_tz_abbr_at_impl(location, utc_sec) {
+        Some(v) => v
+        None => (offset, tz_name_from_offset(offset))
       }
       let final_sec = local_sec - final_offset.to_int64()
-      Ok(make_time_at_zone(final_sec, ns_norm, final_offset, location))
+      Ok(make_time_at_zone(final_sec, ns_norm, final_offset, final_abbr))
     }
   })
 }
