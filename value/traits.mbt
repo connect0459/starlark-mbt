@@ -69,7 +69,7 @@ pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
       x.s.equals(y.s) && x.ords == y.ords
     (BytesElems(x), BytesElems(y)) => x.b.equal(y.b)
     (ExtVal(a), ExtVal(b)) =>
-      match a.get_equals(ExtVal(b)) {
+      match a.get_equals(ExtVal(b), compare_limit) {
         Ok(eq) => eq
         Err(_) => false
       }
@@ -441,7 +441,7 @@ pub fn starlark_equals_depth(
     (StringCodepoints(x), StringCodepoints(y)) =>
       Ok(x.s.equals(y.s) && x.ords == y.ords)
     (BytesElems(x), BytesElems(y)) => Ok(x.b.equal(y.b))
-    (ExtVal(a), ExtVal(b)) => a.get_equals(ExtVal(b))
+    (ExtVal(a), ExtVal(b)) => a.get_equals(ExtVal(b), depth - 1)
     _ => Ok(false)
   }
 }

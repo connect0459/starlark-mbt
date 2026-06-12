@@ -65,7 +65,9 @@ test "symbol: a symbol never equals a non-symbol value" {
     ("name", @value.Value::String(@value.StarlarkString::new("S"))),
   ]).unwrap()
   let c = custom_of(sym)
-  assert_true(c.get_equals(@value.Value::Int(1N)) is Ok(false))
+  assert_true(
+    c.get_equals(@value.Value::Int(1N), @value.compare_limit) is Ok(false),
+  )
 }
 
 ///|
@@ -77,7 +79,9 @@ test "symbol: distinct symbols are unequal even with the same name" {
   }
   let first = make()
   let second = make()
-  assert_true(custom_of(first).get_equals(second) is Ok(false))
+  assert_true(
+    custom_of(first).get_equals(second, @value.compare_limit) is Ok(false),
+  )
 }
 
 ///|
@@ -126,7 +130,9 @@ test "struct: synthetic positional accessors return None when out of range" {
 test "struct: a struct never equals a non-struct value" {
   let s = make_struct(default_ctor, [("a", @value.Value::Int(1N))])
   let c = custom_of(s)
-  assert_true(c.get_equals(@value.Value::Int(1N)) is Ok(false))
+  assert_true(
+    c.get_equals(@value.Value::Int(1N), @value.compare_limit) is Ok(false),
+  )
 }
 
 ///|
@@ -198,14 +204,14 @@ fn make_nested_tuple_val(depth : Int) -> @value.Value {
 test "struct: structs with same shallow value compare as equal" {
   let a = make_struct(default_ctor, [("x", @value.Value::Int(42N))])
   let b = make_struct(default_ctor, [("x", @value.Value::Int(42N))])
-  assert_true(custom_of(a).get_equals(b) is Ok(true))
+  assert_true(custom_of(a).get_equals(b, @value.compare_limit) is Ok(true))
 }
 
 ///|
 test "struct: structs with different values compare as not equal" {
   let a = make_struct(default_ctor, [("x", @value.Value::Int(1N))])
   let b = make_struct(default_ctor, [("x", @value.Value::Int(2N))])
-  assert_true(custom_of(a).get_equals(b) is Ok(false))
+  assert_true(custom_of(a).get_equals(b, @value.compare_limit) is Ok(false))
 }
 
 ///|
@@ -214,7 +220,56 @@ test "struct: structs with values nesting beyond compare_limit propagate compari
   let a = make_struct(default_ctor, [("x", deep)])
   let b = make_struct(default_ctor, [("x", deep)])
   assert_true(
-    custom_of(a).get_equals(b) ==
+    custom_of(a).get_equals(b, @value.compare_limit) ==
+    Err("comparison exceeded maximum recursion depth"),
+  )
+}
+
+// --- depth threading across nested ExtVal boundaries (issue #137) ---
+
+///|
+fn make_nested_struct_val(n : Int) -> @value.Value {
+  let mut v : @value.Value = @value.Value::Int(1N)
+  for _ in 0..<n {
+    v = make_struct(default_ctor, [("x", v)])
+  }
+  v
+}
+
+///|
+test "struct: depth guard fires when nesting exceeds compare_limit across ExtVal boundaries" {
+  let deep_a = make_nested_struct_val(@value.compare_limit + 2)
+  let deep_b = make_nested_struct_val(@value.compare_limit + 2)
+  assert_true(
+    @value.starlark_equals_depth(deep_a, deep_b, @value.compare_limit) ==
+    Err("comparison exceeded maximum recursion depth"),
+  )
+}
+
+///|
+test "struct: structs nested within compare_limit compare correctly" {
+  let a = make_nested_struct_val(3)
+  let b = make_nested_struct_val(3)
+  assert_true(
+    @value.starlark_equals_depth(a, b, @value.compare_limit) is Ok(true),
+  )
+}
+
+///|
+test "struct: depth guard does not fire at compare_limit minus one nested levels" {
+  let a = make_nested_struct_val(@value.compare_limit - 1)
+  let b = make_nested_struct_val(@value.compare_limit - 1)
+  assert_true(
+    @value.starlark_equals_depth(a, b, @value.compare_limit) is Ok(true),
+  )
+}
+
+///|
+test "struct: depth guard fires at exactly compare_limit nested struct levels" {
+  let a = make_nested_struct_val(@value.compare_limit)
+  let b = make_nested_struct_val(@value.compare_limit)
+  assert_true(
+    @value.starlark_equals_depth(a, b, @value.compare_limit) ==
     Err("comparison exceeded maximum recursion depth"),
   )
 }

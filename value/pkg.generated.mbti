@@ -64,7 +64,7 @@ pub fn CustomValue::get_attr_names(Self) -> Array[String]?
 pub fn CustomValue::get_binary(Self, String, Value, Bool) -> Result[Value, String]?
 pub fn CustomValue::get_compare(Self, Value) -> Int?
 pub fn CustomValue::get_contains(Self, Value) -> Result[Bool, String]?
-pub fn CustomValue::get_equals(Self, Value) -> Result[Bool, String]
+pub fn CustomValue::get_equals(Self, Value, Int) -> Result[Bool, String]
 pub fn CustomValue::get_hash(Self) -> Result[UInt, String]
 pub fn CustomValue::get_index(Self, Int) -> Result[Value, String]
 pub fn CustomValue::get_items(Self) -> Result[Array[(Value, Value)], String]?
@@ -81,7 +81,7 @@ pub fn CustomValue::with_binary(Self, (String, Value, Bool) -> Result[Value, Str
 pub fn CustomValue::with_call(Self, (Array[Value], Array[(String, Value)]) -> Result[Value, String]) -> Self
 pub fn CustomValue::with_compare(Self, (Value) -> Int?) -> Self
 pub fn CustomValue::with_contains(Self, (Value) -> Result[Bool, String]) -> Self
-pub fn CustomValue::with_equals(Self, (Value) -> Result[Bool, String]) -> Self
+pub fn CustomValue::with_equals(Self, (Value, Int) -> Result[Bool, String]) -> Self
 pub fn CustomValue::with_freeze(Self, () -> Unit) -> Self
 pub fn CustomValue::with_get_index(Self, (Int) -> Result[Value, String]) -> Self
 pub fn CustomValue::with_hash(Self, () -> Result[UInt, String]) -> Self
