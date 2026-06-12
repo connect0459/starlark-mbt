@@ -1448,6 +1448,34 @@ test "comprehension bare-tuple iterable is still rejected" {
 }
 
 ///|
+test "comprehension if-clause lambda body conditional is rejected" {
+  match
+    @parser.parse_expr("test.star", "[a for b in c if lambda: d if e else f]") {
+    Err(_) => ()
+    Ok(_) =>
+      fail(
+        "expected syntax error for conditional in lambda body inside if-clause",
+      )
+  }
+}
+
+///|
+test "comprehension if-clause lambda body without conditional is accepted" {
+  match @parser.parse_expr("test.star", "[a for b in c if lambda: d]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "lambda body conditional outside comprehension is accepted" {
+  match @parser.parse_expr("test.star", "lambda: d if e else f") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
 test "ternary arg with method call on ident parses as ECond" {
   match parse_e("f(s.upper() if flag else s)") {
     ECall(_, args, _) => {
