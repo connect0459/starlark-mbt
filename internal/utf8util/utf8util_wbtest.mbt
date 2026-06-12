@@ -60,6 +60,12 @@ test "utf16_decode_cp: lone high surrogate at end of string returns raw code uni
 }
 
 ///|
+test "utf16_decode_cp: len larger than string length does not read past the end" {
+  let s = "\u{FFFF}"
+  assert_true(utf16_decode_cp(s, 0, s.length() + 10) == (0xFFFF, 1))
+}
+
+///|
 test "printability: ASCII control characters are not printable" {
   // C0 controls below U+0020 and DEL (U+007F) are non-printable.
   assert_false(is_unicode_printable(0x00))
