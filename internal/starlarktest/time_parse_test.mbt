@@ -226,20 +226,30 @@ test "time module: parse_time applies PM adjustment with 24-hour hour token" {
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|# PM with 24-hour "15" token: hour < 12 → add 12
+      #|# hour < 12 with PM: add 12
       #|assert.eq(
       #|  "17:00",
       #|  time.parse_time("05 PM", format="15 PM").format("15:04"),
       #|)
-      #|# AM with 24-hour "15" token: hour == 12 → set to 0
+      #|# hour == 12 with AM: set to 0 (midnight)
       #|assert.eq(
       #|  "00:00",
       #|  time.parse_time("12 AM", format="15 PM").format("15:04"),
       #|)
-      #|# hour >= 12 with PM: no change
+      #|# hour >= 12 with PM and hour > 12: no change
       #|assert.eq(
       #|  "17:00",
       #|  time.parse_time("17 PM", format="15 PM").format("15:04"),
+      #|)
+      #|# hour == 12 with PM: stays 12 (noon)
+      #|assert.eq(
+      #|  "12:00",
+      #|  time.parse_time("12 PM", format="15 PM").format("15:04"),
+      #|)
+      #|# hour == 0 with PM: add 12 (midnight expressed as 00 PM → noon)
+      #|assert.eq(
+      #|  "12:00",
+      #|  time.parse_time("00 PM", format="15 PM").format("15:04"),
       #|)
     ),
   )
