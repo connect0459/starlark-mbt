@@ -436,6 +436,38 @@ test "math_module: remainder applies round-half-to-even on tie when y = 2^52" {
 }
 
 ///|
+test "math_module: pow(1, nan) and pow(1, ±inf) return 1.0 per IEEE 754" {
+  let m = math_module()
+  let nan = 0.0 / 0.0
+  let inf = @double.infinity
+  expect_float(call2(m, "pow", fv(1.0), fv(nan)), 1.0)
+  expect_float(call2(m, "pow", fv(1.0), fv(inf)), 1.0)
+  expect_float(call2(m, "pow", fv(1.0), fv(-inf)), 1.0)
+}
+
+///|
+test "math_module: hypot(±inf, nan) returns +inf" {
+  let m = math_module()
+  let nan = 0.0 / 0.0
+  let inf = @double.infinity
+  match call2(m, "hypot", fv(inf), fv(nan)) {
+    Ok(@value.Value::Float(f)) => assert_true(f.is_inf() && f > 0.0)
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+  match call2(m, "hypot", fv(-inf), fv(nan)) {
+    Ok(@value.Value::Float(f)) => assert_true(f.is_inf() && f > 0.0)
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+  match call2(m, "hypot", fv(nan), fv(inf)) {
+    Ok(@value.Value::Float(f)) => assert_true(f.is_inf() && f > 0.0)
+    Ok(v) => fail("expected Float, got \{v.type_name()}")
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
 test "math_module: fabs(-0.0) returns positive zero" {
   let m = math_module()
   let neg_zero = -0.0

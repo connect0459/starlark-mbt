@@ -225,8 +225,11 @@ let gamma_factorial_max : Double = 21.0
 
 ///|
 fn float_pow(x : Double, y : Double) -> Double {
-  // Go's math.Pow defines pow(-1, ±Inf) == 1 (C99 / IEEE 754 Annex F),
-  // whereas a naive implementation yields NaN for the oscillating limit.
+  // IEEE 754-2008 §9.2 / C99 Annex F: pow(1, y) = 1 for any y including NaN.
+  if x == 1.0 {
+    return 1.0
+  }
+  // pow(-1, ±Inf) == 1 per IEEE 754 Annex F; naive implementation yields NaN.
   if x == -1.0 && y.is_inf() {
     return 1.0
   }
@@ -277,6 +280,15 @@ fn float_gamma(x : Double) -> Double {
     let t = z + lanczos_g + 0.5
     sqrt_2pi * @std_math.pow(t, z + 0.5) * @std_math.exp(-t) * a
   }
+}
+
+///|
+fn float_hypot(x : Double, y : Double) -> Double {
+  // IEEE 754: hypot(±inf, anything) = +inf, even when the other argument is NaN.
+  if x.is_inf() || y.is_inf() {
+    return 1.0 / 0.0
+  }
+  @std_math.hypot(x, y)
 }
 
 ///|
@@ -385,7 +397,7 @@ pub fn math_module() -> @value.Value {
   attrs["pow"] = make_binary("pow", float_pow)
   attrs["remainder"] = make_binary("remainder", float_remainder)
   attrs["atan2"] = make_binary("atan2", @std_math.atan2)
-  attrs["hypot"] = make_binary("hypot", @std_math.hypot)
+  attrs["hypot"] = make_binary("hypot", float_hypot)
   attrs["log"] = make_log_fn()
   @value.Value::Module(@value.StarlarkModule::new("math", attrs))
 }
