@@ -847,7 +847,13 @@ fn fmt_go_layout(
         write_pad2(buf, second)
         i += 2
       } else if next == '6' {
-        write_pad2(buf, (year % 100L).to_int())
+        let y2 = year % 100L
+        if y2 < 0L {
+          buf.write_char('-')
+          write_pad2(buf, (-y2).to_int())
+        } else {
+          write_pad2(buf, y2.to_int())
+        }
         i += 2
       } else {
         buf.write_char('0')
