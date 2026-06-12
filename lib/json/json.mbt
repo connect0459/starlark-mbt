@@ -445,7 +445,7 @@ fn parse_json_string(
     } else if cp == '\\'.to_int() {
       i += 1
       if i >= len {
-        return Err((i, "unclosed string literal"))
+        return Err((start, "unclosed string literal"))
       }
       let esc = chars[i]
       match esc {
@@ -523,7 +523,7 @@ fn parse_json_string(
       i += 1
     }
   }
-  Err((i, "unclosed string literal"))
+  Err((start, "unclosed string literal"))
 }
 
 ///|
@@ -736,17 +736,17 @@ fn parse_json_number(
   let digits_start = if chars[i] == '-' { 1 } else { 0 }
   let first_digit_idx = i + digits_start
   if first_digit_idx >= j {
-    return Err((i, "invalid number: \{num_str}"))
+    return Err((j, "invalid number: \{num_str}"))
   }
   let first_digit = chars[first_digit_idx]
   if first_digit == '0' &&
     first_digit_idx + 1 < j &&
     is_digit_char(chars[first_digit_idx + 1]) {
-    return Err((i, "invalid number: \{num_str}"))
+    return Err((j, "invalid number: \{num_str}"))
   }
   if is_float {
     let f = @string.parse_double(num_str) catch {
-      _ => return Err((i, "invalid number: \{num_str}"))
+      _ => return Err((j, "invalid number: \{num_str}"))
     }
     Ok((@value.Value::Float(f), j))
   } else {
@@ -757,11 +757,11 @@ fn parse_json_number(
     }
     for c in digits.iter() {
       if c < '0' || c > '9' {
-        return Err((i, "invalid number: \{num_str}"))
+        return Err((j, "invalid number: \{num_str}"))
       }
     }
     if digits.length() == 0 {
-      return Err((i, "invalid number: \{num_str}"))
+      return Err((j, "invalid number: \{num_str}"))
     }
     let abs_n = BigInt::from_string(digits.to_owned())
     let n = if num_str.length() > 0 && num_str[0] == '-' {
