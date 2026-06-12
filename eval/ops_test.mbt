@@ -987,8 +987,7 @@ test "eval_expr: bytes.elems() != bytes.elems() for different bytes returns True
 ///|
 test "eval_expr: percent format with dict as single positional argument formats correctly" {
   match eval_op("\"%s\" % {\"a\": 1}") {
-    Ok(@value.Value::String(s)) =>
-      assert_true(s.raw().contains("a") && s.raw().contains("1"))
+    Ok(@value.Value::String(s)) => assert_eq(s.raw(), "{\"a\": 1}")
     Ok(other) => fail("expected String, got \{other.repr()}")
     Err(e) => fail("unexpected error: \{e.msg()}")
   }
