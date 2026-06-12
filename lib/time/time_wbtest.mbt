@@ -106,6 +106,22 @@ test "fmt_time_at_zone: year beyond 9999 formats without error" {
 }
 
 ///|
+test "fmt_go_layout: 3-digit year is zero-padded via 2006 token" {
+  assert_eq(
+    fmt_go_layout(987L, 1, 1, 0, 0, 0, 0, 0, "UTC", "2006-01-02"),
+    "0987-01-01",
+  )
+}
+
+///|
+test "fmt_go_layout: negative year is sign-prefixed and zero-padded via 2006 token" {
+  assert_eq(
+    fmt_go_layout(-1L, 1, 1, 0, 0, 0, 0, 0, "UTC", "2006-01-02"),
+    "-0001-01-01",
+  )
+}
+
+///|
 test "parse_go_layout: default year is 0 when layout omits year" {
   match parse_go_layout("06-01", "01-02") {
     Ok((year, _, _, _, _, _, _, _)) => assert_eq(year, 0)
