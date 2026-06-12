@@ -248,7 +248,7 @@ The lazy integer sequence returned by `range()`; not a list.
 | `StarlarkRange::new(Int64, Int64, Int64)` | `-> StarlarkRange` | Construct from `start`, `stop`, `step` |
 | `start()` / `stop()` / `step()` | `-> Int64` | The three range parameters |
 | `length()` | `-> Int64` | Number of elements |
-| `index_at(Int)` | `-> Int64` | The value at the i-th position |
+| `index_at(Int64)` | `-> Int64` | The value at the i-th position |
 | `contains(Int64)` | `-> Bool` | Membership test |
 
 ---
