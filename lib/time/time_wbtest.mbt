@@ -104,3 +104,11 @@ test "fmt_time_at_zone: year beyond 9999 formats without error" {
     Err(e) => fail(e)
   }
 }
+
+///|
+test "parse_go_layout: default year is 0 when layout omits year" {
+  match parse_go_layout("06-01", "01-02") {
+    Ok((year, _, _, _, _, _, _, _)) => assert_eq(year, 0)
+    Err(e) => fail(e)
+  }
+}

@@ -1404,7 +1404,7 @@ fn parse_go_layout(
   let vn = vc.length()
   let mut li = 0
   let mut vi = 0
-  let mut year = 1
+  let mut year = 0
   let mut month = 1
   let mut day = 1
   let mut hour = 0
