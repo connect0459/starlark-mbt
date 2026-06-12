@@ -1292,12 +1292,10 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   } else {
     (0, i)
   }
-  let (tz_offset_sec, tz_end) = if i >= len ||
-    chars[i] == 'Z' ||
-    chars[i] == 'z' {
-    let end = if i >= len { i } else { i + 1 }
-    (0, end)
-  } else if chars[i] == '+' || chars[i] == '-' {
+  let (tz_offset_sec, tz_end) = if i < len &&
+    (chars[i] == 'Z' || chars[i] == 'z') {
+    (0, i + 1)
+  } else if i < len && (chars[i] == '+' || chars[i] == '-') {
     let sign = if chars[i] == '+' { 1 } else { -1 }
     let j = i + 1
     let (tz_hour, j) = match parse_2digits(chars, j) {

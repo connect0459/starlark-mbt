@@ -167,6 +167,9 @@ test "time module: parse_time reports malformed RFC3339 input" {
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00Q"), "invalid timezone")
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00+0500"), "invalid timezone")
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00+05:0Z"), "invalid timezone")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00"), "invalid timezone")
+      #|assert.fails(lambda: time.parse_time("2024-06-11T10:20:30"), "invalid timezone")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00.123"), "invalid timezone")
       #|assert.fails(lambda: time.parse_time("2020-13-01T00:00:00Z"), "invalid time")
     ),
   )
