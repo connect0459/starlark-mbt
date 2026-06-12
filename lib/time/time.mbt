@@ -89,8 +89,6 @@ fn floor_div_int64(a : Int64, b : Int64) -> Int64 {
 
 ///|
 // Howard Hinnant's civil calendar algorithm (2014).
-// Converts a Unix day number (days since 1970-01-01) to a proleptic Gregorian
-// (year, month, day). Works for any year representable by Int64.
 fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int, Int) {
   let z = unix_day + 719468L
   let era = floor_div_int64(z, 146097L)
@@ -106,7 +104,6 @@ fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int, Int) {
 }
 
 ///|
-// Inverse of unix_day_to_ymd_i64: (year, month, day) to Unix day number.
 fn ymd_to_unix_day_i64(year : Int64, month : Int, day : Int) -> Int64 {
   let y = if month <= 2 { year - 1L } else { year }
   let era = floor_div_int64(y, 400L)
@@ -119,7 +116,6 @@ fn ymd_to_unix_day_i64(year : Int64, month : Int, day : Int) -> Int64 {
 }
 
 ///|
-// Decompose unix seconds at a UTC offset into civil date/time components.
 fn decompose_unix_sec(
   sec : Int64,
   tz_offset : Int,
@@ -135,15 +131,12 @@ fn decompose_unix_sec(
 }
 
 ///|
-// Returns day-of-week index (0=Sunday … 6=Saturday) for a given Unix day.
 // Unix day 0 (1970-01-01) is Thursday = 4.
 fn weekday_from_unix_day(unix_day : Int64) -> Int {
   ((unix_day % 7L + 4L + 7L) % 7L).to_int()
 }
 
 ///|
-// Write a year to buf, zero-padded to at least 4 digits.
-// Negative years are written as "-NNNN" (e.g. year -1 → "-0001").
 fn write_year_pad4(buf : StringBuilder, year : Int64) -> Unit {
   if year < 0L {
     buf.write_char('-')
