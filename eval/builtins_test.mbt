@@ -2491,6 +2491,14 @@ test "exec_file: dict.pop on frozen dict with missing key and default raises fro
   }
 }
 
+///|
+test "exec_file: dict.pop on emptied dict with unhashable key raises unhashable error" {
+  match exec_b("d = {1: 'a'}\nd.pop(1)\nv = d.pop([], 'x')") {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("unhashable"))
+  }
+}
+
 // --- sorted key= mutation guard ---
 
 ///|
