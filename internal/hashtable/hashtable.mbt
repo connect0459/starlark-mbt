@@ -120,7 +120,7 @@ pub fn[K, V] Hashtable::freeze(self : Hashtable[K, V]) -> Unit {
 // Returns `Err` when the table may not be mutated — either it is frozen or it
 // is currently being iterated. `verb` names the attempted operation
 // ("insert into", "delete from", "clear") so the message matches starlark-go.
-fn[K, V] Hashtable::check_mutable(
+pub fn[K, V] Hashtable::check_mutable(
   self : Hashtable[K, V],
   verb : String,
 ) -> Result[Unit, String] {
@@ -456,6 +456,69 @@ pub fn[K, V] Hashtable::delete(
     idx = self.entries[idx].slot_next
   }
   Ok(false)
+}
+
+///|
+/// Removes `key` and returns its associated value, or `None` if absent.
+/// Returns `Err` if the table is frozen, being iterated, or the key is
+/// unhashable. An empty table returns `Ok(None)` without hashing the key,
+/// matching starlark-go's behaviour where an empty-table delete skips all
+/// guard checks after the mutability check.
+pub fn[K, V] Hashtable::pop_entry(
+  self : Hashtable[K, V],
+  key : K,
+) -> Result[V?, String] {
+  match self.check_mutable("delete from") {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
+  if self.live_count == 0 {
+    return Ok(None)
+  }
+  let h = match (self.hash_fn)(key) {
+    Err(e) => return Err(e)
+    Ok(h) => normalize_hash(h)
+  }
+  let s = slot_of(h, self.slots.length())
+  let mut prev_chain = empty_idx
+  let mut idx = self.slots[s]
+  while idx != empty_idx {
+    if self.entries[idx].hash == h {
+      match (self.eq_fn)(self.entries[idx].key, key) {
+        Err(e) => return Err(e)
+        Ok(true) => {
+          let next_chain = self.entries[idx].slot_next
+          if prev_chain == empty_idx {
+            self.slots[s] = next_chain
+          } else {
+            self.entries[prev_chain].slot_next = next_chain
+          }
+          let op = self.entries[idx].ord_prev
+          let on = self.entries[idx].ord_next
+          if op != empty_idx {
+            self.entries[op].ord_next = on
+          } else {
+            self.head = on
+          }
+          if on != empty_idx {
+            self.entries[on].ord_prev = op
+          } else {
+            self.tail = op
+          }
+          let v = self.entries[idx].value
+          self.entries[idx].hash = 0U
+          self.entries[idx].slot_next = self.free_head
+          self.free_head = idx
+          self.live_count -= 1
+          return Ok(Some(v))
+        }
+        Ok(false) => ()
+      }
+    }
+    prev_chain = idx
+    idx = self.entries[idx].slot_next
+  }
+  Ok(None)
 }
 
 ///|
