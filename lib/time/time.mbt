@@ -155,6 +155,11 @@ fn write_year_pad4(buf : StringBuilder, year : Int64) -> Unit {
 }
 
 ///|
+// Maximum year whose unix-second representation fits in Int64
+// (≈ Int64::max / 86400 / 365.25 ≈ 290 billion years).
+let max_representable_year : Int64 = 290_000_000_000L
+
+///|
 fn normalize_to_unix_sec(
   year : Int64,
   month : Int64,
@@ -164,6 +169,9 @@ fn normalize_to_unix_sec(
   second : Int64,
   nanosecond : Int64,
 ) -> Result[(Int64, Int), String] {
+  if year > max_representable_year || year < -max_representable_year {
+    return Err("time.time: year out of representable range")
+  }
   let carry_s = floor_div_int64(nanosecond, ns_per_second)
   let ns_norm = (nanosecond - carry_s * ns_per_second).to_int()
   let total_sec = hour * secs_per_hour.to_int64() +
@@ -176,6 +184,10 @@ fn normalize_to_unix_sec(
   let extra_years = floor_div_int64(m0, 12L)
   let month_norm = (m0 - extra_years * 12L + 1L).to_int()
   let year_norm_64 = year + extra_years
+  if year_norm_64 > max_representable_year ||
+    year_norm_64 < -max_representable_year {
+    return Err("time.time: date/time out of representable range")
+  }
   let first_unix_day = ymd_to_unix_day_i64(year_norm_64, month_norm, 1)
   let unix_day = first_unix_day + (day - 1L) + carry_d
   let unix_sec = unix_day * secs_per_day + sec_of_day

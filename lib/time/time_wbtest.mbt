@@ -58,6 +58,27 @@ test "weekday_from_unix_day: day before epoch is Wednesday" {
 }
 
 ///|
+test "normalize_to_unix_sec: year at representable limit is accepted" {
+  assert_true(
+    normalize_to_unix_sec(290_000_000_000L, 1L, 1L, 0L, 0L, 0L, 0L) is Ok(_),
+  )
+}
+
+///|
+test "normalize_to_unix_sec: year beyond representable limit is rejected" {
+  assert_true(
+    normalize_to_unix_sec(290_000_000_001L, 1L, 1L, 0L, 0L, 0L, 0L) is Err(_),
+  )
+}
+
+///|
+test "normalize_to_unix_sec: month normalization beyond representable limit is rejected" {
+  assert_true(
+    normalize_to_unix_sec(0L, 3_480_000_000_013L, 1L, 0L, 0L, 0L, 0L) is Err(_),
+  )
+}
+
+///|
 test "normalize_to_unix_sec: year beyond 9999 is accepted" {
   assert_true(normalize_to_unix_sec(12021L, 1L, 1L, 0L, 0L, 0L, 0L) is Ok(_))
 }
