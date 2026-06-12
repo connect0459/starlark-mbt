@@ -1614,6 +1614,9 @@ fn parse_go_layout(
     match read_fixed_digits(vc, vi + 1, 2) {
       None => false
       Some((hh, j)) => {
+        if hh > 23 {
+          return false
+        }
         tz_offset = Some(sign * hh * secs_per_hour)
         vi = j
         true

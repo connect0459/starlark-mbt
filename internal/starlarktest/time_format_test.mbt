@@ -156,6 +156,27 @@ test "time module: parse_time accepts hour-only timezone with Z07 and -07" {
 }
 
 ///|
+test "time module: parse_time rejects out-of-range hour offset in Z07 and -07" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021-03-22 14:30 +99", format="2006-01-02 15:04 Z07"),
+      #|  "cannot parse",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021-03-22 14:30 -24", format="2006-01-02 15:04 -07"),
+      #|  "cannot parse",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: format renders zero-padded day-of-year with 002 verb" {
   let errs = run_star_string(
     (
