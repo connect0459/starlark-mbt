@@ -71,7 +71,7 @@ test "time module: in_location shows EST abbreviation for US/Eastern at epoch" {
 }
 
 ///|
-test "time module: from_timestamp uses host local zone and preserves unix instant" {
+test "time module: from_timestamp preserves unix instant" {
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
