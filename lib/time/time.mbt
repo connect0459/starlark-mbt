@@ -300,6 +300,11 @@ fn fmt_duration(ns : Int64) -> String {
   if ns == 0L {
     return "0s"
   }
+  let u_ns_per_second : UInt64 = 1_000_000_000UL
+  let u_ns_per_millisecond : UInt64 = 1_000_000UL
+  let u_ns_per_microsecond : UInt64 = 1_000UL
+  let u_secs_per_hour : UInt64 = 3600UL
+  let u_secs_per_minute : UInt64 = 60UL
   let buf = StringBuilder::new()
   let abs_ns : UInt64 = if ns < 0L {
     0UL - ns.reinterpret_as_uint64()
@@ -309,13 +314,13 @@ fn fmt_duration(ns : Int64) -> String {
   if ns < 0L {
     buf.write_char('-')
   }
-  if abs_ns < 1_000_000_000UL {
-    if abs_ns < 1_000UL {
+  if abs_ns < u_ns_per_second {
+    if abs_ns < u_ns_per_microsecond {
       buf.write_string(abs_ns.to_string())
       buf.write_string("ns")
-    } else if abs_ns < 1_000_000UL {
-      let us = abs_ns / 1_000UL
-      let frac_ns = abs_ns % 1_000UL
+    } else if abs_ns < u_ns_per_millisecond {
+      let us = abs_ns / u_ns_per_microsecond
+      let frac_ns = abs_ns % u_ns_per_microsecond
       buf.write_string(us.to_string())
       if frac_ns != 0UL {
         buf.write_char('.')
@@ -323,8 +328,8 @@ fn fmt_duration(ns : Int64) -> String {
       }
       buf.write_string("µs")
     } else {
-      let ms = abs_ns / 1_000_000UL
-      let frac_ns = abs_ns % 1_000_000UL
+      let ms = abs_ns / u_ns_per_millisecond
+      let frac_ns = abs_ns % u_ns_per_millisecond
       buf.write_string(ms.to_string())
       if frac_ns != 0UL {
         buf.write_char('.')
@@ -333,11 +338,11 @@ fn fmt_duration(ns : Int64) -> String {
       buf.write_string("ms")
     }
   } else {
-    let total_sec = abs_ns / 1_000_000_000UL
-    let ns_frac = abs_ns % 1_000_000_000UL
-    let hours = total_sec / 3600UL
-    let minutes = total_sec % 3600UL / 60UL
-    let secs = total_sec % 60UL
+    let total_sec = abs_ns / u_ns_per_second
+    let ns_frac = abs_ns % u_ns_per_second
+    let hours = total_sec / u_secs_per_hour
+    let minutes = total_sec % u_secs_per_hour / u_secs_per_minute
+    let secs = total_sec % u_secs_per_minute
     if hours > 0UL {
       buf.write_string(hours.to_string())
       buf.write_char('h')
