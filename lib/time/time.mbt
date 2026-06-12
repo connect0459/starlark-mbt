@@ -137,6 +137,45 @@ fn weekday_from_unix_day(unix_day : Int64) -> Int {
 }
 
 ///|
+fn is_leap_year(year : Int64) -> Bool {
+  year % 4L == 0L && (year % 100L != 0L || year % 400L == 0L)
+}
+
+///|
+fn days_in_month(year : Int64, month : Int) -> Int {
+  match month {
+    1 | 3 | 5 | 7 | 8 | 10 | 12 => 31
+    4 | 6 | 9 | 11 => 30
+    2 => if is_leap_year(year) { 29 } else { 28 }
+    _ => 0
+  }
+}
+
+///|
+fn day_of_year(year : Int64, month : Int, day : Int) -> Int {
+  let mut yday = day
+  for m in 1..<month {
+    yday += days_in_month(year, m)
+  }
+  yday
+}
+
+///|
+fn yday_to_month_day(year : Int64, yday : Int) -> (Int, Int) {
+  let mut remaining = yday
+  let mut month = 1
+  while month < 12 {
+    let dim = days_in_month(year, month)
+    if remaining <= dim {
+      break
+    }
+    remaining -= dim
+    month += 1
+  }
+  (month, remaining)
+}
+
+///|
 fn write_year_pad4(buf : StringBuilder, year : Int64) -> Unit {
   if year < 0L {
     buf.write_char('-')
@@ -842,6 +881,19 @@ fn fmt_go_layout(
       lchars[i + 3] == '6' {
       write_year_pad4(buf, year)
       i += 4
+    } else if c == '0' &&
+      i + 2 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '2' {
+      let yday = day_of_year(year, month, day)
+      if yday < 100 {
+        buf.write_char('0')
+      }
+      if yday < 10 {
+        buf.write_char('0')
+      }
+      buf.write_string(yday.to_string())
+      i += 3
     } else if c == '1' && i + 1 < n && lchars[i + 1] == '5' {
       write_pad2(buf, hour24)
       i += 2
@@ -1494,6 +1546,7 @@ fn parse_go_layout(
   let mut nsec = 0
   let mut tz_offset : Int? = None
   let mut pm : Bool? = None
+  let mut yday = -1
   let err = fn() -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
     Err("time: parsing time \"\{value}\" as \"\{layout}\": cannot parse")
   }
@@ -1626,6 +1679,15 @@ fn parse_go_layout(
         None => return err()
       }
       li += 2
+    } else if starts("002") {
+      match read_fixed_digits(vc, vi, 3) {
+        Some((v, j)) => {
+          yday = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 3
     } else if starts("02") {
       match read_fixed_digits(vc, vi, 2) {
         Some((v, j)) => {
@@ -1829,6 +1891,11 @@ fn parse_go_layout(
   }
   if vi != vn {
     return err()
+  }
+  if yday >= 0 {
+    let (m, d) = yday_to_month_day(year.to_int64(), yday)
+    month = m
+    day = d
   }
   match pm {
     Some(true) => if hour < 12 { hour += 12 }

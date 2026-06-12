@@ -156,6 +156,56 @@ test "time module: parse_time accepts hour-only timezone with Z07 and -07" {
 }
 
 ///|
+test "time module: format renders zero-padded day-of-year with 002 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|# Jan 1 = day 1
+      #|t1 = time.parse_time("2021-01-01T00:00:00Z")
+      #|assert.eq("001", t1.format("002"))
+      #|# Jun 12 = 31+28+31+30+31+12 = 163
+      #|t2 = time.parse_time("2021-06-12T00:00:00Z")
+      #|assert.eq("163", t2.format("002"))
+      #|# Dec 31 in a leap year (2020) = 366
+      #|t3 = time.parse_time("2020-12-31T00:00:00Z")
+      #|assert.eq("366", t3.format("002"))
+      #|# Dec 31 in a common year = 365
+      #|t4 = time.parse_time("2021-12-31T00:00:00Z")
+      #|assert.eq("365", t4.format("002"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time reads zero-padded day-of-year with 002 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("2021 001", format="2006 002"),
+      #|  time.parse_time("2021-01-01T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021 163", format="2006 002"),
+      #|  time.parse_time("2021-06-12T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2020 366", format="2006 002"),
+      #|  time.parse_time("2020-12-31T00:00:00Z"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: format renders space-padded day-of-month with _2 verb" {
   let errs = run_star_string(
     (
