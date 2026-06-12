@@ -370,8 +370,10 @@ pub fn ResolvedFile::locals(self : ResolvedFile) -> Array[Binding] {
 priv struct Block {
   parent : Block?
   bindings : Map[String, Binding]
-  // Deferred uses (name, pos) to be resolved after the container is fully walked.
-  uses : Array[(String, @errors.Position)]
+  // Deferred uses (name, pos, local_candidates) to be resolved after the
+  // container is fully walked. local_candidates holds names in scope at the
+  // use site so "did you mean" suggestions can include locals, not just globals.
+  uses : Array[(String, @errors.Position, Array[String])]
 }
 
 ///|
@@ -628,9 +630,9 @@ fn Resolver::use_name(
   pos : @errors.Position,
 ) -> Unit {
   if self.is_at_file_block() {
-    self.file_block.uses.push((name, pos))
+    self.file_block.uses.push((name, pos, []))
   } else {
-    self.env.uses.push((name, pos))
+    self.env.uses.push((name, pos, []))
   }
 }
 
@@ -639,8 +641,8 @@ fn Resolver::use_name(
 ///|
 fn Resolver::resolve_deferred_uses(self : Resolver) -> Unit {
   for pair in self.file_block.uses {
-    let (name, pos) = pair
-    self.resolve_name_at_toplevel(name, pos)
+    let (name, pos, extras) = pair
+    self.resolve_name_at_toplevel(name, pos, extras)
   }
 }
 
@@ -649,6 +651,7 @@ fn Resolver::resolve_name_at_toplevel(
   self : Resolver,
   name : String,
   pos : @errors.Position,
+  extra_locals : Array[String],
 ) -> Unit {
   if self.globals.contains(name) || self.predeclared_cache.contains(name) {
     ()
@@ -659,7 +662,8 @@ fn Resolver::resolve_name_at_toplevel(
     let b : Binding = { name, pos, scope: Universal }
     self.predeclared_cache[name] = b
   } else {
-    let candidates : Array[String] = self.globals.keys().collect()
+    let candidates : Array[String] = self.globals.keys().collect() +
+      extra_locals
     let hint = @utf8util.spell_nearest(name, candidates)
     if hint.length() > 0 {
       self.errorf(pos, "undefined: \{name} (did you mean \{hint}?)")
@@ -678,7 +682,7 @@ fn Resolver::resolve_function_uses(
   _fn_name : String,
 ) -> Unit {
   for pair in block.uses {
-    let (name, pos) = pair
+    let (name, pos, _) = pair
     // Check if the name is local to the function scope chain
     match lookup_in_local_scope(block, name) {
       Some(_) => ()
@@ -696,13 +700,30 @@ fn Resolver::resolve_function_uses(
           self.predeclared_cache[name] = b
         } else {
           // Could be a forward-referenced global; defer resolution.
-          self.file_block.uses.push((name, pos))
+          // Capture local names now so "did you mean" includes params/locals.
+          self.file_block.uses.push((name, pos, collect_block_locals(block)))
         }
     }
   }
 }
 
 // Walk local scope chain upward (stopping before the file block).
+
+///|
+fn collect_block_locals(block : Block) -> Array[String] {
+  let names : Array[String] = []
+  let mut cur : Block? = Some(block)
+  while cur is Some(b) {
+    for name in b.bindings.keys() {
+      names.push(name)
+    }
+    cur = match b.parent {
+      None => None
+      Some(p) => if p.parent is None { None } else { Some(p) }
+    }
+  }
+  names
+}
 
 ///|
 fn lookup_in_local_scope(env : Block, name : String) -> Binding? {
@@ -866,7 +887,7 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
               "load: names with leading underscores are not exported: \{original}",
             )
           }
-          self.bind_load(local_name, pos)
+          self.bind_load(local_name, sym_pos)
         }
       }
   }
