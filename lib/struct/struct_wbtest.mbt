@@ -254,3 +254,22 @@ test "struct: structs nested within compare_limit compare correctly" {
     @value.starlark_equals_depth(a, b, @value.compare_limit) is Ok(true),
   )
 }
+
+///|
+test "struct: depth guard does not fire at compare_limit minus one nested levels" {
+  let a = make_nested_struct_val(@value.compare_limit - 1)
+  let b = make_nested_struct_val(@value.compare_limit - 1)
+  assert_true(
+    @value.starlark_equals_depth(a, b, @value.compare_limit) is Ok(true),
+  )
+}
+
+///|
+test "struct: depth guard fires at exactly compare_limit nested struct levels" {
+  let a = make_nested_struct_val(@value.compare_limit)
+  let b = make_nested_struct_val(@value.compare_limit)
+  assert_true(
+    @value.starlark_equals_depth(a, b, @value.compare_limit) ==
+    Err("comparison exceeded maximum recursion depth"),
+  )
+}
