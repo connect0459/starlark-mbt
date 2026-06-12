@@ -184,6 +184,40 @@ test "exec_file: augmented extend from range on frozen list raises error" {
   assert_true(result is Err(_))
 }
 
+// --- dict |= iteration guard ---
+
+///|
+test "exec_file: dict |= empty rhs during iteration raises apply-to error" {
+  let src =
+    #|def f():
+    #|  d = {1: 2}
+    #|  for k in d:
+    #|    d |= {}
+    #|f()
+  let t = Thread::new("test")
+  let result = exec_file(t, "<test>", src, Options::default())
+  match result {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("apply |= to"))
+  }
+}
+
+///|
+test "exec_file: dict |= non-empty rhs during iteration raises apply-to error" {
+  let src =
+    #|def f():
+    #|  d = {1: 2}
+    #|  for k in d:
+    #|    d |= {3: 4}
+    #|f()
+  let t = Thread::new("test")
+  let result = exec_file(t, "<test>", src, Options::default())
+  match result {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("apply |= to"))
+  }
+}
+
 // --- Tuple unpacking assignment ---
 
 ///|
