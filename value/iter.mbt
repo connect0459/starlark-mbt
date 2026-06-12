@@ -68,7 +68,14 @@ pub fn iterate(v : Value) -> Result[StarlarkIterator, String] {
     Tuple(t) => Ok(tuple_iter(t))
     Dict(d) => Ok(dict_key_iter(d))
     Set(s) => Ok(set_key_iter(s))
-    Range(r) => Ok(range_iter(r))
+    Range(r) => {
+      let n = r.length()
+      if n < 0L {
+        Err("range has no len")
+      } else {
+        Ok(range_iter(r))
+      }
+    }
     StringElems(e) => Ok(string_elems_iter(e))
     StringCodepoints(c) => Ok(string_codepoints_iter(c))
     BytesElems(e) => Ok(bytes_elems_iter(e))
