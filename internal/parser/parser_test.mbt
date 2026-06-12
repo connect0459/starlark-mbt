@@ -1476,6 +1476,20 @@ test "comprehension if-clause lambda body without conditional is accepted" {
 }
 
 ///|
+test "comprehension if-clause nested lambda body conditional is rejected" {
+  match
+    @parser.parse_expr(
+      "test.star", "[a for b in c if lambda: lambda: d if e else f]",
+    ) {
+    Err(_) => ()
+    Ok(_) =>
+      fail(
+        "expected syntax error for conditional in nested lambda body inside if-clause",
+      )
+  }
+}
+
+///|
 test "lambda body conditional outside comprehension is accepted" {
   match @parser.parse_expr("test.star", "lambda: d if e else f") {
     Ok(_) => ()
