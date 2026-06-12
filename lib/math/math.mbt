@@ -289,7 +289,7 @@ fn float_gamma(x : Double) -> Double {
 fn float_hypot(x : Double, y : Double) -> Double {
   // IEEE 754: hypot(±inf, anything) = +inf, even when the other argument is NaN.
   if x.is_inf() || y.is_inf() {
-    return 1.0 / 0.0
+    return @double.infinity
   }
   @std_math.hypot(x, y)
 }
