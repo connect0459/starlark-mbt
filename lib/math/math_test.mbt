@@ -474,8 +474,8 @@ test "math_module: gamma(171) returns finite value" {
     Ok(@value.Value::Float(f)) => {
       assert_true(!f.is_inf())
       assert_true(!f.is_nan())
-      // go: ~7.257e+306; verify it's in the right ballpark
-      assert_true(f > 7.0e+306 && f < 8.0e+306)
+      // go: ~7.257e+306; keep bounds tight enough to catch future regressions
+      assert_true(f > 7.2e+306 && f < 7.3e+306)
     }
     Ok(v) => fail("expected Float, got \{v.type_name()}")
     Err(e) => fail("expected Ok, got Err(\{e})")
