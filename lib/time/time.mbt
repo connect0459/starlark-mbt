@@ -140,7 +140,7 @@ fn weekday_from_unix_day(unix_day : Int64) -> Int {
 fn write_year_pad4(buf : StringBuilder, year : Int64) -> Unit {
   if year < 0L {
     buf.write_char('-')
-    let s = (-year).to_string()
+    let s = (0UL - year.reinterpret_as_uint64()).to_string()
     for _ in 0..<(4 - s.length()) {
       buf.write_char('0')
     }
