@@ -301,57 +301,59 @@ fn fmt_duration(ns : Int64) -> String {
     return "0s"
   }
   let buf = StringBuilder::new()
-  let abs_ns = if ns < 0L { 0L - ns } else { ns }
+  let abs_ns : UInt64 = if ns < 0L {
+    0UL - ns.reinterpret_as_uint64()
+  } else {
+    ns.reinterpret_as_uint64()
+  }
   if ns < 0L {
     buf.write_char('-')
   }
-  if abs_ns < ns_per_second {
-    if abs_ns < ns_per_microsecond {
+  if abs_ns < 1_000_000_000UL {
+    if abs_ns < 1_000UL {
       buf.write_string(abs_ns.to_string())
       buf.write_string("ns")
-    } else if abs_ns < ns_per_millisecond {
-      let us = abs_ns / ns_per_microsecond
-      let frac_ns = abs_ns % ns_per_microsecond
+    } else if abs_ns < 1_000_000UL {
+      let us = abs_ns / 1_000UL
+      let frac_ns = abs_ns % 1_000UL
       buf.write_string(us.to_string())
-      if frac_ns != 0L {
+      if frac_ns != 0UL {
         buf.write_char('.')
-        buf.write_string(fmt_frac_digits(frac_ns, 3))
+        buf.write_string(fmt_frac_digits(frac_ns.reinterpret_as_int64(), 3))
       }
       buf.write_string("µs")
     } else {
-      let ms = abs_ns / ns_per_millisecond
-      let frac_ns = abs_ns % ns_per_millisecond
+      let ms = abs_ns / 1_000_000UL
+      let frac_ns = abs_ns % 1_000_000UL
       buf.write_string(ms.to_string())
-      if frac_ns != 0L {
+      if frac_ns != 0UL {
         buf.write_char('.')
-        buf.write_string(fmt_frac_digits(frac_ns, 6))
+        buf.write_string(fmt_frac_digits(frac_ns.reinterpret_as_int64(), 6))
       }
       buf.write_string("ms")
     }
   } else {
-    let total_sec = abs_ns / ns_per_second
-    let ns_frac = abs_ns % ns_per_second
-    let hours = total_sec / secs_per_hour.to_int64()
-    let minutes = total_sec %
-      secs_per_hour.to_int64() /
-      secs_per_minute.to_int64()
-    let secs = total_sec % secs_per_minute.to_int64()
-    if hours > 0L {
+    let total_sec = abs_ns / 1_000_000_000UL
+    let ns_frac = abs_ns % 1_000_000_000UL
+    let hours = total_sec / 3600UL
+    let minutes = total_sec % 3600UL / 60UL
+    let secs = total_sec % 60UL
+    if hours > 0UL {
       buf.write_string(hours.to_string())
       buf.write_char('h')
       buf.write_string(minutes.to_string())
       buf.write_char('m')
-    } else if minutes > 0L {
+    } else if minutes > 0UL {
       buf.write_string(minutes.to_string())
       buf.write_char('m')
     }
-    if ns_frac == 0L {
+    if ns_frac == 0UL {
       buf.write_string(secs.to_string())
       buf.write_char('s')
     } else {
       buf.write_string(secs.to_string())
       buf.write_char('.')
-      buf.write_string(fmt_frac_digits(ns_frac, 9))
+      buf.write_string(fmt_frac_digits(ns_frac.reinterpret_as_int64(), 9))
       buf.write_char('s')
     }
   }
