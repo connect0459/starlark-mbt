@@ -290,3 +290,12 @@ test "iterate: range with overflowing length returns no-len error" {
     Ok(_) => assert_true(false)
   }
 }
+
+///|
+test "iterate: range with double-overflowing length returns no-len error" {
+  let r = StarlarkRange::new(@int64.MIN_VALUE, @int64.MAX_VALUE, 2L)
+  match iterate(Value::Range(r)) {
+    Err(msg) => assert_true(msg.contains("has no len"))
+    Ok(_) => assert_true(false)
+  }
+}
