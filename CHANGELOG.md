@@ -62,8 +62,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (#143)
 - `parser`: slice subscript with missing middle colon and comprehension
   `if`-clause used as a binary expression incorrectly parsed (#144)
-- `json`, `struct`: keys sorted by byte length then lexicographically; now
-  sorted by Unicode codepoint order (#100, #145)
+- `json`, `struct`: keys sorted by length before content (MoonBit's default
+  `String::compare`); now sorted lexicographically (#100)
+- `json`, `struct`: lexicographic key sort used UTF-16 code-unit order, causing
+  supplementary-plane characters (U+10000+) to sort before high-BMP code points;
+  now uses Unicode codepoint order (#145)
 - `lib/math`: IEEE 754 edge cases in `fabs`, `sqrt`, `pow`, `hypot`, and
   `gamma` corrected to match Go's `math` package (#146)
 - `eval`, `resolver`, `json`: seven error-message and edge-case divergences
