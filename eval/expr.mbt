@@ -302,7 +302,8 @@ fn call_builtin(
       let n = check(ctx, @value.length_of(pos_args[0]))
       @value.Value::Int(BigInt::from_int64(n))
     }
-    "str" =>
+    "str" => {
+      reject_kwargs(ctx, "str", kw_args)
       if pos_args.length() == 0 {
         raise EvalErr(
           make_eval_error(ctx, "str: got 0 arguments, want exactly 1"),
@@ -325,6 +326,7 @@ fn call_builtin(
           ),
         )
       }
+    }
     "repr" => {
       check_positional(ctx, "repr", pos_args, kw_args, 1, 1)
       @value.Value::String(@value.StarlarkString::new(pos_args[0].repr()))
@@ -1570,12 +1572,12 @@ fn call_list_method(
       check_positional(ctx, "extend", pos_args, kw_args, 1, 1)
       if pos_args[0] is @value.Value::List(src) {
         let snapshot = src.copy_items()
-        check(ctx, l.check_mutable("extend"))
+        check_pfx(ctx, "extend", l.check_mutable("extend"))
         for item in snapshot {
           l.push(item) |> ignore
         }
       } else {
-        check(ctx, l.check_mutable("extend"))
+        check_pfx(ctx, "extend", l.check_mutable("extend"))
         let it = require_seq(ctx, "extend", pos_args[0])
         while true {
           match it.next() {
@@ -1617,15 +1619,16 @@ fn call_list_method(
         Ok(j) => j
         Err(msg) => raise EvalErr(make_eval_error(ctx, "pop: " + msg))
       }
-      check(ctx, l.pop_at(idx.to_int(), "pop from"))
+      check_pfx(ctx, "pop", l.pop_at(idx.to_int(), "pop from"))
     }
     "remove" => {
       check_positional(ctx, "remove", pos_args, kw_args, 1, 1)
       let item = pos_args[0]
       let mut found = -1
       for i in 0..<l.length() {
-        if check(
+        if check_pfx(
             ctx,
+            "remove",
             @value.starlark_equals_depth(l[i], item, @value.compare_limit),
           ) {
           found = i
@@ -1635,7 +1638,7 @@ fn call_list_method(
       if found < 0 {
         raise EvalErr(make_eval_error(ctx, "remove: element not found"))
       }
-      check(ctx, l.pop_at(found, "remove from")) |> ignore
+      check_pfx(ctx, "remove", l.pop_at(found, "remove from")) |> ignore
       @value.Value::None
     }
     "insert" => {
@@ -1659,7 +1662,7 @@ fn call_list_method(
               jj.to_int()
             }
           }
-          check(ctx, l.insert(j, pos_args[1])) |> ignore
+          check_pfx(ctx, "insert", l.insert(j, pos_args[1])) |> ignore
           @value.Value::None
         }
         v =>
@@ -1755,7 +1758,7 @@ fn call_dict_method(
       } else {
         @value.Value::None
       }
-      match check(ctx, d.get(pos_args[0])) {
+      match check_pfx(ctx, "get", d.get(pos_args[0])) {
         None => default_val
         Some(v) => v
       }
@@ -1780,7 +1783,7 @@ fn call_dict_method(
     "pop" => {
       check_positional(ctx, "pop", pos_args, kw_args, 1, 2)
       let key = pos_args[0]
-      match check(ctx, d.pop_entry(key)) {
+      match check_pfx(ctx, "pop", d.pop_entry(key)) {
         None =>
           if pos_args.length() >= 2 {
             pos_args[1]
@@ -1822,10 +1825,10 @@ fn call_dict_method(
       } else {
         @value.Value::None
       }
-      match check(ctx, d.get(key)) {
+      match check_pfx(ctx, "setdefault", d.get(key)) {
         Some(v) => v
         None => {
-          check(ctx, d.set(key, default_val))
+          check_pfx(ctx, "setdefault", d.set(key, default_val))
           default_val
         }
       }

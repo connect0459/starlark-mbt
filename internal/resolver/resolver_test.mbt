@@ -190,6 +190,18 @@ test "resolve: undefined suggests did-you-mean for close global name" {
 }
 
 ///|
+test "resolve: undefined suggests did-you-mean for close local parameter name" {
+  let f = parse_or_fail("def f(param):\n  return parma")
+  let result = resolve(
+    f,
+    no_predeclared,
+    fn(_) { false },
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "undefined: parma (did you mean param?)"))
+}
+
+///|
 test "resolve: undefined with no close match gives no hint" {
   let f = parse_or_fail("hello = 1\nprint(goodbye)")
   let result = resolve(

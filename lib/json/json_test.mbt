@@ -318,6 +318,34 @@ test "decode rejects invalid numbers" {
 }
 
 ///|
+test "decode invalid number error offset points to end of token" {
+  // "00" is 2 chars; token end = offset 2
+  match decode_from_json("00", None) {
+    Err(msg) => assert_true(msg.contains("at offset 2,"))
+    Ok(_) => fail("expected error")
+  }
+  // "-00" is 3 chars; token end = offset 3
+  match decode_from_json("-00", None) {
+    Err(msg) => assert_true(msg.contains("at offset 3,"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "decode unclosed string error offset points to opening quote" {
+  // `"abc` — the opening quote is at offset 0
+  match decode_from_json("\"abc", None) {
+    Err(msg) => assert_true(msg.contains("at offset 0,"))
+    Ok(_) => fail("expected error")
+  }
+  // in an array: `["abc` — the opening quote is at offset 1
+  match decode_from_json("[\"abc", None) {
+    Err(msg) => assert_true(msg.contains("at offset 1,"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
 test "decode rejects truncated unicode escape with fewer than four hex digits" {
   assert_true(decode_from_json("\"\\u00\"", None) is Err(_))
 }
