@@ -284,7 +284,6 @@ test "length_of: non-sized type returns error" {
 
 ///|
 test "iterate: range with overflowing length returns no-len error" {
-  // range(-(1<<62), 1<<62) has 2^63 elements, which overflows Int64
   let r = StarlarkRange::new(-4611686018427387904L, 4611686018427387904L, 1L)
   match iterate(Value::Range(r)) {
     Err(msg) => assert_true(msg.contains("has no len"))
