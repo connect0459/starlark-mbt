@@ -109,6 +109,25 @@ test "time module: format renders numeric timezone offsets" {
 }
 
 ///|
+test "time module: format renders space-padded day-of-month with _2 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t1 = time.parse_time("2020-06-01T00:00:00Z")
+      #|assert.eq(" 1", t1.format("_2"))
+      #|t2 = time.parse_time("2020-06-26T00:00:00Z")
+      #|assert.eq("26", t2.format("_2"))
+      #|t3 = time.parse_time("2020-01-09T00:00:00Z")
+      #|assert.eq(" 9", t3.format("_2"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: str renders fractional seconds and zoned offsets" {
   let errs = run_star_string(
     (

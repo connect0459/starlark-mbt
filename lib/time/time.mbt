@@ -893,6 +893,12 @@ fn fmt_go_layout(
     } else if c == '5' {
       buf.write_string(second.to_string())
       i += 1
+    } else if c == '_' && i + 1 < n && lchars[i + 1] == '2' {
+      if day < 10 {
+        buf.write_char(' ')
+      }
+      buf.write_string(day.to_string())
+      i += 2
     } else if c == '1' {
       buf.write_string(month.to_string())
       i += 1
