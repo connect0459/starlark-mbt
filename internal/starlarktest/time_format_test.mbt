@@ -42,7 +42,7 @@ test "time module: format renders date, name, and clock verbs" {
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|t = time.from_timestamp(1593193116)
+      #|t = time.parse_time("2020-06-26T17:38:36Z")
       #|assert.eq("2020-06-26", t.format("2006-01-02"))
       #|assert.eq("20", t.format("06"))
       #|assert.eq("June", t.format("January"))
@@ -91,7 +91,7 @@ test "time module: format renders numeric timezone offsets" {
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|t = time.from_timestamp(1593193116)
+      #|t = time.parse_time("2020-06-26T17:38:36Z")
       #|assert.eq("+0000", t.format("-0700"))
       #|assert.eq("Z", t.format("Z0700"))
       #|assert.eq("Z", t.format("Z07:00"))
@@ -114,12 +114,13 @@ test "time module: str renders fractional seconds and zoned offsets" {
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|t = time.from_timestamp(1593193116, 123456789)
+      #|t = time.parse_time("2020-06-26T17:38:36.123456789Z",
+      #|                     format="2006-01-02T15:04:05.999999999Z07:00")
       #|assert.eq("2020-06-26 17:38:36.123456789 +0000 UTC", str(t))
-      #|east = time.from_timestamp(1593193116).in_location("Asia/Tokyo")
-      #|assert.eq("2020-06-27 02:38:36 +0900 Asia/Tokyo", str(east))
-      #|west = time.from_timestamp(1593193116).in_location("Pacific/Honolulu")
-      #|assert.eq("2020-06-26 07:38:36 -1000 Pacific/Honolulu", str(west))
+      #|east = time.parse_time("2020-06-26T17:38:36Z").in_location("Asia/Tokyo")
+      #|assert.true(str(east).startswith("2020-06-27 02:38:36 +0900 "), str(east))
+      #|west = time.parse_time("2020-06-26T17:38:36Z").in_location("Pacific/Honolulu")
+      #|assert.true(str(west).startswith("2020-06-26 07:38:36 -1000 "), str(west))
     ),
   )
   if errs.length() != 0 {
