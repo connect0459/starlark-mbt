@@ -88,6 +88,80 @@ fn floor_div_int64(a : Int64, b : Int64) -> Int64 {
 }
 
 ///|
+// Howard Hinnant's civil calendar algorithm (2014).
+// Converts a Unix day number (days since 1970-01-01) to a proleptic Gregorian
+// (year, month, day). Works for any year representable by Int64.
+fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int, Int) {
+  let z = unix_day + 719468L
+  let era = floor_div_int64(z, 146097L)
+  let doe = (z - era * 146097L).to_int()
+  let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
+  let y = yoe.to_int64() + era * 400L
+  let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+  let mp = (5 * doy + 2) / 153
+  let d = doy - (153 * mp + 2) / 5 + 1
+  let m = if mp < 10 { mp + 3 } else { mp - 9 }
+  let year = if m <= 2 { y + 1L } else { y }
+  (year, m, d)
+}
+
+///|
+// Inverse of unix_day_to_ymd_i64: (year, month, day) to Unix day number.
+fn ymd_to_unix_day_i64(year : Int64, month : Int, day : Int) -> Int64 {
+  let y = if month <= 2 { year - 1L } else { year }
+  let era = floor_div_int64(y, 400L)
+  let yoe = (y - era * 400L).to_int()
+  let doy = (153 * (if month > 2 { month - 3 } else { month + 9 }) + 2) / 5 +
+    day -
+    1
+  let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+  era * 146097L + doe.to_int64() - 719468L
+}
+
+///|
+// Decompose unix seconds at a UTC offset into civil date/time components.
+fn decompose_unix_sec(
+  sec : Int64,
+  tz_offset : Int,
+) -> (Int64, Int, Int, Int, Int, Int) {
+  let local_sec = sec + tz_offset.to_int64()
+  let unix_day = floor_div_int64(local_sec, secs_per_day)
+  let sec_of_day = (local_sec - unix_day * secs_per_day).to_int()
+  let (year, month, day) = unix_day_to_ymd_i64(unix_day)
+  let hour = sec_of_day / secs_per_hour
+  let minute = sec_of_day % secs_per_hour / secs_per_minute
+  let second = sec_of_day % secs_per_minute
+  (year, month, day, hour, minute, second)
+}
+
+///|
+// Returns day-of-week index (0=Sunday … 6=Saturday) for a given Unix day.
+// Unix day 0 (1970-01-01) is Thursday = 4.
+fn weekday_from_unix_day(unix_day : Int64) -> Int {
+  ((unix_day % 7L + 4L + 7L) % 7L).to_int()
+}
+
+///|
+// Write a year to buf, zero-padded to at least 4 digits.
+// Negative years are written as "-NNNN" (e.g. year -1 → "-0001").
+fn write_year_pad4(buf : StringBuilder, year : Int64) -> Unit {
+  if year < 0L {
+    buf.write_char('-')
+    let s = (-year).to_string()
+    for _ in 0..<(4 - s.length()) {
+      buf.write_char('0')
+    }
+    buf.write_string(s)
+  } else {
+    let s = year.to_string()
+    for _ in 0..<(4 - s.length()) {
+      buf.write_char('0')
+    }
+    buf.write_string(s)
+  }
+}
+
+///|
 fn normalize_to_unix_sec(
   year : Int64,
   month : Int64,
@@ -109,14 +183,7 @@ fn normalize_to_unix_sec(
   let extra_years = floor_div_int64(m0, 12L)
   let month_norm = (m0 - extra_years * 12L + 1L).to_int()
   let year_norm_64 = year + extra_years
-  if year_norm_64 < -9999L || year_norm_64 > 9999L {
-    return Err("time.time: date/time out of supported range")
-  }
-  let year_norm = year_norm_64.to_int()
-  let first_of_month = @x_time.PlainDate::of(year_norm, month_norm, 1) catch {
-    _ => return Err("time.time: date/time out of supported range")
-  }
-  let first_unix_day = first_of_month.to_unix_day()
+  let first_unix_day = ymd_to_unix_day_i64(year_norm_64, month_norm, 1)
   let unix_day = first_unix_day + (day - 1L) + carry_d
   let unix_sec = unix_day * secs_per_day + sec_of_day
   Ok((unix_sec, ns_norm))
@@ -600,40 +667,32 @@ fn fmt_time_at_zone(
   tz_offset : Int,
   tz_name : String,
 ) -> String {
-  let zone = if tz_offset == 0 {
-    @x_time.utc_zone
-  } else {
-    @x_time.fixed_zone(tz_name, tz_offset) catch {
-      _ => @x_time.utc_zone
-    }
-  }
-  let dt = @x_time.ZonedDateTime::from_unix_second(sec, nanosecond=nsec, zone~) catch {
-    _ => return "invalid time"
-  }
+  let (year, month, day, hour, minute, second) = decompose_unix_sec(
+    sec, tz_offset,
+  )
   let buf = StringBuilder::new()
-  buf.write_string(dt.year().to_string())
+  write_year_pad4(buf, year)
   buf.write_char('-')
-  write_pad2(buf, dt.month())
+  write_pad2(buf, month)
   buf.write_char('-')
-  write_pad2(buf, dt.day())
+  write_pad2(buf, day)
   buf.write_char(' ')
-  write_pad2(buf, dt.hour())
+  write_pad2(buf, hour)
   buf.write_char(':')
-  write_pad2(buf, dt.minute())
+  write_pad2(buf, minute)
   buf.write_char(':')
-  write_pad2(buf, dt.second())
+  write_pad2(buf, second)
   if nsec != 0 {
     buf.write_char('.')
     buf.write_string(fmt_frac_digits(nsec.to_int64(), 9))
   }
   buf.write_char(' ')
-  let off = dt.offset().seconds()
-  if off >= 0 {
+  if tz_offset >= 0 {
     buf.write_char('+')
-    write_pad2(buf, off / secs_per_hour)
-    write_pad2(buf, off % secs_per_hour / secs_per_minute)
+    write_pad2(buf, tz_offset / secs_per_hour)
+    write_pad2(buf, tz_offset % secs_per_hour / secs_per_minute)
   } else {
-    let abs = -off
+    let abs = -tz_offset
     buf.write_char('-')
     write_pad2(buf, abs / secs_per_hour)
     write_pad2(buf, abs % secs_per_hour / secs_per_minute)
@@ -666,19 +725,8 @@ let weekday_abbrev_names : FixedArray[String] = [
 ]
 
 ///|
-fn weekday_index(year : Int, month : Int, day : Int) -> Int {
-  let dt = @x_time.ZonedDateTime::of(year, month, day, zone=@x_time.utc_zone) catch {
-    _ => return 0
-  }
-  match dt.weekday() {
-    @x_time.Weekday::Sunday => 0
-    @x_time.Weekday::Monday => 1
-    @x_time.Weekday::Tuesday => 2
-    @x_time.Weekday::Wednesday => 3
-    @x_time.Weekday::Thursday => 4
-    @x_time.Weekday::Friday => 5
-    @x_time.Weekday::Saturday => 6
-  }
+fn weekday_index(year : Int64, month : Int, day : Int) -> Int {
+  weekday_from_unix_day(ymd_to_unix_day_i64(year, month, day))
 }
 
 ///|
@@ -722,7 +770,7 @@ fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
 // full/abbrev month, "Monday"/"Mon" = weekday, "15" = 24-hour, "-0700"/"Z0700"
 // = numeric zone. Each branch advances `i` by the matched mnemonic's length.
 fn fmt_go_layout(
-  year : Int,
+  year : Int64,
   month : Int,
   day : Int,
   hour24 : Int,
@@ -776,7 +824,7 @@ fn fmt_go_layout(
       lchars[i + 1] == '0' &&
       lchars[i + 2] == '0' &&
       lchars[i + 3] == '6' {
-      buf.write_string(year.to_string())
+      write_year_pad4(buf, year)
       i += 4
     } else if c == '1' && i + 1 < n && lchars[i + 1] == '5' {
       write_pad2(buf, hour24)
@@ -806,7 +854,7 @@ fn fmt_go_layout(
         write_pad2(buf, second)
         i += 2
       } else if next == '6' {
-        write_pad2(buf, year % 100)
+        write_pad2(buf, (year % 100L).to_int())
         i += 2
       } else {
         buf.write_char('0')
@@ -935,20 +983,8 @@ fn time_equals(sec : Int64, nsec : Int, other : @value.Value) -> Bool {
 
 ///|
 fn time_truth(sec : Int64, nsec : Int) -> Bool {
-  let dt = @x_time.ZonedDateTime::from_unix_second(
-    sec,
-    nanosecond=nsec,
-    zone=@x_time.utc_zone,
-  ) catch {
-    _ => return false
-  }
-  !(dt.year() == 1 &&
-  dt.month() == 1 &&
-  dt.day() == 1 &&
-  dt.hour() == 0 &&
-  dt.minute() == 0 &&
-  dt.second() == 0 &&
-  dt.nanosecond() == 0)
+  // Go's zero Time is January 1, year 1, 00:00:00.000000000 UTC = unix second -62135596800.
+  !(sec == -62135596800L && nsec == 0)
 }
 
 ///|
@@ -980,28 +1016,17 @@ fn time_attr(
       Ok(Some(m))
     }
     _ => {
-      let zone = if tz_offset == 0 {
-        @x_time.utc_zone
-      } else {
-        @x_time.fixed_zone(tz_name, tz_offset) catch {
-          _ => @x_time.utc_zone
-        }
-      }
-      let dt = @x_time.ZonedDateTime::from_unix_second(
-        sec,
-        nanosecond=nsec,
-        zone~,
-      ) catch {
-        _ => return Err("invalid time")
-      }
+      let (year, month, day, hour, minute, second) = decompose_unix_sec(
+        sec, tz_offset,
+      )
       let v = match name {
-        "year" => @value.Value::Int(BigInt::from_int(dt.year()))
-        "month" => @value.Value::Int(BigInt::from_int(dt.month()))
-        "day" => @value.Value::Int(BigInt::from_int(dt.day()))
-        "hour" => @value.Value::Int(BigInt::from_int(dt.hour()))
-        "minute" => @value.Value::Int(BigInt::from_int(dt.minute()))
-        "second" => @value.Value::Int(BigInt::from_int(dt.second()))
-        "nanosecond" => @value.Value::Int(BigInt::from_int(dt.nanosecond()))
+        "year" => @value.Value::Int(BigInt::from_int64(year))
+        "month" => @value.Value::Int(BigInt::from_int(month))
+        "day" => @value.Value::Int(BigInt::from_int(day))
+        "hour" => @value.Value::Int(BigInt::from_int(hour))
+        "minute" => @value.Value::Int(BigInt::from_int(minute))
+        "second" => @value.Value::Int(BigInt::from_int(second))
+        "nanosecond" => @value.Value::Int(BigInt::from_int(nsec))
         _ => return Ok(None)
       }
       Ok(Some(v))
@@ -1147,31 +1172,11 @@ fn make_format_method(
       @value.Value::String(s) => s.raw()
       _ => return Err("format: argument must be a string")
     }
-    let zone = if tz_offset == 0 {
-      @x_time.utc_zone
-    } else {
-      @x_time.fixed_zone(tz_name, tz_offset) catch {
-        _ => @x_time.utc_zone
-      }
-    }
-    let dt = @x_time.ZonedDateTime::from_unix_second(
-      sec,
-      nanosecond=nsec,
-      zone~,
-    ) catch {
-      _ => return Err("format: invalid time")
-    }
+    let (year, month, day, hour, minute, second) = decompose_unix_sec(
+      sec, tz_offset,
+    )
     let result = fmt_go_layout(
-      dt.year(),
-      dt.month(),
-      dt.day(),
-      dt.hour(),
-      dt.minute(),
-      dt.second(),
-      dt.nanosecond(),
-      tz_offset,
-      tz_name,
-      layout,
+      year, month, day, hour, minute, second, nsec, tz_offset, tz_name, layout,
     )
     Ok(@value.Value::String(@value.StarlarkString::new(result)))
   })
