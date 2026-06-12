@@ -109,6 +109,168 @@ test "time module: format renders numeric timezone offsets" {
 }
 
 ///|
+test "time module: format renders hour-only timezone offset with Z07 and -07" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|utc = time.parse_time("2020-06-26T17:38:36Z")
+      #|assert.eq("Z", utc.format("Z07"))
+      #|assert.eq("+00", utc.format("-07"))
+      #|east = utc.in_location("Asia/Tokyo")
+      #|assert.eq("+09", east.format("Z07"))
+      #|assert.eq("+09", east.format("-07"))
+      #|west = utc.in_location("Pacific/Honolulu")
+      #|assert.eq("-10", west.format("Z07"))
+      #|assert.eq("-10", west.format("-07"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time accepts hour-only timezone with Z07 and -07" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22 14:30 Z", format="2006-01-02 15:04 Z07"),
+      #|  time.parse_time("2021-03-22T14:30:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22 14:30 +09", format="2006-01-02 15:04 Z07"),
+      #|  time.parse_time("2021-03-22T05:30:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021-03-22 14:30 -10", format="2006-01-02 15:04 -07"),
+      #|  time.parse_time("2021-03-23T00:30:00Z"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time rejects out-of-range hour offset in Z07 and -07" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021-03-22 14:30 +99", format="2006-01-02 15:04 Z07"),
+      #|  "cannot parse",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021-03-22 14:30 -24", format="2006-01-02 15:04 -07"),
+      #|  "cannot parse",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: format renders zero-padded day-of-year with 002 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|# Jan 1 = day 1
+      #|t1 = time.parse_time("2021-01-01T00:00:00Z")
+      #|assert.eq("001", t1.format("002"))
+      #|# Jun 12 = 31+28+31+30+31+12 = 163
+      #|t2 = time.parse_time("2021-06-12T00:00:00Z")
+      #|assert.eq("163", t2.format("002"))
+      #|# Dec 31 in a leap year (2020) = 366
+      #|t3 = time.parse_time("2020-12-31T00:00:00Z")
+      #|assert.eq("366", t3.format("002"))
+      #|# Dec 31 in a common year = 365
+      #|t4 = time.parse_time("2021-12-31T00:00:00Z")
+      #|assert.eq("365", t4.format("002"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time reads zero-padded day-of-year with 002 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("2021 001", format="2006 002"),
+      #|  time.parse_time("2021-01-01T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2021 163", format="2006 002"),
+      #|  time.parse_time("2021-06-12T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("2020 366", format="2006 002"),
+      #|  time.parse_time("2020-12-31T00:00:00Z"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time rejects out-of-range day-of-year with 002 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021 000", format="2006 002"),
+      #|  "cannot parse",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021 366", format="2006 002"),
+      #|  "cannot parse",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.parse_time("2020 367", format="2006 002"),
+      #|  "cannot parse",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: format renders space-padded day-of-month with _2 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t1 = time.parse_time("2020-06-01T00:00:00Z")
+      #|assert.eq(" 1", t1.format("_2"))
+      #|t2 = time.parse_time("2020-06-26T00:00:00Z")
+      #|assert.eq("26", t2.format("_2"))
+      #|t3 = time.parse_time("2020-01-09T00:00:00Z")
+      #|assert.eq(" 9", t3.format("_2"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: str renders fractional seconds and zoned offsets" {
   let errs = run_star_string(
     (

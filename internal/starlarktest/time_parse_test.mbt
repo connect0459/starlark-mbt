@@ -136,6 +136,129 @@ test "time module: parse_time reads fractional seconds of any width" {
 }
 
 ///|
+test "time module: parse_time accepts comma as fractional-second separator" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  0,
+      #|  time.parse_time("10:20:30,000", format="15:04:05,000").nanosecond,
+      #|)
+      #|assert.eq(
+      #|  500000000,
+      #|  time.parse_time("10:20:30,5", format="15:04:05,999").nanosecond,
+      #|)
+      #|assert.eq(
+      #|  123000000,
+      #|  time.parse_time("10:20:30,123", format="15:04:05,000000000").nanosecond,
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: format renders comma fractional-second separator from layout" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(0, 123000000)
+      #|assert.eq(",123", t.format(",000"))
+      #|assert.eq(",123", t.format(",999"))
+      #|whole = time.from_timestamp(0)
+      #|assert.eq("", whole.format(",999"))
+      #|assert.eq(",000", whole.format(",000"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time matches month and weekday names case-insensitively" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  time.parse_time("march 22, 2021", format="January 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("MARCH 22, 2021", format="January 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("mar 22, 2021", format="Jan 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("MAR 22, 2021", format="Jan 2, 2006"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("monday 2021-03-22", format="Monday 2006-01-02"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("MONDAY 2021-03-22", format="Monday 2006-01-02"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+      #|assert.eq(
+      #|  time.parse_time("mon 2021-03-22", format="Mon 2006-01-02"),
+      #|  time.parse_time("2021-03-22T00:00:00Z"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time applies PM adjustment with 24-hour hour token" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|# hour < 12 with PM: add 12
+      #|assert.eq(
+      #|  "17:00",
+      #|  time.parse_time("05 PM", format="15 PM").format("15:04"),
+      #|)
+      #|# hour == 12 with AM: set to 0 (midnight)
+      #|assert.eq(
+      #|  "00:00",
+      #|  time.parse_time("12 AM", format="15 PM").format("15:04"),
+      #|)
+      #|# hour >= 12 with PM and hour > 12: no change
+      #|assert.eq(
+      #|  "17:00",
+      #|  time.parse_time("17 PM", format="15 PM").format("15:04"),
+      #|)
+      #|# hour == 12 with PM: stays 12 (noon)
+      #|assert.eq(
+      #|  "12:00",
+      #|  time.parse_time("12 PM", format="15 PM").format("15:04"),
+      #|)
+      #|# hour == 0 with PM: add 12 (midnight expressed as 00 PM → noon)
+      #|assert.eq(
+      #|  "12:00",
+      #|  time.parse_time("00 PM", format="15 PM").format("15:04"),
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: parse_time rejects values that do not match the layout" {
   let errs = run_star_string(
     (

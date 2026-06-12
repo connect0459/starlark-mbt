@@ -137,6 +137,45 @@ fn weekday_from_unix_day(unix_day : Int64) -> Int {
 }
 
 ///|
+fn is_leap_year(year : Int64) -> Bool {
+  year % 4L == 0L && (year % 100L != 0L || year % 400L == 0L)
+}
+
+///|
+fn days_in_month(year : Int64, month : Int) -> Int {
+  match month {
+    1 | 3 | 5 | 7 | 8 | 10 | 12 => 31
+    4 | 6 | 9 | 11 => 30
+    2 => if is_leap_year(year) { 29 } else { 28 }
+    _ => 0
+  }
+}
+
+///|
+fn day_of_year(year : Int64, month : Int, day : Int) -> Int {
+  let mut yday = day
+  for m in 1..<month {
+    yday += days_in_month(year, m)
+  }
+  yday
+}
+
+///|
+fn yday_to_month_day(year : Int64, yday : Int) -> (Int, Int) {
+  let mut remaining = yday
+  let mut month = 1
+  while month < 12 {
+    let dim = days_in_month(year, month)
+    if remaining <= dim {
+      break
+    }
+    remaining -= dim
+    month += 1
+  }
+  (month, remaining)
+}
+
+///|
 fn write_year_pad4(buf : StringBuilder, year : Int64) -> Unit {
   if year < 0L {
     buf.write_char('-')
@@ -666,6 +705,17 @@ fn write_tz_offset(
 }
 
 ///|
+fn write_tz_offset_hour_only(buf : StringBuilder, tz_offset : Int) -> Unit {
+  let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
+  if tz_offset >= 0 {
+    buf.write_char('+')
+  } else {
+    buf.write_char('-')
+  }
+  write_pad2(buf, abs_off / secs_per_hour)
+}
+
+///|
 fn fmt_time_at_zone(
   sec : Int64,
   nsec : Int,
@@ -831,6 +881,19 @@ fn fmt_go_layout(
       lchars[i + 3] == '6' {
       write_year_pad4(buf, year)
       i += 4
+    } else if c == '0' &&
+      i + 2 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '2' {
+      let yday = day_of_year(year, month, day)
+      if yday < 100 {
+        buf.write_char('0')
+      }
+      if yday < 10 {
+        buf.write_char('0')
+      }
+      buf.write_string(yday.to_string())
+      i += 3
     } else if c == '1' && i + 1 < n && lchars[i + 1] == '5' {
       write_pad2(buf, hour24)
       i += 2
@@ -893,13 +956,19 @@ fn fmt_go_layout(
     } else if c == '5' {
       buf.write_string(second.to_string())
       i += 1
+    } else if c == '_' && i + 1 < n && lchars[i + 1] == '2' {
+      if day < 10 {
+        buf.write_char(' ')
+      }
+      buf.write_string(day.to_string())
+      i += 2
     } else if c == '1' {
       buf.write_string(month.to_string())
       i += 1
     } else if c == '2' {
       buf.write_string(day.to_string())
       i += 1
-    } else if c == '.' &&
+    } else if (c == '.' || c == ',') &&
       i + 1 < n &&
       (lchars[i + 1] == '9' || lchars[i + 1] == '0') {
       let is_trimmed = lchars[i + 1] == '9'
@@ -909,7 +978,7 @@ fn fmt_go_layout(
       }
       let frac_digits = j - i - 1
       if nsec != 0 || !is_trimmed {
-        buf.write_char('.')
+        buf.write_char(c)
         buf.write_string(fmt_nsec_frac(nsec, frac_digits, is_trimmed))
       }
       i = j
@@ -955,6 +1024,22 @@ fn fmt_go_layout(
         write_tz_offset(buf, tz_offset)
       }
       i += 5
+    } else if c == '-' &&
+      i + 2 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' {
+      write_tz_offset_hour_only(buf, tz_offset)
+      i += 3
+    } else if c == 'Z' &&
+      i + 2 < n &&
+      lchars[i + 1] == '0' &&
+      lchars[i + 2] == '7' {
+      if tz_offset == 0 {
+        buf.write_char('Z')
+      } else {
+        write_tz_offset_hour_only(buf, tz_offset)
+      }
+      i += 3
     } else {
       buf.write_char(c)
       i += 1
@@ -1368,7 +1453,16 @@ fn read_flex_digits(chars : Array[Char], i : Int) -> (Int, Int)? {
 }
 
 ///|
-// Match one of `names[1..=count]` (1-indexed) as a prefix of `chars` at `i`.
+fn ascii_lower(c : Char) -> Char {
+  if c >= 'A' && c <= 'Z' {
+    (c.to_int() + 32).unsafe_to_char()
+  } else {
+    c
+  }
+}
+
+///|
+// Match one of `names[start..start+count]` as a prefix of `chars` at `i`.
 // Returns the matched index and the next value position.
 fn match_name(
   chars : Array[Char],
@@ -1385,6 +1479,36 @@ fn match_name(
       let mut ok = true
       for k in 0..<nlen {
         if chars[i + k] != nchars[k] {
+          ok = false
+          break
+        }
+      }
+      if ok {
+        return Some((idx, i + nlen))
+      }
+    }
+  }
+  None
+}
+
+///|
+// Case-insensitive variant of match_name: compares each character after
+// lowercasing so that e.g. "JANUARY" matches "January".
+fn match_name_ci(
+  chars : Array[Char],
+  i : Int,
+  names : FixedArray[String],
+  start : Int,
+  count : Int,
+) -> (Int, Int)? {
+  for idx in start..<(start + count) {
+    let name = names[idx]
+    let nchars = name.to_array()
+    let nlen = nchars.length()
+    if i + nlen <= chars.length() {
+      let mut ok = true
+      for k in 0..<nlen {
+        if ascii_lower(chars[i + k]) != ascii_lower(nchars[k]) {
           ok = false
           break
         }
@@ -1422,7 +1546,7 @@ fn parse_go_layout(
   let mut nsec = 0
   let mut tz_offset : Int? = None
   let mut pm : Bool? = None
-  let mut hour_is_12 = false
+  let mut yday = -1
   let err = fn() -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
     Err("time: parsing time \"\{value}\" as \"\{layout}\": cannot parse")
   }
@@ -1475,6 +1599,31 @@ fn parse_go_layout(
     }
   }
 
+  // Parse a numeric/sign timezone of the form ±hh (hour offset only);
+  // `allow_z` accepts a literal `Z` meaning offset 0.
+  fn parse_zone_hour_only(allow_z : Bool) -> Bool {
+    if allow_z && vi < vn && (vc[vi] == 'Z' || vc[vi] == 'z') {
+      tz_offset = Some(0)
+      vi += 1
+      return true
+    }
+    if vi >= vn || (vc[vi] != '+' && vc[vi] != '-') {
+      return false
+    }
+    let sign = if vc[vi] == '+' { 1 } else { -1 }
+    match read_fixed_digits(vc, vi + 1, 2) {
+      None => false
+      Some((hh, j)) => {
+        if hh > 23 {
+          return false
+        }
+        tz_offset = Some(sign * hh * secs_per_hour)
+        vi = j
+        true
+      }
+    }
+  }
+
   while li < ln {
     if starts("2006") {
       match read_fixed_digits(vc, vi, 4) {
@@ -1495,7 +1644,7 @@ fn parse_go_layout(
       }
       li += 2
     } else if starts("January") {
-      match match_name(vc, vi, month_full_names, 1, 12) {
+      match match_name_ci(vc, vi, month_full_names, 1, 12) {
         Some((idx, j)) => {
           month = idx
           vi = j
@@ -1504,7 +1653,7 @@ fn parse_go_layout(
       }
       li += 7
     } else if starts("Jan") {
-      match match_name(vc, vi, month_abbrev_names, 1, 12) {
+      match match_name_ci(vc, vi, month_abbrev_names, 1, 12) {
         Some((idx, j)) => {
           month = idx
           vi = j
@@ -1513,13 +1662,13 @@ fn parse_go_layout(
       }
       li += 3
     } else if starts("Monday") {
-      match match_name(vc, vi, weekday_full_names, 0, 7) {
+      match match_name_ci(vc, vi, weekday_full_names, 0, 7) {
         Some((_, j)) => vi = j
         None => return err()
       }
       li += 6
     } else if starts("Mon") {
-      match match_name(vc, vi, weekday_abbrev_names, 0, 7) {
+      match match_name_ci(vc, vi, weekday_abbrev_names, 0, 7) {
         Some((_, j)) => vi = j
         None => return err()
       }
@@ -1533,6 +1682,15 @@ fn parse_go_layout(
         None => return err()
       }
       li += 2
+    } else if starts("002") {
+      match read_fixed_digits(vc, vi, 3) {
+        Some((v, j)) => {
+          yday = v
+          vi = j
+        }
+        None => return err()
+      }
+      li += 3
     } else if starts("02") {
       match read_fixed_digits(vc, vi, 2) {
         Some((v, j)) => {
@@ -1567,7 +1725,6 @@ fn parse_go_layout(
       match read_fixed_digits(vc, vi, 2) {
         Some((v, j)) => {
           hour = v
-          hour_is_12 = true
           vi = j
         }
         None => return err()
@@ -1629,6 +1786,16 @@ fn parse_go_layout(
         return err()
       }
       li += 5
+    } else if starts("Z07") {
+      if !parse_zone_hour_only(true) {
+        return err()
+      }
+      li += 3
+    } else if starts("-07") {
+      if !parse_zone_hour_only(false) {
+        return err()
+      }
+      li += 3
     } else if starts("MST") {
       // Timezone abbreviation: consume the alphabetic run but ignore it
       // (abbreviations cannot be resolved to a fixed offset).
@@ -1644,7 +1811,6 @@ fn parse_go_layout(
       match read_flex_digits(vc, vi) {
         Some((v, j)) => {
           hour = v
-          hour_is_12 = true
           vi = j
         }
         None => return err()
@@ -1686,7 +1852,7 @@ fn parse_go_layout(
         None => return err()
       }
       li += 1
-    } else if lc[li] == '.' &&
+    } else if (lc[li] == '.' || lc[li] == ',') &&
       li + 1 < ln &&
       (lc[li + 1] == '0' || lc[li + 1] == '9') {
       let is_trimmed = lc[li + 1] == '9'
@@ -1695,8 +1861,7 @@ fn parse_go_layout(
         lj += 1
       }
       let max_digits = lj - li - 1
-      // Consume the fractional seconds from the value if present.
-      if vi < vn && vc[vi] == '.' {
+      if vi < vn && (vc[vi] == '.' || vc[vi] == ',') {
         let (frac_str, end) = parse_digits_at(vc, vi + 1)
         let flen = frac_str.length()
         if flen > 0 {
@@ -1730,12 +1895,19 @@ fn parse_go_layout(
   if vi != vn {
     return err()
   }
-  if hour_is_12 {
-    match pm {
-      Some(true) => if hour < 12 { hour += 12 }
-      Some(false) => if hour == 12 { hour = 0 }
-      None => ()
+  if yday >= 0 {
+    let max_yday = if is_leap_year(year.to_int64()) { 366 } else { 365 }
+    if yday < 1 || yday > max_yday {
+      return err()
     }
+    let (m, d) = yday_to_month_day(year.to_int64(), yday)
+    month = m
+    day = d
+  }
+  match pm {
+    Some(true) => if hour < 12 { hour += 12 }
+    Some(false) => if hour == 12 { hour = 0 }
+    None => ()
   }
   Ok((year, month, day, hour, minute, second, nsec, tz_offset))
 }
