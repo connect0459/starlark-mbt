@@ -1329,6 +1329,30 @@ test "subscript slice is accepted" {
 }
 
 ///|
+test "subscript tuple lower-bound slice is accepted" {
+  match @parser.parse_expr("test.star", "a[1, 2:]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "subscript tuple lower-bound slice with end is accepted" {
+  match @parser.parse_expr("test.star", "a[1, 2:3]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "subscript tuple lower-bound slice with step is accepted" {
+  match @parser.parse_expr("test.star", "a[1, 2:3:4]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
 test "lambda trailing comma before colon is rejected" {
   match @parser.parse_expr("test.star", "lambda x,: x") {
     Err(_) => ()
@@ -1428,6 +1452,48 @@ test "comprehension bare-tuple iterable is still rejected" {
     Err(_) => ()
     Ok(_) =>
       fail("expected parse error for bare tuple in comprehension iterable")
+  }
+}
+
+///|
+test "comprehension if-clause lambda body conditional is rejected" {
+  match
+    @parser.parse_expr("test.star", "[a for b in c if lambda: d if e else f]") {
+    Err(_) => ()
+    Ok(_) =>
+      fail(
+        "expected syntax error for conditional in lambda body inside if-clause",
+      )
+  }
+}
+
+///|
+test "comprehension if-clause lambda body without conditional is accepted" {
+  match @parser.parse_expr("test.star", "[a for b in c if lambda: d]") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "comprehension if-clause nested lambda body conditional is rejected" {
+  match
+    @parser.parse_expr(
+      "test.star", "[a for b in c if lambda: lambda: d if e else f]",
+    ) {
+    Err(_) => ()
+    Ok(_) =>
+      fail(
+        "expected syntax error for conditional in nested lambda body inside if-clause",
+      )
+  }
+}
+
+///|
+test "lambda body conditional outside comprehension is accepted" {
+  match @parser.parse_expr("test.star", "lambda: d if e else f") {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
 

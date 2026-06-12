@@ -670,9 +670,25 @@ fn is_stmt_terminator(tok : @lexer.Token) -> Bool {
 ///|
 fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::Lambda {
-    return self.parse_lambda_expr()
+    return self.parse_lambda_expr_no_cond()
   }
   self.parse_or_test()
+}
+
+///|
+fn Parser::parse_lambda_expr_no_cond(
+  self : Parser,
+) -> @syntax.Expr raise ParseErr {
+  let p = self.pos
+  self.advance()
+  let params = if self.tok == @lexer.Token::Colon {
+    []
+  } else {
+    self.parse_lambda_params()
+  }
+  self.expect(@lexer.Token::Colon)
+  let body = self.parse_test_no_cond()
+  @syntax.Expr::ELambda(params, body, p)
 }
 
 ///|
@@ -1009,9 +1025,16 @@ fn Parser::parse_subscript_tail(
         }
         elems.push(self.parse_test())
       }
-      self.expect(@lexer.Token::RBrack)
-      let tuple_key = @syntax.Expr::ETuple(elems, p)
-      @syntax.Expr::EIndex(obj, tuple_key, p)
+      if self.tok == @lexer.Token::Colon {
+        let tuple_lo = @syntax.Expr::ETuple(elems, p)
+        let slice = self.parse_slice_from_colon(obj, Some(tuple_lo), p)
+        self.expect(@lexer.Token::RBrack)
+        slice
+      } else {
+        self.expect(@lexer.Token::RBrack)
+        let tuple_key = @syntax.Expr::ETuple(elems, p)
+        @syntax.Expr::EIndex(obj, tuple_key, p)
+      }
     } else {
       self.expect(@lexer.Token::RBrack)
       @syntax.Expr::EIndex(obj, idx, p)
