@@ -89,3 +89,12 @@ test "encode_to_json: depth error is wrapped with json.encode prefix" {
   let expected = "json.encode: \{raw}"
   assert_eq(expected, "json.encode: nesting depth limit exceeded")
 }
+
+///|
+test "str_lex_cmp: supplementary codepoints sort after all BMP characters" {
+  assert_true(str_lex_cmp("\u{E000}", "\u{FFFF}") < 0)
+  assert_true(str_lex_cmp("\u{FFFF}", "\u{10000}") < 0)
+  assert_true(str_lex_cmp("\u{E000}", "\u{10000}") < 0)
+  assert_true(str_lex_cmp("\u{10000}", "\u{E000}") > 0)
+  assert_true(str_lex_cmp("\u{10000}", "\u{10001}") < 0)
+}

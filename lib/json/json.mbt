@@ -2,21 +2,24 @@
 fn str_lex_cmp(a : String, b : String) -> Int {
   let la = a.length()
   let lb = b.length()
-  let len = if la < lb { la } else { lb }
-  for i in 0..<len {
-    let ca = a[i].to_int()
-    let cb = b[i].to_int()
-    if ca < cb {
+  let mut ia = 0
+  let mut ib = 0
+  while ia < la && ib < lb {
+    let (cp_a, step_a) = @utf8util.utf16_decode_cp(a, ia, la)
+    let (cp_b, step_b) = @utf8util.utf16_decode_cp(b, ib, lb)
+    if cp_a < cp_b {
       return -1
     }
-    if ca > cb {
+    if cp_a > cp_b {
       return 1
     }
+    ia += step_a
+    ib += step_b
   }
-  if la < lb {
-    -1
-  } else if la > lb {
+  if ia < la {
     1
+  } else if ib < lb {
+    -1
   } else {
     0
   }

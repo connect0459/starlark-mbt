@@ -181,6 +181,28 @@ test "struct: only the plus operator participates in binary dispatch" {
 }
 
 ///|
+test "str_lex_cmp: supplementary codepoints sort after all BMP characters" {
+  assert_true(str_lex_cmp("\u{E000}", "\u{FFFF}") < 0)
+  assert_true(str_lex_cmp("\u{FFFF}", "\u{10000}") < 0)
+  assert_true(str_lex_cmp("\u{E000}", "\u{10000}") < 0)
+  assert_true(str_lex_cmp("\u{10000}", "\u{E000}") > 0)
+  assert_true(str_lex_cmp("\u{10000}", "\u{10001}") < 0)
+}
+
+///|
+test "struct: non-BMP field names sort by codepoint not UTF-16 code unit" {
+  let s = make_struct(default_ctor, [
+    ("\u{10000}", @value.Value::Int(1N)),
+    ("\u{FFFF}", @value.Value::Int(2N)),
+    ("\u{E000}", @value.Value::Int(3N)),
+  ])
+  assert_eq(
+    custom_of(s).get_repr(),
+    "struct(\u{E000} = 3, \u{FFFF} = 2, \u{10000} = 1)",
+  )
+}
+
+///|
 test "struct: field names are sorted lexicographically not by length" {
   let s = make_struct(default_ctor, [
     ("b", @value.Value::Int(1N)),

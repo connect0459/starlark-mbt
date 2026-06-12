@@ -41,6 +41,31 @@ test "is_valid_utf8 rejects an unpaired surrogate encoding" {
 }
 
 ///|
+test "utf16_decode_cp: BMP character returns code unit as codepoint and step 1" {
+  let s = "\u{FFFF}"
+  assert_true(utf16_decode_cp(s, 0, s.length()) == (0xFFFF, 1))
+}
+
+///|
+test "utf16_decode_cp: supplementary character returns combined codepoint and step 2" {
+  assert_true(utf16_decode_cp("\u{10000}", 0, 2) == (0x10000, 2))
+  assert_true(utf16_decode_cp("\u{10001}", 0, 2) == (0x10001, 2))
+  assert_true(utf16_decode_cp("\u{10FFFF}", 0, 2) == (0x10FFFF, 2))
+}
+
+///|
+test "utf16_decode_cp: lone high surrogate at end of string returns raw code unit and step 1" {
+  let s = "\u{10000}"
+  assert_true(utf16_decode_cp(s, 0, 1) == (0xD800, 1))
+}
+
+///|
+test "utf16_decode_cp: len larger than string length does not read past the end" {
+  let s = "\u{FFFF}"
+  assert_true(utf16_decode_cp(s, 0, s.length() + 10) == (0xFFFF, 1))
+}
+
+///|
 test "printability: ASCII control characters are not printable" {
   // C0 controls below U+0020 and DEL (U+007F) are non-printable.
   assert_false(is_unicode_printable(0x00))
