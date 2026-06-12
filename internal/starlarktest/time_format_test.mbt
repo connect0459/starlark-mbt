@@ -206,6 +206,31 @@ test "time module: parse_time reads zero-padded day-of-year with 002 verb" {
 }
 
 ///|
+test "time module: parse_time rejects out-of-range day-of-year with 002 verb" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021 000", format="2006 002"),
+      #|  "cannot parse",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.parse_time("2021 366", format="2006 002"),
+      #|  "cannot parse",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.parse_time("2020 367", format="2006 002"),
+      #|  "cannot parse",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: format renders space-padded day-of-month with _2 verb" {
   let errs = run_star_string(
     (

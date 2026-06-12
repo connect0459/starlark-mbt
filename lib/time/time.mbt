@@ -1893,6 +1893,10 @@ fn parse_go_layout(
     return err()
   }
   if yday >= 0 {
+    let max_yday = if is_leap_year(year.to_int64()) { 366 } else { 365 }
+    if yday < 1 || yday > max_yday {
+      return err()
+    }
     let (m, d) = yday_to_month_day(year.to_int64(), yday)
     month = m
     day = d
