@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-12
+
+### Fixed
+
+#### HIGH severity — crashes and silent wrong results (#112)
+
+- `eval`: fix VM abort (SIGABRT) on top-level lambda capture in list
+  comprehension (#91)
+- `eval`: add recursion depth limit to `in`, `list.index`, and `list.remove`
+  to prevent stack overflow on deeply nested containers (#90)
+- `eval`: iterator stack not drained on early `return` from `for` loop, causing
+  the container's freeze lock to leak and subsequent mutations to fail (#125)
+- `eval`: `BigInt` / `float` arguments not validated against `Int64` range
+  before numeric operations; `in range(...)` containment check unguarded (#127)
+- `eval`, `lib/json`: surrogate codepoints (U+D800–U+DFFF) in `chr()` and
+  `json.decode` now mapped to U+FFFD instead of producing invalid UTF-8 (#123)
+- `value`: freeze propagation failed through same-name closures and
+  `BoundMethod` / builtin receivers (#93)
+- `value`: identity equality returned wrong results for functions, modules, and
+  iterator views (#89)
+- `value`: `range` length truncated to 32 bits; wrong results for wide ranges
+  (#98)
+- `value`: `bytes` values iterable directly, bypassing the required `.elems()`
+  method (#107)
+- `lib/json`: no nesting depth limit; deeply nested input could exhaust the
+  call stack (#124)
+- `lib/math`: `math.remainder` violated IEEE 754 round-half-to-even;
+  reimplemented via exact `Mod`-based reduction (#102, #126)
+- `parser`: ternary expression starting with an identifier rejected as a call
+  argument (#92)
+- `parser`: trailing comma accepted in subscript, lambda params, and `for`
+  target (#106)
+- `parser`: bare tuple rejected as `for`-loop iterable (#128)
+- `cli`, `repl`: no shared load cache or cycle detection — loading the same
+  module twice ran it twice; circular `load` caused infinite recursion (#95)
+- `repl`, `cli`: relative load paths not resolved against the loading script's
+  directory (#97)
+- `time`: `Int64` overflow in `time + duration` arithmetic; `from_timestamp`
+  nanosecond field not normalised to `[0, 999_999_999]` (#99)
+- `time`: out-of-range `time.time()` fields (e.g. month 13) not normalised;
+  RFC 3339 strings with trailing garbage accepted (#108)
+
+#### MEDIUM severity — conformance gaps (#113)
+
+- `eval`: five collection-semantics divergences from starlark-go, including
+  `dict.update` iteration order and augmented assignment to frozen subscript
+  (#139)
+- `value`, `eval`: `StarlarkRange::length()` overflow for very large ranges
+  (#141, #142)
+- `value`: recursion depth limit not enforced on `dict` / `set` / `struct` /
+  iterator equality (#136)
+- `value`: `CustomValue` equality callback did not receive recursion depth
+  (#143)
+- `parser`: slice subscript with missing middle colon and comprehension
+  `if`-clause used as a binary expression incorrectly parsed (#144)
+- `json`, `struct`: keys sorted by byte length then lexicographically; now
+  sorted by Unicode codepoint order (#100, #145)
+- `lib/math`: IEEE 754 edge cases in `fabs`, `sqrt`, `pow`, `hypot`, and
+  `gamma` corrected to match Go's `math` package (#146)
+- `eval`, `resolver`, `json`: seven error-message and edge-case divergences
+  from starlark-go corrected (#147)
+
+#### `lib/time` conformance (#114)
+
+- `time`: formatting `time.duration_min` produced a double minus sign (#153)
+- `time`: year numbers outside 1–9999 formatted without sign or padding; now
+  uses 4-digit zero-padding with `+`/`-` prefix (#154)
+- `time`: `time.parse_time` used a fixed UTC offset instead of the host local
+  timezone; zone abbreviations now surfaced via the `zone` attribute (#155)
+- `time`: RFC 3339 strings without a timezone component silently parsed as UTC;
+  now raise a parse error (#156)
+- `time`: layout-token gaps in `format` / `parse_time` — `002`, `Z07`, `-07`,
+  `_2`, `PM` / `pm`, case-insensitive names, comma fractional separator (#157)
+- `time`: duration string used integer division, dropping sub-second precision
+  (#101)
+- `time`: `time − time` overflow now saturates; `parse_duration` and `time.time`
+  constructor validate `BigInt` keyword arguments; timezone threaded through
+  arithmetic (#129)
+
+### Documentation
+
+- `value/README.mbt.md`: correct return types of `len_of`, `length_of`, and
+  `StarlarkRange::length` to `Int64`; add missing `StarlarkDict::pop_entry`
+  entry (#158)
+
 ## [0.2.0] - 2026-06-10
 
 ### Added
@@ -181,7 +266,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.0...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.1...HEAD>
+[0.2.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.0...v0.2.1>
 [0.2.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.1...v0.2.0>
 [0.1.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.0...v0.1.1>
 [0.1.0]: <https://github.com/connect0459/starlark-mbt/releases/tag/v0.1.0>
