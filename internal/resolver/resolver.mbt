@@ -700,7 +700,6 @@ fn Resolver::resolve_function_uses(
           self.predeclared_cache[name] = b
         } else {
           // Could be a forward-referenced global; defer resolution.
-          // Capture local names now so "did you mean" includes params/locals.
           self.file_block.uses.push((name, pos, collect_block_locals(block)))
         }
     }

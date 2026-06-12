@@ -1628,8 +1628,6 @@ fn eval_slice(
         raise EvalErr(make_eval_error(ctx, "range has no len"))
       }
       let (start, end_idx_raw) = normalize_slice_64(lo_opt, hi_opt, len, step)
-      // Normalize empty slices so the repr matches go: when indices imply no
-      // elements, clamp end to start (e.g. range(2, 2) not range(2, 1)).
       let end_idx = if step > 0 && end_idx_raw < start {
         start
       } else if step < 0 && end_idx_raw > start {
