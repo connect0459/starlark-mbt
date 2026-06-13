@@ -1137,6 +1137,22 @@ test "exec_file: string.isalnum returns true for alphanumeric string" {
 }
 
 ///|
+test "exec_file: string.isdigit returns true for Unicode decimal digit" {
+  match exec_b("r = \"\u{0661}\".isdigit()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalnum returns true for string with Unicode decimal digit" {
+  match exec_b("r = \"a\u{0661}\".isalnum()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
 test "exec_file: string.islower returns true when all cased chars are lowercase" {
   match exec_b("r = \"hello\".islower()") {
     Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))

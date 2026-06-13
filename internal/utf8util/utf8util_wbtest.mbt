@@ -147,3 +147,31 @@ test "printability: ordinary letters and symbols above ASCII are printable" {
   assert_true(is_unicode_printable(0x4E16)) // 世
   assert_true(is_unicode_printable(0x1F600)) // 😀
 }
+
+///|
+test "is_decimal_digit: ASCII digits 0-9 are decimal digits" {
+  assert_true(is_decimal_digit(0x0030)) // 0
+  assert_true(is_decimal_digit(0x0039)) // 9
+}
+
+///|
+test "is_decimal_digit: ASCII letters and non-digits are not decimal digits" {
+  assert_false(is_decimal_digit(0x0041)) // A
+  assert_false(is_decimal_digit(0x0061)) // a
+  assert_false(is_decimal_digit(0x00B2)) // superscript 2 (No, not Nd)
+}
+
+///|
+test "is_decimal_digit: Arabic-Indic digits (U+0660-U+0669) are decimal digits" {
+  assert_true(is_decimal_digit(0x0660)) // ARABIC-INDIC DIGIT ZERO
+  assert_true(is_decimal_digit(0x0661)) // ARABIC-INDIC DIGIT ONE
+  assert_true(is_decimal_digit(0x0669)) // ARABIC-INDIC DIGIT NINE
+}
+
+///|
+test "is_decimal_digit: Kirat Rai digits start at U+16D70, not U+16D60" {
+  assert_true(is_decimal_digit(0x16D70)) // KIRAT RAI DIGIT ZERO
+  assert_true(is_decimal_digit(0x16D79)) // KIRAT RAI DIGIT NINE
+  assert_false(is_decimal_digit(0x16D60)) // KIRAT RAI LETTER KA (Lo, not Nd)
+  assert_false(is_decimal_digit(0x16D69)) // KIRAT RAI VOWEL SIGN AA (Mc, not Nd)
+}
