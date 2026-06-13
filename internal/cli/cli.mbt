@@ -96,9 +96,7 @@ fn make_loader_with_cache(
     cache[resolved] = Err(@errors.EvalError::simple("cycle in load graph"))
     let load_src = @fs.read_file_to_string(resolved) catch {
       @fs.IOError(msg) => {
-        let err = Err(
-          @errors.EvalError::simple("cannot load \"\{resolved}\": \{msg}"),
-        )
+        let err = Err(@errors.EvalError::simple(msg))
         cache[resolved] = err
         return err
       }
@@ -108,13 +106,7 @@ fn make_loader_with_cache(
       "load:\{load_path}",
       make_loader_with_cache(inner_dir, opts, cache),
     )
-    let result = match @eval.exec_file(load_thread, resolved, load_src, opts) {
-      Ok(m) => Ok(m)
-      Err(e) =>
-        Err(
-          @errors.EvalError::simple("cannot load \"\{resolved}\": \{e.msg()}"),
-        )
-    }
+    let result = @eval.exec_file(load_thread, resolved, load_src, opts)
     cache[resolved] = result
     result
   }
