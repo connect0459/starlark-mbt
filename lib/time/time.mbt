@@ -26,6 +26,9 @@ let secs_per_day : Int64 = 86400L
 let int64_digits_cutoff : Int64 = 922337203685477580L
 
 ///|
+let uint64_max : UInt64 = 18446744073709551615UL
+
+///|
 let uint64_digits_cutoff : UInt64 = 1844674407370955161UL
 
 ///|
@@ -579,7 +582,7 @@ fn parse_duration_number_u64(
     None =>
       match parse_uint64_str(num_str) {
         Some(n) => {
-          if n != 0UL && scale > 18446744073709551615UL / n {
+          if n != 0UL && scale > uint64_max / n {
             return Err("time: invalid duration \"\{orig}\"")
           }
           Ok(n * scale)
@@ -597,7 +600,7 @@ fn parse_duration_number_u64(
           None => return Err("time: invalid duration \"\{orig}\"")
         }
       }
-      if int_val != 0UL && scale > 18446744073709551615UL / int_val {
+      if int_val != 0UL && scale > uint64_max / int_val {
         return Err("time: invalid duration \"\{orig}\"")
       }
       let int_ns = int_val * scale
@@ -619,7 +622,7 @@ fn parse_duration_number_u64(
         }
         frac_val
       }
-      if int_ns > 18446744073709551615UL - frac_ns {
+      if int_ns > uint64_max - frac_ns {
         return Err("time: invalid duration \"\{orig}\"")
       }
       Ok(int_ns + frac_ns)
@@ -704,7 +707,7 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
         match parse_duration_number_u64(num_str, scale, orig) {
           Err(e) => return Err(e)
           Ok(ns_val) => {
-            if total_ns > 18446744073709551615UL - ns_val {
+            if total_ns > uint64_max - ns_val {
               return Err("time: invalid duration \"\{orig}\"")
             }
             total_ns = total_ns + ns_val
