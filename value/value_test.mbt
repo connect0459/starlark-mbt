@@ -424,3 +424,66 @@ test "StarlarkList: reverse swaps the element order in place" {
   assert_true(l[1] == Value::Int(2N))
   assert_true(l[2] == Value::Int(1N))
 }
+
+///|
+test "repr_checked: shallow list repr succeeds" {
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N), Value::Int(3N)])
+  match Value::List(l).repr_checked() {
+    Ok(s) => assert_eq(s, "[1, 2, 3]")
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}
+
+///|
+test "repr_checked: deeply nested list exceeding depth limit returns an error" {
+  let n = repr_limit + 1
+  let mut v : Value = Value::Int(0N)
+  for _ in 0..<n {
+    v = Value::List(StarlarkList::new([v]))
+  }
+  match v.repr_checked() {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep list nesting")
+  }
+}
+
+///|
+test "repr_checked: nesting exactly at depth limit succeeds" {
+  let mut v : Value = Value::Int(0N)
+  for _ in 0..<repr_limit {
+    v = Value::List(StarlarkList::new([v]))
+  }
+  assert_true(v.repr_checked() is Ok(_))
+}
+
+///|
+test "repr_checked: cyclic list still shows placeholder without depth error" {
+  let l = StarlarkList::new([Value::Int(1N)])
+  l.push(Value::List(l)) |> ignore
+  match Value::List(l).repr_checked() {
+    Ok(s) => assert_true(s.contains("[...]"))
+    Err(_) => fail("expected cycle placeholder, not depth error")
+  }
+}
+
+///|
+test "to_str_checked: deeply nested list exceeding depth limit returns an error" {
+  let n = repr_limit + 1
+  let mut v : Value = Value::Int(0N)
+  for _ in 0..<n {
+    v = Value::List(StarlarkList::new([v]))
+  }
+  match v.to_str_checked() {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep list nesting")
+  }
+}
+
+///|
+test "to_str_checked: string returns raw value without quotes" {
+  let s = Value::String(StarlarkString::new("hello"))
+  match s.to_str_checked() {
+    Ok(raw) => assert_eq(raw, "hello")
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}

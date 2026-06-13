@@ -684,8 +684,16 @@ fn percent_format(
     }
     let arg = arg_val
     match spec {
-      's' => buf.write_string(arg.to_str())
-      'r' => buf.write_string(arg.repr())
+      's' =>
+        match arg.to_str_checked() {
+          Err(e) => return Err(e)
+          Ok(s) => buf.write_string(s)
+        }
+      'r' =>
+        match arg.repr_checked() {
+          Err(e) => return Err(e)
+          Ok(s) => buf.write_string(s)
+        }
       'd' | 'i' =>
         match percent_to_int(arg) {
           Ok(n2) => buf.write_string(n2.to_string())
@@ -1405,8 +1413,13 @@ fn eval_index(
       }
     @value.Value::Dict(d) =>
       match check(ctx, d.get(idx)) {
-        None =>
-          raise EvalErr(make_eval_error(ctx, "key \{idx.repr()} not in dict"))
+        None => {
+          let key_str = match idx.repr_checked() {
+            Ok(s) => s
+            Err(_) => "<key>"
+          }
+          raise EvalErr(make_eval_error(ctx, "key \{key_str} not in dict"))
+        }
         Some(v) => v
       }
     @value.Value::Range(r) =>

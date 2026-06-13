@@ -129,6 +129,7 @@ pub struct CustomValue {
   priv type_name_fn : () -> String
   priv truth_fn : () -> Bool
   priv repr_fn : () -> String
+  priv repr_depth_fn : ((Int) -> Result[String, String])?
   priv hash_fn : (() -> Result[UInt, String])?
   priv equals_fn : ((Value, Int) -> Result[Bool, String])?
   priv get_attr_fn : ((String) -> Result[Value?, String])?
@@ -173,6 +174,7 @@ pub fn CustomValue::new(
     type_name_fn,
     truth_fn,
     repr_fn,
+    repr_depth_fn: None,
     hash_fn: None,
     equals_fn: None,
     get_attr_fn: None,
@@ -417,6 +419,51 @@ pub fn CustomValue::get_truth(self : CustomValue) -> Bool {
 /// `repr_fn`.
 pub fn CustomValue::get_repr(self : CustomValue) -> String {
   (self.repr_fn)()
+}
+
+///|
+/// Invokes the depth-aware repr callback with `depth`, propagating the
+/// remaining recursion budget. Falls back to `repr_fn()` when no
+/// depth-aware callback was registered, but still returns `Err` when
+/// `depth` is exhausted to prevent the fallback from calling
+/// `Value::repr()` (which restarts at `repr_limit`) inside a deeply
+/// nested traversal.
+///
+/// Parameters:
+///
+/// - `depth` : Remaining recursion depth passed down from the caller.
+pub fn CustomValue::get_repr_depth(
+  self : CustomValue,
+  depth : Int,
+) -> Result[String, String] {
+  match self.repr_depth_fn {
+    Some(f) => f(depth)
+    None =>
+      if depth < 1 {
+        Err("repr exceeded maximum recursion depth")
+      } else {
+        Ok((self.repr_fn)())
+      }
+  }
+}
+
+///|
+/// Attaches a depth-aware repr callback. When registered, `repr_inner`
+/// calls this instead of `repr_fn`, passing the remaining depth budget so
+/// field values can be repr'd without restarting the counter.
+///
+/// Parameters:
+///
+/// - `self` : The `CustomValue` to extend.
+/// - `repr_depth_fn` : Callback `(depth: Int) -> Result[String, String]`
+///   that renders the value with `depth` remaining levels.
+///
+/// Returns a new `CustomValue` with the depth-aware repr registered.
+pub fn CustomValue::with_repr_depth(
+  self : CustomValue,
+  repr_depth_fn : (Int) -> Result[String, String],
+) -> CustomValue {
+  { ..self, repr_depth_fn: Some(repr_depth_fn) }
 }
 
 ///|
