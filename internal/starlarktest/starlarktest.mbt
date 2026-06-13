@@ -466,7 +466,7 @@ fn parse_hash_annotation(line : String) -> HashAnnotation {
       let after = trim_start(line[hash_pos + 3:].to_owned())
       let chars = after.iter().to_array()
       if chars.is_empty() {
-        Malformed(after)
+        Malformed("(empty)")
       } else if chars[0] == '"' {
         let inner = after[1:].to_owned()
         match inner.find("\"") {

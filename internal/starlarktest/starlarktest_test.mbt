@@ -142,7 +142,7 @@ test "run_chunked_string: empty annotation after ### is an error" {
     #|(a, b) = 1 ###
   let failures = run_chunked_string(src)
   assert_true(failures.length() >= 1)
-  assert_true(failures.iter().any(fn(f) { f.contains("malformed") }))
+  assert_true(failures.iter().any(fn(f) { f.contains("(empty)") }))
 }
 
 ///|
