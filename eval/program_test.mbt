@@ -175,3 +175,41 @@ test "Program::load: returns empty tuple when index is out of range" {
   let (path2, _pos2) = prog.load(-1)
   assert_eq(path2, "")
 }
+
+///|
+test "Program: resolve error with multiple undefined names reports only the first" {
+  match source_program("<test>", "a + b", Options::default(), fn(_) { false }) {
+    Ok(_) => fail("expected resolve error")
+    Err(e) => {
+      let msg = e.to_string()
+      if !msg.contains("undefined: a") {
+        fail("expected 'undefined: a' in: \{msg}")
+      }
+      if msg.contains("undefined: b") {
+        fail("must not contain 'undefined: b' in: \{msg}")
+      }
+    }
+  }
+}
+
+///|
+test "Program: top-level for in resolve error reports only the first error" {
+  match
+    source_program(
+      "<test>",
+      "for x in []:\n  big = big * 10",
+      Options::default(),
+      fn(_) { false },
+    ) {
+    Ok(_) => fail("expected resolve error")
+    Err(e) => {
+      let msg = e.to_string()
+      if !msg.contains("for loop not within a function") {
+        fail("expected 'for loop not within a function' in: \{msg}")
+      }
+      if msg.contains(";") {
+        fail("must not join multiple errors with ';' in: \{msg}")
+      }
+    }
+  }
+}
