@@ -1512,3 +1512,55 @@ test "ternary arg with method call on ident parses as ECond" {
     _ => fail("expected ECall")
   }
 }
+
+// --- Depth guard ---
+
+///|
+test "deeply nested list exceeding depth limit returns a parse error" {
+  let n = 210
+  let src = "[".repeat(n) + "1" + "]".repeat(n)
+  match @parser.parse_expr("test.star", src) {
+    Err(e) => assert_true(e.msg().contains("expression nesting too deep"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep list nesting")
+  }
+}
+
+///|
+test "deeply nested parens exceeding depth limit returns a parse error" {
+  let n = 210
+  let src = "(".repeat(n) + "1" + ")".repeat(n)
+  match @parser.parse_expr("test.star", src) {
+    Err(e) => assert_true(e.msg().contains("expression nesting too deep"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep paren nesting")
+  }
+}
+
+///|
+test "long not-chain exceeding depth limit returns a parse error" {
+  let n = 210
+  let src = "not ".repeat(n) + "True"
+  match @parser.parse_expr("test.star", src) {
+    Err(e) => assert_true(e.msg().contains("expression nesting too deep"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep not chain")
+  }
+}
+
+///|
+test "long unary-minus chain exceeding depth limit returns a parse error" {
+  let n = 210
+  let src = "-".repeat(n) + "1"
+  match @parser.parse_expr("test.star", src) {
+    Err(e) => assert_true(e.msg().contains("expression nesting too deep"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep unary minus chain")
+  }
+}
+
+///|
+test "normal nesting well within depth limit parses successfully" {
+  let n = 50
+  let src = "[".repeat(n) + "1" + "]".repeat(n)
+  match @parser.parse_expr("test.star", src) {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error for shallow nesting: \{e.msg()}")
+  }
+}
