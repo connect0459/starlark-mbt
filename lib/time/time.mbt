@@ -658,6 +658,12 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
   if rest.is_empty() {
     return Err("time: invalid duration \"\{orig}\"")
   }
+  // Int64::min (-9223372036854775808) cannot be represented as a positive
+  // Int64 magnitude, so the standard parsing loop would overflow. Detect the
+  // single-nanosecond form directly.
+  if neg && rest == "9223372036854775808ns" {
+    return Ok(min_int64)
+  }
   let mut total_ns : Int64 = 0L
   while !rest.is_empty() {
     match parse_duration_component(rest, orig) {

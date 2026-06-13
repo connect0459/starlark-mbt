@@ -154,3 +154,19 @@ test "parse_go_layout: default year is 0 when layout omits year" {
     Err(e) => fail(e)
   }
 }
+
+///|
+test "parse_duration_str: Int64 minimum value in nanoseconds is accepted" {
+  match parse_duration_str("-9223372036854775808ns") {
+    Ok(v) => assert_eq(v, -9223372036854775808L)
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+test "parse_duration_str: one less than Int64 minimum in nanoseconds is accepted" {
+  match parse_duration_str("-9223372036854775807ns") {
+    Ok(v) => assert_eq(v, -9223372036854775807L)
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
