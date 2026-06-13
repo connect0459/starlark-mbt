@@ -1578,3 +1578,23 @@ test "nested lambdas in comprehension if-clause exceeding depth limit returns a 
       )
   }
 }
+
+///|
+test "deeply nested dict literals exceeding depth limit returns a parse error" {
+  let n = 210
+  let src = "{0: ".repeat(n) + "0" + "}".repeat(n)
+  match @parser.parse_expr("test.star", src) {
+    Err(e) => assert_true(e.msg().contains("expression nesting too deep"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep dict nesting")
+  }
+}
+
+///|
+test "deeply nested call chains exceeding depth limit returns a parse error" {
+  let n = 210
+  let src = "f(".repeat(n) + "0" + ")".repeat(n)
+  match @parser.parse_expr("test.star", src) {
+    Err(e) => assert_true(e.msg().contains("expression nesting too deep"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep call chain")
+  }
+}
