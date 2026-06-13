@@ -59,26 +59,26 @@ test "string literal is parsed as LitString" {
 }
 
 ///|
-test "None literal is parsed as LitNone" {
+test "None is parsed as an identifier" {
   match parse_e("None") {
-    ELiteral(LitNone, _) => ()
-    _ => fail("expected LitNone")
+    EIdent("None", _) => ()
+    _ => fail("expected EIdent(\"None\")")
   }
 }
 
 ///|
-test "True literal is parsed as LitBool(true)" {
+test "True is parsed as an identifier" {
   match parse_e("True") {
-    ELiteral(LitBool(true), _) => ()
-    _ => fail("expected LitBool(true)")
+    EIdent("True", _) => ()
+    _ => fail("expected EIdent(\"True\")")
   }
 }
 
 ///|
-test "False literal is parsed as LitBool(false)" {
+test "False is parsed as an identifier" {
   match parse_e("False") {
-    ELiteral(LitBool(false), _) => ()
-    _ => fail("expected LitBool(false)")
+    EIdent("False", _) => ()
+    _ => fail("expected EIdent(\"False\")")
   }
 }
 
@@ -202,7 +202,7 @@ test "conditional expression x if c else y" {
   match parse_e("1 if True else 0") {
     ECond(
       ELiteral(LitInt(1N), _),
-      ELiteral(LitBool(true), _),
+      EIdent("True", _),
       ELiteral(LitInt(0N), _),
       _
     ) => ()
@@ -516,7 +516,7 @@ test "for loop" {
 test "while loop" {
   let f = parse_f("while True:\n  pass\n")
   match f.stmts()[0] {
-    SWhile(ELiteral(LitBool(true), _), body, _) => assert_eq(body.length(), 1)
+    SWhile(EIdent("True", _), body, _) => assert_eq(body.length(), 1)
     _ => fail("expected while loop")
   }
 }
@@ -878,45 +878,45 @@ test "walk: visits all clauses in comprehension" {
   assert_eq(kinds.join(","), "for,if")
 }
 
-// --- Keyword literals: None, True, False must not be identifiers ---
+// --- None, True, False are pre-declared identifiers (spec §Identifiers) ---
 
 ///|
-test "parser: None cannot be a function parameter name" {
+test "parser: None is accepted as a function parameter name" {
   let result = @parser.parse_file("test.star", "def f(None): pass\n")
-  assert_true(result is Err(_))
+  assert_true(result is Ok(_))
 }
 
 ///|
-test "parser: True cannot be a function parameter name" {
+test "parser: True is accepted as a function parameter name" {
   let result = @parser.parse_file("test.star", "def f(True): pass\n")
-  assert_true(result is Err(_))
+  assert_true(result is Ok(_))
 }
 
 ///|
-test "parser: False cannot be a function parameter name" {
+test "parser: False is accepted as a function parameter name" {
   let result = @parser.parse_file("test.star", "def f(False): pass\n")
-  assert_true(result is Err(_))
+  assert_true(result is Ok(_))
 }
 
 ///|
-test "parser: None with default cannot be a function parameter name" {
+test "parser: None with default is accepted as a function parameter name" {
   let result = @parser.parse_file("test.star", "def f(None=0): pass\n")
-  assert_true(result is Err(_))
+  assert_true(result is Ok(_))
 }
 
 ///|
-test "parser: None True False still parse as literal expressions" {
+test "parser: None True False parse as identifier expressions" {
   match parse_e("None") {
-    ELiteral(LitNone, _) => ()
-    _ => fail("expected LitNone")
+    EIdent("None", _) => ()
+    _ => fail("expected EIdent(\"None\")")
   }
   match parse_e("True") {
-    ELiteral(LitBool(true), _) => ()
-    _ => fail("expected LitBool(true)")
+    EIdent("True", _) => ()
+    _ => fail("expected EIdent(\"True\")")
   }
   match parse_e("False") {
-    ELiteral(LitBool(false), _) => ()
-    _ => fail("expected LitBool(false)")
+    EIdent("False", _) => ()
+    _ => fail("expected EIdent(\"False\")")
   }
 }
 
@@ -1238,12 +1238,7 @@ test "ternary arg starting with ident parses as ECond" {
       assert_eq(args.length(), 1)
       match args[0] {
         ArgPos(
-          ECond(
-            EIdent("x", _),
-            ELiteral(LitBool(true), _),
-            ELiteral(LitInt(0N), _),
-            _
-          )
+          ECond(EIdent("x", _), EIdent("True", _), ELiteral(LitInt(0N), _), _)
         ) => ()
         _ => fail("expected ArgPos(ECond(x, True, 0))")
       }

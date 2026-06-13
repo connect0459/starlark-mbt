@@ -94,9 +94,6 @@ pub(all) enum Token {
   Pass
   Return
   While
-  NoneKw
-  TrueKw
-  FalseKw
   As
   Async
   Await

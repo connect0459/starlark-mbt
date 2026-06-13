@@ -1416,18 +1416,6 @@ fn Parser::parse_atom(self : Parser) -> @syntax.Expr raise ParseErr {
       self.advance()
       @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBytes(b), p)
     }
-    @lexer.Token::NoneKw => {
-      self.advance()
-      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitNone, p)
-    }
-    @lexer.Token::TrueKw => {
-      self.advance()
-      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(true), p)
-    }
-    @lexer.Token::FalseKw => {
-      self.advance()
-      @syntax.Expr::ELiteral(@syntax.LiteralVal::LitBool(false), p)
-    }
     @lexer.Token::Ident(name) => {
       self.advance()
       @syntax.Expr::EIdent(name, p)

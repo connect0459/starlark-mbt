@@ -382,18 +382,41 @@ test "eval_expr: a runtime error carries the caller-supplied filename" {
 }
 
 ///|
-test "eval_expr: None literal evaluates to None" {
+test "eval_expr: None predeclared identifier evaluates to None" {
   assert_true(eval_e("None") is Ok(@value.Value::None))
 }
 
 ///|
-test "eval_expr: True literal evaluates to Bool(true)" {
+test "eval_expr: True predeclared identifier evaluates to Bool(true)" {
   assert_true(eval_e("True") is Ok(@value.Value::Bool(true)))
 }
 
 ///|
-test "eval_expr: False literal evaluates to Bool(false)" {
+test "eval_expr: False predeclared identifier evaluates to Bool(false)" {
   assert_true(eval_e("False") is Ok(@value.Value::Bool(false)))
+}
+
+///|
+test "True False None can be shadowed by local bindings" {
+  let src =
+    #|def f():
+    #|  True = 0
+    #|  False = 1
+    #|  None = 2
+    #|  return (True, False, None)
+    #|result = f()
+  match exec_src(src) {
+    Ok(m) =>
+      match m.get("result") {
+        Some(@value.Value::Tuple(elems)) => {
+          assert_true(elems[0] is @value.Value::Int(0N))
+          assert_true(elems[1] is @value.Value::Int(1N))
+          assert_true(elems[2] is @value.Value::Int(2N))
+        }
+        _ => fail("expected tuple result")
+      }
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
 }
 
 ///|
