@@ -62,6 +62,10 @@ When the stub is active, `time.now()` always returns the Unix epoch. Override vi
 | `d / n` | `time.duration` | Divide by integer or float |
 | `d // d2` | `int` | Integer floor-division of two durations |
 
+Note: `duration - time` raises `unsupported binary op`. The Starlark spec does not
+define this operation; starlark-go silently computes `time - duration` instead, which
+is a dialect difference.
+
 ## RFC 3339 parsing behavior
 
 The default `parse_time` format follows RFC 3339 with the following intentional

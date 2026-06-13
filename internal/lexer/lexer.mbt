@@ -77,10 +77,6 @@ pub(all) enum Token {
   Pass
   Return
   While
-  // Keyword literals (not identifiers)
-  NoneKw
-  TrueKw
-  FalseKw
   // Reserved Python keywords (not valid in Starlark; parser rejects)
   As
   Async
@@ -178,9 +174,6 @@ pub fn Token::to_string(self : Token) -> String {
     Pass => "pass"
     Return => "return"
     While => "while"
-    NoneKw => "None"
-    TrueKw => "True"
-    FalseKw => "False"
     As => "as"
     Async => "async"
     Await => "await"
@@ -285,9 +278,6 @@ pub fn keyword_token(name : String) -> Token? {
     "pass" => Some(Pass)
     "return" => Some(Return)
     "while" => Some(While)
-    "None" => Some(NoneKw)
-    "True" => Some(TrueKw)
-    "False" => Some(FalseKw)
     "as" => Some(As)
     "async" => Some(Async)
     "await" => Some(Await)

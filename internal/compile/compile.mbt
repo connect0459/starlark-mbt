@@ -775,9 +775,6 @@ fn Fcomp::compile_opt_expr(
 ///|
 fn Fcomp::compile_literal(self : Fcomp, lit : @syntax.LiteralVal) -> Unit {
   match lit {
-    LitNone => self.emit0(Opcode::NoneOp, 0, 1)
-    LitBool(true) => self.emit0(Opcode::TrueOp, 0, 1)
-    LitBool(false) => self.emit0(Opcode::FalseOp, 0, 1)
     LitInt(n) =>
       self.emit1(Opcode::Constant, self.pcomp.add_const(CInt(n)), 0, 1)
     LitFloat(f) =>

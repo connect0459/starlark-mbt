@@ -3,8 +3,6 @@
 
 ///|
 pub(all) enum LiteralVal {
-  LitNone
-  LitBool(Bool)
   LitInt(BigInt)
   LitFloat(Double)
   LitString(String)
