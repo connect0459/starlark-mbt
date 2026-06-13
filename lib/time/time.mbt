@@ -65,6 +65,33 @@ fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
 }
 
 ///|
+fn extract_time_all(v : @value.Value) -> (Int64, Int, Int, String)? {
+  match v {
+    @value.Value::ExtVal(c) =>
+      if c.get_type_name() == "time.time" {
+        match
+          (
+            c.get_attr("__sec"),
+            c.get_attr("__nsec"),
+            c.get_attr("__tz_offset"),
+            c.get_attr("__tz_name"),
+          ) {
+          (
+            Ok(Some(@value.Value::Int(s))),
+            Ok(Some(@value.Value::Int(n))),
+            Ok(Some(@value.Value::Int(off))),
+            Ok(Some(@value.Value::String(name))),
+          ) => Some((s.to_int64(), n.to_int(), off.to_int(), name.raw()))
+          _ => None
+        }
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
 fn normalize_time_parts(sec : Int64, raw_nsec : Int) -> (Int64, Int) {
   let nps = ns_per_second.to_int()
   if raw_nsec >= nps {
@@ -307,15 +334,15 @@ fn duration_binary(
       match extract_duration_ns(rhs) {
         Some(rhs_ns) => Some(Ok(make_duration(ns + rhs_ns)))
         None =>
-          match extract_time_parts(rhs) {
-            Some((sec, nsec)) => {
+          match extract_time_all(rhs) {
+            Some((sec, nsec, tz_offset, tz_name)) => {
               let extra_sec = ns / ns_per_second
               let extra_nsec = (ns % ns_per_second).to_int()
               let (new_sec, new_nsec) = normalize_time_parts(
                 sec + extra_sec,
                 nsec + extra_nsec,
               )
-              Some(Ok(make_time(new_sec, new_nsec)))
+              Some(Ok(make_time_at_zone(new_sec, new_nsec, tz_offset, tz_name)))
             }
             None => None
           }
@@ -1094,6 +1121,9 @@ fn time_attr(
   match name {
     "__sec" => Ok(Some(@value.Value::Int(BigInt::from_int64(sec))))
     "__nsec" => Ok(Some(@value.Value::Int(BigInt::from_int(nsec))))
+    "__tz_offset" => Ok(Some(@value.Value::Int(BigInt::from_int(tz_offset))))
+    "__tz_name" =>
+      Ok(Some(@value.Value::String(@value.StarlarkString::new(tz_name))))
     "unix" => Ok(Some(@value.Value::Int(BigInt::from_int64(sec))))
     "unix_nano" =>
       Ok(
@@ -1142,6 +1172,8 @@ fn time_attr_names() -> Array[String] {
 fn time_binary(
   sec : Int64,
   nsec : Int,
+  tz_offset : Int,
+  tz_name : String,
   op : String,
   rhs : @value.Value,
   is_left : Bool,
@@ -1159,7 +1191,7 @@ fn time_binary(
             sec + extra_sec,
             nsec + extra_nsec,
           )
-          Some(Ok(make_time(new_sec, new_nsec)))
+          Some(Ok(make_time_at_zone(new_sec, new_nsec, tz_offset, tz_name)))
         }
         None => None
       }
@@ -1172,7 +1204,7 @@ fn time_binary(
             sec - extra_sec,
             nsec - extra_nsec,
           )
-          Some(Ok(make_time(new_sec, new_nsec)))
+          Some(Ok(make_time_at_zone(new_sec, new_nsec, tz_offset, tz_name)))
         }
         None =>
           match extract_time_parts(rhs) {
@@ -1219,7 +1251,7 @@ fn make_time_at_zone(
     .with_equals(fn(other, _depth) { Ok(time_equals(sec, nsec, other)) })
     .with_compare(fn(other) { time_compare(sec, nsec, other) })
     .with_binary(fn(op, rhs, is_left) {
-      time_binary(sec, nsec, op, rhs, is_left)
+      time_binary(sec, nsec, tz_offset, tz_name, op, rhs, is_left)
     })
     .with_attrs(fn(name) { time_attr(sec, nsec, tz_offset, tz_name, name) }, fn() {
       time_attr_names()
