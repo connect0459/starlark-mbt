@@ -1142,9 +1142,13 @@ fn Parser::parse_call_arg(self : Parser) -> @syntax.Arg raise ParseErr {
         let v = self.parse_test()
         @syntax.Arg::ArgKw(name, v, p)
       } else {
+        // The ident-positional path bypasses parse_test, so guard depth here to
+        // prevent stack overflow on deeply chained calls like f(f(f(...))).
+        self.bump_depth()
         let ident_expr = @syntax.Expr::EIdent(name, p)
         let e = self.finish_primary_from_expr(ident_expr)
         let full = self.finish_test_from(e, p)
+        self.pop_depth()
         self.reject_malformed_kwarg()
         @syntax.Arg::ArgPos(full)
       }
