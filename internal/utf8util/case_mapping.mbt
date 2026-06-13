@@ -769,8 +769,6 @@ let ll_ranges : Array[(Int, Int, Int)] = [
 ///|
 // Unicode Nd category (decimal digit numbers), from Go's unicode.Digit table.
 // Ranges derived from Unicode 15.1 / Go standard library. (lo, hi, stride).
-
-///|
 let nd_ranges : Array[(Int, Int, Int)] = [
   (0x0030, 0x0039, 1),
   (0x0660, 0x0669, 1),
@@ -839,9 +837,8 @@ let nd_ranges : Array[(Int, Int, Int)] = [
   (0x1FBF0, 0x1FBF9, 1),
 ]
 
-// Unicode lt category, from Go's unicode rangetable. (lo, hi, stride).
-
 ///|
+// Unicode lt category, from Go's unicode rangetable. (lo, hi, stride).
 let lt_ranges : Array[(Int, Int, Int)] = [
   (0x1C5, 0x1CB, 3),
   (0x1F2, 0x1F88, 7574),
