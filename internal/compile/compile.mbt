@@ -498,9 +498,7 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
         let (k, v) = pair
         self.compile_expr(k)
         self.compile_expr(v)
-        self.set_pos(pos)
-        // [.., dict, key, value] -> dict[key] = value, erroring on a key that
-        // already appears in this literal; the dict stays on the stack.
+        self.set_pos(@syntax.expr_pos(k))
         self.emit0(Opcode::SetDictUniq, 2, 0)
       }
     }
