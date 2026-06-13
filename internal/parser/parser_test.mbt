@@ -758,16 +758,16 @@ fn parse_f_err(src : String) -> String {
 
 ///|
 test "is operator is rejected" {
-  let msg = parse_e_err("x is y")
-  if !msg.contains("'is' operator is not allowed") {
+  let msg = parse_f_err("x is y\n")
+  if !msg.contains("got is, want newline") {
     fail("expected 'is' rejection, got: \{msg}")
   }
 }
 
 ///|
 test "is not operator is rejected" {
-  let msg = parse_e_err("x is not y")
-  if !msg.contains("'is' operator is not allowed") {
+  let msg = parse_f_err("x is not y\n")
+  if !msg.contains("got is, want newline") {
     fail("expected 'is not' rejection, got: \{msg}")
   }
 }
@@ -783,7 +783,7 @@ test "type annotation in function parameter is rejected" {
 ///|
 test "annotated assignment is rejected" {
   let msg = parse_f_err("x: int = 1\n")
-  if !msg.contains("type annotations are not allowed") {
+  if !msg.contains("got ':', want newline") {
     fail("expected annotation rejection, got: \{msg}")
   }
 }
@@ -815,7 +815,7 @@ test "double-star in expression position reports want primary expression" {
 ///|
 test "walrus operator := is rejected" {
   let msg = parse_f_err("x := 5\n")
-  if !msg.contains("walrus operator") && !msg.contains(":=") {
+  if !msg.contains("got ':', want newline") {
     fail("expected walrus rejection, got: \{msg}")
   }
 }

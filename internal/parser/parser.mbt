@@ -414,10 +414,6 @@ fn Parser::parse_assign_or_expr_stmt(
       let rhs = self.parse_test()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugRShift, rhs, p)
     }
-    @lexer.Token::Colon =>
-      raise ParseErr(
-        self.syntax_error("type annotations are not allowed in Starlark"),
-      )
     _ => @syntax.Stmt::SExpr(lhs)
   }
 }
@@ -818,11 +814,6 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
   let mut e = self.parse_bitor_expr()
   let mut prev_op_str : String? = None
   while true {
-    if self.tok == @lexer.Token::Is {
-      raise ParseErr(
-        self.syntax_error("'is' operator is not allowed in Starlark"),
-      )
-    }
     let cur_str : String? = match self.tok {
       @lexer.Token::Lt => Some("<")
       @lexer.Token::Le => Some("<=")
@@ -1338,11 +1329,6 @@ fn Parser::finish_comparison_from(
   let mut e = e
   let mut prev_op_str : String? = None
   while true {
-    if self.tok == @lexer.Token::Is {
-      raise ParseErr(
-        self.syntax_error("'is' operator is not allowed in Starlark"),
-      )
-    }
     let cur_str : String? = match self.tok {
       @lexer.Token::Lt => Some("<")
       @lexer.Token::Le => Some("<=")
