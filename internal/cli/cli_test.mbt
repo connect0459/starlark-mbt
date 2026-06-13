@@ -106,3 +106,11 @@ test "parse_cli_args allows -c combined with other flags" {
     Err(msg) => fail(msg)
   }
 }
+
+///|
+test "parse_cli_args captures the inline program from --c space-separated form" {
+  match parse_cli_args(["starlark", "--c", "print(42)"]) {
+    Ok((_filepath, expr, _opts)) => assert_true(expr is Some("print(42)"))
+    Err(msg) => fail(msg)
+  }
+}
