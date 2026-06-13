@@ -91,7 +91,7 @@ fn Parser::expect(
 ) -> Unit raise ParseErr {
   if self.tok != expected {
     raise ParseErr(
-      self.syntax_error(
+      self.scanner_error(
         "got \{self.tok.go_string()}, want \{expected.go_string()}",
       ),
     )
@@ -223,7 +223,7 @@ fn Parser::parse_simple_stmt(
     self.advance()
   } else if self.tok != @lexer.Token::EOF && self.tok != @lexer.Token::Outdent {
     raise ParseErr(
-      self.syntax_error("got \{self.tok.go_string()}, want newline"),
+      self.scanner_error("got \{self.tok.go_string()}, want newline"),
     )
   }
   stmts
@@ -864,7 +864,7 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
-            self.syntax_error("got \{self.tok.go_string()}, want in"),
+            self.scanner_error("got \{self.tok.go_string()}, want in"),
           )
         }
         @syntax.BinaryOp::OpNotIn
@@ -1381,7 +1381,7 @@ fn Parser::finish_comparison_from(
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
-            self.syntax_error("got \{self.tok.go_string()}, want in"),
+            self.scanner_error("got \{self.tok.go_string()}, want in"),
           )
         }
         @syntax.BinaryOp::OpNotIn
@@ -1457,7 +1457,7 @@ fn Parser::parse_atom(self : Parser) -> @syntax.Expr raise ParseErr {
     @lexer.Token::LBrace => self.parse_dict_or_set(p)
     _ =>
       raise ParseErr(
-        self.syntax_error(
+        self.scanner_error(
           "got \{self.tok.go_string()}, want primary expression",
         ),
       )
@@ -1605,7 +1605,9 @@ fn Parser::parse_comp_clauses(
         break
       _ =>
         raise ParseErr(
-          self.syntax_error("got \{self.tok.go_string()}, want ']', for, or if"),
+          self.scanner_error(
+            "got \{self.tok.go_string()}, want ']', for, or if",
+          ),
         )
     }
   }

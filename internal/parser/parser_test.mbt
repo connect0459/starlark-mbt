@@ -1650,3 +1650,15 @@ test "deeply nested call chains exceeding depth limit returns a parse error" {
     Ok(_) => fail("expected depth-limit error for \{n}-deep call chain")
   }
 }
+
+///|
+test "parser: got-want error anchors after the unexpected token" {
+  // go: `foo bar` at 1:8 (one past end of 'bar'), not 1:5 (start of 'bar')
+  match @parser.parse_file("test.star", "foo bar\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got identifier"))
+      assert_eq(e.pos().to_string(), "test.star:1:8")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
