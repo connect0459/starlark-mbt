@@ -146,7 +146,7 @@ pub fn run_file(filepath : String, opts : @eval.Options) -> Int {
   match @eval.exec_file(thread, filepath, src, opts) {
     Ok(_) => 0
     Err(e) => {
-      println(e.msg())
+      println(e.backtrace())
       1
     }
   }
