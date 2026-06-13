@@ -7,6 +7,10 @@ suberror ParseErr {
 }
 
 ///|
+// Safe ceiling across all four backends as of 2026-06-13; see https://github.com/connect0459/starlark-mbt/issues/174.
+let max_expr_depth : Int = 200
+
+///|
 struct Parser {
   scanner : @lexer.Scanner
   mut tok : @lexer.Token
@@ -15,6 +19,7 @@ struct Parser {
   // keyword that terminates the target is not consumed as an `in` comparison
   // operator inside the target expression.
   mut no_in : Bool
+  mut expr_depth : Int
 }
 
 ///|
@@ -25,6 +30,7 @@ fn Parser::new(filename : String, source : String) -> Parser raise ParseErr {
     tok: @lexer.Token::EOF,
     pos: @errors.Position::new(filename, 0, 0),
     no_in: false,
+    expr_depth: 0,
   }
   p.advance()
   p
@@ -63,6 +69,19 @@ fn Parser::eof_kind(self : Parser) -> @errors.SyntaxErrorKind {
   } else {
     @errors.SyntaxErrorKind::Other
   }
+}
+
+///|
+fn Parser::bump_depth(self : Parser) -> Unit raise ParseErr {
+  self.expr_depth += 1
+  if self.expr_depth > max_expr_depth {
+    raise ParseErr(self.syntax_error("expression nesting too deep"))
+  }
+}
+
+///|
+fn Parser::pop_depth(self : Parser) -> Unit {
+  self.expr_depth -= 1
 }
 
 ///|
@@ -669,10 +688,14 @@ fn is_stmt_terminator(tok : @lexer.Token) -> Bool {
 
 ///|
 fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
-  if self.tok == @lexer.Token::Lambda {
-    return self.parse_lambda_expr_no_cond()
+  self.bump_depth()
+  let result = if self.tok == @lexer.Token::Lambda {
+    self.parse_lambda_expr_no_cond()
+  } else {
+    self.parse_or_test()
   }
-  self.parse_or_test()
+  self.pop_depth()
+  result
 }
 
 ///|
@@ -701,12 +724,16 @@ fn Parser::parse_lambda_expr_no_cond(
 ///
 /// Returns the parsed `Expr` node.
 pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
-  if self.tok == @lexer.Token::Lambda {
-    return self.parse_lambda_expr()
+  self.bump_depth()
+  let result = if self.tok == @lexer.Token::Lambda {
+    self.parse_lambda_expr()
+  } else {
+    let p = self.pos
+    let e = self.parse_or_test()
+    self.finish_cond_tail_from(e, p)
   }
-  let p = self.pos
-  let e = self.parse_or_test()
-  self.finish_cond_tail_from(e, p)
+  self.pop_depth()
+  result
 }
 
 ///|
@@ -785,9 +812,11 @@ fn Parser::parse_and_test(self : Parser) -> @syntax.Expr raise ParseErr {
 ///|
 fn Parser::parse_not_test(self : Parser) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::Not {
+    self.bump_depth()
     let p = self.pos
     self.advance()
     let e = self.parse_not_test()
+    self.pop_depth()
     return @syntax.Expr::EUnary(@syntax.UnaryOp::OpNot, e, p)
   }
   self.parse_comparison()
@@ -951,18 +980,24 @@ fn Parser::parse_factor(self : Parser) -> @syntax.Expr raise ParseErr {
   let p = self.pos
   match self.tok {
     @lexer.Token::Plus => {
+      self.bump_depth()
       self.advance()
       let e = self.parse_factor()
+      self.pop_depth()
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpPlus, e, p)
     }
     @lexer.Token::Minus => {
+      self.bump_depth()
       self.advance()
       let e = self.parse_factor()
+      self.pop_depth()
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpMinus, e, p)
     }
     @lexer.Token::Tilde => {
+      self.bump_depth()
       self.advance()
       let e = self.parse_factor()
+      self.pop_depth()
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpBitNot, e, p)
     }
     _ => self.parse_primary()
@@ -1107,9 +1142,13 @@ fn Parser::parse_call_arg(self : Parser) -> @syntax.Arg raise ParseErr {
         let v = self.parse_test()
         @syntax.Arg::ArgKw(name, v, p)
       } else {
+        // The ident-positional path bypasses parse_test, so guard depth here to
+        // prevent stack overflow on deeply chained calls like f(f(f(...))).
+        self.bump_depth()
         let ident_expr = @syntax.Expr::EIdent(name, p)
         let e = self.finish_primary_from_expr(ident_expr)
         let full = self.finish_test_from(e, p)
+        self.pop_depth()
         self.reject_malformed_kwarg()
         @syntax.Arg::ArgPos(full)
       }
