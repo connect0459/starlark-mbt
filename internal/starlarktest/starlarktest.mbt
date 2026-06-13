@@ -4,7 +4,12 @@ fn make_error_fn(errors : Array[String]) -> @value.Value {
     if pos_args.length() != 1 {
       return Err("error: got \{pos_args.length()} arguments, want 1")
     }
-    errors.push(pos_args[0].to_str())
+    errors.push(
+      match pos_args[0].to_str_checked() {
+        Ok(s) => s
+        Err(_) => "<str error>"
+      },
+    )
     Ok(@value.Value::None)
   })
 }
@@ -105,12 +110,18 @@ fn make_true_fn(errors : Array[String]) -> @value.Value {
       let mut found = "assertion failed"
       for kv in kw_args {
         if kv.0 == "msg" {
-          found = kv.1.to_str()
+          found = match kv.1.to_str_checked() {
+            Ok(s) => s
+            Err(_) => "<str error>"
+          }
           break
         }
       }
       if pos_args.length() >= 2 {
-        found = pos_args[1].to_str()
+        found = match pos_args[1].to_str_checked() {
+          Ok(s) => s
+          Err(_) => "<str error>"
+        }
       }
       found
     }
