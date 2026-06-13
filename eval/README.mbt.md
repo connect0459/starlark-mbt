@@ -329,6 +329,32 @@ threads.
 
 ---
 
+## Intentional extensions and dialect differences
+
+The following behaviours differ from starlark-go by design.
+
+### Spell-hint on unexpected keyword argument
+
+When a function call passes an unrecognised keyword argument, the error
+message includes a spell-hint:
+
+```text
+function f got an unexpected keyword argument "nme" (did you mean "name"?)
+```
+
+starlark-go omits the parenthetical hint. This is a quality-of-life
+extension; it does not affect correctness or accepted syntax.
+
+### `(1 << 31) in range(0, 1 << 32)` returns `True`
+
+starlark-go evaluates this as `False` because its `rangeValue.contains`
+converts the needle with `AsInt32`, which truncates `1<<31` (an
+out-of-range signed 32-bit value) to `-1` before comparing. This is a
+known bug in starlark-go. This implementation returns the mathematically
+correct result `True`.
+
+---
+
 ## `DebugFrame`
 
 A read-only snapshot of an active Starlark call frame. Obtain via `Thread::debug_frame(depth)`.
