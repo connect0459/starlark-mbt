@@ -1564,3 +1564,17 @@ test "normal nesting well within depth limit parses successfully" {
     Err(e) => fail("unexpected error for shallow nesting: \{e.msg()}")
   }
 }
+
+///|
+test "nested lambdas in comprehension if-clause exceeding depth limit returns a parse error" {
+  let n = 210
+  let lambdas = "lambda: ".repeat(n) + "1"
+  let src = "[x for x in [1] if \{lambdas}]"
+  match @parser.parse_file("test.star", src) {
+    Err(e) => assert_true(e.msg().contains("expression nesting too deep"))
+    Ok(_) =>
+      fail(
+        "expected depth-limit error for \{n}-deep lambda chain in comprehension if-clause",
+      )
+  }
+}

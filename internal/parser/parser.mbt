@@ -680,10 +680,17 @@ fn is_stmt_terminator(tok : @lexer.Token) -> Bool {
 
 ///|
 fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
-  if self.tok == @lexer.Token::Lambda {
-    return self.parse_lambda_expr_no_cond()
+  self.expr_depth += 1
+  if self.expr_depth > max_expr_depth {
+    raise ParseErr(self.syntax_error("expression nesting too deep"))
   }
-  self.parse_or_test()
+  let result = if self.tok == @lexer.Token::Lambda {
+    self.parse_lambda_expr_no_cond()
+  } else {
+    self.parse_or_test()
+  }
+  self.expr_depth -= 1
+  result
 }
 
 ///|
