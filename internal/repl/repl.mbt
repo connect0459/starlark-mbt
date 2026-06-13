@@ -50,7 +50,10 @@ pub fn eval_input(
         } else {
           // Bind the last expression's value to `_`, matching the Python REPL.
           globals.set("_", v)
-          Value(v.repr())
+          match v.repr_checked() {
+            Ok(s) => Value(s)
+            Err(e) => EvalError(@errors.EvalError::simple(e))
+          }
         }
       Err(e) => EvalError(e)
     }
