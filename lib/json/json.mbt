@@ -812,26 +812,61 @@ pub fn decode_from_json(
 }
 
 ///|
-// Verify that `s` holds exactly one well-formed JSON value with no trailing
-// data, mirroring the strict validation Go's encoding/json.Indent performs.
-fn validate_json(s : String) -> Result[Unit, String] {
-  let chars = s.to_array()
-  match parse_json_value(chars, 0, 0) {
-    Err((offset, _)) =>
-      if offset < chars.length() {
-        Err("invalid character '\{chars[offset]}' in JSON")
-      } else {
-        Err("invalid character at end of JSON input")
-      }
-    Ok((_, next_i)) => {
-      let rest = skip_ws(chars, next_i)
-      if rest < chars.length() {
-        Err("invalid character '\{chars[rest]}' after top-level value")
-      } else {
-        Ok(())
-      }
+fn is_valid_json_scalar(tok : String) -> Bool {
+  if tok == "null" || tok == "true" || tok == "false" {
+    return true
+  }
+  let chars = tok.to_array()
+  let n = chars.length()
+  let mut i = 0
+  if i < n && chars[i] == '-' {
+    i += 1
+  }
+  if i >= n {
+    return false
+  }
+  if chars[i] == '0' {
+    i += 1
+  } else if chars[i].to_int() >= '1'.to_int() &&
+    chars[i].to_int() <= '9'.to_int() {
+    while i < n &&
+          chars[i].to_int() >= '0'.to_int() &&
+          chars[i].to_int() <= '9'.to_int() {
+      i += 1
+    }
+  } else {
+    return false
+  }
+  if i < n && chars[i] == '.' {
+    i += 1
+    if i >= n ||
+      chars[i].to_int() < '0'.to_int() ||
+      chars[i].to_int() > '9'.to_int() {
+      return false
+    }
+    while i < n &&
+          chars[i].to_int() >= '0'.to_int() &&
+          chars[i].to_int() <= '9'.to_int() {
+      i += 1
     }
   }
+  if i < n && (chars[i] == 'e' || chars[i] == 'E') {
+    i += 1
+    if i < n && (chars[i] == '+' || chars[i] == '-') {
+      i += 1
+    }
+    if i >= n ||
+      chars[i].to_int() < '0'.to_int() ||
+      chars[i].to_int() > '9'.to_int() {
+      return false
+    }
+    while i < n &&
+          chars[i].to_int() >= '0'.to_int() &&
+          chars[i].to_int() <= '9'.to_int() {
+      i += 1
+    }
+  }
+  i == n
 }
 
 ///|
@@ -853,8 +888,12 @@ fn write_indent_line(
 
 ///|
 /// Pretty-prints a JSON string, prefixing each line with `prefix` and
-/// indenting each nesting level with `indent_str`. Returns `Err` if `s`
-/// is not valid JSON.
+/// indenting each nesting level with `indent_str`.
+///
+/// Structural errors are detected: unbalanced brackets, unterminated
+/// string literals, and scalar tokens that are not a JSON keyword
+/// (`null`, `true`, `false`) or a syntactically-valid JSON number.
+/// Semantic validity (e.g. numeric range) is not checked.
 ///
 /// Parameters:
 ///
@@ -862,8 +901,8 @@ fn write_indent_line(
 /// - `prefix` : A string prepended to every output line.
 /// - `indent_str` : The string used for each level of nesting indentation.
 ///
-/// Returns `Ok(indented_string)` on success, or `Err(message)` if `s` is
-/// not valid JSON.
+/// Returns `Ok(indented_string)` on success, or `Err(message)` on a
+/// structural error.
 pub fn indent_json(
   s : String,
   prefix : String,
@@ -912,6 +951,9 @@ pub fn indent_json(
         }
         write_indent_line(buf, prefix, indent_str, depth)
       } else if c == '}' || c == ']' {
+        if depth == 0 {
+          return Err("unexpected '\{c}' in JSON")
+        }
         depth -= 1
         write_indent_line(buf, prefix, indent_str, depth)
         buf.write_char(c)
@@ -931,13 +973,38 @@ pub fn indent_json(
           c == '-' ||
           c == '+' ||
           c == '.' {
-          buf.write_char(c)
+          let tok_start = i
           i += 1
+          while i < len {
+            let tc = chars[i].to_int()
+            if (tc >= 'a'.to_int() && tc <= 'z'.to_int()) ||
+              (tc >= 'A'.to_int() && tc <= 'Z'.to_int()) ||
+              (tc >= '0'.to_int() && tc <= '9'.to_int()) ||
+              chars[i] == '-' ||
+              chars[i] == '+' ||
+              chars[i] == '.' {
+              i += 1
+            } else {
+              break
+            }
+          }
+          let tok_buf = StringBuilder::new()
+          for k in tok_start..<i {
+            tok_buf.write_char(chars[k])
+          }
+          let tok = tok_buf.to_string()
+          if !is_valid_json_scalar(tok) {
+            return Err("invalid JSON token '\{tok}'")
+          }
+          buf.write_string(tok)
         } else {
           return Err("invalid character '\{c}' in JSON")
         }
       }
     }
+  }
+  if in_string {
+    return Err("unterminated string in JSON")
   }
   if depth != 0 {
     return Err("unexpected end of JSON")
@@ -1055,13 +1122,10 @@ fn make_indent_fn() -> @value.Value {
         _ => return Err("json.indent: unexpected keyword argument \{k}")
       }
     }
-    match validate_json(s) {
-      Err(msg) => return Err("json.indent: \{msg}")
-      Ok(_) => ()
+    match indent_json(s, pfx, ind) {
+      Ok(result) => Ok(@value.Value::String(@value.StarlarkString::new(result)))
+      Err(e) => Err("json.indent: \{e}")
     }
-    indent_json(s, pfx, ind).map(fn(result) {
-      @value.Value::String(@value.StarlarkString::new(result))
-    })
   })
 }
 

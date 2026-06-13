@@ -388,6 +388,29 @@ test "indent_json empty object and array" {
 ///|
 test "indent_json rejects invalid JSON" {
   assert_true(indent_json("!invalid", "", "\t") is Err(_))
+  assert_true(indent_json("\"unclosed", "", "\t") is Err(_))
+  assert_true(indent_json("[abc]", "", "\t") is Err(_))
+  assert_true(indent_json("[+inf]", "", "\t") is Err(_))
+  assert_true(indent_json("[.5]", "", "\t") is Err(_))
+  assert_true(indent_json("]", "", "\t") is Err(_))
+  assert_true(indent_json("}", "", "\t") is Err(_))
+  assert_true(indent_json("[1]]", "", "\t") is Err(_))
+  assert_true(indent_json("[nullx]", "", "\t") is Err(_))
+  assert_true(indent_json("[truee]", "", "\t") is Err(_))
+  assert_true(indent_json("[1abc]", "", "\t") is Err(_))
+}
+
+///|
+test "indent_json passes through semantically-invalid but syntactically-valid JSON" {
+  check_indent("[1e999]", "", "\t", "[\n\t1e999\n]")
+  check_indent("[1e-999]", "", "\t", "[\n\t1e-999\n]")
+}
+
+///|
+test "decode rejects raw control character (RFC 7159 §7 compliance)" {
+  assert_true(decode_from_json("\"a\tb\"", None) is Err(_))
+  assert_true(decode_from_json("\"a\nb\"", None) is Err(_))
+  assert_true(decode_from_json("\"a\rb\"", None) is Err(_))
 }
 
 ///|
