@@ -71,6 +71,9 @@ fn is_valid_timezone_impl(name : String) -> Bool {
 
 ///|
 fn get_tz_abbr_at_impl(name : String, unix_time : Int64) -> (Int, String)? {
+  if name == "UTC" {
+    return Some((0, "UTC"))
+  }
   let name_bytes = string_to_c_bytes(name)
   let abbr_buf = Bytes::make(16, b'\x00')
   let offset = ffi_get_tz_abbr(name_bytes, unix_time, abbr_buf)

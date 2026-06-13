@@ -14,6 +14,21 @@ let ns_per_minute : Int64 = 60_000_000_000L
 let ns_per_hour : Int64 = 3_600_000_000_000L
 
 ///|
+let u_ns_per_microsecond : UInt64 = 1_000UL
+
+///|
+let u_ns_per_millisecond : UInt64 = 1_000_000UL
+
+///|
+let u_ns_per_second : UInt64 = 1_000_000_000UL
+
+///|
+let u_ns_per_minute : UInt64 = 60_000_000_000UL
+
+///|
+let u_ns_per_hour : UInt64 = 3_600_000_000_000UL
+
+///|
 let secs_per_hour : Int = 3600
 
 ///|
@@ -24,6 +39,12 @@ let secs_per_day : Int64 = 86400L
 
 ///|
 let int64_digits_cutoff : Int64 = 922337203685477580L
+
+///|
+let uint64_max : UInt64 = 18446744073709551615UL
+
+///|
+let uint64_digits_cutoff : UInt64 = 1844674407370955161UL
 
 ///|
 let max_int64 : Int64 = 9223372036854775807L
@@ -429,9 +450,6 @@ fn fmt_duration(ns : Int64) -> String {
   if ns == 0L {
     return "0s"
   }
-  let u_ns_per_second : UInt64 = 1_000_000_000UL
-  let u_ns_per_millisecond : UInt64 = 1_000_000UL
-  let u_ns_per_microsecond : UInt64 = 1_000UL
   let u_secs_per_hour : UInt64 = 3600UL
   let u_secs_per_minute : UInt64 = 60UL
   let buf = StringBuilder::new()
@@ -544,16 +562,39 @@ fn parse_int64_str(s : String) -> Int64? {
 }
 
 ///|
-fn parse_duration_number(
+fn parse_uint64_str(s : String) -> UInt64? {
+  if s.is_empty() {
+    return None
+  }
+  let chars = s.to_array()
+  let mut result = 0UL
+  for c in chars {
+    if c < '0' || c > '9' {
+      return None
+    }
+    if result > uint64_digits_cutoff {
+      return None
+    }
+    let digit = (c.to_int() - '0'.to_int()).to_uint64()
+    if result == uint64_digits_cutoff && digit > 5UL {
+      return None
+    }
+    result = result * 10UL + digit
+  }
+  Some(result)
+}
+
+///|
+fn parse_duration_number_u64(
   num_str : String,
-  scale : Int64,
+  scale : UInt64,
   orig : String,
-) -> Result[Int64, String] {
+) -> Result[UInt64, String] {
   match num_str.find(".") {
     None =>
-      match parse_int64_str(num_str) {
+      match parse_uint64_str(num_str) {
         Some(n) => {
-          if n != 0L && scale > max_int64 / n {
+          if n != 0UL && scale > uint64_max / n {
             return Err("time: invalid duration \"\{orig}\"")
           }
           Ok(n * scale)
@@ -564,36 +605,36 @@ fn parse_duration_number(
       let int_part = num_str[0:dot_pos].to_owned()
       let frac_part = num_str[dot_pos + 1:].to_owned()
       let int_val = if int_part.is_empty() {
-        0L
+        0UL
       } else {
-        match parse_int64_str(int_part) {
+        match parse_uint64_str(int_part) {
           Some(n) => n
           None => return Err("time: invalid duration \"\{orig}\"")
         }
       }
-      if int_val != 0L && scale > max_int64 / int_val {
+      if int_val != 0UL && scale > uint64_max / int_val {
         return Err("time: invalid duration \"\{orig}\"")
       }
       let int_ns = int_val * scale
       let frac_ns = if frac_part.is_empty() {
-        0L
+        0UL
       } else {
         let chars = frac_part.to_array()
-        let mut frac_val = 0L
+        let mut frac_val = 0UL
         let mut frac_scale = scale
         for c in chars {
           if c < '0' || c > '9' {
             return Err("time: invalid duration \"\{orig}\"")
           }
-          frac_scale = frac_scale / 10L
-          if frac_scale > 0L {
+          frac_scale = frac_scale / 10UL
+          if frac_scale > 0UL {
             frac_val = frac_val +
-              (c.to_int() - '0'.to_int()).to_int64() * frac_scale
+              (c.to_int() - '0'.to_int()).to_uint64() * frac_scale
           }
         }
         frac_val
       }
-      if int_ns > max_int64 - frac_ns {
+      if int_ns > uint64_max - frac_ns {
         return Err("time: invalid duration \"\{orig}\"")
       }
       Ok(int_ns + frac_ns)
@@ -658,27 +699,27 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
   if rest.is_empty() {
     return Err("time: invalid duration \"\{orig}\"")
   }
-  let mut total_ns : Int64 = 0L
+  let mut total_ns : UInt64 = 0UL
   while !rest.is_empty() {
     match parse_duration_component(rest, orig) {
       Err(e) => return Err(e)
       Ok((num_str, unit_str, remaining)) => {
-        let scale : Int64 = match unit_str {
-          "ns" => 1L
-          "us" | "µs" | "μs" => ns_per_microsecond
-          "ms" => ns_per_millisecond
-          "s" => ns_per_second
-          "m" => ns_per_minute
-          "h" => ns_per_hour
+        let scale : UInt64 = match unit_str {
+          "ns" => 1UL
+          "us" | "µs" | "μs" => u_ns_per_microsecond
+          "ms" => u_ns_per_millisecond
+          "s" => u_ns_per_second
+          "m" => u_ns_per_minute
+          "h" => u_ns_per_hour
           _ =>
             return Err(
               "time: unknown unit \"\{unit_str}\" in duration \"\{orig}\"",
             )
         }
-        match parse_duration_number(num_str, scale, orig) {
+        match parse_duration_number_u64(num_str, scale, orig) {
           Err(e) => return Err(e)
           Ok(ns_val) => {
-            if total_ns > max_int64 - ns_val {
+            if total_ns > uint64_max - ns_val {
               return Err("time: invalid duration \"\{orig}\"")
             }
             total_ns = total_ns + ns_val
@@ -688,10 +729,17 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
       }
     }
   }
+  let max_magnitude : UInt64 = 9223372036854775808UL
+  if total_ns > max_magnitude {
+    return Err("time: invalid duration \"\{orig}\"")
+  }
   if neg {
-    Ok(0L - total_ns)
+    Ok((0UL - total_ns).reinterpret_as_int64())
   } else {
-    Ok(total_ns)
+    if total_ns > max_magnitude - 1UL {
+      return Err("time: invalid duration \"\{orig}\"")
+    }
+    Ok(total_ns.reinterpret_as_int64())
   }
 }
 
