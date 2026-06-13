@@ -981,31 +981,31 @@ fn Parser::parse_factor(self : Parser) -> @syntax.Expr raise ParseErr {
   let p = self.pos
   match self.tok {
     @lexer.Token::Plus => {
-      self.advance()
       self.expr_depth += 1
       if self.expr_depth > max_expr_depth {
         raise ParseErr(self.syntax_error("expression nesting too deep"))
       }
+      self.advance()
       let e = self.parse_factor()
       self.expr_depth -= 1
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpPlus, e, p)
     }
     @lexer.Token::Minus => {
-      self.advance()
       self.expr_depth += 1
       if self.expr_depth > max_expr_depth {
         raise ParseErr(self.syntax_error("expression nesting too deep"))
       }
+      self.advance()
       let e = self.parse_factor()
       self.expr_depth -= 1
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpMinus, e, p)
     }
     @lexer.Token::Tilde => {
-      self.advance()
       self.expr_depth += 1
       if self.expr_depth > max_expr_depth {
         raise ParseErr(self.syntax_error("expression nesting too deep"))
       }
+      self.advance()
       let e = self.parse_factor()
       self.expr_depth -= 1
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpBitNot, e, p)
