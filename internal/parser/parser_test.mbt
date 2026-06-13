@@ -820,6 +820,46 @@ test "walrus operator := is rejected" {
   }
 }
 
+// --- Rejection error positions (column anchoring) ---
+
+///|
+test "Python keyword statement error anchors at column 1" {
+  // del, global, etc. reach parse_atom which uses syntax_error (token start).
+  match @parser.parse_file("test.star", "del x\n") {
+    Err(e) => assert_eq(e.pos().col(), 1)
+    Ok(_) => fail("expected del rejection")
+  }
+}
+
+///|
+test "is operator error anchors one past the token" {
+  // parse_simple_stmt raises scanner_error (one-past position) after the
+  // comparison loop exits without consuming `is`.
+  // "x is y": `is` at col 3-4, scanner pos after = col 5.
+  match @parser.parse_file("test.star", "x is y\n") {
+    Err(e) => assert_eq(e.pos().col(), 5)
+    Ok(_) => fail("expected is rejection")
+  }
+}
+
+///|
+test "walrus operator error anchors one past the colon" {
+  // "y := 1": `:` at col 3, scanner pos after `:` = col 4.
+  match @parser.parse_file("test.star", "y := 1\n") {
+    Err(e) => assert_eq(e.pos().col(), 4)
+    Ok(_) => fail("expected walrus rejection")
+  }
+}
+
+///|
+test "annotated assignment error anchors one past the colon" {
+  // "x: int = 1": `:` at col 2, scanner pos after `:` = col 3.
+  match @parser.parse_file("test.star", "x: int = 1\n") {
+    Err(e) => assert_eq(e.pos().col(), 3)
+    Ok(_) => fail("expected annotation rejection")
+  }
+}
+
 // --- AST walker ---
 
 ///|
