@@ -1650,3 +1650,56 @@ test "deeply nested call chains exceeding depth limit returns a parse error" {
     Ok(_) => fail("expected depth-limit error for \{n}-deep call chain")
   }
 }
+
+///|
+test "parser: got-want error anchors after the unexpected token" {
+  // go: `foo bar` at 1:8 (one past end of 'bar'), not 1:5 (start of 'bar')
+  match @parser.parse_file("test.star", "foo bar\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got identifier"))
+      assert_eq(e.pos().to_string(), "test.star:1:8")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: conditional without else anchors at the if token" {
+  // go: `x = 1 if 2` at 1:7 (start of 'if'), not 1:11 (after condition)
+  match @parser.parse_file("test.star", "x = 1 if 2\n") {
+    Err(e) => {
+      assert_true(
+        e.msg().contains("conditional expression without else clause"),
+      )
+      assert_eq(e.pos().to_string(), "test.star:1:7")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: unparenthesized trailing comma anchors at the comma" {
+  // go: `a, = 1,` at 1:2 (the trailing comma), not 1:4 (token after comma)
+  match @parser.parse_file("test.star", "a, = 1,\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+      assert_eq(e.pos().to_string(), "test.star:1:2")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: want-primary error anchors at the token start, not one-past" {
+  // go: `x = *\n` → 1:5 (start of '*'). go deliberately uses p.tokval.pos
+  // here to avoid a NEWLINE token's one-past position jumping to the next
+  // line (starlark-go issue #532). scanner_error would give 1:6 for '*' and
+  // the wrong line for a NEWLINE token.
+  match @parser.parse_file("test.star", "x = *\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("want primary expression"))
+      assert_eq(e.pos().to_string(), "test.star:1:5")
+    }
+    Ok(_) => fail("expected error")
+  }
+}

@@ -60,6 +60,16 @@ fn Parser::scanner_error(self : Parser, msg : String) -> @errors.SyntaxError {
 }
 
 ///|
+/// Builds a syntax error at a caller-supplied position.
+fn Parser::syntax_error_at(
+  self : Parser,
+  pos : @errors.Position,
+  msg : String,
+) -> @errors.SyntaxError {
+  @errors.SyntaxError::with_kind(pos, msg, self.eof_kind())
+}
+
+///|
 /// Classifies an error raised at the current token: `UnexpectedEof` when the
 /// parser has reached the end of input (the input may complete with more
 /// lines), otherwise `Other`.
@@ -91,7 +101,7 @@ fn Parser::expect(
 ) -> Unit raise ParseErr {
   if self.tok != expected {
     raise ParseErr(
-      self.syntax_error(
+      self.scanner_error(
         "got \{self.tok.go_string()}, want \{expected.go_string()}",
       ),
     )
@@ -223,7 +233,7 @@ fn Parser::parse_simple_stmt(
     self.advance()
   } else if self.tok != @lexer.Token::EOF && self.tok != @lexer.Token::Outdent {
     raise ParseErr(
-      self.syntax_error("got \{self.tok.go_string()}, want newline"),
+      self.scanner_error("got \{self.tok.go_string()}, want newline"),
     )
   }
   stmts
@@ -616,10 +626,13 @@ fn Parser::parse_test_list_as_expr(
   }
   let items : Array[@syntax.Expr] = [first]
   while self.tok == @lexer.Token::Comma {
+    let comma_pos = self.pos
     self.advance()
     if terminates_expr_list(self.tok) {
       raise ParseErr(
-        self.syntax_error("unparenthesized tuple with trailing comma"),
+        self.syntax_error_at(
+          comma_pos, "unparenthesized tuple with trailing comma",
+        ),
       )
     }
     items.push(self.parse_test())
@@ -657,10 +670,13 @@ fn Parser::parse_expr_list_as_expr(
   }
   let items : Array[@syntax.Expr] = [first]
   while self.tok == @lexer.Token::Comma {
+    let comma_pos = self.pos
     self.advance()
     if self.tok == @lexer.Token::In || is_stmt_terminator(self.tok) {
       raise ParseErr(
-        self.syntax_error("unparenthesized tuple with trailing comma"),
+        self.syntax_error_at(
+          comma_pos, "unparenthesized tuple with trailing comma",
+        ),
       )
     }
     items.push(self.parse_primary())
@@ -736,11 +752,14 @@ fn Parser::finish_cond_tail_from(
   p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::If {
+    let if_pos = self.pos
     self.advance()
     let cond = self.parse_or_test()
     if self.tok != @lexer.Token::Else {
       raise ParseErr(
-        self.syntax_error("conditional expression without else clause"),
+        self.syntax_error_at(
+          if_pos, "conditional expression without else clause",
+        ),
       )
     }
     self.advance()
@@ -864,7 +883,7 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
-            self.syntax_error("got \{self.tok.go_string()}, want in"),
+            self.scanner_error("got \{self.tok.go_string()}, want in"),
           )
         }
         @syntax.BinaryOp::OpNotIn
@@ -1045,10 +1064,13 @@ fn Parser::parse_subscript_tail(
     } else if self.tok == @lexer.Token::Comma {
       let elems : Array[@syntax.Expr] = [idx]
       while self.tok == @lexer.Token::Comma {
+        let comma_pos = self.pos
         self.advance()
         if self.tok == @lexer.Token::RBrack {
           raise ParseErr(
-            self.syntax_error("unparenthesized tuple with trailing comma"),
+            self.syntax_error_at(
+              comma_pos, "unparenthesized tuple with trailing comma",
+            ),
           )
         }
         elems.push(self.parse_test())
@@ -1381,7 +1403,7 @@ fn Parser::finish_comparison_from(
         self.advance()
         if self.tok != @lexer.Token::In {
           raise ParseErr(
-            self.syntax_error("got \{self.tok.go_string()}, want in"),
+            self.scanner_error("got \{self.tok.go_string()}, want in"),
           )
         }
         @syntax.BinaryOp::OpNotIn
@@ -1605,7 +1627,9 @@ fn Parser::parse_comp_clauses(
         break
       _ =>
         raise ParseErr(
-          self.syntax_error("got \{self.tok.go_string()}, want ']', for, or if"),
+          self.scanner_error(
+            "got \{self.tok.go_string()}, want ']', for, or if",
+          ),
         )
     }
   }
