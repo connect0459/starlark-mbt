@@ -400,6 +400,16 @@ test "indent_json passes through semantically-invalid but syntactically-valid JS
 }
 
 ///|
+test "decode rejects raw control character (RFC 7159 §7 compliance)" {
+  // Raw unescaped control characters in JSON strings are prohibited by RFC 7159 §7.
+  // This is an intentional divergence from starlark-go, which accepts them via
+  // a safe-path optimisation that bypasses proper validation.
+  assert_true(decode_from_json("\"a\tb\"", None) is Err(_))
+  assert_true(decode_from_json("\"a\nb\"", None) is Err(_))
+  assert_true(decode_from_json("\"a\rb\"", None) is Err(_))
+}
+
+///|
 test "encode ExtVal with attrs as JSON object" {
   let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
     "myobj(x=1, y=\"two\")"

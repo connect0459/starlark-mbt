@@ -37,6 +37,19 @@ After injecting `json_module()` as `"json"` in predeclared:
 | `dict` | object (keys must be strings) |
 | `ExtVal` with `get_attr_names()` | object (attribute names sorted, values encoded recursively) |
 
+## Dialect notes
+
+| Behaviour | This library | starlark-go |
+| :--- | :--- | :--- |
+| Raw control characters in JSON strings | Rejected (`json.decode` raises an error) — RFC 7159 §7 compliance | Accepted (safe-path optimisation bypasses validation) |
+| `json.indent` on Float64-overflowing number tokens (e.g. `1e999`) | Passes through as-is (syntax-only formatter) | Same |
+
+`json.decode` rejects unescaped control characters (U+0000–U+001F) inside JSON string
+literals. RFC 7159 §7 explicitly prohibits them; the `\n`, `\r`, `\t` etc. escape sequences
+must be used instead. starlark-go accepts raw control characters as a side-effect of an
+optimisation that skips full validation for simple ASCII strings; this library prioritises
+RFC conformance.
+
 ## Quick start
 
 Encoding from MoonBit directly:
