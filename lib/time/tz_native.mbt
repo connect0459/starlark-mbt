@@ -71,8 +71,6 @@ fn is_valid_timezone_impl(name : String) -> Bool {
 
 ///|
 fn get_tz_abbr_at_impl(name : String, unix_time : Int64) -> (Int, String)? {
-  // UTC has a constant offset of 0 at every timestamp; bypass localtime_r
-  // which returns NULL for time_t values outside the system representable range.
   if name == "UTC" {
     return Some((0, "UTC"))
   }
