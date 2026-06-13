@@ -159,7 +159,7 @@ fn validate_resolution(
     resolve_opts,
   )
   if !resolved.is_valid() {
-    let msg = resolved.errors().map(fn(e) { e.to_string() }).join("; ")
+    let msg = resolved.errors()[0].to_string()
     return Err(@errors.EvalError::simple(msg))
   }
   Ok(())
