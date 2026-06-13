@@ -423,9 +423,11 @@ pub fn CustomValue::get_repr(self : CustomValue) -> String {
 
 ///|
 /// Invokes the depth-aware repr callback with `depth`, propagating the
-/// remaining recursion budget. Falls back to `get_repr()` when no
-/// depth-aware callback was registered (i.e., `with_repr_depth` was not
-/// called), which restarts the depth counter at `repr_limit`.
+/// remaining recursion budget. Falls back to `repr_fn()` when no
+/// depth-aware callback was registered, but still returns `Err` when
+/// `depth` is exhausted to prevent the fallback from calling
+/// `Value::repr()` (which restarts at `repr_limit`) inside a deeply
+/// nested traversal.
 ///
 /// Parameters:
 ///
@@ -436,7 +438,12 @@ pub fn CustomValue::get_repr_depth(
 ) -> Result[String, String] {
   match self.repr_depth_fn {
     Some(f) => f(depth)
-    None => Ok((self.repr_fn)())
+    None =>
+      if depth < 1 {
+        Err("repr exceeded maximum recursion depth")
+      } else {
+        Ok((self.repr_fn)())
+      }
   }
 }
 
