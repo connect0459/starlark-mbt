@@ -624,41 +624,41 @@ test "integer literal has position line 1 col 1" {
 
 ///|
 test "import statement is rejected" {
-  match @parser.parse_file("test.star", "import os\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for import statement")
+  let msg = parse_f_err("import os\n")
+  if !msg.contains("got import, want primary expression") {
+    fail("expected got-import error, got: \{msg}")
   }
 }
 
 ///|
 test "global statement is rejected" {
-  match @parser.parse_file("test.star", "global x\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for global statement")
+  let msg = parse_f_err("global x\n")
+  if !msg.contains("got global, want primary expression") {
+    fail("expected got-global error, got: \{msg}")
   }
 }
 
 ///|
 test "raise statement is rejected" {
-  match @parser.parse_file("test.star", "raise Exception()\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for raise statement")
+  let msg = parse_f_err("raise Exception()\n")
+  if !msg.contains("got raise, want primary expression") {
+    fail("expected got-raise error, got: \{msg}")
   }
 }
 
 ///|
 test "class definition is rejected" {
-  match @parser.parse_file("test.star", "class Foo:\n  pass\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for class definition")
+  let msg = parse_f_err("class Foo:\n  pass\n")
+  if !msg.contains("got class, want primary expression") {
+    fail("expected got-class error, got: \{msg}")
   }
 }
 
 ///|
 test "del statement is rejected" {
-  match @parser.parse_file("test.star", "del x\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for del statement")
+  let msg = parse_f_err("del x\n")
+  if !msg.contains("got del, want primary expression") {
+    fail("expected got-del error, got: \{msg}")
   }
 }
 
@@ -1250,9 +1250,9 @@ test "Python keywords not allowed in Starlark are each rejected" {
   ]
   for pair in cases {
     let (src, kw) = pair
-    match @parser.parse_file("test.star", src) {
-      Err(_) => ()
-      Ok(_) => fail("expected parse error for keyword: \{kw}")
+    let msg = parse_f_err(src)
+    if !msg.contains("got \{kw}, want primary expression") {
+      fail("expected got-\{kw} error, got: \{msg}")
     }
   }
 }
