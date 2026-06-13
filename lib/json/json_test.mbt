@@ -401,6 +401,18 @@ test "indent_json rejects invalid JSON" {
 }
 
 ///|
+test "indent_json reports correct message for mismatched closing bracket" {
+  match indent_json("[1}", "", "\t") {
+    Err(e) => assert_eq(e, "invalid character '}' after array element")
+    Ok(_) => fail("expected error")
+  }
+  match indent_json("{\"a\":1]", "", "\t") {
+    Err(e) => assert_eq(e, "invalid character ']' after object key:value pair")
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
 test "indent_json rejects missing value separators" {
   assert_true(indent_json("123 456", "", "\t") is Err(_))
   assert_true(indent_json("[1 2 3]", "", "\t") is Err(_))

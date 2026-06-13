@@ -1058,7 +1058,8 @@ pub fn indent_json(
         ObjAfterKey => return Err("invalid character '}' after object key")
         ObjAfterColon =>
           return Err("invalid character '}' looking for beginning of value")
-        ArrayEmpty | ArrayAfterComma | ArrayAfterVal | ObjEmpty =>
+        ArrayAfterVal => return Err("invalid character '}' after array element")
+        ArrayEmpty | ArrayAfterComma | ObjEmpty =>
           return Err("invalid character '}' looking for beginning of value")
       }
       i += 1
@@ -1091,7 +1092,9 @@ pub fn indent_json(
         }
         ArrayAfterComma =>
           return Err("invalid character ']' looking for beginning of value")
-        ObjEmpty | ObjAfterVal | ObjAfterComma =>
+        ObjAfterVal =>
+          return Err("invalid character ']' after object key:value pair")
+        ObjEmpty | ObjAfterComma =>
           return Err(
             "invalid character ']' looking for beginning of object key string",
           )
