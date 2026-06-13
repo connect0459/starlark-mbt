@@ -36,11 +36,14 @@ pub fn Value::to_str_checked(v : Value) -> Result[String, String] {
     Tuple(t) => repr_inner(Tuple(t), [], [], repr_limit)
     Dict(d) => repr_inner(Dict(d), [], [], repr_limit)
     Set(s) => repr_inner(Set(s), [], [], repr_limit)
-    Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) =>
-      repr_inner(v, [], [], repr_limit)
+    Range(_)
+    | Function(_)
+    | Builtin(_)
+    | BoundMethod(_)
+    | Module(_)
+    | ExtVal(_) => repr_inner(v, [], [], repr_limit)
     StringElems(_) | StringCodepoints(_) | BytesElems(_) =>
       repr_inner(v, [], [], repr_limit)
-    ExtVal(c) => Ok(c.get_repr())
   }
 }
 
