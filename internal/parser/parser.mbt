@@ -1479,7 +1479,7 @@ fn Parser::parse_atom(self : Parser) -> @syntax.Expr raise ParseErr {
     @lexer.Token::LBrace => self.parse_dict_or_set(p)
     _ =>
       raise ParseErr(
-        self.scanner_error(
+        self.syntax_error(
           "got \{self.tok.go_string()}, want primary expression",
         ),
       )

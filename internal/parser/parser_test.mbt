@@ -1688,3 +1688,18 @@ test "parser: unparenthesized trailing comma anchors at the comma" {
     Ok(_) => fail("expected error")
   }
 }
+
+///|
+test "parser: want-primary error anchors at the token start, not one-past" {
+  // go: `x = *\n` → 1:5 (start of '*'). go deliberately uses p.tokval.pos
+  // here to avoid a NEWLINE token's one-past position jumping to the next
+  // line (starlark-go issue #532). scanner_error would give 1:6 for '*' and
+  // the wrong line for a NEWLINE token.
+  match @parser.parse_file("test.star", "x = *\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("want primary expression"))
+      assert_eq(e.pos().to_string(), "test.star:1:5")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
