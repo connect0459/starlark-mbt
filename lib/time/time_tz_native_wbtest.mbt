@@ -48,3 +48,25 @@ test "local tz query: Asia/Tokyo environment yields +32400 offset and JST abbrev
     None => fail("get_local_tz_at_impl returned None for TZ=Asia/Tokyo")
   }
 }
+
+///|
+test "get_tz_abbr_at_impl: UTC resolves to offset 0 at a very large timestamp" {
+  match get_tz_abbr_at_impl("UTC", 9000000000000000000L) {
+    Some((offset, abbr)) => {
+      assert_eq(offset, 0)
+      assert_eq(abbr, "UTC")
+    }
+    None => fail("get_tz_abbr_at_impl returned None for UTC at large timestamp")
+  }
+}
+
+///|
+test "get_tz_abbr_at_impl: UTC resolves to offset 0 at the Unix epoch" {
+  match get_tz_abbr_at_impl("UTC", 0L) {
+    Some((offset, abbr)) => {
+      assert_eq(offset, 0)
+      assert_eq(abbr, "UTC")
+    }
+    None => fail("get_tz_abbr_at_impl returned None for UTC at epoch")
+  }
+}
