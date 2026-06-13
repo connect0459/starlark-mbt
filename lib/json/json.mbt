@@ -911,6 +911,9 @@ pub fn indent_json(
         write_indent_line(buf, prefix, indent_str, depth)
       } else if c == '}' || c == ']' {
         in_token = false
+        if depth == 0 {
+          return Err("unexpected '\{c}' in JSON")
+        }
         depth -= 1
         write_indent_line(buf, prefix, indent_str, depth)
         buf.write_char(c)

@@ -392,6 +392,9 @@ test "indent_json rejects invalid JSON" {
   assert_true(indent_json("[abc]", "", "\t") is Err(_))
   assert_true(indent_json("[+inf]", "", "\t") is Err(_))
   assert_true(indent_json("[.5]", "", "\t") is Err(_))
+  assert_true(indent_json("]", "", "\t") is Err(_))
+  assert_true(indent_json("}", "", "\t") is Err(_))
+  assert_true(indent_json("[1]]", "", "\t") is Err(_))
 }
 
 ///|
