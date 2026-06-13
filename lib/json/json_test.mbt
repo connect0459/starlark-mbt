@@ -396,18 +396,12 @@ test "indent_json rejects invalid JSON" {
 
 ///|
 test "indent_json passes through semantically-invalid but syntactically-valid JSON" {
-  // json.indent is a syntax-only formatter: it must not reject values that are
-  // syntactically valid JSON tokens even if they overflow Float64 (e.g. 1e999).
-  // starlark-go delegates to encoding/json.Indent which behaves the same way.
   check_indent("[1e999]", "", "\t", "[\n\t1e999\n]")
   check_indent("[1e-999]", "", "\t", "[\n\t1e-999\n]")
 }
 
 ///|
 test "decode rejects raw control character (RFC 7159 §7 compliance)" {
-  // Raw unescaped control characters in JSON strings are prohibited by RFC 7159 §7.
-  // This is an intentional divergence from starlark-go, which accepts them via
-  // a safe-path optimisation that bypasses proper validation.
   assert_true(decode_from_json("\"a\tb\"", None) is Err(_))
   assert_true(decode_from_json("\"a\nb\"", None) is Err(_))
   assert_true(decode_from_json("\"a\rb\"", None) is Err(_))

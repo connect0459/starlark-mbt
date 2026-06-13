@@ -842,8 +842,13 @@ fn write_indent_line(
 
 ///|
 /// Pretty-prints a JSON string, prefixing each line with `prefix` and
-/// indenting each nesting level with `indent_str`. Returns `Err` if `s`
-/// is not valid JSON.
+/// indenting each nesting level with `indent_str`.
+///
+/// Structural errors are detected and reported: unbalanced brackets,
+/// unterminated string literals, and scalar tokens that do not start
+/// with a valid JSON value character (digit, `-`, `n`, `t`, or `f`).
+/// Semantic validity of scalar values (e.g. numeric range) is not
+/// checked; the token is formatted as-is.
 ///
 /// Parameters:
 ///
@@ -851,8 +856,8 @@ fn write_indent_line(
 /// - `prefix` : A string prepended to every output line.
 /// - `indent_str` : The string used for each level of nesting indentation.
 ///
-/// Returns `Ok(indented_string)` on success, or `Err(message)` if `s` is
-/// not valid JSON.
+/// Returns `Ok(indented_string)` on success, or `Err(message)` on a
+/// structural error.
 pub fn indent_json(
   s : String,
   prefix : String,
