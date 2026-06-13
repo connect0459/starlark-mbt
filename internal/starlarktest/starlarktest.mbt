@@ -178,28 +178,10 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
   })
 }
 
-///|
-fn pattern_unescape(pat : StringView) -> String {
-  let buf = StringBuilder::new()
-  let chars = pat.to_array()
-  let mut i = 0
-  while i < chars.length() {
-    if chars[i] == '\\' && i + 1 < chars.length() {
-      buf.write_char(chars[i + 1])
-      i += 2
-    } else {
-      buf.write_char(chars[i])
-      i += 1
-    }
-  }
-  buf.to_string()
-}
-
-// Try to match `pat` at position `ti` in `tc`, where '.' matches any single
-// char.  Returns the position after the match on success, or -1 on failure.
-// pattern_unescape has already stripped every backslash before this function is
-// called, so '.' always acts as a single-character wildcard here; there is no
-// way to match a literal '.' (an escaped "\." also collapses to a wildcard).
+// Try to match `pat` at position `ti` in `tc`.
+// '.' is a single-character wildcard.  A backslash followed by any character
+// matches that character literally (e.g. '\.' matches only '.').
+// Returns the position after the match on success, or -1 on failure.
 
 ///|
 fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
@@ -211,7 +193,13 @@ fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
     if ti >= tlen {
       return -1
     }
-    if pc[pi] == '.' {
+    if pc[pi] == '\\' && pi + 1 < plen {
+      if tc[ti] != pc[pi + 1] {
+        return -1
+      }
+      pi += 2
+      ti += 1
+    } else if pc[pi] == '.' {
       pi += 1
       ti += 1
     } else {
@@ -225,8 +213,26 @@ fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
   ti
 }
 
-// Find the first occurrence of `pat` (where '.' matches any single char) in
-// `text` starting at position `start_pos`.
+// Returns the number of text characters consumed when matching `pc`, taking
+// backslash escapes into account (each `\X` pair consumes one text char).
+
+///|
+fn effective_pattern_length(pc : Array[Char]) -> Int {
+  let mut len = 0
+  let mut i = 0
+  while i < pc.length() {
+    if pc[i] == '\\' && i + 1 < pc.length() {
+      i += 2
+    } else {
+      i += 1
+    }
+    len += 1
+  }
+  len
+}
+
+// Find the first occurrence of `pat` (where '.' matches any single char and
+// '\X' matches the literal char X) in `text` starting at `start_pos`.
 // Returns the position immediately after the match, or None if not found.
 
 ///|
@@ -238,7 +244,8 @@ fn find_mini_pattern(pat : String, text : String, start_pos : Int) -> Int? {
   if plen == 0 {
     return Some(start_pos)
   }
-  let max_start = tlen - plen + 1
+  let eff_len = effective_pattern_length(pc)
+  let max_start = tlen - eff_len + 1
   let mut i = start_pos
   while i < max_start {
     let end_pos = try_match_at(pc, tc, i)
@@ -301,10 +308,11 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
   let parts : Array[StringView] = pat.split(".*").collect()
   if parts.length() == 1 {
     // No multi-char wildcard: scan for the part using single-char '.' wildcards.
-    let part = pattern_unescape(parts[0])
+    let part = parts[0].to_owned()
     if anchor_end {
       // Must match at the very end of text.
-      let start = text.length() - part.length()
+      let eff_len = effective_pattern_length(part.to_array())
+      let start = text.length() - eff_len
       if start < 0 {
         return false
       }
@@ -315,7 +323,7 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
   } else {
     let mut pos = 0
     for i in 0..<parts.length() {
-      let part = pattern_unescape(parts[i])
+      let part = parts[i].to_owned()
       if part.is_empty() {
         continue
       }
