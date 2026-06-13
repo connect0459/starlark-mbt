@@ -1662,3 +1662,17 @@ test "parser: got-want error anchors after the unexpected token" {
     Ok(_) => fail("expected error")
   }
 }
+
+///|
+test "parser: conditional without else anchors at the if token" {
+  // go: `x = 1 if 2` at 1:7 (start of 'if'), not 1:11 (after condition)
+  match @parser.parse_file("test.star", "x = 1 if 2\n") {
+    Err(e) => {
+      assert_true(
+        e.msg().contains("conditional expression without else clause"),
+      )
+      assert_eq(e.pos().to_string(), "test.star:1:7")
+    }
+    Ok(_) => fail("expected error")
+  }
+}

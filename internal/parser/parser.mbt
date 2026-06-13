@@ -60,6 +60,16 @@ fn Parser::scanner_error(self : Parser, msg : String) -> @errors.SyntaxError {
 }
 
 ///|
+/// Builds a syntax error at a caller-supplied position.
+fn Parser::syntax_error_at(
+  self : Parser,
+  pos : @errors.Position,
+  msg : String,
+) -> @errors.SyntaxError {
+  @errors.SyntaxError::with_kind(pos, msg, self.eof_kind())
+}
+
+///|
 /// Classifies an error raised at the current token: `UnexpectedEof` when the
 /// parser has reached the end of input (the input may complete with more
 /// lines), otherwise `Other`.
@@ -736,11 +746,14 @@ fn Parser::finish_cond_tail_from(
   p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::If {
+    let if_pos = self.pos
     self.advance()
     let cond = self.parse_or_test()
     if self.tok != @lexer.Token::Else {
       raise ParseErr(
-        self.syntax_error("conditional expression without else clause"),
+        self.syntax_error_at(
+          if_pos, "conditional expression without else clause",
+        ),
       )
     }
     self.advance()
