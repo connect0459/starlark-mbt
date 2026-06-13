@@ -347,11 +347,15 @@ extension; it does not affect correctness or accepted syntax.
 
 ### `(1 << 31) in range(0, 1 << 32)` returns `True`
 
-starlark-go evaluates this as `False` because its `rangeValue.contains`
-converts the needle with `AsInt32`, which truncates `1<<31` (an
-out-of-range signed 32-bit value) to `-1` before comparing. This is a
-known bug in starlark-go. This implementation returns the mathematically
-correct result `True`.
+starlark-go evaluates this as `False` due to how it represents integers
+internally: values outside the signed 32-bit range (−2,147,483,648 to
+2,147,483,647) are stored as `*big.Int`. `1<<31 = 2,147,483,648` exceeds
+`math.MaxInt32`, so it is a big integer in starlark-go's representation.
+`rangeValue.contains` calls `AsInt32`, which returns an out-of-range error
+for any big integer; the error causes `contains` to return `false`
+unconditionally, without comparing against the range bounds. This
+implementation stores all integers fitting in Int64 as small integers and
+performs the containment check correctly, returning `True`.
 
 ---
 
