@@ -1676,3 +1676,15 @@ test "parser: conditional without else anchors at the if token" {
     Ok(_) => fail("expected error")
   }
 }
+
+///|
+test "parser: unparenthesized trailing comma anchors at the comma" {
+  // go: `a, = 1,` at 1:2 (the trailing comma), not 1:4 (token after comma)
+  match @parser.parse_file("test.star", "a, = 1,\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("unparenthesized tuple with trailing comma"))
+      assert_eq(e.pos().to_string(), "test.star:1:2")
+    }
+    Ok(_) => fail("expected error")
+  }
+}

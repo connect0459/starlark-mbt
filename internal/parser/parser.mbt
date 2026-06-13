@@ -626,10 +626,13 @@ fn Parser::parse_test_list_as_expr(
   }
   let items : Array[@syntax.Expr] = [first]
   while self.tok == @lexer.Token::Comma {
+    let comma_pos = self.pos
     self.advance()
     if terminates_expr_list(self.tok) {
       raise ParseErr(
-        self.syntax_error("unparenthesized tuple with trailing comma"),
+        self.syntax_error_at(
+          comma_pos, "unparenthesized tuple with trailing comma",
+        ),
       )
     }
     items.push(self.parse_test())
@@ -667,10 +670,13 @@ fn Parser::parse_expr_list_as_expr(
   }
   let items : Array[@syntax.Expr] = [first]
   while self.tok == @lexer.Token::Comma {
+    let comma_pos = self.pos
     self.advance()
     if self.tok == @lexer.Token::In || is_stmt_terminator(self.tok) {
       raise ParseErr(
-        self.syntax_error("unparenthesized tuple with trailing comma"),
+        self.syntax_error_at(
+          comma_pos, "unparenthesized tuple with trailing comma",
+        ),
       )
     }
     items.push(self.parse_primary())
@@ -1058,10 +1064,13 @@ fn Parser::parse_subscript_tail(
     } else if self.tok == @lexer.Token::Comma {
       let elems : Array[@syntax.Expr] = [idx]
       while self.tok == @lexer.Token::Comma {
+        let comma_pos = self.pos
         self.advance()
         if self.tok == @lexer.Token::RBrack {
           raise ParseErr(
-            self.syntax_error("unparenthesized tuple with trailing comma"),
+            self.syntax_error_at(
+              comma_pos, "unparenthesized tuple with trailing comma",
+            ),
           )
         }
         elems.push(self.parse_test())
