@@ -8,6 +8,8 @@ pub fn hex_char(Int) -> Char
 
 pub fn is_cased_rune(Int) -> Bool
 
+pub fn is_decimal_digit(Int) -> Bool
+
 pub fn is_lower_letter(Int) -> Bool
 
 pub fn is_title_letter(Int) -> Bool
