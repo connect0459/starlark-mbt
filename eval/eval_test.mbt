@@ -420,6 +420,22 @@ test "True False None can be shadowed by local bindings" {
 }
 
 ///|
+test "True False None can be shadowed at module top level" {
+  let src =
+    #|True = 0
+    #|False = 1
+    #|None = 2
+  match exec_src(src) {
+    Ok(m) => {
+      assert_true(m.get("True") is Some(@value.Value::Int(0N)))
+      assert_true(m.get("False") is Some(@value.Value::Int(1N)))
+      assert_true(m.get("None") is Some(@value.Value::Int(2N)))
+    }
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
 test "eval_expr: integer literal evaluates to Int" {
   assert_true(eval_e("42") is Ok(@value.Value::Int(42N)))
 }
