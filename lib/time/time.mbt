@@ -736,7 +736,7 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
   if neg {
     Ok((0UL - total_ns).reinterpret_as_int64())
   } else {
-    if total_ns > 9223372036854775807UL {
+    if total_ns > max_magnitude - 1UL {
       return Err("time: invalid duration \"\{orig}\"")
     }
     Ok(total_ns.reinterpret_as_int64())
