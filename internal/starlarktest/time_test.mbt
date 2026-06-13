@@ -678,6 +678,23 @@ test "time.time: normalizes month=0 to previous year December" {
 }
 
 ///|
+test "time module: time + duration preserves timezone" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.parse_time("2021-03-22T23:20:50+05:30")
+      #|assert.eq(str(t + time.hour), "2021-03-23 00:20:50 +0530 +0530")
+      #|assert.eq(str(t - time.hour), "2021-03-22 22:20:50 +0530 +0530")
+      #|assert.eq(str(time.hour + t), "2021-03-23 00:20:50 +0530 +0530")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time.time: month=0 with default day=0 produces Go-equivalent normalized date" {
   let errs = run_star_string(
     (

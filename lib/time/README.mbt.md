@@ -62,6 +62,15 @@ When the stub is active, `time.now()` always returns the Unix epoch. Override vi
 | `d / n` | `time.duration` | Divide by integer or float |
 | `d // d2` | `int` | Integer floor-division of two durations |
 
+`time + duration`, `time - duration`, and `duration + time` preserve the
+operand's fixed UTC offset and abbreviation. The unix instant is computed
+correctly, but the zone is transferred as-is: no DST recalculation is
+performed. For named-location times obtained via `t.in_location("America/New_York")`,
+adding a duration that crosses a DST boundary will keep the pre-addition
+offset rather than re-deriving the correct post-addition offset, which
+differs from Go's `Time.Add`. Fixed-offset times (e.g., `+05:30`) are
+fully correct.
+
 Note: `duration - time` raises `unsupported binary op`. The Starlark spec does not
 define this operation; starlark-go silently computes `time - duration` instead, which
 is a dialect difference.
