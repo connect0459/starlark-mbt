@@ -656,9 +656,50 @@ fn make_hasfields_fn() -> @value.Value {
 }
 
 ///|
+fn line_of_error(err : @errors.EvalError) -> Int {
+  let stack = err.call_stack()
+  let n = stack.length()
+  for i in 0..<n {
+    let idx = n - 1 - i
+    match stack.at(idx) {
+      Some(frame) => {
+        let pos = frame.pos()
+        if pos.filename() == "<test>" && pos.line() > 0 {
+          return pos.line()
+        }
+      }
+      None => ()
+    }
+  }
+  parse_test_line(err.msg())
+}
+
+///|
+fn parse_test_line(msg : String) -> Int {
+  let prefix = "<test>:"
+  if !msg.has_prefix(prefix) {
+    return 0
+  }
+  let rest = msg[prefix.length():]
+  let chars = rest.iter().to_array()
+  let mut i = 0
+  while i < chars.length() && chars[i] >= '0' && chars[i] <= '9' {
+    i += 1
+  }
+  if i == 0 {
+    return 0
+  }
+  let mut n = 0
+  for j in 0..<i {
+    n = n * 10 + (chars[j].to_int() - '0'.to_int())
+  }
+  n
+}
+
+///|
 fn exec_chunk_raw(
   src : String,
-) -> Result[Array[String], (String, Array[String])] {
+) -> Result[Array[String], (@errors.EvalError, Array[String])] {
   let opts = parse_chunk_options(src)
   let assert_errors : Array[String] = []
   let assert_module = build_assert_module(assert_errors)
@@ -702,7 +743,7 @@ fn exec_chunk_raw(
   match
     @eval.exec_file_with_predeclared(thread, "<test>", src, opts, predeclared) {
     Ok(_) => Ok(assert_errors)
-    Err(e) => Err((e.msg(), assert_errors))
+    Err(e) => Err((e, assert_errors))
   }
 }
 
@@ -711,22 +752,24 @@ pub fn run_chunked_string(src : String) -> Array[String] {
   let failures : Array[String] = []
   let chunks = split_chunks(src)
   for chunk in chunks {
-    let want_patterns : Array[String] = []
+    let want_errs : Map[Int, String] = {}
+    let mut line_num = 1
     for line in chunk.split("\n") {
       match parse_hash_annotation(line.to_owned()) {
         NoAnnotation => ()
         Malformed(raw) => failures.push("malformed ### annotation: \{raw}")
-        ValidPattern(p) => want_patterns.push(p)
+        ValidPattern(p) => want_errs[line_num] = p
       }
+      line_num += 1
     }
-    if want_patterns.is_empty() {
+    if want_errs.is_empty() {
       match exec_chunk_raw(chunk) {
         Ok(assert_errs) =>
           for e in assert_errs {
             failures.push(e)
           }
-        Err((msg, assert_errs)) => {
-          failures.push("unexpected error: \{msg}")
+        Err((eval_err, assert_errs)) => {
+          failures.push("unexpected error: \{eval_err.msg()}")
           for e in assert_errs {
             failures.push(e)
           }
@@ -734,20 +777,35 @@ pub fn run_chunked_string(src : String) -> Array[String] {
       }
     } else {
       match exec_chunk_raw(chunk) {
-        Ok(_) =>
-          for p in want_patterns {
+        Ok(assert_errs) => {
+          want_errs.each(fn(line, pattern) {
             failures.push(
-              "expected error matching \"\{p}\" but none was raised",
+              "expected error matching \"\{pattern}\" at line \{line} but none was raised",
             )
+          })
+          for e in assert_errs {
+            failures.push(e)
           }
-        Err((msg, assert_errs)) => {
-          let matched = want_patterns
-            .iter()
-            .any(fn(p) { pattern_matches(p, msg) })
-          if !matched {
-            let pat = want_patterns[0]
-            failures.push("error \"\{msg}\" did not match pattern \"\{pat}\"")
+        }
+        Err((eval_err, assert_errs)) => {
+          let err_line = line_of_error(eval_err)
+          let msg = eval_err.msg()
+          match want_errs.get(err_line) {
+            Some(pattern) => {
+              want_errs.remove(err_line) |> ignore
+              if !pattern_matches(pattern, msg) {
+                failures.push(
+                  "error \"\{msg}\" did not match pattern \"\{pattern}\"",
+                )
+              }
+            }
+            None => failures.push("unexpected error: \{msg}")
           }
+          want_errs.each(fn(line, pattern) {
+            failures.push(
+              "expected error matching \"\{pattern}\" at line \{line} but none was raised",
+            )
+          })
           for e in assert_errs {
             failures.push(e)
           }
