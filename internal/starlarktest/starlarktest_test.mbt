@@ -116,6 +116,36 @@ test "run_chunked_string: backtick-quoted pattern" {
 }
 
 ///|
+test "run_chunked_string: malformed annotation without quotes is an error" {
+  // A malformed annotation produces one failure for the bad annotation itself.
+  // Because no valid pattern was collected, the runtime error from 1/0 also
+  // surfaces as an unexpected error — two failures in total.
+  let src =
+    #|x = 1/0 ### not-a-quoted-pattern
+  let failures = run_chunked_string(src)
+  assert_true(failures.length() >= 1)
+  assert_true(failures.iter().any(fn(f) { f.contains("malformed") }))
+}
+
+///|
+test "run_chunked_string: annotation with unclosed double quote is an error" {
+  let src =
+    #|(a, b) = 1 ### "unclosed
+  let failures = run_chunked_string(src)
+  assert_true(failures.length() >= 1)
+  assert_true(failures.iter().any(fn(f) { f.contains("malformed") }))
+}
+
+///|
+test "run_chunked_string: empty annotation after ### is an error" {
+  let src =
+    #|(a, b) = 1 ###
+  let failures = run_chunked_string(src)
+  assert_true(failures.length() >= 1)
+  assert_true(failures.iter().any(fn(f) { f.contains("(empty)") }))
+}
+
+///|
 test "StarlarkFunction.doc: returns docstring from first string literal" {
   let thread = @eval.Thread::new("test")
   let src =
