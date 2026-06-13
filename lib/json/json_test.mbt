@@ -388,6 +388,10 @@ test "indent_json empty object and array" {
 ///|
 test "indent_json rejects invalid JSON" {
   assert_true(indent_json("!invalid", "", "\t") is Err(_))
+  assert_true(indent_json("\"unclosed", "", "\t") is Err(_))
+  assert_true(indent_json("[abc]", "", "\t") is Err(_))
+  assert_true(indent_json("[+inf]", "", "\t") is Err(_))
+  assert_true(indent_json("[.5]", "", "\t") is Err(_))
 }
 
 ///|

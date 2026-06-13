@@ -812,6 +812,18 @@ pub fn decode_from_json(
 }
 
 ///|
+// Returns true for characters that may start a JSON scalar value token:
+// digits and '-' for numbers, 'n'/'t'/'f' for null/true/false.
+fn is_json_value_start(c : Char) -> Bool {
+  let cp = c.to_int()
+  (cp >= '0'.to_int() && cp <= '9'.to_int()) ||
+  c == '-' ||
+  c == 'n' ||
+  c == 't' ||
+  c == 'f'
+}
+
+///|
 // Starts a fresh pretty-printed line: a newline, the global `prefix`, then
 // `depth` copies of `indent_str`. Shared by the `{`/`[`, `}`/`]`, and `,`
 // branches of `indent_json`.
@@ -852,6 +864,7 @@ pub fn indent_json(
   let mut depth = 0
   let mut i = 0
   let mut in_string = false
+  let mut in_token = false
   while i < len {
     let c = chars[i]
     if in_string {
@@ -871,12 +884,15 @@ pub fn indent_json(
         cp == '\t'.to_int() ||
         cp == '\n'.to_int() ||
         cp == '\r'.to_int() {
+        in_token = false
         i += 1
       } else if c == '"' {
+        in_token = false
         in_string = true
         buf.write_char(c)
         i += 1
       } else if c == '{' || c == '[' {
+        in_token = false
         buf.write_char(c)
         depth += 1
         i += 1
@@ -889,15 +905,18 @@ pub fn indent_json(
         }
         write_indent_line(buf, prefix, indent_str, depth)
       } else if c == '}' || c == ']' {
+        in_token = false
         depth -= 1
         write_indent_line(buf, prefix, indent_str, depth)
         buf.write_char(c)
         i += 1
       } else if c == ',' {
+        in_token = false
         buf.write_char(',')
         write_indent_line(buf, prefix, indent_str, depth)
         i += 1
       } else if c == ':' {
+        in_token = false
         buf.write_string(": ")
         i += 1
       } else {
@@ -908,13 +927,20 @@ pub fn indent_json(
           c == '-' ||
           c == '+' ||
           c == '.' {
+          if !in_token && !is_json_value_start(c) {
+            return Err("invalid character '\{c}' in JSON")
+          }
           buf.write_char(c)
           i += 1
+          in_token = true
         } else {
           return Err("invalid character '\{c}' in JSON")
         }
       }
     }
+  }
+  if in_string {
+    return Err("unterminated string in JSON")
   }
   if depth != 0 {
     return Err("unexpected end of JSON")
