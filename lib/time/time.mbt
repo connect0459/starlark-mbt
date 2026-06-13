@@ -14,6 +14,21 @@ let ns_per_minute : Int64 = 60_000_000_000L
 let ns_per_hour : Int64 = 3_600_000_000_000L
 
 ///|
+let u_ns_per_microsecond : UInt64 = 1_000UL
+
+///|
+let u_ns_per_millisecond : UInt64 = 1_000_000UL
+
+///|
+let u_ns_per_second : UInt64 = 1_000_000_000UL
+
+///|
+let u_ns_per_minute : UInt64 = 60_000_000_000UL
+
+///|
+let u_ns_per_hour : UInt64 = 3_600_000_000_000UL
+
+///|
 let secs_per_hour : Int = 3600
 
 ///|
@@ -435,9 +450,6 @@ fn fmt_duration(ns : Int64) -> String {
   if ns == 0L {
     return "0s"
   }
-  let u_ns_per_second : UInt64 = 1_000_000_000UL
-  let u_ns_per_millisecond : UInt64 = 1_000_000UL
-  let u_ns_per_microsecond : UInt64 = 1_000UL
   let u_secs_per_hour : UInt64 = 3600UL
   let u_secs_per_minute : UInt64 = 60UL
   let buf = StringBuilder::new()
@@ -694,11 +706,11 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
       Ok((num_str, unit_str, remaining)) => {
         let scale : UInt64 = match unit_str {
           "ns" => 1UL
-          "us" | "µs" | "μs" => 1_000UL
-          "ms" => 1_000_000UL
-          "s" => 1_000_000_000UL
-          "m" => 60_000_000_000UL
-          "h" => 3_600_000_000_000UL
+          "us" | "µs" | "μs" => u_ns_per_microsecond
+          "ms" => u_ns_per_millisecond
+          "s" => u_ns_per_second
+          "m" => u_ns_per_minute
+          "h" => u_ns_per_hour
           _ =>
             return Err(
               "time: unknown unit \"\{unit_str}\" in duration \"\{orig}\"",
