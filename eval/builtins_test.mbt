@@ -2638,3 +2638,40 @@ test "exec_file: slicing double-overflow range raises no-len error" {
 test "exec_file: dict with more than one positional argument raises error" {
   assert_true(emsg("dict(1, 2)").contains("want at most 1"))
 }
+
+// --- repr / str / print depth guard ---
+
+///|
+test "exec_file: repr of deeply nested acyclic list raises runtime error" {
+  let n = @value.repr_limit + 1
+  let src = "def b():\n  x = 0\n  for i in range(\{n}):\n    x = [x]\n  return x\nrepr(b())"
+  assert_true(emsg(src).contains("maximum recursion depth"))
+}
+
+///|
+test "exec_file: str of deeply nested acyclic list raises runtime error" {
+  let n = @value.repr_limit + 1
+  let src = "def b():\n  x = 0\n  for i in range(\{n}):\n    x = [x]\n  return x\nstr(b())"
+  assert_true(emsg(src).contains("maximum recursion depth"))
+}
+
+///|
+test "exec_file: print of deeply nested acyclic list raises runtime error" {
+  let n = @value.repr_limit + 1
+  let src = "def b():\n  x = 0\n  for i in range(\{n}):\n    x = [x]\n  return x\nprint(b())"
+  assert_true(emsg(src).contains("maximum recursion depth"))
+}
+
+///|
+test "exec_file: repr of shallowly nested list succeeds" {
+  let n = @value.repr_limit
+  let src = "def b():\n  x = 0\n  for i in range(\{n}):\n    x = [x]\n  return x\nr = repr(b())"
+  match exec_b(src) {
+    Ok(m) =>
+      match m.get("r") {
+        Some(@value.Value::String(s)) => assert_true(s.raw().has_prefix("["))
+        _ => fail("expected a string result")
+      }
+    Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
