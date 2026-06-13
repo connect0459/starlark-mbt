@@ -291,7 +291,7 @@ fn call_builtin(
         match arg {
           @value.Value::Bytes(b) =>
             buf.write_string(@value.StarlarkString::from_bytes(b).raw())
-          _ => buf.write_string(arg.to_str())
+          _ => buf.write_string(check(ctx, arg.to_str_checked()))
         }
       }
       (ctx.thread.print_fn)(ctx.thread, buf.to_string())
@@ -316,7 +316,10 @@ fn call_builtin(
             @value.Value::String(
               @value.StarlarkString::new(@utf8util.decode_utf8_lossy(b)),
             )
-          v => @value.Value::String(@value.StarlarkString::new(v.to_str()))
+          v =>
+            @value.Value::String(
+              @value.StarlarkString::new(check(ctx, v.to_str_checked())),
+            )
         }
       } else {
         raise EvalErr(
@@ -329,7 +332,9 @@ fn call_builtin(
     }
     "repr" => {
       check_positional(ctx, "repr", pos_args, kw_args, 1, 1)
-      @value.Value::String(@value.StarlarkString::new(pos_args[0].repr()))
+      @value.Value::String(
+        @value.StarlarkString::new(check(ctx, pos_args[0].repr_checked())),
+      )
     }
     "type" => {
       reject_kwargs(ctx, "type", kw_args)
@@ -733,7 +738,11 @@ fn call_builtin(
         s
       }
       let body = if pos_args.length() > 0 {
-        pos_args.map(fn(v) { v.to_str() }).join(sep)
+        let parts : Array[String] = []
+        for v in pos_args {
+          parts.push(check(ctx, v.to_str_checked()))
+        }
+        parts.join(sep)
       } else {
         ""
       }
@@ -3554,8 +3563,8 @@ fn str_format(
           }
         }
         match conv {
-          "s" => buf.write_string(arg.to_str())
-          "r" => buf.write_string(arg.repr())
+          "s" => buf.write_string(check(ctx, arg.to_str_checked()))
+          "r" => buf.write_string(check(ctx, arg.repr_checked()))
           other =>
             raise EvalErr(
               make_eval_error(ctx, "format: unknown conversion \"\{other}\""),

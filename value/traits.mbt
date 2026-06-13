@@ -13,21 +13,34 @@ pub impl Eq for Value with fn equal(a, b) -> Bool {
 ///
 /// Returns the Starlark `str()` representation of `v`.
 pub fn Value::to_str(v : Value) -> String {
+  match v.to_str_checked() {
+    Ok(s) => s
+    Err(e) => abort(e)
+  }
+}
+
+///|
+/// Like `Value::to_str` but returns `Err` instead of aborting when the nesting
+/// depth limit is exceeded. For use in the eval engine where the error should
+/// surface as a Starlark runtime error.
+pub fn Value::to_str_checked(v : Value) -> Result[String, String] {
   match v {
-    None => "None"
-    Bool(true) => "True"
-    Bool(false) => "False"
-    Int(i) => i.to_string()
-    Float(f) => @numeric.format_float(f)
-    String(s) => s.raw
-    Bytes(b) => repr_bytes_val(b)
-    List(l) => repr_inner(List(l), [], [])
-    Tuple(t) => repr_tuple(t)
-    Dict(d) => repr_inner(Dict(d), [], [])
-    Set(s) => repr_inner(Set(s), [], [])
-    Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) => v.repr()
-    StringElems(_) | StringCodepoints(_) | BytesElems(_) => v.repr()
-    ExtVal(c) => c.get_repr()
+    None => Ok("None")
+    Bool(true) => Ok("True")
+    Bool(false) => Ok("False")
+    Int(i) => Ok(i.to_string())
+    Float(f) => Ok(@numeric.format_float(f))
+    String(s) => Ok(s.raw)
+    Bytes(b) => Ok(repr_bytes_val(b))
+    List(l) => repr_inner(List(l), [], [], repr_limit)
+    Tuple(t) => repr_inner(Tuple(t), [], [], repr_limit)
+    Dict(d) => repr_inner(Dict(d), [], [], repr_limit)
+    Set(s) => repr_inner(Set(s), [], [], repr_limit)
+    Range(_) | Function(_) | Builtin(_) | BoundMethod(_) | Module(_) =>
+      repr_inner(v, [], [], repr_limit)
+    StringElems(_) | StringCodepoints(_) | BytesElems(_) =>
+      repr_inner(v, [], [], repr_limit)
+    ExtVal(c) => Ok(c.get_repr())
   }
 }
 

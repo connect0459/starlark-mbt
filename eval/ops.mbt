@@ -684,8 +684,16 @@ fn percent_format(
     }
     let arg = arg_val
     match spec {
-      's' => buf.write_string(arg.to_str())
-      'r' => buf.write_string(arg.repr())
+      's' =>
+        match arg.to_str_checked() {
+          Err(e) => return Err(e)
+          Ok(s) => buf.write_string(s)
+        }
+      'r' =>
+        match arg.repr_checked() {
+          Err(e) => return Err(e)
+          Ok(s) => buf.write_string(s)
+        }
       'd' | 'i' =>
         match percent_to_int(arg) {
           Ok(n2) => buf.write_string(n2.to_string())

@@ -32,6 +32,8 @@ pub fn length_of(Value) -> Result[Int64, String]
 
 pub fn number_to_int(Value) -> Int64?
 
+pub let repr_limit : Int
+
 pub fn starlark_equals_depth(Value, Value, Int) -> Result[Bool, String]
 
 // Errors
@@ -294,8 +296,10 @@ pub fn Value::new_list(Array[Self]) -> Self
 pub fn Value::new_set() -> Self
 pub fn Value::new_string(String) -> Self
 pub fn Value::repr(Self) -> String
+pub fn Value::repr_checked(Self) -> Result[String, String]
 pub fn Value::starlark_equals(Self, Self) -> Bool
 pub fn Value::to_str(Self) -> String
+pub fn Value::to_str_checked(Self) -> Result[String, String]
 pub fn Value::truth(Self) -> Bool
 pub fn Value::type_name(Self) -> String
 pub impl Eq for Value

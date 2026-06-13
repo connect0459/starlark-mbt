@@ -1489,6 +1489,10 @@ fn repr_bytes_val(b : Bytes) -> String {
 }
 
 ///|
+// Safe ceiling across all four backends; see https://github.com/connect0459/starlark-mbt/issues/175.
+pub let repr_limit : Int = 200
+
+///|
 /// Returns the Starlark `repr(v)` string. Detects cyclic list/dict references
 /// and replaces them with `[...]` / `{...}`.
 ///
@@ -1498,7 +1502,18 @@ fn repr_bytes_val(b : Bytes) -> String {
 ///
 /// Returns the Starlark `repr()` string for `v`.
 pub fn Value::repr(v : Value) -> String {
-  repr_inner(v, [], [])
+  match repr_inner(v, [], [], repr_limit) {
+    Ok(s) => s
+    Err(e) => abort(e)
+  }
+}
+
+///|
+/// Like `Value::repr` but returns `Err` instead of aborting when the nesting
+/// depth limit is exceeded. For use in the eval engine where the error should
+/// surface as a Starlark runtime error.
+pub fn Value::repr_checked(v : Value) -> Result[String, String] {
+  repr_inner(v, [], [], repr_limit)
 }
 
 ///|
@@ -1506,35 +1521,56 @@ fn repr_inner(
   v : Value,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-) -> String {
+  depth : Int,
+) -> Result[String, String] {
   match v {
-    None => "None"
-    Bool(true) => "True"
-    Bool(false) => "False"
-    Int(i) => i.to_string()
-    Float(f) => @numeric.format_float(f)
-    String(s) => repr_string_val(s)
-    Bytes(b) => repr_bytes_val(b)
-    List(l) => repr_list_inner(l, seen_lists, seen_dicts)
-    Tuple(t) => repr_tuple_inner(t, seen_lists, seen_dicts)
-    Dict(d) => repr_dict_inner(d, seen_lists, seen_dicts)
-    Set(s) => repr_set_inner(s, seen_lists, seen_dicts)
-    Range(r) => repr_range(r)
-    Function(f) => "<function \{f.name}>"
-    Builtin(f) => "<built-in function \{f.name}>"
+    None => Ok("None")
+    Bool(true) => Ok("True")
+    Bool(false) => Ok("False")
+    Int(i) => Ok(i.to_string())
+    Float(f) => Ok(@numeric.format_float(f))
+    String(s) => Ok(repr_string_val(s))
+    Bytes(b) => Ok(repr_bytes_val(b))
+    List(l) => {
+      if depth < 1 {
+        return Err("repr exceeded maximum recursion depth")
+      }
+      repr_list_inner(l, seen_lists, seen_dicts, depth - 1)
+    }
+    Tuple(t) => {
+      if depth < 1 {
+        return Err("repr exceeded maximum recursion depth")
+      }
+      repr_tuple_inner(t, seen_lists, seen_dicts, depth - 1)
+    }
+    Dict(d) => {
+      if depth < 1 {
+        return Err("repr exceeded maximum recursion depth")
+      }
+      repr_dict_inner(d, seen_lists, seen_dicts, depth - 1)
+    }
+    Set(s) => {
+      if depth < 1 {
+        return Err("repr exceeded maximum recursion depth")
+      }
+      repr_set_inner(s, seen_lists, seen_dicts, depth - 1)
+    }
+    Range(r) => Ok(repr_range(r))
+    Function(f) => Ok("<function \{f.name}>")
+    Builtin(f) => Ok("<built-in function \{f.name}>")
     BoundMethod(m) =>
-      "<built-in method \{m.method_name} of \{m.recv.type_name()} value>"
-    Module(m) => "<module \"\{m.name}\">"
+      Ok("<built-in method \{m.method_name} of \{m.recv.type_name()} value>")
+    Module(m) => Ok("<module \"\{m.name}\">")
     StringElems(e) => {
       let suffix = if e.ords { "elem_ords()" } else { "elems()" }
-      repr_string_val(e.s) + "." + suffix
+      Ok(repr_string_val(e.s) + "." + suffix)
     }
     StringCodepoints(c) => {
       let suffix = if c.ords { "codepoint_ords()" } else { "codepoints()" }
-      repr_string_val(c.s) + "." + suffix
+      Ok(repr_string_val(c.s) + "." + suffix)
     }
-    BytesElems(e) => repr_bytes_val(e.b) + ".elems()"
-    ExtVal(c) => c.get_repr()
+    BytesElems(e) => Ok(repr_bytes_val(e.b) + ".elems()")
+    ExtVal(c) => Ok(c.get_repr())
   }
 }
 
@@ -1556,29 +1592,52 @@ fn repr_dict_inner(
   d : StarlarkDict,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-) -> String {
+  depth : Int,
+) -> Result[String, String] {
   if seen_dicts.iter().any(fn(sd) { d.is_same_storage(sd) }) {
-    return "{...}"
+    return Ok("{...}")
   }
   if d.length() == 0 {
-    return "{}"
+    return Ok("{}")
   }
   seen_dicts.push(d)
   let buf = StringBuilder::new()
   buf.write_char('{')
   let mut first = true
+  let mut err : String? = None
   d.each(fn(k, v) {
-    if first == false {
-      buf.write_string(", ")
+    guard err == None else { return }
+    match repr_inner(k, seen_lists, seen_dicts, depth) {
+      Err(e) => {
+        err = Some(e)
+        return
+      }
+      Ok(ks) =>
+        match repr_inner(v, seen_lists, seen_dicts, depth) {
+          Err(e) => {
+            err = Some(e)
+            return
+          }
+          Ok(vs) => {
+            if !first {
+              buf.write_string(", ")
+            }
+            first = false
+            buf.write_string(ks)
+            buf.write_string(": ")
+            buf.write_string(vs)
+          }
+        }
     }
-    first = false
-    buf.write_string(repr_inner(k, seen_lists, seen_dicts))
-    buf.write_string(": ")
-    buf.write_string(repr_inner(v, seen_lists, seen_dicts))
   })
-  buf.write_char('}')
   let _ = seen_dicts.pop()
-  buf.to_string()
+  match err {
+    Some(e) => Err(e)
+    None => {
+      buf.write_char('}')
+      Ok(buf.to_string())
+    }
+  }
 }
 
 ///|
@@ -1586,19 +1645,35 @@ fn repr_set_inner(
   s : StarlarkSet,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-) -> String {
+  depth : Int,
+) -> Result[String, String] {
   let buf = StringBuilder::new()
   buf.write_string("set([")
   let mut first = true
+  let mut err : String? = None
   s.each(fn(k) {
-    if first == false {
-      buf.write_string(", ")
+    guard err == None else { return }
+    match repr_inner(k, seen_lists, seen_dicts, depth) {
+      Err(e) => {
+        err = Some(e)
+        return
+      }
+      Ok(ks) => {
+        if !first {
+          buf.write_string(", ")
+        }
+        first = false
+        buf.write_string(ks)
+      }
     }
-    first = false
-    buf.write_string(repr_inner(k, seen_lists, seen_dicts))
   })
-  buf.write_string("])")
-  buf.to_string()
+  match err {
+    Some(e) => Err(e)
+    None => {
+      buf.write_string("])")
+      Ok(buf.to_string())
+    }
+  }
 }
 
 ///|
@@ -1606,22 +1681,28 @@ fn repr_list_inner(
   l : StarlarkList,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-) -> String {
+  depth : Int,
+) -> Result[String, String] {
   if seen_lists.iter().any(fn(sl) { l.is_same_storage(sl) }) {
-    return "[...]"
+    return Ok("[...]")
   }
   seen_lists.push(l)
   let buf = StringBuilder::new()
   buf.write_char('[')
   for i in 0..<l.items.length() {
-    if i > 0 {
-      buf.write_string(", ")
+    match repr_inner(l.items[i], seen_lists, seen_dicts, depth) {
+      Err(e) => return Err(e)
+      Ok(s) => {
+        if i > 0 {
+          buf.write_string(", ")
+        }
+        buf.write_string(s)
+      }
     }
-    buf.write_string(repr_inner(l.items[i], seen_lists, seen_dicts))
   }
   buf.write_char(']')
   let _ = seen_lists.pop()
-  buf.to_string()
+  Ok(buf.to_string())
 }
 
 ///|
@@ -1629,28 +1710,24 @@ fn repr_tuple_inner(
   t : Array[Value],
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-) -> String {
-  repr_tuple_with(t, fn(v) { repr_inner(v, seen_lists, seen_dicts) })
-}
-
-///|
-fn repr_tuple(t : Array[Value]) -> String {
-  repr_tuple_with(t, fn(v) { v.repr() })
-}
-
-///|
-fn repr_tuple_with(t : Array[Value], f : (Value) -> String) -> String {
+  depth : Int,
+) -> Result[String, String] {
   let buf = StringBuilder::new()
   buf.write_char('(')
   for i in 0..<t.length() {
-    if i > 0 {
-      buf.write_string(", ")
+    match repr_inner(t[i], seen_lists, seen_dicts, depth) {
+      Err(e) => return Err(e)
+      Ok(s) => {
+        if i > 0 {
+          buf.write_string(", ")
+        }
+        buf.write_string(s)
+      }
     }
-    buf.write_string(f(t[i]))
   }
   if t.length() == 1 {
     buf.write_char(',')
   }
   buf.write_char(')')
-  buf.to_string()
+  Ok(buf.to_string())
 }
