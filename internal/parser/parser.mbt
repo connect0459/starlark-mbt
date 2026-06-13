@@ -7,8 +7,12 @@ suberror ParseErr {
 }
 
 ///|
-// Safe ceiling across all four backends as of 2026-06-13; see https://github.com/connect0459/starlark-mbt/issues/174.
-let max_expr_depth : Int = 200
+// Wasm/JS target (macOS arm64, V8) overflows the call stack at ~176 levels of
+// bracket nesting (each level adds ~15 wasm frames; ~1 MB wasm stack). 80 gives
+// a comfortable margin for all four backends while still allowing any
+// realistically nested Starlark program.
+// ref: <https://github.com/connect0459/starlark-mbt/issues/174>.
+let max_expr_depth : Int = 80
 
 ///|
 struct Parser {
