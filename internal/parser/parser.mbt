@@ -7,12 +7,7 @@ suberror ParseErr {
 }
 
 ///|
-// 200 is empirically the safe ceiling on all four backends as of 2026-06-13:
-// the native debug build overflows the call stack at ~800-900 parse_test depth
-// levels (each level traverses ~15 mutual-recursion frames), and the JS engine
-// saturates at around 700.  200 gives a 3-4x safety margin over normal code
-// while reliably stopping the inputs that caused SIGSEGV in
-// ref: <https://github.com/connect0459/starlark-mbt/issues/174>.
+// Safe ceiling across all four backends as of 2026-06-13; see https://github.com/connect0459/starlark-mbt/issues/174.
 let max_expr_depth : Int = 200
 
 ///|
