@@ -265,7 +265,7 @@ test "expr_pos returns the position of every expression variant" {
   let q = @errors.Position::new("e.star", 9, 3)
   let exprs : Array[Expr] = [
     EIdent("x", q),
-    ELiteral(LitNone, q),
+    ELiteral(LitString("x"), q),
     EUnary(OpMinus, ident("a"), q),
     EBinary(ident("a"), OpAdd, ident("b"), q),
     ECond(ident("a"), ident("b"), ident("c"), q),

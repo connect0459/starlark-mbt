@@ -775,8 +775,6 @@ fn Fcomp::compile_opt_expr(
 ///|
 fn Fcomp::compile_literal(self : Fcomp, lit : @syntax.LiteralVal) -> Unit {
   match lit {
-    LitNone | LitBool(_) =>
-      abort("unreachable: LitNone/LitBool are identifiers, not literals")
     LitInt(n) =>
       self.emit1(Opcode::Constant, self.pcomp.add_const(CInt(n)), 0, 1)
     LitFloat(f) =>

@@ -98,8 +98,6 @@ pub fn File::path(Self) -> String
 pub fn File::stmts(Self) -> Array[Stmt]
 
 pub(all) enum LiteralVal {
-  LitNone
-  LitBool(Bool)
   LitInt(@bigint.BigInt)
   LitFloat(Double)
   LitString(String)
