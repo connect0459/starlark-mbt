@@ -812,29 +812,6 @@ pub fn decode_from_json(
 }
 
 ///|
-// Verify that `s` holds exactly one well-formed JSON value with no trailing
-// data, mirroring the strict validation Go's encoding/json.Indent performs.
-fn validate_json(s : String) -> Result[Unit, String] {
-  let chars = s.to_array()
-  match parse_json_value(chars, 0, 0) {
-    Err((offset, _)) =>
-      if offset < chars.length() {
-        Err("invalid character '\{chars[offset]}' in JSON")
-      } else {
-        Err("invalid character at end of JSON input")
-      }
-    Ok((_, next_i)) => {
-      let rest = skip_ws(chars, next_i)
-      if rest < chars.length() {
-        Err("invalid character '\{chars[rest]}' after top-level value")
-      } else {
-        Ok(())
-      }
-    }
-  }
-}
-
-///|
 // Starts a fresh pretty-printed line: a newline, the global `prefix`, then
 // `depth` copies of `indent_str`. Shared by the `{`/`[`, `}`/`]`, and `,`
 // branches of `indent_json`.
@@ -1054,10 +1031,6 @@ fn make_indent_fn() -> @value.Value {
           )
         _ => return Err("json.indent: unexpected keyword argument \{k}")
       }
-    }
-    match validate_json(s) {
-      Err(msg) => return Err("json.indent: \{msg}")
-      Ok(_) => ()
     }
     indent_json(s, pfx, ind).map(fn(result) {
       @value.Value::String(@value.StarlarkString::new(result))

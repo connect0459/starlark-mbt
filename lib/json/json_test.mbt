@@ -391,6 +391,15 @@ test "indent_json rejects invalid JSON" {
 }
 
 ///|
+test "indent_json passes through semantically-invalid but syntactically-valid JSON" {
+  // json.indent is a syntax-only formatter: it must not reject values that are
+  // syntactically valid JSON tokens even if they overflow Float64 (e.g. 1e999).
+  // starlark-go delegates to encoding/json.Indent which behaves the same way.
+  check_indent("[1e999]", "", "\t", "[\n\t1e999\n]")
+  check_indent("[1e-999]", "", "\t", "[\n\t1e-999\n]")
+}
+
+///|
 test "encode ExtVal with attrs as JSON object" {
   let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
     "myobj(x=1, y=\"two\")"
