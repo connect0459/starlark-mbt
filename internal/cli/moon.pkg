@@ -4,5 +4,8 @@ import {
   "connect0459/starlark/errors",
   "connect0459/starlark/eval",
   "connect0459/starlark/value",
+  "connect0459/starlark/lib/json",
+  "connect0459/starlark/lib/math",
+  "connect0459/starlark/lib/time",
   "connect0459/starlark/internal/repl",
 }
