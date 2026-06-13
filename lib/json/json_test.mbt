@@ -401,6 +401,36 @@ test "indent_json rejects invalid JSON" {
 }
 
 ///|
+test "indent_json reports correct message for mismatched closing bracket" {
+  match indent_json("[1}", "", "\t") {
+    Err(e) => assert_eq(e, "invalid character '}' after array element")
+    Ok(_) => fail("expected error")
+  }
+  match indent_json("{\"a\":1]", "", "\t") {
+    Err(e) => assert_eq(e, "invalid character ']' after object key:value pair")
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "indent_json rejects missing value separators" {
+  assert_true(indent_json("123 456", "", "\t") is Err(_))
+  assert_true(indent_json("[1 2 3]", "", "\t") is Err(_))
+  assert_true(indent_json("{\"a\":1 \"b\":2}", "", "\t") is Err(_))
+}
+
+///|
+test "indent_json rejects trailing comma" {
+  assert_true(indent_json("[1,2,]", "", "\t") is Err(_))
+  assert_true(indent_json("{\"a\":1,}", "", "\t") is Err(_))
+}
+
+///|
+test "indent_json rejects empty input" {
+  assert_true(indent_json("", "", "\t") is Err(_))
+}
+
+///|
 test "indent_json passes through semantically-invalid but syntactically-valid JSON" {
   check_indent("[1e999]", "", "\t", "[\n\t1e999\n]")
   check_indent("[1e-999]", "", "\t", "[\n\t1e-999\n]")

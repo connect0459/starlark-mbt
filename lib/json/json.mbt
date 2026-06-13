@@ -887,13 +887,49 @@ fn write_indent_line(
 }
 
 ///|
+priv enum Context {
+  ArrayEmpty
+  ArrayAfterVal
+  ArrayAfterComma
+  ObjEmpty
+  ObjAfterKey
+  ObjAfterColon
+  ObjAfterVal
+  ObjAfterComma
+}
+
+///|
+// Advances the parent context after a complete value (scalar closed or
+// container closed). Mutates the top of `stack` in place; returns the
+// new `top_done` value (true when the top-level value is now complete).
+fn advance_after_value(stack : Array[Context], top_done : Bool) -> Bool {
+  if stack.is_empty() {
+    true
+  } else {
+    match stack[stack.length() - 1] {
+      ArrayEmpty | ArrayAfterComma => {
+        stack[stack.length() - 1] = ArrayAfterVal
+        top_done
+      }
+      ObjAfterColon => {
+        stack[stack.length() - 1] = ObjAfterVal
+        top_done
+      }
+      _ => top_done
+    }
+  }
+}
+
+///|
 /// Pretty-prints a JSON string, prefixing each line with `prefix` and
 /// indenting each nesting level with `indent_str`.
 ///
-/// Structural errors are detected: unbalanced brackets, unterminated
-/// string literals, and scalar tokens that are not a JSON keyword
-/// (`null`, `true`, `false`) or a syntactically-valid JSON number.
-/// Semantic validity (e.g. numeric range) is not checked.
+/// Validates JSON structure: unbalanced brackets, unterminated string
+/// literals, missing value separators (`,` between elements, `:` between
+/// key and value), trailing commas, surplus tokens after the top-level
+/// value, and empty input. Scalar tokens must be a JSON keyword (`null`,
+/// `true`, `false`) or a syntactically-valid JSON number. Semantic
+/// validity (e.g. numeric range) is not checked.
 ///
 /// Parameters:
 ///
@@ -908,10 +944,14 @@ pub fn indent_json(
   prefix : String,
   indent_str : String,
 ) -> Result[String, String] {
+  if s.is_empty() {
+    return Err("unexpected end of JSON input")
+  }
   let chars = s.to_array()
   let len = chars.length()
   let buf = StringBuilder::new()
-  let mut depth = 0
+  let stack : Array[Context] = []
+  let mut top_done = false
   let mut i = 0
   let mut in_string = false
   while i < len {
@@ -927,87 +967,254 @@ pub fn indent_json(
         in_string = false
       }
       i += 1
-    } else {
-      let cp = c.to_int()
-      if cp == ' '.to_int() ||
-        cp == '\t'.to_int() ||
-        cp == '\n'.to_int() ||
-        cp == '\r'.to_int() {
-        i += 1
-      } else if c == '"' {
-        in_string = true
-        buf.write_char(c)
-        i += 1
-      } else if c == '{' || c == '[' {
-        buf.write_char(c)
-        depth += 1
-        i += 1
-        let ni = skip_ws(chars, i)
-        if ni < len && (chars[ni] == '}' || chars[ni] == ']') {
-          depth -= 1
-          buf.write_char(chars[ni])
-          i = ni + 1
-          continue
+      continue
+    }
+    let cp = c.to_int()
+    if cp == ' '.to_int() ||
+      cp == '\t'.to_int() ||
+      cp == '\n'.to_int() ||
+      cp == '\r'.to_int() {
+      i += 1
+      continue
+    }
+    if c == '"' {
+      if stack.is_empty() {
+        if top_done {
+          return Err("invalid character '\"' after top-level value")
         }
-        write_indent_line(buf, prefix, indent_str, depth)
-      } else if c == '}' || c == ']' {
-        if depth == 0 {
-          return Err("unexpected '\{c}' in JSON")
-        }
-        depth -= 1
-        write_indent_line(buf, prefix, indent_str, depth)
-        buf.write_char(c)
-        i += 1
-      } else if c == ',' {
-        buf.write_char(',')
-        write_indent_line(buf, prefix, indent_str, depth)
-        i += 1
-      } else if c == ':' {
-        buf.write_string(": ")
-        i += 1
+        top_done = true
       } else {
-        let cp2 = c.to_int()
-        if (cp2 >= 'a'.to_int() && cp2 <= 'z'.to_int()) ||
-          (cp2 >= 'A'.to_int() && cp2 <= 'Z'.to_int()) ||
-          (cp2 >= '0'.to_int() && cp2 <= '9'.to_int()) ||
-          c == '-' ||
-          c == '+' ||
-          c == '.' {
-          let tok_start = i
-          i += 1
-          while i < len {
-            let tc = chars[i].to_int()
-            if (tc >= 'a'.to_int() && tc <= 'z'.to_int()) ||
-              (tc >= 'A'.to_int() && tc <= 'Z'.to_int()) ||
-              (tc >= '0'.to_int() && tc <= '9'.to_int()) ||
-              chars[i] == '-' ||
-              chars[i] == '+' ||
-              chars[i] == '.' {
-              i += 1
-            } else {
-              break
-            }
-          }
-          let tok_buf = StringBuilder::new()
-          for k in tok_start..<i {
-            tok_buf.write_char(chars[k])
-          }
-          let tok = tok_buf.to_string()
-          if !is_valid_json_scalar(tok) {
-            return Err("invalid JSON token '\{tok}'")
-          }
-          buf.write_string(tok)
-        } else {
-          return Err("invalid character '\{c}' in JSON")
+        match stack[stack.length() - 1] {
+          ArrayEmpty | ArrayAfterComma =>
+            stack[stack.length() - 1] = ArrayAfterVal
+          ArrayAfterVal =>
+            return Err("invalid character '\"' after array element")
+          ObjEmpty | ObjAfterComma => stack[stack.length() - 1] = ObjAfterKey
+          ObjAfterKey => return Err("invalid character '\"' after object key")
+          ObjAfterColon => stack[stack.length() - 1] = ObjAfterVal
+          ObjAfterVal =>
+            return Err("invalid character '\"' after object key:value pair")
         }
       }
+      in_string = true
+      buf.write_char('"')
+      i += 1
+      continue
+    }
+    if c == '{' || c == '[' {
+      if stack.is_empty() {
+        if top_done {
+          return Err("invalid character '\{c}' after top-level value")
+        }
+      } else {
+        match stack[stack.length() - 1] {
+          ArrayEmpty | ArrayAfterComma => ()
+          ArrayAfterVal =>
+            return Err("invalid character '\{c}' after array element")
+          ObjEmpty | ObjAfterComma =>
+            return Err(
+              "invalid character '\{c}' looking for beginning of object key string",
+            )
+          ObjAfterKey => return Err("invalid character '\{c}' after object key")
+          ObjAfterColon => ()
+          ObjAfterVal =>
+            return Err("invalid character '\{c}' after object key:value pair")
+        }
+      }
+      buf.write_char(c)
+      i += 1
+      let ni = skip_ws(chars, i)
+      let close = if c == '{' { '}' } else { ']' }
+      if ni < len && chars[ni] == close {
+        buf.write_char(close)
+        i = ni + 1
+        top_done = advance_after_value(stack, top_done)
+        continue
+      }
+      let new_ctx = if c == '{' { ObjEmpty } else { ArrayEmpty }
+      stack.push(new_ctx)
+      write_indent_line(buf, prefix, indent_str, stack.length())
+      continue
+    }
+    if c == '}' {
+      if stack.is_empty() {
+        if top_done {
+          return Err("invalid character '}' after top-level value")
+        } else {
+          return Err("invalid character '}' looking for beginning of value")
+        }
+      }
+      match stack[stack.length() - 1] {
+        ObjAfterVal => {
+          write_indent_line(buf, prefix, indent_str, stack.length() - 1)
+          buf.write_char('}')
+          let _ = stack.pop()
+          top_done = advance_after_value(stack, top_done)
+        }
+        ObjAfterComma =>
+          return Err(
+            "invalid character '}' looking for beginning of object key string",
+          )
+        ObjAfterKey => return Err("invalid character '}' after object key")
+        ObjAfterColon =>
+          return Err("invalid character '}' looking for beginning of value")
+        ArrayAfterVal => return Err("invalid character '}' after array element")
+        ArrayEmpty | ArrayAfterComma | ObjEmpty =>
+          return Err("invalid character '}' looking for beginning of value")
+      }
+      i += 1
+      continue
+    }
+    if c == ']' {
+      if stack.is_empty() {
+        if top_done {
+          return Err("invalid character ']' after top-level value")
+        } else {
+          return Err("invalid character ']' looking for beginning of value")
+        }
+      }
+      match stack[stack.length() - 1] {
+        ArrayAfterVal => {
+          write_indent_line(buf, prefix, indent_str, stack.length() - 1)
+          buf.write_char(']')
+          let _ = stack.pop()
+          top_done = advance_after_value(stack, top_done)
+        }
+        ArrayAfterComma =>
+          return Err("invalid character ']' looking for beginning of value")
+        ObjAfterVal =>
+          return Err("invalid character ']' after object key:value pair")
+        ObjEmpty | ObjAfterComma =>
+          return Err(
+            "invalid character ']' looking for beginning of object key string",
+          )
+        ObjAfterKey => return Err("invalid character ']' after object key")
+        ObjAfterColon =>
+          return Err("invalid character ']' looking for beginning of value")
+        ArrayEmpty =>
+          return Err("invalid character ']' looking for beginning of value")
+      }
+      i += 1
+      continue
+    }
+    if c == ',' {
+      if stack.is_empty() {
+        if top_done {
+          return Err("invalid character ',' after top-level value")
+        } else {
+          return Err("invalid character ',' looking for beginning of value")
+        }
+      }
+      match stack[stack.length() - 1] {
+        ArrayAfterVal => {
+          stack[stack.length() - 1] = ArrayAfterComma
+          buf.write_char(',')
+          write_indent_line(buf, prefix, indent_str, stack.length())
+        }
+        ArrayEmpty | ArrayAfterComma =>
+          return Err("invalid character ',' looking for beginning of value")
+        ObjAfterVal => {
+          stack[stack.length() - 1] = ObjAfterComma
+          buf.write_char(',')
+          write_indent_line(buf, prefix, indent_str, stack.length())
+        }
+        ObjEmpty | ObjAfterComma =>
+          return Err(
+            "invalid character ',' looking for beginning of object key string",
+          )
+        ObjAfterKey => return Err("invalid character ',' after object key")
+        ObjAfterColon =>
+          return Err("invalid character ',' looking for beginning of value")
+      }
+      i += 1
+      continue
+    }
+    if c == ':' {
+      if stack.is_empty() {
+        if top_done {
+          return Err("invalid character ':' after top-level value")
+        } else {
+          return Err("invalid character ':' looking for beginning of value")
+        }
+      }
+      match stack[stack.length() - 1] {
+        ObjAfterKey => {
+          stack[stack.length() - 1] = ObjAfterColon
+          buf.write_string(": ")
+        }
+        ArrayEmpty | ArrayAfterComma | ObjAfterColon =>
+          return Err("invalid character ':' looking for beginning of value")
+        ArrayAfterVal => return Err("invalid character ':' after array element")
+        ObjEmpty | ObjAfterComma =>
+          return Err(
+            "invalid character ':' looking for beginning of object key string",
+          )
+        ObjAfterVal =>
+          return Err("invalid character ':' after object key:value pair")
+      }
+      i += 1
+      continue
+    }
+    let cp2 = c.to_int()
+    if (cp2 >= 'a'.to_int() && cp2 <= 'z'.to_int()) ||
+      (cp2 >= 'A'.to_int() && cp2 <= 'Z'.to_int()) ||
+      (cp2 >= '0'.to_int() && cp2 <= '9'.to_int()) ||
+      c == '-' ||
+      c == '+' ||
+      c == '.' {
+      if stack.is_empty() {
+        if top_done {
+          return Err("invalid character '\{c}' after top-level value")
+        }
+      } else {
+        match stack[stack.length() - 1] {
+          ArrayEmpty | ArrayAfterComma => ()
+          ArrayAfterVal =>
+            return Err("invalid character '\{c}' after array element")
+          ObjEmpty | ObjAfterComma =>
+            return Err(
+              "invalid character '\{c}' looking for beginning of object key string",
+            )
+          ObjAfterKey => return Err("invalid character '\{c}' after object key")
+          ObjAfterColon => ()
+          ObjAfterVal =>
+            return Err("invalid character '\{c}' after object key:value pair")
+        }
+      }
+      let tok_start = i
+      i += 1
+      while i < len {
+        let tc = chars[i].to_int()
+        if (tc >= 'a'.to_int() && tc <= 'z'.to_int()) ||
+          (tc >= 'A'.to_int() && tc <= 'Z'.to_int()) ||
+          (tc >= '0'.to_int() && tc <= '9'.to_int()) ||
+          chars[i] == '-' ||
+          chars[i] == '+' ||
+          chars[i] == '.' {
+          i += 1
+        } else {
+          break
+        }
+      }
+      let tok_buf = StringBuilder::new()
+      for k in tok_start..<i {
+        tok_buf.write_char(chars[k])
+      }
+      let tok = tok_buf.to_string()
+      if !is_valid_json_scalar(tok) {
+        return Err("invalid JSON token '\{tok}'")
+      }
+      buf.write_string(tok)
+      top_done = advance_after_value(stack, top_done)
+    } else {
+      return Err("invalid character '\{c}' in JSON")
     }
   }
   if in_string {
     return Err("unterminated string in JSON")
   }
-  if depth != 0 {
-    return Err("unexpected end of JSON")
+  if !stack.is_empty() || !top_done {
+    return Err("unexpected end of JSON input")
   }
   Ok(buf.to_string())
 }
