@@ -53,6 +53,18 @@ fn struct_repr(
   ctor : @value.Value,
   entries : Array[(String, @value.Value)],
 ) -> String {
+  match struct_repr_depth(ctor, entries, @value.repr_limit) {
+    Ok(s) => s
+    Err(e) => abort(e)
+  }
+}
+
+///|
+fn struct_repr_depth(
+  ctor : @value.Value,
+  entries : Array[(String, @value.Value)],
+  depth : Int,
+) -> Result[String, String] {
   let buf = StringBuilder::new()
   buf.write_string(ctor_display(ctor))
   buf.write_char('(')
@@ -62,10 +74,13 @@ fn struct_repr(
     }
     buf.write_string(e.0)
     buf.write_string(" = ")
-    buf.write_string(e.1.repr())
+    match @value.Value::repr_at_depth(e.1, depth) {
+      Err(e) => return Err(e)
+      Ok(s) => buf.write_string(s)
+    }
   }
   buf.write_char(')')
-  buf.to_string()
+  Ok(buf.to_string())
 }
 
 // Hash algorithm for starlark structs, ported from starlark-go's
@@ -317,6 +332,7 @@ pub fn make_struct(
     @value.CustomValue::new(fn() { "struct" }, fn() { true }, fn() {
       struct_repr(ctor, sorted)
     })
+    .with_repr_depth(fn(depth) { struct_repr_depth(ctor, sorted, depth) })
     .with_hash(fn() { struct_hash(sorted) })
     .with_equals(fn(other, depth) { struct_equals(ctor, sorted, other, depth) })
     .with_attrs(fn(name) { struct_get_attr(ctor, sorted, name) }, fn() {
