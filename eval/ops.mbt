@@ -1413,8 +1413,13 @@ fn eval_index(
       }
     @value.Value::Dict(d) =>
       match check(ctx, d.get(idx)) {
-        None =>
-          raise EvalErr(make_eval_error(ctx, "key \{idx.repr()} not in dict"))
+        None => {
+          let key_str = match idx.repr_checked() {
+            Ok(s) => s
+            Err(_) => "<key>"
+          }
+          raise EvalErr(make_eval_error(ctx, "key \{key_str} not in dict"))
+        }
         Some(v) => v
       }
     @value.Value::Range(r) =>
