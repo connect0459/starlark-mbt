@@ -1175,6 +1175,58 @@ test "parser: bare * followed by non-comma token reports 'want ,'" {
 }
 
 ///|
+test "parser: missing separator between def params reports want ',' not want ')'" {
+  match @parser.parse_file("test.star", "def f(a b): pass\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got identifier, want ','"))
+      assert_true(!e.msg().contains("want ')'"))
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: missing separator between non-first def params reports got X want ','" {
+  match @parser.parse_file("test.star", "def f(a, b c): pass\n") {
+    Err(e) => assert_true(e.msg().contains("got identifier, want ','"))
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: missing separator between call args reports want ',' not want ')'" {
+  match @parser.parse_file("test.star", "f(1 2)\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("want ','"))
+      assert_true(!e.msg().contains("want ')'"))
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: missing colon in dict literal reports want ':' not want '}'" {
+  match @parser.parse_file("test.star", "x = {1 2}\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("want ':'"))
+      assert_true(!e.msg().contains("want '}'"))
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: missing separator between lambda params reports want ',' not want ':'" {
+  match @parser.parse_file("test.star", "f = lambda a b: a\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got identifier, want ','"))
+      assert_true(!e.msg().contains("want ':'"))
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
 test "if statement with multiple elif branches is parsed as a single top-level SIf node" {
   // Exercises the recursive elif-branch parse path in the parser.
   let f = parse_f(
