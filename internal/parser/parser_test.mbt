@@ -624,41 +624,41 @@ test "integer literal has position line 1 col 1" {
 
 ///|
 test "import statement is rejected" {
-  match @parser.parse_file("test.star", "import os\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for import statement")
+  let msg = parse_f_err("import os\n")
+  if !msg.contains("got import, want primary expression") {
+    fail("expected got-import error, got: \{msg}")
   }
 }
 
 ///|
 test "global statement is rejected" {
-  match @parser.parse_file("test.star", "global x\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for global statement")
+  let msg = parse_f_err("global x\n")
+  if !msg.contains("got global, want primary expression") {
+    fail("expected got-global error, got: \{msg}")
   }
 }
 
 ///|
 test "raise statement is rejected" {
-  match @parser.parse_file("test.star", "raise Exception()\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for raise statement")
+  let msg = parse_f_err("raise Exception()\n")
+  if !msg.contains("got raise, want primary expression") {
+    fail("expected got-raise error, got: \{msg}")
   }
 }
 
 ///|
 test "class definition is rejected" {
-  match @parser.parse_file("test.star", "class Foo:\n  pass\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for class definition")
+  let msg = parse_f_err("class Foo:\n  pass\n")
+  if !msg.contains("got class, want primary expression") {
+    fail("expected got-class error, got: \{msg}")
   }
 }
 
 ///|
 test "del statement is rejected" {
-  match @parser.parse_file("test.star", "del x\n") {
-    Err(_) => ()
-    Ok(_) => fail("expected error for del statement")
+  let msg = parse_f_err("del x\n")
+  if !msg.contains("got del, want primary expression") {
+    fail("expected got-del error, got: \{msg}")
   }
 }
 
@@ -758,16 +758,16 @@ fn parse_f_err(src : String) -> String {
 
 ///|
 test "is operator is rejected" {
-  let msg = parse_e_err("x is y")
-  if !msg.contains("'is' operator is not allowed") {
+  let msg = parse_f_err("x is y\n")
+  if !msg.contains("got is, want newline") {
     fail("expected 'is' rejection, got: \{msg}")
   }
 }
 
 ///|
 test "is not operator is rejected" {
-  let msg = parse_e_err("x is not y")
-  if !msg.contains("'is' operator is not allowed") {
+  let msg = parse_f_err("x is not y\n")
+  if !msg.contains("got is, want newline") {
     fail("expected 'is not' rejection, got: \{msg}")
   }
 }
@@ -783,7 +783,7 @@ test "type annotation in function parameter is rejected" {
 ///|
 test "annotated assignment is rejected" {
   let msg = parse_f_err("x: int = 1\n")
-  if !msg.contains("type annotations are not allowed") {
+  if !msg.contains("got ':', want newline") {
     fail("expected annotation rejection, got: \{msg}")
   }
 }
@@ -815,8 +815,48 @@ test "double-star in expression position reports want primary expression" {
 ///|
 test "walrus operator := is rejected" {
   let msg = parse_f_err("x := 5\n")
-  if !msg.contains("walrus operator") && !msg.contains(":=") {
+  if !msg.contains("got ':', want newline") {
     fail("expected walrus rejection, got: \{msg}")
+  }
+}
+
+// --- Rejection error positions (column anchoring) ---
+
+///|
+test "Python keyword statement error anchors at column 1" {
+  // del, global, etc. reach parse_atom which uses syntax_error (token start).
+  match @parser.parse_file("test.star", "del x\n") {
+    Err(e) => assert_eq(e.pos().col(), 1)
+    Ok(_) => fail("expected del rejection")
+  }
+}
+
+///|
+test "is operator error anchors one past the token" {
+  // parse_simple_stmt raises scanner_error (one-past position) after the
+  // comparison loop exits without consuming `is`.
+  // "x is y": `is` at col 3-4, scanner pos after = col 5.
+  match @parser.parse_file("test.star", "x is y\n") {
+    Err(e) => assert_eq(e.pos().col(), 5)
+    Ok(_) => fail("expected is rejection")
+  }
+}
+
+///|
+test "walrus operator error anchors one past the colon" {
+  // "y := 1": `:` at col 3, scanner pos after `:` = col 4.
+  match @parser.parse_file("test.star", "y := 1\n") {
+    Err(e) => assert_eq(e.pos().col(), 4)
+    Ok(_) => fail("expected walrus rejection")
+  }
+}
+
+///|
+test "annotated assignment error anchors one past the colon" {
+  // "x: int = 1": `:` at col 2, scanner pos after `:` = col 3.
+  match @parser.parse_file("test.star", "x: int = 1\n") {
+    Err(e) => assert_eq(e.pos().col(), 3)
+    Ok(_) => fail("expected annotation rejection")
   }
 }
 
@@ -1250,9 +1290,9 @@ test "Python keywords not allowed in Starlark are each rejected" {
   ]
   for pair in cases {
     let (src, kw) = pair
-    match @parser.parse_file("test.star", src) {
-      Err(_) => ()
-      Ok(_) => fail("expected parse error for keyword: \{kw}")
+    let msg = parse_f_err(src)
+    if !msg.contains("got \{kw}, want primary expression") {
+      fail("expected got-\{kw} error, got: \{msg}")
     }
   }
 }

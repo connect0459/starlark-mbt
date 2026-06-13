@@ -259,28 +259,6 @@ fn Parser::parse_small_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
       @syntax.Stmt::SPass(p)
     }
     @lexer.Token::Load => self.parse_load_stmt()
-    @lexer.Token::Global =>
-      raise ParseErr(self.syntax_error("'global' is not allowed in Starlark"))
-    @lexer.Token::Nonlocal =>
-      raise ParseErr(self.syntax_error("'nonlocal' is not allowed in Starlark"))
-    @lexer.Token::Del =>
-      raise ParseErr(self.syntax_error("'del' is not allowed in Starlark"))
-    @lexer.Token::Import =>
-      raise ParseErr(
-        self.syntax_error("'import' is not allowed in Starlark; use 'load'"),
-      )
-    @lexer.Token::Raise =>
-      raise ParseErr(self.syntax_error("'raise' is not allowed in Starlark"))
-    @lexer.Token::Try =>
-      raise ParseErr(self.syntax_error("'try' is not allowed in Starlark"))
-    @lexer.Token::Class =>
-      raise ParseErr(self.syntax_error("'class' is not allowed in Starlark"))
-    @lexer.Token::With =>
-      raise ParseErr(self.syntax_error("'with' is not allowed in Starlark"))
-    @lexer.Token::Async =>
-      raise ParseErr(self.syntax_error("'async' is not allowed in Starlark"))
-    @lexer.Token::Yield =>
-      raise ParseErr(self.syntax_error("'yield' is not allowed in Starlark"))
     _ => self.parse_assign_or_expr_stmt()
   }
 }
@@ -436,10 +414,6 @@ fn Parser::parse_assign_or_expr_stmt(
       let rhs = self.parse_test()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugRShift, rhs, p)
     }
-    @lexer.Token::Colon =>
-      raise ParseErr(
-        self.syntax_error("type annotations are not allowed in Starlark"),
-      )
     _ => @syntax.Stmt::SExpr(lhs)
   }
 }
@@ -840,11 +814,6 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
   let mut e = self.parse_bitor_expr()
   let mut prev_op_str : String? = None
   while true {
-    if self.tok == @lexer.Token::Is {
-      raise ParseErr(
-        self.syntax_error("'is' operator is not allowed in Starlark"),
-      )
-    }
     let cur_str : String? = match self.tok {
       @lexer.Token::Lt => Some("<")
       @lexer.Token::Le => Some("<=")
@@ -1360,11 +1329,6 @@ fn Parser::finish_comparison_from(
   let mut e = e
   let mut prev_op_str : String? = None
   while true {
-    if self.tok == @lexer.Token::Is {
-      raise ParseErr(
-        self.syntax_error("'is' operator is not allowed in Starlark"),
-      )
-    }
     let cur_str : String? = match self.tok {
       @lexer.Token::Lt => Some("<")
       @lexer.Token::Le => Some("<=")
