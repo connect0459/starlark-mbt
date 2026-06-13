@@ -555,8 +555,8 @@ fn Parser::parse_params(self : Parser) -> Array[@syntax.Param] raise ParseErr {
       self.syntax_error("type annotations are not allowed in Starlark"),
     )
   }
-  while self.tok == @lexer.Token::Comma {
-    self.advance()
+  while self.tok != @lexer.Token::RParen && self.tok != @lexer.Token::EOF {
+    self.expect(@lexer.Token::Comma)
     if self.tok == @lexer.Token::RParen {
       break
     }
@@ -565,13 +565,6 @@ fn Parser::parse_params(self : Parser) -> Array[@syntax.Param] raise ParseErr {
       raise ParseErr(
         self.syntax_error("type annotations are not allowed in Starlark"),
       )
-    }
-    // After each parameter, the next token must be ',' or ')'.
-    // Anything else (e.g. a non-comma after a bare '*') should say
-    // "want ','" to match starlark-go parse.go's unconditional
-    // consume(COMMA) loop.
-    if self.tok != @lexer.Token::Comma && self.tok != @lexer.Token::RParen {
-      raise ParseErr(self.syntax_error("want ','"))
     }
   }
   params
@@ -778,8 +771,8 @@ fn Parser::parse_lambda_params(
 ) -> Array[@syntax.Param] raise ParseErr {
   let params : Array[@syntax.Param] = []
   params.push(self.parse_param())
-  while self.tok == @lexer.Token::Comma {
-    self.advance()
+  while self.tok != @lexer.Token::Colon && self.tok != @lexer.Token::EOF {
+    self.expect(@lexer.Token::Comma)
     params.push(self.parse_param())
   }
   params
@@ -1111,8 +1104,8 @@ fn Parser::parse_call_args(self : Parser) -> Array[@syntax.Arg] raise ParseErr {
     return args
   }
   args.push(self.parse_call_arg())
-  while self.tok == @lexer.Token::Comma {
-    self.advance()
+  while self.tok != @lexer.Token::RParen && self.tok != @lexer.Token::EOF {
+    self.expect(@lexer.Token::Comma)
     if self.tok == @lexer.Token::RParen {
       break
     }
@@ -1566,6 +1559,11 @@ fn Parser::parse_dict_or_set(
     self.expect(@lexer.Token::RBrace)
     @syntax.Expr::ESetComp(first, clauses, p)
   } else {
+    if self.tok != @lexer.Token::Comma &&
+      self.tok != @lexer.Token::RBrace &&
+      self.tok != @lexer.Token::EOF {
+      self.expect(@lexer.Token::Colon)
+    }
     let items : Array[@syntax.Expr] = [first]
     while self.tok == @lexer.Token::Comma {
       self.advance()
