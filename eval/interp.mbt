@@ -651,10 +651,13 @@ fn VM::run_frame(
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) =>
             match check(ctx, d.get(key)) {
-              Some(_) =>
-                raise EvalErr(
-                  make_eval_error(ctx, "duplicate key: \{key.repr()}"),
-                )
+              Some(_) => {
+                let key_str = match key.repr_checked() {
+                  Ok(s) => s
+                  Err(_) => "<key>"
+                }
+                raise EvalErr(make_eval_error(ctx, "duplicate key: \{key_str}"))
+              }
               None => check(ctx, d.set(key, value))
             }
           other =>
