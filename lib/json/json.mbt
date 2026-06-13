@@ -952,7 +952,6 @@ pub fn indent_json(
   let buf = StringBuilder::new()
   let stack : Array[Context] = []
   let mut top_done = false
-  let mut depth = 0
   let mut i = 0
   let mut in_string = false
   while i < len {
@@ -1023,12 +1022,10 @@ pub fn indent_json(
         }
       }
       buf.write_char(c)
-      depth += 1
       i += 1
       let ni = skip_ws(chars, i)
       let close = if c == '{' { '}' } else { ']' }
       if ni < len && chars[ni] == close {
-        depth -= 1
         buf.write_char(close)
         i = ni + 1
         top_done = advance_after_value(stack, top_done)
@@ -1036,7 +1033,7 @@ pub fn indent_json(
       }
       let new_ctx = if c == '{' { ObjEmpty } else { ArrayEmpty }
       stack.push(new_ctx)
-      write_indent_line(buf, prefix, indent_str, depth)
+      write_indent_line(buf, prefix, indent_str, stack.length())
       continue
     }
     if c == '}' {
@@ -1049,8 +1046,7 @@ pub fn indent_json(
       }
       match stack[stack.length() - 1] {
         ObjAfterVal => {
-          depth -= 1
-          write_indent_line(buf, prefix, indent_str, depth)
+          write_indent_line(buf, prefix, indent_str, stack.length() - 1)
           buf.write_char('}')
           let _ = stack.pop()
           top_done = advance_after_value(stack, top_done)
@@ -1079,8 +1075,7 @@ pub fn indent_json(
       }
       match stack[stack.length() - 1] {
         ArrayAfterVal => {
-          depth -= 1
-          write_indent_line(buf, prefix, indent_str, depth)
+          write_indent_line(buf, prefix, indent_str, stack.length() - 1)
           buf.write_char(']')
           let _ = stack.pop()
           top_done = advance_after_value(stack, top_done)
@@ -1114,14 +1109,14 @@ pub fn indent_json(
         ArrayAfterVal => {
           stack[stack.length() - 1] = ArrayAfterComma
           buf.write_char(',')
-          write_indent_line(buf, prefix, indent_str, depth)
+          write_indent_line(buf, prefix, indent_str, stack.length())
         }
         ArrayEmpty | ArrayAfterComma =>
           return Err("invalid character ',' looking for beginning of value")
         ObjAfterVal => {
           stack[stack.length() - 1] = ObjAfterComma
           buf.write_char(',')
-          write_indent_line(buf, prefix, indent_str, depth)
+          write_indent_line(buf, prefix, indent_str, stack.length())
         }
         ObjEmpty | ObjAfterComma =>
           return Err(
