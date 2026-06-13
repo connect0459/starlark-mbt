@@ -42,7 +42,8 @@ After injecting `json_module()` as `"json"` in predeclared:
 | Behaviour | This library | starlark-go |
 | :--- | :--- | :--- |
 | Raw control characters in JSON strings | Rejected (`json.decode` raises an error) — RFC 7159 §7 compliance | Accepted (safe-path optimisation bypasses validation) |
-| `json.indent` on Float64-overflowing number tokens (e.g. `1e999`) | Passes through as-is (syntax-only formatter) | Same |
+| `json.indent` structural validation | Missing separators (`,`/`:`), trailing commas, surplus tokens, and empty input are rejected with Go-compatible error messages | Same |
+| `json.indent` on Float64-overflowing number tokens (e.g. `1e999`) | Passes through as-is (semantic validity not checked) | Same |
 
 `json.decode` rejects unescaped control characters (U+0000–U+001F) inside JSON string
 literals. RFC 7159 §7 explicitly prohibits them; the `\n`, `\r`, `\t` etc. escape sequences
