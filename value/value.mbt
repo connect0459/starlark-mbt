@@ -1604,19 +1604,17 @@ fn repr_dict_inner(
   let buf = StringBuilder::new()
   buf.write_char('{')
   let mut first = true
-  let mut err : String? = None
-  d.each(fn(k, v) {
-    guard err == None else { return }
-    match repr_inner(k, seen_lists, seen_dicts, depth) {
+  for kv in d.entries() {
+    match repr_inner(kv.0, seen_lists, seen_dicts, depth) {
       Err(e) => {
-        err = Some(e)
-        return
+        let _ = seen_dicts.pop()
+        return Err(e)
       }
       Ok(ks) =>
-        match repr_inner(v, seen_lists, seen_dicts, depth) {
+        match repr_inner(kv.1, seen_lists, seen_dicts, depth) {
           Err(e) => {
-            err = Some(e)
-            return
+            let _ = seen_dicts.pop()
+            return Err(e)
           }
           Ok(vs) => {
             if !first {
@@ -1629,15 +1627,10 @@ fn repr_dict_inner(
           }
         }
     }
-  })
-  let _ = seen_dicts.pop()
-  match err {
-    Some(e) => Err(e)
-    None => {
-      buf.write_char('}')
-      Ok(buf.to_string())
-    }
   }
+  let _ = seen_dicts.pop()
+  buf.write_char('}')
+  Ok(buf.to_string())
 }
 
 ///|
@@ -1650,14 +1643,9 @@ fn repr_set_inner(
   let buf = StringBuilder::new()
   buf.write_string("set([")
   let mut first = true
-  let mut err : String? = None
-  s.each(fn(k) {
-    guard err == None else { return }
+  for k in s.iter() {
     match repr_inner(k, seen_lists, seen_dicts, depth) {
-      Err(e) => {
-        err = Some(e)
-        return
-      }
+      Err(e) => return Err(e)
       Ok(ks) => {
         if !first {
           buf.write_string(", ")
@@ -1666,14 +1654,9 @@ fn repr_set_inner(
         buf.write_string(ks)
       }
     }
-  })
-  match err {
-    Some(e) => Err(e)
-    None => {
-      buf.write_string("])")
-      Ok(buf.to_string())
-    }
   }
+  buf.write_string("])")
+  Ok(buf.to_string())
 }
 
 ///|
