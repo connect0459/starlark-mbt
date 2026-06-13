@@ -186,3 +186,13 @@ test "parse_duration_str: leading-zero nanosecond form of Int64 minimum is accep
     Err(e) => fail("expected Ok, got Err(\{e})")
   }
 }
+
+///|
+test "parse_duration_str: positive 2^63 nanoseconds is rejected" {
+  assert_true(parse_duration_str("9223372036854775808ns") is Err(_))
+}
+
+///|
+test "parse_duration_str: magnitude one beyond Int64 minimum is rejected" {
+  assert_true(parse_duration_str("-9223372036854775809ns") is Err(_))
+}
