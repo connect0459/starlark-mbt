@@ -73,6 +73,7 @@ pub fn CustomValue::get_items(Self) -> Result[Array[(Value, Value)], String]?
 pub fn CustomValue::get_iterate(Self) -> Result[StarlarkIterator, String]
 pub fn CustomValue::get_length(Self) -> Result[Int, String]
 pub fn CustomValue::get_repr(Self) -> String
+pub fn CustomValue::get_repr_depth(Self, Int) -> Result[String, String]
 pub fn CustomValue::get_set_field(Self, String, Value) -> Result[Unit, String]?
 pub fn CustomValue::get_truth(Self) -> Bool
 pub fn CustomValue::get_type_name(Self) -> String
@@ -90,6 +91,7 @@ pub fn CustomValue::with_hash(Self, () -> Result[UInt, String]) -> Self
 pub fn CustomValue::with_items(Self, () -> Result[Array[(Value, Value)], String]) -> Self
 pub fn CustomValue::with_iterate(Self, () -> Result[StarlarkIterator, String]) -> Self
 pub fn CustomValue::with_length(Self, () -> Int) -> Self
+pub fn CustomValue::with_repr_depth(Self, (Int) -> Result[String, String]) -> Self
 pub fn CustomValue::with_set_field(Self, (String, Value) -> Result[Unit, String]) -> Self
 pub fn CustomValue::with_set_index(Self, (Int, Value) -> Result[Unit, String]) -> Self
 pub fn CustomValue::with_set_key(Self, (Value, Value) -> Result[Unit, String]) -> Self
@@ -296,6 +298,7 @@ pub fn Value::new_list(Array[Self]) -> Self
 pub fn Value::new_set() -> Self
 pub fn Value::new_string(String) -> Self
 pub fn Value::repr(Self) -> String
+pub fn Value::repr_at_depth(Self, Int) -> Result[String, String]
 pub fn Value::repr_checked(Self) -> Result[String, String]
 pub fn Value::starlark_equals(Self, Self) -> Bool
 pub fn Value::to_str(Self) -> String

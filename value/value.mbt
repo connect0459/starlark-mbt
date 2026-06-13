@@ -1570,8 +1570,26 @@ fn repr_inner(
       Ok(repr_string_val(c.s) + "." + suffix)
     }
     BytesElems(e) => Ok(repr_bytes_val(e.b) + ".elems()")
-    ExtVal(c) => Ok(c.get_repr())
+    ExtVal(c) => {
+      if depth < 1 {
+        return Err("repr exceeded maximum recursion depth")
+      }
+      c.get_repr_depth(depth - 1)
+    }
   }
+}
+
+///|
+/// Like `Value::repr_checked` but starts with an explicit depth budget
+/// instead of `repr_limit`. Intended for use by `CustomValue` implementations
+/// (e.g. structs) that repr field values and need to propagate the caller's
+/// remaining depth rather than restarting it.
+///
+/// Parameters:
+///
+/// - `depth` : Remaining recursion depth to allow.
+pub fn Value::repr_at_depth(v : Value, depth : Int) -> Result[String, String] {
+  repr_inner(v, [], [], depth)
 }
 
 ///|
