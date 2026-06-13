@@ -812,15 +812,61 @@ pub fn decode_from_json(
 }
 
 ///|
-// Returns true for characters that may start a JSON scalar value token:
-// digits and '-' for numbers, 'n'/'t'/'f' for null/true/false.
-fn is_json_value_start(c : Char) -> Bool {
-  let cp = c.to_int()
-  (cp >= '0'.to_int() && cp <= '9'.to_int()) ||
-  c == '-' ||
-  c == 'n' ||
-  c == 't' ||
-  c == 'f'
+fn is_valid_json_scalar(tok : String) -> Bool {
+  if tok == "null" || tok == "true" || tok == "false" {
+    return true
+  }
+  let chars = tok.to_array()
+  let n = chars.length()
+  let mut i = 0
+  if i < n && chars[i] == '-' {
+    i += 1
+  }
+  if i >= n {
+    return false
+  }
+  if chars[i] == '0' {
+    i += 1
+  } else if chars[i].to_int() >= '1'.to_int() &&
+    chars[i].to_int() <= '9'.to_int() {
+    while i < n &&
+          chars[i].to_int() >= '0'.to_int() &&
+          chars[i].to_int() <= '9'.to_int() {
+      i += 1
+    }
+  } else {
+    return false
+  }
+  if i < n && chars[i] == '.' {
+    i += 1
+    if i >= n ||
+      chars[i].to_int() < '0'.to_int() ||
+      chars[i].to_int() > '9'.to_int() {
+      return false
+    }
+    while i < n &&
+          chars[i].to_int() >= '0'.to_int() &&
+          chars[i].to_int() <= '9'.to_int() {
+      i += 1
+    }
+  }
+  if i < n && (chars[i] == 'e' || chars[i] == 'E') {
+    i += 1
+    if i < n && (chars[i] == '+' || chars[i] == '-') {
+      i += 1
+    }
+    if i >= n ||
+      chars[i].to_int() < '0'.to_int() ||
+      chars[i].to_int() > '9'.to_int() {
+      return false
+    }
+    while i < n &&
+          chars[i].to_int() >= '0'.to_int() &&
+          chars[i].to_int() <= '9'.to_int() {
+      i += 1
+    }
+  }
+  i == n
 }
 
 ///|
@@ -844,11 +890,10 @@ fn write_indent_line(
 /// Pretty-prints a JSON string, prefixing each line with `prefix` and
 /// indenting each nesting level with `indent_str`.
 ///
-/// Structural errors are detected and reported: unbalanced brackets,
-/// unterminated string literals, and scalar tokens that do not start
-/// with a valid JSON value character (digit, `-`, `n`, `t`, or `f`).
-/// Semantic validity of scalar values (e.g. numeric range) is not
-/// checked; the token is formatted as-is.
+/// Structural errors are detected: unbalanced brackets, unterminated
+/// string literals, and scalar tokens that are not a JSON keyword
+/// (`null`, `true`, `false`) or a syntactically-valid JSON number.
+/// Semantic validity (e.g. numeric range) is not checked.
 ///
 /// Parameters:
 ///
@@ -869,7 +914,6 @@ pub fn indent_json(
   let mut depth = 0
   let mut i = 0
   let mut in_string = false
-  let mut in_token = false
   while i < len {
     let c = chars[i]
     if in_string {
@@ -889,15 +933,12 @@ pub fn indent_json(
         cp == '\t'.to_int() ||
         cp == '\n'.to_int() ||
         cp == '\r'.to_int() {
-        in_token = false
         i += 1
       } else if c == '"' {
-        in_token = false
         in_string = true
         buf.write_char(c)
         i += 1
       } else if c == '{' || c == '[' {
-        in_token = false
         buf.write_char(c)
         depth += 1
         i += 1
@@ -910,7 +951,6 @@ pub fn indent_json(
         }
         write_indent_line(buf, prefix, indent_str, depth)
       } else if c == '}' || c == ']' {
-        in_token = false
         if depth == 0 {
           return Err("unexpected '\{c}' in JSON")
         }
@@ -919,12 +959,10 @@ pub fn indent_json(
         buf.write_char(c)
         i += 1
       } else if c == ',' {
-        in_token = false
         buf.write_char(',')
         write_indent_line(buf, prefix, indent_str, depth)
         i += 1
       } else if c == ':' {
-        in_token = false
         buf.write_string(": ")
         i += 1
       } else {
@@ -935,12 +973,30 @@ pub fn indent_json(
           c == '-' ||
           c == '+' ||
           c == '.' {
-          if !in_token && !is_json_value_start(c) {
-            return Err("invalid character '\{c}' in JSON")
-          }
-          buf.write_char(c)
+          let tok_start = i
           i += 1
-          in_token = true
+          while i < len {
+            let tc = chars[i].to_int()
+            if (tc >= 'a'.to_int() && tc <= 'z'.to_int()) ||
+              (tc >= 'A'.to_int() && tc <= 'Z'.to_int()) ||
+              (tc >= '0'.to_int() && tc <= '9'.to_int()) ||
+              chars[i] == '-' ||
+              chars[i] == '+' ||
+              chars[i] == '.' {
+              i += 1
+            } else {
+              break
+            }
+          }
+          let tok_buf = StringBuilder::new()
+          for k in tok_start..<i {
+            tok_buf.write_char(chars[k])
+          }
+          let tok = tok_buf.to_string()
+          if !is_valid_json_scalar(tok) {
+            return Err("invalid JSON token '\{tok}'")
+          }
+          buf.write_string(tok)
         } else {
           return Err("invalid character '\{c}' in JSON")
         }
