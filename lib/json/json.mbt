@@ -899,6 +899,28 @@ priv enum Context {
 }
 
 ///|
+// Advances the parent context after a complete value (scalar closed or
+// container closed). Mutates the top of `stack` in place; returns the
+// new `top_done` value (true when the top-level value is now complete).
+fn advance_after_value(stack : Array[Context], top_done : Bool) -> Bool {
+  if stack.is_empty() {
+    true
+  } else {
+    match stack[stack.length() - 1] {
+      ArrayEmpty | ArrayAfterComma => {
+        stack[stack.length() - 1] = ArrayAfterVal
+        top_done
+      }
+      ObjAfterColon => {
+        stack[stack.length() - 1] = ObjAfterVal
+        top_done
+      }
+      _ => top_done
+    }
+  }
+}
+
+///|
 /// Pretty-prints a JSON string, prefixing each line with `prefix` and
 /// indenting each nesting level with `indent_str`.
 ///
@@ -1009,16 +1031,7 @@ pub fn indent_json(
         depth -= 1
         buf.write_char(close)
         i = ni + 1
-        if stack.is_empty() {
-          top_done = true
-        } else {
-          match stack[stack.length() - 1] {
-            ArrayEmpty | ArrayAfterComma =>
-              stack[stack.length() - 1] = ArrayAfterVal
-            ObjAfterColon => stack[stack.length() - 1] = ObjAfterVal
-            _ => ()
-          }
-        }
+        top_done = advance_after_value(stack, top_done)
         continue
       }
       let new_ctx = if c == '{' { ObjEmpty } else { ArrayEmpty }
@@ -1040,16 +1053,7 @@ pub fn indent_json(
           write_indent_line(buf, prefix, indent_str, depth)
           buf.write_char('}')
           let _ = stack.pop()
-          if stack.is_empty() {
-            top_done = true
-          } else {
-            match stack[stack.length() - 1] {
-              ArrayEmpty | ArrayAfterComma =>
-                stack[stack.length() - 1] = ArrayAfterVal
-              ObjAfterColon => stack[stack.length() - 1] = ObjAfterVal
-              _ => ()
-            }
-          }
+          top_done = advance_after_value(stack, top_done)
         }
         ObjAfterComma =>
           return Err(
@@ -1079,16 +1083,7 @@ pub fn indent_json(
           write_indent_line(buf, prefix, indent_str, depth)
           buf.write_char(']')
           let _ = stack.pop()
-          if stack.is_empty() {
-            top_done = true
-          } else {
-            match stack[stack.length() - 1] {
-              ArrayEmpty | ArrayAfterComma =>
-                stack[stack.length() - 1] = ArrayAfterVal
-              ObjAfterColon => stack[stack.length() - 1] = ObjAfterVal
-              _ => ()
-            }
-          }
+          top_done = advance_after_value(stack, top_done)
         }
         ArrayAfterComma =>
           return Err("invalid character ']' looking for beginning of value")
@@ -1215,16 +1210,7 @@ pub fn indent_json(
         return Err("invalid JSON token '\{tok}'")
       }
       buf.write_string(tok)
-      if stack.is_empty() {
-        top_done = true
-      } else {
-        match stack[stack.length() - 1] {
-          ArrayEmpty | ArrayAfterComma =>
-            stack[stack.length() - 1] = ArrayAfterVal
-          ObjAfterColon => stack[stack.length() - 1] = ObjAfterVal
-          _ => ()
-        }
-      }
+      top_done = advance_after_value(stack, top_done)
     } else {
       return Err("invalid character '\{c}' in JSON")
     }
