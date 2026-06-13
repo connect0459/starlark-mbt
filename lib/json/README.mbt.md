@@ -44,6 +44,8 @@ After injecting `json_module()` as `"json"` in predeclared:
 | Raw control characters in JSON strings | Rejected (`json.decode` raises an error) — RFC 7159 §7 compliance | Accepted (safe-path optimisation bypasses validation) |
 | `json.indent` structural validation | Missing separators (`,`/`:`), trailing commas, surplus tokens, and empty input are rejected with Go-compatible error messages | Same |
 | `json.indent` on Float64-overflowing number tokens (e.g. `1e999`) | Passes through as-is (semantic validity not checked) | Same |
+| Nesting depth limit in `json.indent` | No depth limit — the iterative state-machine formatter handles arbitrary nesting without stack growth | Same (`encoding/json.Indent` is also unlimited) |
+| Nesting depth limit in `json.decode` / `json.encode` | Rejected at 10 000 levels with `nesting depth limit exceeded` — intentional hardening against deeply-nested input | Go uses recursive descent with goroutine-stack growth; no hard limit |
 
 `json.decode` rejects unescaped control characters (U+0000–U+001F) inside JSON string
 literals. RFC 7159 §7 explicitly prohibits them; the `\n`, `\r`, `\t` etc. escape sequences
