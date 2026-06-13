@@ -19,26 +19,34 @@ fn parse_bool_flag(value : String) -> Bool? {
 }
 
 ///|
-/// Parses the CLI arguments into the script path (if any) and the evaluation
-/// options. Two boolean flags (each also spelled with a leading `--`, matching
+/// Parses the CLI arguments into the script path, an optional inline program
+/// (from `-c`), and the evaluation options.
+///
+/// Supported flags (each also spelled with a leading `--`, matching
 /// starlark-go) toggle non-standard dialect features, all disabled by default:
 ///
 /// - `-recursion` enables recursive function calls.
 /// - `-globalreassign` enables top-level reassignment, `while` loops, and
 ///   `if`/`for`/`while` statements at top level — the same trio starlark-go's
 ///   legacy `-globalreassign` flag controls.
+/// - `-c <prog>` or `-c=<prog>` provides an inline program string to execute
+///   instead of a file.
 ///
-/// Each accepts the Go forms `-flag`, `-flag=true`, and `-flag=false`. A bare
-/// `--` stops flag parsing so later arguments are treated as positional.
-/// Returns `Err` for an invalid flag value.
+/// Each boolean flag accepts the Go forms `-flag`, `-flag=true`, and
+/// `-flag=false`. A bare `--` stops flag parsing so later arguments are
+/// treated as positional. Returns `Err` for an invalid flag value or a `-c`
+/// flag with no argument.
+///
+/// The return tuple is `(filepath, expr, opts)` where `filepath` is the
+/// positional script path, `expr` is the `-c` program string, and `opts`
+/// contains the resolved feature flags.
 pub fn parse_cli_args(
   args : Array[String],
-) -> Result[(String?, @eval.Options), String] {
+) -> Result[(String?, String?, @eval.Options), String] {
   let mut filepath : String? = None
+  let mut expr : String? = None
   let mut opts = @eval.Options::default()
   let mut flags_done = false
-  // Apply starlark-go's legacy `-globalreassign`, which conflates three
-  // FileOptions: top-level reassignment, `while` loops, and top-level control.
   fn set_global_reassign(o : @eval.Options, b : Bool) -> @eval.Options {
     o
     .with_allow_global_reassign(b)
@@ -46,8 +54,10 @@ pub fn parse_cli_args(
     .with_allow_top_level_control(b)
   }
 
-  for i in 1..<args.length() {
+  let mut i = 1
+  while i < args.length() {
     let arg = args[i]
+    i += 1
     if flags_done {
       if filepath is None {
         filepath = Some(arg)
@@ -74,11 +84,29 @@ pub fn parse_cli_args(
         None =>
           return Err("invalid boolean value \"\{value}\" for -globalreassign")
       }
+    } else if arg == "-c" || arg == "--c" {
+      if i < args.length() {
+        expr = Some(args[i])
+        i += 1
+      } else {
+        return Err("-c requires an argument")
+      }
+    } else if arg.has_prefix("-c=") || arg.has_prefix("--c=") {
+      expr = Some(arg[arg.find("=").unwrap() + 1:].to_owned())
     } else if filepath is None {
       filepath = Some(arg)
     }
   }
-  Ok((filepath, opts))
+  Ok((filepath, expr, opts))
+}
+
+///|
+fn cli_universe() -> @eval.Universe {
+  let u = @eval.Universe::standard()
+  u.set("json", @json.json_module())
+  u.set("math", @math.math_module())
+  u.set("time", @time.time_module())
+  u
 }
 
 ///|
@@ -86,6 +114,7 @@ fn make_loader_with_cache(
   base_dir : String,
   opts : @eval.Options,
   cache : Map[String, Result[@eval.Module, @errors.EvalError]],
+  universe : @eval.Universe,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
   fn(_thread, load_path) {
     let resolved = resolve_load(base_dir, load_path)
@@ -104,9 +133,11 @@ fn make_loader_with_cache(
     let inner_dir = dir_of(resolved)
     let load_thread = @eval.Thread::with_loader(
       "load:\{load_path}",
-      make_loader_with_cache(inner_dir, opts, cache),
+      make_loader_with_cache(inner_dir, opts, cache, universe),
     )
-    let result = @eval.exec_file(load_thread, resolved, load_src, opts)
+    let result = @eval.exec_file_with_universe(
+      load_thread, resolved, load_src, opts, universe,
+    )
     cache[resolved] = result
     result
   }
@@ -122,15 +153,19 @@ fn make_loader_with_cache(
 ///
 /// - `base_dir` : The filesystem directory used as the resolution root for
 ///   relative load paths.
-/// - `opts` : Feature flags forwarded to `exec_file` for each loaded module.
+/// - `opts` : Feature flags forwarded to `exec_file_with_universe` for each
+///   loaded module.
+/// - `universe` : Predeclared bindings (including lib modules) forwarded to
+///   every loaded module.
 ///
 /// Returns a load handler compatible with `@eval.Thread::with_loader`.
 fn make_loader(
   base_dir : String,
   opts : @eval.Options,
+  universe : @eval.Universe,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
   let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
-  make_loader_with_cache(base_dir, opts, cache)
+  make_loader_with_cache(base_dir, opts, cache, universe)
 }
 
 ///|
@@ -141,9 +176,30 @@ pub fn run_file(filepath : String, opts : @eval.Options) -> Int {
       return 1
     }
   }
+  let universe = cli_universe()
   let base_dir = dir_of(filepath)
-  let thread = @eval.Thread::with_loader(filepath, make_loader(base_dir, opts))
-  match @eval.exec_file(thread, filepath, src, opts) {
+  let thread = @eval.Thread::with_loader(
+    filepath,
+    make_loader(base_dir, opts, universe),
+  )
+  match @eval.exec_file_with_universe(thread, filepath, src, opts, universe) {
+    Ok(_) => 0
+    Err(e) => {
+      println(e.backtrace())
+      1
+    }
+  }
+}
+
+///|
+/// Executes an inline Starlark program supplied via the `-c` flag.
+/// Uses the CLI universe so that `json`, `math`, and `time` are available
+/// without an explicit `load`.  The filename reported in error messages is
+/// `"cmdline"`.
+pub fn run_expr(expr : String, opts : @eval.Options) -> Int {
+  let universe = cli_universe()
+  let thread = @eval.Thread::new("exec cmdline")
+  match @eval.exec_file_with_universe(thread, "cmdline", expr, opts, universe) {
     Ok(_) => 0
     Err(e) => {
       println(e.backtrace())
