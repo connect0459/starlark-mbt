@@ -49,18 +49,9 @@ fn extract_duration_ns(v : @value.Value) -> Int64? {
 
 ///|
 fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
-  match v {
-    @value.Value::ExtVal(c) =>
-      if c.get_type_name() == "time.time" {
-        match (c.get_attr("__sec"), c.get_attr("__nsec")) {
-          (Ok(Some(@value.Value::Int(s))), Ok(Some(@value.Value::Int(n)))) =>
-            Some((s.to_int64(), n.to_int()))
-          _ => None
-        }
-      } else {
-        None
-      }
-    _ => None
+  match extract_time_all(v) {
+    Some((s, n, _, _)) => Some((s, n))
+    None => None
   }
 }
 
