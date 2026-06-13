@@ -1691,7 +1691,10 @@ fn repr_list_inner(
   buf.write_char('[')
   for i in 0..<l.items.length() {
     match repr_inner(l.items[i], seen_lists, seen_dicts, depth) {
-      Err(e) => return Err(e)
+      Err(e) => {
+        let _ = seen_lists.pop()
+        return Err(e)
+      }
       Ok(s) => {
         if i > 0 {
           buf.write_string(", ")
