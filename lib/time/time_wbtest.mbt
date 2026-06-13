@@ -170,3 +170,19 @@ test "parse_duration_str: one less than Int64 minimum in nanoseconds is accepted
     Err(e) => fail("expected Ok, got Err(\{e})")
   }
 }
+
+///|
+test "parse_duration_str: go canonical form of Int64 minimum duration is accepted" {
+  match parse_duration_str("-2562047h47m16.854775808s") {
+    Ok(v) => assert_eq(v, -9223372036854775808L)
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+test "parse_duration_str: leading-zero nanosecond form of Int64 minimum is accepted" {
+  match parse_duration_str("-09223372036854775808ns") {
+    Ok(v) => assert_eq(v, -9223372036854775808L)
+    Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
