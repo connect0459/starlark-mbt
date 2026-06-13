@@ -56,7 +56,15 @@ fn make_eq_fn(errors : Array[String]) -> @value.Value {
     let x = pos_args[0]
     let y = pos_args[1]
     if !assert_float_eq(x, y) {
-      errors.push("\{x.repr()} != \{y.repr()}")
+      let xr = match x.repr_checked() {
+        Ok(s) => s
+        Err(_) => "<repr error>"
+      }
+      let yr = match y.repr_checked() {
+        Ok(s) => s
+        Err(_) => "<repr error>"
+      }
+      errors.push("\{xr} != \{yr}")
     }
     Ok(@value.Value::None)
   })
@@ -71,7 +79,15 @@ fn make_ne_fn(errors : Array[String]) -> @value.Value {
     let x = pos_args[0]
     let y = pos_args[1]
     if x.starlark_equals(y) {
-      errors.push("\{x.repr()} == \{y.repr()}")
+      let xr = match x.repr_checked() {
+        Ok(s) => s
+        Err(_) => "<repr error>"
+      }
+      let yr = match y.repr_checked() {
+        Ok(s) => s
+        Err(_) => "<repr error>"
+      }
+      errors.push("\{xr} == \{yr}")
     }
     Ok(@value.Value::None)
   })
@@ -116,7 +132,15 @@ fn make_lt_fn(errors : Array[String]) -> @value.Value {
     match @value.compare_values(x, y) {
       Ok(ord) =>
         if ord >= 0 {
-          errors.push("\{x.to_str()} is not less than \{y.to_str()}")
+          let xs = match x.to_str_checked() {
+            Ok(s) => s
+            Err(_) => "<str error>"
+          }
+          let ys = match y.to_str_checked() {
+            Ok(s) => s
+            Err(_) => "<str error>"
+          }
+          errors.push("\{xs} is not less than \{ys}")
         }
       Err(msg) => return Err(msg)
     }
@@ -172,7 +196,15 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
         )
     }
     if !found {
-      errors.push("\{container.to_str()} does not contain \{item.to_str()}")
+      let cs = match container.to_str_checked() {
+        Ok(s) => s
+        Err(_) => "<str error>"
+      }
+      let is_ = match item.to_str_checked() {
+        Ok(s) => s
+        Err(_) => "<str error>"
+      }
+      errors.push("\{cs} does not contain \{is_}")
     }
     Ok(@value.Value::None)
   })
