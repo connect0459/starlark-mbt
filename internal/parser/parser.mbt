@@ -72,6 +72,19 @@ fn Parser::eof_kind(self : Parser) -> @errors.SyntaxErrorKind {
 }
 
 ///|
+fn Parser::bump_depth(self : Parser) -> Unit raise ParseErr {
+  self.expr_depth += 1
+  if self.expr_depth > max_expr_depth {
+    raise ParseErr(self.syntax_error("expression nesting too deep"))
+  }
+}
+
+///|
+fn Parser::pop_depth(self : Parser) -> Unit {
+  self.expr_depth -= 1
+}
+
+///|
 fn Parser::expect(
   self : Parser,
   expected : @lexer.Token,
@@ -675,16 +688,13 @@ fn is_stmt_terminator(tok : @lexer.Token) -> Bool {
 
 ///|
 fn Parser::parse_test_no_cond(self : Parser) -> @syntax.Expr raise ParseErr {
-  self.expr_depth += 1
-  if self.expr_depth > max_expr_depth {
-    raise ParseErr(self.syntax_error("expression nesting too deep"))
-  }
+  self.bump_depth()
   let result = if self.tok == @lexer.Token::Lambda {
     self.parse_lambda_expr_no_cond()
   } else {
     self.parse_or_test()
   }
-  self.expr_depth -= 1
+  self.pop_depth()
   result
 }
 
@@ -714,10 +724,7 @@ fn Parser::parse_lambda_expr_no_cond(
 ///
 /// Returns the parsed `Expr` node.
 pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
-  self.expr_depth += 1
-  if self.expr_depth > max_expr_depth {
-    raise ParseErr(self.syntax_error("expression nesting too deep"))
-  }
+  self.bump_depth()
   let result = if self.tok == @lexer.Token::Lambda {
     self.parse_lambda_expr()
   } else {
@@ -725,7 +732,7 @@ pub fn Parser::parse_test(self : Parser) -> @syntax.Expr raise ParseErr {
     let e = self.parse_or_test()
     self.finish_cond_tail_from(e, p)
   }
-  self.expr_depth -= 1
+  self.pop_depth()
   result
 }
 
@@ -805,14 +812,11 @@ fn Parser::parse_and_test(self : Parser) -> @syntax.Expr raise ParseErr {
 ///|
 fn Parser::parse_not_test(self : Parser) -> @syntax.Expr raise ParseErr {
   if self.tok == @lexer.Token::Not {
-    self.expr_depth += 1
-    if self.expr_depth > max_expr_depth {
-      raise ParseErr(self.syntax_error("expression nesting too deep"))
-    }
+    self.bump_depth()
     let p = self.pos
     self.advance()
     let e = self.parse_not_test()
-    self.expr_depth -= 1
+    self.pop_depth()
     return @syntax.Expr::EUnary(@syntax.UnaryOp::OpNot, e, p)
   }
   self.parse_comparison()
@@ -976,33 +980,24 @@ fn Parser::parse_factor(self : Parser) -> @syntax.Expr raise ParseErr {
   let p = self.pos
   match self.tok {
     @lexer.Token::Plus => {
-      self.expr_depth += 1
-      if self.expr_depth > max_expr_depth {
-        raise ParseErr(self.syntax_error("expression nesting too deep"))
-      }
+      self.bump_depth()
       self.advance()
       let e = self.parse_factor()
-      self.expr_depth -= 1
+      self.pop_depth()
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpPlus, e, p)
     }
     @lexer.Token::Minus => {
-      self.expr_depth += 1
-      if self.expr_depth > max_expr_depth {
-        raise ParseErr(self.syntax_error("expression nesting too deep"))
-      }
+      self.bump_depth()
       self.advance()
       let e = self.parse_factor()
-      self.expr_depth -= 1
+      self.pop_depth()
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpMinus, e, p)
     }
     @lexer.Token::Tilde => {
-      self.expr_depth += 1
-      if self.expr_depth > max_expr_depth {
-        raise ParseErr(self.syntax_error("expression nesting too deep"))
-      }
+      self.bump_depth()
       self.advance()
       let e = self.parse_factor()
-      self.expr_depth -= 1
+      self.pop_depth()
       @syntax.Expr::EUnary(@syntax.UnaryOp::OpBitNot, e, p)
     }
     _ => self.parse_primary()
