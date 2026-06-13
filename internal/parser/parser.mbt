@@ -1541,8 +1541,8 @@ fn Parser::parse_dict_or_set(
       @syntax.Expr::EDictComp(first, val, clauses, p)
     } else {
       let pairs : Array[(@syntax.Expr, @syntax.Expr)] = [(first, val)]
-      while self.tok != @lexer.Token::RBrace && self.tok != @lexer.Token::EOF {
-        self.expect(@lexer.Token::Comma)
+      while self.tok == @lexer.Token::Comma {
+        self.advance()
         if self.tok == @lexer.Token::RBrace {
           break
         }
