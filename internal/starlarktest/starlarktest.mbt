@@ -452,25 +452,36 @@ fn unquote_double(s : String) -> String {
 }
 
 ///|
-fn parse_hash_pattern(line : String) -> String? {
+priv enum HashAnnotation {
+  NoAnnotation
+  Malformed(String)
+  ValidPattern(String)
+}
+
+///|
+fn parse_hash_annotation(line : String) -> HashAnnotation {
   match line.find("###") {
-    None => None
+    None => NoAnnotation
     Some(hash_pos) => {
       let after = trim_start(line[hash_pos + 3:].to_owned())
-      if after.length() >= 2 && after.iter().to_array()[0] == '"' {
+      let chars = after.iter().to_array()
+      if chars.is_empty() {
+        Malformed(after)
+      } else if chars[0] == '"' {
         let inner = after[1:].to_owned()
         match inner.find("\"") {
-          None => None
-          Some(end_pos) => Some(unquote_double(inner[0:end_pos].to_owned()))
+          None => Malformed(after)
+          Some(end_pos) =>
+            ValidPattern(unquote_double(inner[0:end_pos].to_owned()))
         }
-      } else if after.length() >= 2 && after.iter().to_array()[0] == '`' {
+      } else if chars[0] == '`' {
         let inner = after[1:].to_owned()
         match inner.find("`") {
-          None => None
-          Some(end_pos) => Some(inner[0:end_pos].to_owned())
+          None => Malformed(after)
+          Some(end_pos) => ValidPattern(inner[0:end_pos].to_owned())
         }
       } else {
-        None
+        Malformed(after)
       }
     }
   }
@@ -702,9 +713,10 @@ pub fn run_chunked_string(src : String) -> Array[String] {
   for chunk in chunks {
     let want_patterns : Array[String] = []
     for line in chunk.split("\n") {
-      match parse_hash_pattern(line.to_owned()) {
-        None => ()
-        Some(p) => want_patterns.push(p)
+      match parse_hash_annotation(line.to_owned()) {
+        NoAnnotation => ()
+        Malformed(raw) => failures.push("malformed ### annotation: \{raw}")
+        ValidPattern(p) => want_patterns.push(p)
       }
     }
     if want_patterns.is_empty() {
