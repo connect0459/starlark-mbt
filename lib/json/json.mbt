@@ -1122,9 +1122,10 @@ fn make_indent_fn() -> @value.Value {
         _ => return Err("json.indent: unexpected keyword argument \{k}")
       }
     }
-    indent_json(s, pfx, ind).map(fn(result) {
-      @value.Value::String(@value.StarlarkString::new(result))
-    })
+    match indent_json(s, pfx, ind) {
+      Ok(result) => Ok(@value.Value::String(@value.StarlarkString::new(result)))
+      Err(e) => Err("json.indent: \{e}")
+    }
   })
 }
 

@@ -1,4 +1,20 @@
 ///|
+test "make_indent_fn: indent_json errors are prefixed with json.indent:" {
+  let indent_fn = make_indent_fn()
+  guard indent_fn is @value.Value::Builtin(bf)
+  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
+    Err("not called")
+  })
+  let arg = @value.Value::String(@value.StarlarkString::new("]"))
+  let result = bf.call_body(dummy_ctx, [arg], [])
+  match result {
+    Some(Err(msg)) => assert_true(msg.has_prefix("json.indent: "))
+    Some(Ok(v)) => fail("expected error, got: \{v.repr()}")
+    None => fail("expected Some result")
+  }
+}
+
+///|
 test "make_indent_fn: does not reject syntactically-valid but Float64-overflowing number tokens" {
   let indent_fn = make_indent_fn()
   guard indent_fn is @value.Value::Builtin(bf)
