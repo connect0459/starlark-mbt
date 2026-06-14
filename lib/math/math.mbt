@@ -204,24 +204,28 @@ fn float_remainder(x : Double, y : Double) -> Double {
 }
 
 ///|
-let sqrt_2pi : Double = 2.5066282746310002
-
-///|
-// Lanczos approximation coefficients for the g=7, n=9 parameter set; paired
-// with `lanczos_g` below. See float_gamma.
-let lanczos_c : Array[Double] = [
-  0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
-  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
-  1.5056327351493116e-7,
+// Cephes rational approximation numerator coefficients for Gamma on [2, 3].
+// Source: go/src/math/gamma.go (Cephes Math Library, Stephen L. Moshier).
+let _gam_p : Array[Double] = [
+  1.60119522476751861407e-04, 1.19135147006586384913e-03, 1.04213797561761569935e-02,
+  4.76367800457137231464e-02, 2.07448227648435975150e-01, 4.94214826801497100753e-01,
+  9.99999999999999996796e-01,
 ]
 
 ///|
-let lanczos_g : Double = 7.0
+// Cephes rational approximation denominator coefficients for Gamma on [2, 3].
+let _gam_q : Array[Double] = [
+  -2.31581873324120129819e-05, 5.39605580493303397842e-04, -4.45641913851797240494e-03,
+  1.18139785222060435552e-02, 3.58236398605498653373e-02, -2.34591795718243348568e-01,
+  7.14304917030273074085e-02, 1.00000000000000000320e+00,
+]
 
 ///|
-// Largest positive integer argument handled by the exact factorial fast path
-// (gamma(n) == (n-1)!); above this the Lanczos approximation is used.
-let gamma_factorial_max : Double = 21.0
+// Stirling series coefficients for Gamma (large x > 33).
+let _gam_s : Array[Double] = [
+  7.87311395793093628397e-04, -2.29549961613378126380e-04, -2.68132617805781232825e-03,
+  3.47222221605458667310e-03, 8.33333333333482257126e-02,
+]
 
 ///|
 fn float_pow(x : Double, y : Double) -> Double {
@@ -250,39 +254,145 @@ fn float_round_starlark(x : Double) -> Double {
 }
 
 ///|
-fn float_gamma(x : Double) -> Double {
-  if x.is_inf() && x > 0.0 {
-    return x
+// Returns (y1, y2) such that Gamma(x) ≈ y1 * y2 for x > 33.
+// Splitting avoids premature overflow for 172 ≤ x ≤ 180.
+fn float_gamma_stirling(x : Double) -> (Double, Double) {
+  if x > 200.0 {
+    return (@double.infinity, 1.0)
   }
-  if x < 0.0 && x == @std_math.floor(x) {
-    return 0.0 / 0.0
-  }
-  if x > 0.0 && x == @std_math.floor(x) && x <= gamma_factorial_max {
-    let n = x.to_int64()
-    let mut r = 1.0
-    let mut k = 2L
-    while k < n {
-      r *= k.to_double()
-      k += 1L
-    }
-    return r
-  }
-  if x < 0.5 {
-    // Reflection formula: gamma(x) = pi / (sin(pi*x) * gamma(1-x)).
-    @std_math.PI / (@std_math.sin(@std_math.PI * x) * float_gamma(1.0 - x))
+  let sqrt_two_pi = 2.506628274631000502417
+  let max_stirling = 143.01608
+  let w0 = 1.0 / x
+  let w = 1.0 +
+    w0 *
+    (
+      (((_gam_s[0] * w0 + _gam_s[1]) * w0 + _gam_s[2]) * w0 + _gam_s[3]) * w0 +
+      _gam_s[4]
+    )
+  let y1 = @std_math.exp(x)
+  if x > max_stirling {
+    let v = @std_math.pow(x, 0.5 * x - 0.25)
+    (v, sqrt_two_pi * w * (v / y1))
   } else {
-    let z = x - 1.0
-    let mut a = lanczos_c[0]
-    for i in 1..<lanczos_c.length() {
-      a += lanczos_c[i] / (z + i.to_double())
-    }
-    // t = z + g + 0.5 per the Lanczos approximation.
-    let t = z + lanczos_g + 0.5
-    // Compute in log-space to avoid intermediate overflow for large arguments
-    // (e.g. gamma(171)): pow(t, z+0.5) alone overflows even though the full
-    // product is finite.
-    @std_math.exp((z + 0.5) * @std_math.ln(t) - t + @std_math.ln(sqrt_2pi * a))
+    (@std_math.pow(x, x - 0.5) / y1, sqrt_two_pi * w)
   }
+}
+
+///|
+// Ported from go/src/math/gamma.go (Cephes Math Library, Stephen L. Moshier).
+// Uses Stirling's formula for |x| > 33 and a Cephes rational P/Q approximation
+// on [2, 3] with argument reduction elsewhere.
+fn float_gamma(x : Double) -> Double {
+  // Special cases.
+  if x.is_nan() ||
+    (x.is_inf() && x < 0.0) ||
+    (x < 0.0 && x == @std_math.floor(x)) {
+    return 0.0 / 0.0 // NaN
+  }
+  if x.is_inf() {
+    return x // +Inf
+  }
+  if x == 0.0 {
+    // Gamma(+0) = +Inf; Gamma(-0) = -Inf.
+    if 1.0 / x < 0.0 {
+      return -1.0 / 0.0
+    }
+    return 1.0 / 0.0
+  }
+  let euler = 0.57721566490153286060651209008240243104215933593992
+  let q = x.abs()
+  let p = @std_math.floor(q)
+  if q > 33.0 {
+    if x >= 0.0 {
+      let (y1, y2) = float_gamma_stirling(x)
+      return y1 * y2
+    }
+    // x < 0, non-integer: reflection formula via Stirling on |x|.
+    let ip = p.to_int64()
+    let signgam = if (ip & 1L) == 0L { -1.0 } else { 1.0 }
+    let mut p2 = p
+    let mut z = q - p2
+    if z > 0.5 {
+      p2 += 1.0
+      z = q - p2
+    }
+    z = q * @std_math.sin(@std_math.PI * z)
+    if z == 0.0 {
+      return signgam * (1.0 / 0.0) // signgam * +Inf
+    }
+    let (sq1, sq2) = float_gamma_stirling(q)
+    let absz = z.abs()
+    let d = absz * sq1 * sq2
+    let pi_over = if d.is_inf() {
+      @std_math.PI / absz / sq1 / sq2
+    } else {
+      @std_math.PI / d
+    }
+    return signgam * pi_over
+  }
+  // Reduce argument to [2, 3].
+  let mut z = 1.0
+  let mut xm = x
+  while xm >= 3.0 {
+    xm -= 1.0
+    z *= xm
+  }
+  // Handle negative x and small-near-zero x.
+  let mut small = false
+  while xm < 0.0 {
+    if xm > -1.0e-9 {
+      small = true
+      break
+    }
+    z /= xm
+    xm += 1.0
+  }
+  if !small {
+    while xm < 2.0 {
+      if xm < 1.0e-9 {
+        small = true
+        break
+      }
+      z /= xm
+      xm += 1.0
+    }
+  }
+  if small {
+    if xm == 0.0 {
+      return 1.0 / 0.0 // +Inf
+    }
+    return z / ((1.0 + euler * xm) * xm)
+  }
+  if xm == 2.0 {
+    return z
+  }
+  xm -= 2.0
+  let p_val = (
+      (
+        (((xm * _gam_p[0] + _gam_p[1]) * xm + _gam_p[2]) * xm + _gam_p[3]) * xm +
+        _gam_p[4]
+      ) *
+      xm +
+      _gam_p[5]
+    ) *
+    xm +
+    _gam_p[6]
+  let q_val = (
+      (
+        (
+          (((xm * _gam_q[0] + _gam_q[1]) * xm + _gam_q[2]) * xm + _gam_q[3]) *
+          xm +
+          _gam_q[4]
+        ) *
+        xm +
+        _gam_q[5]
+      ) *
+      xm +
+      _gam_q[6]
+    ) *
+    xm +
+    _gam_q[7]
+  z * p_val / q_val
 }
 
 ///|
