@@ -133,6 +133,7 @@ pub struct CustomValue {
   priv hash_fn : (() -> Result[UInt, String])?
   priv equals_fn : ((Value, Int) -> Result[Bool, String])?
   priv get_attr_fn : ((String) -> Result[Value?, String])?
+  priv internal_get_attr_fn : ((String) -> Result[Value?, String])?
   priv attr_names_fn : (() -> Array[String])?
   priv set_field_fn : ((String, Value) -> Result[Unit, String])?
   priv contains_fn : ((Value) -> Result[Bool, String])?
@@ -178,6 +179,7 @@ pub fn CustomValue::new(
     hash_fn: None,
     equals_fn: None,
     get_attr_fn: None,
+    internal_get_attr_fn: None,
     attr_names_fn: None,
     set_field_fn: None,
     contains_fn: None,
@@ -254,6 +256,27 @@ pub fn CustomValue::with_attrs(
   attr_names_fn : () -> Array[String],
 ) -> CustomValue {
   { ..self, get_attr_fn: Some(get_attr_fn), attr_names_fn: Some(attr_names_fn) }
+}
+
+///|
+/// Attaches an internal-only attribute accessor that bypasses user-facing
+/// access restrictions. Use this for cross-value protocols (e.g., struct
+/// equality or merge) that need to read implementation-private fields
+/// without exposing them to Starlark programs.
+///
+/// Parameters:
+///
+/// - `self` : The `CustomValue` to extend.
+/// - `internal_get_attr_fn` : Callback that looks up an attribute by name,
+///   including implementation-private names hidden from user code.
+///
+/// Returns a new `CustomValue` with the internal attribute callback
+/// registered.
+pub fn CustomValue::with_internal_get_attr(
+  self : CustomValue,
+  internal_get_attr_fn : (String) -> Result[Value?, String],
+) -> CustomValue {
+  { ..self, internal_get_attr_fn: Some(internal_get_attr_fn) }
 }
 
 ///|
@@ -522,6 +545,28 @@ pub fn CustomValue::get_attr(
   match self.get_attr_fn {
     Some(f) => f(name)
     None => Ok(None)
+  }
+}
+
+///|
+/// Invokes the internal attribute accessor registered by
+/// `with_internal_get_attr`, or falls back to `get_attr` if none was
+/// registered. Intended for cross-value protocols that need to read
+/// implementation-private fields hidden from user-facing `get_attr`.
+///
+/// Parameters:
+///
+/// - `self` : The custom value to look up an internal attribute on.
+/// - `name` : The attribute name to look up.
+///
+/// Returns `Ok(Some(v))` if found, `Ok(None)` if absent, or `Err` on error.
+pub fn CustomValue::get_internal_attr(
+  self : CustomValue,
+  name : String,
+) -> Result[Value?, String] {
+  match self.internal_get_attr_fn {
+    Some(f) => f(name)
+    None => self.get_attr(name)
   }
 }
 
