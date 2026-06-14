@@ -239,7 +239,7 @@ Standard features — part of the Starlark spec, enabled by default:
 
 | Accessor | Mutator | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable `set` literals and the `set()` built-in |
+| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable the `set()` built-in (spec-standard) **and** `{...}` set literal / `{x for x in ...}` set comprehension syntax (mbt extension — starlark-go rejects this syntax) |
 | `allow_lambda()` | `with_allow_lambda(Bool)` | `true` | Enable `lambda` expressions |
 | `allow_bytes()` | `with_allow_bytes(Bool)` | `true` | Enable `bytes` literals (`b"..."`) |
 | `allow_float()` | `with_allow_float(Bool)` | `true` | Enable float literals and float arithmetic |
@@ -332,6 +332,17 @@ threads.
 ## Intentional extensions and dialect differences
 
 The following behaviours differ from starlark-go by design.
+
+### Set literal and set comprehension syntax
+
+mbt accepts `{1, 2, 3}` (set literal) and `{x for x in iterable}` (set comprehension)
+as valid Starlark syntax that evaluates to a `set`. starlark-go rejects both forms with
+a parse error because the Starlark spec defines no set literal grammar.
+
+The `set()` constructor (e.g., `set([1, 2, 3])`) is spec-standard and is supported by
+both implementations. The `{...}` notation is a mbt extension gated by `allow_set`
+(enabled by default). Scripts that disable `allow_set` are restricted to the
+spec-standard constructor form.
 
 ### Spell-hint on unexpected keyword argument
 

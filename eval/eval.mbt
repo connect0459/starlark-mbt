@@ -9,8 +9,10 @@ let default_max_recursion_depth : Int = 100
 /// `allow_top_level_control`, `allow_global_reassign`, and `load_binds_globally`
 /// default to `false` — matching starlark-go's zero-value `FileOptions` for the
 /// extensions. The one intentional divergence is `allow_set`: starlark-go's
-/// zero value still has `Set = false`, but `set` is now part of the Starlark
-/// spec, so it is enabled by default here.
+/// zero value still has `Set = false`, but the `set()` built-in is now part of
+/// the Starlark spec, so it is enabled by default here. Note that `allow_set`
+/// also enables `{...}` set literal and `{x for x in ...}` set comprehension
+/// syntax, which are mbt extensions not present in the spec or starlark-go.
 pub struct Options {
   priv allow_set : Bool
   priv allow_recursion : Bool
@@ -30,7 +32,9 @@ pub struct Options {
 /// `allow_top_level_control`, `allow_global_reassign`, `load_binds_globally`)
 /// are disabled and must be opted into explicitly, matching starlark-go's
 /// zero-value `FileOptions` for those extensions. `allow_set` intentionally
-/// diverges from that zero value (`Set = false`) because `set` is now standard.
+/// diverges from that zero value (`Set = false`) because the `set()` built-in
+/// is now standard; it also enables `{...}` literal / comprehension syntax as
+/// a mbt extension.
 pub fn Options::default() -> Options {
   {
     allow_set: true,
