@@ -1377,65 +1377,66 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
 fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   let chars = s.to_array()
   let len = chars.length()
+  let cannot_parse = "time: parsing time \"\{s}\" as \"2006-01-02T15:04:05Z07:00\": cannot parse"
   if len < 10 {
-    return Err("time: invalid RFC3339 time \"\{s}\"")
+    return Err(cannot_parse)
   }
   let (year_i, _) = parse_digits_at(chars, 0)
   let year = match parse_int64_str(year_i) {
     Some(y) => y.to_int()
-    None => return Err("time: invalid year in \"\{s}\"")
+    None => return Err(cannot_parse)
   }
   let year_end = year_i.length()
   if year_end >= len || chars[year_end] != '-' {
-    return Err("time: invalid RFC3339 time \"\{s}\"")
+    return Err(cannot_parse)
   }
   let i = year_end + 1
   let (month, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err("time: invalid month in \"\{s}\"")
+    None => return Err(cannot_parse)
   }
   if i >= len || chars[i] != '-' {
-    return Err("time: invalid RFC3339 time \"\{s}\"")
+    return Err(cannot_parse)
   }
   let i = i + 1
   let (day, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err("time: invalid day in \"\{s}\"")
+    None => return Err(cannot_parse)
   }
   if i >= len || (chars[i] != 'T' && chars[i] != 't' && chars[i] != ' ') {
-    return Err("time: invalid RFC3339 time \"\{s}\"")
+    return Err(cannot_parse)
   }
   let i = i + 1
   let (hour, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err("time: invalid hour in \"\{s}\"")
+    None => return Err(cannot_parse)
   }
   if i >= len || chars[i] != ':' {
-    return Err("time: invalid RFC3339 time \"\{s}\"")
+    return Err(cannot_parse)
   }
   let i = i + 1
   let (minute, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err("time: invalid minute in \"\{s}\"")
+    None => return Err(cannot_parse)
   }
   if i >= len || chars[i] != ':' {
-    return Err("time: invalid RFC3339 time \"\{s}\"")
+    return Err(cannot_parse)
   }
   let i = i + 1
   let (second, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err("time: invalid second in \"\{s}\"")
+    None => return Err(cannot_parse)
   }
   let (nsec, i) = if i < len && chars[i] == '.' {
     let j = i + 1
     let (frac_str, end) = parse_digits_at(chars, j)
     let frac_len = frac_str.length()
     if frac_len == 0 {
-      return Err("time: invalid fractional seconds in \"\{s}\"")
+      return Err(cannot_parse)
     }
     let frac_val = match parse_int64_str(frac_str) {
       Some(v) => v
-      None => return Err("time: invalid fractional seconds in \"\{s}\"")
+      None => return Err(cannot_parse)
     }
     // Normalize the fractional digits to nanoseconds (9 digits): drop excess
     // precision when more than 9 were given, pad with trailing zeros otherwise.
@@ -1456,19 +1457,19 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     let j = i + 1
     let (tz_hour, j) = match parse_2digits(chars, j) {
       Some(v) => v
-      None => return Err("time: invalid timezone in \"\{s}\"")
+      None => return Err(cannot_parse)
     }
     if j >= len || chars[j] != ':' {
-      return Err("time: invalid timezone in \"\{s}\"")
+      return Err(cannot_parse)
     }
     let j = j + 1
     let (tz_minute, j) = match parse_2digits(chars, j) {
       Some(v) => v
-      None => return Err("time: invalid timezone in \"\{s}\"")
+      None => return Err(cannot_parse)
     }
     (sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute), j)
   } else {
-    return Err("time: invalid timezone in \"\{s}\"")
+    return Err(cannot_parse)
   }
   if tz_end != len {
     return Err("time: extra text after date \"\{s}\"")
@@ -1483,7 +1484,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     nanosecond=nsec,
     zone=@x_time.utc_zone,
   ) catch {
-    _ => return Err("time: invalid time \"\{s}\"")
+    _ => return Err(cannot_parse)
   }
   let unix_sec = dt.to_unix_second() - tz_offset_sec.to_int64()
   Ok((unix_sec, nsec, tz_offset_sec))
