@@ -73,9 +73,15 @@ context.
 | `EvalError::with_cause(String, CallStack, EvalError)` | `EvalError` | Construct wrapping an inner cause |
 | `msg()` | `String` | Error message |
 | `to_string()` | `String` | Error message string (same as `msg()`) |
-| `backtrace()` | `String` | Formatted call stack |
+| `backtrace()` | `String` | Formatted call stack ending with `"Error: msg"` |
 | `call_stack()` | `CallStack` | The captured call stack as structured frames |
 | `cause()` | `EvalError?` | The wrapped inner error, if this error chains one |
+
+`backtrace()` always ends the output with `Error: <msg>` (or `Error in <builtin>: <msg>`
+when the innermost frame is a built-in). This format is intentional — the mbt CLI
+uses `backtrace()` directly to display errors, so the `Error:` prefix appears in all
+CLI output. starlark-go omits the prefix and prints the message directly; the
+difference is a deliberate quality-of-life choice.
 
 ### `SyntaxError` and `ResolveError`
 
