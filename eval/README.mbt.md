@@ -344,6 +344,21 @@ both implementations. The `{...}` notation is a mbt extension gated by `allow_se
 (enabled by default). Scripts that disable `allow_set` are restricted to the
 spec-standard constructor form.
 
+### Recursive-traversal depth guards
+
+mbt enforces explicit depth limits on every recursive traversal path as a safety
+hardening measure, preventing native stack overflow on deeply-nested input.
+starlark-go relies on goroutine-stack growth and has no hard cap.
+
+| Path | Limit | Where documented |
+| :--- | :--- | :--- |
+| Parser expression nesting | 80 | `internal/parser` (raises a parse error) |
+| `repr` / `str` / `print` value nesting | 200 | `value/README.mbt.md` |
+| `json.encode` / `json.decode` nesting | 10 000 | `lib/json/README.mbt.md` |
+
+Exceeding any limit raises a Starlark runtime or parse error rather than crashing
+the process.
+
 ### Spell-hint on unexpected keyword argument
 
 When a function call passes an unrecognised keyword argument, the error
