@@ -1816,6 +1816,30 @@ test "exec_file: str.format raises error when mixing auto and manual indexing" {
   assert_true(exec_b("\"{} {0}\".format(\"a\", \"b\")") is Err(_))
 }
 
+///|
+test "exec_file: str.format raises 'nested replacement fields' for { in name part" {
+  match exec_b("\"{ {} }\".format(1)") {
+    Err(e) =>
+      assert_true(
+        e.to_string().contains("nested replacement fields not supported"),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "exec_file: str.format raises 'format spec features not supported' for { in spec part" {
+  match exec_b("\"{:{}}\".format(1, 2)") {
+    Err(e) =>
+      assert_true(
+        e
+        .to_string()
+        .contains("format spec features not supported in replacement fields: {"),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
 // --- sorted with key= and reverse= ---
 
 ///|
