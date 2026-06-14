@@ -425,7 +425,7 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
       Ok(
         match other {
           @value.Value::ExtVal(c) if c.get_type_name() == "symbol" =>
-            match c.get_attr("__id") {
+            match c.get_internal_attr("__id") {
               Ok(Some(@value.Value::Int(oid))) =>
                 oid == BigInt::from_int64(sym_id.to_int64())
               _ => false
@@ -434,16 +434,14 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
         },
       )
     })
-    .with_attrs(
-      fn(attr) {
-        if attr == "__id" {
-          Ok(Some(@value.Value::Int(BigInt::from_int64(sym_id.to_int64()))))
-        } else {
-          Ok(None)
-        }
-      },
-      fn() { [] },
-    )
+    .with_attrs(fn(_attr) { Ok(None) }, fn() { [] })
+    .with_internal_get_attr(fn(attr) {
+      if attr == "__id" {
+        Ok(Some(@value.Value::Int(BigInt::from_int64(sym_id.to_int64()))))
+      } else {
+        Ok(None)
+      }
+    })
     .with_call(fn(pos_args, kw_args) {
       if pos_args.length() > 0 {
         return Err("\{name}: unexpected positional arguments")

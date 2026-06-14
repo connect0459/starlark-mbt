@@ -85,13 +85,22 @@ test "symbol: distinct symbols are unequal even with the same name" {
 }
 
 ///|
-test "symbol: only the synthetic __id attribute resolves" {
+test "symbol: __id is hidden from user-facing attribute access" {
   let sym = call_builtin(gensym_builtin(), [], [
     ("name", @value.Value::String(@value.StarlarkString::new("S"))),
   ]).unwrap()
   let c = custom_of(sym)
-  assert_true(c.get_attr("__id") is Ok(Some(@value.Value::Int(_))))
+  assert_true(c.get_attr("__id") == Ok(None))
   assert_true(c.get_attr("anything_else") == Ok(None))
+}
+
+///|
+test "symbol: __id is accessible via internal attribute accessor" {
+  let sym = call_builtin(gensym_builtin(), [], [
+    ("name", @value.Value::String(@value.StarlarkString::new("S"))),
+  ]).unwrap()
+  let c = custom_of(sym)
+  assert_true(c.get_internal_attr("__id") is Ok(Some(@value.Value::Int(_))))
 }
 
 ///|
