@@ -2617,6 +2617,28 @@ test "exec_file: dict.update during iteration error includes update: prefix" {
   assert_true(emsg(src).contains("update:"))
 }
 
+///|
+test "exec_file: dict.update with iterable-of-pairs during iteration error includes update: prefix" {
+  let src =
+    #|def f():
+    #|    d = {"a": 1}
+    #|    for _ in d:
+    #|        d.update([("b", 2)])
+    #|f()
+  assert_true(emsg(src).contains("update:"))
+}
+
+///|
+test "exec_file: dict.update with kwargs during iteration error includes update: prefix" {
+  let src =
+    #|def f():
+    #|    d = {"a": 1}
+    #|    for _ in d:
+    #|        d.update(b=2)
+    #|f()
+  assert_true(emsg(src).contains("update:"))
+}
+
 // --- list.index BigInt bounds ---
 
 ///|
