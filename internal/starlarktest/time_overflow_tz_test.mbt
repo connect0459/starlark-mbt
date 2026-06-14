@@ -134,7 +134,7 @@ test "time.time: rejects BigInt kwarg outside signed 64-bit range" {
       #|load("assert.star", "assert")
       #|load("time.star", "time")
       #|assert.fails(lambda: time.time(year=10000000000000000000),
-      #|             "time.time:")
+      #|             "time: for parameter year:")
     ),
   )
   if errs.length() != 0 {
