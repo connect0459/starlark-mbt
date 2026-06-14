@@ -1840,6 +1840,21 @@ test "exec_file: str.format raises 'format spec features not supported' for { in
   }
 }
 
+///|
+test "exec_file: str.format spec error includes full spec text when { appears after other spec characters" {
+  match exec_b("\"{:0{}}\".format(1, 2)") {
+    Err(e) =>
+      assert_true(
+        e
+        .to_string()
+        .contains(
+          "format spec features not supported in replacement fields: 0{",
+        ),
+      )
+    Ok(_) => fail("expected error")
+  }
+}
+
 // --- sorted with key= and reverse= ---
 
 ///|
