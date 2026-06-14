@@ -954,7 +954,7 @@ fn update_dict(
                   ),
                 )
               }
-              check(ctx, d.set(elems[0], elems[1]))
+              check_pfx(ctx, name, d.set(elems[0], elems[1]))
               i = i + 1
             }
           }
@@ -972,7 +972,7 @@ fn update_dict(
     }
     kw_seen.push(kw_name)
     let key = @value.Value::String(@value.StarlarkString::new(kw_name))
-    check(ctx, d.set(key, kw_val))
+    check_pfx(ctx, name, d.set(key, kw_val))
   }
 }
 
