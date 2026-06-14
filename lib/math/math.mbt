@@ -316,7 +316,7 @@ fn make_log_fn() -> @value.Value {
             Err(e) => Err(e)
             Ok(base) =>
               if base == 1.0 {
-                Err("log: division by zero")
+                Err("division by zero")
               } else {
                 Ok(@value.Value::Float(@std_math.ln(x) / @std_math.ln(base)))
               }

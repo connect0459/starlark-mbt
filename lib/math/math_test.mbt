@@ -316,6 +316,12 @@ test "math_module: log base=1 raises division by zero" {
 }
 
 ///|
+test "math_module: log base=1 error is exactly 'division by zero' without function prefix" {
+  let m = math_module()
+  expect_exact_err(call2(m, "log", fv(2.0), fv(1.0)), "division by zero")
+}
+
+///|
 test "math_module: log base=0 computes without error" {
   let m = math_module()
   // ln(x)/ln(0) = ln(x)/(-inf) = 0.0
