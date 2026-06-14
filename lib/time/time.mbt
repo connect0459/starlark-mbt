@@ -2239,7 +2239,7 @@ fn make_parse_duration_fn() -> @value.Value {
       @value.Value::String(s) =>
         match parse_duration_str(s.raw()) {
           Ok(ns) => Ok(make_duration(ns))
-          Err(e) => Err(e)
+          Err(e) => Err("parse_duration: for parameter 1: \{e}")
         }
       v =>
         Err(
@@ -2272,7 +2272,7 @@ fn make_time_constructor_fn() -> @value.Value {
               if n.compare_int64(max_int64) > 0 ||
                 n.compare_int64(min_int64) < 0 {
                 return Err(
-                  "time.time: year value out of range (want signed 64-bit value)",
+                  "time: for parameter year: \{n.to_string()} out of range (want value in signed 64-bit range)",
                 )
               } else {
                 year = n.to_int64()
@@ -2285,7 +2285,7 @@ fn make_time_constructor_fn() -> @value.Value {
               if n.compare_int64(max_int64) > 0 ||
                 n.compare_int64(min_int64) < 0 {
                 return Err(
-                  "time.time: month value out of range (want signed 64-bit value)",
+                  "time: for parameter month: \{n.to_string()} out of range (want value in signed 64-bit range)",
                 )
               } else {
                 month = n.to_int64()
@@ -2298,7 +2298,7 @@ fn make_time_constructor_fn() -> @value.Value {
               if n.compare_int64(max_int64) > 0 ||
                 n.compare_int64(min_int64) < 0 {
                 return Err(
-                  "time.time: day value out of range (want signed 64-bit value)",
+                  "time: for parameter day: \{n.to_string()} out of range (want value in signed 64-bit range)",
                 )
               } else {
                 day = n.to_int64()
@@ -2311,7 +2311,7 @@ fn make_time_constructor_fn() -> @value.Value {
               if n.compare_int64(max_int64) > 0 ||
                 n.compare_int64(min_int64) < 0 {
                 return Err(
-                  "time.time: hour value out of range (want signed 64-bit value)",
+                  "time: for parameter hour: \{n.to_string()} out of range (want value in signed 64-bit range)",
                 )
               } else {
                 hour = n.to_int64()
@@ -2324,7 +2324,7 @@ fn make_time_constructor_fn() -> @value.Value {
               if n.compare_int64(max_int64) > 0 ||
                 n.compare_int64(min_int64) < 0 {
                 return Err(
-                  "time.time: minute value out of range (want signed 64-bit value)",
+                  "time: for parameter minute: \{n.to_string()} out of range (want value in signed 64-bit range)",
                 )
               } else {
                 minute = n.to_int64()
@@ -2337,7 +2337,7 @@ fn make_time_constructor_fn() -> @value.Value {
               if n.compare_int64(max_int64) > 0 ||
                 n.compare_int64(min_int64) < 0 {
                 return Err(
-                  "time.time: second value out of range (want signed 64-bit value)",
+                  "time: for parameter second: \{n.to_string()} out of range (want value in signed 64-bit range)",
                 )
               } else {
                 second = n.to_int64()
@@ -2350,7 +2350,7 @@ fn make_time_constructor_fn() -> @value.Value {
               if n.compare_int64(max_int64) > 0 ||
                 n.compare_int64(min_int64) < 0 {
                 return Err(
-                  "time.time: nanosecond value out of range (want signed 64-bit value)",
+                  "time: for parameter nanosecond: \{n.to_string()} out of range (want value in signed 64-bit range)",
                 )
               } else {
                 nanosecond = n.to_int64()

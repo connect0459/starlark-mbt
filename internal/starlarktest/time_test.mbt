@@ -551,6 +551,47 @@ test "time.parse_duration: type error uses Go format" {
 }
 
 ///|
+test "time.parse_duration: string parse error carries parameter prefix" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.parse_duration("abc"), "parse_duration: for parameter 1: time: invalid duration")
+      #|assert.fails(lambda: time.parse_duration("10"), "parse_duration: for parameter 1: time: missing unit")
+      #|assert.fails(lambda: time.parse_duration("10x"), "parse_duration: for parameter 1: time: unknown unit")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.time: out-of-range kwarg error includes parameter name and value" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.time(year=9999999999999999999),
+      #|  "time: for parameter year: 9999999999999999999 out of range (want value in signed 64-bit range)",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.time(month=9999999999999999999),
+      #|  "time: for parameter month: 9999999999999999999 out of range (want value in signed 64-bit range)",
+      #|)
+      #|assert.fails(
+      #|  lambda: time.time(nanosecond=9999999999999999999),
+      #|  "time: for parameter nanosecond: 9999999999999999999 out of range (want value in signed 64-bit range)",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time: duration * BigInt outside int64 range raises out-of-range error" {
   let errs = run_star_string(
     (
