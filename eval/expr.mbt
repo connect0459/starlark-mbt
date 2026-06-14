@@ -3738,6 +3738,9 @@ fn parse_hex_float_str(s : String) -> Double? {
   let mut exp_val = 0
   while i < n && s[i] >= '0' && s[i] <= '9' {
     exp_val = exp_val * 10 + s[i].to_int() - '0'.to_int()
+    if exp_val > 2100 {
+      exp_val = 2100
+    }
     i += 1
   }
   if i == exp_start || i != n {

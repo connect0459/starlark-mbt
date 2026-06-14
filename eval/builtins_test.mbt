@@ -2403,6 +2403,15 @@ test "exec_file: float rejects hex string without p exponent" {
 }
 
 ///|
+test "exec_file: float rejects hex-float whose exponent overflows 32-bit integer" {
+  assert_true(
+    emsg("float(\"0x1p2147483648\")").contains(
+      "floating-point number too large",
+    ),
+  )
+}
+
+///|
 test "exec_file: fail with non-string sep raises a TypeError" {
   assert_true(
     emsg("fail(\"msg\", sep=123)").contains(
