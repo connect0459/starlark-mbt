@@ -1377,7 +1377,7 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
 fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   let chars = s.to_array()
   let len = chars.length()
-  let cannot_parse = "time: parsing time \"\{s}\" as \"2006-01-02T15:04:05Z07:00\": cannot parse"
+  let cannot_parse = "parsing time \"\{s}\" as \"2006-01-02T15:04:05Z07:00\": cannot parse"
   if len < 10 {
     return Err(cannot_parse)
   }
@@ -1620,7 +1620,7 @@ fn parse_go_layout(
   let mut pm : Bool? = None
   let mut yday = -1
   let err = fn() -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
-    Err("time: parsing time \"\{value}\" as \"\{layout}\": cannot parse")
+    Err("parsing time \"\{value}\" as \"\{layout}\": cannot parse")
   }
   fn starts(tok : String) -> Bool {
     let tc = tok.to_array()
@@ -2170,7 +2170,7 @@ fn make_parse_time_fn() -> @value.Value {
             nanosecond=pns,
             zone=@x_time.utc_zone,
           ) catch {
-            _ => return Err("time: invalid time \"\{x}\"")
+            _ => return Err("parsing time \"\{x}\" as \"\{fmt}\": cannot parse")
           }
           let base = dt.to_unix_second()
           match ptz {
