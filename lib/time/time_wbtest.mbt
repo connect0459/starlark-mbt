@@ -196,3 +196,46 @@ test "parse_duration_str: positive 2^63 nanoseconds is rejected" {
 test "parse_duration_str: magnitude one beyond Int64 minimum is rejected" {
   assert_true(parse_duration_str("-9223372036854775809ns") is Err(_))
 }
+
+///|
+test "parse_rfc3339: completely wrong input includes remaining text and first token in error" {
+  match parse_rfc3339("not a date") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(e.has_suffix("cannot parse \"not a date\" as \"2006\""))
+  }
+}
+
+///|
+test "parse_rfc3339: wrong separator after year includes remaining and expected token" {
+  match parse_rfc3339("2021/03/22T00:00:00Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(e.has_suffix("cannot parse \"/03/22T00:00:00Z\" as \"-\""))
+  }
+}
+
+///|
+test "parse_rfc3339: missing timezone includes remaining text and expected token" {
+  match parse_rfc3339("2021-03-22T00:00:00") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \"\" as \"Z07:00\""))
+  }
+}
+
+///|
+test "parse_go_layout: completely wrong input includes remaining text and first token" {
+  match parse_go_layout("not a date", "2006-01-02") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(e.has_suffix("cannot parse \"not a date\" as \"2006\""))
+  }
+}
+
+///|
+test "parse_go_layout: wrong separator includes remaining text and expected separator token" {
+  match parse_go_layout("2021/03/22", "2006-01-02") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \"/03/22\" as \"-\""))
+  }
+}
