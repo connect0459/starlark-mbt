@@ -316,6 +316,12 @@ test "math_module: log base=1 raises division by zero" {
 }
 
 ///|
+test "math_module: log base=1 error is exactly 'division by zero' without function prefix" {
+  let m = math_module()
+  expect_exact_err(call2(m, "log", fv(2.0), fv(1.0)), "division by zero")
+}
+
+///|
 test "math_module: log base=0 computes without error" {
   let m = math_module()
   // ln(x)/ln(0) = ln(x)/(-inf) = 0.0
@@ -474,11 +480,102 @@ test "math_module: gamma(171) returns finite value" {
     Ok(@value.Value::Float(f)) => {
       assert_true(!f.is_inf())
       assert_true(!f.is_nan())
-      // go: ~7.257e+306; keep bounds tight enough to catch future regressions
+      // go: 7.2574156153080003e+306; bounds stay loose here; exact check is in
+      // the "gamma precision" test below
       assert_true(f > 7.2e+306 && f < 7.3e+306)
     }
     Ok(v) => fail("expected Float, got \{v.type_name()}")
     Err(e) => fail("expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+fn within_1_ulp(a : Double, b : Double) -> Bool {
+  if a == b {
+    true
+  } else if a.is_nan() || b.is_nan() {
+    false
+  } else {
+    let ai = a.reinterpret_as_int64()
+    let bi = b.reinterpret_as_int64()
+    ai == bi + 1L || bi == ai + 1L
+  }
+}
+
+///|
+fn expect_float_within_1_ulp(
+  label : String,
+  r : Result[@value.Value, String],
+  expected : Double,
+) -> Unit raise Error {
+  match r {
+    Ok(@value.Value::Float(f)) =>
+      if !within_1_ulp(f, expected) {
+        fail("\{label}: expected \{expected} (±1 ULP), got \{f}")
+      }
+    Ok(v) => fail("\{label}: expected Float, got \{v.type_name()}")
+    Err(e) => fail("\{label}: expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+test "math_module: gamma precision matches go Cephes implementation" {
+  let m = math_module()
+  // Large argument: Stirling path (x > 33). Former Lanczos gave
+  // 4.2690680090040405e+304; go gives 4.2690680090047066e+304.
+  expect_float_within_1_ulp(
+    "gamma(170)",
+    call1(m, "gamma", fv(170.0)),
+    4.2690680090047066e+304,
+  )
+  expect_float_within_1_ulp(
+    "gamma(171)",
+    call1(m, "gamma", fv(171.0)),
+    7.2574156153080003e+306,
+  )
+  // Argument in (0, 33]: rational approximation path after reduction to [2,3].
+  expect_float_within_1_ulp(
+    "gamma(0.5)",
+    call1(m, "gamma", fv(0.5)),
+    1.7724538509055159,
+  )
+  expect_float_within_1_ulp(
+    "gamma(1.5)",
+    call1(m, "gamma", fv(1.5)),
+    0.88622692545275794,
+  )
+  expect_float_within_1_ulp(
+    "gamma(2.5)",
+    call1(m, "gamma", fv(2.5)),
+    1.329340388179137,
+  )
+  expect_float_within_1_ulp(
+    "gamma(0.1)",
+    call1(m, "gamma", fv(0.1)),
+    9.5135076986687324,
+  )
+  // Negative non-integer: reflection formula.
+  expect_float_within_1_ulp(
+    "gamma(-0.5)",
+    call1(m, "gamma", fv(-0.5)),
+    -3.5449077018110318,
+  )
+  // Zero: +0 → +Inf, -0 → -Inf.
+  match call1(m, "gamma", fv(0.0)) {
+    Ok(@value.Value::Float(f)) =>
+      if !(f.is_inf() && f > 0.0) {
+        fail("gamma(+0): expected +Inf, got \{f}")
+      }
+    Ok(v) => fail("gamma(+0): expected Float, got \{v.type_name()}")
+    Err(e) => fail("gamma(+0): expected Ok, got Err(\{e})")
+  }
+  match call1(m, "gamma", fv(-0.0)) {
+    Ok(@value.Value::Float(f)) =>
+      if !(f.is_inf() && f < 0.0) {
+        fail("gamma(-0): expected -Inf, got \{f}")
+      }
+    Ok(v) => fail("gamma(-0): expected Float, got \{v.type_name()}")
+    Err(e) => fail("gamma(-0): expected Ok, got Err(\{e})")
   }
 }
 
