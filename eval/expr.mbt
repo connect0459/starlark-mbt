@@ -901,7 +901,7 @@ fn update_dict(
         src.each(fn(k, v) { pairs.push((k, v)) })
         for pair in pairs {
           let (k, v) = pair
-          check(ctx, d.set(k, v))
+          check_pfx(ctx, name, d.set(k, v))
         }
       }
       v => {
@@ -1585,7 +1585,7 @@ fn call_list_method(
   match method_name {
     "append" => {
       check_positional(ctx, "append", pos_args, kw_args, 1, 1)
-      check(ctx, l.push(pos_args[0]))
+      check_pfx(ctx, "append", l.push(pos_args[0]))
       @value.Value::None
     }
     "extend" => {

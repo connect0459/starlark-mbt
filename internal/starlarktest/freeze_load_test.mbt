@@ -20,7 +20,7 @@ test "loaded list is deeply frozen and cannot be mutated" {
     #|x.append(99)
   inspect(
     run_load_mutation(loaded, main),
-    content="cannot append to frozen list",
+    content="append: cannot append to frozen list",
   )
 }
 

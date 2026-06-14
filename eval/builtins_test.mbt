@@ -2593,6 +2593,30 @@ test "exec_file: sorted key= that mutates source list raises during-iteration er
   }
 }
 
+// --- iteration-lock error message prefixes ---
+
+///|
+test "exec_file: list.append during iteration error includes append: prefix" {
+  let src =
+    #|def f():
+    #|    xs = [1, 2, 3]
+    #|    for _ in xs:
+    #|        xs.append(4)
+    #|f()
+  assert_true(emsg(src).contains("append:"))
+}
+
+///|
+test "exec_file: dict.update during iteration error includes update: prefix" {
+  let src =
+    #|def f():
+    #|    d = {"a": 1}
+    #|    for _ in d:
+    #|        d.update({"b": 2})
+    #|f()
+  assert_true(emsg(src).contains("update:"))
+}
+
 // --- list.index BigInt bounds ---
 
 ///|
