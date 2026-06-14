@@ -2366,6 +2366,52 @@ test "exec_file: float rejects a string that overflows to infinity" {
 }
 
 ///|
+test "exec_file: float parses hex-float with integer mantissa and binary exponent" {
+  match exec_b("x = float(\"0x1p4\")") {
+    Ok(m) => assert_true(g(m, "x") == Some(@value.Value::Float(16.0)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: float parses hex-float with fractional mantissa" {
+  match exec_b("x = float(\"0x1.8p3\")") {
+    Ok(m) => assert_true(g(m, "x") == Some(@value.Value::Float(12.0)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: float parses negative hex-float" {
+  match exec_b("x = float(\"-0x1p1\")") {
+    Ok(m) => assert_true(g(m, "x") == Some(@value.Value::Float(-2.0)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: float parses hex-float with uppercase prefix and exponent marker" {
+  match exec_b("x = float(\"0X1P4\")") {
+    Ok(m) => assert_true(g(m, "x") == Some(@value.Value::Float(16.0)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: float rejects hex string without p exponent" {
+  assert_true(emsg("float(\"0x10\")").contains("invalid float literal"))
+}
+
+///|
+test "exec_file: float rejects hex-float whose exponent overflows 32-bit integer" {
+  assert_true(
+    emsg("float(\"0x1p2147483648\")").contains(
+      "floating-point number too large",
+    ),
+  )
+}
+
+///|
 test "exec_file: fail with non-string sep raises a TypeError" {
   assert_true(
     emsg("fail(\"msg\", sep=123)").contains(
