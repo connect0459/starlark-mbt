@@ -3428,13 +3428,24 @@ fn str_format(
       } else {
         let start = i + 1
         let mut j = start
+        let mut in_spec = false
         while j < tlen && template[j] != '}' {
-          if template[j] == '{' {
-            raise EvalErr(
-              make_eval_error(
-                ctx, "format: nested replacement fields not supported",
-              ),
-            )
+          if template[j] == ':' {
+            in_spec = true
+          } else if template[j] == '{' {
+            if in_spec {
+              raise EvalErr(
+                make_eval_error(
+                  ctx, "format spec features not supported in replacement fields: {",
+                ),
+              )
+            } else {
+              raise EvalErr(
+                make_eval_error(
+                  ctx, "format: nested replacement fields not supported",
+                ),
+              )
+            }
           }
           j += 1
         }
