@@ -29,18 +29,32 @@ MOONBIT_FFI_EXPORT int32_t starlark_is_valid_timezone(moonbit_bytes_t name) {
     return 0;
 }
 
-/* Clamp unix_time to the range that localtime_r handles reliably.
- * Empirically, values with absolute value >= 9e16 cause localtime_r to return
- * NULL on macOS/Linux.  Clamping to ±9e15 always succeeds and returns the
- * timezone's current recurring rule, which is the correct approximation for
- * timestamps far outside the tzdata transition table. */
-#define STARLARK_MAX_LOCALTIME_SEC ((int64_t)9000000000000000LL)
-#define STARLARK_MIN_LOCALTIME_SEC ((int64_t)-9000000000000000LL)
+/* Maximum absolute Unix second that localtime_r handles on this platform.
+ * On macOS/Linux with 64-bit time_t the empirical failure boundary is near
+ * ±6.7×10¹⁶ s; ±6×10¹⁶ provides ~10% headroom. */
+#define STARLARK_LOCALTIME_LIMIT ((int64_t)60000000000000000LL)
 
-static int64_t clamp_unix_time(int64_t unix_time) {
-    if (unix_time > STARLARK_MAX_LOCALTIME_SEC) return STARLARK_MAX_LOCALTIME_SEC;
-    if (unix_time < STARLARK_MIN_LOCALTIME_SEC) return STARLARK_MIN_LOCALTIME_SEC;
-    return unix_time;
+/* Return a timestamp that (a) localtime_r can handle and (b) shares the same
+ * Julian-year phase as unix_time, so the recurring DST rule is evaluated in
+ * the correct season.  For timestamps already within ±LIMIT this is a no-op.
+ *
+ * Julian year: 365.25 × 86400 = 31 557 600 s.  For timestamps beyond ±LIMIT
+ * we find the nearest same-phase instant inside [0, LIMIT] — this applies
+ * the modern recurring rule (correct for far-future timestamps) rather than
+ * the fixed boundary point (which may land in the opposite DST season).
+ *
+ * Known limitation: for far-past timestamps (beyond −LIMIT) this also
+ * returns a modern-era value; systems that use LMT for pre-historical times
+ * will therefore return the modern recurring-rule offset instead of LMT. */
+static int64_t safe_localtime_sec(int64_t unix_time) {
+    if (unix_time >= -STARLARK_LOCALTIME_LIMIT && unix_time <= STARLARK_LOCALTIME_LIMIT)
+        return unix_time;
+    const int64_t year_sec = 31557600LL;
+    int64_t pos = unix_time % year_sec;
+    if (pos < 0) pos += year_sec;
+    int64_t t = (STARLARK_LOCALTIME_LIMIT / year_sec) * year_sec + pos;
+    if (t > STARLARK_LOCALTIME_LIMIT) t -= year_sec;
+    return t;
 }
 
 /* Returns UTC offset for the named timezone at unix_time, writing the zone
@@ -56,7 +70,7 @@ MOONBIT_FFI_EXPORT int32_t starlark_get_tz_abbr(moonbit_bytes_t name,
     setenv("TZ", tz_name, 1);
     tzset();
 
-    time_t t = (time_t)clamp_unix_time(unix_time);
+    time_t t = (time_t)safe_localtime_sec(unix_time);
     struct tm tm_info;
     struct tm* result = localtime_r(&t, &tm_info);
     int32_t offset;
@@ -89,7 +103,7 @@ MOONBIT_FFI_EXPORT int32_t starlark_get_tz_abbr(moonbit_bytes_t name,
  * Returns INT32_MIN on error. */
 MOONBIT_FFI_EXPORT int32_t starlark_get_local_tz_at(int64_t unix_time,
                                                       moonbit_bytes_t abbr_out) {
-    time_t t = (time_t)clamp_unix_time(unix_time);
+    time_t t = (time_t)safe_localtime_sec(unix_time);
     struct tm tm_info;
     struct tm* result = localtime_r(&t, &tm_info);
     if (result != NULL) {

@@ -72,7 +72,23 @@ test "get_tz_abbr_at_impl: UTC resolves to offset 0 at the Unix epoch" {
 }
 
 ///|
+test "get_tz_abbr_at_impl: Asia/Tokyo resolves at a timestamp within the representable range but above the old threshold" {
+  // 5e16 was needlessly clamped at the old 9e15 threshold; the raised limit
+  // lets localtime_r handle it directly, so JST is always +32400.
+  match get_tz_abbr_at_impl("Asia/Tokyo", 50000000000000000L) {
+    Some((offset, abbr)) => {
+      assert_eq(offset, 32400)
+      assert_eq(abbr, "JST")
+    }
+    None => fail("get_tz_abbr_at_impl returned None for Asia/Tokyo at 5e16")
+  }
+}
+
+///|
 test "get_tz_abbr_at_impl: Asia/Tokyo resolves at a timestamp beyond localtime_r range" {
+  // 9e18 exceeds the ±6e16 limit; safe_localtime_sec aligns to the same
+  // Julian-year phase inside the safe range.  Japan has no DST so JST is
+  // always +32400 regardless of phase.
   match get_tz_abbr_at_impl("Asia/Tokyo", 9000000000000000000L) {
     Some((offset, abbr)) => {
       assert_eq(offset, 32400)
@@ -87,8 +103,13 @@ test "get_tz_abbr_at_impl: Asia/Tokyo resolves at a timestamp beyond localtime_r
 
 ///|
 test "get_tz_abbr_at_impl: named zone returns Some (not None) at extreme negative timestamp" {
+  // Phase alignment maps -9e18 to a modern-era positive instant; for a
+  // non-DST zone the abbreviation is stable regardless of era.
   match get_tz_abbr_at_impl("Asia/Tokyo", -9000000000000000000L) {
-    Some(_) => ()
+    Some((offset, abbr)) => {
+      assert_eq(offset, 32400)
+      assert_eq(abbr, "JST")
+    }
     None =>
       fail(
         "get_tz_abbr_at_impl returned None for Asia/Tokyo at large negative timestamp",
