@@ -121,6 +121,32 @@ fn struct_hash(entries : Array[(String, @value.Value)]) -> Result[UInt, String] 
 }
 
 ///|
+fn struct_search_field(
+  ctor : @value.Value,
+  sorted : Array[(String, @value.Value)],
+  name : String,
+) -> Result[@value.Value?, String] {
+  let n = sorted.length()
+  let mut lo = 0
+  let mut hi = n
+  while lo < hi {
+    let mid = (lo + hi) / 2
+    if str_lex_cmp(sorted[mid].0, name) < 0 {
+      lo = mid + 1
+    } else {
+      hi = mid
+    }
+  }
+  if lo < n && sorted[lo].0 == name {
+    Ok(Some(sorted[lo].1))
+  } else {
+    let cname = ctor_display(ctor)
+    let prefix = if cname == "struct" { "" } else { "\{cname} " }
+    Err("\{prefix}struct has no .\{name} attribute")
+  }
+}
+
+///|
 fn struct_get_attr(
   ctor : @value.Value,
   entries : Array[(String, @value.Value)],
@@ -148,39 +174,22 @@ fn struct_get_attr(
       _ => return Ok(None)
     }
   }
-  let n = entries.length()
-  let mut lo = 0
-  let mut hi = n
-  while lo < hi {
-    let mid = (lo + hi) / 2
-    if str_lex_cmp(entries[mid].0, name) < 0 {
-      lo = mid + 1
-    } else {
-      hi = mid
-    }
-  }
-  if lo < n && entries[lo].0 == name {
-    Ok(Some(entries[lo].1))
-  } else {
-    let cname = ctor_display(ctor)
-    let prefix = if cname == "struct" { "" } else { "\{cname} " }
-    Err("\{prefix}struct has no .\{name} attribute")
-  }
+  struct_search_field(ctor, entries, name)
 }
 
 ///|
 fn get_other_entries(c : @value.CustomValue) -> Array[(String, @value.Value)]? {
-  let n = match c.get_attr("__n") {
+  let n = match c.get_internal_attr("__n") {
     Ok(Some(@value.Value::Int(n))) => n.to_int()
     _ => return None
   }
   let entries : Array[(String, @value.Value)] = Array::new(capacity=n)
   for i in 0..<n {
-    let name = match c.get_attr("__name_\{i}") {
+    let name = match c.get_internal_attr("__name_\{i}") {
       Ok(Some(@value.Value::String(s))) => s.raw()
       _ => return None
     }
-    let val = match c.get_attr("__val_\{i}") {
+    let val = match c.get_internal_attr("__val_\{i}") {
       Ok(Some(v)) => v
       _ => return None
     }
@@ -220,7 +229,7 @@ fn struct_equals(
 ) -> Result[Bool, String] {
   match other {
     @value.Value::ExtVal(c) if c.get_type_name() == "struct" => {
-      let other_ctor = match c.get_attr("__ctor") {
+      let other_ctor = match c.get_internal_attr("__ctor") {
         Ok(Some(v)) => v
         _ => return Ok(false)
       }
@@ -229,7 +238,7 @@ fn struct_equals(
         Err(e) => return Err(e)
         Ok(true) => ()
       }
-      let other_n = match c.get_attr("__n") {
+      let other_n = match c.get_internal_attr("__n") {
         Ok(Some(@value.Value::Int(n))) => n.to_int()
         _ => return Ok(false)
       }
@@ -237,14 +246,14 @@ fn struct_equals(
         return Ok(false)
       }
       for i in 0..<entries.length() {
-        let other_name = match c.get_attr("__name_\{i}") {
+        let other_name = match c.get_internal_attr("__name_\{i}") {
           Ok(Some(@value.Value::String(s))) => s.raw()
           _ => return Ok(false)
         }
         if entries[i].0 != other_name {
           return Ok(false)
         }
-        let other_val = match c.get_attr("__val_\{i}") {
+        let other_val = match c.get_internal_attr("__val_\{i}") {
           Ok(Some(v)) => v
           _ => return Ok(false)
         }
@@ -273,7 +282,7 @@ fn struct_binary(
   }
   match other {
     @value.Value::ExtVal(c) if c.get_type_name() == "struct" => {
-      let other_ctor = match c.get_attr("__ctor") {
+      let other_ctor = match c.get_internal_attr("__ctor") {
         Ok(Some(v)) => v
         _ => return Some(Err("struct: cannot add, could not read constructor"))
       }
@@ -335,9 +344,10 @@ pub fn make_struct(
     .with_repr_depth(fn(depth) { struct_repr_depth(ctor, sorted, depth) })
     .with_hash(fn() { struct_hash(sorted) })
     .with_equals(fn(other, depth) { struct_equals(ctor, sorted, other, depth) })
-    .with_attrs(fn(name) { struct_get_attr(ctor, sorted, name) }, fn() {
+    .with_attrs(fn(name) { struct_search_field(ctor, sorted, name) }, fn() {
       sorted.map(fn(e) { e.0 })
     })
+    .with_internal_get_attr(fn(name) { struct_get_attr(ctor, sorted, name) })
     .with_binary(fn(op, other, is_left) {
       struct_binary(ctor, sorted, op, other, is_left)
     })

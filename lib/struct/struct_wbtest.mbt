@@ -117,13 +117,40 @@ test "symbol: calling a symbol builds a struct tagged with that symbol" {
 }
 
 ///|
-test "struct: synthetic positional accessors return None when out of range" {
+test "struct: internal __n is hidden from user-facing attribute access" {
   let s = make_struct(default_ctor, [("a", @value.Value::Int(1N))])
   let c = custom_of(s)
-  assert_true(c.get_attr("__name_99") == Ok(None))
-  assert_true(c.get_attr("__val_99") == Ok(None))
-  // A non-numeric index also yields no attribute rather than an error.
-  assert_true(c.get_attr("__name_x") == Ok(None))
+  assert_true(c.get_attr("__n") is Err(_))
+}
+
+///|
+test "struct: internal __ctor is hidden from user-facing attribute access" {
+  let s = make_struct(default_ctor, [("a", @value.Value::Int(1N))])
+  let c = custom_of(s)
+  assert_true(c.get_attr("__ctor") is Err(_))
+}
+
+///|
+test "struct: internal __name_0 is hidden from user-facing attribute access" {
+  let s = make_struct(default_ctor, [("a", @value.Value::Int(1N))])
+  let c = custom_of(s)
+  assert_true(c.get_attr("__name_0") is Err(_))
+}
+
+///|
+test "struct: internal __val_0 is hidden from user-facing attribute access" {
+  let s = make_struct(default_ctor, [("a", @value.Value::Int(1N))])
+  let c = custom_of(s)
+  assert_true(c.get_attr("__val_0") is Err(_))
+}
+
+///|
+test "struct: out-of-range synthetic names raise attribute error" {
+  let s = make_struct(default_ctor, [("a", @value.Value::Int(1N))])
+  let c = custom_of(s)
+  assert_true(c.get_attr("__name_99") is Err(_))
+  assert_true(c.get_attr("__val_99") is Err(_))
+  assert_true(c.get_attr("__name_x") is Err(_))
 }
 
 ///|
