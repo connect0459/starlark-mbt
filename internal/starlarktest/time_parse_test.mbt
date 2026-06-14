@@ -265,7 +265,7 @@ test "time module: parse_time rejects values that do not match the layout" {
       #|load("assert.star", "assert")
       #|load("time.star", "time")
       #|assert.fails(lambda: time.parse_time("not-a-date", format="2006-01-02"), "cannot parse")
-      #|assert.fails(lambda: time.parse_time("2021-03-22X", format="2006-01-02"), "cannot parse")
+      #|assert.fails(lambda: time.parse_time("2021-03-22X", format="2006-01-02"), "extra text")
       #|assert.fails(lambda: time.parse_time("20XY-03-22", format="2006-01-02"), "cannot parse")
       #|assert.fails(lambda: time.parse_time("2021/03/22", format="2006-01-02"), "cannot parse")
     ),
@@ -463,7 +463,7 @@ test "time module: parse_time rejects values missing a digit for each layout ver
       #|assert.fails(bad("x", "-07:00"), "cannot parse")
       #|assert.fails(bad("05", "05.000"), "cannot parse")
       #|assert.fails(bad("Z", "T"), "cannot parse")
-      #|assert.fails(bad("012", "01"), "cannot parse")
+      #|assert.fails(bad("012", "01"), "extra text")
     ),
   )
   if errs.length() != 0 {

@@ -1377,66 +1377,74 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
 fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   let chars = s.to_array()
   let len = chars.length()
-  let cannot_parse = "parsing time \"\{s}\" as \"2006-01-02T15:04:05Z07:00\": cannot parse"
+  let rfc_layout = "2006-01-02T15:04:05Z07:00"
+  fn cp_err(pos : Int, tok : String) -> String {
+    let buf = StringBuilder::new()
+    for k in pos..<chars.length() {
+      buf.write_char(chars[k])
+    }
+    "parsing time \"\{s}\" as \"\{rfc_layout}\": cannot parse \"\{buf.to_string()}\" as \"\{tok}\""
+  }
+
   if len < 10 {
-    return Err(cannot_parse)
+    return Err(cp_err(0, "2006"))
   }
   let (year_i, _) = parse_digits_at(chars, 0)
   let year = match parse_int64_str(year_i) {
     Some(y) => y.to_int()
-    None => return Err(cannot_parse)
+    None => return Err(cp_err(0, "2006"))
   }
   let year_end = year_i.length()
   if year_end >= len || chars[year_end] != '-' {
-    return Err(cannot_parse)
+    return Err(cp_err(year_end, "-"))
   }
   let i = year_end + 1
   let (month, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err(cannot_parse)
+    None => return Err(cp_err(i, "01"))
   }
   if i >= len || chars[i] != '-' {
-    return Err(cannot_parse)
+    return Err(cp_err(i, "-"))
   }
   let i = i + 1
   let (day, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err(cannot_parse)
+    None => return Err(cp_err(i, "02"))
   }
   if i >= len || (chars[i] != 'T' && chars[i] != 't' && chars[i] != ' ') {
-    return Err(cannot_parse)
+    return Err(cp_err(i, "T"))
   }
   let i = i + 1
   let (hour, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err(cannot_parse)
+    None => return Err(cp_err(i, "15"))
   }
   if i >= len || chars[i] != ':' {
-    return Err(cannot_parse)
+    return Err(cp_err(i, ":"))
   }
   let i = i + 1
   let (minute, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err(cannot_parse)
+    None => return Err(cp_err(i, "04"))
   }
   if i >= len || chars[i] != ':' {
-    return Err(cannot_parse)
+    return Err(cp_err(i, ":"))
   }
   let i = i + 1
   let (second, i) = match parse_2digits(chars, i) {
     Some(v) => v
-    None => return Err(cannot_parse)
+    None => return Err(cp_err(i, "05"))
   }
   let (nsec, i) = if i < len && chars[i] == '.' {
     let j = i + 1
     let (frac_str, end) = parse_digits_at(chars, j)
     let frac_len = frac_str.length()
     if frac_len == 0 {
-      return Err(cannot_parse)
+      return Err(cp_err(i, ".999999999"))
     }
     let frac_val = match parse_int64_str(frac_str) {
       Some(v) => v
-      None => return Err(cannot_parse)
+      None => return Err(cp_err(i, ".999999999"))
     }
     // Normalize the fractional digits to nanoseconds (9 digits): drop excess
     // precision when more than 9 were given, pad with trailing zeros otherwise.
@@ -1457,22 +1465,29 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     let j = i + 1
     let (tz_hour, j) = match parse_2digits(chars, j) {
       Some(v) => v
-      None => return Err(cannot_parse)
+      None => return Err(cp_err(j, "07"))
     }
     if j >= len || chars[j] != ':' {
-      return Err(cannot_parse)
+      return Err(cp_err(j, ":"))
     }
     let j = j + 1
     let (tz_minute, j) = match parse_2digits(chars, j) {
       Some(v) => v
-      None => return Err(cannot_parse)
+      None => return Err(cp_err(j, "00"))
     }
     (sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute), j)
   } else {
-    return Err(cannot_parse)
+    return Err(cp_err(i, "Z07:00"))
   }
   if tz_end != len {
-    return Err("time: extra text after date \"\{s}\"")
+    let buf = StringBuilder::new()
+    for k in tz_end..<chars.length() {
+      buf.write_char(chars[k])
+    }
+    return Err(
+      "parsing time \"\{s}\" as \"\{rfc_layout}\": extra text: " +
+      buf.to_string(),
+    )
   }
   let dt = @x_time.ZonedDateTime::of(
     year,
@@ -1484,7 +1499,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     nanosecond=nsec,
     zone=@x_time.utc_zone,
   ) catch {
-    _ => return Err(cannot_parse)
+    _ => return Err("parsing time \"\{s}\" as \"\{rfc_layout}\": cannot parse")
   }
   let unix_sec = dt.to_unix_second() - tz_offset_sec.to_int64()
   Ok((unix_sec, nsec, tz_offset_sec))
@@ -1619,8 +1634,16 @@ fn parse_go_layout(
   let mut tz_offset : Int? = None
   let mut pm : Bool? = None
   let mut yday = -1
-  let err = fn() -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
-    Err("parsing time \"\{value}\" as \"\{layout}\": cannot parse")
+  let err = fn(
+    tok : String,
+  ) -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
+    let buf = StringBuilder::new()
+    for k in vi..<vn {
+      buf.write_char(vc[k])
+    }
+    Err(
+      "parsing time \"\{value}\" as \"\{layout}\": cannot parse \"\{buf.to_string()}\" as \"\{tok}\"",
+    )
   }
   fn starts(tok : String) -> Bool {
     let tc = tok.to_array()
@@ -1703,7 +1726,7 @@ fn parse_go_layout(
           year = v
           vi = j
         }
-        None => return err()
+        None => return err("2006")
       }
       li += 4
     } else if starts("06") {
@@ -1712,7 +1735,7 @@ fn parse_go_layout(
           year = if v >= 69 { 1900 + v } else { 2000 + v }
           vi = j
         }
-        None => return err()
+        None => return err("06")
       }
       li += 2
     } else if starts("January") {
@@ -1721,7 +1744,7 @@ fn parse_go_layout(
           month = idx
           vi = j
         }
-        None => return err()
+        None => return err("January")
       }
       li += 7
     } else if starts("Jan") {
@@ -1730,19 +1753,19 @@ fn parse_go_layout(
           month = idx
           vi = j
         }
-        None => return err()
+        None => return err("Jan")
       }
       li += 3
     } else if starts("Monday") {
       match match_name_ci(vc, vi, weekday_full_names, 0, 7) {
         Some((_, j)) => vi = j
-        None => return err()
+        None => return err("Monday")
       }
       li += 6
     } else if starts("Mon") {
       match match_name_ci(vc, vi, weekday_abbrev_names, 0, 7) {
         Some((_, j)) => vi = j
-        None => return err()
+        None => return err("Mon")
       }
       li += 3
     } else if starts("01") {
@@ -1751,7 +1774,7 @@ fn parse_go_layout(
           month = v
           vi = j
         }
-        None => return err()
+        None => return err("01")
       }
       li += 2
     } else if starts("002") {
@@ -1760,7 +1783,7 @@ fn parse_go_layout(
           yday = v
           vi = j
         }
-        None => return err()
+        None => return err("002")
       }
       li += 3
     } else if starts("02") {
@@ -1769,7 +1792,7 @@ fn parse_go_layout(
           day = v
           vi = j
         }
-        None => return err()
+        None => return err("02")
       }
       li += 2
     } else if starts("_2") {
@@ -1781,7 +1804,7 @@ fn parse_go_layout(
           day = v
           vi = j
         }
-        None => return err()
+        None => return err("_2")
       }
       li += 2
     } else if starts("15") {
@@ -1790,7 +1813,7 @@ fn parse_go_layout(
           hour = v
           vi = j
         }
-        None => return err()
+        None => return err("15")
       }
       li += 2
     } else if starts("03") {
@@ -1799,7 +1822,7 @@ fn parse_go_layout(
           hour = v
           vi = j
         }
-        None => return err()
+        None => return err("03")
       }
       li += 2
     } else if starts("04") {
@@ -1808,7 +1831,7 @@ fn parse_go_layout(
           minute = v
           vi = j
         }
-        None => return err()
+        None => return err("04")
       }
       li += 2
     } else if starts("05") {
@@ -1817,7 +1840,7 @@ fn parse_go_layout(
           second = v
           vi = j
         }
-        None => return err()
+        None => return err("05")
       }
       li += 2
     } else if starts("PM") {
@@ -1826,7 +1849,7 @@ fn parse_go_layout(
           pm = Some(idx == 1)
           vi = j
         }
-        None => return err()
+        None => return err("PM")
       }
       li += 2
     } else if starts("pm") {
@@ -1835,37 +1858,37 @@ fn parse_go_layout(
           pm = Some(idx == 1)
           vi = j
         }
-        None => return err()
+        None => return err("pm")
       }
       li += 2
     } else if starts("Z07:00") {
       if !parse_zone(true, true) {
-        return err()
+        return err("Z07:00")
       }
       li += 6
     } else if starts("Z0700") {
       if !parse_zone(false, true) {
-        return err()
+        return err("Z0700")
       }
       li += 5
     } else if starts("-07:00") {
       if !parse_zone(true, false) {
-        return err()
+        return err("-07:00")
       }
       li += 6
     } else if starts("-0700") {
       if !parse_zone(false, false) {
-        return err()
+        return err("-0700")
       }
       li += 5
     } else if starts("Z07") {
       if !parse_zone_hour_only(true) {
-        return err()
+        return err("Z07")
       }
       li += 3
     } else if starts("-07") {
       if !parse_zone_hour_only(false) {
-        return err()
+        return err("-07")
       }
       li += 3
     } else if starts("MST") {
@@ -1885,7 +1908,7 @@ fn parse_go_layout(
           hour = v
           vi = j
         }
-        None => return err()
+        None => return err("3")
       }
       li += 1
     } else if lc[li] == '1' {
@@ -1894,7 +1917,7 @@ fn parse_go_layout(
           month = v
           vi = j
         }
-        None => return err()
+        None => return err("1")
       }
       li += 1
     } else if lc[li] == '2' {
@@ -1903,7 +1926,7 @@ fn parse_go_layout(
           day = v
           vi = j
         }
-        None => return err()
+        None => return err("2")
       }
       li += 1
     } else if lc[li] == '4' {
@@ -1912,7 +1935,7 @@ fn parse_go_layout(
           minute = v
           vi = j
         }
-        None => return err()
+        None => return err("4")
       }
       li += 1
     } else if lc[li] == '5' {
@@ -1921,7 +1944,7 @@ fn parse_go_layout(
           second = v
           vi = j
         }
-        None => return err()
+        None => return err("5")
       }
       li += 1
     } else if (lc[li] == '.' || lc[li] == ',') &&
@@ -1933,13 +1956,20 @@ fn parse_go_layout(
         lj += 1
       }
       let max_digits = lj - li - 1
+      let frac_tok = {
+        let b = StringBuilder::new()
+        for k in li..<lj {
+          b.write_char(lc[k])
+        }
+        b.to_string()
+      }
       if vi < vn && (vc[vi] == '.' || vc[vi] == ',') {
         let (frac_str, end) = parse_digits_at(vc, vi + 1)
         let flen = frac_str.length()
         if flen > 0 {
           let frac_val = match parse_int64_str(frac_str) {
             Some(v) => v
-            None => return err()
+            None => return err(frac_tok)
           }
           nsec = if flen >= 9 {
             (frac_val / pow10_int64(flen - 9)).to_int()
@@ -1948,29 +1978,36 @@ fn parse_go_layout(
           }
           vi = end
         } else if !is_trimmed {
-          return err()
+          return err(frac_tok)
         }
       } else if !is_trimmed {
-        return err()
+        return err(frac_tok)
       }
       let _ = max_digits
       li = lj
     } else {
       // Literal character: must match the value verbatim.
       if vi >= vn || vc[vi] != lc[li] {
-        return err()
+        return err("\{lc[li]}")
       }
       vi += 1
       li += 1
     }
   }
   if vi != vn {
-    return err()
+    let buf = StringBuilder::new()
+    for k in vi..<vn {
+      buf.write_char(vc[k])
+    }
+    return Err(
+      "parsing time \"\{value}\" as \"\{layout}\": extra text: " +
+      buf.to_string(),
+    )
   }
   if yday >= 0 {
     let max_yday = if is_leap_year(year.to_int64()) { 366 } else { 365 }
     if yday < 1 || yday > max_yday {
-      return err()
+      return err("002")
     }
     let (m, d) = yday_to_month_day(year.to_int64(), yday)
     month = m
