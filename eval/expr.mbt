@@ -3693,21 +3693,6 @@ fn parse_hex_float_str(s : String) -> Double? {
     return None
   }
   i += 2
-  let has_p_exp = {
-    let mut j = i
-    let mut found = false
-    while j < n {
-      if s[j] == 'p' || s[j] == 'P' {
-        found = true
-        break
-      }
-      j += 1
-    }
-    found
-  }
-  if !has_p_exp {
-    return None
-  }
   let int_start = i
   while i < n && is_hex_digit(s[i]) {
     i += 1
