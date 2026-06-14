@@ -70,3 +70,28 @@ test "get_tz_abbr_at_impl: UTC resolves to offset 0 at the Unix epoch" {
     None => fail("get_tz_abbr_at_impl returned None for UTC at epoch")
   }
 }
+
+///|
+test "get_tz_abbr_at_impl: Asia/Tokyo resolves at a timestamp beyond localtime_r range" {
+  match get_tz_abbr_at_impl("Asia/Tokyo", 9000000000000000000L) {
+    Some((offset, abbr)) => {
+      assert_eq(offset, 32400)
+      assert_eq(abbr, "JST")
+    }
+    None =>
+      fail(
+        "get_tz_abbr_at_impl returned None for Asia/Tokyo at large timestamp",
+      )
+  }
+}
+
+///|
+test "get_tz_abbr_at_impl: named zone returns Some (not None) at extreme negative timestamp" {
+  match get_tz_abbr_at_impl("Asia/Tokyo", -9000000000000000000L) {
+    Some(_) => ()
+    None =>
+      fail(
+        "get_tz_abbr_at_impl returned None for Asia/Tokyo at large negative timestamp",
+      )
+  }
+}

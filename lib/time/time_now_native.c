@@ -29,6 +29,20 @@ MOONBIT_FFI_EXPORT int32_t starlark_is_valid_timezone(moonbit_bytes_t name) {
     return 0;
 }
 
+/* Clamp unix_time to the range that localtime_r handles reliably.
+ * Empirically, values with absolute value >= 9e16 cause localtime_r to return
+ * NULL on macOS/Linux.  Clamping to ±9e15 always succeeds and returns the
+ * timezone's current recurring rule, which is the correct approximation for
+ * timestamps far outside the tzdata transition table. */
+#define STARLARK_MAX_LOCALTIME_SEC ((int64_t)9000000000000000LL)
+#define STARLARK_MIN_LOCALTIME_SEC ((int64_t)-9000000000000000LL)
+
+static int64_t clamp_unix_time(int64_t unix_time) {
+    if (unix_time > STARLARK_MAX_LOCALTIME_SEC) return STARLARK_MAX_LOCALTIME_SEC;
+    if (unix_time < STARLARK_MIN_LOCALTIME_SEC) return STARLARK_MIN_LOCALTIME_SEC;
+    return unix_time;
+}
+
 /* Returns UTC offset for the named timezone at unix_time, writing the zone
  * abbreviation (at most 15 chars + NUL) into abbr_out.
  * Returns INT32_MIN on error or invalid timezone. */
@@ -42,7 +56,7 @@ MOONBIT_FFI_EXPORT int32_t starlark_get_tz_abbr(moonbit_bytes_t name,
     setenv("TZ", tz_name, 1);
     tzset();
 
-    time_t t = (time_t)unix_time;
+    time_t t = (time_t)clamp_unix_time(unix_time);
     struct tm tm_info;
     struct tm* result = localtime_r(&t, &tm_info);
     int32_t offset;
@@ -75,7 +89,7 @@ MOONBIT_FFI_EXPORT int32_t starlark_get_tz_abbr(moonbit_bytes_t name,
  * Returns INT32_MIN on error. */
 MOONBIT_FFI_EXPORT int32_t starlark_get_local_tz_at(int64_t unix_time,
                                                       moonbit_bytes_t abbr_out) {
-    time_t t = (time_t)unix_time;
+    time_t t = (time_t)clamp_unix_time(unix_time);
     struct tm tm_info;
     struct tm* result = localtime_r(&t, &tm_info);
     if (result != NULL) {
