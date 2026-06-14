@@ -1480,7 +1480,14 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     return Err(cp_err(i, "Z07:00"))
   }
   if tz_end != len {
-    return Err("time: extra text after date \"\{s}\"")
+    let buf = StringBuilder::new()
+    for k in tz_end..<chars.length() {
+      buf.write_char(chars[k])
+    }
+    return Err(
+      "parsing time \"\{s}\" as \"\{rfc_layout}\": extra text: " +
+      buf.to_string(),
+    )
   }
   let dt = @x_time.ZonedDateTime::of(
     year,

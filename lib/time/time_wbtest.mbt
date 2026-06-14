@@ -224,6 +224,17 @@ test "parse_rfc3339: missing timezone includes remaining text and expected token
 }
 
 ///|
+test "parse_rfc3339: trailing garbage uses Go-format extra text: suffix" {
+  match parse_rfc3339("2021-03-22T23:20:50Zgarbage") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(
+        e.has_suffix("as \"2006-01-02T15:04:05Z07:00\": extra text: garbage"),
+      )
+  }
+}
+
+///|
 test "parse_go_layout: completely wrong input includes remaining text and first token" {
   match parse_go_layout("not a date", "2006-01-02") {
     Ok(_) => fail("expected Err")
