@@ -493,24 +493,35 @@ fn call_builtin(
               "inf" | "+inf" | "infinity" | "+infinity" => @double.infinity
               "-inf" | "-infinity" => @double.neg_infinity
               "nan" | "+nan" | "-nan" => @double.not_a_number
-              _ => {
-                let parsed = @string.parse_double(raw) catch {
-                  _ => {
-                    let msg = if is_float_syntax(raw) {
-                      "floating-point number too large"
-                    } else {
-                      "invalid float literal: \{raw}"
+              _ =>
+                match parse_hex_float_str(raw) {
+                  Some(v) => {
+                    if v.is_inf() {
+                      raise EvalErr(
+                        make_eval_error(ctx, "floating-point number too large"),
+                      )
                     }
-                    raise EvalErr(make_eval_error(ctx, msg))
+                    v
+                  }
+                  None => {
+                    let parsed = @string.parse_double(raw) catch {
+                      _ => {
+                        let msg = if is_float_syntax(raw) {
+                          "floating-point number too large"
+                        } else {
+                          "invalid float literal: \{raw}"
+                        }
+                        raise EvalErr(make_eval_error(ctx, msg))
+                      }
+                    }
+                    if parsed.is_inf() {
+                      raise EvalErr(
+                        make_eval_error(ctx, "floating-point number too large"),
+                      )
+                    }
+                    parsed
                   }
                 }
-                if parsed.is_inf() {
-                  raise EvalErr(
-                    make_eval_error(ctx, "floating-point number too large"),
-                  )
-                }
-                parsed
-              }
             }
             @value.Value::Float(f)
           }
@@ -3651,6 +3662,99 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
   }
   let result = BigInt::from_string(digits, radix=actual_base)
   Ok(if negative { -result } else { result })
+}
+
+///|
+fn is_hex_digit(c : UInt16) -> Bool {
+  (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+}
+
+///|
+fn hex_digit_val(c : UInt16) -> Int {
+  let ci = c.to_int()
+  if c >= '0' && c <= '9' {
+    ci - '0'.to_int()
+  } else if c >= 'a' && c <= 'f' {
+    ci - 'a'.to_int() + 10
+  } else {
+    ci - 'A'.to_int() + 10
+  }
+}
+
+///|
+fn parse_hex_float_str(s : String) -> Double? {
+  let n = s.length()
+  let mut i = 0
+  let negative = i < n && s[i] == '-'
+  if i < n && (s[i] == '+' || s[i] == '-') {
+    i += 1
+  }
+  if i + 1 >= n || s[i] != '0' || (s[i + 1] != 'x' && s[i + 1] != 'X') {
+    return None
+  }
+  i += 2
+  let has_p_exp = {
+    let mut j = i
+    let mut found = false
+    while j < n {
+      if s[j] == 'p' || s[j] == 'P' {
+        found = true
+        break
+      }
+      j += 1
+    }
+    found
+  }
+  if !has_p_exp {
+    return None
+  }
+  let int_start = i
+  while i < n && is_hex_digit(s[i]) {
+    i += 1
+  }
+  let int_end = i
+  let mut frac_start = i
+  let mut frac_end = i
+  if i < n && s[i] == '.' {
+    i += 1
+    frac_start = i
+    while i < n && is_hex_digit(s[i]) {
+      i += 1
+    }
+    frac_end = i
+  }
+  if int_end == int_start && frac_end == frac_start {
+    return None
+  }
+  if i >= n || (s[i] != 'p' && s[i] != 'P') {
+    return None
+  }
+  i += 1
+  let exp_neg = i < n && s[i] == '-'
+  if i < n && (s[i] == '+' || s[i] == '-') {
+    i += 1
+  }
+  let exp_start = i
+  let mut exp_val = 0
+  while i < n && s[i] >= '0' && s[i] <= '9' {
+    exp_val = exp_val * 10 + s[i].to_int() - '0'.to_int()
+    i += 1
+  }
+  if i == exp_start || i != n {
+    return None
+  }
+  let mut mantissa = 0.0
+  for j in int_start..<int_end {
+    mantissa = mantissa * 16.0 + hex_digit_val(s[j]).to_double()
+  }
+  let mut frac_scale = 1.0 / 16.0
+  for j in frac_start..<frac_end {
+    mantissa += hex_digit_val(s[j]).to_double() * frac_scale
+    frac_scale /= 16.0
+  }
+  let actual_exp = if exp_neg { -exp_val } else { exp_val }
+  let value = @math.scalbn(mantissa, actual_exp)
+  Some(if negative { -value } else { value })
 }
 
 ///|
