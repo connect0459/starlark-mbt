@@ -84,6 +84,29 @@ test "decompose_unix_sec: Int64 maximum second matches Go normalization" {
 }
 
 ///|
+test "decompose_unix_sec: last sequential second before overflow range uses floor division" {
+  let (year, month, day, hour, minute, second) = decompose_unix_sec(
+    -9223372028741760000L, 0,
+  )
+  assert_eq(year, -292277022400L)
+  assert_eq(month, 3)
+  assert_eq(day, 1)
+  assert_eq(hour, 0)
+  assert_eq(minute, 0)
+  assert_eq(second, 0)
+}
+
+///|
+test "decompose_unix_sec: first second of overflow range uses carry formula" {
+  let (_, _, _, hour, minute, second) = decompose_unix_sec(
+    -9223372028741760001L, 0,
+  )
+  assert_eq(hour, 7)
+  assert_eq(minute, 0)
+  assert_eq(second, 15)
+}
+
+///|
 test "normalize_to_unix_sec: year at representable limit is accepted" {
   let _ = normalize_to_unix_sec(290_000_000_000L, 1L, 1L, 0L, 0L, 0L, 0L)
 }
