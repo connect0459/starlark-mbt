@@ -525,7 +525,7 @@ test "while loop" {
 test "function definition with no params" {
   let f = parse_f("def f():\n  pass\n")
   match f.stmts()[0] {
-    SDef("f", params, body, _) => {
+    SDef("f", _, params, body, _) => {
       assert_eq(params.length(), 0)
       assert_eq(body.length(), 1)
     }
@@ -537,7 +537,7 @@ test "function definition with no params" {
 test "function definition with param and default" {
   let f = parse_f("def f(x, y=1):\n  pass\n")
   match f.stmts()[0] {
-    SDef("f", params, _, _) => {
+    SDef("f", _, params, _, _) => {
       assert_eq(params.length(), 2)
       match params[0] {
         ParamIdent("x", _) => ()
@@ -556,7 +556,7 @@ test "function definition with param and default" {
 test "function definition with star args" {
   let f = parse_f("def f(*args):\n  pass\n")
   match f.stmts()[0] {
-    SDef("f", params, _, _) => {
+    SDef("f", _, params, _, _) => {
       assert_eq(params.length(), 1)
       match params[0] {
         ParamStarIdent("args", _) => ()
@@ -571,7 +571,7 @@ test "function definition with star args" {
 test "function definition with kwargs" {
   let f = parse_f("def f(**kwargs):\n  pass\n")
   match f.stmts()[0] {
-    SDef("f", params, _, _) =>
+    SDef("f", _, params, _, _) =>
       match params[0] {
         ParamKwIdent("kwargs", _) => ()
         _ => fail("expected **kwargs param")
@@ -885,7 +885,7 @@ test "walk: visitor returning false skips children" {
   let visited : Array[String] = []
   @syntax.walk_file(file, fn(node) {
     match node {
-      Some(@syntax.Node::NStmt(@syntax.Stmt::SDef(name, _, _, _))) => {
+      Some(@syntax.Node::NStmt(@syntax.Stmt::SDef(name, _, _, _, _))) => {
         visited.push("def:\{name}")
         false
       }

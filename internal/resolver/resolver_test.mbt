@@ -39,6 +39,16 @@ fn has_error(result : ResolvedFile, substr : String) -> Bool {
   result.errors().any(fn(e) { e.msg().contains(substr) })
 }
 
+///|
+fn error_col(result : ResolvedFile, substr : String) -> Int? {
+  for e in result.errors() {
+    if e.msg().contains(substr) {
+      return Some(e.pos().col())
+    }
+  }
+  None
+}
+
 // --- Basic resolution: valid programs ---
 
 ///|
@@ -874,4 +884,40 @@ test "resolve: conditional expression reports condition error before true-value 
   let errors = result.errors()
   assert_true(errors.length() >= 1)
   assert_true(errors[0].msg().contains("undefined: bb"))
+}
+
+// --- Error position anchoring ---
+
+///|
+test "resolve: multiple *args error anchors at the * operator" {
+  // f(*a, *b) — second * is at col 7 (1-based)
+  let r = resolve_call("f(*a, *b)")
+  assert_true(error_col(r, "multiple *args not allowed") == Some(7))
+}
+
+///|
+test "resolve: multiple **kwargs error anchors at the ** operator" {
+  // f(**a, **b) — second ** is at col 8 (1-based)
+  let r = resolve_call("f(**a, **b)")
+  assert_true(error_col(r, "multiple **kwargs not allowed") == Some(8))
+}
+
+///|
+test "resolve: *args after **kwargs error anchors at the * operator" {
+  // f(**b, *a) — the * is at col 8 (1-based)
+  let r = resolve_call("f(**b, *a)")
+  assert_true(error_col(r, "*args may not follow **kwargs") == Some(8))
+}
+
+///|
+test "resolve: cannot reassign declared-at anchors at function name" {
+  // `def f(): pass` — def is at col 1, f is at col 5
+  let f = parse_or_fail("def f(): pass\nf = 1")
+  let opts = ResolveOptions::default().with_allow_global_reassign(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  let errors = result.errors()
+  assert_true(errors.length() >= 1)
+  let msg = errors[0].msg()
+  assert_true(msg.contains("declared at"))
+  assert_true(msg.contains(":1:5"))
 }

@@ -559,11 +559,11 @@ fn Fcomp::compile_call(
         self.compile_expr(e)
         nkw += 1
       }
-      ArgStarArgs(e) => {
+      ArgStarArgs(_, e) => {
         self.compile_expr(e)
         has_star = true
       }
-      ArgKwArgs(e) => {
+      ArgKwArgs(_, e) => {
         self.compile_expr(e)
         has_kwstar = true
       }
@@ -1013,7 +1013,7 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit0(Opcode::Return, 1, 0)
     }
-    SDef(name, params, body, pos) => {
+    SDef(name, _, params, body, pos) => {
       self.compile_make_func(name, params, body, pos)
       self.set_pos(pos)
       self.compile_store(name)
@@ -1317,7 +1317,7 @@ fn collect_function_locals(fc : Fcomp, body : Array[@syntax.Stmt]) -> Unit {
         }
         SWhile(_, b, _) => walk(b)
         // A nested def binds its name in this scope; its body is a separate scope.
-        SDef(name, _, _, p) => add(name, p)
+        SDef(name, _, _, _, p) => add(name, p)
         _ => ()
       }
     }
@@ -1348,7 +1348,7 @@ fn collect_globals(pcomp : Pcomp, stmts : Array[@syntax.Stmt]) -> Unit {
       match s {
         SAssign(target, _, _) => collect_target_names(target, add)
         SAugAssign(target, _, _, _) => collect_target_names(target, add)
-        SDef(name, _, _, pos) => add(name, pos)
+        SDef(name, _, _, _, pos) => add(name, pos)
         SLoad(_, bindings, _) =>
           for b in bindings {
             add(b.0, b.2)

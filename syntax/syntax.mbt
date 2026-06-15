@@ -72,8 +72,8 @@ pub(all) enum Param {
 pub(all) enum Arg {
   ArgPos(Expr)
   ArgKw(String, Expr, @errors.Position)
-  ArgStarArgs(Expr)
-  ArgKwArgs(Expr)
+  ArgStarArgs(@errors.Position, Expr)
+  ArgKwArgs(@errors.Position, Expr)
 }
 
 ///|
@@ -111,7 +111,7 @@ pub(all) enum Stmt {
   SIf(Expr, Array[Stmt], Array[Stmt], @errors.Position)
   SFor(Expr, Expr, Array[Stmt], @errors.Position)
   SWhile(Expr, Array[Stmt], @errors.Position)
-  SDef(String, Array[Param], Array[Stmt], @errors.Position)
+  SDef(String, @errors.Position, Array[Param], Array[Stmt], @errors.Position)
   SReturn(Expr?, @errors.Position)
   SBreak(@errors.Position)
   SContinue(@errors.Position)
@@ -209,7 +209,7 @@ pub fn stmt_pos(s : Stmt) -> @errors.Position {
     SIf(_, _, _, p) => p
     SFor(_, _, _, p) => p
     SWhile(_, _, p) => p
-    SDef(_, _, _, p) => p
+    SDef(_, _, _, _, p) => p
     SReturn(_, p) => p
     SBreak(p) => p
     SContinue(p) => p

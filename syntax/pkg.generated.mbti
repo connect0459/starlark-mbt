@@ -23,8 +23,8 @@ pub fn walk_stmt(Stmt, (Node?) -> Bool) -> Unit
 pub(all) enum Arg {
   ArgPos(Expr)
   ArgKw(String, Expr, @errors.Position)
-  ArgStarArgs(Expr)
-  ArgKwArgs(Expr)
+  ArgStarArgs(@errors.Position, Expr)
+  ArgKwArgs(@errors.Position, Expr)
 }
 
 pub(all) enum AugOp {
@@ -128,7 +128,7 @@ pub(all) enum Stmt {
   SIf(Expr, Array[Stmt], Array[Stmt], @errors.Position)
   SFor(Expr, Expr, Array[Stmt], @errors.Position)
   SWhile(Expr, Array[Stmt], @errors.Position)
-  SDef(String, Array[Param], Array[Stmt], @errors.Position)
+  SDef(String, @errors.Position, Array[Param], Array[Stmt], @errors.Position)
   SReturn(Expr?, @errors.Position)
   SBreak(@errors.Position)
   SContinue(@errors.Position)

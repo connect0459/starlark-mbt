@@ -66,8 +66,8 @@ test "walk visits collection literals, calls, and attribute access" {
     [
       ArgPos(ident("pos")),
       ArgKw("kw", ident("kwval"), p()),
-      ArgStarArgs(ident("args")),
-      ArgKwArgs(ident("kwargs")),
+      ArgStarArgs(p(), ident("args")),
+      ArgKwArgs(p(), ident("kwargs")),
     ],
     p(),
   )
@@ -136,7 +136,7 @@ test "walk visits every statement kind" {
     SIf(ident("cond"), [SExpr(ident("then"))], [SExpr(ident("els"))], p()),
     SFor(ident("tgt"), ident("it"), [SExpr(ident("body"))], p()),
     SWhile(ident("wc"), [SExpr(ident("wbody"))], p()),
-    SDef("f", [ParamIdent("pa", p())], [SExpr(ident("fbody"))], p()),
+    SDef("f", p(), [ParamIdent("pa", p())], [SExpr(ident("fbody"))], p()),
     SReturn(Some(ident("rv")), p()),
     SReturn(None, p()),
     SBreak(p()),
@@ -168,11 +168,13 @@ test "walk stops descending when visitor returns false at file level" {
 
 ///|
 test "walk stops descending when visitor returns false at a statement" {
-  let file = File::new("t.star", [SDef("f", [], [SExpr(ident("inner"))], p())])
+  let file = File::new("t.star", [
+    SDef("f", p(), [], [SExpr(ident("inner"))], p()),
+  ])
   let names = []
   walk_file(file, fn(node) {
     match node {
-      Some(NStmt(SDef(_, _, _, _))) => false
+      Some(NStmt(SDef(_, _, _, _, _))) => false
       Some(NExpr(EIdent(name, _))) => {
         names.push(name)
         true
@@ -205,7 +207,7 @@ test "walk stops descending when visitor returns false at an expression" {
 ///|
 test "walk stops descending when visitor returns false at a parameter" {
   let file = File::new("t.star", [
-    SDef("f", [ParamDefault("y", ident("dflt"), p())], [], p()),
+    SDef("f", p(), [ParamDefault("y", ident("dflt"), p())], [], p()),
   ])
   let names = []
   walk_file(file, fn(node) {
@@ -298,7 +300,7 @@ test "stmt_pos returns the position of every statement variant" {
     SIf(ident("a"), [], [], q),
     SFor(ident("a"), ident("b"), [], q),
     SWhile(ident("a"), [], q),
-    SDef("f", [], [], q),
+    SDef("f", p(), [], [], q),
     SReturn(None, q),
     SBreak(q),
     SContinue(q),
