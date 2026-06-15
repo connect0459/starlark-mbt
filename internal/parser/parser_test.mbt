@@ -201,8 +201,8 @@ test "boolean or" {
 test "conditional expression x if c else y" {
   match parse_e("1 if True else 0") {
     ECond(
-      ELiteral(LitInt(1N), _),
       EIdent("True", _),
+      ELiteral(LitInt(1N), _),
       ELiteral(LitInt(0N), _),
       _
     ) => ()
@@ -1330,9 +1330,9 @@ test "ternary arg starting with ident parses as ECond" {
       assert_eq(args.length(), 1)
       match args[0] {
         ArgPos(
-          ECond(EIdent("x", _), EIdent("True", _), ELiteral(LitInt(0N), _), _)
+          ECond(EIdent("True", _), EIdent("x", _), ELiteral(LitInt(0N), _), _)
         ) => ()
-        _ => fail("expected ArgPos(ECond(x, True, 0))")
+        _ => fail("expected ArgPos(ECond(True, x, 0))")
       }
     }
     _ => fail("expected ECall")
@@ -1345,8 +1345,8 @@ test "ternary arg starting with ident followed by binary expr parses as ECond" {
     ECall(_, args, _) => {
       assert_eq(args.length(), 1)
       match args[0] {
-        ArgPos(ECond(EIdent("a", _), _, EIdent("b", _), _)) => ()
-        _ => fail("expected ArgPos(ECond(a, a < b, b))")
+        ArgPos(ECond(_, EIdent("a", _), EIdent("b", _), _)) => ()
+        _ => fail("expected ArgPos(ECond(a < b, a, b))")
       }
     }
     _ => fail("expected ECall")
@@ -1359,7 +1359,7 @@ test "ternary arg as first of multiple args parses correctly" {
     ECall(_, args, _) => {
       assert_eq(args.length(), 2)
       match args[0] {
-        ArgPos(ECond(EIdent("x", _), _, EIdent("y", _), _)) => ()
+        ArgPos(ECond(_, EIdent("x", _), EIdent("y", _), _)) => ()
         _ => fail("expected first arg to be ECond")
       }
       match args[1] {
@@ -1592,13 +1592,13 @@ test "ternary arg with method call on ident parses as ECond" {
       match args[0] {
         ArgPos(
           ECond(
-            ECall(EDot(EIdent("s", _), "upper", _), upper_args, _),
             EIdent("flag", _),
+            ECall(EDot(EIdent("s", _), "upper", _), upper_args, _),
             EIdent("s", _),
             _
           )
         ) => assert_eq(upper_args.length(), 0)
-        _ => fail("expected ArgPos(ECond(s.upper(), flag, s))")
+        _ => fail("expected ArgPos(ECond(flag, s.upper(), s))")
       }
     }
     _ => fail("expected ECall")

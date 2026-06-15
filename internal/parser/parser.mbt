@@ -742,7 +742,7 @@ fn Parser::finish_cond_tail_from(
     }
     self.advance()
     let else_e = self.parse_test()
-    @syntax.Expr::ECond(e, cond, else_e, p)
+    @syntax.Expr::ECond(cond, e, else_e, p)
   } else {
     e
   }
