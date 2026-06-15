@@ -412,6 +412,44 @@ test "parse_rfc3339: positive non-zero offset +09:00 produces zone name +0900" {
 }
 
 ///|
+test "parse_go_layout: Z marker produces UTC zone name" {
+  match parse_go_layout("2021-03-22 10:42:13Z", "2006-01-02 15:04:05Z07:00") {
+    Err(e) => fail("expected Ok: \{e}")
+    Ok((_, _, _, _, _, _, _, Some((off, zone_name)))) => {
+      assert_eq(off, 0)
+      assert_eq(zone_name, "UTC")
+    }
+    Ok((_, _, _, _, _, _, _, None)) => fail("expected a parsed zone")
+  }
+}
+
+///|
+test "parse_go_layout: numeric zero offset +00:00 produces nameless fixed zone +0000" {
+  match
+    parse_go_layout("2021-03-22 10:42:13+00:00", "2006-01-02 15:04:05Z07:00") {
+    Err(e) => fail("expected Ok: \{e}")
+    Ok((_, _, _, _, _, _, _, Some((off, zone_name)))) => {
+      assert_eq(off, 0)
+      assert_eq(zone_name, "+0000")
+    }
+    Ok((_, _, _, _, _, _, _, None)) => fail("expected a parsed zone")
+  }
+}
+
+///|
+test "parse_go_layout: positive non-zero offset +09:00 produces zone name +0900" {
+  match
+    parse_go_layout("2021-03-22 10:42:13+09:00", "2006-01-02 15:04:05Z07:00") {
+    Err(e) => fail("expected Ok: \{e}")
+    Ok((_, _, _, _, _, _, _, Some((off, zone_name)))) => {
+      assert_eq(off, 32400)
+      assert_eq(zone_name, "+0900")
+    }
+    Ok((_, _, _, _, _, _, _, None)) => fail("expected a parsed zone")
+  }
+}
+
+///|
 test "parse_go_layout: completely wrong input includes remaining text and first token" {
   match parse_go_layout("not a date", "2006-01-02") {
     Ok(_) => fail("expected Err")

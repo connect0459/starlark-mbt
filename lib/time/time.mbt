@@ -1655,7 +1655,7 @@ fn match_name_ci(
 fn parse_go_layout(
   value : String,
   layout : String,
-) -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
+) -> Result[(Int, Int, Int, Int, Int, Int, Int, (Int, String)?), String] {
   let lc = layout.to_array()
   let vc = value.to_array()
   let ln = lc.length()
@@ -1669,12 +1669,12 @@ fn parse_go_layout(
   let mut minute = 0
   let mut second = 0
   let mut nsec = 0
-  let mut tz_offset : Int? = None
+  let mut parsed_tz : (Int, String)? = None
   let mut pm : Bool? = None
   let mut yday = -1
   let err = fn(
     tok : String,
-  ) -> Result[(Int, Int, Int, Int, Int, Int, Int, Int?), String] {
+  ) -> Result[(Int, Int, Int, Int, Int, Int, Int, (Int, String)?), String] {
     let buf = StringBuilder::new()
     for k in vi..<vn {
       buf.write_char(vc[k])
@@ -1701,7 +1701,7 @@ fn parse_go_layout(
   // accepts a literal `Z` meaning offset 0.
   fn parse_zone(colon : Bool, allow_z : Bool) -> Bool {
     if allow_z && vi < vn && (vc[vi] == 'Z' || vc[vi] == 'z') {
-      tz_offset = Some(0)
+      parsed_tz = Some((0, "UTC"))
       vi += 1
       return true
     }
@@ -1723,7 +1723,10 @@ fn parse_go_layout(
         match read_fixed_digits(vc, j2, 2) {
           None => false
           Some((mm, k)) => {
-            tz_offset = Some(sign * (hh * secs_per_hour + mm * secs_per_minute))
+            let offset = sign * (hh * secs_per_hour + mm * secs_per_minute)
+            let name_buf = StringBuilder::new()
+            write_tz_offset(name_buf, offset)
+            parsed_tz = Some((offset, name_buf.to_string()))
             vi = k
             true
           }
@@ -1736,7 +1739,7 @@ fn parse_go_layout(
   // `allow_z` accepts a literal `Z` meaning offset 0.
   fn parse_zone_hour_only(allow_z : Bool) -> Bool {
     if allow_z && vi < vn && (vc[vi] == 'Z' || vc[vi] == 'z') {
-      tz_offset = Some(0)
+      parsed_tz = Some((0, "UTC"))
       vi += 1
       return true
     }
@@ -1750,7 +1753,10 @@ fn parse_go_layout(
         if hh > 23 {
           return false
         }
-        tz_offset = Some(sign * hh * secs_per_hour)
+        let offset = sign * hh * secs_per_hour
+        let name_buf = StringBuilder::new()
+        write_tz_offset(name_buf, offset)
+        parsed_tz = Some((offset, name_buf.to_string()))
         vi = j
         true
       }
@@ -2053,7 +2059,7 @@ fn parse_go_layout(
     Some(false) => if hour == 12 { hour = 0 }
     None => ()
   }
-  Ok((year, month, day, hour, minute, second, nsec, tz_offset))
+  Ok((year, month, day, hour, minute, second, nsec, parsed_tz))
 }
 
 ///|
@@ -2289,8 +2295,8 @@ fn make_parse_time_fn() -> @value.Value {
           }
           let base = dt.to_unix_second()
           match ptz {
-            Some(off) =>
-              (base - off.to_int64(), pns, true, off, tz_name_from_offset(off))
+            Some((off, zone_name)) =>
+              (base - off.to_int64(), pns, true, off, zone_name)
             None => (base, pns, false, 0, "UTC")
           }
         }
