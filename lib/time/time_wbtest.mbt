@@ -59,71 +59,55 @@ test "weekday_from_unix_day: day before epoch is Wednesday" {
 
 ///|
 test "normalize_to_unix_sec: year at representable limit is accepted" {
-  assert_true(
-    normalize_to_unix_sec(290_000_000_000L, 1L, 1L, 0L, 0L, 0L, 0L) is Ok(_),
-  )
+  let _ = normalize_to_unix_sec(290_000_000_000L, 1L, 1L, 0L, 0L, 0L, 0L)
 }
 
 ///|
-test "normalize_to_unix_sec: year beyond representable limit is rejected" {
-  assert_true(
-    normalize_to_unix_sec(290_000_000_001L, 1L, 1L, 0L, 0L, 0L, 0L) is Err(_),
-  )
+test "normalize_to_unix_sec: year just above old 290e9 limit is accepted" {
+  let (sec, _) = normalize_to_unix_sec(290_000_000_001L, 1L, 1L, 0L, 0L, 0L, 0L)
+  assert_eq(sec, 9_151_516_017_864_403_200L)
 }
 
 ///|
-test "normalize_to_unix_sec: month normalization beyond representable limit is rejected" {
-  assert_true(
-    normalize_to_unix_sec(0L, 3_480_000_000_013L, 1L, 0L, 0L, 0L, 0L) is Err(_),
-  )
+test "normalize_to_unix_sec: negative year just below old -290e9 limit is accepted" {
+  let _ = normalize_to_unix_sec(-300_000_000_000L, 1L, 1L, 0L, 0L, 0L, 0L)
+}
+
+///|
+test "normalize_to_unix_sec: month normalization producing year above old limit is accepted" {
+  let _ = normalize_to_unix_sec(0L, 3_480_000_000_013L, 1L, 0L, 0L, 0L, 0L)
 }
 
 ///|
 test "normalize_to_unix_sec: year beyond 9999 is accepted" {
-  assert_true(normalize_to_unix_sec(12021L, 1L, 1L, 0L, 0L, 0L, 0L) is Ok(_))
+  let _ = normalize_to_unix_sec(12021L, 1L, 1L, 0L, 0L, 0L, 0L)
 }
 
 ///|
 test "normalize_to_unix_sec: year beyond 9999 gives correct unix second" {
-  match normalize_to_unix_sec(12021L, 1L, 1L, 0L, 0L, 0L, 0L) {
-    Ok((sec, _)) => assert_eq(sec, 3671053L * 86400L)
-    Err(e) => fail(e)
-  }
+  let (sec, _) = normalize_to_unix_sec(12021L, 1L, 1L, 0L, 0L, 0L, 0L)
+  assert_eq(sec, 3671053L * 86400L)
 }
 
 ///|
 test "fmt_time_at_zone: 3-digit year is zero-padded to 4 digits" {
-  match normalize_to_unix_sec(987L, 1L, 1L, 0L, 0L, 0L, 0L) {
-    Ok((sec, _)) =>
-      assert_eq(
-        fmt_time_at_zone(sec, 0, 0, "UTC"),
-        "0987-01-01 00:00:00 +0000 UTC",
-      )
-    Err(e) => fail(e)
-  }
+  let (sec, _) = normalize_to_unix_sec(987L, 1L, 1L, 0L, 0L, 0L, 0L)
+  assert_eq(fmt_time_at_zone(sec, 0, 0, "UTC"), "0987-01-01 00:00:00 +0000 UTC")
 }
 
 ///|
 test "fmt_time_at_zone: negative year is sign-prefixed and zero-padded" {
-  match normalize_to_unix_sec(-1L, 1L, 1L, 0L, 0L, 0L, 0L) {
-    Ok((sec, _)) => {
-      let s = fmt_time_at_zone(sec, 0, 0, "UTC")
-      assert_true(s.has_prefix("-0001-"))
-    }
-    Err(e) => fail(e)
-  }
+  let (sec, _) = normalize_to_unix_sec(-1L, 1L, 1L, 0L, 0L, 0L, 0L)
+  assert_true(fmt_time_at_zone(sec, 0, 0, "UTC").has_prefix("-0001-"))
 }
 
 ///|
 test "fmt_time_at_zone: year beyond 9999 formats without error" {
-  match normalize_to_unix_sec(12021L, 1L, 1L, 0L, 0L, 0L, 0L) {
-    Ok((sec, _)) =>
-      assert_eq(
-        fmt_time_at_zone(sec, 0, 0, "UTC"),
-        "12021-01-01 00:00:00 +0000 UTC",
-      )
-    Err(e) => fail(e)
-  }
+  let (sec, _) = normalize_to_unix_sec(12021L, 1L, 1L, 0L, 0L, 0L, 0L)
+  assert_eq(
+    fmt_time_at_zone(sec, 0, 0, "UTC"),
+    "12021-01-01 00:00:00 +0000 UTC",
+  )
 }
 
 ///|
