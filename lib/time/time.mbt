@@ -2183,6 +2183,11 @@ fn make_parse_time_fn() -> @value.Value {
     if pos_args.length() < 1 {
       return Err("parse_time: missing argument for x")
     }
+    if pos_args.length() > 3 {
+      return Err(
+        "parse_time: got \{pos_args.length()} arguments, want at most 3",
+      )
+    }
     let x = match pos_args[0] {
       @value.Value::String(s) => s.raw()
       v =>
