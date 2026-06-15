@@ -269,7 +269,6 @@ pub struct StringDict {
 pub fn StringDict::delete(Self, String) -> Bool
 pub fn StringDict::each(Self, (String, Value) -> Unit) -> Unit
 pub fn StringDict::freeze(Self) -> Unit
-pub fn StringDict::freeze_checked(Self) -> Result[Unit, String]
 pub fn StringDict::from_map(Map[String, Value]) -> Self
 pub fn StringDict::get(Self, String) -> Value?
 pub fn StringDict::has(Self, String) -> Bool
