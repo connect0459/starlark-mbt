@@ -98,7 +98,13 @@ let struct_hash_mult_init : UInt = 9839U
 let struct_hash_mult_step : UInt = 7349U
 
 ///|
-fn struct_hash(entries : Array[(String, @value.Value)]) -> Result[UInt, String] {
+fn struct_hash_depth(
+  entries : Array[(String, @value.Value)],
+  depth : Int,
+) -> Result[UInt, String] {
+  if depth < 1 {
+    return Err("hash exceeded maximum recursion depth")
+  }
   let mut x : UInt = struct_hash_seed
   let mut m : UInt = struct_hash_mult_init
   for e in entries {
@@ -107,7 +113,7 @@ fn struct_hash(entries : Array[(String, @value.Value)]) -> Result[UInt, String] 
       Err(msg) => return Err(msg)
       Ok(nh) => {
         x = x ^ (3U * nh)
-        match @value.Value::hash(e.1) {
+        match @value.hash_value_depth(e.1, depth - 1) {
           Err(msg) => return Err(msg)
           Ok(vh) => {
             x = x ^ (vh * m)
@@ -342,7 +348,7 @@ pub fn make_struct(
       struct_repr(ctor, sorted)
     })
     .with_repr_depth(fn(depth) { struct_repr_depth(ctor, sorted, depth) })
-    .with_hash(fn() { struct_hash(sorted) })
+    .with_hash_depth(fn(depth) { struct_hash_depth(sorted, depth) })
     .with_equals(fn(other, depth) { struct_equals(ctor, sorted, other, depth) })
     .with_attrs(fn(name) { struct_search_field(ctor, sorted, name) }, fn() {
       sorted.map(fn(e) { e.0 })
