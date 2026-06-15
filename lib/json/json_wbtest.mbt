@@ -97,6 +97,15 @@ test "make_decode_fn: unknown kwarg after x-string-kwarg is detected first" {
 }
 
 ///|
+test "make_decode_fn: no args gives missing-argument message matching go format" {
+  let result = call_decode([], [])
+  match result {
+    Err(msg) => assert_eq(msg, "json.decode: missing argument for x")
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "make_decode_fn: default kwarg clashes with second positional arg" {
   let str_arg = @value.Value::String(@value.StarlarkString::new("[1]"))
   let result = call_decode([str_arg, @value.Value::Int(BigInt::from_int(5))], [

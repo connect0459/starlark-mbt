@@ -1329,7 +1329,7 @@ fn make_decode_fn() -> @value.Value {
     // required check
     let x = match x_str {
       Some(s) => s
-      None => return Err("json.decode: missing required argument 'x'")
+      None => return Err("json.decode: missing argument for x")
     }
     let default_val = if pos_args.length() >= 2 {
       Some(pos_args[1])
