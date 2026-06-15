@@ -93,6 +93,16 @@ test "scan: rejects code points beyond U+10FFFF" {
 }
 
 ///|
+test "scan: rejects \\U escape when high bits wrap signed Int" {
+  assert_true(scan("'\\U80000000'").contains("code point out of range"))
+}
+
+///|
+test "scan: rejects \\U escape at max unsigned value" {
+  assert_true(scan("'\\Uffffffff'").contains("code point out of range"))
+}
+
+///|
 test "scan: rejects surrogate code points" {
   assert_true(scan("'\\U0000D800'").contains("invalid Unicode code point"))
 }
@@ -341,6 +351,14 @@ test "scan: code point out of range includes offending value in both slots" {
   let msg = scan("\"\\U00110000\"")
   assert_true(
     msg.contains("code point out of range: \\U00110000 (max \\U00110000)"),
+  )
+}
+
+///|
+test "scan: code point out of range preserves input case in first slot and lowercases second" {
+  let msg = scan("\"\\U0011000A\"")
+  assert_true(
+    msg.contains("code point out of range: \\U0011000A (max \\U0011000a)"),
   )
 }
 

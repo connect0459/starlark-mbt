@@ -10,9 +10,6 @@ let unicode_surr_lo : Int = 0xD800
 ///|
 let unicode_surr_hi : Int = 0xE000
 
-///|
-let unicode_max_codepoint : Int = 0x10FFFF
-
 // Octal/hex escape validation thresholds (starlark-go quote.go semantics).
 // The non-ASCII check (> max_ascii) must precede the invalid-range check
 // (>= max_byte_exclusive) because starlark-go reports a different error for
@@ -1087,15 +1084,6 @@ fn Scanner::decode_escape(
       match self.read_unicode_escape(str_start, "\\U", 8) {
         Err(e) => return Err(e)
         Ok(cp) => {
-          if cp > unicode_max_codepoint {
-            let seq = int_to_hex8_lower(cp)
-            return Err(
-              self.make_error(
-                str_start,
-                "code point out of range: \\U\{seq} (max \\U\{seq})",
-              ),
-            )
-          }
           if cp >= unicode_surr_lo && cp < unicode_surr_hi {
             return Err(
               self.make_error(
@@ -1129,12 +1117,12 @@ fn Scanner::read_unicode_escape(
   count : Int,
 ) -> Result[Int, @errors.SyntaxError] {
   let digits : Array[Char] = []
-  let mut result = 0
+  let mut result : Int64 = 0L
   for _ in 0..<count {
     let b = self.peek_byte()
     if is_xdigit_byte(b) {
       digits.push(b.to_int().unsafe_to_char())
-      result = result * 16 + xdigit_to_int(b)
+      result = result * 16L + xdigit_to_int(b).to_int64()
       self.read_byte() |> ignore
     } else {
       // Peek: is the next char a visible (non-terminator) char?
@@ -1157,7 +1145,25 @@ fn Scanner::read_unicode_escape(
       }
     }
   }
-  Ok(result)
+  if result > 0x10FFFFL {
+    let seq = String::from_array(digits)
+    let seq_lower = String::from_array(
+      digits.map(fn(c) {
+        if c >= 'A' && c <= 'F' {
+          (c.to_int() + 0x20).unsafe_to_char()
+        } else {
+          c
+        }
+      }),
+    )
+    return Err(
+      self.make_error(
+        pos,
+        "code point out of range: \{prefix}\{seq} (max \{prefix}\{seq_lower})",
+      ),
+    )
+  }
+  Ok(result.to_int())
 }
 
 ///|
@@ -1204,13 +1210,6 @@ fn int_to_hex4_upper(n : Int) -> String {
   buf.write_char(hex_char_upper((n >> 8) & 0xF))
   buf.write_char(hex_char_upper((n >> 4) & 0xF))
   buf.write_char(hex_char_upper(n & 0xF))
-  buf.to_string()
-}
-
-///|
-fn int_to_hex8_lower(n : Int) -> String {
-  let buf = StringBuilder::new()
-  @utf8util.write_hex8(buf, n)
   buf.to_string()
 }
 
