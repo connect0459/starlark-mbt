@@ -89,7 +89,7 @@ pub(all) enum Expr {
   ELiteral(LiteralVal, @errors.Position)
   EUnary(UnaryOp, Expr, @errors.Position)
   EBinary(Expr, BinaryOp, Expr, @errors.Position)
-  ECond(Expr, Expr, Expr, @errors.Position) // x if cond else y
+  ECond(Expr, Expr, Expr, @errors.Position) // cond, then, else (surface: then if cond else else)
   EIndex(Expr, Expr, @errors.Position) // a[i]
   ESlice(Expr, Expr?, Expr?, Expr?, @errors.Position) // a[start:end:step]
   EDot(Expr, String, @errors.Position) // x.attr
