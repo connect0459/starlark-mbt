@@ -354,6 +354,14 @@ test "scan: code point out of range includes offending value in both slots" {
   )
 }
 
+///|
+test "scan: code point out of range preserves input case in first slot and lowercases second" {
+  let msg = scan("\"\\U0011000A\"")
+  assert_true(
+    msg.contains("code point out of range: \\U0011000A (max \\U0011000a)"),
+  )
+}
+
 // --- Unbalanced closing bracket at depth 0 ---
 
 ///|
