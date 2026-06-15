@@ -239,7 +239,7 @@ Standard features — part of the Starlark spec, enabled by default:
 
 | Accessor | Mutator | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable the `set()` built-in (spec-standard) **and** `{...}` set literal / `{x for x in ...}` set comprehension syntax (mbt extension — starlark-go rejects this syntax) |
+| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable `{...}` set literal and `{x for x in ...}` set comprehension syntax (mbt extension — starlark-go rejects this syntax). The `set()` built-in is spec-standard and always available regardless of this flag. |
 | `allow_lambda()` | `with_allow_lambda(Bool)` | `true` | Enable `lambda` expressions |
 | `allow_bytes()` | `with_allow_bytes(Bool)` | `true` | Enable `bytes` literals (`b"..."`) |
 | `allow_float()` | `with_allow_float(Bool)` | `true` | Enable float literals and float arithmetic |
@@ -350,11 +350,11 @@ mbt enforces explicit depth limits on every recursive traversal path as a safety
 hardening measure, preventing native stack overflow on deeply-nested input.
 starlark-go relies on goroutine-stack growth and has no hard cap.
 
-| Path | Limit | Where documented |
+| Path | Limit | Details |
 | :--- | :--- | :--- |
-| Parser expression nesting | 80 | `internal/parser` (raises a parse error) |
-| `repr` / `str` / `print` value nesting | 200 | `value/README.mbt.md` |
-| `json.encode` / `json.decode` nesting | 10 000 | `lib/json/README.mbt.md` |
+| Parser expression nesting | 80 | Raises a parse error; `internal/parser` is an internal package with no public README |
+| `repr` / `str` / `print` value nesting | 200 | See `value/README.mbt.md` |
+| `json.encode` / `json.decode` nesting | 10 000 | See `lib/json/README.mbt.md` |
 
 Exceeding any limit raises a Starlark runtime or parse error rather than crashing
 the process.
