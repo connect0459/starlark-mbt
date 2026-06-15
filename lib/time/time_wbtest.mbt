@@ -270,6 +270,30 @@ test "parse_rfc3339: year shorter than four digits is rejected" {
 }
 
 ///|
+test "parse_rfc3339: hour 24 is rejected" {
+  match parse_rfc3339("2021-03-23T24:00:00Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \"24:00:00Z\" as \"15\""))
+  }
+}
+
+///|
+test "parse_rfc3339: minute 60 is rejected" {
+  match parse_rfc3339("2021-03-23T00:60:00Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \"60:00Z\" as \"04\""))
+  }
+}
+
+///|
+test "parse_rfc3339: second 60 is rejected" {
+  match parse_rfc3339("2021-03-23T00:00:60Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \"60Z\" as \"05\""))
+  }
+}
+
+///|
 test "parse_go_layout: completely wrong input includes remaining text and first token" {
   match parse_go_layout("not a date", "2006-01-02") {
     Ok(_) => fail("expected Err")

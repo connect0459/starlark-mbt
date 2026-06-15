@@ -1418,25 +1418,37 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     return Err(cp_err(i, "T"))
   }
   let i = i + 1
-  let (hour, i) = match parse_2digits(chars, i) {
+  let hour_pos = i
+  let (hour, i) = match parse_2digits(chars, hour_pos) {
     Some(v) => v
-    None => return Err(cp_err(i, "15"))
+    None => return Err(cp_err(hour_pos, "15"))
+  }
+  if hour > 23 {
+    return Err(cp_err(hour_pos, "15"))
   }
   if i >= len || chars[i] != ':' {
     return Err(cp_err(i, ":"))
   }
   let i = i + 1
-  let (minute, i) = match parse_2digits(chars, i) {
+  let minute_pos = i
+  let (minute, i) = match parse_2digits(chars, minute_pos) {
     Some(v) => v
-    None => return Err(cp_err(i, "04"))
+    None => return Err(cp_err(minute_pos, "04"))
+  }
+  if minute > 59 {
+    return Err(cp_err(minute_pos, "04"))
   }
   if i >= len || chars[i] != ':' {
     return Err(cp_err(i, ":"))
   }
   let i = i + 1
-  let (second, i) = match parse_2digits(chars, i) {
+  let second_pos = i
+  let (second, i) = match parse_2digits(chars, second_pos) {
     Some(v) => v
-    None => return Err(cp_err(i, "05"))
+    None => return Err(cp_err(second_pos, "05"))
+  }
+  if second > 59 {
+    return Err(cp_err(second_pos, "05"))
   }
   let (nsec, i) = if i < len && chars[i] == '.' {
     let j = i + 1
