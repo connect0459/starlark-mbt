@@ -355,6 +355,24 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
 }
 
 ///|
+fn aug_op_of_tok(tok : @lexer.Token) -> @syntax.AugOp? {
+  match tok {
+    @lexer.Token::PlusAssign => Some(@syntax.AugOp::AugAdd)
+    @lexer.Token::MinusAssign => Some(@syntax.AugOp::AugSub)
+    @lexer.Token::StarAssign => Some(@syntax.AugOp::AugMul)
+    @lexer.Token::SlashAssign => Some(@syntax.AugOp::AugDiv)
+    @lexer.Token::SlashSlashAssign => Some(@syntax.AugOp::AugFloorDiv)
+    @lexer.Token::PercentAssign => Some(@syntax.AugOp::AugMod)
+    @lexer.Token::AmpAssign => Some(@syntax.AugOp::AugBitAnd)
+    @lexer.Token::PipeAssign => Some(@syntax.AugOp::AugBitOr)
+    @lexer.Token::CircumflexAssign => Some(@syntax.AugOp::AugBitXor)
+    @lexer.Token::LtLtAssign => Some(@syntax.AugOp::AugLShift)
+    @lexer.Token::GtGtAssign => Some(@syntax.AugOp::AugRShift)
+    _ => None
+  }
+}
+
+///|
 fn Parser::parse_assign_or_expr_stmt(
   self : Parser,
 ) -> @syntax.Stmt raise ParseErr {
@@ -366,62 +384,15 @@ fn Parser::parse_assign_or_expr_stmt(
       let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAssign(lhs, rhs, p)
     }
-    @lexer.Token::PlusAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugAdd, rhs, p)
-    }
-    @lexer.Token::MinusAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugSub, rhs, p)
-    }
-    @lexer.Token::StarAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugMul, rhs, p)
-    }
-    @lexer.Token::SlashAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugDiv, rhs, p)
-    }
-    @lexer.Token::SlashSlashAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugFloorDiv, rhs, p)
-    }
-    @lexer.Token::PercentAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugMod, rhs, p)
-    }
-    @lexer.Token::AmpAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugBitAnd, rhs, p)
-    }
-    @lexer.Token::PipeAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugBitOr, rhs, p)
-    }
-    @lexer.Token::CircumflexAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugBitXor, rhs, p)
-    }
-    @lexer.Token::LtLtAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugLShift, rhs, p)
-    }
-    @lexer.Token::GtGtAssign => {
-      self.advance()
-      let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugRShift, rhs, p)
-    }
-    _ => @syntax.Stmt::SExpr(lhs)
+    tok =>
+      match aug_op_of_tok(tok) {
+        Some(op) => {
+          self.advance()
+          let rhs = self.parse_test_list_as_expr()
+          @syntax.Stmt::SAugAssign(lhs, op, rhs, p)
+        }
+        None => @syntax.Stmt::SExpr(lhs)
+      }
   }
 }
 
