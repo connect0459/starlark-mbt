@@ -1396,7 +1396,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     None => return Err(cp_err(month_pos, "01"))
   }
   if month < 1 || month > 12 {
-    return Err(cp_err(month_pos, "01"))
+    return Err("parsing time \"\{s}\": month out of range")
   }
   if i >= len || chars[i] != '-' {
     return Err(cp_err(i, "-"))
@@ -1408,7 +1408,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     None => return Err(cp_err(day_pos, "02"))
   }
   if day < 1 || day > days_in_month(year.to_int64(), month) {
-    return Err(cp_err(day_pos, "02"))
+    return Err("parsing time \"\{s}\": day out of range")
   }
   if i >= len || chars[i] != 'T' {
     return Err(cp_err(i, "T"))
@@ -1420,7 +1420,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     None => return Err(cp_err(hour_pos, "15"))
   }
   if hour > 23 {
-    return Err(cp_err(hour_pos, "15"))
+    return Err("parsing time \"\{s}\": hour out of range")
   }
   if i >= len || chars[i] != ':' {
     return Err(cp_err(i, ":"))
@@ -1432,7 +1432,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     None => return Err(cp_err(minute_pos, "04"))
   }
   if minute > 59 {
-    return Err(cp_err(minute_pos, "04"))
+    return Err("parsing time \"\{s}\": minute out of range")
   }
   if i >= len || chars[i] != ':' {
     return Err(cp_err(i, ":"))
@@ -1444,7 +1444,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     None => return Err(cp_err(second_pos, "05"))
   }
   if second > 59 {
-    return Err(cp_err(second_pos, "05"))
+    return Err("parsing time \"\{s}\": second out of range")
   }
   let (nsec, i) = if i < len && chars[i] == '.' {
     let j = i + 1

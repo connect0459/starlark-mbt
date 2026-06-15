@@ -254,62 +254,65 @@ test "parse_rfc3339: year shorter than four digits is rejected" {
 }
 
 ///|
-test "parse_rfc3339: month 13 is rejected with remaining text and token" {
+test "parse_rfc3339: out-of-range month emits field-specific error" {
   match parse_rfc3339("2021-13-22T10:42:13Z") {
     Ok(_) => fail("expected Err")
     Err(e) =>
-      assert_true(e.has_suffix("cannot parse \"13-22T10:42:13Z\" as \"01\""))
+      assert_eq(e, "parsing time \"2021-13-22T10:42:13Z\": month out of range")
   }
 }
 
 ///|
-test "parse_rfc3339: month 0 is rejected with remaining text and token" {
+test "parse_rfc3339: month 0 emits field-specific error" {
   match parse_rfc3339("2021-00-22T10:42:13Z") {
     Ok(_) => fail("expected Err")
     Err(e) =>
-      assert_true(e.has_suffix("cannot parse \"00-22T10:42:13Z\" as \"01\""))
+      assert_eq(e, "parsing time \"2021-00-22T10:42:13Z\": month out of range")
   }
 }
 
 ///|
-test "parse_rfc3339: day 32 is rejected with remaining text and token" {
+test "parse_rfc3339: out-of-range day emits field-specific error" {
   match parse_rfc3339("2021-03-32T10:42:13Z") {
     Ok(_) => fail("expected Err")
     Err(e) =>
-      assert_true(e.has_suffix("cannot parse \"32T10:42:13Z\" as \"02\""))
+      assert_eq(e, "parsing time \"2021-03-32T10:42:13Z\": day out of range")
   }
 }
 
 ///|
-test "parse_rfc3339: day 0 is rejected with remaining text and token" {
+test "parse_rfc3339: day 0 emits field-specific error" {
   match parse_rfc3339("2021-03-00T10:42:13Z") {
     Ok(_) => fail("expected Err")
     Err(e) =>
-      assert_true(e.has_suffix("cannot parse \"00T10:42:13Z\" as \"02\""))
+      assert_eq(e, "parsing time \"2021-03-00T10:42:13Z\": day out of range")
   }
 }
 
 ///|
-test "parse_rfc3339: hour 24 is rejected" {
+test "parse_rfc3339: out-of-range hour emits field-specific error" {
   match parse_rfc3339("2021-03-23T24:00:00Z") {
     Ok(_) => fail("expected Err")
-    Err(e) => assert_true(e.has_suffix("cannot parse \"24:00:00Z\" as \"15\""))
+    Err(e) =>
+      assert_eq(e, "parsing time \"2021-03-23T24:00:00Z\": hour out of range")
   }
 }
 
 ///|
-test "parse_rfc3339: minute 60 is rejected" {
+test "parse_rfc3339: out-of-range minute emits field-specific error" {
   match parse_rfc3339("2021-03-23T00:60:00Z") {
     Ok(_) => fail("expected Err")
-    Err(e) => assert_true(e.has_suffix("cannot parse \"60:00Z\" as \"04\""))
+    Err(e) =>
+      assert_eq(e, "parsing time \"2021-03-23T00:60:00Z\": minute out of range")
   }
 }
 
 ///|
-test "parse_rfc3339: second 60 is rejected" {
+test "parse_rfc3339: out-of-range second emits field-specific error" {
   match parse_rfc3339("2021-03-23T00:00:60Z") {
     Ok(_) => fail("expected Err")
-    Err(e) => assert_true(e.has_suffix("cannot parse \"60Z\" as \"05\""))
+    Err(e) =>
+      assert_eq(e, "parsing time \"2021-03-23T00:00:60Z\": second out of range")
   }
 }
 

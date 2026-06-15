@@ -293,7 +293,26 @@ test "time module: parse_time reports malformed RFC3339 input" {
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00"), "cannot parse")
       #|assert.fails(lambda: time.parse_time("2024-06-11T10:20:30"), "cannot parse")
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00.123"), "cannot parse")
-      #|assert.fails(lambda: time.parse_time("2020-13-01T00:00:00Z"), "cannot parse")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time rejects RFC3339 out-of-range field values" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(lambda: time.parse_time("2020-13-01T00:00:00Z"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-00-01T00:00:00Z"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-01-32T00:00:00Z"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-01-00T00:00:00Z"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T24:00:00Z"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T00:60:00Z"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:60Z"), "out of range")
     ),
   )
   if errs.length() != 0 {
