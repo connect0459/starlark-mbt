@@ -1289,8 +1289,11 @@ fn make_decode_fn() -> @value.Value {
           )
       }
     }
-    // process kwargs
+    // process kwargs; defer the x-string-kwarg positional-only error to after
+    // the loop so that unknown kwargs appearing later are detected first,
+    // matching go's UnpackArgs kwloop order (json.go:322 check runs post-loop)
     let mut default_from_kw : @value.Value? = None
+    let mut x_kwarg_string = false
     for kw in kw_args {
       let (k, v) = kw
       match k {
@@ -1309,8 +1312,7 @@ fn make_decode_fn() -> @value.Value {
             )
           } else {
             match v {
-              @value.Value::String(_) =>
-                return Err("json.decode: unexpected keyword argument x")
+              @value.Value::String(_) => x_kwarg_string = true
               _ =>
                 return Err(
                   "json.decode: for parameter x: got \{v.type_name()}, want string",
@@ -1319,6 +1321,10 @@ fn make_decode_fn() -> @value.Value {
           }
         _ => return Err("json.decode: unexpected keyword argument \"\{k}\"")
       }
+    }
+    // deferred positional-only rejection for x string-kwarg (post-loop, like go)
+    if x_kwarg_string {
+      return Err("json.decode: unexpected keyword argument x")
     }
     // required check
     let x = match x_str {

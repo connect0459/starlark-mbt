@@ -73,6 +73,30 @@ test "make_decode_fn: x kwarg with wrong type gives for-parameter message" {
 }
 
 ///|
+test "make_decode_fn: x string-kwarg is rejected as positional-only" {
+  let result = call_decode([], [
+    ("x", @value.Value::String(@value.StarlarkString::new("1"))),
+  ])
+  match result {
+    Err(msg) => assert_eq(msg, "json.decode: unexpected keyword argument x")
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_decode_fn: unknown kwarg after x-string-kwarg is detected first" {
+  let result = call_decode([], [
+    ("x", @value.Value::String(@value.StarlarkString::new("1"))),
+    ("foo", @value.Value::Int(BigInt::from_int(1))),
+  ])
+  match result {
+    Err(msg) =>
+      assert_eq(msg, "json.decode: unexpected keyword argument \"foo\"")
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "make_decode_fn: default kwarg clashes with second positional arg" {
   let str_arg = @value.Value::String(@value.StarlarkString::new("[1]"))
   let result = call_decode([str_arg, @value.Value::Int(BigInt::from_int(5))], [
