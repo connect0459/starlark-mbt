@@ -77,12 +77,14 @@ is a dialect difference.
 
 ## RFC 3339 parsing behavior
 
-The default `parse_time` format follows RFC 3339 with one intentional extension
-beyond the strict layout:
+The default `parse_time` format follows RFC 3339 strictly, matching Go's
+`time.Parse(time.RFC3339, …)` behavior:
 
 | Input form | Example | Behavior |
 | :--- | :--- | :--- |
-| Hour value 24 | `"2021-03-23T24:00:00Z"` | accepted, treated as midnight of next day |
+| Hour value 24 | `"2021-03-23T24:00:00Z"` | rejected (go parity) |
+| Minute value 60 | `"2021-03-23T00:60:00Z"` | rejected (go parity) |
+| Second value 60 | `"2021-03-23T00:00:60Z"` | rejected (go parity) |
 | Lowercase `t` separator | `"2021-03-22t23:20:50Z"` | rejected (go parity) |
 | Space separator | `"2021-03-22 23:20:50Z"` | rejected (go parity) |
 
