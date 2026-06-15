@@ -222,7 +222,7 @@ fn Value::hash_depth(self : Value, depth : Int) -> Result[UInt, String] {
     StringElems(_) => Err("unhashable: string.elems")
     StringCodepoints(_) => Err("unhashable: string.codepoints")
     BytesElems(_) => Err("unhashable: bytes.elems")
-    ExtVal(c) => c.get_hash()
+    ExtVal(c) => c.get_hash_depth(depth)
   }
 }
 

@@ -131,6 +131,7 @@ pub struct CustomValue {
   priv repr_fn : () -> String
   priv repr_depth_fn : ((Int) -> Result[String, String])?
   priv hash_fn : (() -> Result[UInt, String])?
+  priv hash_depth_fn : ((Int) -> Result[UInt, String])?
   priv equals_fn : ((Value, Int) -> Result[Bool, String])?
   priv get_attr_fn : ((String) -> Result[Value?, String])?
   priv internal_get_attr_fn : ((String) -> Result[Value?, String])?
@@ -177,6 +178,7 @@ pub fn CustomValue::new(
     repr_fn,
     repr_depth_fn: None,
     hash_fn: None,
+    hash_depth_fn: None,
     equals_fn: None,
     get_attr_fn: None,
     internal_get_attr_fn: None,
@@ -490,16 +492,63 @@ pub fn CustomValue::with_repr_depth(
 }
 
 ///|
+/// Invokes the depth-aware hash callback if registered, or falls back to the
+/// plain hash callback. Returns `Err` when the recursion budget (`depth`) is
+/// exhausted and no depth-aware callback is registered, to prevent the fallback
+/// from calling `Value::hash` (which restarts at `hash_limit`) inside a deeply
+/// nested traversal.
+///
+/// Parameters:
+///
+/// - `depth` : Remaining recursion depth passed down from the caller.
+pub fn CustomValue::get_hash_depth(
+  self : CustomValue,
+  depth : Int,
+) -> Result[UInt, String] {
+  match self.hash_depth_fn {
+    Some(f) => f(depth)
+    None =>
+      match self.hash_fn {
+        Some(f) =>
+          if depth < 1 {
+            Err("hash exceeded maximum recursion depth")
+          } else {
+            f()
+          }
+        None => Err("unhashable type: \{(self.type_name_fn)()}")
+      }
+  }
+}
+
+///|
 /// Invokes the hash callback, or returns `Err("unhashable type: T")` if no
 /// hash callback was registered.
 ///
 /// Returns `Ok(hash)` if a hash callback was registered, or
 /// `Err("unhashable type: T")` otherwise.
 pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
-  match self.hash_fn {
-    Some(f) => f()
-    None => Err("unhashable type: \{(self.type_name_fn)()}")
-  }
+  self.get_hash_depth(hash_limit)
+}
+
+///|
+/// Attaches a depth-aware hash callback. When registered, `Value::hash_depth`
+/// calls this instead of `hash_fn`, passing the remaining depth budget so field
+/// values can be hashed without restarting the counter. Use `hash_value_depth`
+/// (from the `value` package's public API) to hash nested `Value`s while
+/// propagating depth correctly.
+///
+/// Parameters:
+///
+/// - `self` : The `CustomValue` to extend.
+/// - `hash_depth_fn` : Callback `(depth: Int) -> Result[UInt, String]` that
+///   hashes the value with `depth` remaining levels.
+///
+/// Returns a new `CustomValue` with the depth-aware hash registered.
+pub fn CustomValue::with_hash_depth(
+  self : CustomValue,
+  hash_depth_fn : (Int) -> Result[UInt, String],
+) -> CustomValue {
+  { ..self, hash_depth_fn: Some(hash_depth_fn) }
 }
 
 ///|

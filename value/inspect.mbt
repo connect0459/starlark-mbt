@@ -4,6 +4,23 @@
 // operations carry no source position; richer EvalError context lives in @eval.
 
 ///|
+/// Hashes `v` with an explicit recursion-depth cap. Pass the received `depth`
+/// to `hash_value_depth` inside a `CustomValue::with_hash_depth` callback so
+/// nested `Value` fields are hashed without restarting the counter.
+///
+/// Parameters:
+///
+/// - `v` : The value to hash.
+/// - `depth` : Remaining recursion budget; use `hash_limit` as the initial
+///   value.
+///
+/// Returns `Ok(hash)` on success, or `Err` for unhashable types or when
+/// `depth` is exhausted.
+pub fn hash_value_depth(v : Value, depth : Int) -> Result[UInt, String] {
+  v.hash_depth(depth)
+}
+
+///|
 /// Structural equality with the default recursion-depth cap (`compare_limit`)
 /// to guard against cycles.
 ///
