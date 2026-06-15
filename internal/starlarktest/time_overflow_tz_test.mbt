@@ -79,6 +79,36 @@ test "time.parse_duration: rejects overflow from large unit multiplication" {
 }
 
 ///|
+test "time.from_timestamp: Int64 minimum second matches Go normalization" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp(-1 << 63).in_location("UTC")
+      #|assert.eq(str(t), "292277026596-12-04 15:30:08 +0000 UTC")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.from_timestamp: Int64 maximum second matches Go normalization" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.from_timestamp((1 << 63) - 1).in_location("UTC")
+      #|assert.eq(str(t), "292277026596-12-04 15:30:07 +0000 UTC")
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time.parse_duration: rejects overflow when accumulating components" {
   let errs = run_star_string(
     (

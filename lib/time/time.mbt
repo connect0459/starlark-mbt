@@ -160,8 +160,20 @@ fn decompose_unix_sec(
   tz_offset : Int,
 ) -> (Int64, Int, Int, Int, Int, Int) {
   let local_sec = sec + tz_offset.to_int64()
-  let unix_day = floor_div_int64(local_sec, secs_per_day)
-  let sec_of_day = (local_sec - unix_day * secs_per_day).to_int()
+  let unix_to_abs = 9223372028741760000L
+  let (unix_day, sec_of_day) = if local_sec >= -unix_to_abs {
+    let d = floor_div_int64(local_sec, secs_per_day)
+    (d, (local_sec - d * secs_per_day).to_int())
+  } else {
+    let c_rem = local_sec % secs_per_day
+    let pow2_64_mod = 25216L
+    let pow2_64_div = 213503982334601L
+    let carry = if c_rem + pow2_64_mod < 0L { 1L } else { 0L }
+    (
+      local_sec / secs_per_day + pow2_64_div - carry,
+      (c_rem + pow2_64_mod + carry * secs_per_day).to_int(),
+    )
+  }
   let (year, month, day) = unix_day_to_ymd_i64(unix_day)
   let hour = sec_of_day / secs_per_hour
   let minute = sec_of_day % secs_per_hour / secs_per_minute
