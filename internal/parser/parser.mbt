@@ -508,10 +508,7 @@ fn Parser::parse_while_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
 fn Parser::parse_suite(self : Parser) -> Array[@syntax.Stmt] raise ParseErr {
   if self.tok == @lexer.Token::Newline {
     self.advance()
-    if self.tok != @lexer.Token::Indent {
-      raise ParseErr(self.syntax_error("expected indented block"))
-    }
-    self.advance()
+    self.expect(@lexer.Token::Indent)
     let stmts : Array[@syntax.Stmt] = []
     while self.tok != @lexer.Token::Outdent && self.tok != @lexer.Token::EOF {
       let ss = self.parse_stmt()

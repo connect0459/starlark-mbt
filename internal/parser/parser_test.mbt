@@ -1743,3 +1743,56 @@ test "parser: want-primary error anchors at the token start, not one-past" {
     Ok(_) => fail("expected error")
   }
 }
+
+// --- Missing indented block (parse_suite) ---
+
+///|
+test "parser: missing indented block after if reports got <tok>, want indent" {
+  // go: `if True:\npass` → `2:5: got pass, want indent`
+  // `pass` at line 2 col 1 (4 chars); scanner pos one past = col 5.
+  match @parser.parse_file("test.star", "if True:\npass\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got pass, want indent"))
+      assert_eq(e.pos().to_string(), "test.star:2:5")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: missing indented block after def reports got <tok>, want indent" {
+  // go: `def f():\nx=1` → `2:2: got identifier, want indent`
+  // `x` at line 2 col 1 (1 char); scanner pos one past = col 2.
+  match @parser.parse_file("test.star", "def f():\nx=1\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got identifier, want indent"))
+      assert_eq(e.pos().to_string(), "test.star:2:2")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: missing indented block after for reports got <tok>, want indent" {
+  // go: `for x in [1]:\nx=1` → `2:2: got identifier, want indent`
+  match @parser.parse_file("test.star", "for x in [1]:\nx=1\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got identifier, want indent"))
+      assert_eq(e.pos().to_string(), "test.star:2:2")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: missing indented block after while reports got <tok>, want indent" {
+  // go: `while True:\nbreak` → `2:6: got break, want indent`
+  // `break` at line 2 col 1 (5 chars); scanner pos one past = col 6.
+  match @parser.parse_file("test.star", "while True:\nbreak\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("got break, want indent"))
+      assert_eq(e.pos().to_string(), "test.star:2:6")
+    }
+    Ok(_) => fail("expected error")
+  }
+}
