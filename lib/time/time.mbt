@@ -1477,6 +1477,9 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
       Some(v) => v
       None => return Err(cp_err(j, "07"))
     }
+    if tz_hour > 23 {
+      return Err("parsing time \"\{s}\": time zone offset hour out of range")
+    }
     if j >= len || chars[j] != ':' {
       return Err(cp_err(j, ":"))
     }
@@ -1484,6 +1487,9 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     let (tz_minute, j) = match parse_2digits(chars, j) {
       Some(v) => v
       None => return Err(cp_err(j, "00"))
+    }
+    if tz_minute > 59 {
+      return Err("parsing time \"\{s}\": time zone offset minute out of range")
     }
     (sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute), j)
   } else {

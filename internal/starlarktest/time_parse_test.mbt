@@ -313,6 +313,8 @@ test "time module: parse_time rejects RFC3339 out-of-range field values" {
       #|assert.fails(lambda: time.parse_time("2020-01-01T24:00:00Z"), "out of range")
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:60:00Z"), "out of range")
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:60Z"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00+25:00"), "out of range")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00+00:60"), "out of range")
     ),
   )
   if errs.length() != 0 {

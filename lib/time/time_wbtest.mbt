@@ -317,6 +317,28 @@ test "parse_rfc3339: out-of-range second emits field-specific error" {
 }
 
 ///|
+test "parse_rfc3339: out-of-range timezone offset hour emits field-specific error" {
+  match parse_rfc3339("2021-01-01T00:00:00+25:00") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_eq(
+        e, "parsing time \"2021-01-01T00:00:00+25:00\": time zone offset hour out of range",
+      )
+  }
+}
+
+///|
+test "parse_rfc3339: out-of-range timezone offset minute emits field-specific error" {
+  match parse_rfc3339("2021-01-01T00:00:00+00:60") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_eq(
+        e, "parsing time \"2021-01-01T00:00:00+00:60\": time zone offset minute out of range",
+      )
+  }
+}
+
+///|
 test "parse_go_layout: completely wrong input includes remaining text and first token" {
   match parse_go_layout("not a date", "2006-01-02") {
     Ok(_) => fail("expected Err")
