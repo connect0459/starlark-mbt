@@ -962,8 +962,12 @@ test "parser: None True False parse as identifier expressions" {
 
 ///|
 test "load with zero imported symbols is rejected" {
+  // Error anchors at '(' (col 5), not ')' or any later position.
   match @parser.parse_file("test.star", "load(\"m\")\n") {
-    Err(e) => assert_true(e.msg().contains("must import at least 1 symbol"))
+    Err(e) => {
+      assert_true(e.msg().contains("must import at least 1 symbol"))
+      assert_eq(e.pos().col(), 5)
+    }
     Ok(_) => fail("expected error for load with no symbols")
   }
 }
@@ -1032,11 +1036,14 @@ test "conditional expression without else clause produces correct message" {
 
 ///|
 test "load unquoted original name produces correct message" {
+  // scanner_error (one past 'e' in originalname) = col 25.
   match @parser.parse_file("test.star", "load(\"m\", x=originalname)\n") {
-    Err(e) =>
+    Err(e) => {
       assert_true(
         e.msg().contains("original name of loaded symbol must be quoted"),
       )
+      assert_eq(e.pos().col(), 25)
+    }
     Ok(_) => fail("expected error for unquoted original name")
   }
 }
@@ -1169,21 +1176,28 @@ test "scanner: invalid int literal reported at start position" {
 ///|
 test "parser: load non-string operand reports correct message" {
   // load("", 1) → load operand must be "name" or localname="name" (got int literal)
+  // scanner_error (one past '1') = col 11.
   match @parser.parse_file("test.star", "load(\"\", 1)\n") {
-    Err(e) =>
+    Err(e) => {
       assert_true(
         e.msg().contains("load operand must be") &&
         e.msg().contains("got int literal"),
       )
+      assert_eq(e.pos().col(), 11)
+    }
     Ok(_) => fail("expected error")
   }
 }
 
 ///|
 test "parser: load ident without = reports correct message" {
-  // load("a", x) → load operand must be "x" or x="originalname"
+  // scanner_error (one past ')') = col 13, not col 12 (start of ')').
   match @parser.parse_file("test.star", "load(\"a\", x)\n") {
-    Err(e) => assert_true(e.msg().contains("load operand must be"))
+    Err(e) => {
+      assert_true(e.msg().contains("load operand must be"))
+      assert_true(e.msg().contains("(want '=' after x)"))
+      assert_eq(e.pos().col(), 13)
+    }
     Ok(_) => fail("expected error")
   }
 }
@@ -1191,13 +1205,16 @@ test "parser: load ident without = reports correct message" {
 ///|
 test "parser: load non-string first arg reports correct message" {
   // load(1, 2) → first operand of load statement must be a string literal
+  // scanner_error (one past '1') = col 7.
   match @parser.parse_file("test.star", "load(1, 2)\n") {
-    Err(e) =>
+    Err(e) => {
       assert_true(
         e
         .msg()
         .contains("first operand of load statement must be a string literal"),
       )
+      assert_eq(e.pos().col(), 7)
+    }
     Ok(_) => fail("expected error")
   }
 }
@@ -1318,6 +1335,30 @@ test "load statement accepts trailing comma before closing paren" {
         _ => fail("expected SLoad")
       }
     Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "parser: load missing separator between operands reports want ','" {
+  match @parser.parse_file("test.star", "load(\"m\" \"n\")\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("want ','"))
+      assert_true(!e.msg().contains("want ')'"))
+    }
+    Ok(_) => fail("expected error for missing separator")
+  }
+}
+
+///|
+test "parser: load default operand error quotes punctuation token" {
+  // load("m",,"a") hits the default arm with tok=Comma; go_string() wraps
+  // punctuation in single quotes, so the message must contain (got ',').
+  match @parser.parse_file("test.star", "load(\"m\",,\"a\")\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("load operand must be"))
+      assert_true(e.msg().contains("(got ',')"))
+    }
+    Ok(_) => fail("expected error")
   }
 }
 
