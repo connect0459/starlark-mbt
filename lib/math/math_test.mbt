@@ -610,6 +610,110 @@ test "math_module: sqrt(-0.0) returns negative zero" {
 }
 
 ///|
+fn relative_close(a : Double, b : Double, tol : Double) -> Bool {
+  if a == b {
+    true
+  } else if a.is_nan() || b.is_nan() || b == 0.0 {
+    false
+  } else {
+    (a - b).abs() / b.abs() < tol
+  }
+}
+
+///|
+fn expect_float_relative(
+  label : String,
+  r : Result[@value.Value, String],
+  expected : Double,
+  tol : Double,
+) -> Unit raise Error {
+  match r {
+    Ok(@value.Value::Float(f)) =>
+      if !relative_close(f, expected, tol) {
+        fail("\{label}: expected ~\{expected}, got \{f}")
+      }
+    Ok(v) => fail("\{label}: expected Float, got \{v.type_name()}")
+    Err(e) => fail("\{label}: expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+test "math_module: cosh is correct for large arguments (22 <= |x| < 710)" {
+  let m = math_module()
+  // go/CPython reference values; the broken @math.cosh returns exp(x/2) instead
+  // of exp(x)/2 for this range, producing values orders of magnitude too small.
+  expect_float_relative(
+    "cosh(22)",
+    call1(m, "cosh", fv(22.0)),
+    1.792456423065796e9,
+    1.0e-10,
+  )
+  expect_float_relative(
+    "cosh(100)",
+    call1(m, "cosh", fv(100.0)),
+    1.3440585709080678e43,
+    1.0e-10,
+  )
+  expect_float_relative(
+    "cosh(709)",
+    call1(m, "cosh", fv(709.0)),
+    4.109203730777486e307,
+    1.0e-10,
+  )
+  // Symmetry: cosh is even
+  expect_float_relative(
+    "cosh(-22)",
+    call1(m, "cosh", fv(-22.0)),
+    1.792456423065796e9,
+    1.0e-10,
+  )
+}
+
+///|
+test "math_module: cosh overflow saturates to +inf" {
+  let m = math_module()
+  match call1(m, "cosh", fv(1000.0)) {
+    Ok(@value.Value::Float(f)) =>
+      if !(f.is_inf() && f > 0.0) {
+        fail("cosh(1000): expected +Inf, got \{f}")
+      }
+    Ok(v) => fail("cosh(1000): expected Float, got \{v.type_name()}")
+    Err(e) => fail("cosh(1000): expected Ok, got Err(\{e})")
+  }
+}
+
+///|
+test "math_module: cosh special cases (nan, infinity, small x)" {
+  let m = math_module()
+  // NaN in → NaN out
+  match call1(m, "cosh", fv(0.0 / 0.0)) {
+    Ok(@value.Value::Float(f)) =>
+      if !f.is_nan() {
+        fail("cosh(NaN): expected NaN, got \{f}")
+      }
+    Ok(v) => fail("cosh(NaN): expected Float, got \{v.type_name()}")
+    Err(e) => fail("cosh(NaN): expected Ok, got Err(\{e})")
+  }
+  // ±inf → +inf
+  match call1(m, "cosh", fv(1.0 / 0.0)) {
+    Ok(@value.Value::Float(f)) =>
+      if !(f.is_inf() && f > 0.0) {
+        fail("cosh(+inf): expected +Inf, got \{f}")
+      }
+    Ok(v) => fail("cosh(+inf): expected Float, got \{v.type_name()}")
+    Err(e) => fail("cosh(+inf): expected Ok, got Err(\{e})")
+  }
+  // Small x: cosh(0) = 1, cosh(1) ≈ 1.5430806348152437
+  expect_float_relative("cosh(0)", call1(m, "cosh", fv(0.0)), 1.0, 1.0e-10)
+  expect_float_relative(
+    "cosh(1)",
+    call1(m, "cosh", fv(1.0)),
+    1.5430806348152437,
+    1.0e-10,
+  )
+}
+
+///|
 test "math_module: rounding functions reject wrong argument counts and keyword args" {
   let m = math_module()
   expect_err(call_raw(m, "ceil", [], []), "got 0 arguments, want 1")
