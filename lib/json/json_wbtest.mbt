@@ -73,6 +73,33 @@ test "make_decode_fn: x kwarg with wrong type gives for-parameter message" {
 }
 
 ///|
+test "make_decode_fn: default kwarg clashes with second positional arg" {
+  let str_arg = @value.Value::String(@value.StarlarkString::new("[1]"))
+  let result = call_decode([str_arg, @value.Value::Int(BigInt::from_int(5))], [
+    ("default", @value.Value::Int(BigInt::from_int(9))),
+  ])
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.decode: got multiple values for keyword argument \"default\"",
+      )
+    Ok(v) => fail("expected error for duplicate default, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_decode_fn: positional type error precedes unknown kwarg error" {
+  let result = call_decode([@value.Value::Int(BigInt::from_int(2))], [
+    ("foo", @value.Value::Int(BigInt::from_int(3))),
+  ])
+  match result {
+    Err(msg) =>
+      assert_eq(msg, "json.decode: for parameter x: got int, want string")
+    Ok(v) => fail("expected type error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "make_indent_fn: indent_json errors are prefixed with json.indent:" {
   let indent_fn = make_indent_fn()
   guard indent_fn is @value.Value::Builtin(bf)
