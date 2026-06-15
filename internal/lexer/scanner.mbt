@@ -604,7 +604,26 @@ fn Scanner::scan_operator(
     0x7E => Ok({ tok: Tilde, pos: start }) // ~
     0x3B => Ok({ tok: Semi, pos: start }) // ;
     0x3A => Ok({ tok: Colon, pos: start }) // :
-    _ => Err(self.make_error(start, "unexpected input character"))
+    _ => {
+      // For ASCII (cn < 0x80) the single byte is the full rune.
+      // For multi-byte UTF-8: read_byte() already consumed the leading byte;
+      // decode the full rune starting at that position (self.off - 1), then
+      // consume the remaining continuation bytes.
+      let ch = if cn < 0x80 {
+        cn.unsafe_to_char()
+      } else {
+        let (cp, rlen) = @utf8util.utf8_decode_rune(self.src, self.off - 1)
+        for _ in 1..<rlen {
+          self.read_byte() |> ignore
+        }
+        if cp > 0 {
+          cp.unsafe_to_char()
+        } else {
+          cn.unsafe_to_char()
+        }
+      }
+      Err(self.make_error(start, "unexpected input character '\{ch}'"))
+    }
   }
 }
 
@@ -799,10 +818,10 @@ fn Scanner::scan_string(
   is_bytes : Bool,
   is_raw : Bool,
 ) -> Result[ScannedToken, @errors.SyntaxError] {
-  // Capture the position of the opening quote, not the prefix character
-  // (b, r, br, etc.). Escape-sequence errors are reported here, matching
-  // starlark-go scan.go which sets `start := sc.pos` after consuming the
-  // prefix but before consuming the quote.
+  // `start` is the pre-prefix token start (used by starlark-go as val.pos for
+  // unterminated/newline errors). `quote_start` is captured just before the
+  // opening quote, after any prefix chars (r, b, rb) are consumed; starlark-go
+  // anchors escape-sequence errors here.
   let quote_start = self.current_pos()
   let quote = self.peek_byte()
   let triple = self.peek_byte_ahead(1) == quote &&
@@ -814,12 +833,14 @@ fn Scanner::scan_string(
   }
   let buf : Array[Byte] = []
   if triple {
-    match self.scan_string_triple(quote_start, quote, is_bytes, is_raw, buf) {
+    match
+      self.scan_string_triple(start, quote_start, quote, is_bytes, is_raw, buf) {
       Err(e) => return Err(e)
       Ok(_) => ()
     }
   } else {
-    match self.scan_string_single(quote_start, quote, is_bytes, is_raw, buf) {
+    match
+      self.scan_string_single(start, quote_start, quote, is_bytes, is_raw, buf) {
       Err(e) => return Err(e)
       Ok(_) => ()
     }
@@ -835,7 +856,8 @@ fn Scanner::scan_string(
 ///|
 fn Scanner::scan_string_single(
   self : Scanner,
-  start : @errors.Position,
+  tok_start : @errors.Position,
+  esc_start : @errors.Position,
   quote : Byte,
   is_bytes : Bool,
   is_raw : Bool,
@@ -843,21 +865,21 @@ fn Scanner::scan_string_single(
 ) -> Result[Unit, @errors.SyntaxError] {
   while true {
     if self.peek_byte() == b'\x00' {
-      return Err(self.unterminated_string_error(start))
+      return Err(self.unterminated_string_error(tok_start))
     }
     let ch = self.read_byte()
     if ch == quote {
       break
     }
     if ch == b'\n' || ch == b'\r' {
-      return Err(self.make_error(start, "unexpected newline in string"))
+      return Err(self.make_error(tok_start, "unexpected newline in string"))
     }
     if ch == b'\\' {
       if is_raw {
         // Raw: backslash is kept literally; next char too (except \<newline>)
         buf.push(b'\\')
         if self.peek_byte() == b'\x00' {
-          return Err(self.unterminated_string_error(start))
+          return Err(self.unterminated_string_error(tok_start))
         }
         let next = self.read_byte()
         if next == b'\r' {
@@ -867,10 +889,10 @@ fn Scanner::scan_string_single(
         }
       } else {
         if self.peek_byte() == b'\x00' {
-          return Err(self.unterminated_string_error(start))
+          return Err(self.unterminated_string_error(tok_start))
         }
         let next = self.read_byte()
-        match self.decode_escape(start, next, is_bytes, buf) {
+        match self.decode_escape(esc_start, next, is_bytes, buf) {
           Err(e) => return Err(e)
           Ok(_) => ()
         }
@@ -885,7 +907,8 @@ fn Scanner::scan_string_single(
 ///|
 fn Scanner::scan_string_triple(
   self : Scanner,
-  start : @errors.Position,
+  tok_start : @errors.Position,
+  esc_start : @errors.Position,
   quote : Byte,
   is_bytes : Bool,
   is_raw : Bool,
@@ -894,7 +917,7 @@ fn Scanner::scan_string_triple(
   let mut quote_count = 0
   while true {
     if self.peek_byte() == b'\x00' {
-      return Err(self.unterminated_string_error(start))
+      return Err(self.unterminated_string_error(tok_start))
     }
     let ch = self.read_byte()
     if ch == quote {
@@ -913,7 +936,7 @@ fn Scanner::scan_string_triple(
         if is_raw {
           buf.push(b'\\')
           if self.peek_byte() == b'\x00' {
-            return Err(self.unterminated_string_error(start))
+            return Err(self.unterminated_string_error(tok_start))
           }
           let next = self.read_byte()
           if next == b'\r' {
@@ -923,10 +946,10 @@ fn Scanner::scan_string_triple(
           }
         } else {
           if self.peek_byte() == b'\x00' {
-            return Err(self.unterminated_string_error(start))
+            return Err(self.unterminated_string_error(tok_start))
           }
           let next = self.read_byte()
-          match self.decode_escape(start, next, is_bytes, buf) {
+          match self.decode_escape(esc_start, next, is_bytes, buf) {
             Err(e) => return Err(e)
             Ok(_) => ()
           }
@@ -1003,10 +1026,10 @@ fn Scanner::decode_escape(
       buf.push(val.to_byte())
     }
     0x78 => {
-      // Hex: \xNN (exactly 2 digits).
-      // "truncated" only when a required digit slot is occupied by EOF or a
-      // string delimiter; any other character (including non-hex punctuation)
-      // is "invalid", matching starlark-go quote.go:198-203.
+      // Hex: \xNN (exactly 2 digits), matching starlark-go quote.go semantics.
+      // Mirroring starlark-go's fixed-width-slot approach (slot = 2 chars):
+      //   - fewer than 2 chars available before a string terminator → "truncated"
+      //   - 2 chars present but not all hex → "invalid" (full slot printed)
       fn is_str_end(b : Byte) -> Bool {
         b == b'\x00' || b == b'"' || b == b'\'' || b == b'\n'
       }
@@ -1029,10 +1052,11 @@ fn Scanner::decode_escape(
             ),
           )
         }
+        // h1 consumed, h2 is a terminator: only 1 char in the slot → truncated
         return Err(
           self.make_error(
             str_start,
-            "invalid escape sequence \\x\{h1.to_int().unsafe_to_char()}",
+            "truncated escape sequence \\x\{h1.to_int().unsafe_to_char()}",
           ),
         )
       }
@@ -1058,7 +1082,15 @@ fn Scanner::decode_escape(
       self.read_byte() |> ignore
       let val = xdigit_to_int(h1) * 16 + xdigit_to_int(h2)
       if !is_bytes && val > max_ascii {
-        return Err(self.make_error(str_start, "non-ASCII hex escape"))
+        let c1 = h1.to_int().unsafe_to_char()
+        let c2 = h2.to_int().unsafe_to_char()
+        let hex4 = int_to_hex4_upper(val)
+        return Err(
+          self.make_error(
+            str_start,
+            "non-ASCII hex escape \\x\{c1}\{c2} (use \\u\{hex4} for the UTF-8 encoding of U+\{hex4})",
+          ),
+        )
       }
       buf.push(val.to_byte())
     }
@@ -1109,48 +1141,54 @@ fn Scanner::decode_escape(
 ///|
 // Read count hex digits for a Unicode escape (\uNNNN or \UNNNNNNNN).
 // prefix is the already-consumed prefix ("\\u" or "\\U") for error messages.
-// Distinguishes truncated (not enough chars) from invalid (non-hex char present).
+// Mirrors starlark-go's fixed-width-slot approach: always tries to consume
+// exactly `count` source chars before deciding truncated vs invalid.
+//   - a string terminator before the slot is full → "truncated" + partial
+//   - full slot consumed but not valid hex → "invalid" + full slot
 fn Scanner::read_unicode_escape(
   self : Scanner,
   pos : @errors.Position,
   prefix : String,
   count : Int,
 ) -> Result[Int, @errors.SyntaxError] {
-  let digits : Array[Char] = []
-  let mut result : Int64 = 0L
+  let slot : Array[Byte] = []
   for _ in 0..<count {
     let b = self.peek_byte()
+    if b == b'\x00' || b == b'"' || b == b'\'' || b == b'\n' {
+      let partial = String::from_array(
+        slot.map(fn(by) { by.to_int().unsafe_to_char() }),
+      )
+      return Err(
+        self.make_error(pos, "truncated escape sequence \{prefix}\{partial}"),
+      )
+    }
+    self.read_byte() |> ignore
+    slot.push(b)
+  }
+  let slot_str = String::from_array(
+    slot.map(fn(by) { by.to_int().unsafe_to_char() }),
+  )
+  let mut result : Int64 = 0L
+  let mut all_hex = true
+  for b in slot {
     if is_xdigit_byte(b) {
-      digits.push(b.to_int().unsafe_to_char())
       result = result * 16L + xdigit_to_int(b).to_int64()
-      self.read_byte() |> ignore
     } else {
-      // Peek: is the next char a visible (non-terminator) char?
-      let is_visible = b != b'\x00' && b != b'"' && b != b'\'' && b != b'\n'
-      let partial = String::from_array(digits)
-      if is_visible {
-        // Consume the non-hex char and call it "invalid"
-        self.read_byte() |> ignore
-        let bad = b.to_int().unsafe_to_char()
-        return Err(
-          self.make_error(
-            pos,
-            "invalid escape sequence \{prefix}\{partial}\{bad}",
-          ),
-        )
-      } else {
-        return Err(
-          self.make_error(pos, "truncated escape sequence \{prefix}\{partial}"),
-        )
-      }
+      all_hex = false
+      break
     }
   }
+  if !all_hex {
+    return Err(
+      self.make_error(pos, "invalid escape sequence \{prefix}\{slot_str}"),
+    )
+  }
   if result > 0x10FFFFL {
-    let seq = String::from_array(digits)
     let seq_lower = String::from_array(
-      digits.map(fn(c) {
+      slot.map(fn(b) {
+        let c = b.to_int().unsafe_to_char()
         if c >= 'A' && c <= 'F' {
-          (c.to_int() + 0x20).unsafe_to_char()
+          (b.to_int() + 0x20).unsafe_to_char()
         } else {
           c
         }
@@ -1159,7 +1197,7 @@ fn Scanner::read_unicode_escape(
     return Err(
       self.make_error(
         pos,
-        "code point out of range: \{prefix}\{seq} (max \{prefix}\{seq_lower})",
+        "code point out of range: \{prefix}\{slot_str} (max \{prefix}\{seq_lower})",
       ),
     )
   }
@@ -1360,6 +1398,6 @@ fn parse_float_str(s : String) -> Result[Double, String] {
     return Err("empty float string")
   }
   Ok(@string.parse_double(s)) catch {
-    _ => Err("invalid float literal: \{s}")
+    _ => Err("invalid float literal")
   }
 }
