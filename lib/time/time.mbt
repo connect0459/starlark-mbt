@@ -2302,23 +2302,15 @@ fn make_parse_time_fn() -> @value.Value {
         }
       }
     }
-    let make_zoned = fn(
-      sec : Int64,
-      ns : Int,
-      off : Int,
-      zone : String,
-    ) -> @value.Value {
-      make_time_at_zone(sec, ns, off, zone)
-    }
     if location == "UTC" || location == "" {
-      Ok(make_zoned(parsed_sec, nsec, tz_off, tz_name))
+      Ok(make_time_at_zone(parsed_sec, nsec, tz_off, tz_name))
     } else {
       if !is_valid_timezone_impl(location) {
         return Err("unknown time zone \{location}")
       }
       if has_tz {
         // Value carried an explicit timezone → parsed_sec is already UTC.
-        Ok(make_zoned(parsed_sec, nsec, tz_off, tz_name))
+        Ok(make_time_at_zone(parsed_sec, nsec, tz_off, tz_name))
       } else {
         // parsed_sec is "local time treated as UTC" → adjust for location.
         let (offset, _) = match get_tz_abbr_at_impl(location, parsed_sec) {
