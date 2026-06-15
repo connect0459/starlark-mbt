@@ -962,8 +962,12 @@ test "parser: None True False parse as identifier expressions" {
 
 ///|
 test "load with zero imported symbols is rejected" {
+  // Error anchors at '(' (col 5), not ')' or any later position.
   match @parser.parse_file("test.star", "load(\"m\")\n") {
-    Err(e) => assert_true(e.msg().contains("must import at least 1 symbol"))
+    Err(e) => {
+      assert_true(e.msg().contains("must import at least 1 symbol"))
+      assert_eq(e.pos().col(), 5)
+    }
     Ok(_) => fail("expected error for load with no symbols")
   }
 }
@@ -1181,9 +1185,13 @@ test "parser: load non-string operand reports correct message" {
 
 ///|
 test "parser: load ident without = reports correct message" {
-  // load("a", x) → load operand must be "x" or x="originalname"
+  // scanner_error (one past ')') = col 13, not col 12 (start of ')').
   match @parser.parse_file("test.star", "load(\"a\", x)\n") {
-    Err(e) => assert_true(e.msg().contains("load operand must be"))
+    Err(e) => {
+      assert_true(e.msg().contains("load operand must be"))
+      assert_true(e.msg().contains("(want '=' after x)"))
+      assert_eq(e.pos().col(), 13)
+    }
     Ok(_) => fail("expected error")
   }
 }
@@ -1318,6 +1326,17 @@ test "load statement accepts trailing comma before closing paren" {
         _ => fail("expected SLoad")
       }
     Err(e) => fail("unexpected error: \{e.msg()}")
+  }
+}
+
+///|
+test "parser: load missing separator between operands reports want ','" {
+  match @parser.parse_file("test.star", "load(\"m\" \"n\")\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("want ','"))
+      assert_true(!e.msg().contains("want ')'"))
+    }
+    Ok(_) => fail("expected error for missing separator")
   }
 }
 
