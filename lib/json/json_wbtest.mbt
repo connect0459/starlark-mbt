@@ -46,7 +46,8 @@ test "make_decode_fn: unknown kwarg rejected even alongside valid default kwarg"
     ("foo", @value.Value::Int(BigInt::from_int(2))),
   ])
   match result {
-    Err(msg) => assert_true(msg.contains("unexpected keyword argument"))
+    Err(msg) =>
+      assert_eq(msg, "json.decode: unexpected keyword argument \"foo\"")
     Ok(v) => fail("expected error for unknown kwarg, got: \{v.repr()}")
   }
 }
