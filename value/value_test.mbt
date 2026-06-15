@@ -487,3 +487,69 @@ test "to_str_checked: string returns raw value without quotes" {
     Err(e) => fail("unexpected error: \{e}")
   }
 }
+
+///|
+test "hash: shallow tuple returns a stable hash value" {
+  let t = Value::Tuple([Value::Int(1N), Value::Int(2N)])
+  match t.hash() {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}
+
+///|
+test "hash: deeply nested tuple exceeding depth limit returns a graceful error" {
+  let n = hash_limit + 1
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<n {
+    v = Value::Tuple([v])
+  }
+  match v.hash() {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep tuple nesting")
+  }
+}
+
+///|
+test "hash: nesting exactly at depth limit succeeds" {
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<hash_limit {
+    v = Value::Tuple([v])
+  }
+  assert_true(v.hash() is Ok(_))
+}
+
+///|
+test "hash: ExtVal with with_hash_depth threads depth to callback" {
+  let received_depth : Ref[Int] = { val: -1 }
+  let cv = CustomValue::new(fn() { "T" }, fn() { true }, fn() { "T()" }).with_hash_depth(fn(
+      d,
+    ) {
+      received_depth.val = d
+      Ok(42U)
+    },
+  )
+  assert_true(hash_value_depth(Value::ExtVal(cv), 7) is Ok(42U))
+  assert_eq(received_depth.val, 7)
+}
+
+///|
+test "hash: ExtVal with only with_hash returns error when depth is exhausted" {
+  let cv = CustomValue::new(fn() { "T" }, fn() { true }, fn() { "T()" }).with_hash(fn() {
+      Ok(99U)
+    },
+  )
+  match hash_value_depth(Value::ExtVal(cv), 0) {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth error")
+  }
+}
+
+///|
+test "hash: ExtVal with only with_hash succeeds when depth is available" {
+  let cv = CustomValue::new(fn() { "T" }, fn() { true }, fn() { "T()" }).with_hash(fn() {
+      Ok(99U)
+    },
+  )
+  assert_true(hash_value_depth(Value::ExtVal(cv), 1) is Ok(99U))
+}

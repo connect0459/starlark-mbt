@@ -201,14 +201,43 @@ fn hash_float(f : Double) -> UInt {
 }
 
 ///|
-fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
+fn Value::hash_depth(self : Value, depth : Int) -> Result[UInt, String] {
+  match self {
+    None => Ok(0U)
+    Bool(false) => Ok(0U)
+    Bool(true) => Ok(1U)
+    Int(n) => Ok(hash_bigint(n))
+    Float(f) => Ok(hash_float(f))
+    String(s) => Ok(fnv1a(s.bytes))
+    Bytes(b) => Ok(fnv1a(b))
+    Tuple(t) => hash_tuple(t, depth)
+    List(_) => Err("unhashable type: list")
+    Dict(_) => Err("unhashable type: dict")
+    Set(_) => Err("unhashable type: set")
+    Range(_) => Err("unhashable: range")
+    Function(f) => Ok(fnv1a(@utf8.encode(f.name())))
+    Builtin(b) => Ok(fnv1a(@utf8.encode(b.name())))
+    BoundMethod(m) => Ok(hash_int(m.id))
+    Module(_) => Err("unhashable: module")
+    StringElems(_) => Err("unhashable: string.elems")
+    StringCodepoints(_) => Err("unhashable: string.codepoints")
+    BytesElems(_) => Err("unhashable: bytes.elems")
+    ExtVal(c) => c.get_hash_depth(depth)
+  }
+}
+
+///|
+fn hash_tuple(t : Array[Value], depth : Int) -> Result[UInt, String] {
+  if depth < 1 {
+    return Err("hash exceeded maximum recursion depth")
+  }
   let mut x : UInt = tuple_hash_init
   let mut mult : UInt = tuple_hash_prime
   // Python's tuplehash step: mult += 82520 + len + len per element.
   // The "len + len" form is a direct port of CPython's uint arithmetic.
   let n = (t.length() + t.length()).reinterpret_as_uint()
   for elem in t {
-    match elem.hash() {
+    match elem.hash_depth(depth - 1) {
       Err(e) => return Err(e)
       Ok(y) => {
         x = x ^ (y * mult)
@@ -231,28 +260,7 @@ fn hash_tuple(t : Array[Value]) -> Result[UInt, String] {
 /// Returns `Ok(hash)` for hashable values, or `Err` with a message like
 /// `"unhashable type: list"` for unhashable types.
 pub fn Value::hash(self : Value) -> Result[UInt, String] {
-  match self {
-    None => Ok(0U)
-    Bool(false) => Ok(0U)
-    Bool(true) => Ok(1U)
-    Int(n) => Ok(hash_bigint(n))
-    Float(f) => Ok(hash_float(f))
-    String(s) => Ok(fnv1a(s.bytes))
-    Bytes(b) => Ok(fnv1a(b))
-    Tuple(t) => hash_tuple(t)
-    List(_) => Err("unhashable type: list")
-    Dict(_) => Err("unhashable type: dict")
-    Set(_) => Err("unhashable type: set")
-    Range(_) => Err("unhashable: range")
-    Function(f) => Ok(fnv1a(@utf8.encode(f.name())))
-    Builtin(b) => Ok(fnv1a(@utf8.encode(b.name())))
-    BoundMethod(m) => Ok(hash_int(m.id))
-    Module(_) => Err("unhashable: module")
-    StringElems(_) => Err("unhashable: string.elems")
-    StringCodepoints(_) => Err("unhashable: string.codepoints")
-    BytesElems(_) => Err("unhashable: bytes.elems")
-    ExtVal(c) => c.get_hash()
-  }
+  self.hash_depth(hash_limit)
 }
 
 ///|
@@ -335,6 +343,9 @@ fn int_float_cmp(n : BigInt, f : Double) -> Int {
 
 ///|
 pub let compare_limit : Int = 10
+
+///|
+pub let hash_limit : Int = 200
 
 ///|
 /// Compares `a` and `b` using Starlark's total ordering, returning a negative

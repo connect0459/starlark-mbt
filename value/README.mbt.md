@@ -148,9 +148,11 @@ These guard against infinite recursion on cyclic data structures.
 
 | Symbol | Signature | Description |
 | :--- | :--- | :--- |
-| `compare_limit` | `Int` | Default recursion depth (value: `10`) |
+| `compare_limit` | `Int` | Default recursion depth for comparison (value: `10`) |
+| `hash_limit` | `Int` | Default recursion depth for `Value::hash` (value: `200`) |
 | `equal_depth` | `(Value, Value, Int) -> Result[Bool, String]` | Equality with explicit depth limit |
 | `compare_depth` | `(String, Value, Value, Int) -> Result[Bool, String]` | Comparison operator (`"=="`, `"<"`, …) with explicit depth limit |
+| `hash_value_depth` | `(Value, Int) -> Result[UInt, String]` | Hash with explicit depth limit; use inside `CustomValue::with_hash_depth` callbacks |
 | `compare_values` | `(Value, Value, op? : String) -> Result[Int, String]` | **Internal / eval-engine only** — embedders should use `compare_depth` instead |
 | `compare_values_depth` | `(Value, Value, Int, op? : String) -> Result[Int, String]` | **Internal / eval-engine only** — embedders should use `compare_depth` instead |
 
@@ -371,8 +373,10 @@ Each appears as a dedicated `Value` variant and reports its own `type()` string.
 system as `Value::ExtVal(cv)`. Construct with `CustomValue::new(repr_fn, truth_fn,
 type_name_fn)` and attach optional protocol implementations via fluent `.with_*` methods:
 `with_attrs`, `with_call`, `with_binary`, `with_unary`, `with_compare`, `with_contains`,
-`with_equals`, `with_hash`, `with_iterate`, `with_length`, `with_items`, `with_freeze`,
-`with_get_index`, `with_set_index`, `with_set_key`, `with_set_field`, `with_slice`.
+`with_equals`, `with_hash`, `with_hash_depth`, `with_iterate`, `with_length`, `with_items`,
+`with_freeze`, `with_get_index`, `with_set_index`, `with_set_key`, `with_set_field`,
+`with_slice`. Use `with_hash_depth` instead of `with_hash` when the value contains nested
+`Value` fields — pass the received `depth` to `hash_value_depth` so the budget is not reset.
 
 `BuiltinCallCtx` is passed to a built-in's body so it can call back into the evaluator:
 

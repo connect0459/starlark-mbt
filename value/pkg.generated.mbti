@@ -24,6 +24,10 @@ pub fn equal(Value, Value) -> Result[Bool, String]
 
 pub fn equal_depth(Value, Value, Int) -> Result[Bool, String]
 
+pub let hash_limit : Int
+
+pub fn hash_value_depth(Value, Int) -> Result[UInt, String]
+
 pub fn iterate(Value) -> Result[StarlarkIterator, String]
 
 pub fn len_of(Value) -> Int64
@@ -68,6 +72,7 @@ pub fn CustomValue::get_compare(Self, Value) -> Int?
 pub fn CustomValue::get_contains(Self, Value) -> Result[Bool, String]?
 pub fn CustomValue::get_equals(Self, Value, Int) -> Result[Bool, String]
 pub fn CustomValue::get_hash(Self) -> Result[UInt, String]
+pub fn CustomValue::get_hash_depth(Self, Int) -> Result[UInt, String]
 pub fn CustomValue::get_index(Self, Int) -> Result[Value, String]
 pub fn CustomValue::get_internal_attr(Self, String) -> Result[Value?, String]
 pub fn CustomValue::get_items(Self) -> Result[Array[(Value, Value)], String]?
@@ -89,6 +94,7 @@ pub fn CustomValue::with_equals(Self, (Value, Int) -> Result[Bool, String]) -> S
 pub fn CustomValue::with_freeze(Self, () -> Unit) -> Self
 pub fn CustomValue::with_get_index(Self, (Int) -> Result[Value, String]) -> Self
 pub fn CustomValue::with_hash(Self, () -> Result[UInt, String]) -> Self
+pub fn CustomValue::with_hash_depth(Self, (Int) -> Result[UInt, String]) -> Self
 pub fn CustomValue::with_internal_get_attr(Self, (String) -> Result[Value?, String]) -> Self
 pub fn CustomValue::with_items(Self, () -> Result[Array[(Value, Value)], String]) -> Self
 pub fn CustomValue::with_iterate(Self, () -> Result[StarlarkIterator, String]) -> Self

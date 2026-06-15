@@ -331,3 +331,33 @@ test "struct: depth guard fires at exactly compare_limit nested struct levels" {
     Err("comparison exceeded maximum recursion depth"),
   )
 }
+
+// --- hash depth threading across nested struct boundaries ---
+
+///|
+test "struct: hashing a struct with shallow values succeeds" {
+  let s = make_struct(default_ctor, [("x", @value.Value::Int(1N))])
+  assert_true(s.hash() is Ok(_))
+}
+
+///|
+test "struct: hashing a deeply nested struct exceeding hash_limit returns a graceful error" {
+  let n = @value.hash_limit + 1
+  let mut v : @value.Value = @value.Value::Int(1N)
+  for _ in 0..<n {
+    v = make_struct(default_ctor, [("x", v)])
+  }
+  match v.hash() {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep struct nesting")
+  }
+}
+
+///|
+test "struct: hashing a struct nested within hash_limit succeeds" {
+  let mut v : @value.Value = @value.Value::Int(1N)
+  for _ in 0..<@value.hash_limit {
+    v = make_struct(default_ctor, [("x", v)])
+  }
+  assert_true(v.hash() is Ok(_))
+}
