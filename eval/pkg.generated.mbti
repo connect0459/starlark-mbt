@@ -58,6 +58,7 @@ pub struct Module {
   // private fields
 }
 pub fn Module::freeze(Self) -> Unit
+pub fn Module::freeze_checked(Self) -> Result[Unit, String]
 pub fn Module::from_map(Map[String, @value.Value]) -> Self
 pub fn Module::get(Self, String) -> @value.Value?
 pub fn Module::global_names(Self) -> Array[String]

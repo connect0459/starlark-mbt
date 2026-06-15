@@ -832,12 +832,18 @@ pub fn Module::new() -> Module {
 ///
 /// Returns a new, frozen `Module` containing the bindings from `m`.
 pub fn Module::from_map(m : Map[String, @value.Value]) -> Module {
+  let mod = Module::from_map_unfrozen(m)
+  mod.freeze()
+  mod
+}
+
+///|
+fn Module::from_map_unfrozen(m : Map[String, @value.Value]) -> Module {
   let mod = Module::new()
   m.each(fn(name, v) {
     let key = @value.Value::String(@value.StarlarkString::new(name))
     mod.globals.set(key, v) |> ignore
   })
-  mod.freeze()
   mod
 }
 
@@ -848,6 +854,27 @@ pub fn Module::freeze(self : Module) -> Unit {
   self.frozen = true
   self.globals.freeze()
   self.globals.each(fn(_, v) { v.freeze() })
+}
+
+///|
+/// Like `Module::freeze` but returns `Err` instead of aborting when the
+/// nesting depth limit is exceeded.
+pub fn Module::freeze_checked(self : Module) -> Result[Unit, String] {
+  self.frozen = true
+  self.globals.freeze()
+  let mut err : String? = None
+  self.globals.each(fn(_, v) {
+    if err is None {
+      match v.freeze_checked() {
+        Err(e) => err = Some(e)
+        Ok(_) => ()
+      }
+    }
+  })
+  match err {
+    Some(e) => Err(e)
+    None => Ok(())
+  }
 }
 
 ///|
@@ -1119,7 +1146,12 @@ pub fn exec_file_with_universe(
     Ok(pair) => pair
     Err(e) => return Err(e)
   }
-  Ok(Module::from_map(module_output(prog, m, opts)))
+  let mod = Module::from_map_unfrozen(module_output(prog, m, opts))
+  match mod.freeze_checked() {
+    Err(e) => return Err(@errors.EvalError::simple(e))
+    Ok(_) => ()
+  }
+  Ok(mod)
 }
 
 ///|
@@ -1161,7 +1193,10 @@ pub fn exec_file_with_predeclared(
     let key = @value.Value::String(@value.StarlarkString::new(name))
     m.globals.set(key, v) |> ignore
   })
-  m.freeze()
+  match m.freeze_checked() {
+    Err(e) => return Err(@errors.EvalError::simple(e))
+    Ok(_) => ()
+  }
   Ok(m)
 }
 
