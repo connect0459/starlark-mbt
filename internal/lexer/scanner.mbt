@@ -605,7 +605,23 @@ fn Scanner::scan_operator(
     0x3B => Ok({ tok: Semi, pos: start }) // ;
     0x3A => Ok({ tok: Colon, pos: start }) // :
     _ => {
-      let ch = cn.unsafe_to_char()
+      // For ASCII (cn < 0x80) the single byte is the full rune.
+      // For multi-byte UTF-8: read_byte() already consumed the leading byte;
+      // decode the full rune starting at that position (self.off - 1), then
+      // consume the remaining continuation bytes.
+      let ch = if cn < 0x80 {
+        cn.unsafe_to_char()
+      } else {
+        let (cp, rlen) = @utf8util.utf8_decode_rune(self.src, self.off - 1)
+        for _ in 1..<rlen {
+          self.read_byte() |> ignore
+        }
+        if cp > 0 {
+          cp.unsafe_to_char()
+        } else {
+          cn.unsafe_to_char()
+        }
+      }
       Err(self.make_error(start, "unexpected input character '\{ch}'"))
     }
   }

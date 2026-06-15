@@ -463,6 +463,12 @@ test "scan: unexpected dollar sign includes the character" {
   assert_true(msg.contains("unexpected input character '$'"))
 }
 
+///|
+test "scan: unexpected multi-byte character shows the full Unicode rune" {
+  let msg = scan("a ☃ b")
+  assert_true(msg.contains("unexpected input character '☃'"))
+}
+
 // --- L-1: invalid float literal carries no colon-literal suffix ---
 
 ///|
