@@ -148,7 +148,8 @@ These guard against infinite recursion on cyclic data structures.
 
 | Symbol | Signature | Description |
 | :--- | :--- | :--- |
-| `compare_limit` | `Int` | Default recursion depth (value: `10`) |
+| `compare_limit` | `Int` | Default recursion depth for comparison (value: `10`) |
+| `hash_limit` | `Int` | Default recursion depth for `Value::hash` (value: `200`) |
 | `equal_depth` | `(Value, Value, Int) -> Result[Bool, String]` | Equality with explicit depth limit |
 | `compare_depth` | `(String, Value, Value, Int) -> Result[Bool, String]` | Comparison operator (`"=="`, `"<"`, …) with explicit depth limit |
 | `compare_values` | `(Value, Value, op? : String) -> Result[Int, String]` | **Internal / eval-engine only** — embedders should use `compare_depth` instead |
