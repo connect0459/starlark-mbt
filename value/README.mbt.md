@@ -154,6 +154,24 @@ These guard against infinite recursion on cyclic data structures.
 | `compare_values` | `(Value, Value, op? : String) -> Result[Int, String]` | **Internal / eval-engine only** — embedders should use `compare_depth` instead |
 | `compare_values_depth` | `(Value, Value, Int, op? : String) -> Result[Int, String]` | **Internal / eval-engine only** — embedders should use `compare_depth` instead |
 
+### Depth-limited repr / str
+
+`Value::repr` and `Value::repr_checked` cap recursive nesting at `repr_limit` (200)
+to prevent a native stack overflow on deeply-nested acyclic values. Exceeding the
+limit in `repr_checked` returns an `Err`; `repr` aborts (it is intended for contexts
+where the depth is already known to be safe).
+
+`repr_at_depth` lets callers pass an explicit remaining-depth budget — useful for
+`CustomValue` implementations that call `repr` on nested values and want to share the
+parent's depth budget.
+
+| Symbol | Signature | Description |
+| :--- | :--- | :--- |
+| `repr_limit` | `Int` | Default nesting budget for `repr` / `repr_checked` (value: `200`) |
+| `Value::repr` | `(Value) -> String` | Starlark `repr()` string; aborts on depth overflow |
+| `Value::repr_checked` | `(Value) -> Result[String, String]` | Like `repr` but returns `Err` on depth overflow |
+| `Value::repr_at_depth` | `(Value, Int) -> Result[String, String]` | `repr_checked` with an explicit depth budget |
+
 ---
 
 ### `StarlarkString`

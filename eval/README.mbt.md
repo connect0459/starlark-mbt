@@ -239,7 +239,7 @@ Standard features — part of the Starlark spec, enabled by default:
 
 | Accessor | Mutator | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable `set` literals and the `set()` built-in |
+| `allow_set()` | `with_allow_set(Bool)` | `true` | Enable `{...}` set literal and `{x for x in ...}` set comprehension syntax (mbt extension — starlark-go rejects this syntax). The `set()` built-in is spec-standard and always available regardless of this flag. |
 | `allow_lambda()` | `with_allow_lambda(Bool)` | `true` | Enable `lambda` expressions |
 | `allow_bytes()` | `with_allow_bytes(Bool)` | `true` | Enable `bytes` literals (`b"..."`) |
 | `allow_float()` | `with_allow_float(Bool)` | `true` | Enable float literals and float arithmetic |
@@ -332,6 +332,32 @@ threads.
 ## Intentional extensions and dialect differences
 
 The following behaviours differ from starlark-go by design.
+
+### Set literal and set comprehension syntax
+
+mbt accepts `{1, 2, 3}` (set literal) and `{x for x in iterable}` (set comprehension)
+as valid Starlark syntax that evaluates to a `set`. starlark-go rejects both forms with
+a parse error because the Starlark spec defines no set literal grammar.
+
+The `set()` constructor (e.g., `set([1, 2, 3])`) is spec-standard and is supported by
+both implementations. The `{...}` notation is a mbt extension gated by `allow_set`
+(enabled by default). Scripts that disable `allow_set` are restricted to the
+spec-standard constructor form.
+
+### Recursive-traversal depth guards
+
+mbt enforces explicit depth limits on every recursive traversal path as a safety
+hardening measure, preventing native stack overflow on deeply-nested input.
+starlark-go relies on goroutine-stack growth and has no hard cap.
+
+| Path | Limit | Details |
+| :--- | :--- | :--- |
+| Parser expression nesting | 80 | Raises a parse error; `internal/parser` is an internal package with no public README |
+| `repr` / `str` / `print` value nesting | 200 | See `value/README.mbt.md` |
+| `json.encode` / `json.decode` nesting | 10 000 | See `lib/json/README.mbt.md` |
+
+Exceeding any limit raises a Starlark runtime or parse error rather than crashing
+the process.
 
 ### Spell-hint on unexpected keyword argument
 
