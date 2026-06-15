@@ -53,8 +53,8 @@ test "scan: rejects non-ASCII octal escape in a string" {
 
 ///|
 test "scan: rejects a hex escape with a non-hex first digit" {
-  // h1 is visible but not hex — reports "invalid", not "truncated"
-  assert_true(scan("'\\xG'").contains("invalid escape sequence"))
+  // h1 visible, h2 is the closing quote (terminator): slot is truncated
+  assert_true(scan("'\\xG'").contains("truncated escape sequence"))
 }
 
 ///|
@@ -114,8 +114,8 @@ test "scan: rejects unknown escape sequences" {
 
 ///|
 test "scan: rejects a truncated unicode escape" {
-  // \\u00G0: reads 0,0 then G (visible non-hex) → invalid escape sequence \u00G
-  assert_true(scan("'\\u00G0'").contains("invalid escape sequence"))
+  // \\u00G0: reads full 4-char slot (00G0) → invalid escape sequence \u00G0
+  assert_true(scan("'\\u00G0'").contains("invalid escape sequence \\u00G0"))
 }
 
 // --- String termination errors ---
@@ -382,6 +382,34 @@ test "scan: unexpected '}' at depth 0" {
 ///|
 test "scan: unbalanced ')' after expression" {
   assert_true(scan("a = max(range(10)))").contains("unexpected ')'"))
+}
+
+// --- M-7: \x escape classification (truncated vs invalid) ---
+
+///|
+test "scan: \\xg truncated because second slot is a string terminator" {
+  let msg = scan("\"\\xg\"")
+  assert_true(msg.contains("truncated escape sequence \\xg"))
+}
+
+///|
+test "scan: \\xgg invalid because both slot chars are non-hex visible" {
+  let msg = scan("\"\\xgg\"")
+  assert_true(msg.contains("invalid escape sequence \\xgg"))
+}
+
+// --- M-7: \u/\U escape prints the full fixed-width slot ---
+
+///|
+test "scan: invalid \\u slot prints all four chars in the error" {
+  let msg = scan("\"\\u1g34\"")
+  assert_true(msg.contains("invalid escape sequence \\u1g34"))
+}
+
+///|
+test "scan: invalid \\U slot prints all eight chars in the error" {
+  let msg = scan("\"\\U0000001g\"")
+  assert_true(msg.contains("invalid escape sequence \\U0000001g"))
 }
 
 // --- L-3: unexpected input character includes the offending rune ---

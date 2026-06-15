@@ -1006,10 +1006,10 @@ fn Scanner::decode_escape(
       buf.push(val.to_byte())
     }
     0x78 => {
-      // Hex: \xNN (exactly 2 digits).
-      // "truncated" only when a required digit slot is occupied by EOF or a
-      // string delimiter; any other character (including non-hex punctuation)
-      // is "invalid", matching starlark-go quote.go:198-203.
+      // Hex: \xNN (exactly 2 digits), matching starlark-go quote.go semantics.
+      // Mirroring starlark-go's fixed-width-slot approach (slot = 2 chars):
+      //   - fewer than 2 chars available before a string terminator → "truncated"
+      //   - 2 chars present but not all hex → "invalid" (full slot printed)
       fn is_str_end(b : Byte) -> Bool {
         b == b'\x00' || b == b'"' || b == b'\'' || b == b'\n'
       }
@@ -1032,10 +1032,11 @@ fn Scanner::decode_escape(
             ),
           )
         }
+        // h1 consumed, h2 is a terminator: only 1 char in the slot → truncated
         return Err(
           self.make_error(
             str_start,
-            "invalid escape sequence \\x\{h1.to_int().unsafe_to_char()}",
+            "truncated escape sequence \\x\{h1.to_int().unsafe_to_char()}",
           ),
         )
       }
@@ -1120,48 +1121,54 @@ fn Scanner::decode_escape(
 ///|
 // Read count hex digits for a Unicode escape (\uNNNN or \UNNNNNNNN).
 // prefix is the already-consumed prefix ("\\u" or "\\U") for error messages.
-// Distinguishes truncated (not enough chars) from invalid (non-hex char present).
+// Mirrors starlark-go's fixed-width-slot approach: always tries to consume
+// exactly `count` source chars before deciding truncated vs invalid.
+//   - a string terminator before the slot is full → "truncated" + partial
+//   - full slot consumed but not valid hex → "invalid" + full slot
 fn Scanner::read_unicode_escape(
   self : Scanner,
   pos : @errors.Position,
   prefix : String,
   count : Int,
 ) -> Result[Int, @errors.SyntaxError] {
-  let digits : Array[Char] = []
-  let mut result : Int64 = 0L
+  let slot : Array[Byte] = []
   for _ in 0..<count {
     let b = self.peek_byte()
+    if b == b'\x00' || b == b'"' || b == b'\'' || b == b'\n' {
+      let partial = String::from_array(
+        slot.map(fn(by) { by.to_int().unsafe_to_char() }),
+      )
+      return Err(
+        self.make_error(pos, "truncated escape sequence \{prefix}\{partial}"),
+      )
+    }
+    self.read_byte() |> ignore
+    slot.push(b)
+  }
+  let slot_str = String::from_array(
+    slot.map(fn(by) { by.to_int().unsafe_to_char() }),
+  )
+  let mut result : Int64 = 0L
+  let mut all_hex = true
+  for b in slot {
     if is_xdigit_byte(b) {
-      digits.push(b.to_int().unsafe_to_char())
       result = result * 16L + xdigit_to_int(b).to_int64()
-      self.read_byte() |> ignore
     } else {
-      // Peek: is the next char a visible (non-terminator) char?
-      let is_visible = b != b'\x00' && b != b'"' && b != b'\'' && b != b'\n'
-      let partial = String::from_array(digits)
-      if is_visible {
-        // Consume the non-hex char and call it "invalid"
-        self.read_byte() |> ignore
-        let bad = b.to_int().unsafe_to_char()
-        return Err(
-          self.make_error(
-            pos,
-            "invalid escape sequence \{prefix}\{partial}\{bad}",
-          ),
-        )
-      } else {
-        return Err(
-          self.make_error(pos, "truncated escape sequence \{prefix}\{partial}"),
-        )
-      }
+      all_hex = false
+      break
     }
   }
+  if !all_hex {
+    return Err(
+      self.make_error(pos, "invalid escape sequence \{prefix}\{slot_str}"),
+    )
+  }
   if result > 0x10FFFFL {
-    let seq = String::from_array(digits)
     let seq_lower = String::from_array(
-      digits.map(fn(c) {
+      slot.map(fn(b) {
+        let c = b.to_int().unsafe_to_char()
         if c >= 'A' && c <= 'F' {
-          (c.to_int() + 0x20).unsafe_to_char()
+          (b.to_int() + 0x20).unsafe_to_char()
         } else {
           c
         }
@@ -1170,7 +1177,7 @@ fn Scanner::read_unicode_escape(
     return Err(
       self.make_error(
         pos,
-        "code point out of range: \{prefix}\{seq} (max \{prefix}\{seq_lower})",
+        "code point out of range: \{prefix}\{slot_str} (max \{prefix}\{seq_lower})",
       ),
     )
   }
