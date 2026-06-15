@@ -1271,10 +1271,26 @@ fn make_encode_indent_fn() -> @value.Value {
 ///|
 fn make_decode_fn() -> @value.Value {
   @value.Value::new_builtin("json.decode", fn(_ctx, pos_args, kw_args) {
+    if pos_args.length() > 2 {
+      return Err(
+        "json.decode: got \{pos_args.length()} arguments, want at most 2",
+      )
+    }
+    let mut default_from_kw : @value.Value? = None
     for kw in kw_args {
-      let (k, _) = kw
-      if k == "x" {
-        return Err("json.decode: unexpected keyword argument x")
+      let (k, v) = kw
+      match k {
+        "default" => default_from_kw = Some(v)
+        "x" =>
+          match v {
+            @value.Value::String(_) =>
+              return Err("json.decode: unexpected keyword argument x")
+            _ =>
+              return Err(
+                "json.decode: for parameter x: got \{v.type_name()}, want string",
+              )
+          }
+        _ => return Err("json.decode: unexpected keyword argument \"\{k}\"")
       }
     }
     if pos_args.length() < 1 {
@@ -1282,20 +1298,15 @@ fn make_decode_fn() -> @value.Value {
     }
     let x = match pos_args[0] {
       @value.Value::String(s) => s.raw()
-      _ => return Err("json.decode: x must be a string")
+      v =>
+        return Err(
+          "json.decode: for parameter x: got \{v.type_name()}, want string",
+        )
     }
-    let default_val : @value.Value? = if pos_args.length() >= 2 {
+    let default_val = if pos_args.length() >= 2 {
       Some(pos_args[1])
     } else {
-      let mut found : @value.Value? = None
-      for kw in kw_args {
-        let (k, v) = kw
-        if k == "default" {
-          found = Some(v)
-          break
-        }
-      }
-      found
+      default_from_kw
     }
     decode_from_json(x, default_val)
   })

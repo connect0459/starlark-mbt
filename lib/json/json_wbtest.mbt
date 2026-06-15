@@ -1,4 +1,77 @@
 ///|
+fn call_decode(
+  pos : Array[@value.Value],
+  kw : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] {
+  let decode_fn = make_decode_fn()
+  guard decode_fn is @value.Value::Builtin(bf)
+  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
+    Err("not called")
+  })
+  match bf.call_body(dummy_ctx, pos, kw) {
+    Some(r) => r
+    None => Err("no body")
+  }
+}
+
+///|
+test "make_decode_fn: surplus positional args rejected with count and limit" {
+  let str_arg = @value.Value::String(@value.StarlarkString::new("1"))
+  let int_arg = @value.Value::Int(BigInt::from_int(2))
+  let result = call_decode([str_arg, int_arg, int_arg], [])
+  match result {
+    Err(msg) => assert_eq(msg, "json.decode: got 3 arguments, want at most 2")
+    Ok(v) => fail("expected error for 3 positional args, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_decode_fn: unknown kwarg rejected" {
+  let str_arg = @value.Value::String(@value.StarlarkString::new("[1]"))
+  let result = call_decode([str_arg], [
+    ("foo", @value.Value::Int(BigInt::from_int(2))),
+  ])
+  match result {
+    Err(msg) =>
+      assert_eq(msg, "json.decode: unexpected keyword argument \"foo\"")
+    Ok(v) => fail("expected error for unknown kwarg, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_decode_fn: unknown kwarg rejected even alongside valid default kwarg" {
+  let str_arg = @value.Value::String(@value.StarlarkString::new("[1]"))
+  let result = call_decode([str_arg], [
+    ("default", @value.Value::Int(BigInt::from_int(9))),
+    ("foo", @value.Value::Int(BigInt::from_int(2))),
+  ])
+  match result {
+    Err(msg) => assert_true(msg.contains("unexpected keyword argument"))
+    Ok(v) => fail("expected error for unknown kwarg, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_decode_fn: wrong type for positional x gives for-parameter message" {
+  let result = call_decode([@value.Value::Int(BigInt::from_int(2))], [])
+  match result {
+    Err(msg) =>
+      assert_eq(msg, "json.decode: for parameter x: got int, want string")
+    Ok(v) => fail("expected type error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_decode_fn: x kwarg with wrong type gives for-parameter message" {
+  let result = call_decode([], [("x", @value.Value::Int(BigInt::from_int(2)))])
+  match result {
+    Err(msg) =>
+      assert_eq(msg, "json.decode: for parameter x: got int, want string")
+    Ok(v) => fail("expected type error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "make_indent_fn: indent_json errors are prefixed with json.indent:" {
   let indent_fn = make_indent_fn()
   guard indent_fn is @value.Value::Builtin(bf)
