@@ -856,3 +856,22 @@ test "resolve: load inside function inside if gives 'within a function' not 'con
   let result = resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "load statement within a function"))
 }
+
+// --- Conditional expression (ternary) resolution order ---
+
+///|
+test "resolve: conditional expression reports condition error before true-value error" {
+  // `aa if bb else cc` — all three are undefined.
+  // The condition `bb` is at col 7; the true-value `aa` is at col 1.
+  // starlark-go reports `bb` first (condition before true-value).
+  let f = parse_or_fail("aa if bb else cc")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  let errors = result.errors()
+  assert_true(errors.length() >= 1)
+  assert_true(errors[0].msg().contains("undefined: bb"))
+}

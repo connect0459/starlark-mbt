@@ -441,8 +441,7 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.emit0(opcode, 1, 1)
     }
     EBinary(l, op, r, pos) => self.compile_binary(l, op, r, pos)
-    // `then if cond else orelse` — note the AST stores the then-value first.
-    ECond(then_e, cond_e, else_e, _) => {
+    ECond(cond_e, then_e, else_e, _) => {
       let else_lbl = self.new_label()
       let end_lbl = self.new_label()
       let base = self.cur_stack
