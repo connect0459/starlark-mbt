@@ -1147,10 +1147,19 @@ fn Scanner::read_unicode_escape(
   }
   if result > 0x10FFFFL {
     let seq = String::from_array(digits)
+    let seq_lower = String::from_array(
+      digits.map(fn(c) {
+        if c >= 'A' && c <= 'F' {
+          (c.to_int() + 0x20).unsafe_to_char()
+        } else {
+          c
+        }
+      }),
+    )
     return Err(
       self.make_error(
         pos,
-        "code point out of range: \{prefix}\{seq} (max \{prefix}\{seq})",
+        "code point out of range: \{prefix}\{seq} (max \{prefix}\{seq_lower})",
       ),
     )
   }
