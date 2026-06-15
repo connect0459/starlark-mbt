@@ -487,3 +487,34 @@ test "to_str_checked: string returns raw value without quotes" {
     Err(e) => fail("unexpected error: \{e}")
   }
 }
+
+///|
+test "hash: shallow tuple returns a stable hash value" {
+  let t = Value::Tuple([Value::Int(1N), Value::Int(2N)])
+  match t.hash() {
+    Ok(_) => ()
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}
+
+///|
+test "hash: deeply nested tuple exceeding depth limit returns a graceful error" {
+  let n = hash_limit + 1
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<n {
+    v = Value::Tuple([v])
+  }
+  match v.hash() {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep tuple nesting")
+  }
+}
+
+///|
+test "hash: nesting exactly at depth limit succeeds" {
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<hash_limit {
+    v = Value::Tuple([v])
+  }
+  assert_true(v.hash() is Ok(_))
+}

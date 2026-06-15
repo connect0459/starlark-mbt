@@ -24,6 +24,8 @@ pub fn equal(Value, Value) -> Result[Bool, String]
 
 pub fn equal_depth(Value, Value, Int) -> Result[Bool, String]
 
+pub let hash_limit : Int
+
 pub fn iterate(Value) -> Result[StarlarkIterator, String]
 
 pub fn len_of(Value) -> Int64
