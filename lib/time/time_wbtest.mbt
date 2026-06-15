@@ -270,6 +270,42 @@ test "parse_rfc3339: year shorter than four digits is rejected" {
 }
 
 ///|
+test "parse_rfc3339: month 13 is rejected with remaining text and token" {
+  match parse_rfc3339("2021-13-22T10:42:13Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(e.has_suffix("cannot parse \"13-22T10:42:13Z\" as \"01\""))
+  }
+}
+
+///|
+test "parse_rfc3339: month 0 is rejected with remaining text and token" {
+  match parse_rfc3339("2021-00-22T10:42:13Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(e.has_suffix("cannot parse \"00-22T10:42:13Z\" as \"01\""))
+  }
+}
+
+///|
+test "parse_rfc3339: day 32 is rejected with remaining text and token" {
+  match parse_rfc3339("2021-03-32T10:42:13Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(e.has_suffix("cannot parse \"32T10:42:13Z\" as \"02\""))
+  }
+}
+
+///|
+test "parse_rfc3339: day 0 is rejected with remaining text and token" {
+  match parse_rfc3339("2021-03-00T10:42:13Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(e.has_suffix("cannot parse \"00T10:42:13Z\" as \"02\""))
+  }
+}
+
+///|
 test "parse_rfc3339: hour 24 is rejected" {
   match parse_rfc3339("2021-03-23T24:00:00Z") {
     Ok(_) => fail("expected Err")

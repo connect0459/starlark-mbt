@@ -1402,17 +1402,25 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     return Err(cp_err(year_end, "-"))
   }
   let i = year_end + 1
-  let (month, i) = match parse_2digits(chars, i) {
+  let month_pos = i
+  let (month, i) = match parse_2digits(chars, month_pos) {
     Some(v) => v
-    None => return Err(cp_err(i, "01"))
+    None => return Err(cp_err(month_pos, "01"))
+  }
+  if month < 1 || month > 12 {
+    return Err(cp_err(month_pos, "01"))
   }
   if i >= len || chars[i] != '-' {
     return Err(cp_err(i, "-"))
   }
   let i = i + 1
-  let (day, i) = match parse_2digits(chars, i) {
+  let day_pos = i
+  let (day, i) = match parse_2digits(chars, day_pos) {
     Some(v) => v
-    None => return Err(cp_err(i, "02"))
+    None => return Err(cp_err(day_pos, "02"))
+  }
+  if day < 1 || day > days_in_month(year.to_int64(), month) {
+    return Err(cp_err(day_pos, "02"))
   }
   if i >= len || chars[i] != 'T' {
     return Err(cp_err(i, "T"))
