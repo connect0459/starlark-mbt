@@ -212,8 +212,8 @@ test "parse_rfc3339: trailing garbage uses Go-format extra text: suffix" {
   match parse_rfc3339("2021-03-22T23:20:50Zgarbage") {
     Ok(_) => fail("expected Err")
     Err(e) =>
-      assert_true(
-        e.has_suffix("as \"2006-01-02T15:04:05Z07:00\": extra text: garbage"),
+      assert_eq(
+        e, "parsing time \"2021-03-22T23:20:50Zgarbage\": extra text: \"garbage\"",
       )
   }
 }

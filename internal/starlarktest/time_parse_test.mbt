@@ -265,7 +265,7 @@ test "time module: parse_time rejects values that do not match the layout" {
       #|load("assert.star", "assert")
       #|load("time.star", "time")
       #|assert.fails(lambda: time.parse_time("not-a-date", format="2006-01-02"), "cannot parse")
-      #|assert.fails(lambda: time.parse_time("2021-03-22X", format="2006-01-02"), "extra text")
+      #|assert.fails(lambda: time.parse_time("2021-03-22X", format="2006-01-02"), "extra text: \"X\"")
       #|assert.fails(lambda: time.parse_time("20XY-03-22", format="2006-01-02"), "cannot parse")
       #|assert.fails(lambda: time.parse_time("2021/03/22", format="2006-01-02"), "cannot parse")
     ),
@@ -328,8 +328,8 @@ test "time module: parse_time rejects RFC3339 trailing garbage after Z" {
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50Zgarbage"), "extra text")
-      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50Z "), "extra text")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50Zgarbage"), "extra text: \"garbage\"")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50Z "), "extra text: \" \"")
     ),
   )
   if errs.length() != 0 {
@@ -343,8 +343,8 @@ test "time module: parse_time rejects RFC3339 trailing garbage after numeric tim
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50+00:00garbage"), "extra text")
-      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50+00:00 "), "extra text")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50+00:00garbage"), "extra text: \"garbage\"")
+      #|assert.fails(lambda: time.parse_time("2021-03-22T23:20:50+00:00 "), "extra text: \" \"")
     ),
   )
   if errs.length() != 0 {
@@ -431,17 +431,20 @@ test "time module: parse_time and from_timestamp validate argument types" {
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
-      #|assert.fails(lambda: time.parse_time(5), "x must be a string")
-      #|assert.fails(lambda: time.parse_time(), "missing required argument")
-      #|assert.fails(lambda: time.parse_time("x", format=5), "format must be a string")
-      #|assert.fails(lambda: time.parse_time("x", location=5), "location must be a string")
-      #|assert.fails(lambda: time.parse_time("x", 5), "format must be a string")
-      #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00Z", "2006-01-02T15:04:05Z07:00", 5), "location must be a string")
+      #|assert.fails(lambda: time.parse_time(5), "for parameter x: got int, want string")
+      #|assert.fails(lambda: time.parse_time(), "missing argument for x")
+      #|assert.fails(lambda: time.parse_time("x", format=5), "for parameter format: got int, want string")
+      #|assert.fails(lambda: time.parse_time("x", location=5), "for parameter location: got int, want string")
+      #|assert.fails(lambda: time.parse_time("x", 5), "for parameter format: got int, want string")
+      #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00Z", "2006-01-02T15:04:05Z07:00", 5), "for parameter location: got int, want string")
       #|assert.fails(lambda: time.parse_time("x", bogus="y"), "unexpected keyword argument")
-      #|assert.fails(lambda: time.from_timestamp("x"), "sec must be an integer")
-      #|assert.fails(lambda: time.from_timestamp(0, "x"), "nsec must be an integer")
-      #|assert.fails(lambda: time.from_timestamp(), "missing required argument")
-      #|assert.fails(lambda: time.is_valid_timezone(5), "argument must be a string")
+      #|assert.fails(lambda: time.parse_time(bogus="y"), "unexpected keyword argument")
+      #|assert.fails(lambda: time.parse_time("a", "b", "c", "d"), "want at most 3")
+      #|assert.fails(lambda: time.from_timestamp("x"), "for parameter 1: got string, want int")
+      #|assert.fails(lambda: time.from_timestamp(0, "x"), "for parameter 2: got string, want int")
+      #|assert.fails(lambda: time.from_timestamp(), "got 0 arguments, want at least 1")
+      #|assert.fails(lambda: time.from_timestamp(sec=1), "unexpected keyword arguments")
+      #|assert.fails(lambda: time.is_valid_timezone(5), "for parameter 1: got int, want string")
       #|assert.fails(lambda: time.is_valid_timezone(), "want 1")
     ),
   )
@@ -484,7 +487,7 @@ test "time module: parse_time rejects values missing a digit for each layout ver
       #|assert.fails(bad("x", "-07:00"), "cannot parse")
       #|assert.fails(bad("05", "05.000"), "cannot parse")
       #|assert.fails(bad("Z", "T"), "cannot parse")
-      #|assert.fails(bad("012", "01"), "extra text")
+      #|assert.fails(bad("012", "01"), "extra text: \"2\"")
     ),
   )
   if errs.length() != 0 {

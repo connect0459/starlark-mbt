@@ -1294,15 +1294,21 @@ fn make_time(sec : Int64, nsec : Int) -> @value.Value {
 ///|
 fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
   @value.Value::new_builtin("in_location", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("in_location: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err("in_location: got \{pos_args.length()} arguments, want 1")
     }
     let loc = match pos_args[0] {
       @value.Value::String(s) => s.raw()
-      _ => return Err("in_location: argument must be a string")
+      v =>
+        return Err(
+          "in_location: for parameter 1: got \{v.type_name()}, want string",
+        )
     }
     if !is_valid_timezone_impl(loc) {
-      return Err("in_location: unsupported timezone \"\{loc}\"")
+      return Err("unknown time zone \{loc}")
     }
     let (offset, abbr) = match get_tz_abbr_at_impl(loc, sec) {
       Some(v) => v
@@ -1320,12 +1326,16 @@ fn make_format_method(
   tz_name : String,
 ) -> @value.Value {
   @value.Value::new_builtin("format", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("format: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err("format: got \{pos_args.length()} arguments, want 1")
     }
     let layout = match pos_args[0] {
       @value.Value::String(s) => s.raw()
-      _ => return Err("format: argument must be a string")
+      v =>
+        return Err("format: for parameter 1: got \{v.type_name()}, want string")
     }
     let (year, month, day, hour, minute, second) = decompose_unix_sec(
       sec, tz_offset,
@@ -1500,10 +1510,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     for k in tz_end..<chars.length() {
       buf.write_char(chars[k])
     }
-    return Err(
-      "parsing time \"\{s}\" as \"\{rfc_layout}\": extra text: " +
-      buf.to_string(),
-    )
+    return Err("parsing time \"\{s}\": extra text: \"\{buf.to_string()}\"")
   }
   let dt = @x_time.ZonedDateTime::of(
     year,
@@ -2015,10 +2022,7 @@ fn parse_go_layout(
     for k in vi..<vn {
       buf.write_char(vc[k])
     }
-    return Err(
-      "parsing time \"\{value}\" as \"\{layout}\": extra text: " +
-      buf.to_string(),
-    )
+    return Err("parsing time \"\{value}\": extra text: \"\{buf.to_string()}\"")
   }
   if yday >= 0 {
     let max_yday = if is_leap_year(year.to_int64()) { 366 } else { 365 }
@@ -2103,8 +2107,11 @@ pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
 ///|
 fn make_now_fn() -> @value.Value {
   @value.Value::new_builtin("now", fn(ctx, pos_args, kw_args) {
-    if pos_args.length() != 0 || kw_args.length() != 0 {
-      return Err("time.now: unexpected arguments")
+    if kw_args.length() != 0 {
+      return Err("now: unexpected keyword arguments")
+    }
+    if pos_args.length() != 0 {
+      return Err("now: got \{pos_args.length()} arguments, want 0")
     }
     match ctx.get_local(now_override_key) {
       Some(v) => Ok(v)
@@ -2119,25 +2126,31 @@ fn make_now_fn() -> @value.Value {
 ///|
 fn make_from_timestamp_fn() -> @value.Value {
   @value.Value::new_builtin("from_timestamp", fn(_ctx, pos_args, kw_args) {
+    if kw_args.length() != 0 {
+      return Err("from_timestamp: unexpected keyword arguments")
+    }
     if pos_args.length() < 1 {
-      return Err("time.from_timestamp: missing required argument 'sec'")
+      return Err("from_timestamp: got 0 arguments, want at least 1")
     }
     if pos_args.length() > 2 {
       return Err(
         "from_timestamp: got \{pos_args.length()} arguments, want at most 2",
       )
     }
-    if kw_args.length() != 0 {
-      return Err("time.from_timestamp: unexpected keyword arguments")
-    }
     let sec = match pos_args[0] {
       @value.Value::Int(n) => n.to_int64()
-      _ => return Err("time.from_timestamp: sec must be an integer")
+      v =>
+        return Err(
+          "from_timestamp: for parameter 1: got \{v.type_name()}, want int",
+        )
     }
     let nsec64 = if pos_args.length() >= 2 {
       match pos_args[1] {
         @value.Value::Int(n) => n.to_int64()
-        _ => return Err("time.from_timestamp: nsec must be an integer")
+        v =>
+          return Err(
+            "from_timestamp: for parameter 2: got \{v.type_name()}, want int",
+          )
       }
     } else {
       0L
@@ -2160,12 +2173,27 @@ fn make_from_timestamp_fn() -> @value.Value {
 ///|
 fn make_parse_time_fn() -> @value.Value {
   @value.Value::new_builtin("parse_time", fn(_ctx, pos_args, kw_args) {
+    for kw in kw_args {
+      let (k, _) = kw
+      match k {
+        "format" | "location" => ()
+        _ => return Err("parse_time: unexpected keyword argument \{k}")
+      }
+    }
     if pos_args.length() < 1 {
-      return Err("time.parse_time: missing required argument 'x'")
+      return Err("parse_time: missing argument for x")
+    }
+    if pos_args.length() > 3 {
+      return Err(
+        "parse_time: got \{pos_args.length()} arguments, want at most 3",
+      )
     }
     let x = match pos_args[0] {
       @value.Value::String(s) => s.raw()
-      _ => return Err("time.parse_time: x must be a string")
+      v =>
+        return Err(
+          "parse_time: for parameter x: got \{v.type_name()}, want string",
+        )
     }
     let mut fmt = "2006-01-02T15:04:05Z07:00"
     let mut location = "UTC"
@@ -2175,26 +2203,38 @@ fn make_parse_time_fn() -> @value.Value {
         "format" =>
           match v {
             @value.Value::String(s) => fmt = s.raw()
-            _ => return Err("time.parse_time: format must be a string")
+            v =>
+              return Err(
+                "parse_time: for parameter format: got \{v.type_name()}, want string",
+              )
           }
         "location" =>
           match v {
             @value.Value::String(s) => location = s.raw()
-            _ => return Err("time.parse_time: location must be a string")
+            v =>
+              return Err(
+                "parse_time: for parameter location: got \{v.type_name()}, want string",
+              )
           }
-        _ => return Err("time.parse_time: unexpected keyword argument \{k}")
+        _ => return Err("parse_time: unexpected keyword argument \{k}")
       }
     }
     if pos_args.length() >= 2 {
       match pos_args[1] {
         @value.Value::String(s) => fmt = s.raw()
-        _ => return Err("time.parse_time: format must be a string")
+        v =>
+          return Err(
+            "parse_time: for parameter format: got \{v.type_name()}, want string",
+          )
       }
     }
     if pos_args.length() >= 3 {
       match pos_args[2] {
         @value.Value::String(s) => location = s.raw()
-        _ => return Err("time.parse_time: location must be a string")
+        v =>
+          return Err(
+            "parse_time: for parameter location: got \{v.type_name()}, want string",
+          )
       }
     }
     // The default layout is parsed by the strict RFC3339 reader; any other
@@ -2244,7 +2284,7 @@ fn make_parse_time_fn() -> @value.Value {
       Ok(make_zoned(parsed_sec, nsec, tz_off))
     } else {
       if !is_valid_timezone_impl(location) {
-        return Err("time.parse_time: unsupported timezone \"\{location}\"")
+        return Err("unknown time zone \{location}")
       }
       if has_tz {
         // Value carried an explicit timezone → parsed_sec is already UTC.
@@ -2330,7 +2370,10 @@ fn make_time_constructor_fn() -> @value.Value {
               } else {
                 year = n.to_int64()
               }
-            _ => return Err("time.time: year must be an integer")
+            v =>
+              return Err(
+                "time: for parameter year: got \{v.type_name()}, want int",
+              )
           }
         "month" =>
           match v {
@@ -2343,7 +2386,10 @@ fn make_time_constructor_fn() -> @value.Value {
               } else {
                 month = n.to_int64()
               }
-            _ => return Err("time.time: month must be an integer")
+            v =>
+              return Err(
+                "time: for parameter month: got \{v.type_name()}, want int",
+              )
           }
         "day" =>
           match v {
@@ -2356,7 +2402,10 @@ fn make_time_constructor_fn() -> @value.Value {
               } else {
                 day = n.to_int64()
               }
-            _ => return Err("time.time: day must be an integer")
+            v =>
+              return Err(
+                "time: for parameter day: got \{v.type_name()}, want int",
+              )
           }
         "hour" =>
           match v {
@@ -2369,7 +2418,10 @@ fn make_time_constructor_fn() -> @value.Value {
               } else {
                 hour = n.to_int64()
               }
-            _ => return Err("time.time: hour must be an integer")
+            v =>
+              return Err(
+                "time: for parameter hour: got \{v.type_name()}, want int",
+              )
           }
         "minute" =>
           match v {
@@ -2382,7 +2434,10 @@ fn make_time_constructor_fn() -> @value.Value {
               } else {
                 minute = n.to_int64()
               }
-            _ => return Err("time.time: minute must be an integer")
+            v =>
+              return Err(
+                "time: for parameter minute: got \{v.type_name()}, want int",
+              )
           }
         "second" =>
           match v {
@@ -2395,7 +2450,10 @@ fn make_time_constructor_fn() -> @value.Value {
               } else {
                 second = n.to_int64()
               }
-            _ => return Err("time.time: second must be an integer")
+            v =>
+              return Err(
+                "time: for parameter second: got \{v.type_name()}, want int",
+              )
           }
         "nanosecond" =>
           match v {
@@ -2408,14 +2466,20 @@ fn make_time_constructor_fn() -> @value.Value {
               } else {
                 nanosecond = n.to_int64()
               }
-            _ => return Err("time.time: nanosecond must be an integer")
+            v =>
+              return Err(
+                "time: for parameter nanosecond: got \{v.type_name()}, want int",
+              )
           }
         "location" =>
           match v {
             @value.Value::String(s) => location = s.raw()
-            _ => return Err("time.time: location must be a string")
+            v =>
+              return Err(
+                "time: for parameter location: got \{v.type_name()}, want string",
+              )
           }
-        _ => return Err("time.time: unexpected keyword argument \{k}")
+        _ => return Err("time: unexpected keyword argument \{k}")
       }
     }
     if location == "UTC" || location == "" {
@@ -2425,7 +2489,7 @@ fn make_time_constructor_fn() -> @value.Value {
       Ok(make_time(unix_sec, ns_norm))
     } else {
       if !is_valid_timezone_impl(location) {
-        return Err("time.time: unsupported timezone \"\{location}\"")
+        return Err("unknown time zone \{location}")
       }
       let (local_sec, ns_norm) = normalize_to_unix_sec(
         year, month, day, hour, minute, second, nanosecond,
@@ -2450,14 +2514,20 @@ fn make_time_constructor_fn() -> @value.Value {
 ///|
 fn make_is_valid_timezone_fn() -> @value.Value {
   @value.Value::new_builtin("is_valid_timezone", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("is_valid_timezone: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err(
-        "time.is_valid_timezone: got \{pos_args.length()} arguments, want 1",
+        "is_valid_timezone: got \{pos_args.length()} arguments, want 1",
       )
     }
     let s = match pos_args[0] {
       @value.Value::String(s) => s.raw()
-      _ => return Err("time.is_valid_timezone: argument must be a string")
+      v =>
+        return Err(
+          "is_valid_timezone: for parameter 1: got \{v.type_name()}, want string",
+        )
     }
     Ok(@value.Value::Bool(is_valid_timezone_impl(s)))
   })
