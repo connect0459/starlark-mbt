@@ -496,6 +496,27 @@ test "time module: parse_time rejects values missing a digit for each layout ver
 }
 
 ///|
+test "time module: parse_time distinguishes Z UTC marker from numeric zero offset +00:00" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.eq(
+      #|  str(time.parse_time("2021-03-22T10:42:13Z")),
+      #|  "2021-03-22 10:42:13 +0000 UTC",
+      #|)
+      #|assert.eq(
+      #|  str(time.parse_time("2021-03-22T10:42:13+00:00")),
+      #|  "2021-03-22 10:42:13 +0000 +0000",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: duration and time reject incompatible binary operands" {
   let errs = run_star_string(
     (

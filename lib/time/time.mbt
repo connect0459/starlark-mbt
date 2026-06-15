@@ -1384,7 +1384,7 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
 }
 
 ///|
-fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
+fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
   let chars = s.to_array()
   let len = chars.length()
   let rfc_layout = "2006-01-02T15:04:05Z07:00"
@@ -1490,8 +1490,8 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   } else {
     (0, i)
   }
-  let (tz_offset_sec, tz_end) = if i < len && chars[i] == 'Z' {
-    (0, i + 1)
+  let (tz_offset_sec, tz_end, zone_name) = if i < len && chars[i] == 'Z' {
+    (0, i + 1, "UTC")
   } else if i < len && (chars[i] == '+' || chars[i] == '-') {
     let sign = if chars[i] == '+' { 1 } else { -1 }
     let j = i + 1
@@ -1513,7 +1513,10 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     if tz_minute > 59 {
       return Err("parsing time \"\{s}\": time zone offset minute out of range")
     }
-    (sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute), j)
+    let offset = sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute)
+    let name_buf = StringBuilder::new()
+    write_tz_offset(name_buf, offset)
+    (offset, j, name_buf.to_string())
   } else {
     return Err(cp_err(i, "Z07:00"))
   }
@@ -1537,7 +1540,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     _ => return Err("parsing time \"\{s}\" as \"\{rfc_layout}\": cannot parse")
   }
   let unix_sec = dt.to_unix_second() - tz_offset_sec.to_int64()
-  Ok((unix_sec, nsec, tz_offset_sec))
+  Ok((unix_sec, nsec, tz_offset_sec, zone_name))
 }
 
 ///|
@@ -2251,14 +2254,21 @@ fn make_parse_time_fn() -> @value.Value {
     }
     // The default layout is parsed by the strict RFC3339 reader; any other
     // layout is parsed with the Go reference-time interpreter.
-    // Both yield (parsed_sec, nsec, has_explicit_tz, tz_offset_sec) where
-    // parsed_sec is the UTC instant (already offset-adjusted when the value
-    // carried an explicit zone), and tz_offset_sec is the explicit zone offset
-    // in seconds (0 for UTC or when no zone was present).
-    let (parsed_sec, nsec, has_tz, tz_off) : (Int64, Int, Bool, Int) = if fmt ==
-      default_parse_time_layout {
+    // Both yield (parsed_sec, nsec, has_explicit_tz, tz_offset_sec, zone_name)
+    // where parsed_sec is the UTC instant (already offset-adjusted when the
+    // value carried an explicit zone), tz_offset_sec is the explicit zone offset
+    // in seconds (0 for UTC or when no zone was present), and zone_name is the
+    // display name for the zone ("UTC" for Z, "+0000" for numeric zero offset).
+    let (parsed_sec, nsec, has_tz, tz_off, tz_name) : (
+      Int64,
+      Int,
+      Bool,
+      Int,
+      String,
+    ) = if fmt == default_parse_time_layout {
       match parse_rfc3339(x) {
-        Ok((sec, ns, tz)) => (sec, ns, parse_time_has_tz_suffix(x), tz)
+        Ok((sec, ns, tz, zone_name)) =>
+          (sec, ns, parse_time_has_tz_suffix(x), tz, zone_name)
         Err(e) => return Err(e)
       }
     } else {
@@ -2279,28 +2289,30 @@ fn make_parse_time_fn() -> @value.Value {
           }
           let base = dt.to_unix_second()
           match ptz {
-            Some(off) => (base - off.to_int64(), pns, true, off)
-            None => (base, pns, false, 0)
+            Some(off) =>
+              (base - off.to_int64(), pns, true, off, tz_name_from_offset(off))
+            None => (base, pns, false, 0, "UTC")
           }
         }
       }
     }
-    let make_zoned = fn(sec : Int64, ns : Int, off : Int) -> @value.Value {
-      if off == 0 {
-        make_time(sec, ns)
-      } else {
-        make_time_at_zone(sec, ns, off, tz_name_from_offset(off))
-      }
+    let make_zoned = fn(
+      sec : Int64,
+      ns : Int,
+      off : Int,
+      zone : String,
+    ) -> @value.Value {
+      make_time_at_zone(sec, ns, off, zone)
     }
     if location == "UTC" || location == "" {
-      Ok(make_zoned(parsed_sec, nsec, tz_off))
+      Ok(make_zoned(parsed_sec, nsec, tz_off, tz_name))
     } else {
       if !is_valid_timezone_impl(location) {
         return Err("unknown time zone \{location}")
       }
       if has_tz {
         // Value carried an explicit timezone → parsed_sec is already UTC.
-        Ok(make_zoned(parsed_sec, nsec, tz_off))
+        Ok(make_zoned(parsed_sec, nsec, tz_off, tz_name))
       } else {
         // parsed_sec is "local time treated as UTC" → adjust for location.
         let (offset, _) = match get_tz_abbr_at_impl(location, parsed_sec) {
