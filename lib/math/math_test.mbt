@@ -670,6 +670,25 @@ test "math_module: cosh is correct for large arguments (22 <= |x| < 710)" {
 }
 
 ///|
+test "math_module: cosh returns correct finite value at x=710 (exp-overflow window)" {
+  let m = math_module()
+  // x = 710 lies in (ln(DBL_MAX), ln(2*DBL_MAX)) ≈ (709.78, 710.48): cosh is
+  // finite even though exp(x) overflows. go/CPython: 1.1169973830808557e+308.
+  expect_float_relative(
+    "cosh(710)",
+    call1(m, "cosh", fv(710.0)),
+    1.1169973830808557e308,
+    1.0e-10,
+  )
+  expect_float_relative(
+    "cosh(-710)",
+    call1(m, "cosh", fv(-710.0)),
+    1.1169973830808557e308,
+    1.0e-10,
+  )
+}
+
+///|
 test "math_module: cosh overflow saturates to +inf" {
   let m = math_module()
   match call1(m, "cosh", fv(1000.0)) {
