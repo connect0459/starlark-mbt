@@ -338,7 +338,7 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
       _ =>
         raise ParseErr(
           self.scanner_error(
-            "load operand must be \"name\" or localname=\"name\" (got \{self.tok.to_string()})",
+            "load operand must be \"name\" or localname=\"name\" (got \{self.tok.go_string()})",
           ),
         )
     }

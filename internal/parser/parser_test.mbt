@@ -1349,6 +1349,19 @@ test "parser: load missing separator between operands reports want ','" {
   }
 }
 
+///|
+test "parser: load default operand error quotes punctuation token" {
+  // load("m",,"a") hits the default arm with tok=Comma; go_string() wraps
+  // punctuation in single quotes, so the message must contain (got ',').
+  match @parser.parse_file("test.star", "load(\"m\",,\"a\")\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("load operand must be"))
+      assert_true(e.msg().contains("(got ',')"))
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
 // --- Ternary expression as call argument ---
 
 ///|
