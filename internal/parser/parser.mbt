@@ -368,57 +368,57 @@ fn Parser::parse_assign_or_expr_stmt(
     }
     @lexer.Token::PlusAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugAdd, rhs, p)
     }
     @lexer.Token::MinusAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugSub, rhs, p)
     }
     @lexer.Token::StarAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugMul, rhs, p)
     }
     @lexer.Token::SlashAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugDiv, rhs, p)
     }
     @lexer.Token::SlashSlashAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugFloorDiv, rhs, p)
     }
     @lexer.Token::PercentAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugMod, rhs, p)
     }
     @lexer.Token::AmpAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugBitAnd, rhs, p)
     }
     @lexer.Token::PipeAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugBitOr, rhs, p)
     }
     @lexer.Token::CircumflexAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugBitXor, rhs, p)
     }
     @lexer.Token::LtLtAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugLShift, rhs, p)
     }
     @lexer.Token::GtGtAssign => {
       self.advance()
-      let rhs = self.parse_test()
+      let rhs = self.parse_test_list_as_expr()
       @syntax.Stmt::SAugAssign(lhs, @syntax.AugOp::AugRShift, rhs, p)
     }
     _ => @syntax.Stmt::SExpr(lhs)
