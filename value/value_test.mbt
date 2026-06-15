@@ -553,3 +553,56 @@ test "hash: ExtVal with only with_hash succeeds when depth is available" {
   )
   assert_true(hash_value_depth(Value::ExtVal(cv), 1) is Ok(99U))
 }
+
+///|
+test "freeze_checked: shallow list freezes successfully" {
+  let l = StarlarkList::new([Value::Int(1N), Value::Int(2N)])
+  assert_true(Value::List(l).freeze_checked() is Ok(_))
+  assert_true(l.is_frozen())
+}
+
+///|
+test "freeze_checked: deeply nested list exceeding depth limit returns an error" {
+  let n = freeze_limit + 1
+  let mut v : Value = Value::Int(0N)
+  for _ in 0..<n {
+    v = Value::List(StarlarkList::new([v]))
+  }
+  match v.freeze_checked() {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep list nesting")
+  }
+}
+
+///|
+test "freeze_checked: nesting exactly at depth limit succeeds" {
+  let mut v : Value = Value::Int(0N)
+  for _ in 0..<freeze_limit {
+    v = Value::List(StarlarkList::new([v]))
+  }
+  assert_true(v.freeze_checked() is Ok(_))
+}
+
+///|
+test "freeze_checked: deeply nested dict exceeding depth limit returns an error" {
+  let n = freeze_limit + 1
+  let mut v : Value = Value::Int(0N)
+  for _ in 0..<n {
+    let d = StarlarkDict::new()
+    d.set(Value::String(StarlarkString::new("k")), v) |> ignore
+    v = Value::Dict(d)
+  }
+  match v.freeze_checked() {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for \{n}-deep dict nesting")
+  }
+}
+
+///|
+test "freeze_checked: already-frozen container skips re-traversal" {
+  let inner = StarlarkList::new([Value::Int(1N)])
+  inner.freeze()
+  let outer = StarlarkList::new([Value::List(inner)])
+  assert_true(Value::List(outer).freeze_checked() is Ok(_))
+  assert_true(outer.is_frozen())
+}

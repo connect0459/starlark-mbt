@@ -144,3 +144,22 @@ pub fn StringDict::values(self : StringDict) -> Array[Value] {
 pub fn StringDict::freeze(self : StringDict) -> Unit {
   self.data.each(fn(_, v) { v.freeze() })
 }
+
+///|
+/// Like `StringDict::freeze` but returns `Err` instead of aborting when the
+/// nesting depth limit is exceeded.
+pub fn StringDict::freeze_checked(self : StringDict) -> Result[Unit, String] {
+  let mut err : String? = None
+  self.data.each(fn(_, v) {
+    if err is None {
+      match v.freeze_checked() {
+        Err(e) => err = Some(e)
+        Ok(_) => ()
+      }
+    }
+  })
+  match err {
+    Some(e) => Err(e)
+    None => Ok(())
+  }
+}
