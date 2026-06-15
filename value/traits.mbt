@@ -578,6 +578,11 @@ pub fn Value::freeze(self : Value) -> Unit {
 ///|
 /// Like `Value::freeze` but returns `Err` instead of aborting when the nesting
 /// depth limit is exceeded.
+///
+/// On `Err`, the value is in an indeterminate partially-frozen state and must
+/// be discarded. The exec-file entry points do this automatically; embedders
+/// calling `freeze_checked` directly must not use the value after an `Err`
+/// return.
 pub fn Value::freeze_checked(self : Value) -> Result[Unit, String] {
   freeze_value_inner(self, [], freeze_limit)
 }
@@ -588,14 +593,44 @@ fn freeze_value_inner(
   seen_funcs : Array[StarlarkFunction],
   depth : Int,
 ) -> Result[Unit, String] {
+  // Phase 1: early exits that do not consume the depth budget.
+  // Already-frozen containers, the function cycle guard, and scalar / no-op
+  // values all return immediately without decrementing depth.
   match v {
-    List(l) => {
-      if l.is_frozen() {
+    List(l) => if l.is_frozen() { return Ok(()) }
+    Dict(d) => if d.is_frozen() { return Ok(()) }
+    Set(s) => if s.is_frozen() { return Ok(()) }
+    Function(f) =>
+      if seen_funcs.iter().any(fn(g) { physical_equal(g, f) }) {
         return Ok(())
       }
-      if depth < 1 {
-        return Err("freeze exceeded maximum recursion depth")
-      }
+    None
+    | Bool(_)
+    | Int(_)
+    | Float(_)
+    | String(_)
+    | Bytes(_)
+    | Range(_)
+    | StringElems(_)
+    | StringCodepoints(_)
+    | BytesElems(_)
+    | Module(_) => return Ok(())
+    _ => ()
+  }
+  // Phase 2: single depth guard for all remaining paths (containers and
+  // ExtVal). Placing it here — after the frozen/cycle/scalar exits — means
+  // already-frozen nodes do not consume depth and scalars never trigger
+  // the limit, matching the semantics of hash_limit and repr_limit.
+  if depth < 1 {
+    return Err("freeze exceeded maximum recursion depth")
+  }
+  // Phase 3: recursive processing. Every branch here may recurse.
+  // Note: ExtVal passes through the depth guard above, but do_freeze receives
+  // no depth argument — the registered freeze_fn is responsible for its own
+  // recursion. Full depth propagation through ExtVal requires an API change
+  // (adding a depth parameter to freeze_fn) and is tracked as a known gap.
+  match v {
+    List(l) => {
       l.freeze()
       for item in l.items {
         match freeze_value_inner(item, seen_funcs, depth - 1) {
@@ -605,12 +640,6 @@ fn freeze_value_inner(
       }
     }
     Dict(d) => {
-      if d.is_frozen() {
-        return Ok(())
-      }
-      if depth < 1 {
-        return Err("freeze exceeded maximum recursion depth")
-      }
       d.freeze()
       let mut err : String? = None
       d.each(fn(k, val) {
@@ -631,12 +660,6 @@ fn freeze_value_inner(
       }
     }
     Set(s) => {
-      if s.is_frozen() {
-        return Ok(())
-      }
-      if depth < 1 {
-        return Err("freeze exceeded maximum recursion depth")
-      }
       s.freeze()
       let mut err : String? = None
       s.each(fn(k) {
@@ -652,24 +675,14 @@ fn freeze_value_inner(
         None => ()
       }
     }
-    Tuple(t) => {
-      if depth < 1 {
-        return Err("freeze exceeded maximum recursion depth")
-      }
+    Tuple(t) =>
       for item in t {
         match freeze_value_inner(item, seen_funcs, depth - 1) {
           Err(e) => return Err(e)
           Ok(_) => ()
         }
       }
-    }
     Function(f) => {
-      if seen_funcs.iter().any(fn(g) { physical_equal(g, f) }) {
-        return Ok(())
-      }
-      if depth < 1 {
-        return Err("freeze exceeded maximum recursion depth")
-      }
       seen_funcs.push(f)
       for default_opt in f.defaults {
         match default_opt {
@@ -692,29 +705,20 @@ fn freeze_value_inner(
         }
       }
     }
-    BoundMethod(m) => {
-      if depth < 1 {
-        return Err("freeze exceeded maximum recursion depth")
-      }
+    BoundMethod(m) =>
       match freeze_value_inner(m.recv, seen_funcs, depth - 1) {
         Err(e) => return Err(e)
         Ok(_) => ()
       }
-    }
     Builtin(f) =>
       match f.receiver() {
-        Some(r) => {
-          if depth < 1 {
-            return Err("freeze exceeded maximum recursion depth")
-          }
+        Some(r) =>
           match freeze_value_inner(r, seen_funcs, depth - 1) {
             Err(e) => return Err(e)
             Ok(_) => ()
           }
-        }
         None => ()
       }
-    Module(_) => ()
     ExtVal(c) => c.do_freeze()
     _ => ()
   }

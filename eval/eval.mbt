@@ -826,6 +826,12 @@ pub fn Module::new() -> Module {
 ///|
 /// Creates a frozen `Module` pre-populated from `m`.
 ///
+/// Aborts (rather than returning an error) if any value in `m` is nested
+/// beyond `freeze_limit`. This is acceptable for static, shallow maps such as
+/// built-in library exports. For user-supplied code, use the `exec_file*`
+/// entry points, which call `Module::freeze_checked` and propagate depth
+/// errors as a `EvalError`.
+///
 /// Parameters:
 ///
 /// - `m` : A map of global name strings to their initial values.
