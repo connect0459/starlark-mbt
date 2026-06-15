@@ -348,6 +348,9 @@ pub let compare_limit : Int = 10
 pub let hash_limit : Int = 200
 
 ///|
+pub let freeze_limit : Int = 200
+
+///|
 /// Compares `a` and `b` using Starlark's total ordering, returning a negative
 /// int, zero, or positive int. Returns `Err` for incompatible types. `op` is
 /// the operator string used in the error message.
@@ -560,77 +563,166 @@ fn set_equals_depth(
 ///|
 /// Recursively deep-freezes `self` and all values reachable from it (list
 /// items, dict keys/values, set elements, function defaults and closures).
+/// Aborts if the nesting depth exceeds `freeze_limit`.
 ///
 /// Parameters:
 ///
 /// - `self` : The root value to freeze.
 pub fn Value::freeze(self : Value) -> Unit {
-  freeze_value_inner(self, [])
+  match freeze_value_inner(self, [], freeze_limit) {
+    Ok(_) => ()
+    Err(e) => abort(e)
+  }
 }
 
 ///|
-fn freeze_value_inner(v : Value, seen_funcs : Array[StarlarkFunction]) -> Unit {
+/// Like `Value::freeze` but returns `Err` instead of aborting when the nesting
+/// depth limit is exceeded.
+///
+/// On `Err`, the value is in an indeterminate partially-frozen state and must
+/// be discarded. The exec-file entry points do this automatically; embedders
+/// calling `freeze_checked` directly must not use the value after an `Err`
+/// return.
+pub fn Value::freeze_checked(self : Value) -> Result[Unit, String] {
+  freeze_value_inner(self, [], freeze_limit)
+}
+
+///|
+fn freeze_value_inner(
+  v : Value,
+  seen_funcs : Array[StarlarkFunction],
+  depth : Int,
+) -> Result[Unit, String] {
+  // Phase 1: early exits that do not consume the depth budget.
+  // Already-frozen containers, the function cycle guard, and scalar / no-op
+  // values all return immediately without decrementing depth.
+  match v {
+    List(l) => if l.is_frozen() { return Ok(()) }
+    Dict(d) => if d.is_frozen() { return Ok(()) }
+    Set(s) => if s.is_frozen() { return Ok(()) }
+    Function(f) =>
+      if seen_funcs.iter().any(fn(g) { physical_equal(g, f) }) {
+        return Ok(())
+      }
+    None
+    | Bool(_)
+    | Int(_)
+    | Float(_)
+    | String(_)
+    | Bytes(_)
+    | Range(_)
+    | StringElems(_)
+    | StringCodepoints(_)
+    | BytesElems(_)
+    | Module(_) => return Ok(())
+    _ => ()
+  }
+  // Phase 2: single depth guard for all remaining paths (containers and
+  // ExtVal). Placing it here — after the frozen/cycle/scalar exits — means
+  // already-frozen nodes do not consume depth and scalars never trigger
+  // the limit, matching the semantics of hash_limit and repr_limit.
+  if depth < 1 {
+    return Err("freeze exceeded maximum recursion depth")
+  }
+  // Phase 3: recursive processing. Every branch here may recurse.
+  // Note: ExtVal passes through the depth guard above, but do_freeze receives
+  // no depth argument — the registered freeze_fn is responsible for its own
+  // recursion. Full depth propagation through ExtVal requires an API change
+  // (adding a depth parameter to freeze_fn) and is tracked as a known gap.
   match v {
     List(l) => {
-      if l.is_frozen() {
-        return
-      }
       l.freeze()
       for item in l.items {
-        freeze_value_inner(item, seen_funcs)
+        match freeze_value_inner(item, seen_funcs, depth - 1) {
+          Err(e) => return Err(e)
+          Ok(_) => ()
+        }
       }
     }
     Dict(d) => {
-      if d.is_frozen() {
-        return
-      }
       d.freeze()
+      let mut err : String? = None
       d.each(fn(k, val) {
-        freeze_value_inner(k, seen_funcs)
-        freeze_value_inner(val, seen_funcs)
+        if err is None {
+          match freeze_value_inner(k, seen_funcs, depth - 1) {
+            Err(e) => err = Some(e)
+            Ok(_) =>
+              match freeze_value_inner(val, seen_funcs, depth - 1) {
+                Err(e) => err = Some(e)
+                Ok(_) => ()
+              }
+          }
+        }
       })
+      match err {
+        Some(e) => return Err(e)
+        None => ()
+      }
     }
     Set(s) => {
-      if s.is_frozen() {
-        return
-      }
       s.freeze()
-      s.each(fn(k) { freeze_value_inner(k, seen_funcs) })
+      let mut err : String? = None
+      s.each(fn(k) {
+        if err is None {
+          match freeze_value_inner(k, seen_funcs, depth - 1) {
+            Err(e) => err = Some(e)
+            Ok(_) => ()
+          }
+        }
+      })
+      match err {
+        Some(e) => return Err(e)
+        None => ()
+      }
     }
     Tuple(t) =>
       for item in t {
-        freeze_value_inner(item, seen_funcs)
+        match freeze_value_inner(item, seen_funcs, depth - 1) {
+          Err(e) => return Err(e)
+          Ok(_) => ()
+        }
       }
     Function(f) => {
-      if seen_funcs.iter().any(fn(g) { physical_equal(g, f) }) {
-        return
-      }
       seen_funcs.push(f)
       for default_opt in f.defaults {
         match default_opt {
-          Some(dv) => freeze_value_inner(dv, seen_funcs)
+          Some(dv) =>
+            match freeze_value_inner(dv, seen_funcs, depth - 1) {
+              Err(e) => return Err(e)
+              Ok(_) => ()
+            }
           None => ()
         }
       }
-      // Freeze the values the closure captured through cells, so freezing the
-      // function also freezes the data it closes over.
       for cell in f.vm_freevars {
         match cell.get() {
-          Some(cv) => freeze_value_inner(cv, seen_funcs)
+          Some(cv) =>
+            match freeze_value_inner(cv, seen_funcs, depth - 1) {
+              Err(e) => return Err(e)
+              Ok(_) => ()
+            }
           None => ()
         }
       }
     }
-    BoundMethod(m) => freeze_value_inner(m.recv, seen_funcs)
+    BoundMethod(m) =>
+      match freeze_value_inner(m.recv, seen_funcs, depth - 1) {
+        Err(e) => return Err(e)
+        Ok(_) => ()
+      }
     Builtin(f) =>
       match f.receiver() {
-        Some(r) => freeze_value_inner(r, seen_funcs)
+        Some(r) =>
+          match freeze_value_inner(r, seen_funcs, depth - 1) {
+            Err(e) => return Err(e)
+            Ok(_) => ()
+          }
         None => ()
       }
-    Module(_) => ()
     ExtVal(c) => c.do_freeze()
     _ => ()
   }
+  Ok(())
 }
 
 ///|

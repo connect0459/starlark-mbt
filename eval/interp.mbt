@@ -273,7 +273,12 @@ fn exec_file_vm(
     Ok(pair) => pair
     Err(e) => return Err(e)
   }
-  Ok(Module::from_map(module_output(prog, m, opts)))
+  let mod = Module::from_map_unfrozen(module_output(prog, m, opts))
+  match mod.freeze_checked() {
+    Err(e) => return Err(@errors.EvalError::simple(e))
+    Ok(_) => ()
+  }
+  Ok(mod)
 }
 
 ///|

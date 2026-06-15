@@ -123,7 +123,8 @@ pub enum Value {
 | `truth()` | `-> Bool` | Truthiness for `if`/`while`/`and`/`or` |
 | `starlark_equals(Value)` | `-> Bool` | Structural equality |
 | `hash()` | `-> Result[UInt, String]` | Hash; `Err` for unhashable values |
-| `freeze()` | `-> Unit` | Freeze this value (and, transitively, its contents) |
+| `freeze()` | `-> Unit` | Freeze this value (and, transitively, its contents); aborts on depth overflow |
+| `freeze_checked()` | `-> Result[Unit, String]` | Like `freeze` but returns `Err` on depth overflow |
 
 `Value` also implements `Eq`.
 
@@ -149,6 +150,7 @@ These guard against infinite recursion on cyclic data structures.
 | Symbol | Signature | Description |
 | :--- | :--- | :--- |
 | `compare_limit` | `Int` | Default recursion depth for comparison (value: `10`) |
+| `freeze_limit` | `Int` | Default recursion depth for `Value::freeze` / `freeze_checked` (value: `200`) |
 | `hash_limit` | `Int` | Default recursion depth for `Value::hash` (value: `200`) |
 | `equal_depth` | `(Value, Value, Int) -> Result[Bool, String]` | Equality with explicit depth limit |
 | `compare_depth` | `(String, Value, Value, Int) -> Result[Bool, String]` | Comparison operator (`"=="`, `"<"`, …) with explicit depth limit |

@@ -24,6 +24,8 @@ pub fn equal(Value, Value) -> Result[Bool, String]
 
 pub fn equal_depth(Value, Value, Int) -> Result[Bool, String]
 
+pub let freeze_limit : Int
+
 pub let hash_limit : Int
 
 pub fn hash_value_depth(Value, Int) -> Result[UInt, String]
@@ -297,6 +299,7 @@ pub(all) enum Value {
   ExtVal(CustomValue)
 }
 pub fn Value::freeze(Self) -> Unit
+pub fn Value::freeze_checked(Self) -> Result[Unit, String]
 pub fn Value::hash(Self) -> Result[UInt, String]
 pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
 pub fn Value::new_dict() -> Self
