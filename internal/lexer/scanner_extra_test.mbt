@@ -383,3 +383,38 @@ test "scan: unexpected '}' at depth 0" {
 test "scan: unbalanced ')' after expression" {
   assert_true(scan("a = max(range(10)))").contains("unexpected ')'"))
 }
+
+// --- L-3: unexpected input character includes the offending rune ---
+
+///|
+test "scan: unexpected input character includes the offending rune" {
+  let msg = scan("a @ b")
+  assert_true(msg.contains("unexpected input character '@'"))
+}
+
+///|
+test "scan: unexpected dollar sign includes the character" {
+  let msg = scan("$")
+  assert_true(msg.contains("unexpected input character '$'"))
+}
+
+// --- L-1: invalid float literal carries no colon-literal suffix ---
+
+///|
+test "scan: overflow float literal emits bare message without literal suffix" {
+  let msg = scan("1.8e308")
+  assert_true(msg.contains("invalid float literal"))
+  assert_false(msg.contains(": 1.8e308"))
+}
+
+// --- L-2: non-ASCII hex escape includes sequence and UTF-8 encoding hint ---
+
+///|
+test "scan: non-ASCII hex escape includes escape sequence and encoding hint" {
+  let msg = scan("\"\\xff\"")
+  assert_true(
+    msg.contains(
+      "non-ASCII hex escape \\xff (use \\u00FF for the UTF-8 encoding of U+00FF)",
+    ),
+  )
+}

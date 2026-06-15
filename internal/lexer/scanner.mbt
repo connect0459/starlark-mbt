@@ -604,7 +604,10 @@ fn Scanner::scan_operator(
     0x7E => Ok({ tok: Tilde, pos: start }) // ~
     0x3B => Ok({ tok: Semi, pos: start }) // ;
     0x3A => Ok({ tok: Colon, pos: start }) // :
-    _ => Err(self.make_error(start, "unexpected input character"))
+    _ => {
+      let ch = cn.unsafe_to_char()
+      Err(self.make_error(start, "unexpected input character '\{ch}'"))
+    }
   }
 }
 
@@ -1058,7 +1061,15 @@ fn Scanner::decode_escape(
       self.read_byte() |> ignore
       let val = xdigit_to_int(h1) * 16 + xdigit_to_int(h2)
       if !is_bytes && val > max_ascii {
-        return Err(self.make_error(str_start, "non-ASCII hex escape"))
+        let c1 = h1.to_int().unsafe_to_char()
+        let c2 = h2.to_int().unsafe_to_char()
+        let hex4 = int_to_hex4_upper(val)
+        return Err(
+          self.make_error(
+            str_start,
+            "non-ASCII hex escape \\x\{c1}\{c2} (use \\u\{hex4} for the UTF-8 encoding of U+\{hex4})",
+          ),
+        )
       }
       buf.push(val.to_byte())
     }
@@ -1360,6 +1371,6 @@ fn parse_float_str(s : String) -> Result[Double, String] {
     return Err("empty float string")
   }
   Ok(@string.parse_double(s)) catch {
-    _ => Err("invalid float literal: \{s}")
+    _ => Err("invalid float literal")
   }
 }
