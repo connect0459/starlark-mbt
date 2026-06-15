@@ -160,7 +160,7 @@ fn decompose_unix_sec(
   tz_offset : Int,
 ) -> (Int64, Int, Int, Int, Int, Int) {
   let local_sec = sec + tz_offset.to_int64()
-  let unix_to_abs = 9223372028715321600L
+  let unix_to_abs = 9223372028741760000L
   let (unix_day, sec_of_day) = if local_sec >= -unix_to_abs {
     let d = floor_div_int64(local_sec, secs_per_day)
     (d, (local_sec - d * secs_per_day).to_int())
