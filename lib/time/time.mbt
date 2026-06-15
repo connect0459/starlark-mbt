@@ -1302,7 +1302,7 @@ fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
       _ => return Err("in_location: argument must be a string")
     }
     if !is_valid_timezone_impl(loc) {
-      return Err("in_location: unsupported timezone \"\{loc}\"")
+      return Err("unknown time zone \{loc}")
     }
     let (offset, abbr) = match get_tz_abbr_at_impl(loc, sec) {
       Some(v) => v
@@ -2244,7 +2244,7 @@ fn make_parse_time_fn() -> @value.Value {
       Ok(make_zoned(parsed_sec, nsec, tz_off))
     } else {
       if !is_valid_timezone_impl(location) {
-        return Err("time.parse_time: unsupported timezone \"\{location}\"")
+        return Err("unknown time zone \{location}")
       }
       if has_tz {
         // Value carried an explicit timezone → parsed_sec is already UTC.
@@ -2425,7 +2425,7 @@ fn make_time_constructor_fn() -> @value.Value {
       Ok(make_time(unix_sec, ns_norm))
     } else {
       if !is_valid_timezone_impl(location) {
-        return Err("time.time: unsupported timezone \"\{location}\"")
+        return Err("unknown time zone \{location}")
       }
       let (local_sec, ns_norm) = normalize_to_unix_sec(
         year, month, day, hour, minute, second, nanosecond,

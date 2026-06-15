@@ -158,7 +158,7 @@ test "time module: in_location and format reject malformed arguments" {
       #|load("assert.star", "assert")
       #|load("time.star", "time")
       #|t = time.from_timestamp(1593193116)
-      #|assert.fails(lambda: t.in_location("Mars/Olympus"), "unsupported timezone")
+      #|assert.fails(lambda: t.in_location("Mars/Olympus"), "unknown time zone")
       #|assert.fails(lambda: t.in_location(5), "must be a string")
       #|assert.fails(lambda: t.in_location("UTC", "extra"), "want 1")
       #|assert.fails(lambda: t.format(5), "must be a string")
@@ -204,7 +204,7 @@ test "time module: time constructor validates argument types and names" {
       #|assert.fails(lambda: time.time(location=5), "location must be a string")
       #|assert.fails(lambda: time.time(foo=1), "unexpected keyword argument")
       #|assert.fails(lambda: time.time(2021), "unexpected positional arguments")
-      #|assert.fails(lambda: time.time(year=2021, location="Mars/Olympus"), "unsupported timezone")
+      #|assert.fails(lambda: time.time(year=2021, location="Mars/Olympus"), "unknown time zone")
     ),
   )
   if errs.length() != 0 {
@@ -229,7 +229,7 @@ test "time module: parse_time interprets values relative to a location" {
       #|assert.eq(wall, time.parse_time("2021-03-22T05:30:00Z"))
       #|assert.fails(
       #|  lambda: time.parse_time("2021-03-22T14:30:00Z", location="Mars/Olympus"),
-      #|  "unsupported timezone",
+      #|  "unknown time zone",
       #|)
     ),
   )
