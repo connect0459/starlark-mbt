@@ -2173,6 +2173,13 @@ fn make_from_timestamp_fn() -> @value.Value {
 ///|
 fn make_parse_time_fn() -> @value.Value {
   @value.Value::new_builtin("parse_time", fn(_ctx, pos_args, kw_args) {
+    for kw in kw_args {
+      let (k, _) = kw
+      match k {
+        "format" | "location" => ()
+        _ => return Err("parse_time: unexpected keyword argument \{k}")
+      }
+    }
     if pos_args.length() < 1 {
       return Err("parse_time: missing argument for x")
     }

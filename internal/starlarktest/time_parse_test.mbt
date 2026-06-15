@@ -438,6 +438,7 @@ test "time module: parse_time and from_timestamp validate argument types" {
       #|assert.fails(lambda: time.parse_time("x", 5), "for parameter format: got int, want string")
       #|assert.fails(lambda: time.parse_time("2020-01-01T00:00:00Z", "2006-01-02T15:04:05Z07:00", 5), "for parameter location: got int, want string")
       #|assert.fails(lambda: time.parse_time("x", bogus="y"), "unexpected keyword argument")
+      #|assert.fails(lambda: time.parse_time(bogus="y"), "unexpected keyword argument")
       #|assert.fails(lambda: time.from_timestamp("x"), "for parameter 1: got string, want int")
       #|assert.fails(lambda: time.from_timestamp(0, "x"), "for parameter 2: got string, want int")
       #|assert.fails(lambda: time.from_timestamp(), "got 0 arguments, want at least 1")
