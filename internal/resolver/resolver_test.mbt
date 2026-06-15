@@ -537,6 +537,20 @@ test "resolve: augmented assignment to tuple LHS is rejected" {
 }
 
 ///|
+test "resolve: unparenthesized tuple LHS with tuple RHS in augmented assignment is rejected" {
+  let f = parse_or_fail("a, b += 1, 2")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(
+    has_error(result, "can't use tuple expression in augmented assignment"),
+  )
+}
+
+///|
 test "resolve: augmented assignment to list LHS is rejected" {
   let f = parse_or_fail("[a, b] += 1")
   let result = resolve(

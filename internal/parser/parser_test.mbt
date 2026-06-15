@@ -468,6 +468,20 @@ test "augmented assignment plus-equals" {
 }
 
 ///|
+test "unparenthesized tuple LHS augmented assignment with tuple RHS parses correctly" {
+  let f = parse_f("a, b += 1, 2\n")
+  match f.stmts()[0] {
+    SAugAssign(
+      ETuple([EIdent("a", _), EIdent("b", _)], _),
+      AugAdd,
+      ETuple([ELiteral(LitInt(1N), _), ELiteral(LitInt(2N), _)], _),
+      _
+    ) => ()
+    _ => fail("expected SAugAssign with tuple LHS and tuple RHS")
+  }
+}
+
+///|
 test "expression statement" {
   let f = parse_f("f()\n")
   match f.stmts()[0] {
