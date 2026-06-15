@@ -76,7 +76,7 @@ pub fn walk_stmt(stmt : Stmt, f : (Node?) -> Bool) -> Unit {
         walk_stmt(s, f)
       }
     }
-    SDef(_, params, body, _) => {
+    SDef(_, _, params, body, _) => {
       for p in params {
         walk_param(p, f)
       }
@@ -201,7 +201,7 @@ fn walk_arg(arg : Arg, f : (Node?) -> Bool) -> Unit {
     return
   }
   match arg {
-    ArgPos(e) | ArgStarArgs(e) | ArgKwArgs(e) => walk_expr(e, f)
+    ArgPos(e) | ArgStarArgs(_, e) | ArgKwArgs(_, e) => walk_expr(e, f)
     ArgKw(_, e, _) => walk_expr(e, f)
   }
   f(None) |> ignore

@@ -192,6 +192,7 @@ test "num_params counts varargs and kwargs parameters" {
   // def f(a, b=1, *args, **kw): pass
   let def_ = @syntax.Stmt::SDef(
     "f",
+    p(1, 1),
     [
       @syntax.Param::ParamIdent("a", p(1, 1)),
       @syntax.Param::ParamDefault("b", lit_int(1), p(1, 1)),

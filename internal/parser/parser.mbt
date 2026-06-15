@@ -428,13 +428,13 @@ fn Parser::parse_assign_or_expr_stmt(
 fn Parser::parse_def_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
   let p = self.pos
   self.advance()
-  let (name, _) = self.expect_ident()
+  let (name, name_pos) = self.expect_ident()
   self.expect(@lexer.Token::LParen)
   let params = self.parse_params()
   self.expect(@lexer.Token::RParen)
   self.expect(@lexer.Token::Colon)
   let body = self.parse_suite()
-  @syntax.Stmt::SDef(name, params, body, p)
+  @syntax.Stmt::SDef(name, name_pos, params, body, p)
 }
 
 ///|
@@ -1116,12 +1116,12 @@ fn Parser::parse_call_arg(self : Parser) -> @syntax.Arg raise ParseErr {
     @lexer.Token::StarStar => {
       self.advance()
       let e = self.parse_test()
-      @syntax.Arg::ArgKwArgs(e)
+      @syntax.Arg::ArgKwArgs(p, e)
     }
     @lexer.Token::Star => {
       self.advance()
       let e = self.parse_test()
-      @syntax.Arg::ArgStarArgs(e)
+      @syntax.Arg::ArgStarArgs(p, e)
     }
     @lexer.Token::Ident(name) => {
       self.advance()

@@ -825,8 +825,8 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       self.walk_stmts(body)
       self.loops = old_loops
     }
-    @syntax.Stmt::SDef(name, params, body, pos) => {
-      self.bind_name(name, pos)
+    @syntax.Stmt::SDef(name, name_pos, params, body, pos) => {
+      self.bind_name(name, name_pos)
       let saved = self.push_block()
       let old_fn = self.current_fn_name
       let old_in_func = self.in_func
@@ -1022,7 +1022,8 @@ fn Resolver::pre_collect_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       self.pre_collect_stmts(body)
     }
     @syntax.Stmt::SWhile(_, body, _) => self.pre_collect_stmts(body)
-    @syntax.Stmt::SDef(name, _, _, pos) => self.bind_local(name, pos)
+    @syntax.Stmt::SDef(name, name_pos, _, _, _) =>
+      self.bind_local(name, name_pos)
     _ => ()
   }
 }
@@ -1085,19 +1086,18 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       let mut n_kw = 0
       for arg in args {
         match arg {
-          @syntax.Arg::ArgKwArgs(e) => {
+          @syntax.Arg::ArgKwArgs(op_pos, e) => {
             if seen_kwargs {
-              self.errorf(@syntax.expr_pos(e), "multiple **kwargs not allowed")
+              self.errorf(op_pos, "multiple **kwargs not allowed")
             }
             seen_kwargs = true
             self.walk_expr(e)
           }
-          @syntax.Arg::ArgStarArgs(e) => {
-            let pos = @syntax.expr_pos(e)
+          @syntax.Arg::ArgStarArgs(op_pos, e) => {
             if seen_kwargs {
-              self.errorf(pos, "*args may not follow **kwargs")
+              self.errorf(op_pos, "*args may not follow **kwargs")
             } else if seen_varargs {
-              self.errorf(pos, "multiple *args not allowed")
+              self.errorf(op_pos, "multiple *args not allowed")
             }
             seen_varargs = true
             self.walk_expr(e)
