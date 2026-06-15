@@ -77,17 +77,17 @@ is a dialect difference.
 
 ## RFC 3339 parsing behavior
 
-The default `parse_time` format follows RFC 3339 with the following intentional
-lenient extensions:
+The default `parse_time` format follows RFC 3339 with one intentional extension
+beyond the strict layout:
 
 | Input form | Example | Behavior |
 | :--- | :--- | :--- |
 | Hour value 24 | `"2021-03-23T24:00:00Z"` | accepted, treated as midnight of next day |
-| Lowercase `t` separator | `"2021-03-22t23:20:50Z"` | accepted |
-| Space separator | `"2021-03-22 23:20:50Z"` | accepted |
+| Lowercase `t` separator | `"2021-03-22t23:20:50Z"` | rejected (go parity) |
+| Space separator | `"2021-03-22 23:20:50Z"` | rejected (go parity) |
 
 Trailing text after the timezone is rejected:
-`"2021-03-22T23:20:50Zgarbage"` → error `"extra text after date"`.
+`"2021-03-22T23:20:50Zgarbage"` → error `"... extra text: garbage"`.
 
 ## Quick start
 

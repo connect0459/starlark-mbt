@@ -235,6 +235,41 @@ test "parse_rfc3339: trailing garbage uses Go-format extra text: suffix" {
 }
 
 ///|
+test "parse_rfc3339: space date-time separator is rejected" {
+  match parse_rfc3339("2021-03-22 10:42:13Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \" 10:42:13Z\" as \"T\""))
+  }
+}
+
+///|
+test "parse_rfc3339: lowercase t separator is rejected" {
+  match parse_rfc3339("2021-03-22t10:42:13Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \"t10:42:13Z\" as \"T\""))
+  }
+}
+
+///|
+test "parse_rfc3339: lowercase z timezone marker is rejected" {
+  match parse_rfc3339("2021-03-22T10:42:13z") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix("cannot parse \"z\" as \"Z07:00\""))
+  }
+}
+
+///|
+test "parse_rfc3339: year shorter than four digits is rejected" {
+  match parse_rfc3339("21-03-22T10:42:13Z") {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_true(
+        e.has_suffix("cannot parse \"21-03-22T10:42:13Z\" as \"2006\""),
+      )
+  }
+}
+
+///|
 test "parse_go_layout: completely wrong input includes remaining text and first token" {
   match parse_go_layout("not a date", "2006-01-02") {
     Ok(_) => fail("expected Err")

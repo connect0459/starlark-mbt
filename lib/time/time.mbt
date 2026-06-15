@@ -1395,7 +1395,10 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     None => return Err(cp_err(0, "2006"))
   }
   let year_end = year_i.length()
-  if year_end >= len || chars[year_end] != '-' {
+  if year_end != 4 {
+    return Err(cp_err(0, "2006"))
+  }
+  if chars[year_end] != '-' {
     return Err(cp_err(year_end, "-"))
   }
   let i = year_end + 1
@@ -1411,7 +1414,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     Some(v) => v
     None => return Err(cp_err(i, "02"))
   }
-  if i >= len || (chars[i] != 'T' && chars[i] != 't' && chars[i] != ' ') {
+  if i >= len || chars[i] != 'T' {
     return Err(cp_err(i, "T"))
   }
   let i = i + 1
@@ -1457,8 +1460,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   } else {
     (0, i)
   }
-  let (tz_offset_sec, tz_end) = if i < len &&
-    (chars[i] == 'Z' || chars[i] == 'z') {
+  let (tz_offset_sec, tz_end) = if i < len && chars[i] == 'Z' {
     (0, i + 1)
   } else if i < len && (chars[i] == '+' || chars[i] == '-') {
     let sign = if chars[i] == '+' { 1 } else { -1 }
@@ -2181,7 +2183,7 @@ fn make_parse_time_fn() -> @value.Value {
         _ => return Err("time.parse_time: location must be a string")
       }
     }
-    // The default layout is parsed by the lenient RFC3339 reader; any other
+    // The default layout is parsed by the strict RFC3339 reader; any other
     // layout is parsed with the Go reference-time interpreter.
     // Both yield (parsed_sec, nsec, has_explicit_tz, tz_offset_sec) where
     // parsed_sec is the UTC instant (already offset-adjusted when the value
