@@ -1271,31 +1271,70 @@ fn make_encode_indent_fn() -> @value.Value {
 ///|
 fn make_decode_fn() -> @value.Value {
   @value.Value::new_builtin("json.decode", fn(_ctx, pos_args, kw_args) {
-    for kw in kw_args {
-      let (k, _) = kw
-      if k == "x" {
-        return Err("json.decode: unexpected keyword argument x")
+    // positional cap: go allows at most 2 (x + default?)
+    if pos_args.length() > 2 {
+      return Err(
+        "json.decode: got \{pos_args.length()} arguments, want at most 2",
+      )
+    }
+    // type-check positional x first so that go's error-precedence is preserved:
+    // json.decode(2, foo=3) → type error, not unknown-kwarg error
+    let mut x_str : String? = None
+    if pos_args.length() >= 1 {
+      match pos_args[0] {
+        @value.Value::String(s) => x_str = Some(s.raw())
+        v =>
+          return Err(
+            "json.decode: for parameter x: got \{v.type_name()}, want string",
+          )
       }
     }
-    if pos_args.length() < 1 {
-      return Err("json.decode: missing required argument 'x'")
+    // process kwargs; defer the x-string-kwarg positional-only error to after
+    // the loop so that unknown kwargs appearing later are detected first,
+    // matching go's UnpackArgs kwloop order (json.go:322 check runs post-loop)
+    let mut default_from_kw : @value.Value? = None
+    let mut x_kwarg_string = false
+    for kw in kw_args {
+      let (k, v) = kw
+      match k {
+        "default" =>
+          if pos_args.length() >= 2 || default_from_kw is Some(_) {
+            return Err(
+              "json.decode: got multiple values for keyword argument \"default\"",
+            )
+          } else {
+            default_from_kw = Some(v)
+          }
+        "x" =>
+          if pos_args.length() >= 1 {
+            return Err(
+              "json.decode: got multiple values for keyword argument \"x\"",
+            )
+          } else {
+            match v {
+              @value.Value::String(_) => x_kwarg_string = true
+              _ =>
+                return Err(
+                  "json.decode: for parameter x: got \{v.type_name()}, want string",
+                )
+            }
+          }
+        _ => return Err("json.decode: unexpected keyword argument \"\{k}\"")
+      }
     }
-    let x = match pos_args[0] {
-      @value.Value::String(s) => s.raw()
-      _ => return Err("json.decode: x must be a string")
+    // deferred positional-only rejection for x string-kwarg (post-loop, like go)
+    if x_kwarg_string {
+      return Err("json.decode: unexpected keyword argument x")
     }
-    let default_val : @value.Value? = if pos_args.length() >= 2 {
+    // required check
+    let x = match x_str {
+      Some(s) => s
+      None => return Err("json.decode: missing argument for x")
+    }
+    let default_val = if pos_args.length() >= 2 {
       Some(pos_args[1])
     } else {
-      let mut found : @value.Value? = None
-      for kw in kw_args {
-        let (k, v) = kw
-        if k == "default" {
-          found = Some(v)
-          break
-        }
-      }
-      found
+      default_from_kw
     }
     decode_from_json(x, default_val)
   })
