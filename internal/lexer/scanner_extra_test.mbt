@@ -412,6 +412,43 @@ test "scan: invalid \\U slot prints all eight chars in the error" {
   assert_true(msg.contains("invalid escape sequence \\U0000001g"))
 }
 
+// --- M-8: unterminated/newline errors anchor at pre-prefix token start ---
+
+///|
+test "scan: unterminated raw string anchors at the prefix character column" {
+  let msg = scan("r\"abc")
+  assert_true(msg.contains("foo.star:1:1:"))
+  assert_true(msg.contains("unexpected EOF in string"))
+}
+
+///|
+test "scan: unterminated bytes string anchors at the prefix character column" {
+  let msg = scan("b\"abc")
+  assert_true(msg.contains("foo.star:1:1:"))
+  assert_true(msg.contains("unexpected EOF in string"))
+}
+
+///|
+test "scan: unterminated rb string anchors at the first prefix character column" {
+  let msg = scan("rb\"abc")
+  assert_true(msg.contains("foo.star:1:1:"))
+  assert_true(msg.contains("unexpected EOF in string"))
+}
+
+///|
+test "scan: newline in raw string anchors at the prefix character column" {
+  let msg = scan("r\"abc\n")
+  assert_true(msg.contains("foo.star:1:1:"))
+  assert_true(msg.contains("unexpected newline in string"))
+}
+
+///|
+test "scan: unprefixed unterminated string still anchors at the quote column" {
+  let msg = scan("\"abc")
+  assert_true(msg.contains("foo.star:1:1:"))
+  assert_true(msg.contains("unexpected EOF in string"))
+}
+
 // --- L-3: unexpected input character includes the offending rune ---
 
 ///|

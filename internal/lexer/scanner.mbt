@@ -802,10 +802,10 @@ fn Scanner::scan_string(
   is_bytes : Bool,
   is_raw : Bool,
 ) -> Result[ScannedToken, @errors.SyntaxError] {
-  // Capture the position of the opening quote, not the prefix character
-  // (b, r, br, etc.). Escape-sequence errors are reported here, matching
-  // starlark-go scan.go which sets `start := sc.pos` after consuming the
-  // prefix but before consuming the quote.
+  // `start` is the pre-prefix token start (used by starlark-go as val.pos for
+  // unterminated/newline errors). `quote_start` is captured just before the
+  // opening quote, after any prefix chars (r, b, rb) are consumed; starlark-go
+  // anchors escape-sequence errors here.
   let quote_start = self.current_pos()
   let quote = self.peek_byte()
   let triple = self.peek_byte_ahead(1) == quote &&
@@ -817,12 +817,14 @@ fn Scanner::scan_string(
   }
   let buf : Array[Byte] = []
   if triple {
-    match self.scan_string_triple(quote_start, quote, is_bytes, is_raw, buf) {
+    match
+      self.scan_string_triple(start, quote_start, quote, is_bytes, is_raw, buf) {
       Err(e) => return Err(e)
       Ok(_) => ()
     }
   } else {
-    match self.scan_string_single(quote_start, quote, is_bytes, is_raw, buf) {
+    match
+      self.scan_string_single(start, quote_start, quote, is_bytes, is_raw, buf) {
       Err(e) => return Err(e)
       Ok(_) => ()
     }
@@ -838,7 +840,8 @@ fn Scanner::scan_string(
 ///|
 fn Scanner::scan_string_single(
   self : Scanner,
-  start : @errors.Position,
+  tok_start : @errors.Position,
+  esc_start : @errors.Position,
   quote : Byte,
   is_bytes : Bool,
   is_raw : Bool,
@@ -846,21 +849,21 @@ fn Scanner::scan_string_single(
 ) -> Result[Unit, @errors.SyntaxError] {
   while true {
     if self.peek_byte() == b'\x00' {
-      return Err(self.unterminated_string_error(start))
+      return Err(self.unterminated_string_error(tok_start))
     }
     let ch = self.read_byte()
     if ch == quote {
       break
     }
     if ch == b'\n' || ch == b'\r' {
-      return Err(self.make_error(start, "unexpected newline in string"))
+      return Err(self.make_error(tok_start, "unexpected newline in string"))
     }
     if ch == b'\\' {
       if is_raw {
         // Raw: backslash is kept literally; next char too (except \<newline>)
         buf.push(b'\\')
         if self.peek_byte() == b'\x00' {
-          return Err(self.unterminated_string_error(start))
+          return Err(self.unterminated_string_error(tok_start))
         }
         let next = self.read_byte()
         if next == b'\r' {
@@ -870,10 +873,10 @@ fn Scanner::scan_string_single(
         }
       } else {
         if self.peek_byte() == b'\x00' {
-          return Err(self.unterminated_string_error(start))
+          return Err(self.unterminated_string_error(tok_start))
         }
         let next = self.read_byte()
-        match self.decode_escape(start, next, is_bytes, buf) {
+        match self.decode_escape(esc_start, next, is_bytes, buf) {
           Err(e) => return Err(e)
           Ok(_) => ()
         }
@@ -888,7 +891,8 @@ fn Scanner::scan_string_single(
 ///|
 fn Scanner::scan_string_triple(
   self : Scanner,
-  start : @errors.Position,
+  tok_start : @errors.Position,
+  esc_start : @errors.Position,
   quote : Byte,
   is_bytes : Bool,
   is_raw : Bool,
@@ -897,7 +901,7 @@ fn Scanner::scan_string_triple(
   let mut quote_count = 0
   while true {
     if self.peek_byte() == b'\x00' {
-      return Err(self.unterminated_string_error(start))
+      return Err(self.unterminated_string_error(tok_start))
     }
     let ch = self.read_byte()
     if ch == quote {
@@ -916,7 +920,7 @@ fn Scanner::scan_string_triple(
         if is_raw {
           buf.push(b'\\')
           if self.peek_byte() == b'\x00' {
-            return Err(self.unterminated_string_error(start))
+            return Err(self.unterminated_string_error(tok_start))
           }
           let next = self.read_byte()
           if next == b'\r' {
@@ -926,10 +930,10 @@ fn Scanner::scan_string_triple(
           }
         } else {
           if self.peek_byte() == b'\x00' {
-            return Err(self.unterminated_string_error(start))
+            return Err(self.unterminated_string_error(tok_start))
           }
           let next = self.read_byte()
-          match self.decode_escape(start, next, is_bytes, buf) {
+          match self.decode_escape(esc_start, next, is_bytes, buf) {
             Err(e) => return Err(e)
             Ok(_) => ()
           }
