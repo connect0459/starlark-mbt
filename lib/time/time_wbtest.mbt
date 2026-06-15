@@ -58,6 +58,32 @@ test "weekday_from_unix_day: day before epoch is Wednesday" {
 }
 
 ///|
+test "decompose_unix_sec: Int64 minimum second matches Go normalization" {
+  let (year, month, day, hour, minute, second) = decompose_unix_sec(
+    -9223372036854775808L, 0,
+  )
+  assert_eq(year, 292277026596L)
+  assert_eq(month, 12)
+  assert_eq(day, 4)
+  assert_eq(hour, 15)
+  assert_eq(minute, 30)
+  assert_eq(second, 8)
+}
+
+///|
+test "decompose_unix_sec: Int64 maximum second matches Go normalization" {
+  let (year, month, day, hour, minute, second) = decompose_unix_sec(
+    9223372036854775807L, 0,
+  )
+  assert_eq(year, 292277026596L)
+  assert_eq(month, 12)
+  assert_eq(day, 4)
+  assert_eq(hour, 15)
+  assert_eq(minute, 30)
+  assert_eq(second, 7)
+}
+
+///|
 test "normalize_to_unix_sec: year at representable limit is accepted" {
   let _ = normalize_to_unix_sec(290_000_000_000L, 1L, 1L, 0L, 0L, 0L, 0L)
 }
