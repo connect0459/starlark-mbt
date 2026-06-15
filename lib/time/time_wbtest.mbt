@@ -66,9 +66,10 @@ test "normalize_to_unix_sec: year at representable limit is accepted" {
 
 ///|
 test "normalize_to_unix_sec: year just above old 290e9 limit is accepted" {
-  assert_true(
-    normalize_to_unix_sec(290_000_000_001L, 1L, 1L, 0L, 0L, 0L, 0L) is Ok(_),
-  )
+  match normalize_to_unix_sec(290_000_000_001L, 1L, 1L, 0L, 0L, 0L, 0L) {
+    Ok((sec, _)) => assert_eq(sec, 9_151_516_017_864_403_200L)
+    Err(e) => fail(e)
+  }
 }
 
 ///|
