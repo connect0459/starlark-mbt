@@ -77,14 +77,21 @@ is a dialect difference.
 
 ## RFC 3339 parsing behavior
 
-The default `parse_time` format follows RFC 3339 with one intentional extension
-beyond the strict layout:
+The default `parse_time` format follows RFC 3339. Inputs rejected by Go's
+`time.Parse(time.RFC3339, …)` are also rejected here (*rejection parity*).
+Error message wording differs from Go's — mbt uses `cannot parse "…" as
+"<token>"` throughout, while Go emits `<field> out of range`. Message-format
+parity is tracked separately.
 
 | Input form | Example | Behavior |
 | :--- | :--- | :--- |
-| Hour value 24 | `"2021-03-23T24:00:00Z"` | accepted, treated as midnight of next day |
-| Lowercase `t` separator | `"2021-03-22t23:20:50Z"` | rejected (go parity) |
-| Space separator | `"2021-03-22 23:20:50Z"` | rejected (go parity) |
+| Month out of range | `"2021-13-22T10:42:13Z"` | rejected |
+| Day out of range | `"2021-03-32T10:42:13Z"` | rejected |
+| Hour value 24 | `"2021-03-23T24:00:00Z"` | rejected |
+| Minute value 60 | `"2021-03-23T00:60:00Z"` | rejected |
+| Second value 60 | `"2021-03-23T00:00:60Z"` | rejected |
+| Lowercase `t` separator | `"2021-03-22t23:20:50Z"` | rejected |
+| Space separator | `"2021-03-22 23:20:50Z"` | rejected |
 
 Trailing text after the timezone is rejected:
 `"2021-03-22T23:20:50Zgarbage"` → error `"... extra text: garbage"`.
