@@ -1395,6 +1395,9 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     None => return Err(cp_err(0, "2006"))
   }
   let year_end = year_i.length()
+  if year_end != 4 {
+    return Err(cp_err(0, "2006"))
+  }
   if year_end >= len || chars[year_end] != '-' {
     return Err(cp_err(year_end, "-"))
   }
@@ -1411,7 +1414,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     Some(v) => v
     None => return Err(cp_err(i, "02"))
   }
-  if i >= len || (chars[i] != 'T' && chars[i] != 't' && chars[i] != ' ') {
+  if i >= len || chars[i] != 'T' {
     return Err(cp_err(i, "T"))
   }
   let i = i + 1
@@ -1457,8 +1460,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
   } else {
     (0, i)
   }
-  let (tz_offset_sec, tz_end) = if i < len &&
-    (chars[i] == 'Z' || chars[i] == 'z') {
+  let (tz_offset_sec, tz_end) = if i < len && chars[i] == 'Z' {
     (0, i + 1)
   } else if i < len && (chars[i] == '+' || chars[i] == '-') {
     let sign = if chars[i] == '+' { 1 } else { -1 }
