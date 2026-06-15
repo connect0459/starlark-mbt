@@ -1,11 +1,116 @@
 # Changelog
 
+<!--
+When cutting a new release, update THREE places in this file:
+
+1. Rename [Unreleased] to [X.Y.Z] with today's date (above).
+2. Update the reference links at the very bottom of this file:
+    - Change [Unreleased] to compare the new tag against HEAD.
+    - Add [X.Y.Z] comparing the new tag against the previous tag.
+3. After the PR is merged, create a GitHub Release (this creates the remote
+   tag; pass `--target` to pin it to the exact merge commit SHA):
+
+    ```console
+    gh release create vX.Y.Z --title "vX.Y.Z" \
+      --notes-file .connect0459/gh-pr-draft.md \
+      --target <merge-commit-sha>
+    ```
+
+see: <https://github.com/connect0459/starlark-mbt/pull/211>
+-->
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.3.0] - 2026-06-15
+
+### Added
+
+- `lexer`, `parser`: reclassify `True` / `False` / `None` as pre-declared
+  identifiers rather than reserved words, matching starlark-go semantics (#167)
+- `eval`: extend `str.isdigit` and `str.isalnum` to recognise Unicode decimal
+  digits (category `Nd`), not just ASCII `0`–`9` (#169)
+
+### Removed
+
+- **BREAKING** `syntax`: remove `LiteralVal::LitNone` and
+  `LiteralVal::LitBool(Bool)` from the public `syntax` API (#167).
+  `True`, `False`, and `None` are now pre-declared identifiers and can no
+  longer appear as `ELiteral` AST nodes. Downstream code that
+  pattern-matches on these variants must be updated.
+
+### Fixed
+
+#### Crashes and stack-overflow guards
+
+- `parser`: add expression-nesting depth guard to prevent SIGSEGV on deeply
+  nested input on the native backend (#178)
+- `parser`: lower `max_expr_depth` to 80 to also prevent wasm call-stack
+  overflow (#190)
+- `value`: guard `repr` / `str` recursive traversal against native stack
+  overflow; now raises `repr exceeded maximum recursion depth` (#179)
+
+#### Conformance: eval / value
+
+- `eval`: resolver now surfaces only the first error per file to match
+  starlark-go behaviour (#186)
+- `eval`: `float()` now accepts hex-float string literals (e.g. `"0x1.8p+1"`)
+  (#206)
+- `eval`: iteration-lock errors from `list.append` and `dict.update` now carry
+  the expected `append:` / `update:` prefix (#207)
+- `eval`: `str.format` reports the correct error message when `{` appears in
+  the format-spec part of a replacement field (#208)
+- `struct`: hide synthetic `__*` internal attributes from user-facing attribute
+  access (#209)
+
+#### Conformance: parser
+
+- `parser`: missing separator error now reports the closing bracket as the
+  expected token, matching starlark-go (#187)
+- `parser`: error positions anchor at the correct token (position captured
+  before `advance()` call) (#188)
+- `parser`, `lexer`: reserved-word and operator rejection messages aligned with
+  starlark-go phrasing (#189)
+
+#### Conformance: json
+
+- `json`: reduce `json.indent` to a syntax-only re-formatter; document
+  `json.decode` RFC compliance (#168)
+- `json`: validate separator characters and reject empty input in `json.indent`
+  (#181)
+
+#### Conformance: lib/time
+
+- `time`: timezone now preserved through `time ± duration` arithmetic (#180)
+- `time`: `in_location` resolves UTC correctly at extreme timestamps;
+  `parse_duration` now accepts `Int64::min` (#195)
+- `time`: `parse_duration`, `parse_time`, and `time()` error messages aligned
+  with Go format strings (#196)
+- `time`: `in_location` handles named timezone zones at extreme timestamps
+  (#199)
+- `time`: `parse_time` errors now include the remaining unparsed input and the
+  expected layout token (#200)
+
+#### lib/math
+
+- `lib/math`: replace Lanczos `gamma` with higher-precision Cephes
+  coefficients; drop doubled `log:` error prefix (#198)
+
+#### CLI / test harness
+
+- `cli`: traceback output, library-module pre-declaration, and load-error
+  double-wrapping fixed (#165)
+- `starlarktest`: harden `###`-annotation matching harness (#166)
+
+### Documentation
+
+- Document set-literal / set-comprehension as a MoonBit extension, depth-guard
+  policy across traversal paths, and the `Error:` prefix on CLI error output
+  (#210)
 
 ## [0.2.1] - 2026-06-12
 
@@ -269,7 +374,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.1...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.0...HEAD>
+[0.3.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.1...v0.3.0>
 [0.2.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.0...v0.2.1>
 [0.2.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.1...v0.2.0>
 [0.1.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.0...v0.1.1>
