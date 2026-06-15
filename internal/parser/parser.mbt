@@ -294,7 +294,7 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
     }
     _ =>
       raise ParseErr(
-        self.syntax_error(
+        self.scanner_error(
           "first operand of load statement must be a string literal",
         ),
       )
@@ -329,7 +329,7 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
           }
           _ =>
             raise ParseErr(
-              self.syntax_error(
+              self.scanner_error(
                 "original name of loaded symbol must be quoted: \{local_name}=\"originalname\"",
               ),
             )
@@ -337,7 +337,7 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
       }
       _ =>
         raise ParseErr(
-          self.syntax_error(
+          self.scanner_error(
             "load operand must be \"name\" or localname=\"name\" (got \{self.tok.to_string()})",
           ),
         )

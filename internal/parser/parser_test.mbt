@@ -1036,11 +1036,14 @@ test "conditional expression without else clause produces correct message" {
 
 ///|
 test "load unquoted original name produces correct message" {
+  // scanner_error (one past 'e' in originalname) = col 25.
   match @parser.parse_file("test.star", "load(\"m\", x=originalname)\n") {
-    Err(e) =>
+    Err(e) => {
       assert_true(
         e.msg().contains("original name of loaded symbol must be quoted"),
       )
+      assert_eq(e.pos().col(), 25)
+    }
     Ok(_) => fail("expected error for unquoted original name")
   }
 }
@@ -1173,12 +1176,15 @@ test "scanner: invalid int literal reported at start position" {
 ///|
 test "parser: load non-string operand reports correct message" {
   // load("", 1) → load operand must be "name" or localname="name" (got int literal)
+  // scanner_error (one past '1') = col 11.
   match @parser.parse_file("test.star", "load(\"\", 1)\n") {
-    Err(e) =>
+    Err(e) => {
       assert_true(
         e.msg().contains("load operand must be") &&
         e.msg().contains("got int literal"),
       )
+      assert_eq(e.pos().col(), 11)
+    }
     Ok(_) => fail("expected error")
   }
 }
@@ -1199,13 +1205,16 @@ test "parser: load ident without = reports correct message" {
 ///|
 test "parser: load non-string first arg reports correct message" {
   // load(1, 2) → first operand of load statement must be a string literal
+  // scanner_error (one past '1') = col 7.
   match @parser.parse_file("test.star", "load(1, 2)\n") {
-    Err(e) =>
+    Err(e) => {
       assert_true(
         e
         .msg()
         .contains("first operand of load statement must be a string literal"),
       )
+      assert_eq(e.pos().col(), 7)
+    }
     Ok(_) => fail("expected error")
   }
 }
