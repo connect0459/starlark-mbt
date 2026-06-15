@@ -1500,10 +1500,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int), String] {
     for k in tz_end..<chars.length() {
       buf.write_char(chars[k])
     }
-    return Err(
-      "parsing time \"\{s}\" as \"\{rfc_layout}\": extra text: " +
-      buf.to_string(),
-    )
+    return Err("parsing time \"\{s}\": extra text: \"\{buf.to_string()}\"")
   }
   let dt = @x_time.ZonedDateTime::of(
     year,
@@ -2015,10 +2012,7 @@ fn parse_go_layout(
     for k in vi..<vn {
       buf.write_char(vc[k])
     }
-    return Err(
-      "parsing time \"\{value}\" as \"\{layout}\": extra text: " +
-      buf.to_string(),
-    )
+    return Err("parsing time \"\{value}\": extra text: \"\{buf.to_string()}\"")
   }
   if yday >= 0 {
     let max_yday = if is_leap_year(year.to_int64()) { 366 } else { 365 }
