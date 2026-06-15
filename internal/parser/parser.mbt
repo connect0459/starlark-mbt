@@ -285,6 +285,7 @@ fn Parser::parse_return_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
 fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
   let p = self.pos
   self.advance()
+  let lparen = self.pos
   self.expect(@lexer.Token::LParen)
   let module_name = match self.tok {
     @lexer.Token::Str(s) => {
@@ -299,8 +300,8 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
       )
   }
   let bindings : Array[(String, String, @errors.Position)] = []
-  while self.tok == @lexer.Token::Comma {
-    self.advance()
+  while self.tok != @lexer.Token::RParen && self.tok != @lexer.Token::EOF {
+    self.expect(@lexer.Token::Comma)
     if self.tok == @lexer.Token::RParen {
       break
     }
@@ -315,8 +316,8 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
         self.advance()
         if self.tok != @lexer.Token::Assign {
           raise ParseErr(
-            self.syntax_error(
-              "load operand must be \"\{local_name}\" or \{local_name}=\"originalname\"",
+            self.scanner_error(
+              "load operand must be \"\{local_name}\" or \{local_name}=\"originalname\" (want '=' after \{local_name})",
             ),
           )
         }
@@ -345,7 +346,9 @@ fn Parser::parse_load_stmt(self : Parser) -> @syntax.Stmt raise ParseErr {
   self.expect(@lexer.Token::RParen)
   if bindings.is_empty() {
     raise ParseErr(
-      self.syntax_error("load statement must import at least 1 symbol"),
+      self.syntax_error_at(
+        lparen, "load statement must import at least 1 symbol",
+      ),
     )
   }
   @syntax.Stmt::SLoad(module_name, bindings, p)
