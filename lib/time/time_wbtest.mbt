@@ -65,16 +65,23 @@ test "normalize_to_unix_sec: year at representable limit is accepted" {
 }
 
 ///|
-test "normalize_to_unix_sec: year beyond representable limit is rejected" {
+test "normalize_to_unix_sec: year just above old 290e9 limit is accepted" {
   assert_true(
-    normalize_to_unix_sec(290_000_000_001L, 1L, 1L, 0L, 0L, 0L, 0L) is Err(_),
+    normalize_to_unix_sec(290_000_000_001L, 1L, 1L, 0L, 0L, 0L, 0L) is Ok(_),
   )
 }
 
 ///|
-test "normalize_to_unix_sec: month normalization beyond representable limit is rejected" {
+test "normalize_to_unix_sec: negative year just below old -290e9 limit is accepted" {
   assert_true(
-    normalize_to_unix_sec(0L, 3_480_000_000_013L, 1L, 0L, 0L, 0L, 0L) is Err(_),
+    normalize_to_unix_sec(-300_000_000_000L, 1L, 1L, 0L, 0L, 0L, 0L) is Ok(_),
+  )
+}
+
+///|
+test "normalize_to_unix_sec: month normalization producing year above old limit is accepted" {
+  assert_true(
+    normalize_to_unix_sec(0L, 3_480_000_000_013L, 1L, 0L, 0L, 0L, 0L) is Ok(_),
   )
 }
 
