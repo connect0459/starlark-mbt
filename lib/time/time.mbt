@@ -1386,7 +1386,7 @@ fn time_quote(s : String) -> String {
       buf.write_string("\\\"")
     } else if cp == '\\'.to_int() {
       buf.write_string("\\\\")
-    } else if cp >= 32 && cp <= 126 {
+    } else if cp >= 32 && cp <= 127 {
       buf.write_char(c)
     } else if cp < 0x80 {
       write_hex_escape(buf, cp)

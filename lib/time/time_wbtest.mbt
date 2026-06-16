@@ -593,13 +593,20 @@ test "time_quote: NUL (0x00) is escaped as \\x00" {
 }
 
 ///|
-test "time_quote: DEL (0x7f) is escaped as \\x7f" {
+test "time_quote: DEL (0x7f) passes through as raw byte" {
   let del = {
     let b = StringBuilder::new()
     b.write_char((0x7F).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(time_quote(del), "\"\\x7f\"")
+  let expected = {
+    let b = StringBuilder::new()
+    b.write_char('"')
+    b.write_char((0x7F).unsafe_to_char())
+    b.write_char('"')
+    b.to_string()
+  }
+  assert_eq(time_quote(del), expected)
 }
 
 ///|
