@@ -61,38 +61,9 @@ pub fn Value::to_str_checked(v : Value) -> Result[String, String] {
 ///
 /// Returns `true` when the two values are equal under Starlark semantics.
 pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
-  match (a, b) {
-    (None, None) => true
-    (Bool(x), Bool(y)) => x == y
-    (Int(x), Int(y)) => x == y
-    (Float(x), Float(y)) => if x.is_nan() { y.is_nan() } else { x == y }
-    (String(x), String(y)) => x.equals(y)
-    (Bytes(x), Bytes(y)) => x.equal(y)
-    (List(x), List(y)) => slice_equals(x.items[:], y.items[:])
-    (Tuple(x), Tuple(y)) => slice_equals(x[:], y[:])
-    (Int(n), Float(f)) => int_float_eq(n, f)
-    (Float(f), Int(n)) => int_float_eq(n, f)
-    (Dict(x), Dict(y)) => dict_equals(x, y)
-    (Set(x), Set(y)) => set_equals(x, y)
-    (Range(x), Range(y)) => range_equals(x, y)
-    // Functions use identity: only equal if same object
-    (Function(x), Function(y)) => physical_equal(x, y)
-    (Builtin(x), Builtin(y)) => x.name == y.name
-    // Bound methods use identity: each access creates a new unique object
-    (BoundMethod(x), BoundMethod(y)) => x.id == y.id
-    // Modules use identity equality
-    (Module(x), Module(y)) => physical_equal(x, y)
-    // Iterators compare by source value: two views over the same data are equal
-    (StringElems(x), StringElems(y)) => x.s.equals(y.s) && x.ords == y.ords
-    (StringCodepoints(x), StringCodepoints(y)) =>
-      x.s.equals(y.s) && x.ords == y.ords
-    (BytesElems(x), BytesElems(y)) => x.b.equal(y.b)
-    (ExtVal(a), ExtVal(b)) =>
-      match a.get_equals(ExtVal(b), compare_limit) {
-        Ok(eq) => eq
-        Err(_) => false
-      }
-    _ => false
+  match starlark_equals_depth(a, b, compare_limit) {
+    Ok(eq) => eq
+    Err(_) => false
   }
 }
 
@@ -107,19 +78,6 @@ fn int_float_eq(n : BigInt, f : Double) -> Bool {
     return false
   }
   n == @numeric.double_to_bigint(f)
-}
-
-///|
-fn slice_equals(a : ArrayView[Value], b : ArrayView[Value]) -> Bool {
-  if a.length() != b.length() {
-    return false
-  }
-  for i in 0..<a.length() {
-    if a[i].starlark_equals(b[i]) == false {
-      return false
-    }
-  }
-  true
 }
 
 ///|
@@ -751,38 +709,4 @@ fn range_equals(x : StarlarkRange, y : StarlarkRange) -> Bool {
     return false
   }
   xl == 1L || x.step == y.step
-}
-
-///|
-fn dict_equals(a : StarlarkDict, b : StarlarkDict) -> Bool {
-  if a.length() != b.length() {
-    return false
-  }
-  let mut ok = true
-  a.each(fn(k, v) {
-    if ok {
-      match b.get(k) {
-        Ok(Some(bv)) => if v.starlark_equals(bv) == false { ok = false }
-        _ => ok = false
-      }
-    }
-  })
-  ok
-}
-
-///|
-fn set_equals(a : StarlarkSet, b : StarlarkSet) -> Bool {
-  if a.length() != b.length() {
-    return false
-  }
-  let mut ok = true
-  a.each(fn(k) {
-    if ok {
-      match b.contains(k) {
-        Ok(true) => ()
-        _ => ok = false
-      }
-    }
-  })
-  ok
 }
