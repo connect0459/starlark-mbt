@@ -377,7 +377,10 @@ fn call_builtin(
           "base" => base_from_kw = Some(kv.1)
           name =>
             raise EvalErr(
-              make_eval_error(ctx, "int: unexpected keyword argument \{name}"),
+              make_eval_error(
+                ctx,
+                "int: unexpected keyword argument \"\{name}\"",
+              ),
             )
         }
       }

@@ -2352,7 +2352,9 @@ test "exec_file: int with x keyword and positional argument raises conflict erro
 
 ///|
 test "exec_file: int with unknown keyword argument raises error" {
-  assert_true(emsg("int(y=1)").contains("int: unexpected keyword argument y"))
+  assert_true(
+    emsg("int(y=1)").contains("int: unexpected keyword argument \"y\""),
+  )
 }
 
 ///|
