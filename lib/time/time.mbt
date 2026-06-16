@@ -1575,7 +1575,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
       buf.write_char(chars[k])
     }
     return Err(
-      "parsing time \"\{s}\": extra text: \{time_quote(buf.to_string())}",
+      "parsing time \{time_quote(s)}: extra text: \{time_quote(buf.to_string())}",
     )
   }
   let dt = @x_time.ZonedDateTime::of(
@@ -2095,7 +2095,7 @@ fn parse_go_layout(
       buf.write_char(vc[k])
     }
     return Err(
-      "parsing time \"\{value}\": extra text: \{time_quote(buf.to_string())}",
+      "parsing time \{time_quote(value)}: extra text: \{time_quote(buf.to_string())}",
     )
   }
   if yday >= 0 {

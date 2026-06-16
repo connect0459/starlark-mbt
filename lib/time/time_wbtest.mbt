@@ -623,7 +623,7 @@ test "time_quote: U+00B5 micro sign is UTF-8 encoded as \\xc2\\xb5" {
 }
 
 ///|
-test "parse_rfc3339: double-quote in trailing extra text is Go-escaped" {
+test "parse_rfc3339: double-quote in both input and trailing extra text is fully Go-quoted" {
   let input = {
     let b = StringBuilder::new()
     b.write_string("2021-03-22T23:20:50Z")
@@ -632,12 +632,15 @@ test "parse_rfc3339: double-quote in trailing extra text is Go-escaped" {
   }
   match parse_rfc3339(input) {
     Ok(_) => fail("expected Err")
-    Err(e) => assert_true(e.has_suffix(": extra text: \"\\\"\""))
+    Err(e) =>
+      assert_eq(
+        e, "parsing time \"2021-03-22T23:20:50Z\\\"\": extra text: \"\\\"\"",
+      )
   }
 }
 
 ///|
-test "parse_go_layout: double-quote in trailing extra text is Go-escaped" {
+test "parse_go_layout: double-quote in both input and trailing extra text is fully Go-quoted" {
   let input = {
     let b = StringBuilder::new()
     b.write_string("2006")
@@ -646,6 +649,6 @@ test "parse_go_layout: double-quote in trailing extra text is Go-escaped" {
   }
   match parse_go_layout(input, "2006") {
     Ok(_) => fail("expected Err")
-    Err(e) => assert_true(e.has_suffix(": extra text: \"\\\"\""))
+    Err(e) => assert_eq(e, "parsing time \"2006\\\"\": extra text: \"\\\"\"")
   }
 }
