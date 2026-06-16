@@ -15,6 +15,43 @@ fn call_decode(
 }
 
 ///|
+fn call_encode(
+  pos : Array[@value.Value],
+  kw : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] {
+  let encode_fn = make_encode_fn()
+  guard encode_fn is @value.Value::Builtin(bf)
+  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
+    Err("not called")
+  })
+  match bf.call_body(dummy_ctx, pos, kw) {
+    Some(r) => r
+    None => Err("no body")
+  }
+}
+
+///|
+test "make_encode_fn: unexpected keyword arguments error is separate from arity error" {
+  let int_arg = @value.Value::Int(BigInt::from_int(1))
+  let result = call_encode([int_arg], [
+    ("foo", @value.Value::Int(BigInt::from_int(2))),
+  ])
+  match result {
+    Err(msg) => assert_eq(msg, "json.encode: unexpected keyword arguments")
+    Ok(v) => fail("expected error for kwargs, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_encode_fn: arity error when zero positional args" {
+  let result = call_encode([], [])
+  match result {
+    Err(msg) => assert_eq(msg, "json.encode: got 0 arguments, want 1")
+    Ok(v) => fail("expected arity error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "make_decode_fn: surplus positional args rejected with count and limit" {
   let str_arg = @value.Value::String(@value.StarlarkString::new("1"))
   let int_arg = @value.Value::Int(BigInt::from_int(2))

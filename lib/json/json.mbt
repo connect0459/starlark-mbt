@@ -408,6 +408,14 @@ fn is_digit_char(c : Char) -> Bool {
 }
 
 ///|
+fn is_hex_digit(c : Char) -> Bool {
+  let cp = c.to_int()
+  (cp >= '0'.to_int() && cp <= '9'.to_int()) ||
+  (cp >= 'a'.to_int() && cp <= 'f'.to_int()) ||
+  (cp >= 'A'.to_int() && cp <= 'F'.to_int())
+}
+
+///|
 fn parse_hex4_at(chars : Array[Char], i : Int) -> (Int, Int) {
   if i + 4 > chars.length() {
     return (-1, i)
@@ -485,7 +493,28 @@ fn parse_json_string(
           i += 1
           let (code, next_i) = parse_hex4_at(chars, i)
           if code < 0 {
-            return Err((i, "invalid \\u escape"))
+            let mut found_bad = false
+            let mut bad_char = ' '
+            let mut j = i
+            while j < len {
+              let ch = chars[j]
+              if !is_hex_digit(ch) {
+                bad_char = ch
+                found_bad = true
+                break
+              }
+              j += 1
+            }
+            if found_bad {
+              return Err(
+                (
+                  i,
+                  "invalid character '\{bad_char}' in \\u hexadecimal character escape",
+                ),
+              )
+            } else {
+              return Err((i, "unexpected end of JSON input"))
+            }
           }
           i = next_i
           let cp_out = if code >= high_surrogate_lo && code <= high_surrogate_hi {
@@ -1202,7 +1231,9 @@ pub fn indent_json(
       }
       let tok = tok_buf.to_string()
       if !is_valid_json_scalar(tok) {
-        return Err("invalid JSON token '\{tok}'")
+        return Err(
+          "invalid character '\{chars[tok_start]}' looking for beginning of value",
+        )
       }
       buf.write_string(tok)
       top_done = advance_after_value(stack, top_done)
@@ -1222,7 +1253,10 @@ pub fn indent_json(
 ///|
 fn make_encode_fn() -> @value.Value {
   @value.Value::new_builtin("json.encode", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("json.encode: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err("json.encode: got \{pos_args.length()} arguments, want 1")
     }
     encode_to_json(pos_args[0]).map(fn(s) {
