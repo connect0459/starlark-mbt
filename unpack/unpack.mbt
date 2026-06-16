@@ -78,7 +78,7 @@ pub fn unpack_args(
       if infos[i].name == kw_name {
         if defined[i] {
           return Err(
-            "\{fn_name}: got multiple values for keyword argument \{kw_name}",
+            "\{fn_name}: got multiple values for keyword argument \"\{kw_name}\"",
           )
         }
         if infos[i].skip_none && arg is @value.Value::None {
@@ -92,7 +92,7 @@ pub fn unpack_args(
       }
     }
     if !found {
-      return Err("\{fn_name}: unexpected keyword argument \{kw_name}")
+      return Err("\{fn_name}: unexpected keyword argument \"\{kw_name}\"")
     }
   }
   for i in 0..<n {
