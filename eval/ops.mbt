@@ -779,11 +779,17 @@ fn percent_format(
             if bytes.length() == 0 {
               return Err("%c format requires a single-character string")
             }
-            let (_, size) = @utf8util.utf8_decode_rune(bytes, 0)
+            let (rune_val, size) = @utf8util.utf8_decode_rune(bytes, 0)
             if size != bytes.length() {
               return Err("%c format requires a single-character string")
             }
-            buf.write_bytes(s2.to_bytes()[:])
+            // Mirror Go's WriteRune: invalid UTF-8 → U+FFFD, valid → the rune.
+            let rune_char = if rune_val < 0 {
+              '\u{FFFD}'
+            } else {
+              rune_val.unsafe_to_char()
+            }
+            buf.write_char_utf8(rune_char)
           }
           _ =>
             return Err(

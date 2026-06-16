@@ -724,6 +724,35 @@ test "exec_file: join emits raw bytes for invalid-UTF-8 string elements" {
 }
 
 ///|
+test "exec_file: percent-c emits U+FFFD for invalid-UTF-8 single-byte string" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // go: DecodeRuneInString("\xc3") → (U+FFFD, 1); WriteRune(U+FFFD) = ef bf bd.
+  // %c is a rune-formatting verb, not a raw-byte sink.
+  match
+    exec_file(t, "<test>", "print(\"%c\" % \"é\"[0])", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xef\xbf\xbd")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: percent-c emits correct UTF-8 for valid emoji string" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match exec_file(t, "<test>", "print(\"%c\" % \"😀\")", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xf0\x9f\x98\x80")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
 test "exec_file: percent-s preserves raw bytes of invalid-UTF-8 string" {
   let msgs : Array[Bytes] = []
   let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
