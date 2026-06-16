@@ -1222,7 +1222,10 @@ pub fn indent_json(
 ///|
 fn make_encode_fn() -> @value.Value {
   @value.Value::new_builtin("json.encode", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
+    if kw_args.length() != 0 {
+      return Err("json.encode: unexpected keyword arguments")
+    }
+    if pos_args.length() != 1 {
       return Err("json.encode: got \{pos_args.length()} arguments, want 1")
     }
     encode_to_json(pos_args[0]).map(fn(s) {
