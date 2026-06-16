@@ -1161,9 +1161,7 @@ fn Fcomp::compile_assign_target(
       self.set_pos(dpos)
       self.emit1(Opcode::SetField, self.pcomp.add_name(attr), 2, 0)
     }
-    ETuple(elems, tpos) | EList(elems, tpos) => {
-      self.set_pos(tpos)
-      // pops the value, pushes its `n` elements with element 0 on top
+    ETuple(elems, _) | EList(elems, _) => {
       self.emit1(Opcode::Unpack, elems.length(), 1, elems.length())
       for e in elems {
         self.compile_assign_target(e)
