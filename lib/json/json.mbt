@@ -1220,7 +1220,9 @@ pub fn indent_json(
       }
       let tok = tok_buf.to_string()
       if !is_valid_json_scalar(tok) {
-        return Err("invalid JSON token '\{tok}'")
+        return Err(
+          "invalid character '\{chars[tok_start]}' looking for beginning of value",
+        )
       }
       buf.write_string(tok)
       top_done = advance_after_value(stack, top_done)

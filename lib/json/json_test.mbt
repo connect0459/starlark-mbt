@@ -420,6 +420,20 @@ test "indent_json rejects invalid JSON" {
 }
 
 ///|
+test "indent_json: invalid keyword token reports first character with go-compatible message" {
+  match indent_json("bad json", "", "\t") {
+    Err(e) =>
+      assert_eq(e, "invalid character 'b' looking for beginning of value")
+    Ok(_) => fail("expected error for 'bad json'")
+  }
+  match indent_json("[nan]", "", "\t") {
+    Err(e) =>
+      assert_eq(e, "invalid character 'n' looking for beginning of value")
+    Ok(_) => fail("expected error for '[nan]'")
+  }
+}
+
+///|
 test "indent_json reports correct message for mismatched closing bracket" {
   match indent_json("[1}", "", "\t") {
     Err(e) => assert_eq(e, "invalid character '}' after array element")
