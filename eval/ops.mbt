@@ -1244,7 +1244,7 @@ fn in_op(
     @value.Value::Set(s) =>
       match s.contains(needle) {
         Ok(b) => @value.Value::Bool(b)
-        Err(_) => @value.Value::Bool(false)
+        Err(e) => raise EvalErr(make_eval_error(ctx, e))
       }
     @value.Value::String(s) =>
       match needle {

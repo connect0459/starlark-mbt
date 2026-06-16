@@ -923,13 +923,13 @@ test "eval_expr: set add with deeply nested element raises hash depth error" {
 }
 
 ///|
-test "eval_expr: t in set with deeply nested element returns False (hash error silenced)" {
+test "eval_expr: t in set with deeply nested element raises hash depth error" {
   let t = make_nested_tuple(@value.compare_limit)
   let s = @value.StarlarkSet::new()
   match eval_with_env("t in s", [("s", @value.Value::Set(s)), ("t", t)]) {
-    Ok(@value.Value::Bool(false)) => ()
-    Ok(v) => fail("expected False, got \{v.repr()}")
-    Err(e) => fail("unexpected error: \{e.msg()}")
+    Err(e) =>
+      assert_true(e.msg().contains("hash exceeded maximum recursion depth"))
+    Ok(v) => fail("expected depth error, got \{v.repr()}")
   }
 }
 
