@@ -2,6 +2,13 @@
 /// An immutable Starlark string backed by a pre-computed UTF-8 `Bytes` array.
 /// All length, indexing, and hashing operations use the byte array so that
 /// `s[i]` returns the i-th byte, matching starlark-go semantics.
+///
+/// The dual `raw`/`bytes` representation (Option A) is deliberate: `raw` is a
+/// MoonBit `String` used for display and MoonBit-level operations; `bytes` is
+/// the authoritative byte sequence used for all Starlark-observable output
+/// (print, repr, write). Output sinks must read `bytes`, not `raw`, so that
+/// invalid-UTF-8 strings round-trip faithfully instead of being replaced with
+/// U+FFFD. See also `StarlarkString::from_bytes`.
 pub struct StarlarkString {
   priv raw : String
   priv bytes : Bytes
@@ -1489,7 +1496,9 @@ fn repr_bytes_val(b : Bytes) -> String {
 }
 
 ///|
-// Safe ceiling across all four backends; see https://github.com/connect0459/starlark-mbt/issues/175.
+/// Depth cap for `repr` / `str` traversal. Set to 200 — a safe ceiling on all
+/// four MoonBit backends (see #175). See `compare_limit` in `value/traits.mbt`
+/// for the depth-guard convention that all recursive traversal paths follow.
 pub let repr_limit : Int = 200
 
 ///|
