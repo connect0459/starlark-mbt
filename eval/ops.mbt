@@ -1244,11 +1244,7 @@ fn in_op(
         Ok(Some(_)) => @value.Value::Bool(true)
         _ => @value.Value::Bool(false)
       }
-    @value.Value::Set(s) =>
-      match s.contains(needle) {
-        Ok(b) => @value.Value::Bool(b)
-        Err(e) => raise EvalErr(make_eval_error(ctx, e))
-      }
+    @value.Value::Set(s) => @value.Value::Bool(check(ctx, s.contains(needle)))
     @value.Value::String(s) =>
       match needle {
         @value.Value::String(n) => @value.Value::Bool(s.raw().contains(n.raw()))
