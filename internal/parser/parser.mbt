@@ -376,20 +376,21 @@ fn aug_op_of_tok(tok : @lexer.Token) -> @syntax.AugOp? {
 fn Parser::parse_assign_or_expr_stmt(
   self : Parser,
 ) -> @syntax.Stmt raise ParseErr {
-  let p = self.pos
   let lhs = self.parse_test_list_as_expr()
   match self.tok {
     @lexer.Token::Assign => {
+      let assign_pos = self.pos
       self.advance()
       let rhs = self.parse_test_list_as_expr()
-      @syntax.Stmt::SAssign(lhs, rhs, p)
+      @syntax.Stmt::SAssign(lhs, rhs, assign_pos)
     }
     tok =>
       match aug_op_of_tok(tok) {
         Some(op) => {
+          let aug_pos = self.pos
           self.advance()
           let rhs = self.parse_test_list_as_expr()
-          @syntax.Stmt::SAugAssign(lhs, op, rhs, p)
+          @syntax.Stmt::SAugAssign(lhs, op, rhs, aug_pos)
         }
         None => @syntax.Stmt::SExpr(lhs)
       }
@@ -748,24 +749,24 @@ fn Parser::parse_lambda_params(
 
 ///|
 fn Parser::parse_or_test(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_and_test()
   while self.tok == @lexer.Token::Or {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_and_test()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpOr, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpOr, r, op_pos)
   }
   e
 }
 
 ///|
 fn Parser::parse_and_test(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_not_test()
   while self.tok == @lexer.Token::And {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_not_test()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpAnd, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpAnd, r, op_pos)
   }
   e
 }
@@ -785,7 +786,6 @@ fn Parser::parse_not_test(self : Parser) -> @syntax.Expr raise ParseErr {
 
 ///|
 fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_bitor_expr()
   let mut prev_op_str : String? = None
   while true {
@@ -814,6 +814,7 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
         )
       None => ()
     }
+    let op_pos = self.pos
     let op : @syntax.BinaryOp = match self.tok {
       @lexer.Token::Lt => @syntax.BinaryOp::OpLt
       @lexer.Token::Le => @syntax.BinaryOp::OpLe
@@ -837,52 +838,52 @@ fn Parser::parse_comparison(self : Parser) -> @syntax.Expr raise ParseErr {
     prev_op_str = Some(cur_str)
     self.advance()
     let r = self.parse_bitor_expr()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
 
 ///|
 fn Parser::parse_bitor_expr(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_bitxor_expr()
   while self.tok == @lexer.Token::Pipe {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_bitxor_expr()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitOr, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitOr, r, op_pos)
   }
   e
 }
 
 ///|
 fn Parser::parse_bitxor_expr(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_bitand_expr()
   while self.tok == @lexer.Token::Circumflex {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_bitand_expr()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitXor, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitXor, r, op_pos)
   }
   e
 }
 
 ///|
 fn Parser::parse_bitand_expr(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_shift_expr()
   while self.tok == @lexer.Token::Amp {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_shift_expr()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitAnd, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitAnd, r, op_pos)
   }
   e
 }
 
 ///|
 fn Parser::parse_shift_expr(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_arith_expr()
   while true {
+    let op_pos = self.pos
     let op = match self.tok {
       @lexer.Token::LtLt => @syntax.BinaryOp::OpLShift
       @lexer.Token::GtGt => @syntax.BinaryOp::OpRShift
@@ -890,16 +891,16 @@ fn Parser::parse_shift_expr(self : Parser) -> @syntax.Expr raise ParseErr {
     }
     self.advance()
     let r = self.parse_arith_expr()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
 
 ///|
 fn Parser::parse_arith_expr(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_term()
   while true {
+    let op_pos = self.pos
     let op = match self.tok {
       @lexer.Token::Plus => @syntax.BinaryOp::OpAdd
       @lexer.Token::Minus => @syntax.BinaryOp::OpSub
@@ -907,16 +908,16 @@ fn Parser::parse_arith_expr(self : Parser) -> @syntax.Expr raise ParseErr {
     }
     self.advance()
     let r = self.parse_term()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
 
 ///|
 fn Parser::parse_term(self : Parser) -> @syntax.Expr raise ParseErr {
-  let p = self.pos
   let mut e = self.parse_factor()
   while true {
+    let op_pos = self.pos
     let op = match self.tok {
       @lexer.Token::Star => @syntax.BinaryOp::OpMul
       @lexer.Token::Slash => @syntax.BinaryOp::OpDiv
@@ -926,7 +927,7 @@ fn Parser::parse_term(self : Parser) -> @syntax.Expr raise ParseErr {
     }
     self.advance()
     let r = self.parse_factor()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
@@ -1165,17 +1166,16 @@ fn Parser::finish_primary_from_expr(
 fn Parser::finish_full_expr(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
-  let e1 = self.finish_term_from(e, p)
-  let e2 = self.finish_arith_from(e1, p)
-  let e3 = self.finish_shift_from(e2, p)
-  let e4 = self.finish_bitand_from(e3, p)
-  let e5 = self.finish_bitxor_from(e4, p)
-  let e6 = self.finish_bitor_from(e5, p)
-  let e7 = self.finish_comparison_from(e6, p)
-  let e8 = self.finish_and_from(e7, p)
-  self.finish_or_from(e8, p)
+  let e1 = self.finish_term_from(e)
+  let e2 = self.finish_arith_from(e1)
+  let e3 = self.finish_shift_from(e2)
+  let e4 = self.finish_bitand_from(e3)
+  let e5 = self.finish_bitxor_from(e4)
+  let e6 = self.finish_bitor_from(e5)
+  let e7 = self.finish_comparison_from(e6)
+  let e8 = self.finish_and_from(e7)
+  self.finish_or_from(e8)
 }
 
 ///|
@@ -1184,7 +1184,7 @@ fn Parser::finish_test_from(
   e : @syntax.Expr,
   p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
-  let or_e = self.finish_full_expr(e, p)
+  let or_e = self.finish_full_expr(e)
   self.finish_cond_tail_from(or_e, p)
 }
 
@@ -1192,10 +1192,10 @@ fn Parser::finish_test_from(
 fn Parser::finish_term_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while true {
+    let op_pos = self.pos
     let op = match self.tok {
       @lexer.Token::Star => @syntax.BinaryOp::OpMul
       @lexer.Token::Slash => @syntax.BinaryOp::OpDiv
@@ -1205,7 +1205,7 @@ fn Parser::finish_term_from(
     }
     self.advance()
     let r = self.parse_factor()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
@@ -1214,10 +1214,10 @@ fn Parser::finish_term_from(
 fn Parser::finish_arith_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while true {
+    let op_pos = self.pos
     let op = match self.tok {
       @lexer.Token::Plus => @syntax.BinaryOp::OpAdd
       @lexer.Token::Minus => @syntax.BinaryOp::OpSub
@@ -1225,7 +1225,7 @@ fn Parser::finish_arith_from(
     }
     self.advance()
     let r = self.parse_term()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
@@ -1234,10 +1234,10 @@ fn Parser::finish_arith_from(
 fn Parser::finish_shift_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while true {
+    let op_pos = self.pos
     let op = match self.tok {
       @lexer.Token::LtLt => @syntax.BinaryOp::OpLShift
       @lexer.Token::GtGt => @syntax.BinaryOp::OpRShift
@@ -1245,7 +1245,7 @@ fn Parser::finish_shift_from(
     }
     self.advance()
     let r = self.parse_arith_expr()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
@@ -1254,13 +1254,13 @@ fn Parser::finish_shift_from(
 fn Parser::finish_bitand_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while self.tok == @lexer.Token::Amp {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_shift_expr()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitAnd, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitAnd, r, op_pos)
   }
   e
 }
@@ -1269,13 +1269,13 @@ fn Parser::finish_bitand_from(
 fn Parser::finish_bitxor_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while self.tok == @lexer.Token::Circumflex {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_bitand_expr()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitXor, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitXor, r, op_pos)
   }
   e
 }
@@ -1284,13 +1284,13 @@ fn Parser::finish_bitxor_from(
 fn Parser::finish_bitor_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while self.tok == @lexer.Token::Pipe {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_bitxor_expr()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitOr, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpBitOr, r, op_pos)
   }
   e
 }
@@ -1299,7 +1299,6 @@ fn Parser::finish_bitor_from(
 fn Parser::finish_comparison_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   let mut prev_op_str : String? = None
@@ -1329,6 +1328,7 @@ fn Parser::finish_comparison_from(
         )
       None => ()
     }
+    let op_pos = self.pos
     let op : @syntax.BinaryOp = match self.tok {
       @lexer.Token::Lt => @syntax.BinaryOp::OpLt
       @lexer.Token::Le => @syntax.BinaryOp::OpLe
@@ -1352,7 +1352,7 @@ fn Parser::finish_comparison_from(
     prev_op_str = Some(cur_str)
     self.advance()
     let r = self.parse_bitor_expr()
-    e = @syntax.Expr::EBinary(e, op, r, p)
+    e = @syntax.Expr::EBinary(e, op, r, op_pos)
   }
   e
 }
@@ -1361,13 +1361,13 @@ fn Parser::finish_comparison_from(
 fn Parser::finish_and_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while self.tok == @lexer.Token::And {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_not_test()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpAnd, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpAnd, r, op_pos)
   }
   e
 }
@@ -1376,13 +1376,13 @@ fn Parser::finish_and_from(
 fn Parser::finish_or_from(
   self : Parser,
   e : @syntax.Expr,
-  p : @errors.Position,
 ) -> @syntax.Expr raise ParseErr {
   let mut e = e
   while self.tok == @lexer.Token::Or {
+    let op_pos = self.pos
     self.advance()
     let r = self.parse_and_test()
-    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpOr, r, p)
+    e = @syntax.Expr::EBinary(e, @syntax.BinaryOp::OpOr, r, op_pos)
   }
   e
 }

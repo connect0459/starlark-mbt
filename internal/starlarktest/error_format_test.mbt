@@ -147,7 +147,7 @@ test "error format: EvalError backtrace includes traceback with call frames" {
           #|Traceback (most recent call last):
           #|  test.star:5:2: in <toplevel>
           #|  test.star:4:4: in f
-          #|  test.star:2:10: in g
+          #|  test.star:2:12: in g
           #|Error: unknown binary op: int + string
         ),
       )
@@ -170,7 +170,7 @@ test "error format: EvalError backtrace with no frames shows only Error line" {
         e.backtrace(),
         content=(
           #|Traceback (most recent call last):
-          #|  test.star:1:5: in <toplevel>
+          #|  test.star:1:7: in <toplevel>
           #|Error: unknown binary op: int + string
         ),
       )
@@ -419,7 +419,7 @@ test "error format: load failure cause preserves inner backtrace" {
             content=(
               #|Traceback (most recent call last):
               #|  crash.star:4:2: in <toplevel>
-              #|  crash.star:2:10: in f
+              #|  crash.star:2:12: in f
               #|Error: floored division by zero
             ),
           )
@@ -549,7 +549,7 @@ test "error format: intermediate frame shows call-site within function" {
           #|Traceback (most recent call last):
           #|  test.star:5:2: in <toplevel>
           #|  test.star:4:4: in f
-          #|  test.star:2:10: in g
+          #|  test.star:2:12: in g
           #|Error: unknown binary op: int + string
         ),
       )
@@ -583,10 +583,63 @@ test "error format: deep call chain frames show call positions" {
           #|  crash.star:3:20: in h
           #|  <builtin>: in min
           #|  crash.star:2:19: in g
-          #|  crash.star:1:18: in f
+          #|  crash.star:1:19: in f
           #|Error: floored division by zero
         ),
       )
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: traceback frame anchors at the binary operator, not the left operand" {
+  let cases : Array[(String, String)] = [
+    ("\"aaaaaaaaaa\" + 1", "t.star:1:14: in <toplevel>"),
+    ("1 < \"a\"", "t.star:1:3: in <toplevel>"),
+    ("1 | \"x\"", "t.star:1:3: in <toplevel>"),
+  ]
+  for item in cases {
+    let (src, want_frame) = item
+    let thread = @eval.Thread::new("test")
+    let result = @eval.exec_file(
+      thread,
+      "t.star",
+      src,
+      @eval.Options::default(),
+    )
+    match result {
+      Err(e) => assert_true(e.backtrace().contains(want_frame))
+      Ok(_) => abort("expected error for: \{src}")
+    }
+  }
+}
+
+///|
+test "error format: traceback frame anchors at the = sign for tuple unpack" {
+  let thread = @eval.Thread::new("test")
+  let result = @eval.exec_file(
+    thread,
+    "t.star",
+    "a, b = 1, 2, 3",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => assert_true(e.backtrace().contains("t.star:1:6: in <toplevel>"))
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
+test "error format: comprehension tuple unpack traceback anchors at the for clause, not the iterable" {
+  let thread = @eval.Thread::new("test")
+  let result = @eval.exec_file(
+    thread,
+    "t.star",
+    "[a for a, b in [(1, 2), 3]]",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => assert_true(e.backtrace().contains("t.star:1:4: in <toplevel>"))
     Ok(_) => abort("expected error")
   }
 }

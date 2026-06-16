@@ -643,10 +643,11 @@ fn Fcomp::compile_comprehension(
   }
   // The first clause is always a `for` (Starlark grammar). Its iterable is
   // evaluated in the enclosing scope, before any comprehension target is bound.
-  guard clauses[0] is ClauseFor(first_target, first_iter, _) else {
+  guard clauses[0] is ClauseFor(first_target, first_iter, for_pos) else {
     raise CompileErr("compile: comprehension must begin with a for clause")
   }
   self.compile_expr(first_iter)
+  self.set_pos(for_pos)
   self.emit0(Opcode::IterPush, 1, 0)
   // Now bind every comprehension target as a comp-local slot. A name that
   // repeats across `for` clauses is one variable sharing a single slot, so it
@@ -717,8 +718,9 @@ fn Fcomp::emit_comp_rest(
     return
   }
   match clauses[ci] {
-    ClauseFor(target, iter_e, _) => {
+    ClauseFor(target, iter_e, for_pos) => {
       self.compile_expr(iter_e)
+      self.set_pos(for_pos)
       self.emit0(Opcode::IterPush, 1, 0)
       let head = self.new_label()
       let end_lbl = self.new_label()
@@ -1161,9 +1163,7 @@ fn Fcomp::compile_assign_target(
       self.set_pos(dpos)
       self.emit1(Opcode::SetField, self.pcomp.add_name(attr), 2, 0)
     }
-    ETuple(elems, tpos) | EList(elems, tpos) => {
-      self.set_pos(tpos)
-      // pops the value, pushes its `n` elements with element 0 on top
+    ETuple(elems, _) | EList(elems, _) => {
       self.emit1(Opcode::Unpack, elems.length(), 1, elems.length())
       for e in elems {
         self.compile_assign_target(e)
