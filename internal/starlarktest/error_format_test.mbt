@@ -205,7 +205,7 @@ test "error format: wrong number of args to function" {
 
 ///|
 test "error format: recursion depth exceeded" {
-  let thread = @eval.Thread::with_print("test", fn(_, _) {  })
+  let thread = @eval.Thread::with_print("test", fn(_, _bytes) {  })
   let src =
     #|def f():
     #|  return f()
@@ -640,7 +640,8 @@ test "Thread.with_print: callback receives caller position and name via call_fra
     #|print("hello")
     #|def f(): print("hello", "world", sep=", ")
     #|f()
-  let thread = @eval.Thread::with_print("test", fn(thread, msg) {
+  let thread = @eval.Thread::with_print("test", fn(thread, bytes) {
+    let msg = @utf8.decode_lossy(bytes[:])
     match thread.call_frame(1) {
       Some(frame) =>
         buf.push("\{frame.pos().to_string()}: \{frame.name()}: \{msg}\n")

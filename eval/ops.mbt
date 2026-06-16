@@ -616,7 +616,7 @@ fn percent_format(
     @value.Value::Tuple(t) => t
     _ => [args]
   }
-  let buf = StringBuilder::new()
+  let buf = @buffer.Buffer::Buffer()
   let chars = fmt.to_array()
   let n = chars.length()
   let mut i = 0
@@ -624,7 +624,7 @@ fn percent_format(
   while i < n {
     let c = chars[i]
     if c != '%' {
-      buf.write_char(c)
+      buf.write_char_utf8(c)
       i += 1
       continue
     }
@@ -638,7 +638,7 @@ fn percent_format(
       return Err("incomplete format")
     }
     if chars[i] == '%' {
-      buf.write_char('%')
+      buf.write_char_utf8('%')
       i += 1
       continue
     }
@@ -685,28 +685,32 @@ fn percent_format(
     let arg = arg_val
     match spec {
       's' =>
-        match arg.to_str_checked() {
-          Err(e) => return Err(e)
-          Ok(s) => buf.write_string(s)
+        match arg {
+          @value.Value::String(sv) => buf.write_bytes(sv.to_bytes()[:])
+          _ =>
+            match arg.to_str_checked() {
+              Err(e) => return Err(e)
+              Ok(s) => buf.write_string_utf8(s)
+            }
         }
       'r' =>
         match arg.repr_checked() {
           Err(e) => return Err(e)
-          Ok(s) => buf.write_string(s)
+          Ok(s) => buf.write_string_utf8(s)
         }
       'd' | 'i' =>
         match percent_to_int(arg) {
-          Ok(n2) => buf.write_string(n2.to_string())
+          Ok(n2) => buf.write_string_utf8(n2.to_string())
           Err(cause) => return Err("%\{spec} format requires integer: \{cause}")
         }
       'o' =>
         match percent_to_int(arg) {
           Ok(n2) =>
             if n2 < 0N {
-              buf.write_char('-')
-              buf.write_string(int64_to_octal(-n2))
+              buf.write_char_utf8('-')
+              buf.write_string_utf8(int64_to_octal(-n2))
             } else {
-              buf.write_string(int64_to_octal(n2))
+              buf.write_string_utf8(int64_to_octal(n2))
             }
           Err(cause) => return Err("%o format requires integer: \{cause}")
         }
@@ -714,10 +718,10 @@ fn percent_format(
         match percent_to_int(arg) {
           Ok(n2) =>
             if n2 < 0N {
-              buf.write_char('-')
-              buf.write_string(int64_to_hex(-n2, false))
+              buf.write_char_utf8('-')
+              buf.write_string_utf8(int64_to_hex(-n2, false))
             } else {
-              buf.write_string(int64_to_hex(n2, false))
+              buf.write_string_utf8(int64_to_hex(n2, false))
             }
           Err(cause) => return Err("%x format requires integer: \{cause}")
         }
@@ -725,10 +729,10 @@ fn percent_format(
         match percent_to_int(arg) {
           Ok(n2) =>
             if n2 < 0N {
-              buf.write_char('-')
-              buf.write_string(int64_to_hex(-n2, true))
+              buf.write_char_utf8('-')
+              buf.write_string_utf8(int64_to_hex(-n2, true))
             } else {
-              buf.write_string(int64_to_hex(n2, true))
+              buf.write_string_utf8(int64_to_hex(n2, true))
             }
           Err(cause) => return Err("%X format requires integer: \{cause}")
         }
@@ -753,7 +757,7 @@ fn percent_format(
           }
           _ => ""
         }
-        buf.write_string(s2)
+        buf.write_string_utf8(s2)
       }
       'c' =>
         match arg {
@@ -765,9 +769,9 @@ fn percent_format(
             }
             let cp = n2.to_int()
             if cp >= unicode_surr_first && cp <= unicode_surr_last {
-              buf.write_char('\u{FFFD}')
+              buf.write_char_utf8('\u{FFFD}')
             } else {
-              buf.write_char(cp.unsafe_to_char())
+              buf.write_char_utf8(cp.unsafe_to_char())
             }
           }
           @value.Value::String(s2) => {
@@ -779,7 +783,7 @@ fn percent_format(
             if size != bytes.length() {
               return Err("%c format requires a single-character string")
             }
-            buf.write_string(s2.raw())
+            buf.write_bytes(s2.to_bytes()[:])
           }
           _ =>
             return Err(
@@ -792,7 +796,7 @@ fn percent_format(
   if arg_idx < arg_list.length() && !is_mapping {
     return Err("too many arguments for format string")
   }
-  Ok(@value.Value::String(@value.StarlarkString::new(buf.to_string())))
+  Ok(@value.Value::String(@value.StarlarkString::from_bytes(buf.contents())))
 }
 
 ///|

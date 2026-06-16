@@ -498,7 +498,7 @@ pub fn Predeclared::delete(self : Predeclared, name : String) -> Bool {
 /// cancellation state. A `Thread` is not safe for concurrent use.
 pub struct Thread {
   priv name : String
-  priv mut print_fn : (Thread, String) -> Unit
+  priv mut print_fn : (Thread, Bytes) -> Unit
   priv mut load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   priv call_stack : Array[@errors.CallFrame]
   priv debug_stack : Array[ActiveCallFrame]
@@ -522,7 +522,7 @@ pub struct Thread {
 pub fn Thread::new(name : String) -> Thread {
   {
     name,
-    print_fn: fn(_, msg) { println(msg) },
+    print_fn: fn(_, bytes) { default_println_bytes(bytes) },
     load_fn: None,
     call_stack: [],
     debug_stack: [],
@@ -542,12 +542,12 @@ pub fn Thread::new(name : String) -> Thread {
 ///
 /// - `name` : A label for the thread used in diagnostics.
 /// - `print_fn` : Callback invoked for each `print()` call; receives the
-///   active thread and the formatted message string.
+///   active thread and the formatted message bytes (without trailing newline).
 ///
 /// Returns a new `Thread` with the given print callback.
 pub fn Thread::with_print(
   name : String,
-  print_fn : (Thread, String) -> Unit,
+  print_fn : (Thread, Bytes) -> Unit,
 ) -> Thread {
   {
     name,
@@ -580,7 +580,7 @@ pub fn Thread::with_loader(
 ) -> Thread {
   {
     name,
-    print_fn: fn(_, msg) { println(msg) },
+    print_fn: fn(_, bytes) { default_println_bytes(bytes) },
     load_fn: Some(load_fn),
     call_stack: [],
     debug_stack: [],
@@ -607,7 +607,7 @@ pub fn Thread::with_loader(
 pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
   {
     name,
-    print_fn: fn(_, msg) { println(msg) },
+    print_fn: fn(_, bytes) { default_println_bytes(bytes) },
     load_fn: None,
     call_stack: [],
     debug_stack: [],
@@ -698,10 +698,10 @@ pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
 ///
 /// - `self` : The thread to update.
 /// - `print_fn` : The new print callback; receives the active thread and the
-///   formatted message string.
+///   formatted message bytes (without trailing newline).
 pub fn Thread::set_print(
   self : Thread,
-  print_fn : (Thread, String) -> Unit,
+  print_fn : (Thread, Bytes) -> Unit,
 ) -> Unit {
   self.print_fn = print_fn
 }

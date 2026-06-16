@@ -133,10 +133,10 @@ pub fn Thread::set_loader(Self, (Self, String) -> Result[Module, @errors.EvalErr
 pub fn Thread::set_local(Self, String, @value.Value) -> Unit
 pub fn Thread::set_max_steps(Self, Int) -> Unit
 pub fn Thread::set_on_max_steps(Self, (Self) -> Unit) -> Unit
-pub fn Thread::set_print(Self, (Self, String) -> Unit) -> Unit
+pub fn Thread::set_print(Self, (Self, Bytes) -> Unit) -> Unit
 pub fn Thread::uncancel(Self) -> Unit
 pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self
-pub fn Thread::with_print(String, (Self, String) -> Unit) -> Self
+pub fn Thread::with_print(String, (Self, Bytes) -> Unit) -> Self
 pub fn Thread::with_step_budget(String, Int) -> Self
 
 pub struct Universe {
