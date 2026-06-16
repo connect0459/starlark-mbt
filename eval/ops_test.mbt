@@ -880,7 +880,8 @@ test "eval_expr: dict assignment with deeply nested key raises hash depth error"
       ("d", @value.Value::Dict(@value.StarlarkDict::new())),
       ("t", t),
     ]) {
-    Err(e) => assert_true(e.msg().contains("maximum recursion depth"))
+    Err(e) =>
+      assert_true(e.msg().contains("hash exceeded maximum recursion depth"))
     Ok(_) => fail("expected depth error on dict assignment")
   }
 }
@@ -890,7 +891,8 @@ test "eval_expr: dict subscript lookup with deeply nested key raises hash depth 
   let t = make_nested_tuple(@value.compare_limit)
   let d = @value.StarlarkDict::new()
   match eval_with_env("d[t]", [("d", @value.Value::Dict(d)), ("t", t)]) {
-    Err(e) => assert_true(e.msg().contains("maximum recursion depth"))
+    Err(e) =>
+      assert_true(e.msg().contains("hash exceeded maximum recursion depth"))
     Ok(_) => fail("expected depth error on dict lookup")
   }
 }
@@ -914,8 +916,20 @@ test "eval_expr: set add with deeply nested element raises hash depth error" {
       ("s", @value.Value::Set(@value.StarlarkSet::new())),
       ("t", t),
     ]) {
-    Err(e) => assert_true(e.msg().contains("maximum recursion depth"))
+    Err(e) =>
+      assert_true(e.msg().contains("hash exceeded maximum recursion depth"))
     Ok(_) => fail("expected depth error on set add")
+  }
+}
+
+///|
+test "eval_expr: t in set with deeply nested element returns False (hash error silenced)" {
+  let t = make_nested_tuple(@value.compare_limit)
+  let s = @value.StarlarkSet::new()
+  match eval_with_env("t in s", [("s", @value.Value::Set(s)), ("t", t)]) {
+    Ok(@value.Value::Bool(false)) => ()
+    Ok(v) => fail("expected False, got \{v.repr()}")
+    Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
 
