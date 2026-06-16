@@ -1,6 +1,9 @@
 ///|
 pub impl Eq for Value with fn equal(a, b) -> Bool {
-  a.starlark_equals(b)
+  match starlark_equals_depth(a, b, compare_limit) {
+    Ok(eq) => eq
+    Err(_) => false
+  }
 }
 
 ///|
