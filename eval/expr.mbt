@@ -2057,7 +2057,7 @@ fn call_str_method(
       }
       @value.Value::String(@value.StarlarkString::from_bytes(buf.contents()))
     }
-    "format" => str_format(ctx, s.raw(), pos_args, kw_args)
+    "format" => str_format(ctx, s.to_bytes(), pos_args, kw_args)
     "capitalize" => {
       let raw = s.raw()
       if raw.length() == 0 {
@@ -3414,30 +3414,30 @@ fn str_replace_count(
 ///|
 fn str_format(
   ctx : EvalContext,
-  template : String,
+  template_bytes : Bytes,
   args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
   let buf = @buffer.Buffer::Buffer()
-  let tlen = template.length()
+  let n = template_bytes.length()
   let mut i = 0
   let mut auto_idx = 0
   let mut auto_mode = false
   let mut manual_mode = false
-  while i < tlen {
-    let c = template[i]
-    if c == '{' {
-      if i + 1 < tlen && template[i + 1] == '{' {
-        buf.write_char_utf8('{')
+  while i < n {
+    let b = template_bytes[i]
+    if b == b'{' {
+      if i + 1 < n && template_bytes[i + 1] == b'{' {
+        buf.write_byte(b'{')
         i += 2
       } else {
         let start = i + 1
         let mut j = start
         let mut in_name = true
-        while j < tlen && template[j] != '}' {
-          if template[j] == '!' || template[j] == ':' {
+        while j < n && template_bytes[j] != b'}' {
+          if template_bytes[j] == b'!' || template_bytes[j] == b':' {
             in_name = false
-          } else if template[j] == '{' && in_name {
+          } else if template_bytes[j] == b'{' && in_name {
             raise EvalErr(
               make_eval_error(
                 ctx, "format: nested replacement fields not supported",
@@ -3446,10 +3446,10 @@ fn str_format(
           }
           j += 1
         }
-        if j >= tlen {
+        if j >= n {
           raise EvalErr(make_eval_error(ctx, "format: unmatched '{' in format"))
         }
-        let field = template[start:j].to_owned()
+        let field = @utf8.decode_lossy(template_bytes[start:j])
         i = j + 1
         let (name, conv) = if find_substr(field, "!") >= 0 {
           let bang = find_substr(field, "!")
@@ -3594,15 +3594,15 @@ fn str_format(
             )
         }
       }
-    } else if c == '}' {
-      if i + 1 < tlen && template[i + 1] == '}' {
-        buf.write_char_utf8('}')
+    } else if b == b'}' {
+      if i + 1 < n && template_bytes[i + 1] == b'}' {
+        buf.write_byte(b'}')
         i += 2
       } else {
         raise EvalErr(make_eval_error(ctx, "format: single '}' in format"))
       }
     } else {
-      buf.write_char_utf8(Int::unsafe_to_char(c.to_int()))
+      buf.write_byte(template_bytes[i])
       i += 1
     }
   }

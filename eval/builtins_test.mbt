@@ -789,6 +789,44 @@ test "exec_file: print with invalid-UTF-8 sep emits raw separator bytes" {
   }
 }
 
+///|
+test "exec_file: str_format emits valid UTF-8 for non-BMP chars in template literal" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // "😀" = U+1F600 encodes as f0 9f 98 80 in UTF-8. If str_format wrongly
+  // encodes the template char-by-char as UTF-16 code units (surrogate halves),
+  // it would emit the CESU-8 sequence ed a0 bd ed b8 80 instead.
+  match
+    exec_file(t, "<test>", "print(\"😀{}\".format(1))", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xf0\x9f\x98\x801")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str_format emits raw bytes for invalid-UTF-8 in template literal" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // Template "é"[0] + "{}" has the invalid byte 0xc3 in the literal part.
+  // It should be emitted as-is, not replaced with U+FFFD (ef bf bd).
+  match
+    exec_file(
+      t,
+      "<test>",
+      "x = \"é\"[0] + \"{}\"\nprint(x.format(1))",
+      Options::default(),
+    ) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc31")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
 // --- List methods ---
 
 ///|
