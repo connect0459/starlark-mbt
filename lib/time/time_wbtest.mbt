@@ -465,3 +465,44 @@ test "parse_go_layout: wrong separator includes remaining text and expected sepa
     Err(e) => assert_true(e.has_suffix("cannot parse \"/03/22\" as \"-\""))
   }
 }
+
+///|
+fn call_time_builtin(
+  builtin : @value.Value,
+  pos_args : Array[@value.Value],
+  kw_args : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] {
+  guard builtin is @value.Value::Builtin(bf)
+  let ctx = @value.BuiltinCallCtx::new(fn(_v, _p, _k) {
+    Err("nested calls are not exercised here")
+  })
+  match bf.call_body(ctx, pos_args, kw_args) {
+    Some(r) => r
+    None => Err("builtin had no body")
+  }
+}
+
+///|
+test "make_parse_time_fn: unknown keyword argument name is double-quoted" {
+  let result = call_time_builtin(
+    make_parse_time_fn(),
+    [@value.Value::String(@value.StarlarkString::new("2021-01-01"))],
+    [("bogus", @value.Value::String(@value.StarlarkString::new("y")))],
+  )
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(msg, "parse_time: unexpected keyword argument \"bogus\"")
+  }
+}
+
+///|
+test "make_time_constructor_fn: unknown keyword argument name is double-quoted" {
+  let result = call_time_builtin(make_time_constructor_fn(), [], [
+    ("foo", @value.Value::Int(BigInt::from_int(1))),
+  ])
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) => assert_eq(msg, "time: unexpected keyword argument \"foo\"")
+  }
+}
