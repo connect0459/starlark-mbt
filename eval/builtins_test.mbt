@@ -3021,3 +3021,30 @@ test "exec_file: repr of shallowly nested list succeeds" {
     Err(e) => fail("unexpected error: \{e.msg()}")
   }
 }
+
+// --- dotted attribute error wording ---
+
+///|
+test "exec_file: tuple dotted attribute error uses .x field or method wording" {
+  assert_eq(emsg("(1, 2).foo"), "tuple has no .foo field or method")
+}
+
+///|
+test "exec_file: int dotted attribute error uses .x field or method wording" {
+  assert_eq(emsg("(1).foo"), "int has no .foo field or method")
+}
+
+///|
+test "exec_file: bool dotted attribute error uses .x field or method wording" {
+  assert_eq(emsg("True.foo"), "bool has no .foo field or method")
+}
+
+///|
+test "exec_file: NoneType dotted attribute error uses .x field or method wording" {
+  assert_eq(emsg("None.foo"), "NoneType has no .foo field or method")
+}
+
+///|
+test "exec_file: range dotted attribute error uses .x field or method wording" {
+  assert_eq(emsg("range(3).foo"), "range has no .foo field or method")
+}
