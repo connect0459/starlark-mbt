@@ -1236,16 +1236,15 @@ fn in_op(
       }
       @value.Value::Bool(false)
     }
+    // Dict silences all hash errors (starlark-go Mapping.Get: "cannot
+    // distinguish true errors from key not found"). Set propagates them
+    // (starlark-go Set.Has returns the error from the hashtable lookup).
     @value.Value::Dict(d) =>
       match d.get(needle) {
         Ok(Some(_)) => @value.Value::Bool(true)
         _ => @value.Value::Bool(false)
       }
-    @value.Value::Set(s) =>
-      match s.contains(needle) {
-        Ok(b) => @value.Value::Bool(b)
-        Err(_) => @value.Value::Bool(false)
-      }
+    @value.Value::Set(s) => @value.Value::Bool(check(ctx, s.contains(needle)))
     @value.Value::String(s) =>
       match needle {
         @value.Value::String(n) => @value.Value::Bool(s.raw().contains(n.raw()))
