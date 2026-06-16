@@ -506,3 +506,156 @@ test "make_time_constructor_fn: unknown keyword argument name is double-quoted" 
     Err(msg) => assert_eq(msg, "time: unexpected keyword argument \"foo\"")
   }
 }
+
+///|
+test "time_quote: empty string produces empty quoted string" {
+  assert_eq(time_quote(""), "\"\"")
+}
+
+///|
+test "time_quote: plain ASCII text is preserved verbatim inside quotes" {
+  assert_eq(time_quote("hello123"), "\"hello123\"")
+}
+
+///|
+test "time_quote: double-quote is escaped as backslash-quote" {
+  assert_eq(time_quote("\""), "\"\\\"\"")
+}
+
+///|
+test "time_quote: backslash is doubled" {
+  assert_eq(time_quote("\\"), "\"\\\\\"")
+}
+
+///|
+test "time_quote: newline (0x0a) is escaped as \\x0a" {
+  assert_eq(time_quote("\n"), "\"\\x0a\"")
+}
+
+///|
+test "time_quote: tab (0x09) is escaped as \\x09" {
+  assert_eq(time_quote("\t"), "\"\\x09\"")
+}
+
+///|
+test "time_quote: bell (0x07) is escaped as \\x07" {
+  let bell = {
+    let b = StringBuilder::new()
+    b.write_char((7).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(time_quote(bell), "\"\\x07\"")
+}
+
+///|
+test "time_quote: backspace (0x08) is escaped as \\x08" {
+  let bs = {
+    let b = StringBuilder::new()
+    b.write_char((8).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(time_quote(bs), "\"\\x08\"")
+}
+
+///|
+test "time_quote: vertical tab (0x0b) is escaped as \\x0b" {
+  let vt = {
+    let b = StringBuilder::new()
+    b.write_char((11).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(time_quote(vt), "\"\\x0b\"")
+}
+
+///|
+test "time_quote: form feed (0x0c) is escaped as \\x0c" {
+  let ff = {
+    let b = StringBuilder::new()
+    b.write_char((12).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(time_quote(ff), "\"\\x0c\"")
+}
+
+///|
+test "time_quote: carriage return (0x0d) is escaped as \\x0d" {
+  assert_eq(time_quote("\r"), "\"\\x0d\"")
+}
+
+///|
+test "time_quote: NUL (0x00) is escaped as \\x00" {
+  let nul = {
+    let b = StringBuilder::new()
+    b.write_char((0).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(time_quote(nul), "\"\\x00\"")
+}
+
+///|
+test "time_quote: DEL (0x7f) passes through as raw byte" {
+  let del = {
+    let b = StringBuilder::new()
+    b.write_char((0x7F).unsafe_to_char())
+    b.to_string()
+  }
+  let expected = {
+    let b = StringBuilder::new()
+    b.write_char('"')
+    b.write_char((0x7F).unsafe_to_char())
+    b.write_char('"')
+    b.to_string()
+  }
+  assert_eq(time_quote(del), expected)
+}
+
+///|
+test "time_quote: non-ASCII U+0080 is UTF-8 encoded as \\xc2\\x80" {
+  let s = {
+    let b = StringBuilder::new()
+    b.write_char((0x80).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(time_quote(s), "\"\\xc2\\x80\"")
+}
+
+///|
+test "time_quote: U+00B5 micro sign is UTF-8 encoded as \\xc2\\xb5" {
+  let s = {
+    let b = StringBuilder::new()
+    b.write_char('µ')
+    b.to_string()
+  }
+  assert_eq(time_quote(s), "\"\\xc2\\xb5\"")
+}
+
+///|
+test "parse_rfc3339: double-quote in both input and trailing extra text is fully Go-quoted" {
+  let input = {
+    let b = StringBuilder::new()
+    b.write_string("2021-03-22T23:20:50Z")
+    b.write_char('"')
+    b.to_string()
+  }
+  match parse_rfc3339(input) {
+    Ok(_) => fail("expected Err")
+    Err(e) =>
+      assert_eq(
+        e, "parsing time \"2021-03-22T23:20:50Z\\\"\": extra text: \"\\\"\"",
+      )
+  }
+}
+
+///|
+test "parse_go_layout: double-quote in both input and trailing extra text is fully Go-quoted" {
+  let input = {
+    let b = StringBuilder::new()
+    b.write_string("2006")
+    b.write_char('"')
+    b.to_string()
+  }
+  match parse_go_layout(input, "2006") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_eq(e, "parsing time \"2006\\\"\": extra text: \"\\\"\"")
+  }
+}

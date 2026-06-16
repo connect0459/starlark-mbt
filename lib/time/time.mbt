@@ -1360,6 +1360,55 @@ fn make_format_method(
 }
 
 ///|
+fn hex_lower_digit(n : Int) -> Char {
+  if n < 10 {
+    ('0'.to_int() + n).unsafe_to_char()
+  } else {
+    ('a'.to_int() + n - 10).unsafe_to_char()
+  }
+}
+
+///|
+fn write_hex_escape(buf : StringBuilder, b : Int) -> Unit {
+  buf.write_char('\\')
+  buf.write_char('x')
+  buf.write_char(hex_lower_digit(b >> 4))
+  buf.write_char(hex_lower_digit(b & 0xF))
+}
+
+///|
+fn time_quote(s : String) -> String {
+  let buf = StringBuilder::new()
+  buf.write_char('"')
+  for c in s {
+    let cp = c.to_int()
+    if cp == '"'.to_int() {
+      buf.write_string("\\\"")
+    } else if cp == '\\'.to_int() {
+      buf.write_string("\\\\")
+    } else if cp >= 32 && cp <= 127 {
+      buf.write_char(c)
+    } else if cp < 0x80 {
+      write_hex_escape(buf, cp)
+    } else if cp < 0x800 {
+      write_hex_escape(buf, 0xC0 | (cp >> 6))
+      write_hex_escape(buf, 0x80 | (cp & 0x3F))
+    } else if cp < 0x10000 {
+      write_hex_escape(buf, 0xE0 | (cp >> 12))
+      write_hex_escape(buf, 0x80 | ((cp >> 6) & 0x3F))
+      write_hex_escape(buf, 0x80 | (cp & 0x3F))
+    } else {
+      write_hex_escape(buf, 0xF0 | (cp >> 18))
+      write_hex_escape(buf, 0x80 | ((cp >> 12) & 0x3F))
+      write_hex_escape(buf, 0x80 | ((cp >> 6) & 0x3F))
+      write_hex_escape(buf, 0x80 | (cp & 0x3F))
+    }
+  }
+  buf.write_char('"')
+  buf.to_string()
+}
+
+///|
 fn parse_2digits(chars : Array[Char], i : Int) -> (Int, Int)? {
   if i + 1 >= chars.length() {
     return None
@@ -1525,7 +1574,9 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
     for k in tz_end..<chars.length() {
       buf.write_char(chars[k])
     }
-    return Err("parsing time \"\{s}\": extra text: \"\{buf.to_string()}\"")
+    return Err(
+      "parsing time \{time_quote(s)}: extra text: \{time_quote(buf.to_string())}",
+    )
   }
   let dt = @x_time.ZonedDateTime::of(
     year,
@@ -2043,7 +2094,9 @@ fn parse_go_layout(
     for k in vi..<vn {
       buf.write_char(vc[k])
     }
-    return Err("parsing time \"\{value}\": extra text: \"\{buf.to_string()}\"")
+    return Err(
+      "parsing time \{time_quote(value)}: extra text: \{time_quote(buf.to_string())}",
+    )
   }
   if yday >= 0 {
     let max_yday = if is_leap_year(year.to_int64()) { 366 } else { 365 }
