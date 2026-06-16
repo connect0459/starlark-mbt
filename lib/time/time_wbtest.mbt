@@ -508,118 +508,118 @@ test "make_time_constructor_fn: unknown keyword argument name is double-quoted" 
 }
 
 ///|
-test "quote_go_ascii: empty string produces empty quoted string" {
-  assert_eq(quote_go_ascii(""), "\"\"")
+test "time_quote: empty string produces empty quoted string" {
+  assert_eq(time_quote(""), "\"\"")
 }
 
 ///|
-test "quote_go_ascii: plain ASCII text is preserved verbatim inside quotes" {
-  assert_eq(quote_go_ascii("hello123"), "\"hello123\"")
+test "time_quote: plain ASCII text is preserved verbatim inside quotes" {
+  assert_eq(time_quote("hello123"), "\"hello123\"")
 }
 
 ///|
-test "quote_go_ascii: double-quote is escaped as backslash-quote" {
-  assert_eq(quote_go_ascii("\""), "\"\\\"\"")
+test "time_quote: double-quote is escaped as backslash-quote" {
+  assert_eq(time_quote("\""), "\"\\\"\"")
 }
 
 ///|
-test "quote_go_ascii: backslash is doubled" {
-  assert_eq(quote_go_ascii("\\"), "\"\\\\\"")
+test "time_quote: backslash is doubled" {
+  assert_eq(time_quote("\\"), "\"\\\\\"")
 }
 
 ///|
-test "quote_go_ascii: newline is escaped as backslash-n" {
-  assert_eq(quote_go_ascii("\n"), "\"\\n\"")
+test "time_quote: newline (0x0a) is escaped as \\x0a" {
+  assert_eq(time_quote("\n"), "\"\\x0a\"")
 }
 
 ///|
-test "quote_go_ascii: tab is escaped as backslash-t" {
-  assert_eq(quote_go_ascii("\t"), "\"\\t\"")
+test "time_quote: tab (0x09) is escaped as \\x09" {
+  assert_eq(time_quote("\t"), "\"\\x09\"")
 }
 
 ///|
-test "quote_go_ascii: bell (0x07) is escaped as backslash-a" {
+test "time_quote: bell (0x07) is escaped as \\x07" {
   let bell = {
     let b = StringBuilder::new()
     b.write_char((7).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(quote_go_ascii(bell), "\"\\a\"")
+  assert_eq(time_quote(bell), "\"\\x07\"")
 }
 
 ///|
-test "quote_go_ascii: backspace (0x08) is escaped as backslash-b" {
+test "time_quote: backspace (0x08) is escaped as \\x08" {
   let bs = {
     let b = StringBuilder::new()
     b.write_char((8).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(quote_go_ascii(bs), "\"\\b\"")
+  assert_eq(time_quote(bs), "\"\\x08\"")
 }
 
 ///|
-test "quote_go_ascii: vertical tab (0x0B) is escaped as backslash-v" {
+test "time_quote: vertical tab (0x0b) is escaped as \\x0b" {
   let vt = {
     let b = StringBuilder::new()
     b.write_char((11).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(quote_go_ascii(vt), "\"\\v\"")
+  assert_eq(time_quote(vt), "\"\\x0b\"")
 }
 
 ///|
-test "quote_go_ascii: form feed (0x0C) is escaped as backslash-f" {
+test "time_quote: form feed (0x0c) is escaped as \\x0c" {
   let ff = {
     let b = StringBuilder::new()
     b.write_char((12).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(quote_go_ascii(ff), "\"\\f\"")
+  assert_eq(time_quote(ff), "\"\\x0c\"")
 }
 
 ///|
-test "quote_go_ascii: carriage return is escaped as backslash-r" {
-  assert_eq(quote_go_ascii("\r"), "\"\\r\"")
+test "time_quote: carriage return (0x0d) is escaped as \\x0d" {
+  assert_eq(time_quote("\r"), "\"\\x0d\"")
 }
 
 ///|
-test "quote_go_ascii: NUL (0x00) is escaped as \\x00" {
+test "time_quote: NUL (0x00) is escaped as \\x00" {
   let nul = {
     let b = StringBuilder::new()
     b.write_char((0).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(quote_go_ascii(nul), "\"\\x00\"")
+  assert_eq(time_quote(nul), "\"\\x00\"")
 }
 
 ///|
-test "quote_go_ascii: DEL (0x7F) is escaped as \\x7f" {
+test "time_quote: DEL (0x7f) is escaped as \\x7f" {
   let del = {
     let b = StringBuilder::new()
     b.write_char((0x7F).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(quote_go_ascii(del), "\"\\x7f\"")
+  assert_eq(time_quote(del), "\"\\x7f\"")
 }
 
 ///|
-test "quote_go_ascii: non-ASCII code point (U+0080) is escaped as \\u0080" {
+test "time_quote: non-ASCII U+0080 is UTF-8 encoded as \\xc2\\x80" {
   let s = {
     let b = StringBuilder::new()
     b.write_char((0x80).unsafe_to_char())
     b.to_string()
   }
-  assert_eq(quote_go_ascii(s), "\"\\u0080\"")
+  assert_eq(time_quote(s), "\"\\xc2\\x80\"")
 }
 
 ///|
-test "quote_go_ascii: BMP non-ASCII code point (U+00B5) is escaped as \\u00b5" {
+test "time_quote: U+00B5 micro sign is UTF-8 encoded as \\xc2\\xb5" {
   let s = {
     let b = StringBuilder::new()
     b.write_char('µ')
     b.to_string()
   }
-  assert_eq(quote_go_ascii(s), "\"\\u00b5\"")
+  assert_eq(time_quote(s), "\"\\xc2\\xb5\"")
 }
 
 ///|

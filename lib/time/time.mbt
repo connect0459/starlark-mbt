@@ -1369,7 +1369,15 @@ fn hex_lower_digit(n : Int) -> Char {
 }
 
 ///|
-fn quote_go_ascii(s : String) -> String {
+fn write_hex_escape(buf : StringBuilder, b : Int) -> Unit {
+  buf.write_char('\\')
+  buf.write_char('x')
+  buf.write_char(hex_lower_digit(b >> 4))
+  buf.write_char(hex_lower_digit(b & 0xF))
+}
+
+///|
+fn time_quote(s : String) -> String {
   let buf = StringBuilder::new()
   buf.write_char('"')
   for c in s {
@@ -1378,45 +1386,22 @@ fn quote_go_ascii(s : String) -> String {
       buf.write_string("\\\"")
     } else if cp == '\\'.to_int() {
       buf.write_string("\\\\")
-    } else if cp == 7 {
-      buf.write_string("\\a")
-    } else if cp == 8 {
-      buf.write_string("\\b")
-    } else if cp == 9 {
-      buf.write_string("\\t")
-    } else if cp == 10 {
-      buf.write_string("\\n")
-    } else if cp == 11 {
-      buf.write_string("\\v")
-    } else if cp == 12 {
-      buf.write_string("\\f")
-    } else if cp == 13 {
-      buf.write_string("\\r")
     } else if cp >= 32 && cp <= 126 {
       buf.write_char(c)
-    } else if cp < 128 {
-      buf.write_char('\\')
-      buf.write_char('x')
-      buf.write_char(hex_lower_digit(cp >> 4))
-      buf.write_char(hex_lower_digit(cp & 0xF))
-    } else if cp <= 0xFFFF {
-      buf.write_char('\\')
-      buf.write_char('u')
-      buf.write_char(hex_lower_digit((cp >> 12) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 8) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 4) & 0xF))
-      buf.write_char(hex_lower_digit(cp & 0xF))
+    } else if cp < 0x80 {
+      write_hex_escape(buf, cp)
+    } else if cp < 0x800 {
+      write_hex_escape(buf, 0xC0 | (cp >> 6))
+      write_hex_escape(buf, 0x80 | (cp & 0x3F))
+    } else if cp < 0x10000 {
+      write_hex_escape(buf, 0xE0 | (cp >> 12))
+      write_hex_escape(buf, 0x80 | ((cp >> 6) & 0x3F))
+      write_hex_escape(buf, 0x80 | (cp & 0x3F))
     } else {
-      buf.write_char('\\')
-      buf.write_char('U')
-      buf.write_char(hex_lower_digit((cp >> 28) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 24) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 20) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 16) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 12) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 8) & 0xF))
-      buf.write_char(hex_lower_digit((cp >> 4) & 0xF))
-      buf.write_char(hex_lower_digit(cp & 0xF))
+      write_hex_escape(buf, 0xF0 | (cp >> 18))
+      write_hex_escape(buf, 0x80 | ((cp >> 12) & 0x3F))
+      write_hex_escape(buf, 0x80 | ((cp >> 6) & 0x3F))
+      write_hex_escape(buf, 0x80 | (cp & 0x3F))
     }
   }
   buf.write_char('"')
@@ -1590,7 +1575,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
       buf.write_char(chars[k])
     }
     return Err(
-      "parsing time \"\{s}\": extra text: \{quote_go_ascii(buf.to_string())}",
+      "parsing time \"\{s}\": extra text: \{time_quote(buf.to_string())}",
     )
   }
   let dt = @x_time.ZonedDateTime::of(
@@ -2110,7 +2095,7 @@ fn parse_go_layout(
       buf.write_char(vc[k])
     }
     return Err(
-      "parsing time \"\{value}\": extra text: \{quote_go_ascii(buf.to_string())}",
+      "parsing time \"\{value}\": extra text: \{time_quote(buf.to_string())}",
     )
   }
   if yday >= 0 {
