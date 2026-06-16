@@ -408,6 +408,14 @@ fn is_digit_char(c : Char) -> Bool {
 }
 
 ///|
+fn is_hex_digit(c : Char) -> Bool {
+  let cp = c.to_int()
+  (cp >= '0'.to_int() && cp <= '9'.to_int()) ||
+  (cp >= 'a'.to_int() && cp <= 'f'.to_int()) ||
+  (cp >= 'A'.to_int() && cp <= 'F'.to_int())
+}
+
+///|
 fn parse_hex4_at(chars : Array[Char], i : Int) -> (Int, Int) {
   if i + 4 > chars.length() {
     return (-1, i)
@@ -489,10 +497,7 @@ fn parse_json_string(
             let mut j = i
             while j < len {
               let ch = chars[j]
-              let cp2 = ch.to_int()
-              if !((cp2 >= '0'.to_int() && cp2 <= '9'.to_int()) ||
-                (cp2 >= 'a'.to_int() && cp2 <= 'f'.to_int()) ||
-                (cp2 >= 'A'.to_int() && cp2 <= 'F'.to_int())) {
+              if !is_hex_digit(ch) {
                 bad_char = ch
                 break
               }
