@@ -254,14 +254,14 @@ fn call_builtin(
 ) -> @value.Value raise EvalErr {
   match name {
     "print" => {
-      let sep = {
-        let mut found = " "
+      let sep_bytes = {
+        let mut found : Bytes = b" "
         for kv in kw_args {
           let (k, v) = kv
           match k {
             "sep" =>
               match v {
-                @value.Value::String(s) => found = s.raw()
+                @value.Value::String(s) => found = s.to_bytes()
                 _ =>
                   raise EvalErr(
                     make_eval_error(
@@ -281,20 +281,20 @@ fn call_builtin(
         }
         found
       }
-      let buf = StringBuilder::new()
+      let buf = @buffer.Buffer::Buffer()
       let mut first = true
       for arg in pos_args {
         if !first {
-          buf.write_string(sep)
+          buf.write_bytes(sep_bytes[:])
         }
         first = false
         match arg {
-          @value.Value::Bytes(b) =>
-            buf.write_string(@value.StarlarkString::from_bytes(b).raw())
-          _ => buf.write_string(check(ctx, arg.to_str_checked()))
+          @value.Value::String(s) => buf.write_bytes(s.to_bytes()[:])
+          @value.Value::Bytes(b) => buf.write_bytes(b[:])
+          _ => buf.write_string_utf8(check(ctx, arg.to_str_checked()))
         }
       }
-      (ctx.thread.print_fn)(ctx.thread, buf.to_string())
+      (ctx.thread.print_fn)(ctx.thread, buf.contents())
       @value.Value::None
     }
     "len" => {
@@ -310,6 +310,7 @@ fn call_builtin(
         )
       } else if pos_args.length() == 1 {
         match pos_args[0] {
+          @value.Value::String(s) => @value.Value::String(s)
           @value.Value::Bytes(b) =>
             // starlark-go's str(bytes) replaces invalid encodings with U+FFFD
             // using Go's per-byte decoder, not the WHATWG maximal-subpart rule.
@@ -2015,7 +2016,7 @@ fn call_str_method(
     }
     "join" => {
       check_positional(ctx, "join", pos_args, kw_args, 1, 1)
-      let parts : Array[String] = []
+      let parts : Array[Bytes] = []
       let it = match @value.iterate(pos_args[0]) {
         Ok(it) => it
         Err(_) =>
@@ -2032,7 +2033,7 @@ fn call_str_method(
             it.done()
             break
           }
-          Some(@value.Value::String(part)) => parts.push(part.raw())
+          Some(@value.Value::String(part)) => parts.push(part.to_bytes())
           Some(v) => {
             it.done()
             raise EvalErr(
@@ -2044,18 +2045,19 @@ fn call_str_method(
           }
         }
       }
-      let buf = StringBuilder::new()
+      let sep_bytes = s.to_bytes()
+      let buf = @buffer.Buffer::Buffer()
       let mut first = true
       for part in parts {
         if !first {
-          buf.write_string(s.raw())
+          buf.write_bytes(sep_bytes[:])
         }
         first = false
-        buf.write_string(part)
+        buf.write_bytes(part[:])
       }
-      @value.Value::String(@value.StarlarkString::new(buf.to_string()))
+      @value.Value::String(@value.StarlarkString::from_bytes(buf.contents()))
     }
-    "format" => str_format(ctx, s.raw(), pos_args, kw_args)
+    "format" => str_format(ctx, s.to_bytes(), pos_args, kw_args)
     "capitalize" => {
       let raw = s.raw()
       if raw.length() == 0 {
@@ -3412,30 +3414,30 @@ fn str_replace_count(
 ///|
 fn str_format(
   ctx : EvalContext,
-  template : String,
+  template_bytes : Bytes,
   args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
-  let buf = StringBuilder::new()
-  let tlen = template.length()
+  let buf = @buffer.Buffer::Buffer()
+  let n = template_bytes.length()
   let mut i = 0
   let mut auto_idx = 0
   let mut auto_mode = false
   let mut manual_mode = false
-  while i < tlen {
-    let c = template[i]
-    if c == '{' {
-      if i + 1 < tlen && template[i + 1] == '{' {
-        buf.write_char('{')
+  while i < n {
+    let b = template_bytes[i]
+    if b == b'{' {
+      if i + 1 < n && template_bytes[i + 1] == b'{' {
+        buf.write_byte(b'{')
         i += 2
       } else {
         let start = i + 1
         let mut j = start
         let mut in_name = true
-        while j < tlen && template[j] != '}' {
-          if template[j] == '!' || template[j] == ':' {
+        while j < n && template_bytes[j] != b'}' {
+          if template_bytes[j] == b'!' || template_bytes[j] == b':' {
             in_name = false
-          } else if template[j] == '{' && in_name {
+          } else if template_bytes[j] == b'{' && in_name {
             raise EvalErr(
               make_eval_error(
                 ctx, "format: nested replacement fields not supported",
@@ -3444,10 +3446,10 @@ fn str_format(
           }
           j += 1
         }
-        if j >= tlen {
+        if j >= n {
           raise EvalErr(make_eval_error(ctx, "format: unmatched '{' in format"))
         }
-        let field = template[start:j].to_owned()
+        let field = @utf8.decode_lossy(template_bytes[start:j])
         i = j + 1
         let (name, conv) = if find_substr(field, "!") >= 0 {
           let bang = find_substr(field, "!")
@@ -3580,27 +3582,31 @@ fn str_format(
           }
         }
         match conv {
-          "s" => buf.write_string(check(ctx, arg.to_str_checked()))
-          "r" => buf.write_string(check(ctx, arg.repr_checked()))
+          "s" =>
+            match arg {
+              @value.Value::String(sv) => buf.write_bytes(sv.to_bytes()[:])
+              _ => buf.write_string_utf8(check(ctx, arg.to_str_checked()))
+            }
+          "r" => buf.write_string_utf8(check(ctx, arg.repr_checked()))
           other =>
             raise EvalErr(
               make_eval_error(ctx, "format: unknown conversion \"\{other}\""),
             )
         }
       }
-    } else if c == '}' {
-      if i + 1 < tlen && template[i + 1] == '}' {
-        buf.write_char('}')
+    } else if b == b'}' {
+      if i + 1 < n && template_bytes[i + 1] == b'}' {
+        buf.write_byte(b'}')
         i += 2
       } else {
         raise EvalErr(make_eval_error(ctx, "format: single '}' in format"))
       }
     } else {
-      buf.write_char(Int::unsafe_to_char(c.to_int()))
+      buf.write_byte(template_bytes[i])
       i += 1
     }
   }
-  @value.Value::String(@value.StarlarkString::new(buf.to_string()))
+  @value.Value::String(@value.StarlarkString::from_bytes(buf.contents()))
 }
 
 ///|

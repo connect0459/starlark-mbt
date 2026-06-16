@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/buffer",
   "moonbitlang/core/double",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/int64",
@@ -13,3 +14,11 @@ import {
   "connect0459/starlark/internal/resolver",
   "connect0459/starlark/internal/utf8util",
 }
+
+options(
+  "native-stub": [ "eval_native.c" ],
+  targets: {
+    "eval_print_native.mbt": [ "native", "llvm" ],
+    "eval_print_stub.mbt": [ "wasm", "wasm-gc", "js" ],
+  },
+)

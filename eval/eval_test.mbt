@@ -245,12 +245,12 @@ test "Thread::set_max_steps updates the step budget on an existing thread" {
 
 ///|
 test "Thread: with_print routes output to the custom callback" {
-  let msgs : Array[String] = []
-  let t = Thread::with_print("test", fn(_thread, msg) { msgs.push(msg) })
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_thread, bytes) { msgs.push(bytes) })
   match exec_file(t, "<test>", "print(\"hello\")", Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
-      assert_eq(msgs[0], "hello")
+      assert_eq(@utf8.decode_lossy(msgs[0][:]), "hello")
     }
     Err(e) => fail(e.msg())
   }
@@ -263,7 +263,7 @@ test "Thread: with_print callback receives Thread with accessible call stack" {
     #|def f():
     #|  print("inside f")
     #|f()
-  let t = Thread::with_print("test", fn(thread, _msg) {
+  let t = Thread::with_print("test", fn(thread, _bytes) {
     captured_depth.push(thread.call_stack_depth())
   })
   match exec_file(t, "foo.star", src, Options::default()) {
@@ -1024,9 +1024,9 @@ test "Thread::set_max_steps does not reset the step counter" {
 
 ///|
 test "Thread can combine print, loader, and step budget via setters" {
-  let msgs : Array[String] = []
+  let msgs : Array[Bytes] = []
   let t = Thread::new("test")
-  t.set_print(fn(_thread, msg) { msgs.push(msg) })
+  t.set_print(fn(_thread, bytes) { msgs.push(bytes) })
   t.set_loader(fn(_thread, _path) {
     let m = Module::new()
     Ok(m)
@@ -1035,7 +1035,7 @@ test "Thread can combine print, loader, and step budget via setters" {
   match exec_file(t, "<test>", "print(\"hi\")", Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
-      assert_eq(msgs[0], "hi")
+      assert_eq(@utf8.decode_lossy(msgs[0][:]), "hi")
       assert_true(t.max_steps() == Some(10000))
     }
     Err(e) => fail(e.msg())

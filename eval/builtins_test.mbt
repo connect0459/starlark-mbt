@@ -641,39 +641,216 @@ test "exec_file: set converts list and deduplicates elements" {
 
 ///|
 test "exec_file: print sends output through Thread print callback" {
-  let msgs : Array[String] = []
-  let t = Thread::with_print("test", fn(_, msg) { msgs.push(msg) })
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   match
     exec_file(t, "<test>", "print(\"hello\", \"world\")", Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
-      assert_eq(msgs[0], "hello world")
+      assert_eq(@utf8.decode_lossy(msgs[0][:]), "hello world")
     }
     Err(e) => fail(e.to_string())
   }
 }
 
 ///|
-test "exec_file: print outputs Bytes as raw decoded string, not repr" {
-  let msgs : Array[String] = []
-  let t = Thread::with_print("test", fn(_, msg) { msgs.push(msg) })
+test "exec_file: print outputs Bytes value as raw bytes, not repr" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   match exec_file(t, "<test>", "print(b\"hello\")", Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
-      assert_eq(msgs[0], "hello")
+      assert_eq(msgs[0], b"hello")
     }
     Err(e) => fail(e.to_string())
   }
 }
 
 ///|
-test "exec_file: print outputs Bytes with hex escapes as raw decoded string" {
-  let msgs : Array[String] = []
-  let t = Thread::with_print("test", fn(_, msg) { msgs.push(msg) })
+test "exec_file: print outputs Bytes with hex escapes as raw bytes" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   match exec_file(t, "<test>", "print(b\"\\x61\\x62\")", Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
-      assert_eq(msgs[0], "ab")
+      assert_eq(msgs[0], b"ab")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+// --- print: byte-faithful output ---
+
+///|
+test "exec_file: print emits raw bytes for invalid-UTF-8 string slice" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // "é" encodes as [0xC3, 0xA9]; "é"[0] is [0xC3] — invalid UTF-8 alone.
+  // The output must be the raw byte 0xC3, not the U+FFFD replacement (ef bf bd).
+  match exec_file(t, "<test>", "print(\"é\"[0])", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc3")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: print emits raw bytes for invalid-UTF-8 string range slice" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match exec_file(t, "<test>", "print(\"é\"[0:1])", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc3")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: join emits raw bytes for invalid-UTF-8 string elements" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    exec_file(t, "<test>", "print(\"\".join([\"é\"[0]]))", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc3")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: percent-c emits U+FFFD for invalid-UTF-8 single-byte string" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // go: DecodeRuneInString("\xc3") → (U+FFFD, 1); WriteRune(U+FFFD) = ef bf bd.
+  // %c is a rune-formatting verb, not a raw-byte sink.
+  match
+    exec_file(t, "<test>", "print(\"%c\" % \"é\"[0])", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xef\xbf\xbd")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: percent-c emits correct UTF-8 for valid emoji string" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match exec_file(t, "<test>", "print(\"%c\" % \"😀\")", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xf0\x9f\x98\x80")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: percent-s preserves raw bytes of invalid-UTF-8 string" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    exec_file(t, "<test>", "print(\"%s\" % \"é\"[0])", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc3")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str_format preserves raw bytes of invalid-UTF-8 string" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    exec_file(
+      t,
+      "<test>",
+      "print(\"{}\".format(\"é\"[0]))",
+      Options::default(),
+    ) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc3")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str() returns identity for invalid-UTF-8 string" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match exec_file(t, "<test>", "print(str(\"é\"[0]))", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc3")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: print with invalid-UTF-8 sep emits raw separator bytes" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // sep is "é"[0] = [0xC3]; output should be "a\xc3b"
+  match
+    exec_file(
+      t,
+      "<test>",
+      "print(\"a\", \"b\", sep=\"é\"[0])",
+      Options::default(),
+    ) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"a\xc3b")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str_format emits valid UTF-8 for non-BMP chars in template literal" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // "😀" = U+1F600 encodes as f0 9f 98 80 in UTF-8. If str_format wrongly
+  // encodes the template char-by-char as UTF-16 code units (surrogate halves),
+  // it would emit the CESU-8 sequence ed a0 bd ed b8 80 instead.
+  match
+    exec_file(t, "<test>", "print(\"😀{}\".format(1))", Options::default()) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xf0\x9f\x98\x801")
+    }
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: str_format emits raw bytes for invalid-UTF-8 in template literal" {
+  let msgs : Array[Bytes] = []
+  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  // Template "é"[0] + "{}" has the invalid byte 0xc3 in the literal part.
+  // It should be emitted as-is, not replaced with U+FFFD (ef bf bd).
+  match
+    exec_file(
+      t,
+      "<test>",
+      "x = \"é\"[0] + \"{}\"\nprint(x.format(1))",
+      Options::default(),
+    ) {
+    Ok(_) => {
+      assert_eq(msgs.length(), 1)
+      assert_eq(msgs[0], b"\xc31")
     }
     Err(e) => fail(e.to_string())
   }
@@ -1966,20 +2143,22 @@ test "exec_file: max with key= returns element with largest key" {
 
 ///|
 test "exec_file: print with sep= uses custom separator" {
-  let captured = Array::new()
-  let t = Thread::with_print("<test>", fn(_, s) { captured.push(s) })
+  let captured : Array[Bytes] = []
+  let t = Thread::with_print("<test>", fn(_, bytes) { captured.push(bytes) })
   ignore(
     exec_file(t, "<test>", "print(1, 2, 3, sep=\"-\")", Options::default()),
   )
-  assert_true(captured.length() > 0 && captured[0] == "1-2-3")
+  assert_true(
+    captured.length() > 0 && @utf8.decode_lossy(captured[0][:]) == "1-2-3",
+  )
 }
 
 ///|
 test "exec_file: print with sep= and no args outputs empty string" {
-  let captured = Array::new()
-  let t = Thread::with_print("<test>", fn(_, s) { captured.push(s) })
+  let captured : Array[Bytes] = []
+  let t = Thread::with_print("<test>", fn(_, bytes) { captured.push(bytes) })
   ignore(exec_file(t, "<test>", "print(sep=\",\")", Options::default()))
-  assert_true(captured.length() > 0 && captured[0] == "")
+  assert_true(captured.length() > 0 && captured[0] == b"")
 }
 
 // --- dir() ---
