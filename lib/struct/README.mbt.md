@@ -1,8 +1,16 @@
 # `lib/struct` package
 
-`struct`, `module`, and `gensym` extensions for Starlark (analogous to
-`starlark-go/lib/starlarkstruct`). Import `connect0459/starlark/lib/struct` and
-inject the callables you need as predeclared bindings.
+`struct` and `module` extensions for Starlark (analogous to
+`starlark-go/lib/starlarkstruct`), plus `gensym` — a MoonBit-only
+extension with no starlark-go counterpart. Import
+`connect0459/starlark/lib/struct` and inject the callables you need as
+predeclared bindings.
+
+> **Extension note — `gensym`**: `gensym(name=…)` is not part of the
+> Starlark specification and has no equivalent in `starlark-go/lib/starlarkstruct`.
+> It is a deliberate MoonBit extension that provides unique callable symbols for
+> branded struct constructors. Scripts that use `gensym` are not portable to
+> other Starlark implementations.
 
 ## MoonBit-level API
 
@@ -10,7 +18,7 @@ inject the callables you need as predeclared bindings.
 | :--- | :--- | :--- |
 | `struct_builtin()` | `() -> @value.Value` | Returns the `struct(…)` Starlark callable |
 | `module_builtin()` | `() -> @value.Value` | Returns the `module(name, …)` Starlark callable |
-| `gensym_builtin()` | `() -> @value.Value` | Returns the `gensym(name=…)` Starlark callable |
+| `gensym_builtin()` | `() -> @value.Value` | Returns the `gensym(name=…)` Starlark callable (**MoonBit extension**) |
 | `make_struct(ctor, entries)` | `(@value.Value, Array[(String, @value.Value)]) -> @value.Value` | Construct a struct value directly from MoonBit |
 | `make_module(name, members)` | `(String, Array[(String, @value.Value)]) -> @value.Value` | Construct a module value directly from MoonBit |
 | `default_ctor` | `@value.Value` | A `Value::String("struct")` constant; pass as the `ctor` argument to `make_struct` |
@@ -53,4 +61,4 @@ let _ = @eval.exec_file_with_predeclared(thread, "s.star", src,
 | `s.x` | Attribute access |
 | `s + struct(z=3)` | Merge two structs with the same constructor |
 | `module("mymod", f=fn)` | Create a module value |
-| `gensym(name="tag")` | Create a unique symbol callable |
+| `gensym(name="tag")` | Create a unique symbol callable (**MoonBit extension; not portable**) |
