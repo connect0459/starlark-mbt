@@ -319,3 +319,61 @@ test "StarlarkSet: starlark_equals different sizes returns false" {
   s2.add(Value::Int(2N)) |> ignore
   assert_false(Value::Set(s1).starlark_equals(Value::Set(s2)))
 }
+
+// --- depth-limit consistency (hash_limit vs compare_limit alignment) ---
+
+///|
+test "StarlarkDict: tuple key nested at compare_limit returns an error on insert" {
+  let d = StarlarkDict::new()
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<compare_limit {
+    v = Value::Tuple([v])
+  }
+  match d.set(v, Value::None) {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for deeply nested tuple key")
+  }
+}
+
+///|
+test "StarlarkDict: tuple key nested at compare_limit - 1 can be inserted and retrieved" {
+  let d = StarlarkDict::new()
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<(compare_limit - 1) {
+    v = Value::Tuple([v])
+  }
+  let expected = Value::String(StarlarkString::new("value"))
+  assert_true(d.set(v, expected) is Ok(_))
+  match d.get(v) {
+    Ok(Some(val)) => assert_true(val.starlark_equals(expected))
+    Ok(None) => fail("key not found after insertion")
+    Err(e) => fail("unexpected error on get: \{e}")
+  }
+}
+
+///|
+test "StarlarkSet: element nested at compare_limit returns an error on add" {
+  let s = StarlarkSet::new()
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<compare_limit {
+    v = Value::Tuple([v])
+  }
+  match s.add(v) {
+    Err(e) => assert_true(e.contains("maximum recursion depth"))
+    Ok(_) => fail("expected depth-limit error for deeply nested tuple element")
+  }
+}
+
+///|
+test "StarlarkSet: element nested at compare_limit - 1 can be added and found" {
+  let s = StarlarkSet::new()
+  let mut v : Value = Value::Int(1N)
+  for _ in 0..<(compare_limit - 1) {
+    v = Value::Tuple([v])
+  }
+  assert_true(s.add(v) is Ok(_))
+  match s.contains(v) {
+    Ok(found) => assert_true(found)
+    Err(e) => fail("unexpected error on contains: \{e}")
+  }
+}
