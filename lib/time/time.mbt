@@ -1360,6 +1360,70 @@ fn make_format_method(
 }
 
 ///|
+fn hex_lower_digit(n : Int) -> Char {
+  if n < 10 {
+    ('0'.to_int() + n).unsafe_to_char()
+  } else {
+    ('a'.to_int() + n - 10).unsafe_to_char()
+  }
+}
+
+///|
+fn quote_go_ascii(s : String) -> String {
+  let buf = StringBuilder::new()
+  buf.write_char('"')
+  for c in s {
+    let cp = c.to_int()
+    if cp == '"'.to_int() {
+      buf.write_string("\\\"")
+    } else if cp == '\\'.to_int() {
+      buf.write_string("\\\\")
+    } else if cp == 7 {
+      buf.write_string("\\a")
+    } else if cp == 8 {
+      buf.write_string("\\b")
+    } else if cp == 9 {
+      buf.write_string("\\t")
+    } else if cp == 10 {
+      buf.write_string("\\n")
+    } else if cp == 11 {
+      buf.write_string("\\v")
+    } else if cp == 12 {
+      buf.write_string("\\f")
+    } else if cp == 13 {
+      buf.write_string("\\r")
+    } else if cp >= 32 && cp <= 126 {
+      buf.write_char(c)
+    } else if cp < 128 {
+      buf.write_char('\\')
+      buf.write_char('x')
+      buf.write_char(hex_lower_digit(cp >> 4))
+      buf.write_char(hex_lower_digit(cp & 0xF))
+    } else if cp <= 0xFFFF {
+      buf.write_char('\\')
+      buf.write_char('u')
+      buf.write_char(hex_lower_digit((cp >> 12) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 8) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 4) & 0xF))
+      buf.write_char(hex_lower_digit(cp & 0xF))
+    } else {
+      buf.write_char('\\')
+      buf.write_char('U')
+      buf.write_char(hex_lower_digit((cp >> 28) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 24) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 20) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 16) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 12) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 8) & 0xF))
+      buf.write_char(hex_lower_digit((cp >> 4) & 0xF))
+      buf.write_char(hex_lower_digit(cp & 0xF))
+    }
+  }
+  buf.write_char('"')
+  buf.to_string()
+}
+
+///|
 fn parse_2digits(chars : Array[Char], i : Int) -> (Int, Int)? {
   if i + 1 >= chars.length() {
     return None
@@ -1525,7 +1589,9 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
     for k in tz_end..<chars.length() {
       buf.write_char(chars[k])
     }
-    return Err("parsing time \"\{s}\": extra text: \"\{buf.to_string()}\"")
+    return Err(
+      "parsing time \"\{s}\": extra text: \{quote_go_ascii(buf.to_string())}",
+    )
   }
   let dt = @x_time.ZonedDateTime::of(
     year,
@@ -2043,7 +2109,9 @@ fn parse_go_layout(
     for k in vi..<vn {
       buf.write_char(vc[k])
     }
-    return Err("parsing time \"\{value}\": extra text: \"\{buf.to_string()}\"")
+    return Err(
+      "parsing time \"\{value}\": extra text: \{quote_go_ascii(buf.to_string())}",
+    )
   }
   if yday >= 0 {
     let max_yday = if is_leap_year(year.to_int64()) { 366 } else { 365 }

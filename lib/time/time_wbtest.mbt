@@ -506,3 +506,146 @@ test "make_time_constructor_fn: unknown keyword argument name is double-quoted" 
     Err(msg) => assert_eq(msg, "time: unexpected keyword argument \"foo\"")
   }
 }
+
+///|
+test "quote_go_ascii: empty string produces empty quoted string" {
+  assert_eq(quote_go_ascii(""), "\"\"")
+}
+
+///|
+test "quote_go_ascii: plain ASCII text is preserved verbatim inside quotes" {
+  assert_eq(quote_go_ascii("hello123"), "\"hello123\"")
+}
+
+///|
+test "quote_go_ascii: double-quote is escaped as backslash-quote" {
+  assert_eq(quote_go_ascii("\""), "\"\\\"\"")
+}
+
+///|
+test "quote_go_ascii: backslash is doubled" {
+  assert_eq(quote_go_ascii("\\"), "\"\\\\\"")
+}
+
+///|
+test "quote_go_ascii: newline is escaped as backslash-n" {
+  assert_eq(quote_go_ascii("\n"), "\"\\n\"")
+}
+
+///|
+test "quote_go_ascii: tab is escaped as backslash-t" {
+  assert_eq(quote_go_ascii("\t"), "\"\\t\"")
+}
+
+///|
+test "quote_go_ascii: bell (0x07) is escaped as backslash-a" {
+  let bell = {
+    let b = StringBuilder::new()
+    b.write_char((7).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(bell), "\"\\a\"")
+}
+
+///|
+test "quote_go_ascii: backspace (0x08) is escaped as backslash-b" {
+  let bs = {
+    let b = StringBuilder::new()
+    b.write_char((8).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(bs), "\"\\b\"")
+}
+
+///|
+test "quote_go_ascii: vertical tab (0x0B) is escaped as backslash-v" {
+  let vt = {
+    let b = StringBuilder::new()
+    b.write_char((11).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(vt), "\"\\v\"")
+}
+
+///|
+test "quote_go_ascii: form feed (0x0C) is escaped as backslash-f" {
+  let ff = {
+    let b = StringBuilder::new()
+    b.write_char((12).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(ff), "\"\\f\"")
+}
+
+///|
+test "quote_go_ascii: carriage return is escaped as backslash-r" {
+  assert_eq(quote_go_ascii("\r"), "\"\\r\"")
+}
+
+///|
+test "quote_go_ascii: NUL (0x00) is escaped as \\x00" {
+  let nul = {
+    let b = StringBuilder::new()
+    b.write_char((0).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(nul), "\"\\x00\"")
+}
+
+///|
+test "quote_go_ascii: DEL (0x7F) is escaped as \\x7f" {
+  let del = {
+    let b = StringBuilder::new()
+    b.write_char((0x7F).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(del), "\"\\x7f\"")
+}
+
+///|
+test "quote_go_ascii: non-ASCII code point (U+0080) is escaped as \\u0080" {
+  let s = {
+    let b = StringBuilder::new()
+    b.write_char((0x80).unsafe_to_char())
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(s), "\"\\u0080\"")
+}
+
+///|
+test "quote_go_ascii: BMP non-ASCII code point (U+00B5) is escaped as \\u00b5" {
+  let s = {
+    let b = StringBuilder::new()
+    b.write_char('µ')
+    b.to_string()
+  }
+  assert_eq(quote_go_ascii(s), "\"\\u00b5\"")
+}
+
+///|
+test "parse_rfc3339: double-quote in trailing extra text is Go-escaped" {
+  let input = {
+    let b = StringBuilder::new()
+    b.write_string("2021-03-22T23:20:50Z")
+    b.write_char('"')
+    b.to_string()
+  }
+  match parse_rfc3339(input) {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix(": extra text: \"\\\"\""))
+  }
+}
+
+///|
+test "parse_go_layout: double-quote in trailing extra text is Go-escaped" {
+  let input = {
+    let b = StringBuilder::new()
+    b.write_string("2006")
+    b.write_char('"')
+    b.to_string()
+  }
+  match parse_go_layout(input, "2006") {
+    Ok(_) => fail("expected Err")
+    Err(e) => assert_true(e.has_suffix(": extra text: \"\\\"\""))
+  }
+}
