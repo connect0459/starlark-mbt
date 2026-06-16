@@ -356,6 +356,25 @@ test "decode rejects unicode escape containing non-hex characters" {
 }
 
 ///|
+test "decode: unicode escape with non-hex char reports the bad character" {
+  match decode_from_json("\"\\uXYZ\"", None) {
+    Err(e) =>
+      assert_true(
+        e.contains("invalid character 'X' in \\u hexadecimal character escape"),
+      )
+    Ok(_) => fail("expected error for \\uXYZ")
+  }
+}
+
+///|
+test "decode: truncated unicode escape reports the first non-hex character" {
+  match decode_from_json("\"\\u00\"", None) {
+    Err(e) => assert_true(e.contains("in \\u hexadecimal character escape"))
+    Ok(_) => fail("expected error for truncated \\u00")
+  }
+}
+
+///|
 test "indent_json pretty-prints with tab" {
   let input = "{\"x\":1,\"y\":[\"one\",\"two\"]}"
   let expected =

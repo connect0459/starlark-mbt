@@ -485,7 +485,25 @@ fn parse_json_string(
           i += 1
           let (code, next_i) = parse_hex4_at(chars, i)
           if code < 0 {
-            return Err((i, "invalid \\u escape"))
+            let mut bad_char = '?'
+            let mut j = i
+            while j < len {
+              let ch = chars[j]
+              let cp2 = ch.to_int()
+              if !((cp2 >= '0'.to_int() && cp2 <= '9'.to_int()) ||
+                (cp2 >= 'a'.to_int() && cp2 <= 'f'.to_int()) ||
+                (cp2 >= 'A'.to_int() && cp2 <= 'F'.to_int())) {
+                bad_char = ch
+                break
+              }
+              j += 1
+            }
+            return Err(
+              (
+                i,
+                "invalid character '\{bad_char}' in \\u hexadecimal character escape",
+              ),
+            )
           }
           i = next_i
           let cp_out = if code >= high_surrogate_lo && code <= high_surrogate_hi {
