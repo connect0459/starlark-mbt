@@ -368,7 +368,7 @@ fn call_builtin(
             if pos_args.length() >= 1 {
               raise EvalErr(
                 make_eval_error(
-                  ctx, "int: got multiple values for keyword argument x",
+                  ctx, "int: got multiple values for keyword argument \"x\"",
                 ),
               )
             }
@@ -1245,7 +1245,7 @@ fn builtin_sorted(
         if iterable_set {
           raise EvalErr(
             make_eval_error(
-              ctx, "sorted: got multiple values for keyword argument iterable",
+              ctx, "sorted: got multiple values for keyword argument \"iterable\"",
             ),
           )
         }
@@ -1257,7 +1257,7 @@ fn builtin_sorted(
         if key_set {
           raise EvalErr(
             make_eval_error(
-              ctx, "sorted: got multiple values for keyword argument key",
+              ctx, "sorted: got multiple values for keyword argument \"key\"",
             ),
           )
         }
@@ -1269,7 +1269,7 @@ fn builtin_sorted(
         if reverse_set {
           raise EvalErr(
             make_eval_error(
-              ctx, "sorted: got multiple values for keyword argument reverse",
+              ctx, "sorted: got multiple values for keyword argument \"reverse\"",
             ),
           )
         }

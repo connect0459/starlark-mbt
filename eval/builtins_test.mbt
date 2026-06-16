@@ -2272,6 +2272,30 @@ test "exec_file: sorted with no iterable reports missing argument" {
 }
 
 ///|
+test "exec_file: sorted raises conflict error when iterable passed both positionally and by keyword" {
+  assert_eq(
+    emsg("sorted([1, 2], iterable=[3, 4])"),
+    "sorted: got multiple values for keyword argument \"iterable\"",
+  )
+}
+
+///|
+test "exec_file: sorted raises conflict error when key passed both positionally and by keyword" {
+  assert_eq(
+    emsg("sorted([1, 2], len, key=len)"),
+    "sorted: got multiple values for keyword argument \"key\"",
+  )
+}
+
+///|
+test "exec_file: sorted raises conflict error when reverse passed both positionally and by keyword" {
+  assert_eq(
+    emsg("sorted([1, 2], len, True, reverse=True)"),
+    "sorted: got multiple values for keyword argument \"reverse\"",
+  )
+}
+
+///|
 test "exec_file: min checks positional count before keyword args" {
   assert_eq(
     emsg("min(default=5)"),
@@ -2343,10 +2367,9 @@ test "exec_file: int with more than two positional arguments raises error" {
 
 ///|
 test "exec_file: int with x keyword and positional argument raises conflict error" {
-  assert_true(
-    emsg("int(1, x=2)").contains(
-      "int: got multiple values for keyword argument x",
-    ),
+  assert_eq(
+    emsg("int(1, x=2)"),
+    "int: got multiple values for keyword argument \"x\"",
   )
 }
 
