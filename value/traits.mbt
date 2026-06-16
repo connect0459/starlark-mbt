@@ -345,12 +345,21 @@ fn int_float_cmp(n : BigInt, f : Double) -> Int {
 }
 
 ///|
+/// Depth cap for recursive comparison and equality operations.
+/// Matches starlark-go's `CompareLimit` (10). Every function that recurses
+/// over nested `Value`s must accept a `depth : Int` parameter, decrement it
+/// before each recursive call, and return `Err` when `depth < 1`. The named
+/// limit constants here are the shared roots; never recurse without one.
 pub let compare_limit : Int = 10
 
 ///|
+/// Depth cap for `hash` traversal. Set to 200 — a safe ceiling on all four
+/// MoonBit backends. See `compare_limit` for the depth-guard convention.
 pub let hash_limit : Int = 200
 
 ///|
+/// Depth cap for `freeze` traversal. Set to 200 — a safe ceiling on all four
+/// MoonBit backends. See `compare_limit` for the depth-guard convention.
 pub let freeze_limit : Int = 200
 
 ///|
