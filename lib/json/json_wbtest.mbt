@@ -133,6 +133,46 @@ test "make_decode_fn: positional type error precedes unknown kwarg error" {
 }
 
 ///|
+test "make_encode_indent_fn: unknown keyword argument name is double-quoted" {
+  let fn_val = make_encode_indent_fn()
+  guard fn_val is @value.Value::Builtin(bf)
+  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
+    Err("not called")
+  })
+  let arg = @value.Value::String(@value.StarlarkString::new("{}"))
+  let result = bf.call_body(dummy_ctx, [arg], [
+    ("bogus", @value.Value::String(@value.StarlarkString::new("x"))),
+  ])
+  match result {
+    Some(Err(msg)) =>
+      assert_eq(
+        msg, "json.encode_indent: unexpected keyword argument \"bogus\"",
+      )
+    Some(Ok(v)) => fail("expected error, got: \{v.repr()}")
+    None => fail("expected Some result")
+  }
+}
+
+///|
+test "make_indent_fn: unknown keyword argument name is double-quoted" {
+  let fn_val = make_indent_fn()
+  guard fn_val is @value.Value::Builtin(bf)
+  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
+    Err("not called")
+  })
+  let arg = @value.Value::String(@value.StarlarkString::new("{}"))
+  let result = bf.call_body(dummy_ctx, [arg], [
+    ("bogus", @value.Value::String(@value.StarlarkString::new("x"))),
+  ])
+  match result {
+    Some(Err(msg)) =>
+      assert_eq(msg, "json.indent: unexpected keyword argument \"bogus\"")
+    Some(Ok(v)) => fail("expected error, got: \{v.repr()}")
+    None => fail("expected Some result")
+  }
+}
+
+///|
 test "make_indent_fn: indent_json errors are prefixed with json.indent:" {
   let indent_fn = make_indent_fn()
   guard indent_fn is @value.Value::Builtin(bf)

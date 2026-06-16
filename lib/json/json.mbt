@@ -1254,7 +1254,8 @@ fn make_encode_indent_fn() -> @value.Value {
           return Err(
             "json.encode_indent: for parameter indent: got \{v.type_name()}, want string",
           )
-        _ => return Err("json.encode_indent: unexpected keyword argument \{k}")
+        _ =>
+          return Err("json.encode_indent: unexpected keyword argument \"\{k}\"")
       }
     }
     let state = EncodeState::new()
@@ -1365,7 +1366,7 @@ fn make_indent_fn() -> @value.Value {
           return Err(
             "json.indent: for parameter indent: got \{v.type_name()}, want string",
           )
-        _ => return Err("json.indent: unexpected keyword argument \{k}")
+        _ => return Err("json.indent: unexpected keyword argument \"\{k}\"")
       }
     }
     match indent_json(s, pfx, ind) {
