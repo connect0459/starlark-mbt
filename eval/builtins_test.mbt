@@ -2496,6 +2496,17 @@ test "exec_file: min/max reject unexpected keyword with unpack wording" {
 }
 
 ///|
+test "exec_file: min/max type-mismatch errors include builtin name and correct operator" {
+  assert_eq(emsg("max(1, \"z\")"), "max: string > int not implemented")
+  assert_eq(emsg("min([1, \"a\"])"), "min: string < int not implemented")
+}
+
+///|
+test "exec_file: set with unhashable element error includes builtin name" {
+  assert_eq(emsg("set([[1]])"), "set: unhashable type: list")
+}
+
+///|
 test "exec_file: splitlines/join report parameter index in type errors" {
   assert_eq(
     emsg("\"hi\".splitlines(1)"),

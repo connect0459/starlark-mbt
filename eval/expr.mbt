@@ -1025,7 +1025,7 @@ fn builtin_set(
         it.done()
         break
       }
-      Some(v) => check(ctx, s.add(v))
+      Some(v) => check_pfx(ctx, "set", s.add(v))
     }
   }
   @value.Value::Set(s)
@@ -1101,6 +1101,7 @@ fn builtin_minmax(
         call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
     }
   }
+  let cmp_op = if want_max { ">" } else { "<" }
   let items : Array[@value.Value] = []
   if pos_args.length() == 1 {
     let it = match @value.iterate(pos_args[0]) {
@@ -1130,7 +1131,11 @@ fn builtin_minmax(
       let mut best_key = key_of(best)
       for i in 1..<items.length() {
         let item_key = key_of(items[i])
-        let c = check(ctx, @value.compare_values(item_key, best_key))
+        let c = check_pfx(
+          ctx,
+          fn_name,
+          @value.compare_values(item_key, best_key, op=cmp_op),
+        )
         if (want_max && c > 0) || (!want_max && c < 0) {
           best = items[i]
           best_key = item_key
@@ -1153,7 +1158,11 @@ fn builtin_minmax(
     let mut result_key = key_of(result)
     for i in 1..<items.length() {
       let item_key = key_of(items[i])
-      let c = check(ctx, @value.compare_values(item_key, result_key))
+      let c = check_pfx(
+        ctx,
+        fn_name,
+        @value.compare_values(item_key, result_key, op=cmp_op),
+      )
       if (want_max && c > 0) || (!want_max && c < 0) {
         result = items[i]
         result_key = item_key
