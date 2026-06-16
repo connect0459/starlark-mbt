@@ -100,7 +100,7 @@ test "unpack_args: unexpected keyword arg returns error mentioning the name" {
   let kw = [("z", @value.Value::Int(1N))]
   match unpack_args("f", pos, kw, ["a"]) {
     Err(e) =>
-      if !(e.contains("unexpected") && e.contains("z")) {
+      if !(e.contains("unexpected") && e.contains("\"z\"")) {
         fail("expected error about 'z', got: \{e}")
       }
     Ok(_) => panic()
@@ -113,8 +113,8 @@ test "unpack_args: duplicate keyword arg returns error" {
   let kw = [("a", @value.Value::Int(2N))]
   match unpack_args("f", pos, kw, ["a"]) {
     Err(e) =>
-      if !(e.contains("multiple") || e.contains("duplicate")) {
-        fail("expected error about duplicate, got: \{e}")
+      if !(e.contains("multiple") && e.contains("\"a\"")) {
+        fail("expected error about duplicate of 'a', got: \{e}")
       }
     Ok(_) => panic()
   }
