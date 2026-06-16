@@ -314,13 +314,21 @@ pub let compare_limit : Int = 10
 /// Depth cap for `hash` traversal. Set to 200 — a safe ceiling on all four
 /// MoonBit backends. See `compare_limit` for the depth-guard convention.
 ///
-/// **Asymmetry warning**: `hash_limit` (200) and `compare_limit` (10) differ
-/// by design, but pairing them in a hash table — using `hash_limit` for hashing
-/// and `compare_limit` for equality — creates a silent divergence: keys nested
-/// 11–200 levels deep hash successfully but equality returns `false` (depth
-/// exceeded → `Err` → `false`), so `d[k]` reports "key not found" even when the
-/// key is present. See also `dict_set.mbt`. Fix tracked in issue #271.
+/// `StarlarkDict` and `StarlarkSet` use `dict_key_hash_limit` (not this
+/// constant) for their internal hash function. Use `hash_limit` only for
+/// standalone hash calls outside of a hash-table context.
 pub let hash_limit : Int = 200
+
+///|
+/// Depth cap for hashing `StarlarkDict` and `StarlarkSet` keys.
+///
+/// Set to `compare_limit - 1` so that any key that hashes successfully can
+/// also be compared for equality. `starlark_equals_depth` checks `depth < 1`
+/// before dispatching — including for leaf types — so equality with budget
+/// `compare_limit` accepts nesting only up to `compare_limit - 1`. Using this
+/// constant for the hash function keeps both limits in lock-step: a key that
+/// hashes at depth D can always be equality-compared at the same depth.
+pub let dict_key_hash_limit : Int = compare_limit - 1
 
 ///|
 /// Depth cap for `freeze` traversal. Set to 200 — a safe ceiling on all four

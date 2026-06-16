@@ -13,7 +13,7 @@ pub struct StarlarkDict {
 pub fn StarlarkDict::new() -> StarlarkDict {
   {
     ht: @hashtable.Hashtable::new(
-      Value::hash,
+      fn(v) { v.hash_depth(dict_key_hash_limit) },
       fn(a, b) { starlark_equals_depth(a, b, compare_limit) },
       Value::None,
       Value::None,
@@ -222,7 +222,7 @@ pub struct StarlarkSet {
 pub fn StarlarkSet::new() -> StarlarkSet {
   {
     ht: @hashtable.Hashtable::new(
-      Value::hash,
+      fn(v) { v.hash_depth(dict_key_hash_limit) },
       fn(a, b) { starlark_equals_depth(a, b, compare_limit) },
       Value::None,
       Value::None,
