@@ -313,6 +313,13 @@ pub let compare_limit : Int = 10
 ///|
 /// Depth cap for `hash` traversal. Set to 200 — a safe ceiling on all four
 /// MoonBit backends. See `compare_limit` for the depth-guard convention.
+///
+/// **Asymmetry warning**: `hash_limit` (200) and `compare_limit` (10) differ
+/// by design, but pairing them in a hash table — using `hash_limit` for hashing
+/// and `compare_limit` for equality — creates a silent divergence: keys nested
+/// 11–200 levels deep hash successfully but equality returns `false` (depth
+/// exceeded → `Err` → `false`), so `d[k]` reports "key not found" even when the
+/// key is present. See also `dict_set.mbt`. Fix tracked in issue #271.
 pub let hash_limit : Int = 200
 
 ///|
