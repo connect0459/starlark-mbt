@@ -20,6 +20,8 @@ pub fn compare_values(Value, Value, op? : String) -> Result[Int, String]
 
 pub fn compare_values_depth(Value, Value, Int, op? : String) -> Result[Int, String]
 
+pub let dict_key_hash_limit : Int
+
 pub fn equal(Value, Value) -> Result[Bool, String]
 
 pub fn equal_depth(Value, Value, Int) -> Result[Bool, String]
