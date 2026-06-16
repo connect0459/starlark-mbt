@@ -630,6 +630,21 @@ test "error format: traceback frame anchors at the = sign for tuple unpack" {
 }
 
 ///|
+test "error format: comprehension tuple unpack traceback anchors at the for clause, not the iterable" {
+  let thread = @eval.Thread::new("test")
+  let result = @eval.exec_file(
+    thread,
+    "t.star",
+    "[a for a, b in [(1, 2), 3]]",
+    @eval.Options::default(),
+  )
+  match result {
+    Err(e) => assert_true(e.backtrace().contains("t.star:1:4: in <toplevel>"))
+    Ok(_) => abort("expected error")
+  }
+}
+
+///|
 test "error format: load with no loader gives 'not implemented' message" {
   let thread = @eval.Thread::new("test")
   let src =
