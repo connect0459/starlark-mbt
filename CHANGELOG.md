@@ -26,6 +26,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-19
+
+### Fixed
+
+#### Crashes and stack-overflow guards
+
+- `value`: guard `Value::hash` / `hash_tuple` against native stack overflow on
+  deeply nested containers (#222)
+- `value`: guard `freeze_value_inner` against native stack overflow; deep-freeze
+  errors now propagate as `EvalError` from `exec_file` and related entry points
+  (#223)
+
+#### Conformance: eval / value
+
+- `value`: `starlark_equals` and `impl Eq for Value` now route through the
+  depth-guarded path, preventing silent divergence on cyclic or deeply nested
+  structures (#270)
+- `value`: align `dict` / `set` hash-depth limit with `compare_limit` to prevent
+  silent key-not-found on deeply nested keys (#274)
+- `eval`: fix set `in` operator to propagate hash-depth errors instead of
+  silencing them to `False`; dict `in` retains error-silencing behavior
+  matching starlark-go's intentional design (#275)
+- `eval`: route string output through the faithful byte representation to prevent
+  spurious U+FFFD substitution; fix `%c` rune-write semantics; fix `str.format`
+  CESU-8 regression when the template contains non-ASCII bytes (#266)
+- `eval`: prefix `min` / `max` / `set` builtin errors with the builtin name; fix
+  `max` operator result when operands are equal (#267)
+- `eval`: use `.x field` or `.x method` wording for all dotted-attribute errors
+  (#268)
+- `eval`: quote keyword argument name in "got multiple values" errors (#259)
+- `unpack`: double-quote keyword argument name in `unpack_args` error messages
+  (#255)
+- `eval`: double-quote unknown keyword argument name in `int()` error message
+  (#255)
+- `struct`: align `module` member sort to codepoint-aware `str_lex_cmp` (#270)
+
+#### Conformance: compiler / runtime positions
+
+- `compile`: anchor `EBinary` at the operator position; anchor `Unpack` at the
+  `=` sign (#272)
+- `compile`: anchor comprehension `IterPush` and `Unpack` at the `for`-clause
+  position (#272)
+
+#### Conformance: parser / lexer
+
+- `parser`: parse tuple RHS in augmented assignment statements (#241)
+- `parser`: unify `ECond` field order to `cond`-first to match starlark-go AST
+  layout (#236)
+- `parser`: align load-statement diagnostics with starlark-go; extend
+  `scanner_error` anchoring to all load-statement error sites (#240)
+- `parser`: emit Go-conformant message and position for missing indented block
+  (#238)
+- `syntax`, `parser`, `resolver`, `compile`: anchor `*args` / `**kwargs` errors
+  at the operator position; anchor `def` errors at the function name (#237)
+- `lexer`: align three error-message paths with starlark-go; anchor
+  unterminated-string and newline-in-string errors at the token start position
+  (#239)
+- `lexer`: classify `\x` / `\u` / `\U` escape sequences using starlark-go's
+  fixed-width slot semantics (#239)
+- `lexer`: decode the full UTF-8 rune in the "unexpected input character" message
+  (#239)
+- `lexer`: accumulate `\U` hex digits in `Int64` to prevent signed overflow for
+  high code points (#228)
+- `lexer`: lowercase second slot of the code-point-out-of-range error message
+  (#228)
+
+#### Conformance: json
+
+- `json`: complete `json.decode` argument binder — reject surplus positional
+  arguments, unknown keywords, and duplicate `default`; preserve positional-first
+  error order (#225)
+- `json`: detect `json.encode` keyword arguments separately from arity; report
+  the first bad character in `\u` hexadecimal escape errors; align `json.indent`
+  invalid-token error wording with Go (#269)
+- `json`: double-quote unknown keyword argument name in `encode_indent` and
+  `indent` error messages (#255)
+
+#### Conformance: lib/math
+
+- `lib/math`: work around `@math.cosh` large-argument branch returning
+  `exp(x/2)`; clamp the workaround to the finite-`exp` range so `cosh(710)`
+  still overflows to `+Inf` correctly (#224)
+
+#### Conformance: lib/time
+
+- `lib/time`: reject space / lowercase separators and sub-4-digit years in
+  `parse_rfc3339` to match starlark-go's strict RFC 3339 parser (#226)
+- `lib/time`: reject out-of-range `hour` / `minute` / `second` fields; add
+  range checks for timezone offset fields; emit field-specific error messages
+  (#250)
+- `time`: remove year-range guard from `parse_time` to accept extreme years,
+  matching starlark-go behaviour (#249)
+- `time`: align argument error messages with `starlark.UnpackArgs` shape; check
+  unknown keywords before arity; reject more than 3 positional arguments; align
+  unknown-timezone error with Go's `LoadLocation` message; drop the layout
+  segment and quote trailing text in extra-text errors (#251)
+- `time`: distinguish Z UTC marker from numeric `+00:00` offset in
+  `parse_rfc3339` and the go-layout path; correct `decompose_unix_sec`
+  overflow-range boundary; replicate Go `uint64` normalization at `Int64::min`
+  (#253, #254)
+- `time`: apply `time_quote` (matching Go's `time.quote()`) to extra-text in
+  `parse_time` error messages; extend passthrough to include DEL (0x7F) (#258)
+- `time`: double-quote unknown keyword argument name in error messages (#255)
+
 ## [0.3.0] - 2026-06-15
 
 ### Added
@@ -374,7 +478,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.0...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.1...HEAD>
+[0.3.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.0...v0.3.1>
 [0.3.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.1...v0.3.0>
 [0.2.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.0...v0.2.1>
 [0.2.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.1.1...v0.2.0>
