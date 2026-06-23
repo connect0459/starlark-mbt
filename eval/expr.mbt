@@ -2859,8 +2859,8 @@ fn arg_as_string(
 }
 
 ///|
-/// Clamps a method's `count` parameter to a non-negative `Int`: negative
-/// values become `-1` (unlimited); values exceeding int32 are clamped to
+/// Normalizes a method's `count` parameter: negative values become `-1`
+/// (unlimited); non-negative values exceeding int32 are clamped to
 /// `max_int32`.
 fn int64_to_count(n : Int64) -> Int {
   if n < 0L {
