@@ -228,6 +228,17 @@ pub fn StarlarkList::eachi(
 }
 
 ///|
+/// Returns `true` if `self` and `other` share the same underlying items array.
+/// Used during `repr` traversal to detect aliased lists (cycle detection):
+/// a list that already appears in the `seen_lists` stack has the same storage
+/// as one of its own ancestors, so the recursion must be cut off.
+///
+/// Parameters:
+///
+/// - `self` : The list to check.
+/// - `other` : The candidate ancestor list.
+///
+/// Returns `true` when both lists wrap the same physical `Array[Value]`.
 fn StarlarkList::is_same_storage(
   self : StarlarkList,
   other : StarlarkList,
@@ -525,6 +536,9 @@ pub fn StarlarkRange::contains(self : StarlarkRange, n : Int64) -> Bool {
 }
 
 ///|
+/// A Starlark user-defined function, carrying its name, source position, default
+/// values, and — for compiled functions — the bytecode `Funcode`, captured free
+/// variable cells, and a reference to the module it was defined in.
 pub struct StarlarkFunction {
   priv name : String
   priv defaults : Array[Value?]
@@ -859,6 +873,10 @@ pub fn StarlarkFunction::free_var(
 }
 
 ///|
+/// Context object passed to every builtin function call. Provides two
+/// capabilities: a dispatcher for invoking arbitrary Starlark callables (needed
+/// when a builtin must call back into the interpreter), and a thread-local key
+/// lookup for embedder-supplied per-call overrides (e.g. a test-injected clock).
 pub struct BuiltinCallCtx {
   priv call : (Value, Array[Value], Array[(String, Value)]) -> Result[
     Value,
@@ -922,6 +940,9 @@ pub fn BuiltinCallCtx::invoke(
 }
 
 ///|
+/// A built-in function value. Carries a `name` for display, an optional inline
+/// `body` closure (absent for dispatch-only builtins resolved by name at call
+/// time), and an optional `recv` for bound-method builtins.
 pub struct StarlarkBuiltinFunc {
   priv name : String
   priv body : ((BuiltinCallCtx, Array[Value], Array[(String, Value)]) -> Result[
@@ -1004,9 +1025,18 @@ pub fn StarlarkBuiltinFunc::call_body(
 }
 
 ///|
+/// Global monotonically increasing counter used to assign a unique integer id
+/// to each `StarlarkBoundMethod` at construction time. The id is consumed by
+/// identity comparison (`==`) and hashing of bound methods, since two distinct
+/// bound-method values wrapping the same receiver and name must still compare
+/// unequal.
 let bound_method_id_counter : Ref[Int] = { val: 0 }
 
 ///|
+/// A built-in method bound to a specific receiver. Each value is assigned a
+/// unique `id` at construction time so that identity comparison and hashing
+/// treat two separately created bound methods as distinct, even when they wrap
+/// the same receiver and method name.
 pub struct StarlarkBoundMethod {
   priv recv : Value
   priv method_name : String
@@ -1050,6 +1080,9 @@ pub fn StarlarkBoundMethod::method_name(self : StarlarkBoundMethod) -> String {
 }
 
 ///|
+/// A Starlark module value produced by executing a `.star` file. Carries the
+/// module's name (typically its filename or import path) and the map of
+/// module-level bindings that are visible to importers.
 pub struct StarlarkModule {
   priv name : String
   priv attrs : Map[String, Value]
@@ -1101,6 +1134,10 @@ pub fn StarlarkModule::attr_names(self : StarlarkModule) -> Array[String] {
 }
 
 ///|
+/// A lazy byte-element iterator over a `StarlarkString`. Returned by
+/// `string.elems()` and `string.elem_ords()`. When `ords` is `true` the
+/// iterator yields integer byte values; when `false` it yields single-byte
+/// `StarlarkString` values. This mirrors starlark-go's `stringElems` type.
 pub struct StarlarkStringElems {
   priv s : StarlarkString
   priv ords : Bool
@@ -1143,6 +1180,11 @@ pub fn StarlarkStringElems::is_ords(self : StarlarkStringElems) -> Bool {
 }
 
 ///|
+/// A lazy Unicode-codepoint iterator over a `StarlarkString`. Returned by
+/// `string.codepoints()` and `string.codepoint_ords()`. When `ords` is `true`
+/// the iterator yields integer codepoint values; when `false` it yields
+/// single-codepoint `StarlarkString` values. This mirrors starlark-go's
+/// `stringCodepoints` type.
 pub struct StarlarkStringCodepoints {
   priv s : StarlarkString
   priv ords : Bool
@@ -1187,6 +1229,9 @@ pub fn StarlarkStringCodepoints::is_ords(
 }
 
 ///|
+/// A lazy byte-element iterator over a `Bytes` value. Returned by
+/// `bytes.elems()`. Each iteration step yields the integer value of the next
+/// byte. This mirrors starlark-go's `bytesIterable` type.
 pub struct StarlarkBytesElems {
   priv b : Bytes
 }
@@ -1398,6 +1443,15 @@ let ascii_del : Int = 0x7F
 let utf8_multibyte_lo : Int = 0x80
 
 ///|
+/// Appends a Unicode escape sequence for codepoint `r` to `buf`. Emits
+/// `\uXXXX` (four hex digits) for codepoints below U+10000 and
+/// `\UXXXXXXXX` (eight hex digits) for codepoints at or above U+10000,
+/// matching starlark-go's `quote.go` escape format.
+///
+/// Parameters:
+///
+/// - `r` : The Unicode codepoint to escape.
+/// - `buf` : The `StringBuilder` to append to.
 fn write_unicode_escape(r : Int, buf : StringBuilder) -> Unit {
   if r < 0x10000 {
     buf.write_string("\\u")
@@ -1409,6 +1463,20 @@ fn write_unicode_escape(r : Int, buf : StringBuilder) -> Unit {
 }
 
 ///|
+/// Core escape-and-append logic shared by `repr_string_val` and
+/// `repr_bytes_val`. Iterates over each byte of `b`, emitting standard
+/// backslash escapes (`\\`, `\n`, `\r`, `\t`, `\a`, `\b`, `\f`, `\v`),
+/// escaping the active `quote_char`, writing printable ASCII verbatim,
+/// decoding valid UTF-8 multi-byte sequences and emitting printable codepoints
+/// verbatim or as `\uXXXX`/`\UXXXXXXXX`, and falling back to `\xHH` for
+/// invalid bytes or non-printable single bytes.
+///
+/// Parameters:
+///
+/// - `b` : The raw byte sequence to escape.
+/// - `buf` : The `StringBuilder` to append escaped output to.
+/// - `quote_char` : The surrounding quote character (`"` or `'`); occurrences
+///   inside `b` are backslash-escaped.
 fn repr_bytes_inner(b : Bytes, buf : StringBuilder, quote_char : Char) -> Unit {
   let len = b.length()
   let mut i = 0
@@ -1526,6 +1594,24 @@ pub fn Value::repr_checked(v : Value) -> Result[String, String] {
 }
 
 ///|
+/// Central recursive dispatch for `repr`. Handles every `Value` variant,
+/// threading the `seen_lists`/`seen_dicts` cycle-detection stacks and the
+/// remaining `depth` budget through all recursive calls. Called directly by
+/// `Value::repr`, `Value::repr_checked`, and `Value::repr_at_depth`, and
+/// indirectly by the collection helpers (`repr_list_inner`, `repr_dict_inner`,
+/// etc.).
+///
+/// Parameters:
+///
+/// - `v` : The value to represent.
+/// - `seen_lists` : Stack of lists currently on the repr call path; used to
+///   detect cycles.
+/// - `seen_dicts` : Stack of dicts currently on the repr call path; used to
+///   detect cycles.
+/// - `depth` : Remaining recursion depth; returns `Err` when it reaches zero.
+///
+/// Returns `Ok(repr_string)` on success, or `Err(message)` when the depth
+/// limit is exceeded.
 fn repr_inner(
   v : Value,
   seen_lists : Array[StarlarkList],

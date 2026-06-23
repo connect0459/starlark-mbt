@@ -1,4 +1,6 @@
 ///|
+/// Returns `true` when two `Value`s are equal under Starlark semantics,
+/// including cross-type `Int`/`Float` equality and NaN inequality.
 pub impl Eq for Value with fn equal(a, b) -> Bool {
   match starlark_equals_depth(a, b, compare_limit) {
     Ok(eq) => eq
@@ -68,6 +70,14 @@ pub fn Value::starlark_equals(a : Value, b : Value) -> Bool {
 }
 
 ///|
+/// Returns `true` when the integer `n` is exactly equal to the finite float
+/// `f`. Returns `false` for NaN, infinities, and floats with a fractional
+/// part.
+///
+/// Parameters:
+///
+/// - `n` : The integer value.
+/// - `f` : The float value to compare against.
 fn int_float_eq(n : BigInt, f : Double) -> Bool {
   if f.is_nan() || f.is_inf() {
     return false
@@ -113,6 +123,11 @@ let tuple_hash_step_base : UInt = 82520U
 let bigint_uint32_modulus : BigInt = 4294967296N
 
 ///|
+/// Computes the FNV-1a hash of a byte sequence.
+///
+/// Parameters:
+///
+/// - `bytes` : The byte sequence to hash.
 fn fnv1a(bytes : Bytes) -> UInt {
   let mut h = fnv_offset_basis
   for i in 0..<bytes.length() {
@@ -134,6 +149,13 @@ let min_int64_bigint : BigInt = -9223372036854775808N
 let max_int64_bigint : BigInt = 9223372036854775807N
 
 ///|
+/// Computes the Starlark integer hash for a `BigInt`, matching starlark-go's
+/// algorithm. Values in the `int64` range use the two's-complement low 32 bits;
+/// values outside that range use the low 32 bits of the magnitude.
+///
+/// Parameters:
+///
+/// - `n` : The integer to hash.
 fn hash_bigint(n : BigInt) -> UInt {
   // Integer hash algorithm:
   //   small int (int64 range): lo = big.Word(iSmall) = uint64(iSmall)
@@ -152,6 +174,13 @@ fn hash_bigint(n : BigInt) -> UInt {
 }
 
 ///|
+/// Computes the Starlark hash for a `Double`. NaN and infinities return a fixed
+/// sentinel; finite values are hashed via their exact integer equivalent so that
+/// `hash(1.0) == hash(1)`.
+///
+/// Parameters:
+///
+/// - `f` : The float value to hash.
 fn hash_float(f : Double) -> UInt {
   if f.is_nan() || f.is_inf() {
     return float_special_hash
@@ -162,6 +191,15 @@ fn hash_float(f : Double) -> UInt {
 }
 
 ///|
+/// Computes the hash of `self` with an explicit recursion-depth cap to guard
+/// against deep nesting. Returns `Err` for unhashable types or when the depth
+/// limit is reached.
+///
+/// Parameters:
+///
+/// - `self` : The value to hash.
+/// - `depth` : Maximum remaining recursion depth; returns `Err` when it
+///   reaches zero.
 fn Value::hash_depth(self : Value, depth : Int) -> Result[UInt, String] {
   match self {
     None => Ok(0U)
@@ -188,6 +226,14 @@ fn Value::hash_depth(self : Value, depth : Int) -> Result[UInt, String] {
 }
 
 ///|
+/// Computes the Starlark tuple hash using Python's tuplehash algorithm,
+/// respecting the given recursion-depth cap.
+///
+/// Parameters:
+///
+/// - `t` : The array of tuple elements to hash.
+/// - `depth` : Maximum remaining recursion depth; returns `Err` when it
+///   reaches zero.
 fn hash_tuple(t : Array[Value], depth : Int) -> Result[UInt, String] {
   if depth < 1 {
     return Err("hash exceeded maximum recursion depth")
@@ -277,6 +323,14 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 }
 
 ///|
+/// Compares an integer `n` to a finite-or-special float `f` using exact
+/// arithmetic. NaN is treated as greater than all integers; infinities sort
+/// to the expected extremes. Returns a negative int, zero, or positive int.
+///
+/// Parameters:
+///
+/// - `n` : The integer value.
+/// - `f` : The float value to compare against.
 fn int_float_cmp(n : BigInt, f : Double) -> Int {
   if f != f {
     -1 // NaN > everything in starlark ordering
@@ -462,6 +516,15 @@ pub fn starlark_equals_depth(
 }
 
 ///|
+/// Returns `Ok(true)` when two array slices of `Value`s are element-wise equal
+/// under Starlark semantics, respecting the given recursion-depth cap.
+///
+/// Parameters:
+///
+/// - `a` : The left-hand slice.
+/// - `b` : The right-hand slice.
+/// - `depth` : Maximum remaining recursion depth passed to each element
+///   comparison.
 fn slice_equals_depth(
   a : ArrayView[Value],
   b : ArrayView[Value],
@@ -481,6 +544,16 @@ fn slice_equals_depth(
 }
 
 ///|
+/// Lexicographically compares two array slices of `Value`s using
+/// `compare_values_depth`, respecting the given recursion-depth cap.
+///
+/// Parameters:
+///
+/// - `a` : The left-hand slice.
+/// - `b` : The right-hand slice.
+/// - `depth` : Maximum remaining recursion depth passed to each element
+///   comparison.
+/// - `op` : The comparison operator string used in error messages (default `"<"`).
 fn slice_cmp_depth(
   a : ArrayView[Value],
   b : ArrayView[Value],
@@ -498,6 +571,15 @@ fn slice_cmp_depth(
 }
 
 ///|
+/// Returns `Ok(true)` when two `StarlarkDict`s have the same set of keys and
+/// each corresponding pair of values is equal under Starlark semantics.
+///
+/// Parameters:
+///
+/// - `a` : The left-hand dict.
+/// - `b` : The right-hand dict.
+/// - `depth` : Maximum remaining recursion depth passed to each value
+///   comparison.
 fn dict_equals_depth(
   a : StarlarkDict,
   b : StarlarkDict,
@@ -524,6 +606,15 @@ fn dict_equals_depth(
 }
 
 ///|
+/// Returns `Ok(true)` when two `StarlarkSet`s contain the same elements under
+/// Starlark semantics.
+///
+/// Parameters:
+///
+/// - `a` : The left-hand set.
+/// - `b` : The right-hand set.
+/// - `_depth` : Reserved recursion-depth cap (unused; sets contain only
+///   hashable scalars in practice).
 fn set_equals_depth(
   a : StarlarkSet,
   b : StarlarkSet,
@@ -573,6 +664,18 @@ pub fn Value::freeze_checked(self : Value) -> Result[Unit, String] {
 }
 
 ///|
+/// Recursively freezes `v` and all values reachable from it, using `seen_funcs`
+/// to break cycles through `StarlarkFunction` closures and `depth` as a
+/// recursion-depth guard. Already-frozen containers and scalar values return
+/// immediately without consuming the depth budget.
+///
+/// Parameters:
+///
+/// - `v` : The value to freeze.
+/// - `seen_funcs` : Accumulator of `StarlarkFunction` objects already visited
+///   in the current traversal, used to detect closure cycles.
+/// - `depth` : Maximum remaining recursion depth; returns `Err` when it
+///   reaches zero.
 fn freeze_value_inner(
   v : Value,
   seen_funcs : Array[StarlarkFunction],
@@ -711,6 +814,15 @@ fn freeze_value_inner(
 }
 
 ///|
+/// Returns `true` when two `StarlarkRange` values represent the same sequence
+/// of integers. Ranges with different lengths are never equal; empty ranges
+/// are always equal; non-empty ranges are equal when they have the same start
+/// and, if their length exceeds one, the same step.
+///
+/// Parameters:
+///
+/// - `x` : The left-hand range.
+/// - `y` : The right-hand range.
 fn range_equals(x : StarlarkRange, y : StarlarkRange) -> Bool {
   let xl = x.length()
   let yl = y.length()

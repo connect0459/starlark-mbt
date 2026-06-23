@@ -1,10 +1,11 @@
-// A mutable box shared between a closure and the function that defines the
-// captured variable. A local variable that a nested function captures is
-// promoted to a cell: the defining frame and every capturing closure hold the
-// same `Cell`, so assignments are visible across them (stateful closures).
-// `None` marks a cell whose variable has not been assigned yet.
-
 ///|
+/// A mutable box shared between a closure and the function that defines the
+/// captured variable.
+///
+/// A local variable captured by a nested function is promoted to a `Cell`:
+/// the defining frame and every capturing closure hold the same instance,
+/// so assignments are visible across all of them. `None` means the variable
+/// has not been assigned yet.
 pub struct Cell {
   priv mut v : Value?
 }
