@@ -9,11 +9,11 @@ import {
 options(
   link: {
     "wasm-gc": {
-      "exports": ["exec_script"],
+      "exports": ["exec_script", "exec_script_with_env"],
       "use-js-builtin-string": true,
     },
     "js": {
-      "exports": ["exec_script"],
+      "exports": ["exec_script", "exec_script_with_env"],
       "format": "esm",
     },
   },
