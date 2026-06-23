@@ -1,8 +1,7 @@
 ///|
 /// Encodes a plain MoonBit `String` as a JSON string literal by delegating to
-/// `lib/json.encode_to_json`. This keeps all escaping (control characters,
-/// HTML-sensitive bytes, U+2028/U+2029, invalid UTF-8) consistent with the
-/// project's canonical encoder (`marshal_string`).
+/// `lib/json.encode_to_json`. All escaping is handled by `lib/json`'s string
+/// quoting logic, ensuring consistency with the rest of the project.
 fn encode_str(s : String) -> String {
   match @json.encode_to_json(
     @value.Value::String(@value.StarlarkString::new(s)),
