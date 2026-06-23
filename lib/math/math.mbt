@@ -48,6 +48,7 @@ fn make_binary(name : String, f : (Double, Double) -> Double) -> @value.Value {
 }
 
 ///|
+/// Returns the absolute value of `x`, correctly handling -0.0 (returns +0.0).
 fn float_abs(x : Double) -> Double {
   // `1.0 / x < 0.0` detects -0.0: dividing by -0.0 yields -inf.
   if x < 0.0 || (x == 0.0 && 1.0 / x < 0.0) {
@@ -58,6 +59,8 @@ fn float_abs(x : Double) -> Double {
 }
 
 ///|
+/// Returns a value with the magnitude of `x` and the sign of `y`, treating
+/// -0.0 and +0.0 as distinct signs.
 fn float_copysign(x : Double, y : Double) -> Double {
   let abs_x = float_abs(x)
   // `1.0 / y < 0.0` distinguishes -0.0 from +0.0: dividing by -0.0 yields
@@ -80,6 +83,10 @@ fn float_mod(x : Double, y : Double) -> Double {
 }
 
 ///|
+/// Computes `x mod y` exactly using integer bit manipulation on the IEEE 754
+/// representation, avoiding the precision loss of the floating-point division
+/// used by `float_mod`. Returns NaN when the result is undefined (infinite
+/// dividend, zero divisor, or either operand is NaN).
 fn precise_fmod(x : Double, y : Double) -> Double {
   let xb = x.reinterpret_as_uint64()
   let yb = y.reinterpret_as_uint64()
@@ -164,6 +171,9 @@ fn precise_fmod(x : Double, y : Double) -> Double {
 }
 
 ///|
+/// Computes the IEEE 754 remainder of `x / y` (the value `r` such that
+/// `x = n * y + r` where `n` is the nearest integer to `x / y`, with ties
+/// broken toward even). Returns NaN when the result is undefined.
 fn float_remainder(x : Double, y : Double) -> Double {
   if x.is_nan() || y.is_nan() || x.is_inf() || y == 0.0 {
     return 0.0 / 0.0
@@ -241,6 +251,8 @@ fn float_pow(x : Double, y : Double) -> Double {
 }
 
 ///|
+/// Rounds `x` to the nearest integer using round-half-away-from-zero, matching
+/// Starlark's `round` semantics (distinct from round-half-to-even).
 fn float_round_starlark(x : Double) -> Double {
   let t = @std_math.trunc(x)
   let frac = x - t
@@ -396,6 +408,8 @@ fn float_gamma(x : Double) -> Double {
 }
 
 ///|
+/// Computes `sqrt(x² + y²)`, returning `+Inf` when either argument is
+/// infinite (even if the other is NaN), conforming to IEEE 754.
 fn float_hypot(x : Double, y : Double) -> Double {
   // IEEE 754: hypot(±inf, anything) = +inf, even when the other argument is NaN.
   if x.is_inf() || y.is_inf() {
@@ -405,6 +419,9 @@ fn float_hypot(x : Double, y : Double) -> Double {
 }
 
 ///|
+/// Creates the Starlark `log` builtin, which accepts one or two float/int
+/// arguments and returns the natural logarithm of the first argument, or the
+/// logarithm to the given base when a second argument is supplied.
 fn make_log_fn() -> @value.Value {
   @value.Value::new_builtin("log", fn(_ctx, pos_args, kw_args) {
     if kw_args.length() != 0 {
@@ -437,6 +454,8 @@ fn make_log_fn() -> @value.Value {
 }
 
 ///|
+/// Converts a finite float `f` to an integer `Value`, returning an error when
+/// `f` is infinite or NaN.
 fn float_to_int(f : Double) -> Result[@value.Value, String] {
   if f.is_inf() {
     Err("cannot convert float infinity to integer")
@@ -448,6 +467,14 @@ fn float_to_int(f : Double) -> Result[@value.Value, String] {
 }
 
 ///|
+/// Creates a Starlark rounding builtin that applies `round` to a float
+/// argument and converts the result to an integer, passing integer arguments
+/// through unchanged.
+///
+/// Parameters:
+///
+/// - `name` : the builtin's display name, used in error messages
+/// - `round` : the rounding function to apply to float arguments
 fn make_rounding(name : String, round : (Double) -> Double) -> @value.Value {
   @value.Value::new_builtin(name, fn(_ctx, pos_args, kw_args) {
     if kw_args.length() != 0 {
@@ -467,8 +494,9 @@ fn make_rounding(name : String, round : (Double) -> Double) -> @value.Value {
 ///|
 /// Returns the `math` Starlark module value, providing the constants `e` and
 /// `pi`, and the functions `ceil`, `floor`, `round`, `fabs`, `exp`, `sqrt`,
-/// `log`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `pow`, and
-/// `trunc` as attributes.
+/// `log`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `acosh`,
+/// `asinh`, `atanh`, `cosh`, `sinh`, `tanh`, `degrees`, `radians`, `gamma`,
+/// `copysign`, `mod`, `pow`, `remainder`, and `hypot` as attributes.
 ///
 /// Returns the constructed `math` module as a `@value.Value::Module`.
 pub fn math_module() -> @value.Value {
