@@ -1,4 +1,9 @@
 ///|
+/// Compares two strings lexicographically by Unicode code point order,
+/// decoding UTF-16 surrogate pairs as needed.
+///
+/// Returns a negative integer if `a` < `b`, zero if equal, or a positive
+/// integer if `a` > `b`.
 fn str_lex_cmp(a : String, b : String) -> Int {
   let la = a.length()
   let lb = b.length()
@@ -144,6 +149,8 @@ fn marshal_string(bytes : Bytes, buf : StringBuilder) -> Unit {
 }
 
 ///|
+/// Produces the JSON-quoted form of a Starlark string, choosing between
+/// printable-ASCII fast path and full Unicode marshal as appropriate.
 fn json_quote_string(s : @value.StarlarkString) -> String {
   let buf = StringBuilder::new()
   let bytes = s.to_bytes()
@@ -172,6 +179,8 @@ fn format_float_json(f : Double) -> String {
 }
 
 ///|
+/// Tracks which mutable containers (lists, dicts, tuples) are currently on
+/// the encoding stack to detect cycles in the value graph.
 priv struct EncodeState {
   list_path : Array[@value.StarlarkList]
   dict_path : Array[@value.StarlarkDict]
@@ -179,11 +188,24 @@ priv struct EncodeState {
 }
 
 ///|
+/// Creates a fresh `EncodeState` with empty ancestor paths.
 fn EncodeState::new() -> EncodeState {
   { list_path: [], dict_path: [], tuple_path: [] }
 }
 
 ///|
+/// Recursively encodes a Starlark value to a JSON string, tracking the
+/// current nesting depth and ancestor containers to detect cycles.
+///
+/// Parameters:
+///
+/// - `v` : The Starlark value to encode.
+/// - `state` : Ancestor-container sets used for cycle detection.
+/// - `depth` : Current nesting depth; returns `Err` when it reaches
+///   `json_max_nesting_depth`.
+///
+/// Returns `Ok(json_string)` or `Err(message)` describing the first
+/// encoding failure encountered.
 fn encode_inner(
   v : @value.Value,
   state : EncodeState,
@@ -276,6 +298,15 @@ fn encode_inner(
 }
 
 ///|
+/// Encodes a custom Starlark value as a JSON object using its `dir()`
+/// attribute names as keys, sorted lexicographically.
+///
+/// Parameters:
+///
+/// - `c` : The custom value to encode.
+/// - `names` : The attribute names returned by `get_attr_names()`.
+/// - `state` : Ancestor-container sets used for cycle detection.
+/// - `depth` : Current nesting depth passed down to recursive calls.
 fn encode_ext_val_as_object(
   c : @value.CustomValue,
   names : Array[String],
@@ -315,6 +346,15 @@ fn encode_ext_val_as_object(
 }
 
 ///|
+/// Encodes an iterable of Starlark values as a JSON array.
+///
+/// Parameters:
+///
+/// - `items` : The elements to encode in order.
+/// - `kind` : A human-readable name for the container type used in error
+///   messages (e.g. `"list"`, `"tuple"`, `"range"`).
+/// - `state` : Ancestor-container sets used for cycle detection.
+/// - `depth` : Current nesting depth passed down to recursive calls.
 fn encode_sequence(
   items : Iter[@value.Value],
   kind : String,
@@ -342,6 +382,14 @@ fn encode_sequence(
 }
 
 ///|
+/// Encodes a Starlark dict as a JSON object, sorting keys lexicographically.
+/// All keys must be strings; non-string keys produce an error.
+///
+/// Parameters:
+///
+/// - `d` : The dict to encode.
+/// - `state` : Ancestor-container sets used for cycle detection.
+/// - `depth` : Current nesting depth passed down to recursive calls.
 fn encode_dict_val(
   d : @value.StarlarkDict,
   state : EncodeState,
@@ -386,7 +434,10 @@ fn encode_dict_val(
 ///|
 /// Encodes a Starlark value to a compact JSON string.
 /// Supported types: `None`, `Bool`, `Int`, `Float`, `String`, `List`,
-/// `Tuple`, `Dict`, `Range`. Returns `Err` for unhashable or unsupported types.
+/// `Tuple`, `Dict`, `Range`, `Set`, and custom values (`ExtVal`) that
+/// implement `get_attr_names()` (encoded as a JSON object). Returns `Err`
+/// for non-finite floats, unsupported types, cycles, or nesting that
+/// exceeds the depth limit.
 ///
 /// Parameters:
 ///
@@ -416,6 +467,17 @@ fn is_hex_digit(c : Char) -> Bool {
 }
 
 ///|
+/// Parses exactly four hexadecimal characters starting at position `i` in
+/// `chars` and returns the decoded integer value together with the position
+/// after the four digits.
+///
+/// Parameters:
+///
+/// - `chars` : The character array being parsed.
+/// - `i` : The index of the first hex digit.
+///
+/// Returns `(value, i+4)` on success or `(-1, i)` if fewer than four
+/// characters remain or a non-hex character is encountered.
 fn parse_hex4_at(chars : Array[Char], i : Int) -> (Int, Int) {
   if i + 4 > chars.length() {
     return (-1, i)
@@ -438,6 +500,18 @@ fn parse_hex4_at(chars : Array[Char], i : Int) -> (Int, Int) {
 }
 
 ///|
+/// Parses a JSON string literal starting at `start` (which must point to the
+/// opening `"`), handling all standard JSON escape sequences including
+/// `\uXXXX` and UTF-16 surrogate pairs.
+///
+/// Parameters:
+///
+/// - `chars` : The character array being parsed.
+/// - `start` : Index of the opening `"`.
+///
+/// Returns `Ok((string_value, position_after_closing_quote))` on success, or
+/// `Err((error_offset, message))` on a malformed escape, control character,
+/// or unclosed literal.
 fn parse_json_string(
   chars : Array[Char],
   start : Int,
@@ -574,6 +648,13 @@ fn skip_ws(chars : Array[Char], i : Int) -> Int {
 }
 
 ///|
+/// Reports whether `chars` contains `prefix` starting at position `pos`.
+///
+/// Parameters:
+///
+/// - `chars` : The character array to search within.
+/// - `pos` : The starting index in `chars`.
+/// - `prefix` : The string to match.
 fn starts_with_at(chars : Array[Char], pos : Int, prefix : String) -> Bool {
   let pfx = prefix.to_array()
   if pos + pfx.length() > chars.length() {
@@ -588,6 +669,18 @@ fn starts_with_at(chars : Array[Char], pos : Int, prefix : String) -> Bool {
 }
 
 ///|
+/// Parses a single JSON value starting at position `i` in `chars`,
+/// dispatching to the appropriate sub-parser based on the leading character.
+///
+/// Parameters:
+///
+/// - `chars` : The character array being parsed.
+/// - `i` : The starting position (leading whitespace is skipped).
+/// - `depth` : Current nesting depth; returns `Err` when it reaches the
+///   maximum.
+///
+/// Returns `Ok((value, position_after_value))` on success, or
+/// `Err((offset, message))` on a parse error.
 fn parse_json_value(
   chars : Array[Char],
   i : Int,
@@ -635,6 +728,18 @@ fn parse_json_value(
 }
 
 ///|
+/// Parses a JSON array starting at position `i` (which must point to `[`),
+/// returning a Starlark `List` containing the decoded elements.
+///
+/// Parameters:
+///
+/// - `chars` : The character array being parsed.
+/// - `i` : Index of the opening `[`.
+/// - `depth` : Current nesting depth passed down to recursive calls.
+///
+/// Returns `Ok((List, position_after_closing_bracket))` on success, or
+/// `Err((offset, message))` on a structural error (trailing comma, missing
+/// separator, premature end of input, etc.).
 fn parse_json_array(
   chars : Array[Char],
   i : Int,
@@ -675,6 +780,18 @@ fn parse_json_array(
 }
 
 ///|
+/// Parses a JSON object starting at position `i` (which must point to `{`),
+/// returning a Starlark `Dict`. Duplicate keys are accepted; the last value
+/// for a given key wins.
+///
+/// Parameters:
+///
+/// - `chars` : The character array being parsed.
+/// - `i` : Index of the opening `{`.
+/// - `depth` : Current nesting depth passed down to recursive calls.
+///
+/// Returns `Ok((Dict, position_after_closing_brace))` on success, or
+/// `Err((offset, message))` on a structural error.
 fn parse_json_object(
   chars : Array[Char],
   i : Int,
@@ -737,6 +854,18 @@ fn parse_json_object(
 }
 
 ///|
+/// Parses a JSON number (integer or floating-point) starting at position `i`,
+/// returning a Starlark `Int` for integers and `Float` for decimals or
+/// scientific notation.
+///
+/// Parameters:
+///
+/// - `chars` : The character array being parsed.
+/// - `i` : Index of the first character of the number (`-` or a digit).
+///
+/// Returns `Ok((value, position_after_number))` on success, or
+/// `Err((offset, message))` for invalid number syntax (e.g. leading zeros,
+/// bare minus).
 fn parse_json_number(
   chars : Array[Char],
   i : Int,
@@ -841,6 +970,9 @@ pub fn decode_from_json(
 }
 
 ///|
+/// Reports whether `tok` is a syntactically valid JSON scalar token: one of
+/// the keywords `null`, `true`, `false`, or a well-formed JSON number (no
+/// leading zeros, no bare minus, valid optional fraction and exponent).
 fn is_valid_json_scalar(tok : String) -> Bool {
   if tok == "null" || tok == "true" || tok == "false" {
     return true
@@ -916,6 +1048,9 @@ fn write_indent_line(
 }
 
 ///|
+/// Represents the parser state for the container currently at the top of the
+/// stack in `indent_json`, tracking what token is expected next within that
+/// array or object.
 priv enum Context {
   ArrayEmpty
   ArrayAfterVal
@@ -928,9 +1063,17 @@ priv enum Context {
 }
 
 ///|
-// Advances the parent context after a complete value (scalar closed or
-// container closed). Mutates the top of `stack` in place; returns the
-// new `top_done` value (true when the top-level value is now complete).
+/// Advances the parent container context after a complete value has been
+/// consumed, transitioning the top-of-stack state from "awaiting value" to
+/// "after value".
+///
+/// Parameters:
+///
+/// - `stack` : The current stack of open container contexts; mutated in place.
+/// - `top_done` : Whether the top-level value was already complete before
+///   this call.
+///
+/// Returns the updated `top_done` flag.
 fn advance_after_value(stack : Array[Context], top_done : Bool) -> Bool {
   if stack.is_empty() {
     true
@@ -1251,6 +1394,7 @@ pub fn indent_json(
 }
 
 ///|
+/// Builds the `json.encode` builtin function value.
 fn make_encode_fn() -> @value.Value {
   @value.Value::new_builtin("json.encode", fn(_ctx, pos_args, kw_args) {
     if kw_args.length() != 0 {
@@ -1266,6 +1410,7 @@ fn make_encode_fn() -> @value.Value {
 }
 
 ///|
+/// Builds the `json.encode_indent` builtin function value.
 fn make_encode_indent_fn() -> @value.Value {
   @value.Value::new_builtin("json.encode_indent", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 {
@@ -1304,6 +1449,7 @@ fn make_encode_indent_fn() -> @value.Value {
 }
 
 ///|
+/// Builds the `json.decode` builtin function value.
 fn make_decode_fn() -> @value.Value {
   @value.Value::new_builtin("json.decode", fn(_ctx, pos_args, kw_args) {
     // positional cap: go allows at most 2 (x + default?)
@@ -1376,6 +1522,7 @@ fn make_decode_fn() -> @value.Value {
 }
 
 ///|
+/// Builds the `json.indent` builtin function value.
 fn make_indent_fn() -> @value.Value {
   @value.Value::new_builtin("json.indent", fn(_ctx, pos_args, kw_args) {
     if pos_args.length() != 1 {
