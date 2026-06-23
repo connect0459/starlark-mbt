@@ -1,4 +1,8 @@
 ///|
+/// Translates a Starlark index `i` for a sequence of `length` elements into a
+/// non-negative offset. Negative indices count from the end. Returns `Err` when
+/// `i` falls outside Go's int32 range (matching starlark-go's `AsInt32` check)
+/// or the adjusted offset is out of bounds.
 fn adjust_index(
   i : BigInt,
   length : Int64,
@@ -23,6 +27,8 @@ fn adjust_index(
 }
 
 ///|
+/// Returns the source spelling of a unary operator, used in
+/// "unknown unary op" error messages.
 fn unary_op_to_str(op : @syntax.UnaryOp) -> String {
   match op {
     @syntax.UnaryOp::OpPlus => "+"
@@ -33,6 +39,8 @@ fn unary_op_to_str(op : @syntax.UnaryOp) -> String {
 }
 
 ///|
+/// Returns the source spelling of a binary arithmetic/bitwise operator, used
+/// in "unknown binary op" error messages.
 fn op_to_str(op : @syntax.BinaryOp) -> String {
   match op {
     @syntax.BinaryOp::OpAdd => "+"
@@ -51,6 +59,8 @@ fn op_to_str(op : @syntax.BinaryOp) -> String {
 }
 
 ///|
+/// Applies a unary operator to `v`. Custom values are given first refusal via
+/// their `get_unary` hook; all built-in types are handled inline.
 fn eval_unary(
   ctx : EvalContext,
   op : @syntax.UnaryOp,
@@ -95,6 +105,10 @@ fn eval_unary(
 }
 
 ///|
+/// Applies a binary operator to `lv` and `rv`. Left-hand `ExtVal`s are given
+/// first refusal, then right-hand; both non-`ExtVal` pairs dispatch to the
+/// operator-specific sub-functions below. `and`/`or` short-circuit before
+/// reaching this function and must not be passed here.
 fn eval_binary(
   ctx : EvalContext,
   lv : @value.Value,
@@ -158,6 +172,8 @@ fn eval_binary(
 }
 
 ///|
+/// Converts `n` to a finite `Double`, raising when the magnitude overflows
+/// IEEE-754 double range.
 fn finite_double(ctx : EvalContext, n : BigInt) -> Double raise EvalErr {
   match @numeric.bigint_to_finite_double(n) {
     Ok(f) => f
@@ -166,6 +182,8 @@ fn finite_double(ctx : EvalContext, n : BigInt) -> Double raise EvalErr {
 }
 
 ///|
+/// Implements `+`: numeric addition for int/float pairs; concatenation for
+/// string, bytes, list, and tuple.
 fn eval_add(
   ctx : EvalContext,
   lv : @value.Value,
@@ -235,6 +253,8 @@ fn eval_add(
 }
 
 ///|
+/// Implements `-`: numeric subtraction for int/float pairs; set difference for
+/// set × set (elements in `lv` not in `rv`).
 fn eval_arith_sub(
   ctx : EvalContext,
   lv : @value.Value,
@@ -270,6 +290,8 @@ fn eval_arith_sub(
 }
 
 ///|
+/// Implements `*`: numeric multiplication for int/float pairs; sequence
+/// repetition (`seq * n` or `n * seq`) for string, bytes, list, and tuple.
 fn eval_mul(
   ctx : EvalContext,
   lv : @value.Value,
@@ -310,49 +332,53 @@ fn eval_mul(
   }
 }
 
-// Int32 range: Go's AsInt32 bounds used for slice/index range checks.
-
 ///|
+/// Upper bound of Go's `AsInt32` range; slice/index values exceeding this are
+/// out of range.
 let max_int32 : BigInt = 2147483647N
 
 ///|
+/// Lower bound of Go's `AsInt32` range; slice/index values below this are out
+/// of range.
 let min_int32 : BigInt = -2147483648N
 
-// Maximum allocation size matching starlark-go's `len*i >= 1<<30` check.
-
 ///|
+/// Maximum safe allocation element count, matching starlark-go's
+/// `len*i >= 1<<30` overflow guard.
 let max_alloc : Int = 1073741824
 
 ///|
+/// Maximum valid byte value (255); used to range-check `in bytes` with an int
+/// needle.
 let max_byte_val : BigInt = 255N
 
-// Starlark shift-count limits (matching starlark-go's shl/shr behaviour).
-// Left shifts beyond max_lshift_bits would cause unbounded BigInt growth.
-// Right shifts beyond max_rshift_bits always produce 0 or -1, so clamp to
-// avoid BigInt.to_int() overflow.
-
 ///|
+/// Maximum left-shift count. Beyond 512 bits the BigInt would grow without
+/// bound; shifts at or above this limit raise an error.
 let max_lshift_bits : BigInt = 512N
 
 ///|
+/// Maximum right-shift count used as a safe clamp. Beyond 1 000 000 bits the
+/// result is always 0 (positive) or −1 (negative), so clamping avoids
+/// `BigInt.to_int()` overflow.
 let max_rshift_bits : BigInt = 1_000_000N
 
-// Unicode codepoint bounds used for %c format validation.
-
 ///|
+/// Maximum valid Unicode code point (U+10FFFF), used for `%c` format
+/// validation and `chr`.
 let unicode_max_cp_bigint : BigInt = 0x10FFFFN
 
 ///|
-// Inclusive lower bound of the Unicode surrogate block (U+D800..U+DFFF).
+/// Inclusive lower bound of the Unicode surrogate block (U+D800..U+DFFF).
 let unicode_surr_first : Int = 0xD800
 
 ///|
-// Inclusive upper bound of the Unicode surrogate block (U+D800..U+DFFF).
+/// Inclusive upper bound of the Unicode surrogate block (U+D800..U+DFFF).
 let unicode_surr_last : Int = 0xDFFF
 
-// Decimal places for %e/%f printf format (matching C printf "%.6e"/"%.6f").
-
 ///|
+/// Decimal places for `%e`/`%f` printf format, matching C's
+/// `printf("%.6e")`/`printf("%.6f")`.
 let printf_float_precision : Int = 6
 
 ///|
@@ -376,6 +402,8 @@ fn checked_repeat_count(n : BigInt, elem_len : Int) -> Result[Int, String] {
 }
 
 ///|
+/// Repeats the bytes of `s` exactly `n` times. Non-positive `n` yields an
+/// empty string; out-of-int32 or allocation-cap violations return an `Err`.
 fn repeat_string(
   s : @value.StarlarkString,
   n : BigInt,
@@ -396,6 +424,9 @@ fn repeat_string(
 }
 
 ///|
+/// Materializes `n` repetitions of `l`'s elements into a new list.
+/// Non-positive `n` yields an empty list; violations of the count/allocation
+/// cap return an `Err`.
 fn repeat_list(
   l : @value.StarlarkList,
   n : BigInt,
@@ -414,6 +445,9 @@ fn repeat_list(
 }
 
 ///|
+/// Materializes `n` repetitions of tuple `t` into a new element array.
+/// Non-positive `n` yields an empty array; violations of the count/allocation
+/// cap return an `Err`.
 fn repeat_tuple(
   t : Array[@value.Value],
   n : BigInt,
@@ -432,6 +466,9 @@ fn repeat_tuple(
 }
 
 ///|
+/// Repeats the bytes of `b` exactly `n` times into a new `Bytes`.
+/// Non-positive `n` yields empty bytes; violations of the count/allocation cap
+/// return an `Err`.
 fn repeat_bytes(b : Bytes, n : BigInt) -> Result[Bytes, String] {
   let byte_len = b.length()
   let count = match checked_repeat_count(n, byte_len) {
@@ -448,6 +485,8 @@ fn repeat_bytes(b : Bytes, n : BigInt) -> Result[Bytes, String] {
 }
 
 ///|
+/// Implements real division (`/`). Raises when `allow_float` is off.
+/// Division by zero is always an error regardless of the operand types.
 fn eval_div(
   ctx : EvalContext,
   lv : @value.Value,
@@ -493,6 +532,9 @@ fn eval_div(
 }
 
 ///|
+/// Implements floor division (`//`). For int pairs, delegates to
+/// `@numeric.floor_div` which produces Python's signed-floor semantics. For
+/// float operands, divides then applies `floor`.
 fn eval_floor_div(
   ctx : EvalContext,
   lv : @value.Value,
@@ -531,6 +573,8 @@ fn eval_floor_div(
 }
 
 ///|
+/// Computes `a % b` with floor (not truncation) semantics: adjusts the
+/// truncating remainder so the result carries the sign of the divisor `b`.
 fn float_floor_mod(a : Double, b : Double) -> Double {
   let r = a % b
   // `%` truncates toward zero; floor-mod's result must carry the divisor's
@@ -543,12 +587,16 @@ fn float_floor_mod(a : Double, b : Double) -> Double {
 }
 
 ///|
+/// Returns true when `f` is strictly negative or negative zero. Uses the
+/// `1.0 / f` sign trick to distinguish `-0.0` from `+0.0`.
 fn signbit(f : Double) -> Bool {
   // Distinguishes -0.0 from +0.0: 1.0 / -0.0 is -inf (< 0), 1.0 / +0.0 is +inf.
   f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)
 }
 
 ///|
+/// Implements `%`: floor modulo for numeric pairs; percent format when the
+/// left operand is a string (delegates to `percent_format`).
 fn eval_mod(
   ctx : EvalContext,
   lv : @value.Value,
@@ -588,6 +636,9 @@ fn eval_mod(
 }
 
 ///|
+/// Coerces `arg` to a `BigInt` for `%d`/`%o`/`%x`/`%X` format specs.
+/// Floats are truncated toward zero; `NaN`/`Inf` and non-numeric types are
+/// rejected.
 fn percent_to_int(arg : @value.Value) -> Result[BigInt, String] {
   match arg {
     @value.Value::Int(n) => Ok(n)
@@ -604,6 +655,10 @@ fn percent_to_int(arg : @value.Value) -> Result[BigInt, String] {
 }
 
 ///|
+/// Implements the `%` format operator for strings. Supports positional
+/// arguments (via a tuple or single value) and named `%(key)spec` arguments
+/// (via a dict). Mirrors Go's `fmt.Sprintf` sub-language as used by
+/// starlark-go.
 fn percent_format(
   fmt : String,
   args : @value.Value,
@@ -806,6 +861,8 @@ fn percent_format(
 }
 
 ///|
+/// Formats a non-negative `BigInt` as an octal string without a leading `0o`
+/// prefix, matching the `%o` conversion spec.
 fn int64_to_octal(n : BigInt) -> String {
   if n.is_zero() {
     return "0"
@@ -826,6 +883,8 @@ fn int64_to_octal(n : BigInt) -> String {
 }
 
 ///|
+/// Formats a non-negative `BigInt` as a hex string without a `0x` prefix.
+/// `upper` selects uppercase A–F; lowercase otherwise. Used by `%x`/`%X`.
 fn int64_to_hex(n : BigInt, upper : Bool) -> String {
   if n.is_zero() {
     return "0"
@@ -852,6 +911,7 @@ fn int64_to_hex(n : BigInt, upper : Bool) -> String {
 }
 
 ///|
+/// Returns `10^n` as a `BigInt`, used in exact-arithmetic float formatting.
 fn pow10_big(n : Int) -> BigInt {
   let mut r = 1N
   for _ in 0..<n {
@@ -861,6 +921,8 @@ fn pow10_big(n : Int) -> BigInt {
 }
 
 ///|
+/// Left-pads `n.to_string()` with zeros to at least `width` digits. Used to
+/// produce the fixed-width fractional part in `%f` output.
 fn pad_bigint(n : BigInt, width : Int) -> String {
   let s = n.to_string()
   let pad = width - s.length()
@@ -875,10 +937,10 @@ fn pad_bigint(n : BigInt, width : Int) -> String {
   pbuf.to_string()
 }
 
-// Decompose a finite, strictly-positive double into (mantissa, exponent) such
-// that the value equals mantissa * 2^exponent exactly.
-
 ///|
+/// Extracts the exact binary representation of a finite, strictly-positive
+/// double as `(mantissa, exponent)` where `value = mantissa × 2^exponent`.
+/// Used by `round_scaled` for lossless decimal conversion.
 fn decompose_double(abs_f : Double) -> (BigInt, Int) {
   let bits = abs_f.reinterpret_as_uint64()
   // 52 = mantissa bits; 0x7FF = 11-bit biased-exponent mask (bits 52..62)
@@ -894,11 +956,10 @@ fn decompose_double(abs_f : Double) -> (BigInt, Int) {
   }
 }
 
-// Divide two non-negative big integers (den > 0), rounding the quotient to the
-// nearest integer with ties resolved to the even value (round half to even),
-// matching Go's strconv.FormatFloat.
-
 ///|
+/// Divides `num` by `den` (both non-negative, `den > 0`) rounding the
+/// quotient to the nearest integer with ties broken toward even ("round half
+/// to even"), matching Go's `strconv.FormatFloat` rounding.
 fn round_half_even_div(num : BigInt, den : BigInt) -> BigInt {
   let q = num / den
   let r = num % den
@@ -914,11 +975,10 @@ fn round_half_even_div(num : BigInt, den : BigInt) -> BigInt {
   }
 }
 
-// Compute round_half_even(abs_f * 10^scale) using exact big-integer arithmetic
-// on the true binary value of abs_f, avoiding the rounding error of an
-// intermediate floating-point multiply. abs_f must be finite and >= 0.
-
 ///|
+/// Rounds `abs_f × 10^scale` to the nearest integer using exact big-integer
+/// arithmetic on the true binary value of `abs_f`, avoiding the rounding error
+/// of an intermediate floating-point multiply. `abs_f` must be finite and ≥ 0.
 fn round_scaled(abs_f : Double, scale : Int) -> BigInt {
   let (mant, e) = decompose_double(abs_f)
   let mut num = mant
@@ -937,6 +997,8 @@ fn round_scaled(abs_f : Double, scale : Int) -> BigInt {
 }
 
 ///|
+/// Formats `f` in scientific notation with 6 decimal places (`%e`/`%E`),
+/// matching C's `printf("%.6e")` output exactly. `upper` selects `E` vs `e`.
 fn format_float_e(f : Double, upper : Bool) -> String {
   if f.is_nan() {
     return "nan"
@@ -978,6 +1040,8 @@ fn format_float_e(f : Double, upper : Bool) -> String {
 }
 
 ///|
+/// Formats `f` in fixed-point notation with 6 decimal places (`%f`), matching
+/// C's `printf("%.6f")` output exactly.
 fn format_float_f(f : Double) -> String {
   if f.is_nan() {
     return "nan"
@@ -999,11 +1063,16 @@ fn format_float_f(f : Double) -> String {
 }
 
 ///|
+/// Formats `f` for `%g`/`%G`, delegating to `@numeric.format_float` (the
+/// general-purpose shortest-representation formatter).
 fn format_float_g(f : Double) -> String {
   @numeric.format_float(f)
 }
 
 ///|
+/// Implements `&`/`|`/`^` for integer pairs; `|` for dict pairs (union, right
+/// takes precedence); and `&`/`|`/`^` for set pairs (intersection, union,
+/// symmetric difference).
 fn eval_bitwise(
   ctx : EvalContext,
   lv : @value.Value,
@@ -1092,6 +1161,9 @@ fn eval_bitwise(
 }
 
 ///|
+/// Implements `<<` and `>>` for integer pairs. Left shifts at or above
+/// `max_lshift_bits` (512) raise an error; right shifts are clamped to
+/// `max_rshift_bits` to avoid `to_int()` overflow while preserving sign.
 fn eval_shift(
   ctx : EvalContext,
   lv : @value.Value,
@@ -1136,6 +1208,7 @@ fn eval_shift(
 }
 
 ///|
+/// Returns true when every element of `s1` is contained in `s2`.
 fn set_is_subset(s1 : @value.StarlarkSet, s2 : @value.StarlarkSet) -> Bool {
   let mut all_in = true
   s1.each(fn(v) {
@@ -1150,6 +1223,10 @@ fn set_is_subset(s1 : @value.StarlarkSet, s2 : @value.StarlarkSet) -> Bool {
 }
 
 ///|
+/// Implements ordered comparisons (`<`/`<=`/`>`/`>=`). Set pairs use the
+/// subset/superset partial order; all other pairs delegate to
+/// `@value.compare_values`. `strict_sign > 0` means `>` / `>=`; `strict`
+/// distinguishes `<` from `<=`.
 fn eval_cmp(
   ctx : EvalContext,
   lv : @value.Value,
@@ -1207,6 +1284,10 @@ fn eval_cmp(
 }
 
 ///|
+/// Implements the `in` membership test for all collection types. Dict
+/// containment silences hash errors (matching starlark-go's `Mapping.Get`
+/// semantics); set containment propagates them. Bytes accepts both a bytes
+/// needle and an int byte value.
 fn in_op(
   ctx : EvalContext,
   needle : @value.Value,
@@ -1363,6 +1444,9 @@ fn in_op(
 }
 
 ///|
+/// Integer-indexed lookup for list, tuple, string, bytes, range, and
+/// `StringElems`; dict lookup by arbitrary hashable key; `ExtVal` via the
+/// length + index hooks. Negative integer indices count from the end.
 fn eval_index(
   ctx : EvalContext,
   obj : @value.Value,
@@ -1508,6 +1592,9 @@ fn eval_index(
 }
 
 ///|
+/// Item assignment for list (integer index) and dict (arbitrary hashable key),
+/// and `ExtVal` (via `HasSetKey` or `HasSetIndex` hooks in that precedence
+/// order). All other types raise.
 fn set_index(
   ctx : EvalContext,
   obj : @value.Value,
@@ -1574,6 +1661,9 @@ fn set_index(
 }
 
 ///|
+/// Slices list, tuple, string, bytes, range, and `ExtVal` by optional
+/// `[lo:hi:step]` bounds. Omitted bounds and step default to natural
+/// start/end/1; a zero step always raises.
 fn eval_slice(
   ctx : EvalContext,
   obj : @value.Value,
@@ -1710,6 +1800,10 @@ fn eval_slice(
 }
 
 ///|
+/// Clamps `[lo_opt, hi_opt]` slice bounds against an `Int` sequence length
+/// for the given `step` direction. Omitted bounds default to the natural
+/// start/end; out-of-range values are clamped into `[0, len]` (positive step)
+/// or `[-1, len-1]` (negative step).
 fn normalize_slice(
   lo_opt : Int?,
   hi_opt : Int?,
@@ -1776,6 +1870,8 @@ fn normalize_slice(
 }
 
 ///|
+/// 64-bit variant of `normalize_slice`, used for `range` slices whose length
+/// may exceed `Int` range.
 fn normalize_slice_64(
   lo_opt : Int?,
   hi_opt : Int?,
@@ -1842,6 +1938,9 @@ fn normalize_slice_64(
 }
 
 ///|
+/// Converts an augmented-assignment operator (`+=`, `-=`, etc.) to its
+/// corresponding binary operator, so `eval_aug_val` can delegate to
+/// `eval_binary` for non-special-cased operators.
 fn aug_to_bin_op(aug_op : @syntax.AugOp) -> @syntax.BinaryOp {
   match aug_op {
     @syntax.AugOp::AugAdd => @syntax.BinaryOp::OpAdd

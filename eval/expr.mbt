@@ -73,6 +73,10 @@ fn builtin_type_methods(v : @value.Value) -> Array[String]? {
 }
 
 ///|
+/// Looks up attribute `attr` on `obj`. Built-in types (string, list, dict,
+/// set, bytes) return a `BoundMethod` for valid method names; modules consult
+/// their attribute map; `ExtVal` delegates to its `get_attr` hook. Provides a
+/// did-you-mean hint when the attribute name is misspelled.
 fn eval_getattr(
   ctx : EvalContext,
   obj : @value.Value,
@@ -148,6 +152,10 @@ fn eval_getattr(
 }
 
 ///|
+/// Invokes `func_val` with positional `pos_args` and keyword `kw_args`.
+/// Compiled functions run on the VM (which must be present during bytecode
+/// dispatch); builtins and bound methods dispatch through the shared call
+/// mechanism; `ExtVal` delegates to its `do_call` hook.
 fn call_value(
   ctx : EvalContext,
   func_val : @value.Value,
@@ -248,6 +256,12 @@ fn call_value(
 }
 
 ///|
+/// Dispatches a call to a predeclared built-in function by `name`. Acts as
+/// the single registry for all standard Starlark builtins: `print`, `len`,
+/// `str`, `repr`, `type`, `bool`, `int`, `float`, `abs`, `range`, `list`,
+/// `tuple`, `dict`, `set`, `bytes`, `min`, `max`, `enumerate`, `sorted`,
+/// `reversed`, `zip`, `any`, `all`, `hash`, `dir`, `chr`, `ord`, `fail`,
+/// `hasattr`, and `getattr`.
 fn call_builtin(
   ctx : EvalContext,
   name : String,
@@ -816,6 +830,8 @@ fn check_int64_range(
 }
 
 ///|
+/// Validates that `b` fits in a signed 64-bit integer and returns it,
+/// enforcing the int64-range constraint on `range` arguments.
 fn range_arg_to_int64(ctx : EvalContext, b : BigInt) -> Int64 raise EvalErr {
   check_int64_range(
     ctx,
@@ -826,6 +842,9 @@ fn range_arg_to_int64(ctx : EvalContext, b : BigInt) -> Int64 raise EvalErr {
 }
 
 ///|
+/// Implements `range(stop)`, `range(start, stop)`, and
+/// `range(start, stop, step)`. Validates that each argument is an in-range
+/// integer and that `step != 0`.
 fn builtin_range(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -856,6 +875,9 @@ fn builtin_range(
 }
 
 ///|
+/// Implements `list()`. With zero arguments returns an empty list; with one
+/// argument, copies a list shallow or materializes any other iterable into a
+/// new list.
 fn builtin_list(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -879,6 +901,8 @@ fn builtin_list(
 }
 
 ///|
+/// Implements `tuple()`. With zero arguments returns an empty tuple; with one
+/// argument materializes any iterable into a tuple.
 fn builtin_tuple(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -891,9 +915,10 @@ fn builtin_tuple(
 }
 
 ///|
-// Common implementation of the builtin `dict` function and the `dict.update`
-// method. `name` ("dict" or "update") prefixes every error message.
-// Precondition: pos_args.length() <= 1.
+/// Common implementation of the `dict()` builtin and the `dict.update()`
+/// method. Applies at most one positional argument (a dict or iterable of
+/// 2-element pairs) then applies keyword arguments in order. `name` prefixes
+/// every error message. Precondition: `pos_args.length() <= 1`.
 fn update_dict(
   ctx : EvalContext,
   name : String,
@@ -984,6 +1009,8 @@ fn update_dict(
 }
 
 ///|
+/// Implements `dict()`: enforces at most one positional argument, then
+/// delegates to `update_dict` to apply positional and keyword arguments.
 fn builtin_dict(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1003,6 +1030,8 @@ fn builtin_dict(
 }
 
 ///|
+/// Implements `set()`. With zero arguments returns an empty set; with one
+/// argument iterates the argument and adds each element.
 fn builtin_set(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1035,6 +1064,10 @@ fn builtin_set(
 }
 
 ///|
+/// Shared implementation of `min` and `max`. Accepts either a single iterable
+/// or multiple positional arguments. The optional `key` callable is applied
+/// before comparisons; ties keep the first encountered value.
+/// `want_max=true` selects the maximum, `false` the minimum.
 fn builtin_minmax(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1176,6 +1209,8 @@ fn builtin_minmax(
 }
 
 ///|
+/// Implements `enumerate(iterable, start=0)`. Produces `(start+i, value)`
+/// tuples; `start` must fit in a signed 64-bit integer.
 fn builtin_enumerate(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1215,6 +1250,10 @@ fn builtin_enumerate(
 }
 
 ///|
+/// Implements `sorted(iterable, key=None, reverse=False)`. All three
+/// parameters are accepted positionally or by keyword. Ties are broken by
+/// original index to guarantee stability regardless of the underlying
+/// `sort_by` implementation.
 fn builtin_sorted(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1419,11 +1458,11 @@ fn builtin_sorted(
 }
 
 ///|
-// Reproduce starlark-go's type-mismatch error message for `sorted`. starlark-go
-// sorts with sort.Stable, whose insertion sort compares less(j, j-1) and keeps
-// the LAST failing comparison's error while sorting continues; sort.Reverse
-// swaps the comparison operands. Replaying that insertion sort over the keys
-// recovers the exact "<left> < <right> not implemented" message and direction.
+/// Reconstructs the exact comparison-failure error message for `sorted`.
+/// Replays starlark-go's insertion sort (`sort.Stable`) over `keys` (with the
+/// same `sort.Reverse` operand swap when `reverse` is true) to recover the
+/// last failing `<` comparison and its operands, producing a message that
+/// matches starlark-go's "<left> < <right> not implemented" exactly.
 fn sorted_type_error(
   ctx : EvalContext,
   keys : Array[@value.Value],
@@ -1467,6 +1506,8 @@ fn sorted_type_error(
 }
 
 ///|
+/// Implements `reversed(seq)`. Requires an indexable sequence via
+/// `require_seq`; returns a new list with elements in reverse order.
 fn builtin_reversed(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1482,6 +1523,8 @@ fn builtin_reversed(
 }
 
 ///|
+/// Implements `zip(*iterables)`. Advances all iterators in lockstep and stops
+/// as soon as the shortest is exhausted, matching Python's `zip` semantics.
 fn builtin_zip(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1531,6 +1574,9 @@ fn builtin_zip(
 }
 
 ///|
+/// Shared implementation of `any` and `all`. `any_mode=true` short-circuits
+/// on the first truthy element; `any_mode=false` short-circuits on the first
+/// falsy element.
 fn builtin_any_all(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -1562,6 +1608,9 @@ fn builtin_any_all(
 }
 
 ///|
+/// Dispatches a method call on `recv` to the type-specific handler
+/// (`call_list_method`, `call_dict_method`, `call_str_method`,
+/// `call_set_method`, or `call_bytes_method`).
 fn call_method(
   ctx : EvalContext,
   recv : @value.Value,
@@ -1591,6 +1640,9 @@ fn call_method(
 }
 
 ///|
+/// Implements all list methods (`append`, `extend`, `pop`, `remove`,
+/// `insert`, `clear`, `index`). Mutation operations are guarded by the list's
+/// own mutability check.
 fn call_list_method(
   ctx : EvalContext,
   l : @value.StarlarkList,
@@ -1779,6 +1831,8 @@ fn call_list_method(
 }
 
 ///|
+/// Implements all dict methods (`get`, `keys`, `values`, `items`, `pop`,
+/// `update`, `clear`, `popitem`, `setdefault`).
 fn call_dict_method(
   ctx : EvalContext,
   d : @value.StarlarkDict,
@@ -1875,6 +1929,8 @@ fn call_dict_method(
 }
 
 ///|
+/// Implements all string methods. Every method reads from the immutable `s`
+/// and returns a new value; the string itself is never mutated.
 fn call_str_method(
   ctx : EvalContext,
   s : @value.StarlarkString,
@@ -2309,6 +2365,8 @@ fn call_str_method(
 }
 
 ///|
+/// Iterates `arg` and adds each element to `result`. On a non-iterable or
+/// hash error, raises with a `"<method_nm>: argument #<arg_idx> ..."` prefix.
 fn set_iterate_into(
   ctx : EvalContext,
   arg : @value.Value,
@@ -2342,10 +2400,10 @@ fn set_iterate_into(
 }
 
 ///|
-// Validate the single optional iterable argument shared by the set operations
-// intersection/difference/symmetric_difference/issubset/issuperset. These are
-// declared with min=0 and one optional parameter, so >1 args reports
-// "want at most 1" and a non-iterable reports the parameter-named unpack error.
+/// Validates and returns the single optional iterable argument shared by
+/// `intersection`, `difference`, `symmetric_difference`, `issubset`, and
+/// `issuperset`. Enforces at most one positional argument and requires it to be
+/// iterable; a non-iterable raises the parameter-named unpack error.
 fn set_other_iter(
   ctx : EvalContext,
   name : String,
@@ -2369,6 +2427,9 @@ fn set_other_iter(
 }
 
 ///|
+/// Implements all set methods (`add`, `discard`, `remove`, `clear`, `pop`,
+/// `union`, `intersection`, `difference`, `symmetric_difference`, `issubset`,
+/// `issuperset`, `update`).
 fn call_set_method(
   ctx : EvalContext,
   s : @value.StarlarkSet,
@@ -2578,6 +2639,9 @@ fn call_set_method(
 }
 
 ///|
+/// Implements `bytes()`. Accepts a `bytes` value (identity), a `string` (UTF-8
+/// re-encoded with invalid sequences replaced by U+FFFD, matching
+/// starlark-go), or an iterable of ints in `[0, 255]`.
 fn builtin_bytes(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
@@ -2653,6 +2717,8 @@ fn builtin_bytes(
 }
 
 ///|
+/// Dispatches `bytes` method calls. Currently only `elems` is supported,
+/// which returns a `BytesElems` iterator.
 fn call_bytes_method(
   ctx : EvalContext,
   b : Bytes,
@@ -2669,10 +2735,9 @@ fn call_bytes_method(
 }
 
 ///|
-// Validate a builtin/method's positional-argument count and reject keyword
-// arguments.
-// Normalize a possibly-negative index against length `n` and clamp it into
-// `[0, n]`, the half-open bound used by `list.index`'s start/end parameters.
+/// Normalizes a possibly-negative `Int64` index against length `n` and clamps
+/// it into the inclusive range `[0, n]`, the valid domain for `list.index`'s
+/// half-open `start`/`end` parameters.
 fn clamp_slice_index_i64(raw : Int64, n : Int) -> Int {
   let n64 = n.to_int64()
   let j = if raw < 0L { raw + n64 } else { raw }
@@ -2686,9 +2751,10 @@ fn clamp_slice_index_i64(raw : Int64, n : Int) -> Int {
 }
 
 ///|
-// Shared body for `startswith`/`endswith`: `arg` is either a single string or a
-// tuple of strings; returns true when `check` holds for the single string or
-// any tuple element. `name` prefixes the type-error messages.
+/// Shared body for `startswith`/`endswith`. `arg` is a single string or a
+/// tuple of strings; returns `Bool(true)` when the `check` predicate holds
+/// for the single string or any tuple element. `name` prefixes type-error
+/// messages.
 fn match_affix(
   ctx : EvalContext,
   name : String,
@@ -2728,6 +2794,8 @@ fn match_affix(
 }
 
 ///|
+/// Validates that `kw_args` is empty and that the positional-argument count is
+/// in `[min, max]`. `name` prefixes every error message.
 fn check_positional(
   ctx : EvalContext,
   name : String,
@@ -2755,8 +2823,8 @@ fn check_positional(
 }
 
 ///|
-// Reject keyword arguments with the "X does not accept keyword
-// arguments" message (used by builtins that bypass UnpackPositionalArgs).
+/// Raises when `kw_args` is non-empty, with the message
+/// `"<name> does not accept keyword arguments"`.
 fn reject_kwargs(
   ctx : EvalContext,
   name : String,
@@ -2770,8 +2838,8 @@ fn reject_kwargs(
 }
 
 ///|
-// Coerce the `idx`-th (0-based) positional argument to a string, raising the
-// unpack error on type mismatch.
+/// Coerces the `idx`-th (0-based) positional argument to a `StarlarkString`,
+/// raising a type-error on mismatch.
 fn arg_as_string(
   ctx : EvalContext,
   name : String,
@@ -2791,6 +2859,9 @@ fn arg_as_string(
 }
 
 ///|
+/// Normalizes a method's `count` parameter: negative values become `-1`
+/// (unlimited); non-negative values exceeding int32 are clamped to
+/// `max_int32`.
 fn int64_to_count(n : Int64) -> Int {
   if n < 0L {
     -1
@@ -2802,8 +2873,8 @@ fn int64_to_count(n : Int64) -> Int {
 }
 
 ///|
-// Coerce the `idx`-th (0-based) positional argument to an int64, raising an
-// error on type mismatch or if the value is outside the signed 64-bit range.
+/// Coerces the `idx`-th (0-based) positional argument to an `Int64`, raising a
+/// type-error or an out-of-range error on mismatch.
 fn arg_as_int64(
   ctx : EvalContext,
   name : String,
@@ -2830,8 +2901,9 @@ fn arg_as_int64(
 }
 
 ///|
-// Validate and extract an optional start/end index argument for string search
-// methods. Accepts Int (clamped) or None (default); errors on any other type.
+/// Decodes an optional start/end index argument for string search methods.
+/// Accepts an `Int` (clamped to `[0, slen]`) or `None` (returns
+/// `default_val`); raises on any other type.
 fn parse_search_index(
   ctx : EvalContext,
   mname : String,
@@ -2874,8 +2946,8 @@ fn parse_search_index(
 }
 
 ///|
-// Clamp a Starlark start/end index against a byte length: negatives count from
-// the end, then clamp to [0, len].
+/// Resolves a possibly-negative byte index against `blen` (negatives count
+/// from the end) and clamps the result to `[0, blen]`.
 fn clamp_byte_index(idx : Int, blen : Int) -> Int {
   if idx < 0 {
     (blen + idx).max(0)
@@ -2885,7 +2957,8 @@ fn clamp_byte_index(idx : Int, blen : Int) -> Int {
 }
 
 ///|
-// Slice a StarlarkString by byte offsets [lo, hi), returning a new string.
+/// Returns the bytes of `s` in the byte-offset range `[lo, hi)` as a new
+/// `StarlarkString`. Returns an empty string when `lo >= hi`.
 fn str_byte_slice(
   s : @value.StarlarkString,
   lo : Int,
@@ -2902,7 +2975,8 @@ fn str_byte_slice(
 }
 
 ///|
-// First byte offset of `needle` within `hay[lo:hi]`, or -1. Empty needle → lo.
+/// Returns the byte offset of the first occurrence of `needle` within
+/// `hay[lo:hi]`, or `-1` if not found. An empty `needle` returns `lo`.
 fn bytes_index_in(
   hay : @value.StarlarkString,
   lo : Int,
@@ -2929,7 +3003,8 @@ fn bytes_index_in(
 }
 
 ///|
-// Last byte offset of `needle` within `hay[lo:hi]`, or -1. Empty needle → hi.
+/// Returns the byte offset of the last occurrence of `needle` within
+/// `hay[lo:hi]`, or `-1` if not found. An empty `needle` returns `hi`.
 fn bytes_last_index_in(
   hay : @value.StarlarkString,
   lo : Int,
@@ -2955,6 +3030,7 @@ fn bytes_last_index_in(
 }
 
 ///|
+/// Returns true when `s` begins with `prefix` (byte-level comparison).
 fn bytes_has_prefix(
   s : @value.StarlarkString,
   prefix : @value.StarlarkString,
@@ -2972,6 +3048,7 @@ fn bytes_has_prefix(
 }
 
 ///|
+/// Returns true when `s` ends with `suffix` (byte-level comparison).
 fn bytes_has_suffix(
   s : @value.StarlarkString,
   suffix : @value.StarlarkString,
@@ -2990,8 +3067,9 @@ fn bytes_has_suffix(
 }
 
 ///|
-// Count non-overlapping occurrences of `needle` within `hay[lo:hi]`.
-// Empty needle yields the Unicode code point count plus one (Go strings.Count).
+/// Counts non-overlapping occurrences of `needle` within `hay[lo:hi]`. An
+/// empty `needle` returns the Unicode code point count plus one (matching Go's
+/// `strings.Count`).
 fn bytes_count_in(
   hay : @value.StarlarkString,
   lo : Int,
@@ -3028,6 +3106,8 @@ fn bytes_count_in(
 }
 
 ///|
+/// Returns the byte offset of the first occurrence of `sub` in `s`, or `-1`.
+/// An empty `sub` returns 0.
 fn find_substr(s : String, sub : String) -> Int {
   if sub.length() == 0 {
     return 0
@@ -3113,6 +3193,10 @@ fn partition_string(
 }
 
 ///|
+/// Reports whether `c` is a Unicode whitespace character. Mirrors Go's
+/// `unicode.IsSpace` (which Starlark uses for split/strip/`isspace`): ASCII
+/// controls and space, the Latin-1 NEL and no-break space, and the Unicode
+/// `White_Space` category.
 fn is_whitespace(c : Char) -> Bool {
   // Mirror Go's unicode.IsSpace, which Starlark uses for whitespace-based
   // split/strip and isspace: ASCII controls + space, the Latin-1 NEL and
@@ -3138,6 +3222,7 @@ fn map_string_runes(raw : String, f : (Int) -> Int) -> String {
 }
 
 ///|
+/// Wraps an array of strings into a Starlark list of `String` values.
 fn to_value_list(parts : Array[String]) -> @value.Value {
   let items : Array[@value.Value] = []
   for p in parts {
@@ -3147,6 +3232,9 @@ fn to_value_list(parts : Array[String]) -> @value.Value {
 }
 
 ///|
+/// Splits `s` on runs of Unicode whitespace, producing at most `maxsplit+1`
+/// parts when `maxsplit >= 0`. Leading and trailing whitespace is ignored and
+/// consecutive whitespace is collapsed, matching Python's `str.split()`.
 fn split_whitespace(s : String, maxsplit : Int) -> Array[String] {
   let chars = s.to_array()
   let n = chars.length()
@@ -3181,6 +3269,8 @@ fn split_whitespace(s : String, maxsplit : Int) -> Array[String] {
 }
 
 ///|
+/// Right-to-left variant of `split_whitespace`. Scans from the end of `s`
+/// and reverses the parts so the result is in source order.
 fn rsplit_whitespace(s : String, maxsplit : Int) -> Array[String] {
   let chars = s.to_array()
   let n = chars.length()
@@ -3217,6 +3307,8 @@ fn rsplit_whitespace(s : String, maxsplit : Int) -> Array[String] {
 }
 
 ///|
+/// Returns the byte offset of the first occurrence of `sub` in `s` at or
+/// after `from`, or `-1`. An empty `sub` returns `from`.
 fn find_substr_from(s : String, sub : String, from : Int) -> Int {
   if sub.length() == 0 {
     return from
@@ -3242,6 +3334,8 @@ fn find_substr_from(s : String, sub : String, from : Int) -> Int {
 }
 
 ///|
+/// Returns the byte offset of the last occurrence of `sub` in `s` ending
+/// before `before`, or `-1`. An empty `sub` returns `before`.
 fn rfind_substr_before(s : String, sub : String, before : Int) -> Int {
   if sub.length() == 0 {
     return before
@@ -3269,6 +3363,9 @@ fn rfind_substr_before(s : String, sub : String, before : Int) -> Int {
 }
 
 ///|
+/// Splits `s` on the literal separator `sep`, producing at most `maxsplit+1`
+/// parts when `maxsplit >= 0`. Unlike whitespace splitting, empty parts are
+/// preserved.
 fn split_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
   let seplen = sep.length()
   let slen = s.length()
@@ -3293,6 +3390,9 @@ fn split_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
 }
 
 ///|
+/// Right-to-left variant of `split_by_sep`. Delegates to `split_by_sep` when
+/// `maxsplit < 0` (unlimited); otherwise scans from the end and reverses the
+/// result so it is in source order.
 fn rsplit_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
   if maxsplit < 0 {
     return split_by_sep(s, sep, -1)
@@ -3320,6 +3420,9 @@ fn rsplit_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
 }
 
 ///|
+/// Strips Unicode whitespace from the left (`from_left`) and/or right
+/// (`from_right`) of `s`. Shared by `strip`, `lstrip`, and `rstrip` when
+/// no explicit character set is provided.
 fn strip_whitespace(s : String, from_left : Bool, from_right : Bool) -> String {
   let chars = s.to_array()
   let n = chars.length()
@@ -3343,6 +3446,9 @@ fn strip_whitespace(s : String, from_left : Bool, from_right : Bool) -> String {
 }
 
 ///|
+/// Strips any character present in `chars` from the left (`from_left`) and/or
+/// right (`from_right`) of `s`. Shared by `strip`, `lstrip`, and `rstrip`
+/// when an explicit character set is provided.
 fn strip_chars(
   s : String,
   chars : String,
@@ -3382,6 +3488,9 @@ fn strip_chars(
 }
 
 ///|
+/// Replaces at most `count` non-overlapping occurrences of `old` with `new_s`
+/// in `s`. An empty `old` inserts `new_s` before each character and once at
+/// the end, matching Python's `str.replace("", ...)` semantics.
 fn str_replace_count(
   s : String,
   old : String,
@@ -3424,6 +3533,10 @@ fn str_replace_count(
 }
 
 ///|
+/// Implements `str.format()`. Supports automatic (`{}`), positional (`{0}`),
+/// and named (`{key}`) field references, as well as `!r`/`!s` conversion
+/// specs. Raises on nested replacements, attribute/element syntax, and
+/// unknown conversions.
 fn str_format(
   ctx : EvalContext,
   template_bytes : Bytes,
@@ -3622,6 +3735,9 @@ fn str_format(
 }
 
 ///|
+/// Parses a signed integer string in the given `base` (2–36, or 0 for
+/// auto-detection). Base 0 detects `0x`/`0o`/`0b` prefixes; rejects bare
+/// leading zeros in base-0 mode. Returns an error string on failure.
 fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
   if s.length() == 0 {
     return Err("invalid literal with base \{base}: \{s}")
@@ -3689,11 +3805,14 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
 }
 
 ///|
+/// Returns true when `c` is an ASCII hexadecimal digit (0–9, a–f, A–F).
 fn is_hex_digit(c : UInt16) -> Bool {
   (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 
 ///|
+/// Returns the numeric value of an ASCII hex digit (0–15). Precondition:
+/// `is_hex_digit(c)`.
 fn hex_digit_val(c : UInt16) -> Int {
   let ci = c.to_int()
   if c >= '0' && c <= '9' {
@@ -3706,6 +3825,9 @@ fn hex_digit_val(c : UInt16) -> Int {
 }
 
 ///|
+/// Parses a C99 hexadecimal float literal (`0x<hex>.<hex>p<exp>`). Returns
+/// `None` when `s` is not a valid hex float, allowing the caller to fall back
+/// to decimal parsing.
 fn parse_hex_float_str(s : String) -> Double? {
   let n = s.length()
   let mut i = 0
@@ -3770,6 +3892,10 @@ fn parse_hex_float_str(s : String) -> Double? {
 }
 
 ///|
+/// Returns true when `s` has the syntactic form of a float literal (optional
+/// sign, integer digits, optional `.fraction`, optional `e`/`E` exponent)
+/// regardless of whether the value is in range. Used to choose a more precise
+/// error message on parse failure.
 fn is_float_syntax(s : String) -> Bool {
   let n = s.length()
   let mut i = 0
