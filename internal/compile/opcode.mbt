@@ -8,6 +8,10 @@
 // family, the operand encodes `(npositional << 8) | nnamed`.
 
 ///|
+/// The complete bytecode instruction set. Opcodes with a byte value below
+/// `op_arg_min` take no operand; those at or above it are followed by a
+/// uvarint-encoded operand in the instruction stream. For the `Call` family
+/// the operand packs `(npositional << 8) | nnamed`.
 pub(all) enum Opcode {
   // sentinel / stack operations
   Nop

@@ -5,6 +5,10 @@
 // each `Const` into a `Value` when it executes the `Constant` opcode.
 
 ///|
+/// A compile-time constant-pool carrier. The pool holds only primitive literal
+/// values (never runtime `Value`s), keeping `compile` free of any dependency
+/// on the `value` package. The VM materializes each `Const` into a `Value`
+/// when it executes the `Constant` opcode.
 pub(all) enum Const {
   CNone
   CBool(Bool)
