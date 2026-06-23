@@ -6,6 +6,7 @@
 /// the defining frame and every capturing closure hold the same instance,
 /// so assignments are visible across all of them. `None` means the variable
 /// has not been assigned yet.
+#internal(unsafe, "closure machinery; not part of the public embedding API")
 pub struct Cell {
   priv mut v : Value?
 }
