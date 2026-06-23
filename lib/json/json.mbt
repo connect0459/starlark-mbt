@@ -86,7 +86,7 @@ fn quote_printable_ascii(bytes : Bytes, buf : StringBuilder) -> Unit {
     } else if b == 0x5C {
       buf.write_string("\\\\")
     } else if b == 0x7F {
-      buf.write_string("\\x7f")
+      buf.write_string("\\u007f")
     } else {
       buf.write_char(b.unsafe_to_char())
     }
