@@ -56,13 +56,23 @@ fn parse_env_json(
 ///
 /// `env_json` must be a JSON object whose keys are binding names and whose
 /// values are the corresponding Starlark-compatible JSON values (null, bool,
-/// number, string, array, object). The bindings are visible to the script as
-/// read-only predeclared names but are **not** included in the returned
-/// `globals` map.
+/// number, string, array, object). The injected names are visible to the script
+/// before any user-defined globals are evaluated and are **not** included in
+/// the returned `globals` map — unless the script assigns to the same name, in
+/// which case the assignment shadows the predeclared binding and the new value
+/// appears in `globals` as a regular global.
 ///
-/// On success, returns `{"globals":{...},"output":"..."}` in the same format
-/// as `exec_script`. On failure (invalid `env_json`, parse error, or runtime
-/// error), returns `{"error":"..."}`.
+/// On success, returns `{"globals":{...},"output":"..."}` where `globals` maps
+/// each top-level binding to its JSON-encoded value and `output` contains all
+/// text written by `print()`. On failure (invalid `env_json`, parse error, or
+/// runtime error), returns `{"error":"..."}`.
+///
+/// **BigInt precision**: Starlark `Int` values are arbitrary-precision integers
+/// serialized as bare JSON number tokens. JavaScript's `JSON.parse` converts
+/// them to IEEE 754 doubles, so integers whose absolute value exceeds 2^53 will
+/// lose precision silently. If lossless handling of large integers is required,
+/// consumers should treat `Int` fields as strings (pass them through a
+/// BigInt-aware JSON parser) rather than relying on `JSON.parse`.
 ///
 /// This function is exported for the `wasm-gc` and `js` build targets via the
 /// `link` options in `moon.pkg`, making it callable from a JavaScript host
