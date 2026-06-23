@@ -121,6 +121,11 @@ test "encode string with escaping" {
 }
 
 ///|
+test "encode string: DEL (U+007F) is encoded as \\u007f, not \\x7f" {
+  check_encode(str_val("\u{007F}"), "\"\\u007f\"")
+}
+
+///|
 test "encode list" {
   check_encode(list_val([int_val(1L), int_val(2L), int_val(3L)]), "[1,2,3]")
   check_encode(list_val([]), "[]")

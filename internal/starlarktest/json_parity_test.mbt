@@ -17,11 +17,11 @@ test "json.encode emits raw UTF-8 for non-ASCII, like Go json.Marshal" {
 }
 
 ///|
-test "json.encode escapes DEL as Go strconv.AppendQuote does" {
+test "json.encode escapes DEL (U+007F) as \\u007f" {
   let src =
     #|load("assert.star", "assert")
     #|load("json.star", "json")
-    #|assert.eq(json.encode("\x7f"), '"\\x7f"')
+    #|assert.eq(json.encode("\x7f"), '"\\u007f"')
   let errs = run_star_string(src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
