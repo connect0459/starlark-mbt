@@ -973,10 +973,10 @@ fn Scanner::scan_string_triple(
 }
 
 ///|
-/// Decodes a single escape sequence starting with the already-consumed
-/// backslash character `c`, appending decoded bytes to `buf`. `str_start`
-/// anchors error messages to the opening quote. `is_bytes` controls whether
-/// non-ASCII octal/hex escapes (`\xNN` > 127) are rejected.
+/// Decodes a single escape sequence from `c`, the character immediately
+/// following the already-consumed backslash, appending decoded bytes to `buf`.
+/// `str_start` anchors error messages to the opening quote. `is_bytes`
+/// controls whether non-ASCII octal/hex escapes (`\xNN` > 127) are rejected.
 fn Scanner::decode_escape(
   self : Scanner,
   str_start : @errors.Position,
