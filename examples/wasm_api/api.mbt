@@ -39,19 +39,12 @@ fn parse_env_json(
   match parsed {
     @value.Value::Dict(d) => {
       let map : Map[String, @value.Value] = {}
-      let mut err : String? = None
       d.each(fn(k, v) {
-        if err is None {
-          match k {
-            @value.Value::String(s) => map[s.raw()] = v
-            _ => err = Some("predeclared env keys must be strings")
-          }
+        if k is @value.Value::String(s) {
+          map[s.raw()] = v
         }
       })
-      match err {
-        Some(msg) => Err(msg)
-        None => Ok(@eval.Predeclared::from_map(map))
-      }
+      Ok(@eval.Predeclared::from_map(map))
     }
     _ => Err("predeclared env must be a JSON object")
   }
