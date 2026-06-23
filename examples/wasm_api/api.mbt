@@ -8,32 +8,20 @@ fn encode_str(s : String) -> String {
     @value.Value::String(@value.StarlarkString::new(s)),
   ) {
     Ok(js) => js
-    Err(_) => "\"\""
+    Err(e) => abort("unexpected encode error for string: \{e}")
   }
 }
 
 ///|
 /// Converts a Starlark value to a JSON fragment.
 ///
-/// `None`, `Bool`, `Int`, `String`, and finite `Float` map to native JSON
-/// types via `lib/json.encode_to_json`. Non-finite `Float` (NaN / ±Inf) and
-/// all other types (List, Dict, Function, …) are represented as their Starlark
-/// `repr()` wrapped in a JSON string via `encode_str`.
-///
-/// All string escaping is delegated to `lib/json.encode_to_json`, ensuring
-/// consistency with the project's canonical encoder.
+/// Delegates to `lib/json.encode_to_json` for all types; if encoding fails
+/// (non-finite `Float`, `Function`, or other unsupported types), falls back
+/// to the Starlark `repr()` wrapped in a JSON string via `encode_str`.
 fn value_to_json(v : @value.Value) -> String {
-  match v {
-    @value.Value::None |
-    @value.Value::Bool(_) |
-    @value.Value::Int(_) |
-    @value.Value::Float(_) |
-    @value.Value::String(_) =>
-      match @json.encode_to_json(v) {
-        Ok(s) => s
-        Err(_) => encode_str(v.repr())
-      }
-    _ => encode_str(v.repr())
+  match @json.encode_to_json(v) {
+    Ok(s) => s
+    Err(_) => encode_str(v.repr())
   }
 }
 
@@ -90,7 +78,7 @@ pub fn exec_script(src : String) -> String {
         ),
       ) {
         Ok(s) => s
-        Err(_) => "\"\""
+        Err(e) => abort("unexpected encode error for output buffer: \{e}")
       }
       "{\"globals\":\{gbuf.to_string()},\"output\":\{out_json}}"
     }
