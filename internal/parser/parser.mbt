@@ -15,6 +15,10 @@ suberror ParseErr {
 let max_expr_depth : Int = 80
 
 ///|
+/// Recursive-descent parser state. Wraps a `Scanner` and a one-token
+/// lookahead (`tok`/`pos`). `no_in` suppresses the `in` comparison operator
+/// inside `for` / comprehension target lists; `expr_depth` guards against
+/// stack overflow from deeply nested expressions.
 struct Parser {
   scanner : @lexer.Scanner
   mut tok : @lexer.Token
