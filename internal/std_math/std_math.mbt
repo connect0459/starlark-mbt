@@ -94,21 +94,7 @@ pub fn sinh(x : Double) -> Double {
 ///|
 /// Returns the hyperbolic cosine of x.
 pub fn cosh(x : Double) -> Double {
-  let abs_x = x.abs()
-  // Small x: @math.cosh is correct.
-  if abs_x < 22.0 {
-    return @math.cosh(x)
-  }
-  let t = @math.exp(abs_x)
-  // Very large x: exp overflows, but cosh stays finite up to |x| ≈ 710.48.
-  // @math.cosh uses a scaled exp(|x|/2)² formula here and is correct.
-  if t.is_inf() {
-    return @math.cosh(x)
-  }
-  // Workaround for the broken 22 ≤ |x| < ~709.78 branch: @math.cosh pipes
-  // 0.5*|x| to exp instead of halving exp(|x|).
-  // ref: <https://github.com/connect0459/starlark-mbt/issues/218>
-  0.5 * t + 0.5 / t
+  @math.cosh(x)
 }
 
 ///|
