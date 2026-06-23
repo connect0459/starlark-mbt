@@ -44,8 +44,8 @@ const instance = await WebAssembly.instantiate(mod, {
 
 // exec_script accepts a Starlark source string and returns a JSON string.
 // Default dialect: allow_set, allow_lambda, allow_bytes, allow_float all true;
-// top-level for/while/if and recursion disabled (pass options via exec_file for
-// custom dialects – this thin wrapper always uses Options::default()).
+// top-level for/while/if and recursion disabled. Options are not configurable
+// from JS in this version; dialect control is tracked in issue #280.
 const result = instance.exports.exec_script(`
 greeting = "hello from wasm-gc Starlark!"
 numbers  = [1, 2, 3, 4, 5]
