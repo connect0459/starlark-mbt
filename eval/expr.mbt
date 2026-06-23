@@ -2736,8 +2736,8 @@ fn call_bytes_method(
 
 ///|
 /// Normalizes a possibly-negative `Int64` index against length `n` and clamps
-/// it into `[0, n]`, the half-open bound used by `list.index`'s `start`/`end`
-/// parameters.
+/// it into the inclusive range `[0, n]`, the valid domain for `list.index`'s
+/// half-open `start`/`end` parameters.
 fn clamp_slice_index_i64(raw : Int64, n : Int) -> Int {
   let n64 = n.to_int64()
   let j = if raw < 0L { raw + n64 } else { raw }
