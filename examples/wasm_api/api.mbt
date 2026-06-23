@@ -89,6 +89,8 @@ fn do_exec(
 /// `allow_set`, `allow_recursion`, `allow_lambda`, `allow_while`,
 /// `allow_bytes`, `allow_float`, `allow_global_reassign`,
 /// `allow_top_level_control`, `load_binds_globally`.
+///
+/// Duplicate keys follow standard JSON last-wins semantics and are not an error.
 fn parse_options_json(options_json : String) -> Result[@eval.Options, String] {
   let parsed = match @json.decode_from_json(options_json, None) {
     Err(msg) => return Err(msg)
