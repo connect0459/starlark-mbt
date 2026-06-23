@@ -1161,8 +1161,8 @@ fn eval_bitwise(
 }
 
 ///|
-/// Implements `<<` and `>>` for integer pairs. Left shifts exceeding
-/// `max_lshift_bits` raise an error; right shifts are clamped to
+/// Implements `<<` and `>>` for integer pairs. Left shifts at or above
+/// `max_lshift_bits` (512) raise an error; right shifts are clamped to
 /// `max_rshift_bits` to avoid `to_int()` overflow while preserving sign.
 fn eval_shift(
   ctx : EvalContext,
