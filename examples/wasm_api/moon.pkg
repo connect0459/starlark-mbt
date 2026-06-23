@@ -1,0 +1,19 @@
+import {
+  "connect0459/starlark/eval",
+  "connect0459/starlark/value",
+  "connect0459/starlark/lib/json",
+  "moonbitlang/core/buffer",
+}
+
+options(
+  link: {
+    "wasm-gc": {
+      "exports": ["exec_script"],
+      "use-js-builtin-string": true,
+    },
+    "js": {
+      "exports": ["exec_script"],
+      "format": "esm",
+    },
+  },
+)
