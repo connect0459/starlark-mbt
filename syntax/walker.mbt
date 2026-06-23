@@ -179,6 +179,14 @@ pub fn walk_expr(expr : Expr, f : (Node?) -> Bool) -> Unit {
 }
 
 ///|
+/// Performs a depth-first walk of a parameter node, visiting its default-value
+/// expression when present.
+///
+/// Parameters:
+///
+/// - `param` : The parameter node to walk.
+/// - `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
+///   of each parent. Return `false` to skip a subtree.
 fn walk_param(param : Param, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NParam(param))) {
     f(None) |> ignore
@@ -195,6 +203,14 @@ fn walk_param(param : Param, f : (Node?) -> Bool) -> Unit {
 }
 
 ///|
+/// Performs a depth-first walk of a call-argument node, visiting its value
+/// expression.
+///
+/// Parameters:
+///
+/// - `arg` : The argument node to walk.
+/// - `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
+///   of each parent. Return `false` to skip a subtree.
 fn walk_arg(arg : Arg, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NArg(arg))) {
     f(None) |> ignore
@@ -208,6 +224,15 @@ fn walk_arg(arg : Arg, f : (Node?) -> Bool) -> Unit {
 }
 
 ///|
+/// Performs a depth-first walk of a comprehension clause, visiting the target
+/// and iterable expressions of a `for` clause or the condition expression of an
+/// `if` clause.
+///
+/// Parameters:
+///
+/// - `clause` : The comprehension clause to walk.
+/// - `f` : Visitor callback; receives `Some(node)` on entry and `None` on exit
+///   of each parent. Return `false` to skip a subtree.
 fn walk_comp_clause(clause : CompClause, f : (Node?) -> Bool) -> Unit {
   if !f(Some(NCompClause(clause))) {
     f(None) |> ignore

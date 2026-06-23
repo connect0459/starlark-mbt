@@ -216,6 +216,10 @@ fn range_iter(r : StarlarkRange) -> StarlarkIterator {
 }
 
 ///|
+/// Builds a `StarlarkIterator` over the byte elements of a string.
+///
+/// When `e.ords` is `true`, yields each byte value as an `Int`; otherwise
+/// yields each byte as a one-byte `String`.
 fn string_elems_iter(e : StarlarkStringElems) -> StarlarkIterator {
   let bytes = e.s.bytes
   let cur = IterCursor::{ pos: 0 }
@@ -249,6 +253,10 @@ fn string_elems_iter(e : StarlarkStringElems) -> StarlarkIterator {
 }
 
 ///|
+/// Builds a `StarlarkIterator` over the Unicode codepoints of a string.
+///
+/// When `c.ords` is `true`, yields each codepoint as an `Int`; otherwise
+/// yields each codepoint as a single-character `String`.
 fn string_codepoints_iter(c : StarlarkStringCodepoints) -> StarlarkIterator {
   let chars = c.s.raw.to_array()
   let cur = IterCursor::{ pos: 0 }

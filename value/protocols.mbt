@@ -8,17 +8,29 @@
 // ExtVal(obj) variant of the Value enum to integrate with the evaluator.
 
 ///|
+/// Attribute-access protocol for custom Starlark value types.
+/// Implement this trait to support `getattr`, `hasattr`, and `dir` on a
+/// custom type registered as a `Value::ExtVal`.
 pub trait HasAttrs {
   fn get_attr(Self, String) -> Result[Value?, String]
   fn attr_names(Self) -> Array[String]
 }
 
 ///|
+/// Field-assignment protocol for custom Starlark value types.
+/// Implement this trait to support `x.name = v` field assignment on a
+/// custom type registered as a `Value::ExtVal`.
 pub trait HasSetField {
   fn set_field(Self, String, Value) -> Result[Unit, String]
 }
 
 ///|
+/// Total-order comparison protocol for custom Starlark value types.
+/// Implement this trait to define `<`, `<=`, `>`, `>=` on a custom type
+/// registered as a `Value::ExtVal`. By convention, `compare_same_type` is
+/// intended to be called only when both operands have the same Starlark type
+/// name, though this is not yet enforced by the evaluator. Return a negative
+/// int, zero, or positive int to indicate ordering.
 pub trait StarlarkComparable {
   fn compare_same_type(Self, Value) -> Result[Int, String]
 }

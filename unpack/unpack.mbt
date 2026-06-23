@@ -3,6 +3,11 @@
 // built-ins that need to validate and extract positional + keyword arguments.
 
 ///|
+/// Parsed representation of a single parameter specification string.
+///
+/// - `name` : the bare parameter name (suffix sigils stripped)
+/// - `optional` : `true` when the parameter may be absent
+/// - `skip_none` : `true` when a caller-supplied `None` value is treated as absent
 priv struct ParamInfo {
   name : String
   optional : Bool
@@ -10,6 +15,12 @@ priv struct ParamInfo {
 }
 
 ///|
+/// Parses a parameter specification string into a `ParamInfo`.
+///
+/// The suffix sigils control optionality:
+/// - no suffix — required parameter
+/// - `"?"` suffix — optional; a missing argument yields `None`
+/// - `"??"` suffix — optional; a caller-supplied `None` value is also treated as absent
 fn parse_param_spec(s : String) -> ParamInfo {
   if s.has_suffix("??") {
     { name: s[0:s.length() - 2].to_owned(), optional: true, skip_none: true }

@@ -2,6 +2,14 @@
 // All nodes carry a Position for error reporting.
 
 ///|
+/// Represents a literal value in the Starlark AST.
+///
+/// Variants:
+///
+/// - `LitInt` : An integer literal.
+/// - `LitFloat` : A floating-point literal.
+/// - `LitString` : A string literal.
+/// - `LitBytes` : A bytes literal.
 pub(all) enum LiteralVal {
   LitInt(BigInt)
   LitFloat(Double)
@@ -10,6 +18,14 @@ pub(all) enum LiteralVal {
 }
 
 ///|
+/// Represents a unary operator in the Starlark AST.
+///
+/// Variants:
+///
+/// - `OpPlus` : Unary `+`.
+/// - `OpMinus` : Unary `-`.
+/// - `OpBitNot` : Bitwise complement `~`.
+/// - `OpNot` : Logical negation `not`.
 pub(all) enum UnaryOp {
   OpPlus
   OpMinus
@@ -18,6 +34,9 @@ pub(all) enum UnaryOp {
 }
 
 ///|
+/// Represents a binary operator in the Starlark AST.
+///
+/// Covers arithmetic, bitwise, comparison, membership, and logical operators.
 pub(all) enum BinaryOp {
   OpAdd
   OpSub
@@ -43,6 +62,10 @@ pub(all) enum BinaryOp {
 }
 
 ///|
+/// Represents an augmented-assignment operator in the Starlark AST.
+///
+/// Each variant corresponds to one of the `+=`, `-=`, `*=`, `/=`, `//=`,
+/// `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=` forms.
 pub(all) enum AugOp {
   AugAdd
   AugSub
@@ -60,6 +83,17 @@ pub(all) enum AugOp {
 // Param and Expr are mutually recursive.
 
 ///|
+/// Represents a single parameter in a function definition.
+///
+/// Variants:
+///
+/// - `ParamIdent` : A plain positional parameter `name`.
+/// - `ParamDefault` : A parameter with a default value `name = expr`.
+/// - `ParamStarBare` : A bare `*` separator (no name).
+/// - `ParamStarIdent` : A `*name` variadic positional parameter.
+/// - `ParamKwIdent` : A `**name` variadic keyword parameter.
+///
+/// Each variant carries the source `Position` of the parameter token.
 pub(all) enum Param {
   ParamIdent(String, @errors.Position)
   ParamDefault(String, Expr, @errors.Position)
@@ -69,6 +103,17 @@ pub(all) enum Param {
 }
 
 ///|
+/// Represents a single argument at a call site.
+///
+/// Variants:
+///
+/// - `ArgPos` : A positional argument `expr`.
+/// - `ArgKw` : A keyword argument `name = expr`.
+/// - `ArgStarArgs` : A `*expr` unpacked positional argument.
+/// - `ArgKwArgs` : A `**expr` unpacked keyword argument.
+///
+/// `ArgKw`, `ArgStarArgs`, and `ArgKwArgs` carry the source `Position` of
+/// the argument token.
 pub(all) enum Arg {
   ArgPos(Expr)
   ArgKw(String, Expr, @errors.Position)
@@ -77,12 +122,42 @@ pub(all) enum Arg {
 }
 
 ///|
+/// Represents a single clause in a comprehension expression.
+///
+/// Variants:
+///
+/// - `ClauseFor` : A `for lhs in rhs` iteration clause.
+/// - `ClauseIf` : A filtering `if cond` clause.
+///
+/// Each variant carries the source `Position` of the clause keyword.
 pub(all) enum CompClause {
   ClauseFor(Expr, Expr, @errors.Position)
   ClauseIf(Expr, @errors.Position)
 }
 
 ///|
+/// Represents an expression node in the Starlark AST.
+///
+/// Every variant carries a source `Position` as its last field for error
+/// reporting. Variants:
+///
+/// - `EIdent` : An identifier reference.
+/// - `ELiteral` : A literal value.
+/// - `EUnary` : A unary operation.
+/// - `EBinary` : A binary operation.
+/// - `ECond` : A conditional expression `t if cond else f`.
+/// - `EIndex` : A subscript expression `obj[key]`.
+/// - `ESlice` : A slice expression `obj[lo:hi:step]`; absent bounds are `None`.
+/// - `EDot` : An attribute access `obj.attr`.
+/// - `ECall` : A function call `fn(args...)`.
+/// - `EList` : A list display `[...]`.
+/// - `ETuple` : A tuple display `(...)`.
+/// - `EDict` : A dict display `{k: v, ...}`.
+/// - `ESet` : A set display `{...}`.
+/// - `ELambda` : A lambda expression `lambda params: body`.
+/// - `EListComp` : A list comprehension `[expr for ...]`.
+/// - `ESetComp` : A set comprehension `{expr for ...}`.
+/// - `EDictComp` : A dict comprehension `{k: v for ...}`.
 pub(all) enum Expr {
   EIdent(String, @errors.Position)
   ELiteral(LiteralVal, @errors.Position)
@@ -104,6 +179,23 @@ pub(all) enum Expr {
 }
 
 ///|
+/// Represents a statement node in the Starlark AST.
+///
+/// Every variant (except `SExpr`) carries a source `Position` as its last
+/// field for error reporting. Variants:
+///
+/// - `SExpr` : An expression used as a statement.
+/// - `SAssign` : A simple assignment `lhs = rhs`.
+/// - `SAugAssign` : An augmented assignment `lhs op= rhs`.
+/// - `SIf` : An `if / else` block; the else branch may be empty.
+/// - `SFor` : A `for` loop.
+/// - `SWhile` : A `while` loop.
+/// - `SDef` : A function definition `def name(params): body`.
+/// - `SReturn` : A `return` statement; the expression is optional.
+/// - `SBreak` : A `break` statement.
+/// - `SContinue` : A `continue` statement.
+/// - `SPass` : A `pass` statement.
+/// - `SLoad` : A `load` statement; each binding is `(local, orig, pos)`.
 pub(all) enum Stmt {
   SExpr(Expr)
   SAssign(Expr, Expr, @errors.Position)

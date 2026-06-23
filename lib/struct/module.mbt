@@ -3,11 +3,20 @@
 // its string representation does not enumerate its fields.
 
 ///|
+/// Returns the canonical string representation of a module with the given
+/// `name`, formatted as `<module 'name'>`.
 fn module_repr(name : String) -> String {
   "<module \{(@value.Value::String(@value.StarlarkString::new(name))).repr()}>"
 }
 
 ///|
+/// Looks up `name` in a list of module members and returns the first
+/// matching value, or `None` if no entry matches.
+///
+/// Parameters:
+///
+/// - `members` : Attribute name/value pairs to search through linearly.
+/// - `name` : The attribute name to look up.
 fn module_get_attr(
   members : Array[(String, @value.Value)],
   name : String,

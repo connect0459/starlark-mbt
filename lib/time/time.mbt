@@ -53,6 +53,10 @@ let max_int64 : Int64 = 9223372036854775807L
 let min_int64 : Int64 = -9223372036854775808L
 
 ///|
+/// Extracts the nanosecond count from a `time.duration` Starlark value.
+///
+/// Returns `None` if `v` is not a `time.duration` custom value or if the
+/// internal `__ns` attribute is missing or has an unexpected type.
 fn extract_duration_ns(v : @value.Value) -> Int64? {
   match v {
     @value.Value::ExtVal(c) =>
@@ -69,6 +73,10 @@ fn extract_duration_ns(v : @value.Value) -> Int64? {
 }
 
 ///|
+/// Extracts the Unix second and nanosecond components from a `time.time` value.
+///
+/// Returns `None` if `v` is not a `time.time` custom value or if required
+/// internal attributes are missing or have unexpected types.
 fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
   match extract_time_all(v) {
     Some((s, n, _, _)) => Some((s, n))
@@ -77,6 +85,17 @@ fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
 }
 
 ///|
+/// Extracts all internal fields from a `time.time` Starlark value.
+///
+/// Returns `Some((sec, nsec, tz_offset, tz_name))` where:
+///
+/// - `sec` : Unix timestamp in whole seconds.
+/// - `nsec` : Nanosecond offset within the second.
+/// - `tz_offset` : Timezone offset in seconds east of UTC.
+/// - `tz_name` : Display name for the timezone.
+///
+/// Returns `None` if `v` is not a `time.time` custom value or if any required
+/// attribute is absent or has an unexpected type.
 fn extract_time_all(v : @value.Value) -> (Int64, Int, Int, String)? {
   match v {
     @value.Value::ExtVal(c) =>
@@ -104,6 +123,10 @@ fn extract_time_all(v : @value.Value) -> (Int64, Int, Int, String)? {
 }
 
 ///|
+/// Adjusts a (seconds, nanoseconds) pair so that `nsec` falls in `[0, 1e9)`.
+///
+/// When `raw_nsec` overflows or underflows the nanosecond range, the excess is
+/// carried into `sec`.
 fn normalize_time_parts(sec : Int64, raw_nsec : Int) -> (Int64, Int) {
   let nps = ns_per_second.to_int()
   if raw_nsec >= nps {
@@ -116,6 +139,11 @@ fn normalize_time_parts(sec : Int64, raw_nsec : Int) -> (Int64, Int) {
 }
 
 ///|
+/// Computes the floor-division of `a` by `b` for signed 64-bit integers.
+///
+/// Unlike the built-in truncating division, when `b` is positive the result
+/// is rounded toward negative infinity and the remainder `a - result * b`
+/// is always non-negative. Behavior is unspecified for a negative divisor.
 fn floor_div_int64(a : Int64, b : Int64) -> Int64 {
   let q = a / b
   let r = a - q * b
@@ -128,6 +156,16 @@ fn floor_div_int64(a : Int64, b : Int64) -> Int64 {
 
 ///|
 // Howard Hinnant's civil calendar algorithm (2014).
+
+///|
+/// Converts a Unix day number to a proleptic Gregorian (year, month, day) triple.
+///
+/// Parameters:
+///
+/// - `unix_day` : Days since the Unix epoch (1970-01-01 = 0); may be negative.
+///
+/// Returns `(year, month, day)` where `month` is in `1..=12` and `day` is
+/// in `1..=31`.
 fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int, Int) {
   let z = unix_day + 719468L
   let era = floor_div_int64(z, 146097L)
@@ -143,6 +181,15 @@ fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int, Int) {
 }
 
 ///|
+/// Converts a proleptic Gregorian (year, month, day) triple to a Unix day number.
+///
+/// Parameters:
+///
+/// - `year` : Proleptic Gregorian year (may be negative or zero).
+/// - `month` : Month in `1..=12`.
+/// - `day` : Day-of-month in `1..=31`.
+///
+/// Returns the number of days since the Unix epoch (1970-01-01 = 0).
 fn ymd_to_unix_day_i64(year : Int64, month : Int, day : Int) -> Int64 {
   let y = if month <= 2 { year - 1L } else { year }
   let era = floor_div_int64(y, 400L)
@@ -155,6 +202,14 @@ fn ymd_to_unix_day_i64(year : Int64, month : Int, day : Int) -> Int64 {
 }
 
 ///|
+/// Decomposes a Unix second and timezone offset into calendar fields.
+///
+/// Parameters:
+///
+/// - `sec` : Unix timestamp in whole seconds.
+/// - `tz_offset` : Timezone offset in seconds east of UTC.
+///
+/// Returns `(year, month, day, hour, minute, second)` in the given timezone.
 fn decompose_unix_sec(
   sec : Int64,
   tz_offset : Int,
@@ -245,6 +300,17 @@ fn write_year_pad4(buf : StringBuilder, year : Int64) -> Unit {
 }
 
 ///|
+/// Normalizes arbitrary calendar fields (including out-of-range values) to a
+/// Unix (second, nanosecond) pair by carrying overflow between every unit.
+///
+/// Parameters:
+///
+/// - `year`, `month`, `day`, `hour`, `minute`, `second` : Calendar components;
+///   any field may be outside its normal range and will be normalized.
+/// - `nanosecond` : Nanosecond component; may be negative or exceed 1e9.
+///
+/// Returns `(unix_sec, normalized_nsec)` where `normalized_nsec` is in
+/// `[0, 1_000_000_000)`.
 fn normalize_to_unix_sec(
   year : Int64,
   month : Int64,
@@ -446,6 +512,17 @@ fn fmt_frac_digits(frac : Int64, prec : Int) -> String {
 }
 
 ///|
+/// Formats a duration given in nanoseconds as a human-readable string.
+///
+/// Selects the largest unit (`ns`, `µs`, `ms`, or `s`) for which the
+/// magnitude is at least one whole unit, expressing any sub-unit remainder as
+/// a decimal fraction (with optional `h`/`m` prefix for durations of one
+/// second or more). Negative durations are prefixed with `-`. Zero is always
+/// `"0s"`.
+///
+/// Parameters:
+///
+/// - `ns` : Duration in nanoseconds (may be negative).
 fn fmt_duration(ns : Int64) -> String {
   if ns == 0L {
     return "0s"
@@ -513,6 +590,11 @@ fn fmt_duration(ns : Int64) -> String {
 }
 
 ///|
+/// Creates a `time.duration` Starlark value from a nanosecond count.
+///
+/// Parameters:
+///
+/// - `ns` : Duration magnitude in nanoseconds; may be negative.
 fn make_duration(ns : Int64) -> @value.Value {
   @value.Value::ExtVal(
     @value.CustomValue::new(fn() { "time.duration" }, fn() { ns != 0L }, fn() {
@@ -683,6 +765,18 @@ fn parse_duration_component(
 }
 
 ///|
+/// Parses a Go-style duration string (e.g. `"1h30m"`, `"2.5s"`, `"-300ms"`)
+/// into a nanosecond count.
+///
+/// Parameters:
+///
+/// - `s` : Duration string to parse; must consist of one or more
+///   number-unit pairs where the unit is one of `ns`, `us`/`µs`/`μs`,
+///   `ms`, `s`, `m`, or `h`. The special values `"0"`, `"+0"`, and `"-0"`
+///   are also accepted.
+///
+/// Returns `Ok(nanoseconds)` on success, or `Err(message)` describing the
+/// first parse failure.
 fn parse_duration_str(s : String) -> Result[Int64, String] {
   if s == "0" || s == "+0" || s == "-0" {
     return Ok(0L)
@@ -890,6 +984,21 @@ fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
 // (01/02 03:04:05PM '06 -0700): e.g. "2006" = 4-digit year, "January"/"Jan" =
 // full/abbrev month, "Monday"/"Mon" = weekday, "15" = 24-hour, "-0700"/"Z0700"
 // = numeric zone. Each branch advances `i` by the matched mnemonic's length.
+
+///|
+/// Formats calendar fields using a Go reference-time layout string.
+///
+/// Parameters:
+///
+/// - `year`, `month`, `day` : Gregorian date components in the target timezone.
+/// - `hour24` : Hour of day in 24-hour notation (0–23).
+/// - `minute`, `second` : Minute and second within the hour/minute.
+/// - `nsec` : Nanoseconds within the second (0–999_999_999).
+/// - `tz_offset` : Timezone offset in seconds east of UTC.
+/// - `tz_name` : Display name for the timezone (used for the `MST` verb).
+/// - `layout` : Go reference-time layout string.
+///
+/// Returns the formatted time string.
 fn fmt_go_layout(
   year : Int64,
   month : Int,
@@ -1144,6 +1253,11 @@ fn time_equals(sec : Int64, nsec : Int, other : @value.Value) -> Bool {
 }
 
 ///|
+/// Returns the truth value of a `time.time` instant.
+///
+/// A `time.time` is falsy when it equals Go's zero `Time` (January 1, year 1,
+/// 00:00:00 UTC, which corresponds to Unix second -62135596800), and truthy
+/// for every other instant.
 fn time_truth(sec : Int64, nsec : Int) -> Bool {
   // Go's zero Time is January 1, year 1, 00:00:00.000000000 UTC = unix second -62135596800.
   !(sec == -62135596800L && nsec == 0)
@@ -1274,6 +1388,14 @@ fn time_binary(
 }
 
 ///|
+/// Creates a `time.time` Starlark value pinned to an explicit timezone.
+///
+/// Parameters:
+///
+/// - `sec` : Unix timestamp in whole seconds.
+/// - `nsec` : Nanosecond offset within the second (0–999_999_999).
+/// - `tz_offset` : Timezone offset in seconds east of UTC.
+/// - `tz_name` : Display name for the timezone (e.g. `"UTC"`, `"+09:00"`).
 fn make_time_at_zone(
   sec : Int64,
   nsec : Int,
@@ -1299,6 +1421,12 @@ fn make_time_at_zone(
 }
 
 ///|
+/// Creates a UTC `time.time` Starlark value from a Unix second/nanosecond pair.
+///
+/// Parameters:
+///
+/// - `sec` : Unix timestamp in whole seconds.
+/// - `nsec` : Nanosecond offset within the second (0–999_999_999).
 fn make_time(sec : Int64, nsec : Int) -> @value.Value {
   make_time_at_zone(sec, nsec, 0, "UTC")
 }
@@ -1433,6 +1561,15 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
 }
 
 ///|
+/// Parses an RFC 3339 timestamp string into its components.
+///
+/// Parameters:
+///
+/// - `s` : RFC 3339 timestamp string (e.g. `"2006-01-02T15:04:05Z"` or
+///   `"2006-01-02T15:04:05.999999999+09:00"`).
+///
+/// Returns `Ok((unix_sec, nsec, tz_offset_sec, zone_name))` where `unix_sec`
+/// is already adjusted to UTC, or `Err(message)` on any parse failure.
 fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
   let chars = s.to_array()
   let len = chars.length()
@@ -1596,6 +1733,18 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
 
 ///|
 // Read exactly `n` digits at `chars[i]`, returning the value and next index.
+
+///|
+/// Reads exactly `n` decimal digits starting at index `i` in `chars`.
+///
+/// Parameters:
+///
+/// - `chars` : Character array to read from.
+/// - `i` : Starting index.
+/// - `n` : Exact number of digits to consume.
+///
+/// Returns `Some((value, next_index))` on success, or `None` if fewer than
+/// `n` digits are available or a non-digit character is encountered.
 fn read_fixed_digits(chars : Array[Char], i : Int, n : Int) -> (Int, Int)? {
   let len = chars.length()
   if i + n > len {
@@ -1614,6 +1763,19 @@ fn read_fixed_digits(chars : Array[Char], i : Int, n : Int) -> (Int, Int)? {
 
 ///|
 // Read 1 or 2 digits at `chars[i]` (used for the non-padded Go verbs 1/2/3/4/5).
+
+///|
+/// Reads one or two decimal digits starting at index `i` in `chars`.
+///
+/// Consumes two digits when both are present and numeric; otherwise consumes
+/// exactly one digit.
+///
+/// Parameters:
+///
+/// - `chars` : Character array to read from.
+/// - `i` : Starting index.
+///
+/// Returns `Some((value, next_index))`, or `None` if no digit is present at `i`.
 fn read_flex_digits(chars : Array[Char], i : Int) -> (Int, Int)? {
   let len = chars.length()
   if i >= len || chars[i] < '0' || chars[i] > '9' {
@@ -1640,6 +1802,21 @@ fn ascii_lower(c : Char) -> Char {
 ///|
 // Match one of `names[start..start+count]` as a prefix of `chars` at `i`.
 // Returns the matched index and the next value position.
+
+///|
+/// Matches one name from `names[start..start+count]` as a prefix of `chars`
+/// starting at index `i`.
+///
+/// Parameters:
+///
+/// - `chars` : Character array to match against.
+/// - `i` : Starting position within `chars`.
+/// - `names` : Array of candidate names.
+/// - `start` : First index in `names` to consider.
+/// - `count` : Number of names to try.
+///
+/// Returns `Some((matched_index, next_position))` for the first name that
+/// matches exactly, or `None` if no candidate matches.
 fn match_name(
   chars : Array[Char],
   i : Int,
@@ -1670,6 +1847,23 @@ fn match_name(
 ///|
 // Case-insensitive variant of match_name: compares each character after
 // lowercasing so that e.g. "JANUARY" matches "January".
+
+///|
+/// Case-insensitive variant of `match_name`.
+///
+/// Matches one name from `names[start..start+count]` as a prefix of `chars`
+/// at index `i`, comparing each character after ASCII-lowercasing both sides.
+///
+/// Parameters:
+///
+/// - `chars` : Character array to match against.
+/// - `i` : Starting position within `chars`.
+/// - `names` : Array of candidate names.
+/// - `start` : First index in `names` to consider.
+/// - `count` : Number of names to try.
+///
+/// Returns `Some((matched_index, next_position))` for the first name that
+/// matches case-insensitively, or `None` if no candidate matches.
 fn match_name_ci(
   chars : Array[Char],
   i : Int,
@@ -1703,6 +1897,21 @@ fn match_name_ci(
 // Returns (year, month, day, hour, minute, second, nsec, tz_offset) where
 // tz_offset is Some when the value carried an explicit zone (a `Z` literal
 // means offset 0).
+
+///|
+/// Parses a time string against a Go reference-time layout.
+///
+/// Mirrors the token set that `fmt_go_layout` produces. When the value
+/// contains an explicit timezone indicator (`Z`, `±hh:mm`, etc.) the returned
+/// `tz_offset` tuple is `Some((offset_sec, name))`; otherwise it is `None`.
+///
+/// Parameters:
+///
+/// - `value` : The time string to parse.
+/// - `layout` : Go reference-time layout string.
+///
+/// Returns `Ok((year, month, day, hour, minute, second, nsec, tz_offset))` on
+/// success, or `Err(message)` describing the first mismatch.
 fn parse_go_layout(
   value : String,
   layout : String,
@@ -2122,6 +2331,12 @@ let am_pm_upper : FixedArray[String] = ["AM", "PM"]
 let am_pm_lower : FixedArray[String] = ["am", "pm"]
 
 ///|
+/// Returns `true` when the string `s` contains an explicit timezone suffix.
+///
+/// Recognises a trailing `Z`/`z`, or a `+`/`-` sign that immediately follows
+/// the date-time base (after any optional fractional seconds) in an RFC
+/// 3339-shaped string.  Used to distinguish "the value carried an explicit
+/// zone" from "use the requested location as the default zone".
 fn parse_time_has_tz_suffix(s : String) -> Bool {
   let n = s.length()
   if n == 0 {

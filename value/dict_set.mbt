@@ -22,6 +22,10 @@ pub fn StarlarkDict::new() -> StarlarkDict {
 }
 
 ///|
+/// Returns `true` if `self` and `other` share the same underlying storage.
+///
+/// Used to detect aliasing: when two dict variables point to the same
+/// internal hashtable, mutations through one are visible through the other.
 fn StarlarkDict::is_same_storage(
   self : StarlarkDict,
   other : StarlarkDict,
@@ -134,6 +138,16 @@ pub fn StarlarkDict::pop_entry(
 }
 
 ///|
+/// Checks that the dict is mutable, returning `Err` if it is frozen or under
+/// active iteration.
+///
+/// Parameters:
+///
+/// - `verb` : A short description of the attempted operation, included in the
+///   error message (e.g. `"dict.pop"`).
+///
+/// Returns `Ok(())` if the dict can be mutated, or `Err` with a message
+/// describing why mutation is disallowed.
 pub fn StarlarkDict::check_mutable(
   self : StarlarkDict,
   verb : String,
@@ -142,11 +156,19 @@ pub fn StarlarkDict::check_mutable(
 }
 
 ///|
+/// Marks the start of an iteration, incrementing the active-iterator count.
+///
+/// While any iterator is active, mutations that would invalidate traversal
+/// order are rejected.
 fn StarlarkDict::iter_begin(self : StarlarkDict) -> Unit {
   self.ht.iter_begin()
 }
 
 ///|
+/// Marks the end of an iteration, decrementing the active-iterator count.
+///
+/// Must be paired with every call to `iter_begin`; after the last iterator
+/// finishes, mutations are permitted again.
 fn StarlarkDict::iter_end(self : StarlarkDict) -> Unit {
   self.ht.iter_end()
 }
@@ -319,11 +341,19 @@ pub fn StarlarkSet::each(self : StarlarkSet, f : (Value) -> Unit) -> Unit {
 }
 
 ///|
+/// Marks the start of an iteration, incrementing the active-iterator count.
+///
+/// While any iterator is active, mutations that would invalidate traversal
+/// order are rejected.
 fn StarlarkSet::iter_begin(self : StarlarkSet) -> Unit {
   self.ht.iter_begin()
 }
 
 ///|
+/// Marks the end of an iteration, decrementing the active-iterator count.
+///
+/// Must be paired with every call to `iter_begin`; after the last iterator
+/// finishes, mutations are permitted again.
 fn StarlarkSet::iter_end(self : StarlarkSet) -> Unit {
   self.ht.iter_end()
 }
