@@ -104,13 +104,8 @@ fn parse_options_json(options_json : String) -> Result[@eval.Options, String] {
     if err is Some(_) {
       return
     }
-    let key = match k {
-      @value.Value::String(s) => s.raw()
-      _ => {
-        err = Some("option key must be a string")
-        return
-      }
-    }
+    guard k is @value.Value::String(s) else { return }
+    let key = s.raw()
     let flag = match v {
       @value.Value::Bool(b) => b
       _ => {
