@@ -63,3 +63,32 @@ if (data.error) {
   console.log('output :', data.output.trim());
   console.log('globals:', JSON.stringify(data.globals, null, 2));
 }
+
+// exec_script_with_env accepts a Starlark source string and a JSON object
+// string.  Keys in the JSON object become read-only predeclared names inside
+// the script; they are not listed in the returned "globals" map.  Supported
+// value types: null, bool, number, string, array, object (any JSON value that
+// maps to a Starlark value).
+const envJson = JSON.stringify({
+  APP_NAME: 'my-app',
+  VERSION: 3,
+  FEATURES: ['alpha', 'beta'],
+});
+
+const result2 = instance.exports.exec_script_with_env(
+  `
+label = APP_NAME + " v" + str(VERSION)
+feature_count = len(FEATURES)
+print("label:", label)
+`,
+  envJson,
+);
+
+const data2 = JSON.parse(result2);
+
+if (data2.error) {
+  console.error('Starlark error:', data2.error);
+} else {
+  console.log('output :', data2.output.trim());
+  console.log('globals:', JSON.stringify(data2.globals, null, 2));
+}

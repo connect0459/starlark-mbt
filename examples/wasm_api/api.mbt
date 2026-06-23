@@ -25,32 +25,77 @@ fn value_to_json(v : @value.Value) -> String {
 }
 
 ///|
-/// Executes a Starlark script and returns a JSON-encoded result string.
+/// Parses a JSON object string into a `Predeclared` binding set.
+///
+/// Returns `Ok(predeclared)` on success, or `Err(json_error_message)` if
+/// `env_json` is not valid JSON or not a JSON object.
+fn parse_env_json(
+  env_json : String,
+) -> Result[@eval.Predeclared, String] {
+  let parsed = match @json.decode_from_json(env_json, None) {
+    Err(msg) => return Err(msg)
+    Ok(v) => v
+  }
+  match parsed {
+    @value.Value::Dict(d) => {
+      let map : Map[String, @value.Value] = {}
+      d.each(fn(k, v) {
+        if k is @value.Value::String(s) {
+          map[s.raw()] = v
+        }
+      })
+      Ok(@eval.Predeclared::from_map(map))
+    }
+    _ => Err("predeclared env must be a JSON object")
+  }
+}
+
+///|
+/// Executes a Starlark script with host-injected predeclared bindings and
+/// returns a JSON-encoded result string.
+///
+/// `env_json` must be a JSON object whose keys are binding names and whose
+/// values are the corresponding Starlark-compatible JSON values (null, bool,
+/// number, string, array, object). The injected names are visible to the script
+/// before any user-defined globals are evaluated and are **not** included in
+/// the returned `globals` map — unless the script assigns to the same name, in
+/// which case the assignment shadows the predeclared binding and the new value
+/// appears in `globals` as a regular global.
 ///
 /// On success, returns `{"globals":{...},"output":"..."}` where `globals` maps
-/// each top-level binding name to its JSON-encoded value and `output` contains
-/// all text written by `print()` calls during execution.
-///
-/// On failure, returns `{"error":"..."}` with the error message.
+/// each top-level binding to its JSON-encoded value and `output` contains all
+/// text written by `print()`. On failure (invalid `env_json`, parse error, or
+/// runtime error), returns `{"error":"..."}`.
 ///
 /// **BigInt precision**: Starlark `Int` values are arbitrary-precision integers
 /// serialized as bare JSON number tokens. JavaScript's `JSON.parse` converts
 /// them to IEEE 754 doubles, so integers whose absolute value exceeds 2^53 will
 /// lose precision silently. If lossless handling of large integers is required,
-/// consumers should treat the `Int` fields as strings (pass them through a
+/// consumers should treat `Int` fields as strings (pass them through a
 /// BigInt-aware JSON parser) rather than relying on `JSON.parse`.
 ///
 /// This function is exported for the `wasm-gc` and `js` build targets via the
 /// `link` options in `moon.pkg`, making it callable from a JavaScript host
 /// through the WebAssembly JS API or an ES module import.
-pub fn exec_script(src : String) -> String {
+pub fn exec_script_with_env(src : String, env_json : String) -> String {
+  let predeclared = match parse_env_json(env_json) {
+    Err(msg) => return "{\"error\":\{encode_str(msg)}}"
+    Ok(p) => p
+  }
   let out_buf = @buffer.Buffer::Buffer()
-  let thread = @eval.Thread::new("exec_script")
+  let thread = @eval.Thread::new("exec_script_with_env")
   thread.set_print(fn(_, bytes) {
     out_buf.write_bytes(bytes[:])
     out_buf.write_byte(b'\n')
   })
-  match @eval.exec_file(thread, "script.star", src, @eval.Options::default()) {
+  match
+    @eval.exec_file_with_predeclared(
+      thread,
+      "script.star",
+      src,
+      @eval.Options::default(),
+      predeclared,
+    ) {
     Err(e) => "{\"error\":\{encode_str(e.msg())}}"
     Ok(m) => {
       let gbuf = StringBuilder::new()
@@ -82,4 +127,18 @@ pub fn exec_script(src : String) -> String {
       "{\"globals\":\{gbuf.to_string()},\"output\":\{out_json}}"
     }
   }
+}
+
+///|
+/// Executes a Starlark script and returns a JSON-encoded result string.
+///
+/// Equivalent to `exec_script_with_env(src, "{}")` with no predeclared
+/// bindings. See that function for the full output format, BigInt precision
+/// notes, and predeclared-vs-global semantics.
+///
+/// This function is exported for the `wasm-gc` and `js` build targets via the
+/// `link` options in `moon.pkg`, making it callable from a JavaScript host
+/// through the WebAssembly JS API or an ES module import.
+pub fn exec_script(src : String) -> String {
+  exec_script_with_env(src, "{}")
 }
