@@ -113,3 +113,72 @@ test "value_to_json: nested List maps to nested JSON array" {
     "[[1,2]]",
   )
 }
+
+///|
+test "parse_options_json: empty object returns default allow_set=true" {
+  match parse_options_json("{}") {
+    Ok(opts) => assert_eq(opts.allow_set(), true)
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}
+
+///|
+test "parse_options_json: allow_recursion true sets flag" {
+  match parse_options_json("{\"allow_recursion\": true}") {
+    Ok(opts) => assert_eq(opts.allow_recursion(), true)
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}
+
+///|
+test "parse_options_json: allow_set false overrides default true" {
+  match parse_options_json("{\"allow_set\": false}") {
+    Ok(opts) => assert_eq(opts.allow_set(), false)
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}
+
+///|
+test "parse_options_json: all nine flags are accepted" {
+  let json_str = "{\"allow_set\":false,\"allow_recursion\":true,\"allow_lambda\":false,\"allow_while\":false,\"allow_bytes\":false,\"allow_float\":false,\"allow_global_reassign\":true,\"allow_top_level_control\":true,\"load_binds_globally\":true}"
+  match parse_options_json(json_str) {
+    Ok(opts) => {
+      assert_eq(opts.allow_set(), false)
+      assert_eq(opts.allow_recursion(), true)
+      assert_eq(opts.allow_top_level_control(), true)
+    }
+    Err(e) => fail("unexpected error: \{e}")
+  }
+}
+
+///|
+test "parse_options_json: unknown key returns error containing the key name" {
+  match parse_options_json("{\"unknown_flag\": true}") {
+    Ok(_) => fail("expected error for unknown key")
+    Err(e) => assert_true(e.contains("unknown_flag"))
+  }
+}
+
+///|
+test "parse_options_json: non-boolean value returns error mentioning key and boolean" {
+  match parse_options_json("{\"allow_set\": 1}") {
+    Ok(_) => fail("expected error for non-boolean value")
+    Err(e) => assert_true(e.contains("allow_set") && e.contains("boolean"))
+  }
+}
+
+///|
+test "parse_options_json: non-object JSON returns error mentioning object" {
+  match parse_options_json("[true, false]") {
+    Ok(_) => fail("expected error for non-object JSON")
+    Err(e) => assert_true(e.contains("object"))
+  }
+}
+
+///|
+test "parse_options_json: invalid JSON string returns error" {
+  match parse_options_json("not-valid-json") {
+    Ok(_) => fail("expected error for invalid JSON")
+    Err(_) => ()
+  }
+}

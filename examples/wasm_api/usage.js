@@ -44,8 +44,7 @@ const instance = await WebAssembly.instantiate(mod, {
 
 // exec_script accepts a Starlark source string and returns a JSON string.
 // Default dialect: allow_set, allow_lambda, allow_bytes, allow_float all true;
-// top-level for/while/if and recursion disabled. Options are not configurable
-// from JS in this version; dialect control is tracked in issue #280.
+// top-level for/while/if and recursion disabled.
 const result = instance.exports.exec_script(`
 greeting = "hello from wasm-gc Starlark!"
 numbers  = [1, 2, 3, 4, 5]
@@ -91,4 +90,38 @@ if (data2.error) {
 } else {
   console.log('output :', data2.output.trim());
   console.log('globals:', JSON.stringify(data2.globals, null, 2));
+}
+
+// exec_script_with_options accepts a Starlark source string and a JSON object
+// string that configures dialect flags.  Recognised keys (all boolean):
+//   allow_set, allow_recursion, allow_lambda, allow_while, allow_bytes,
+//   allow_float, allow_global_reassign, allow_top_level_control,
+//   load_binds_globally.
+// Missing keys default to Options::default().  Unknown keys or non-boolean
+// values produce {"error":"..."} instead of silently falling back.
+const optionsJson = JSON.stringify({
+  allow_recursion: true,
+  allow_top_level_control: true,
+});
+
+const result3 = instance.exports.exec_script_with_options(
+  `
+def fib(n):
+  if n <= 1:
+    return n
+  return fib(n - 1) + fib(n - 2)
+
+results = [fib(i) for i in range(8)]
+print("fibonacci:", results)
+`,
+  optionsJson,
+);
+
+const data3 = JSON.parse(result3);
+
+if (data3.error) {
+  console.error('Starlark error:', data3.error);
+} else {
+  console.log('output :', data3.output.trim());
+  console.log('globals:', JSON.stringify(data3.globals, null, 2));
 }

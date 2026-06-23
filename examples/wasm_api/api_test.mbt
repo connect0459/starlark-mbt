@@ -96,3 +96,64 @@ test "exec_script_with_env: non-object JSON env returns error" {
   let result = exec_script_with_env("x = 1", "[1,2,3]")
   assert_true(result.has_prefix("{\"error\":"))
 }
+
+///|
+test "exec_script_with_options: empty options uses default dialect" {
+  assert_eq(
+    exec_script_with_options("x = 42", "{}"),
+    "{\"globals\":{\"x\":42},\"output\":\"\"}",
+  )
+}
+
+///|
+test "exec_script_with_options: allow_top_level_control true permits top-level if" {
+  let result = exec_script_with_options(
+    "if True:\n  x = 1",
+    "{\"allow_top_level_control\": true}",
+  )
+  assert_true(result.contains("\"x\":1"))
+}
+
+///|
+test "exec_script_with_options: allow_top_level_control false (default) forbids top-level if" {
+  let result = exec_script_with_options("if True:\n  x = 1", "{}")
+  assert_true(result.has_prefix("{\"error\":"))
+}
+
+///|
+test "exec_script_with_options: allow_set false disables set literals" {
+  let result = exec_script_with_options("s = {1, 2, 3}", "{\"allow_set\": false}")
+  assert_true(result.has_prefix("{\"error\":"))
+}
+
+///|
+test "exec_script_with_options: allow_recursion true enables recursive functions" {
+  let src = "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\nresult = fact(5)"
+  let result = exec_script_with_options(src, "{\"allow_recursion\": true}")
+  assert_true(result.contains("\"result\":120"))
+}
+
+///|
+test "exec_script_with_options: allow_recursion false (default) rejects recursive calls" {
+  let src = "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\nresult = fact(5)"
+  let result = exec_script_with_options(src, "{}")
+  assert_true(result.has_prefix("{\"error\":"))
+}
+
+///|
+test "exec_script_with_options: invalid JSON options returns error" {
+  let result = exec_script_with_options("x = 1", "not-json")
+  assert_true(result.has_prefix("{\"error\":"))
+}
+
+///|
+test "exec_script_with_options: unknown option key returns error" {
+  let result = exec_script_with_options("x = 1", "{\"unknown_flag\": true}")
+  assert_true(result.has_prefix("{\"error\":"))
+}
+
+///|
+test "exec_script_with_options: non-boolean option value returns error" {
+  let result = exec_script_with_options("x = 1", "{\"allow_set\": 1}")
+  assert_true(result.has_prefix("{\"error\":"))
+}
