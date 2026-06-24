@@ -2389,6 +2389,14 @@ pub let now_override_key : String = "time.now"
 /// - `nsec` : Nanoseconds offset within the second (0..999_999_999).
 ///
 /// Returns a `time.time` Starlark value representing the given instant.
+///
+/// ```mbt check
+/// test {
+///   // The Unix epoch: 1970-01-01 00:00:00 UTC.
+///   let v = time_value(0L, 0)
+///   inspect(@value.Value::type_name(v), content="time.time")
+/// }
+/// ```
 pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
   make_time(sec, nsec)
 }
@@ -2829,6 +2837,23 @@ fn make_is_valid_timezone_fn() -> @value.Value {
 /// `duration` constructor as attributes.
 ///
 /// Returns the constructed `time` module as a `@value.Value::Module`.
+///
+/// ```mbt check
+/// test {
+///   let m = time_module()
+///   guard m is @value.Value::Module(mod) else { fail("expected module") }
+///   inspect(mod.name(), content="time")
+///   // Parsing functions are present.
+///   inspect(mod.attr_names().contains("parse_time"), content="true")
+///   inspect(mod.attr_names().contains("parse_duration"), content="true")
+///   // Duration constants are pre-built attributes.
+///   inspect(mod.attr_names().contains("second"), content="true")
+///   inspect(mod.attr_names().contains("hour"), content="true")
+///   // Duration values carry the "time.duration" type name.
+///   guard mod.get("second") is Some(sec) else { fail("second not found") }
+///   inspect(@value.Value::type_name(sec), content="time.duration")
+/// }
+/// ```
 pub fn time_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["now"] = make_now_fn()
