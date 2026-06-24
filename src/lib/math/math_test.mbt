@@ -640,8 +640,6 @@ fn expect_float_relative(
 ///|
 test "math_module: cosh is correct for large arguments (22 <= |x| < 710)" {
   let m = math_module()
-  // go/CPython reference values; the broken @math.cosh returns exp(x/2) instead
-  // of exp(x)/2 for this range, producing values orders of magnitude too small.
   expect_float_relative(
     "cosh(22)",
     call1(m, "cosh", fv(22.0)),
