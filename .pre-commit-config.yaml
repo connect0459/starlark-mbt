@@ -6,15 +6,15 @@ repos:
         args: [--markdown-linebreak-ext=md]
         exclude: |
           (?x)
-          ^internal/(repl|starlarktest)/vendor/       # vendored upstream sources
-          | ^internal/starlarktest/.*_star_test\.mbt$ # generated pre-build embed outputs
+          ^src/internal/(repl|starlarktest)/vendor/       # vendored upstream sources
+          | ^src/internal/starlarktest/.*_star_test\.mbt$ # generated pre-build embed outputs
       - id: end-of-file-fixer
         exclude: |
           (?x)
-          moon\.pkg$                                  # moon package manifests (DSL, no trailing newline)
-          | pkg\.generated\.mbti$                     # generated interface files
-          | ^internal/(repl|starlarktest)/vendor/     # vendored upstream sources
-          | ^internal/starlarktest/.*_star_test\.mbt$ # generated pre-build embed outputs
+          moon\.pkg$                                      # moon package manifests (DSL, no trailing newline)
+          | pkg\.generated\.mbti$                         # generated interface files
+          | ^src/internal/(repl|starlarktest)/vendor/     # vendored upstream sources
+          | ^src/internal/starlarktest/.*_star_test\.mbt$ # generated pre-build embed outputs
       - id: check-json
       - id: check-yaml
       - id: check-added-large-files
