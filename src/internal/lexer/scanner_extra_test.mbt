@@ -384,8 +384,6 @@ test "scan: unbalanced ')' after expression" {
   assert_true(scan("a = max(range(10)))").contains("unexpected ')'"))
 }
 
-// --- M-7: \x escape classification (truncated vs invalid) ---
-
 ///|
 test "scan: \\xg truncated because second slot is a string terminator" {
   let msg = scan("\"\\xg\"")
@@ -398,8 +396,6 @@ test "scan: \\xgg invalid because both slot chars are non-hex visible" {
   assert_true(msg.contains("invalid escape sequence \\xgg"))
 }
 
-// --- M-7: \u/\U escape prints the full fixed-width slot ---
-
 ///|
 test "scan: invalid \\u slot prints all four chars in the error" {
   let msg = scan("\"\\u1g34\"")
@@ -411,8 +407,6 @@ test "scan: invalid \\U slot prints all eight chars in the error" {
   let msg = scan("\"\\U0000001g\"")
   assert_true(msg.contains("invalid escape sequence \\U0000001g"))
 }
-
-// --- M-8: unterminated/newline errors anchor at pre-prefix token start ---
 
 ///|
 test "scan: unterminated raw string anchors at the prefix character column" {
@@ -449,8 +443,6 @@ test "scan: unprefixed unterminated string still anchors at the quote column" {
   assert_true(msg.contains("unexpected EOF in string"))
 }
 
-// --- L-3: unexpected input character includes the offending rune ---
-
 ///|
 test "scan: unexpected input character includes the offending rune" {
   let msg = scan("a @ b")
@@ -469,16 +461,12 @@ test "scan: unexpected multi-byte character shows the full Unicode rune" {
   assert_true(msg.contains("unexpected input character '☃'"))
 }
 
-// --- L-1: invalid float literal carries no colon-literal suffix ---
-
 ///|
 test "scan: overflow float literal emits bare message without literal suffix" {
   let msg = scan("1.8e308")
   assert_true(msg.contains("invalid float literal"))
   assert_false(msg.contains(": 1.8e308"))
 }
-
-// --- L-2: non-ASCII hex escape includes sequence and UTF-8 encoding hint ---
 
 ///|
 test "scan: non-ASCII hex escape includes escape sequence and encoding hint" {

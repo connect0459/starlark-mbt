@@ -933,8 +933,6 @@ test "eval_expr: t in set with deeply nested element raises hash depth error" {
   }
 }
 
-// --- StringElems / StringCodepoints value equality (M-2) ---
-
 ///|
 test "eval_expr: string.elems() == string.elems() for same string returns True" {
   match eval_op("\"ab\".elems() == \"ab\".elems()") {
