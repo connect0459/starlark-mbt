@@ -128,6 +128,15 @@ pub fn Options::load_binds_globally(self : Options) -> Bool {
 /// - `v` : The new value for the `load_binds_globally` flag.
 ///
 /// Returns a new `Options` with the `load_binds_globally` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_load_binds_globally(true)
+///   inspect(opts.load_binds_globally(), content="true")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_set(), content="true")
+/// }
+/// ```
 pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
   { ..self, load_binds_globally: v }
 }
@@ -163,6 +172,15 @@ pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_set` flag.
 ///
 /// Returns a new `Options` with the `allow_set` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_set(false)
+///   inspect(opts.allow_set(), content="false")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_recursion(), content="false")
+/// }
+/// ```
 pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
   { ..self, allow_set: v }
 }
@@ -176,6 +194,15 @@ pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_global_reassign` flag.
 ///
 /// Returns a new `Options` with the `allow_global_reassign` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_global_reassign(true)
+///   inspect(opts.allow_global_reassign(), content="true")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_float(), content="true")
+/// }
+/// ```
 pub fn Options::with_allow_global_reassign(self : Options, v : Bool) -> Options {
   { ..self, allow_global_reassign: v }
 }
@@ -189,6 +216,15 @@ pub fn Options::with_allow_global_reassign(self : Options, v : Bool) -> Options 
 /// - `v` : The new value for the `allow_lambda` flag.
 ///
 /// Returns a new `Options` with the `allow_lambda` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_lambda(false)
+///   inspect(opts.allow_lambda(), content="false")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_recursion(), content="false")
+/// }
+/// ```
 pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
   { ..self, allow_lambda: v }
 }
@@ -202,6 +238,15 @@ pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_while` flag.
 ///
 /// Returns a new `Options` with the `allow_while` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_while(true)
+///   inspect(opts.allow_while(), content="true")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_float(), content="true")
+/// }
+/// ```
 pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
   { ..self, allow_while: v }
 }
@@ -215,6 +260,15 @@ pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_bytes` flag.
 ///
 /// Returns a new `Options` with the `allow_bytes` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_bytes(false)
+///   inspect(opts.allow_bytes(), content="false")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_recursion(), content="false")
+/// }
+/// ```
 pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
   { ..self, allow_bytes: v }
 }
@@ -228,6 +282,15 @@ pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_float` flag.
 ///
 /// Returns a new `Options` with the `allow_float` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_float(false)
+///   inspect(opts.allow_float(), content="false")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_lambda(), content="true")
+/// }
+/// ```
 pub fn Options::with_allow_float(self : Options, v : Bool) -> Options {
   { ..self, allow_float: v }
 }
@@ -241,6 +304,15 @@ pub fn Options::with_allow_float(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_top_level_control` flag.
 ///
 /// Returns a new `Options` with the `allow_top_level_control` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_top_level_control(true)
+///   inspect(opts.allow_top_level_control(), content="true")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_float(), content="true")
+/// }
+/// ```
 pub fn Options::with_allow_top_level_control(
   self : Options,
   v : Bool,
@@ -1163,6 +1235,30 @@ pub fn exec_file(
 ///   the standard built-ins.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let uni = Universe::from_map({ "answer": @value.Value::new_int(42L) })
+///   let m = exec_file_with_universe(
+///     thread,
+///     "u.star",
+///     "x = answer * 2",
+///     Options::default(),
+///     uni,
+///   ).unwrap()
+///   inspect(m.get("x").unwrap().repr(), content="84")
+///   // A syntax error yields EvalError.
+///   let err = exec_file_with_universe(
+///     Thread::new("t"),
+///     "bad.star",
+///     "???",
+///     Options::default(),
+///     uni,
+///   )
+///   inspect(err is Err(_), content="true")
+/// }
+/// ```
 pub fn exec_file_with_universe(
   thread : Thread,
   filename : String,
@@ -1205,6 +1301,23 @@ pub fn exec_file_with_universe(
 /// - `predeclared` : Extra per-execution bindings injected before user globals.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let pre = Predeclared::from_map({ "base": @value.Value::new_int(10L) })
+///   let m = exec_file_with_predeclared(
+///     thread,
+///     "p.star",
+///     "result = base + 5",
+///     Options::default(),
+///     pre,
+///   ).unwrap()
+///   inspect(m.get("result").unwrap().repr(), content="15")
+///   // `base` is predeclared, not exported as a module global.
+///   inspect(m.get("base") is None, content="true")
+/// }
+/// ```
 pub fn exec_file_with_predeclared(
   thread : Thread,
   filename : String,
@@ -1251,6 +1364,20 @@ pub fn exec_file_with_predeclared(
 /// - `opts` : Feature flags controlling which dialect features are active.
 ///
 /// Returns `Ok(())` on success, or an `EvalError` on failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let globals = @value.StringDict::new()
+///   // First chunk: define x.
+///   exec_repl_chunk(thread, "<repl>", "x = 6", globals, Options::default())
+///   |> Result::unwrap
+///   // Second chunk: x is still visible; bindings accumulate across calls.
+///   exec_repl_chunk(thread, "<repl>", "y = x * 7", globals, Options::default())
+///   |> Result::unwrap
+///   inspect(globals.get("y").unwrap().repr(), content="42")
+/// }
+/// ```
 pub fn exec_repl_chunk(
   thread : Thread,
   filename : String,
