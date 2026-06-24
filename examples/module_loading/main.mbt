@@ -1,3 +1,4 @@
+///|
 fn main {
   let utils_src =
     #|def clamp(x, lo, hi):

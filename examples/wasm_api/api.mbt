@@ -3,9 +3,8 @@
 /// `lib/json.encode_to_json`. All escaping is handled by `lib/json`'s string
 /// quoting logic, ensuring consistency with the rest of the project.
 fn encode_str(s : String) -> String {
-  match @json.encode_to_json(
-    @value.Value::String(@value.StarlarkString::new(s)),
-  ) {
+  match
+    @json.encode_to_json(@value.Value::String(@value.StarlarkString::new(s))) {
     Ok(js) => js
     Err(e) => abort("unexpected encode error for string: \{e}")
   }
@@ -46,11 +45,12 @@ fn format_module(m : @eval.Module, out_buf : @buffer.Buffer) -> String {
     }
   }
   gbuf.write_string("}")
-  let out_json = match @json.encode_to_json(
-    @value.Value::String(
-      @value.StarlarkString::from_bytes(out_buf.contents()),
-    ),
-  ) {
+  let out_json = match
+    @json.encode_to_json(
+      @value.Value::String(
+        @value.StarlarkString::from_bytes(out_buf.contents()),
+      ),
+    ) {
     Ok(s) => s
     Err(e) => abort("unexpected encode error for output buffer: \{e}")
   }
@@ -72,7 +72,9 @@ fn do_exec(
     out_buf.write_byte(b'\n')
   })
   match
-    @eval.exec_file_with_predeclared(thread, "script.star", src, opts, predeclared) {
+    @eval.exec_file_with_predeclared(
+      thread, "script.star", src, opts, predeclared,
+    ) {
     Err(e) => "{\"error\":\{encode_str(e.msg())}}"
     Ok(m) => format_module(m, out_buf)
   }
@@ -123,7 +125,8 @@ fn parse_options_json(options_json : String) -> Result[@eval.Options, String] {
       "allow_bytes" => opts = opts.with_allow_bytes(flag)
       "allow_float" => opts = opts.with_allow_float(flag)
       "allow_global_reassign" => opts = opts.with_allow_global_reassign(flag)
-      "allow_top_level_control" => opts = opts.with_allow_top_level_control(flag)
+      "allow_top_level_control" =>
+        opts = opts.with_allow_top_level_control(flag)
       "load_binds_globally" => opts = opts.with_load_binds_globally(flag)
       _ => {
         err = Some("unknown option: \"\{key}\"")
@@ -142,9 +145,7 @@ fn parse_options_json(options_json : String) -> Result[@eval.Options, String] {
 ///
 /// Returns `Ok(predeclared)` on success, or `Err(json_error_message)` if
 /// `env_json` is not valid JSON or not a JSON object.
-fn parse_env_json(
-  env_json : String,
-) -> Result[@eval.Predeclared, String] {
+fn parse_env_json(env_json : String) -> Result[@eval.Predeclared, String] {
   let parsed = match @json.decode_from_json(env_json, None) {
     Err(msg) => return Err(msg)
     Ok(v) => v
@@ -152,11 +153,7 @@ fn parse_env_json(
   match parsed {
     @value.Value::Dict(d) => {
       let map : Map[String, @value.Value] = {}
-      d.each(fn(k, v) {
-        if k is @value.Value::String(s) {
-          map[s.raw()] = v
-        }
-      })
+      d.each(fn(k, v) { if k is @value.Value::String(s) { map[s.raw()] = v } })
       Ok(@eval.Predeclared::from_map(map))
     }
     _ => Err("predeclared env must be a JSON object")

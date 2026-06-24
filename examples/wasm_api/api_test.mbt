@@ -49,7 +49,9 @@ test "exec_script_with_env: empty env behaves like exec_script" {
 ///|
 test "exec_script_with_env: string constant is readable from script" {
   assert_eq(
-    exec_script_with_env("result = MY_CONST + \"!\"", "{\"MY_CONST\":\"hello\"}"),
+    exec_script_with_env(
+      "result = MY_CONST + \"!\"", "{\"MY_CONST\":\"hello\"}",
+    ),
     "{\"globals\":{\"result\":\"hello!\"},\"output\":\"\"}",
   )
 }
@@ -108,8 +110,7 @@ test "exec_script_with_options: empty options uses default dialect" {
 ///|
 test "exec_script_with_options: allow_top_level_control true permits top-level if" {
   let result = exec_script_with_options(
-    "if True:\n  x = 1",
-    "{\"allow_top_level_control\": true}",
+    "if True:\n  x = 1", "{\"allow_top_level_control\": true}",
   )
   assert_true(result.contains("\"x\":1"))
 }
@@ -122,7 +123,9 @@ test "exec_script_with_options: allow_top_level_control false (default) forbids 
 
 ///|
 test "exec_script_with_options: allow_set false disables set literals" {
-  let result = exec_script_with_options("s = {1, 2, 3}", "{\"allow_set\": false}")
+  let result = exec_script_with_options(
+    "s = {1, 2, 3}", "{\"allow_set\": false}",
+  )
   assert_true(result.has_prefix("{\"error\":"))
 }
 

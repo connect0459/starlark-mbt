@@ -46,18 +46,12 @@ test "value_to_json: finite Float maps to number" {
 
 ///|
 test "value_to_json: NaN falls back to repr string" {
-  assert_eq(
-    value_to_json(@value.Value::Float(@double.not_a_number)),
-    "\"nan\"",
-  )
+  assert_eq(value_to_json(@value.Value::Float(@double.not_a_number)), "\"nan\"")
 }
 
 ///|
 test "value_to_json: positive Inf falls back to repr string" {
-  assert_eq(
-    value_to_json(@value.Value::Float(@double.infinity)),
-    "\"+inf\"",
-  )
+  assert_eq(value_to_json(@value.Value::Float(@double.infinity)), "\"+inf\"")
 }
 
 ///|

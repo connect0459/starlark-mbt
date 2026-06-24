@@ -1,3 +1,4 @@
+///|
 fn main {
   let thread = @eval.Thread::new("main")
   let src =
@@ -5,7 +6,13 @@ fn main {
     #|evens = [x for x in range(20) if x % 2 == 0]
     #|word_lengths = {w: len(w) for w in ["apple", "banana", "cherry"]}
     #|flat = [x for row in [[1, 2], [3, 4], [5, 6]] for x in row]
-  match @eval.exec_file(thread, "comprehensions.star", src, @eval.Options::default()) {
+  match
+    @eval.exec_file(
+      thread,
+      "comprehensions.star",
+      src,
+      @eval.Options::default(),
+    ) {
     Ok(m) => {
       match m.get("squares") {
         Some(v) => println("squares (\{@value.len_of(v)} items) = \{v.repr()}")

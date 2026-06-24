@@ -10,7 +10,7 @@
 # the compiled CLI binary).
 set -uo pipefail
 
-moon build cmd/starlark --target native >/dev/null 2>&1 || {
+moon build src/cmd/starlark --target native >/dev/null 2>&1 || {
     echo "test-repl-piped: native build failed" >&2
     exit 1
 }

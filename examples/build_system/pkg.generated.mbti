@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "examples/build_system"
+
+// Values
+
+// Errors
+
+// Types and methods
+type Rule
+
+// Type aliases
+
+// Traits
+

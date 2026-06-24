@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "examples/wasm_api"
+
+// Values
+pub fn exec_script(String) -> String
+
+pub fn exec_script_with_env(String, String) -> String
+
+pub fn exec_script_with_options(String, String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
