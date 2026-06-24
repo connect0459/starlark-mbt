@@ -1235,6 +1235,30 @@ pub fn exec_file(
 ///   the standard built-ins.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let uni = Universe::from_map({ "answer": @value.Value::new_int(42L) })
+///   let m = exec_file_with_universe(
+///     thread,
+///     "u.star",
+///     "x = answer * 2",
+///     Options::default(),
+///     uni,
+///   ).unwrap()
+///   inspect(m.get("x").unwrap().repr(), content="84")
+///   // A syntax error yields EvalError.
+///   let err = exec_file_with_universe(
+///     Thread::new("t"),
+///     "bad.star",
+///     "???",
+///     Options::default(),
+///     uni,
+///   )
+///   inspect(err is Err(_), content="true")
+/// }
+/// ```
 pub fn exec_file_with_universe(
   thread : Thread,
   filename : String,
@@ -1277,6 +1301,23 @@ pub fn exec_file_with_universe(
 /// - `predeclared` : Extra per-execution bindings injected before user globals.
 ///
 /// Returns the frozen `Module`, or an `EvalError` on failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let pre = Predeclared::from_map({ "base": @value.Value::new_int(10L) })
+///   let m = exec_file_with_predeclared(
+///     thread,
+///     "p.star",
+///     "result = base + 5",
+///     Options::default(),
+///     pre,
+///   ).unwrap()
+///   inspect(m.get("result").unwrap().repr(), content="15")
+///   // `base` is predeclared, not exported as a module global.
+///   inspect(m.get("base") is None, content="true")
+/// }
+/// ```
 pub fn exec_file_with_predeclared(
   thread : Thread,
   filename : String,
@@ -1323,6 +1364,20 @@ pub fn exec_file_with_predeclared(
 /// - `opts` : Feature flags controlling which dialect features are active.
 ///
 /// Returns `Ok(())` on success, or an `EvalError` on failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let globals = @value.StringDict::new()
+///   // First chunk: define x.
+///   exec_repl_chunk(thread, "<repl>", "x = 6", globals, Options::default())
+///   |> Result::unwrap
+///   // Second chunk: x is still visible; bindings accumulate across calls.
+///   exec_repl_chunk(thread, "<repl>", "y = x * 7", globals, Options::default())
+///   |> Result::unwrap
+///   inspect(globals.get("y").unwrap().repr(), content="42")
+/// }
+/// ```
 pub fn exec_repl_chunk(
   thread : Thread,
   filename : String,
