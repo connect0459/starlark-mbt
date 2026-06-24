@@ -8,15 +8,17 @@ When cutting a new release, update THREE places in this file:
     - Change [Unreleased] to compare the new tag against HEAD.
     - Add [X.Y.Z] comparing the new tag against the previous tag.
 3. After the PR is merged, create a GitHub Release (this creates the remote
-   tag; pass `--target` to pin it to the exact merge commit SHA):
+   tag). Pull main first so HEAD is the merge commit, then use `--target main`
+   or pass the full 40-character SHA — the GitHub API rejects abbreviated SHAs:
 
     ```console
+    git checkout main && git pull origin main
     gh release create vX.Y.Z --title "vX.Y.Z" \
-      --notes-file .connect0459/gh-pr-draft.md \
-      --target <merge-commit-sha>
+      --notes-file path/to/gh-release-draft.md \
+      --target main
     ```
 
-see: <https://github.com/connect0459/starlark-mbt/pull/211>
+see: <https://github.com/connect0459/starlark-mbt/pull/306>
 -->
 
 All notable changes to this project will be documented in this file.
