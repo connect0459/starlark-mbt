@@ -60,6 +60,12 @@ This project may be released publicly. All of the following must be written in *
   - **`just verify`** — run the full CI-equivalent check across all four
     backends (`js`, `wasm`, `wasm-gc`, `native`) before opening a PR.
 
+- `examples/moon.mod` imports `connect0459/starlark@0.0.0` as a sentinel.
+  The `@0.0.0` version is intentional: the workspace resolver (`moon.work`)
+  always shadows it with the local source, so the pin is never used for
+  resolution and does not need to track `moon.mod`'s version on bumps.
+  Do not change it to a real version number.
+
 - When a change affects the public API, update the documentation in the same PR
   so it stays in sync with the implementation:
   - **Per-package `README.mbt.md`** — the single documentation source for each

@@ -15,3 +15,7 @@ description = "The Starlark configuration language, implemented in Moonbit"
 import {
   "moonbitlang/x@0.4.45",
 }
+
+options(
+  source: "src",
+)

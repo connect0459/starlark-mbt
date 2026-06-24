@@ -1,3 +1,4 @@
+///|
 fn main {
   let thread = @eval.Thread::new("main")
   let src =
@@ -7,7 +8,8 @@ fn main {
     #|csv = "alice,30,engineer"
     #|parts = csv.split(",")
     #|formatted = "name={} age={} role={}".format(*parts)
-  match @eval.exec_file(thread, "string_fmt.star", src, @eval.Options::default()) {
+  match
+    @eval.exec_file(thread, "string_fmt.star", src, @eval.Options::default()) {
     Ok(m) => {
       match m.get("joined") {
         Some(v) => {

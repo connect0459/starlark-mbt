@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "examples/fibonacci"
+package "connect0459/starlark_examples/fibonacci"
 
 // Values
 

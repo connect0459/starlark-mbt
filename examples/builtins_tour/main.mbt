@@ -1,3 +1,4 @@
+///|
 fn main {
   let thread = @eval.Thread::new("main")
   let src =
