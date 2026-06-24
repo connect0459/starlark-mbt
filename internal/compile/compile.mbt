@@ -17,6 +17,9 @@ pub suberror CompileErr {
 // --- program-level compiler state ---
 
 ///|
+/// Program-level compiler state. Accumulates the constant pool, interned name
+/// table, function table, and global bindings shared across all functions in a
+/// single compiled module.
 priv struct Pcomp {
   constants : Array[Const]
   names : Array[String]
@@ -65,6 +68,9 @@ fn Pcomp::add_name(self : Pcomp, name : String) -> Int {
 // code serializes identically to direct emission.
 
 ///|
+/// A single pseudo-instruction in the unassembled stream. Jump instructions
+/// store a label id in `arg` (resolved to a byte offset at assembly time);
+/// normal instructions store the uvarint operand directly.
 priv struct PInstr {
   op : Opcode
   arg : Int
@@ -73,6 +79,10 @@ priv struct PInstr {
 }
 
 ///|
+/// Function-level compiler state. Accumulates the pseudo-instruction stream,
+/// local slot table, free-variable capture list, and loop stack for one
+/// function body (or the implicit module-init function). `Fcomp::finish`
+/// serializes this state into a `Funcode`.
 priv struct Fcomp {
   pcomp : Pcomp
   name : String

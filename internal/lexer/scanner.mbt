@@ -628,6 +628,9 @@ fn Scanner::scan_operator(
 }
 
 ///|
+/// Scans a numeric literal starting at the current position (with `start`
+/// pointing to the first character). Handles decimal integers, `0x` hex,
+/// `0o` octal, `0b` binary, and floating-point with optional exponent.
 fn Scanner::scan_number(
   self : Scanner,
   start : @errors.Position,
@@ -970,6 +973,10 @@ fn Scanner::scan_string_triple(
 }
 
 ///|
+/// Decodes a single escape sequence from `c`, the character immediately
+/// following the already-consumed backslash, appending decoded bytes to `buf`.
+/// `str_start` anchors error messages to the opening quote. `is_bytes`
+/// controls whether non-ASCII octal/hex escapes (`\xNN` > 127) are rejected.
 fn Scanner::decode_escape(
   self : Scanner,
   str_start : @errors.Position,

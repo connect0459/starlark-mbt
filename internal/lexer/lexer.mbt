@@ -1,6 +1,11 @@
 // Starlark lexical token types.
 
 ///|
+/// All lexical token kinds produced by the Starlark scanner. Value-carrying
+/// variants (`Ident`, `Int`, `Float`, `Str`, `Bytes`) embed the decoded
+/// literal; all other variants are pure tags. The reserved Python keywords
+/// (`As`, `Async`, ..., `Yield`) are recognised by the scanner but rejected
+/// by the parser.
 pub(all) enum Token {
   Illegal
   EOF

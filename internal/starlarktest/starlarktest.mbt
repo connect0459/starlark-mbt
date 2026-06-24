@@ -301,6 +301,11 @@ fn find_mini_pattern(pat : String, text : String, start_pos : Int) -> Int? {
 }
 
 ///|
+/// Returns `true` when `text` contains a substring matching `pattern`.
+/// Supports `.` as a single-character wildcard, `.*` (and `...`/`.+`) as a
+/// multi-character wildcard, `[|]` as a literal `|`, a trailing `$` anchor,
+/// and `\X` literal escapes. This covers the subset of patterns used in
+/// `###` error annotations and `assert.fails` calls in the conformance suite.
 fn pattern_matches(pattern : String, text : String) -> Bool {
   let anchor_end = pattern.has_suffix("$")
   let pat = if anchor_end {
@@ -502,6 +507,10 @@ priv enum HashAnnotation {
 }
 
 ///|
+/// Parses a `### "pattern"` or `` ### `pattern` `` error-expectation
+/// annotation from a single source line. Returns `ValidPattern(p)` when
+/// well-formed, `Malformed(raw)` when the `###` marker is present but the
+/// annotation is syntactically invalid, and `NoAnnotation` otherwise.
 fn parse_hash_annotation(line : String) -> HashAnnotation {
   match line.find("###") {
     None => NoAnnotation
@@ -740,6 +749,11 @@ fn parse_test_line(msg : String) -> Int {
 }
 
 ///|
+/// Executes a single source chunk with the full test environment: the `assert`
+/// module, standard extension loaders (`assert.star`, `json.star`, etc.), and
+/// the `hasfields`/`struct`/`fibonacci` predeclared names. Returns
+/// `Ok(assert_errors)` on clean execution, or `Err((eval_error, assert_errors))`
+/// if the script raises an evaluation error.
 fn exec_chunk_raw(
   src : String,
 ) -> Result[Array[String], (@errors.EvalError, Array[String])] {
@@ -791,6 +805,18 @@ fn exec_chunk_raw(
 }
 
 ///|
+/// Runs a multi-chunk Starlark test string and returns the failure messages.
+/// The source is split on `\n---\n` separators; each chunk is executed in
+/// isolation. A `### "pattern"` annotation on a line asserts that execution
+/// produces an error whose message matches `pattern`; unannotated chunks must
+/// complete without errors and pass all `assert.*` checks.
+///
+/// Parameters:
+///
+/// - `src` : The Starlark source text, optionally containing `\n---\n` chunk
+///   separators and `### "pattern"` error annotations.
+///
+/// Returns a (possibly empty) array of failure descriptions.
 pub fn run_chunked_string(src : String) -> Array[String] {
   let failures : Array[String] = []
   let chunks = split_chunks(src)
@@ -860,6 +886,17 @@ pub fn run_chunked_string(src : String) -> Array[String] {
 }
 
 ///|
+/// Runs a single Starlark source string against a caller-supplied set of
+/// predeclared names and returns any failure messages. The standard test
+/// modules (`assert.star`, `json.star`, `math.star`, `time.star`,
+/// `struct.star`) are available via `load`. Returns an empty array on success.
+///
+/// Parameters:
+///
+/// - `predeclared` : Extra names visible to the script as predeclared globals.
+/// - `src` : The Starlark source text to execute.
+///
+/// Returns a (possibly empty) array of error or assertion-failure messages.
 pub fn run_with_predeclared(
   predeclared : @eval.Predeclared,
   src : String,
@@ -913,6 +950,17 @@ pub fn run_with_predeclared(
 }
 
 ///|
+/// Filters `src`'s `\n---\n`-delimited chunks, dropping any that contain one
+/// of the given `keywords`, then re-joins and returns the surviving chunks.
+/// Aborts when all chunks are filtered, which would otherwise silently pass
+/// with zero assertions.
+///
+/// Parameters:
+///
+/// - `src` : A multi-chunk source string (chunks separated by `\n---\n`).
+/// - `keywords` : Substrings that mark chunks to skip.
+///
+/// Returns the filtered source string with surviving chunks re-joined by `\n---\n`.
 pub fn skip_chunks_containing(src : String, keywords : Array[String]) -> String {
   let kept = split_chunks(src)
     .iter()
@@ -929,6 +977,15 @@ pub fn skip_chunks_containing(src : String, keywords : Array[String]) -> String 
 }
 
 ///|
+/// Runs a single Starlark `.star`-style test source string, providing the
+/// standard test modules and the `fibonacci` predeclared name. Returns any
+/// failure messages; an empty array indicates success.
+///
+/// Parameters:
+///
+/// - `src` : The Starlark source text to execute.
+///
+/// Returns a (possibly empty) array of error or assertion-failure messages.
 pub fn run_star_string(src : String) -> Array[String] {
   let errors : Array[String] = []
   let assert_module = build_assert_module(errors)

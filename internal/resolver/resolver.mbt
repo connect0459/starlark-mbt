@@ -11,6 +11,14 @@
 let max_call_args : Int = 255
 
 ///|
+/// The scope classification of a resolved name binding.
+///
+/// `Local(idx)` is a function-local slot; `Global(idx)` is a module-level
+/// slot. `Predeclared` and `Universal` name built-ins supplied by the host or
+/// the language itself. `Cell` and `Free` are reserved for nested-function
+/// capture and are not yet produced by the current resolver. `Undefined` is
+/// the not-defined sentinel (the zero value) and is likewise not currently
+/// emitted.
 pub(all) enum Scope {
   Undefined
   Local(Int)
