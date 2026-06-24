@@ -26,6 +26,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-24
+
+### Added
+
+#### Examples
+
+- `examples/wasm_api`: new library package exposing `exec_script`,
+  `exec_script_with_env`, and `exec_script_with_options` as host-callable
+  symbols for wasm-gc / js embedding (#281, #283, #284)
+
+### Fixed
+
+- `lib/json`: emit `\u007f` for DEL (U+007F) instead of the invalid escape
+  `\x7f`, producing valid JSON output for strings containing the DEL character
+  (#281)
+- `lib/math`: remove `cosh` large-argument workaround; upstream
+  `@math.cosh` is fixed in moonbit core `0.1.20260618` (#278)
+
+### Changed
+
+- Reorganise library packages under `src/` and introduce `moon.work`
+  workspace file; the `examples/` module separation is now visually
+  explicit (#297)
+- Rename private helpers in `lib/time` and `examples/wasm_api` to remove
+  stale prefixes; no public API surface affected (#303, #304)
+
+### Documentation
+
+- Add `///` docstrings to all public APIs and non-obvious private helpers
+  across `value`, `syntax`, `unpack`, `lib/json`, `lib/math`, `lib/struct`,
+  `lib/time`, `eval`, and the five internal packages (`lexer`, `parser`,
+  `resolver`, `compile`, `starlarktest`) (#290, #291, #292)
+- Add `mbt check` executable examples to all targeted public functions
+  across `value`, `syntax`, `unpack`, `eval`, `lib/json`, `lib/math`,
+  `lib/struct`, and `lib/time` (#293, #294)
+
 ## [0.3.1] - 2026-06-19
 
 ### Fixed
@@ -478,7 +514,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.1...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.2...HEAD>
+[0.3.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.1...v0.3.2>
 [0.3.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.0...v0.3.1>
 [0.3.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.1...v0.3.0>
 [0.2.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.0...v0.2.1>
