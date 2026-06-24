@@ -1289,6 +1289,13 @@ pub(all) enum Value {
 /// - `s` : The MoonBit `String` to wrap.
 ///
 /// Returns a `Value::String` backed by a new `StarlarkString`.
+///
+/// ```mbt check
+/// test {
+///   let v = Value::new_string("hello")
+///   inspect(v.repr(), content="\"hello\"")
+/// }
+/// ```
 pub fn Value::new_string(s : String) -> Value {
   String(StarlarkString::new(s))
 }
@@ -1301,6 +1308,13 @@ pub fn Value::new_string(s : String) -> Value {
 /// - `n` : The 64-bit signed integer to wrap.
 ///
 /// Returns a `Value::Int` containing `n` as an arbitrary-precision integer.
+///
+/// ```mbt check
+/// test {
+///   let v = Value::new_int(42L)
+///   inspect(v.repr(), content="42")
+/// }
+/// ```
 pub fn Value::new_int(n : Int64) -> Value {
   Int(BigInt::from_int64(n))
 }
@@ -1313,6 +1327,13 @@ pub fn Value::new_int(n : Int64) -> Value {
 /// - `f` : The double-precision float to wrap.
 ///
 /// Returns a `Value::Float` containing `f`.
+///
+/// ```mbt check
+/// test {
+///   let v = Value::new_float(1.5)
+///   inspect(v.repr(), content="1.5")
+/// }
+/// ```
 pub fn Value::new_float(f : Double) -> Value {
   Float(f)
 }
@@ -1325,6 +1346,13 @@ pub fn Value::new_float(f : Double) -> Value {
 /// - `items` : The initial array of `Value` elements.
 ///
 /// Returns a `Value::List` containing `items`.
+///
+/// ```mbt check
+/// test {
+///   let v = Value::new_list([Value::Int(1N), Value::Int(2N), Value::Int(3N)])
+///   inspect(v.repr(), content="[1, 2, 3]")
+/// }
+/// ```
 pub fn Value::new_list(items : Array[Value]) -> Value {
   List(StarlarkList::new(items))
 }
@@ -1333,6 +1361,13 @@ pub fn Value::new_list(items : Array[Value]) -> Value {
 /// Creates an empty `Value::Dict`.
 ///
 /// Returns a new empty `Value::Dict`.
+///
+/// ```mbt check
+/// test {
+///   let v = Value::new_dict()
+///   inspect(v.repr(), content="{}")
+/// }
+/// ```
 pub fn Value::new_dict() -> Value {
   Dict(StarlarkDict::new())
 }
@@ -1341,6 +1376,13 @@ pub fn Value::new_dict() -> Value {
 /// Creates an empty `Value::Set`.
 ///
 /// Returns a new empty `Value::Set`.
+///
+/// ```mbt check
+/// test {
+///   let v = Value::new_set()
+///   inspect(v.repr(), content="set([])")
+/// }
+/// ```
 pub fn Value::new_set() -> Value {
   Set(StarlarkSet::new())
 }
@@ -1373,6 +1415,15 @@ pub fn Value::new_builtin(
 /// - `v` : The value whose type name to retrieve.
 ///
 /// Returns the Starlark type name string.
+///
+/// ```mbt check
+/// test {
+///   inspect(Value::None.type_name(), content="NoneType")
+///   inspect(Value::Int(1N).type_name(), content="int")
+///   inspect(Value::Bool(true).type_name(), content="bool")
+///   inspect(Value::new_string("").type_name(), content="string")
+/// }
+/// ```
 pub fn Value::type_name(v : Value) -> String {
   match v {
     None => "NoneType"
@@ -1406,6 +1457,16 @@ pub fn Value::type_name(v : Value) -> String {
 ///
 /// Returns `false` for `None`, `False`, zero numbers, empty strings/bytes/
 /// collections, and zero-length ranges; `true` for everything else.
+///
+/// ```mbt check
+/// test {
+///   inspect(Value::None.truth(), content="false")
+///   inspect(Value::Int(0N).truth(), content="false")
+///   inspect(Value::new_string("").truth(), content="false")
+///   inspect(Value::Int(1N).truth(), content="true")
+///   inspect(Value::Bool(true).truth(), content="true")
+/// }
+/// ```
 pub fn Value::truth(v : Value) -> Bool {
   match v {
     None => false
@@ -1578,6 +1639,19 @@ pub let repr_limit : Int = 200
 /// - `v` : The value to represent.
 ///
 /// Returns the Starlark `repr()` string for `v`.
+///
+/// ```mbt check
+/// test {
+///   inspect(Value::None.repr(), content="None")
+///   inspect(Value::Bool(true).repr(), content="True")
+///   inspect(Value::Int(42N).repr(), content="42")
+///   inspect(Value::new_string("hi").repr(), content="\"hi\"")
+///   // Cyclic list is shown with a placeholder rather than crashing.
+///   let l = StarlarkList::new([Value::Int(0N)])
+///   l.push(Value::List(l)) |> ignore
+///   inspect(Value::List(l).repr().contains("[...]"), content="true")
+/// }
+/// ```
 pub fn Value::repr(v : Value) -> String {
   match repr_inner(v, [], [], repr_limit) {
     Ok(s) => s
@@ -1589,6 +1663,18 @@ pub fn Value::repr(v : Value) -> String {
 /// Like `Value::repr` but returns `Err` instead of aborting when the nesting
 /// depth limit is exceeded. For use in the eval engine where the error should
 /// surface as a Starlark runtime error.
+///
+/// ```mbt check
+/// test {
+///   inspect(Value::Int(99N).repr_checked().unwrap(), content="99")
+///   // Exceeding the depth limit yields an Err rather than aborting.
+///   let mut v : Value = Value::Int(0N)
+///   for _ in 0..<(repr_limit + 1) {
+///     v = Value::new_list([v])
+///   }
+///   inspect(v.repr_checked() is Err(_), content="true")
+/// }
+/// ```
 pub fn Value::repr_checked(v : Value) -> Result[String, String] {
   repr_inner(v, [], [], repr_limit)
 }
