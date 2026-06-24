@@ -2741,6 +2741,63 @@ depend on publishing).
 
 ---
 
+### Phase R8: Re-adopt `src/` layout and add `moon.work` workspace ✅
+
+**Context**: Phase R7 flattened the layout to the module root, citing
+`moonbitlang/core` and `moonbitlang/x` as the reference. However, those
+libraries have no `examples/` sub-module at the same level. This project
+does — and with a flat layout, `eval/`, `syntax/`, and `examples/` appear
+as siblings in `ls` output, despite `examples/` being a *separate MoonBit
+module* (with its own `moon.mod`) rather than a package of this module.
+The visual boundary between the library and the examples sub-module was
+non-obvious to contributors.
+
+**Reference**: `moonbitlang/async` — a published async runtime library —
+uses exactly the layout described here:
+
+```text
+async/
+├── moon.mod        (options(source: "src"))
+├── moon.work       (members = [".", "./examples", "./test_programs"])
+├── src/            ← all library packages
+└── examples/       ← separate module (moon.mod with @0.0.0 sentinel dep)
+```
+
+The `source: "src"` field makes `src/` the package root; import paths
+(`connect0459/starlark/eval`, …) are **unchanged for external users**.
+`moon.work` ties the library root and `examples/` into a single workspace
+so IDE tooling and `moon fmt` span both modules.
+
+**Why the version pin is `@0.0.0`**: `moonbitlang/async` uses the sentinel
+`@0.0.0` in `examples/moon.mod` rather than the actual library version.
+The workspace resolver always shadows it with the local source, so the pin
+is never used for resolution and does not need to track the root version on
+bumps. This was confirmed via `moon work sync` — the tool exists precisely
+because workspace members are expected to pin versions and sync them.
+
+**Why the module is named `connect0459/starlark_examples`**: mooncakes
+requires `username/modulename` format. The bare `"examples"` name used
+since Phase 0 was rule-non-compliant (though harmless in a local workspace,
+since `moon publish` would reject it). The rename follows the
+`moonbitlang/async_examples` naming pattern.
+
+**Changes (PR #297, Issue #296)**:
+
+- [x] `moon.mod` — `options(source: "src")` added (toolchain auto-migrated
+  the file from deprecated JSON to TOML format)
+- [x] `moon.work` — new file; members `[".", "./examples"]`
+- [x] All library packages moved from module root into `src/`:
+  `errors`, `eval`, `syntax`, `value`, `unpack`, `lib`, `internal`, `cmd`
+- [x] `examples/moon.mod.json` → `examples/moon.mod` (TOML); module renamed
+  to `connect0459/starlark_examples`; dependency pin changed to `@0.0.0`
+- [x] `.pre-commit-config.yaml` — vendor exclusion globs updated from
+  `^internal/` to `^src/internal/`
+- [x] `scripts/run-star.sh`, `scripts/test-repl-piped.sh` — CLI build
+  target updated from `cmd/starlark` to `src/cmd/starlark`
+- [x] `AGENTS.md` — `@0.0.0` sentinel convention documented
+
+---
+
 ## Bytecode Compiler + VM Migration ✅
 
 **Status: complete.** The flip has landed — the AST walker is deleted and the
