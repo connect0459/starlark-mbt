@@ -1447,10 +1447,10 @@ fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
           "in_location: for parameter 1: got \{v.type_name()}, want string",
         )
     }
-    if !is_valid_timezone_impl(loc) {
+    if !is_valid_timezone(loc) {
       return Err("unknown time zone \{loc}")
     }
-    let (offset, abbr) = match get_tz_abbr_at_impl(loc, sec) {
+    let (offset, abbr) = match get_tz_abbr_at(loc, sec) {
       Some(v) => v
       None => return Err("in_location: cannot determine offset for \"\{loc}\"")
     }
@@ -2459,7 +2459,7 @@ fn make_from_timestamp_fn() -> @value.Value {
     } else {
       (sec + extra_sec, norm_nsec.to_int())
     }
-    let (local_offset, local_abbr) = match get_local_tz_at_impl(final_sec) {
+    let (local_offset, local_abbr) = match get_local_tz_at(final_sec) {
       Some(v) => v
       None => (0, "UTC")
     }
@@ -2581,7 +2581,7 @@ fn make_parse_time_fn() -> @value.Value {
     if location == "UTC" || location == "" {
       Ok(make_time_at_zone(parsed_sec, nsec, tz_off, tz_name))
     } else {
-      if !is_valid_timezone_impl(location) {
+      if !is_valid_timezone(location) {
         return Err("unknown time zone \{location}")
       }
       if has_tz {
@@ -2589,7 +2589,7 @@ fn make_parse_time_fn() -> @value.Value {
         Ok(make_time_at_zone(parsed_sec, nsec, tz_off, tz_name))
       } else {
         // parsed_sec is "local time treated as UTC" → adjust for location.
-        let (offset, _) = match get_tz_abbr_at_impl(location, parsed_sec) {
+        let (offset, _) = match get_tz_abbr_at(location, parsed_sec) {
           Some(v) => v
           None =>
             return Err(
@@ -2598,7 +2598,7 @@ fn make_parse_time_fn() -> @value.Value {
         }
         let utc_sec = parsed_sec - offset.to_int64()
         let (final_offset, final_abbr) = match
-          get_tz_abbr_at_impl(location, utc_sec) {
+          get_tz_abbr_at(location, utc_sec) {
           Some(v) => v
           None => (offset, tz_name_from_offset(offset))
         }
@@ -2786,20 +2786,19 @@ fn make_time_constructor_fn() -> @value.Value {
       )
       Ok(make_time(unix_sec, ns_norm))
     } else {
-      if !is_valid_timezone_impl(location) {
+      if !is_valid_timezone(location) {
         return Err("unknown time zone \{location}")
       }
       let (local_sec, ns_norm) = normalize_to_unix_sec(
         year, month, day, hour, minute, second, nanosecond,
       )
-      let (offset, _) = match get_tz_abbr_at_impl(location, local_sec) {
+      let (offset, _) = match get_tz_abbr_at(location, local_sec) {
         Some(v) => v
         None =>
           return Err("time.time: cannot determine offset for \"\{location}\"")
       }
       let utc_sec = local_sec - offset.to_int64()
-      let (final_offset, final_abbr) = match
-        get_tz_abbr_at_impl(location, utc_sec) {
+      let (final_offset, final_abbr) = match get_tz_abbr_at(location, utc_sec) {
         Some(v) => v
         None => (offset, tz_name_from_offset(offset))
       }
@@ -2827,7 +2826,7 @@ fn make_is_valid_timezone_fn() -> @value.Value {
           "is_valid_timezone: for parameter 1: got \{v.type_name()}, want string",
         )
     }
-    Ok(@value.Value::Bool(is_valid_timezone_impl(s)))
+    Ok(@value.Value::Bool(is_valid_timezone(s)))
   })
 }
 

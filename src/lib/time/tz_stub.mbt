@@ -1,5 +1,5 @@
 ///|
-fn is_valid_timezone_impl(name : String) -> Bool {
+fn is_valid_timezone(name : String) -> Bool {
   for z in iana_sorted {
     if z == name {
       return true
@@ -9,7 +9,7 @@ fn is_valid_timezone_impl(name : String) -> Bool {
 }
 
 ///|
-fn get_tz_offset_at_impl(name : String, _unix_time : Int64) -> Int? {
+fn get_tz_offset_at(name : String, _unix_time : Int64) -> Int? {
   match name {
     "UTC"
     | "Etc/UTC"
@@ -475,14 +475,14 @@ let iana_sorted : FixedArray[String] = [
 ]
 
 ///|
-fn get_tz_abbr_at_impl(name : String, unix_time : Int64) -> (Int, String)? {
-  match get_tz_offset_at_impl(name, unix_time) {
+fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int, String)? {
+  match get_tz_offset_at(name, unix_time) {
     Some(offset) => Some((offset, tz_name_from_offset(offset)))
     None => None
   }
 }
 
 ///|
-fn get_local_tz_at_impl(_unix_time : Int64) -> (Int, String)? {
+fn get_local_tz_at(_unix_time : Int64) -> (Int, String)? {
   Some((0, "UTC"))
 }
