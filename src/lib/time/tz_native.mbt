@@ -64,13 +64,13 @@ fn bytes_to_ascii_string(buf : Bytes) -> String {
 }
 
 ///|
-fn is_valid_timezone_impl(name : String) -> Bool {
+fn is_valid_timezone(name : String) -> Bool {
   let bytes = string_to_c_bytes(name)
   ffi_is_valid_timezone(bytes)
 }
 
 ///|
-fn get_tz_abbr_at_impl(name : String, unix_time : Int64) -> (Int, String)? {
+fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int, String)? {
   if name == "UTC" {
     return Some((0, "UTC"))
   }
@@ -95,7 +95,7 @@ fn get_tz_abbr_at_impl(name : String, unix_time : Int64) -> (Int, String)? {
 }
 
 ///|
-fn get_local_tz_at_impl(unix_time : Int64) -> (Int, String)? {
+fn get_local_tz_at(unix_time : Int64) -> (Int, String)? {
   let abbr_buf = Bytes::make(16, b'\x00')
   let offset = ffi_get_local_tz_at(unix_time, abbr_buf)
   if offset == -2147483648 {
