@@ -1,5 +1,3 @@
-// Scanner tests — TDD: these tests define the contract before implementation.
-
 // scan tokenises src and returns a space-joined string of token representations.
 // On scan error the error position and message are returned instead.
 

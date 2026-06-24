@@ -1,5 +1,3 @@
-// Parser tests — TDD Red phase.
-
 ///|
 fn parse_e(src : String) -> @syntax.Expr {
   match @parser.parse_expr("test.star", src) {

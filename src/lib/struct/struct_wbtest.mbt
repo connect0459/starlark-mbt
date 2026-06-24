@@ -247,8 +247,6 @@ test "struct: field names are sorted lexicographically not by length" {
   assert_eq(custom_of(s).get_repr(), "struct(aa = 2, b = 1)")
 }
 
-// --- struct equality with deeply nested values (M-27) ---
-
 ///|
 fn make_nested_tuple_val(depth : Int) -> @value.Value {
   let mut v : @value.Value = @value.Value::Int(1N)
