@@ -35,6 +35,18 @@ pub struct Options {
 /// diverges from that zero value (`Set = false`) because the `{...}` literal
 /// and comprehension syntax is a useful mbt extension. The `set()` built-in
 /// itself is always available and is not controlled by this flag.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default()
+///   // Standard features are on.
+///   inspect(opts.allow_float(), content="true")
+///   inspect(opts.allow_lambda(), content="true")
+///   // Non-standard extensions are off.
+///   inspect(opts.allow_recursion(), content="false")
+///   inspect(opts.allow_while(), content="false")
+/// }
+/// ```
 pub fn Options::default() -> Options {
   {
     allow_set: true,
@@ -129,6 +141,15 @@ pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
 /// - `v` : The new value for the `allow_recursion` flag.
 ///
 /// Returns a new `Options` with the `allow_recursion` flag set to `v`.
+///
+/// ```mbt check
+/// test {
+///   let opts = Options::default().with_allow_recursion(true)
+///   inspect(opts.allow_recursion(), content="true")
+///   // Other flags are unchanged.
+///   inspect(opts.allow_float(), content="true")
+/// }
+/// ```
 pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
   { ..self, allow_recursion: v }
 }
@@ -1108,6 +1129,17 @@ pub fn compare(
 ///
 /// Returns the frozen `Module`, or an `EvalError` on parse, resolve, or
 /// runtime failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let m = exec_file(thread, "test.star", "x = 1 + 2", Options::default()).unwrap()
+///   inspect(m.get("x").unwrap().repr(), content="3")
+///   // A syntax error yields EvalError.
+///   let err = exec_file(Thread::new("t"), "bad.star", "???", Options::default())
+///   inspect(err is Err(_), content="true")
+/// }
+/// ```
 pub fn exec_file(
   thread : Thread,
   filename : String,
@@ -1264,6 +1296,20 @@ pub fn exec_repl_chunk(
 /// - `env` : Global environment dict supplying variable bindings.
 ///
 /// Returns the evaluated `Value`, or an `EvalError` on failure.
+///
+/// ```mbt check
+/// test {
+///   let thread = Thread::new("test")
+///   let env = @value.StringDict::new()
+///   // Evaluate an arithmetic expression.
+///   inspect(eval_expr(thread, "<e>", "2 + 3", env).unwrap().repr(), content="5")
+///   // Supply a binding via env.
+///   env.set("n", @value.Value::new_int(10L))
+///   inspect(eval_expr(thread, "<e>", "n * 2", env).unwrap().repr(), content="20")
+///   // An undefined name yields EvalError.
+///   inspect(eval_expr(thread, "<e>", "ghost", env) is Err(_), content="true")
+/// }
+/// ```
 pub fn eval_expr(
   thread : Thread,
   filename : String,

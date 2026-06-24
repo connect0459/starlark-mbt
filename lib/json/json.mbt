@@ -445,6 +445,28 @@ fn encode_dict_val(
 ///
 /// Returns `Ok(json_string)` on success, or `Err(message)` if the value
 /// cannot be represented as JSON.
+///
+/// ```mbt check
+/// test {
+///   inspect(encode_to_json(@value.Value::None).unwrap(), content="null")
+///   inspect(encode_to_json(@value.Value::Bool(true)).unwrap(), content="true")
+///   inspect(encode_to_json(@value.Value::new_int(42L)).unwrap(), content="42")
+///   inspect(
+///     encode_to_json(@value.Value::new_string("hi")).unwrap(),
+///     content="\"hi\"",
+///   )
+///   let lst = @value.Value::new_list([
+///     @value.Value::Int(1N),
+///     @value.Value::Int(2N),
+///   ])
+///   inspect(encode_to_json(lst).unwrap(), content="[1,2]")
+///   // Non-finite floats cannot be represented in JSON.
+///   inspect(
+///     encode_to_json(@value.Value::Float(@double.infinity)) is Err(_),
+///     content="true",
+///   )
+/// }
+/// ```
 pub fn encode_to_json(v : @value.Value) -> Result[String, String] {
   let state = EncodeState::new()
   match encode_inner(v, state, 0) {
@@ -943,6 +965,24 @@ fn parse_json_number(
 ///
 /// Returns `Ok(value)` on success, or `Err(message)` if parsing fails and no
 /// default is provided.
+///
+/// ```mbt check
+/// test {
+///   // Scalar types.
+///   inspect(decode_from_json("null", None).unwrap().repr(), content="None")
+///   inspect(decode_from_json("true", None).unwrap().repr(), content="True")
+///   inspect(decode_from_json("42", None).unwrap().repr(), content="42")
+///   inspect(decode_from_json("\"hi\"", None).unwrap().repr(), content="\"hi\"")
+///   // Array becomes a Starlark list.
+///   inspect(decode_from_json("[1,2]", None).unwrap().repr(), content="[1, 2]")
+///   // Invalid JSON with a fallback returns the default instead of an error.
+///   let fallback = @value.Value::None
+///   inspect(
+///     decode_from_json("???", Some(fallback)).unwrap().repr(),
+///     content="None",
+///   )
+/// }
+/// ```
 pub fn decode_from_json(
   s : String,
   default : @value.Value?,
@@ -1111,6 +1151,18 @@ fn advance_after_value(stack : Array[Context], top_done : Bool) -> Bool {
 ///
 /// Returns `Ok(indented_string)` on success, or `Err(message)` on a
 /// structural error.
+///
+/// ```mbt check
+/// test {
+///   // Scalars and empty containers pass through unchanged.
+///   inspect(indent_json("null", "", "  ").unwrap(), content="null")
+///   inspect(indent_json("{}", "", "  ").unwrap(), content="{}")
+///   // Nested arrays are expanded across lines.
+///   inspect(indent_json("[1,2]", "", "  ").unwrap(), content="[\n  1,\n  2\n]")
+///   // Structural errors produce Err.
+///   inspect(indent_json("!bad", "", "  ") is Err(_), content="true")
+/// }
+/// ```
 pub fn indent_json(
   s : String,
   prefix : String,
@@ -1562,6 +1614,16 @@ fn make_indent_fn() -> @value.Value {
 /// `encode_indent`, and `indent` as attributes.
 ///
 /// Returns the constructed `json` module as a `@value.Value::Module`.
+///
+/// ```mbt check
+/// test {
+///   let m = json_module()
+///   guard m is @value.Value::Module(mod) else { fail("expected module") }
+///   inspect(mod.name(), content="json")
+///   inspect(mod.attr_names().contains("encode"), content="true")
+///   inspect(mod.attr_names().contains("decode"), content="true")
+/// }
+/// ```
 pub fn json_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["encode"] = make_encode_fn()

@@ -499,6 +499,22 @@ fn make_rounding(name : String, round : (Double) -> Double) -> @value.Value {
 /// `copysign`, `mod`, `pow`, `remainder`, and `hypot` as attributes.
 ///
 /// Returns the constructed `math` module as a `@value.Value::Module`.
+///
+/// ```mbt check
+/// test {
+///   let m = math_module()
+///   guard m is @value.Value::Module(mod) else { fail("expected module") }
+///   inspect(mod.name(), content="math")
+///   // pi is available as a Float attribute.
+///   guard mod.get("pi") is Some(@value.Value::Float(pi)) else {
+///     fail("pi not found")
+///   }
+///   inspect(pi > 3.14 && pi < 3.15, content="true")
+///   // Mathematical functions are accessible by name.
+///   inspect(mod.attr_names().contains("sqrt"), content="true")
+///   inspect(mod.attr_names().contains("floor"), content="true")
+/// }
+/// ```
 pub fn math_module() -> @value.Value {
   let attrs : Map[String, @value.Value] = {}
   attrs["e"] = @value.Value::Float(2.718281828459045)
