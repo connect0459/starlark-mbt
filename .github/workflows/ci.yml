@@ -39,7 +39,7 @@ jobs:
         run: moon fmt --check
 
       - name: Check packages
-        run: moon check --deny-warn
+        run: moon check --deny-warn --target all
 
       - name: Verify generated interfaces are current
         run: moon info && git diff --exit-code
@@ -62,22 +62,8 @@ jobs:
       - name: Update package registry
         run: moon update
 
-      # Targets run sequentially within one job (one toolchain setup) rather
-      # than as a matrix, trading a little wall-clock for fewer independent
-      # network setups. All targets run even if one fails (matching the former
-      # matrix `fail-fast: false`), and the job fails if any did.
-      - name: Check and test all targets
-        run: |
-          rc=0
-          for t in js wasm wasm-gc native; do
-            echo "::group::$t"
-            if ! (moon check --deny-warn --target "$t" && moon test --target "$t"); then
-              echo "::error::target $t failed (check/test)"
-              rc=1
-            fi
-            echo "::endgroup::"
-          done
-          exit $rc
+      - name: Test all targets
+        run: moon test --target all
 
       - name: Run examples
         run: bash scripts/run-examples.sh > /dev/null
