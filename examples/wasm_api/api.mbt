@@ -60,7 +60,7 @@ fn format_module(m : @eval.Module, out_buf : @buffer.Buffer) -> String {
 ///|
 /// Shared execution engine: sets up a thread, runs `src` with `opts` and
 /// `predeclared`, and returns a JSON-encoded result string.
-fn do_exec(
+fn exec(
   src : String,
   opts : @eval.Options,
   predeclared : @eval.Predeclared,
@@ -192,7 +192,7 @@ pub fn exec_script_with_env(src : String, env_json : String) -> String {
     Err(msg) => return "{\"error\":\{encode_str(msg)}}"
     Ok(p) => p
   }
-  do_exec(src, @eval.Options::default(), predeclared)
+  exec(src, @eval.Options::default(), predeclared)
 }
 
 ///|
@@ -219,7 +219,7 @@ pub fn exec_script_with_options(src : String, options_json : String) -> String {
     Err(msg) => return "{\"error\":\{encode_str(msg)}}"
     Ok(o) => o
   }
-  do_exec(src, opts, @eval.Predeclared::new())
+  exec(src, opts, @eval.Predeclared::new())
 }
 
 ///|
