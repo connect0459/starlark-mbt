@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "examples/wasm_api"
+package "connect0459/starlark_examples/wasm_api"
 
 // Values
 pub fn exec_script(String) -> String

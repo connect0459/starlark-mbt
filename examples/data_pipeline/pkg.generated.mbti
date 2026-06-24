@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "examples/data_pipeline"
+package "connect0459/starlark_examples/data_pipeline"
 
 // Values
 

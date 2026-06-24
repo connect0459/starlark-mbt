@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "examples/hello_world"
+package "connect0459/starlark_examples/hello_world"
 
 // Values
 

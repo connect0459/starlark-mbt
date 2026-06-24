@@ -1,4 +1,4 @@
-name = "examples"
+name = "connect0459/starlark_examples"
 
 version = "0.1.0"
 
