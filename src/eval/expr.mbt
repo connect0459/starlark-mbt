@@ -3765,7 +3765,7 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
   } else {
     base
   }
-  let report_base = if base == 0 { actual_base } else { base }
+  let report_base = base
   let digit_start = if s[start] == '0' && start + 1 < s.length() {
     let prefix = s[start + 1]
     if (prefix == 'x' || prefix == 'X') && actual_base == 16 {
