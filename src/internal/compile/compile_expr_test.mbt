@@ -355,3 +355,27 @@ test "an invalid for-loop target reports its own position, not the enclosing sta
     _ => abort("expected a CompileErr")
   }
 }
+
+///|
+test "compile_expr: accepts left-nested binary addition chain of 2000 terms" {
+  // Build EBinary(EBinary(...(1+1)...+1)+1) with 2000 terms by hand.
+  // The compiler must handle this iteratively without stack overflow.
+  let one = lit_int(1)
+  let mut chain = one
+  for _ in 1..<2000 {
+    chain = @syntax.Expr::EBinary(
+      chain,
+      @syntax.BinaryOp::OpAdd,
+      lit_int(1),
+      p(1, 1),
+    )
+  }
+  let assign = @syntax.Stmt::SAssign(
+    @syntax.Expr::EIdent("x", p(1, 1)),
+    chain,
+    p(1, 1),
+  )
+  // Should compile successfully — no CompileErr, no stack overflow.
+  let fc = compile_top([assign])
+  assert_true(fc.disasm().length() > 0)
+}
