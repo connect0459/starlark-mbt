@@ -440,6 +440,9 @@ fn duration_binary(
           @value.Value::Int(i) =>
             if i.is_zero() {
               Some(Err("time.duration division by zero"))
+            } else if i.compare_int64(max_int64) > 0 ||
+              i.compare_int64(min_int64) < 0 {
+              Some(Err("int value out of range (want signed 64-bit value)"))
             } else {
               Some(Ok(make_duration(ns / i.to_int64())))
             }
