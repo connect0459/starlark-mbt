@@ -629,7 +629,7 @@ fn VM::run_frame(
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::List(l) => {
-            if l.length() >= max_alloc_native {
+            if l.length() >= max_alloc_elems {
               raise EvalErr(
                 make_eval_error(
                   ctx,

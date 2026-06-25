@@ -390,7 +390,7 @@ fn checked_repeat_count(n : BigInt, elem_len : Int) -> Result[Int, String] {
   }
   let count = n.to_int()
   if elem_len > 0 &&
-    elem_len.to_int64() * count.to_int64() >= max_alloc_native.to_int64() {
+    elem_len.to_int64() * count.to_int64() >= max_alloc_elems.to_int64() {
     return Err("excessive repeat (\{elem_len} * \{count} elements)")
   }
   Ok(count)
