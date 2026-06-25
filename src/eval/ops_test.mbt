@@ -748,6 +748,21 @@ test "eval_expr: bytes repeat with count exceeding int32 range raises error" {
   assert_true(op_err("b\"x\" * 9999999999").contains("too large"))
 }
 
+///|
+test "eval_expr: list repeat at allocation cap raises error" {
+  assert_true(op_err("[0] * 1073741824").contains("excessive repeat"))
+}
+
+///|
+test "eval_expr: tuple repeat at allocation cap raises error" {
+  assert_true(op_err("(0,) * 1073741824").contains("excessive repeat"))
+}
+
+///|
+test "eval_expr: string repeat at allocation cap raises error" {
+  assert_true(op_err("\"x\" * 1073741824").contains("excessive repeat"))
+}
+
 // --- percent_format (string %) edge cases ---
 
 ///|

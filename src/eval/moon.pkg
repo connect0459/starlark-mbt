@@ -18,6 +18,8 @@ import {
 options(
   "native-stub": [ "eval_native.c" ],
   targets: {
+    "alloc_cap_native.mbt": [ "native", "llvm" ],
+    "alloc_cap_stub.mbt": [ "wasm", "wasm-gc", "js" ],
     "eval_print_native.mbt": [ "native", "llvm" ],
     "eval_print_stub.mbt": [ "wasm", "wasm-gc", "js" ],
   },

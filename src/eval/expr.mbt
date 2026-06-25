@@ -894,6 +894,7 @@ fn builtin_list(
       @value.Value::List(@value.StarlarkList::new(items))
     }
     v => {
+      guard_range_alloc(ctx, "list", v)
       let it = require_seq(ctx, "list", v)
       @value.Value::List(@value.StarlarkList::new(it.collect()))
     }
@@ -910,6 +911,7 @@ fn builtin_tuple(
   if pos_args.length() == 0 {
     return @value.Value::Tuple([])
   }
+  guard_range_alloc(ctx, "tuple", pos_args[0])
   let it = require_seq(ctx, "tuple", pos_args[0])
   @value.Value::Tuple(it.collect())
 }
@@ -937,6 +939,7 @@ fn update_dict(
         }
       }
       v => {
+        guard_range_alloc(ctx, name, v)
         let it = match @value.iterate(v) {
           Ok(i) => i
           Err(_) =>
@@ -1041,6 +1044,7 @@ fn builtin_set(
     return @value.Value::Set(s)
   }
   let iterable = pos_args[0]
+  guard_range_alloc(ctx, "set", iterable)
   let it = match @value.iterate(iterable) {
     Err(_) =>
       raise EvalErr(
@@ -1222,6 +1226,7 @@ fn builtin_enumerate(
   } else {
     0N
   }
+  guard_range_alloc(ctx, "enumerate", pos_args[0])
   let result : Array[@value.Value] = []
   let it = match @value.iterate(pos_args[0]) {
     Ok(it) => it
@@ -1353,6 +1358,7 @@ fn builtin_sorted(
   }
   // starlark-go order: check iterable type first, then key, then reverse.
   // Kwarg names are quoted in error messages; positional names are not.
+  guard_range_alloc(ctx, "sorted", iterable)
   let it = match @value.iterate(iterable) {
     Ok(it) => it
     Err(_) => {
@@ -1512,6 +1518,7 @@ fn builtin_reversed(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
+  guard_range_alloc(ctx, "reversed", pos_args[0])
   let it = require_seq(ctx, "reversed", pos_args[0])
   let items = it.collect()
   let n = items.length()
@@ -1666,6 +1673,7 @@ fn call_list_method(
         }
       } else {
         check_pfx(ctx, "extend", l.check_mutable("extend"))
+        guard_range_alloc(ctx, "extend", pos_args[0])
         let it = require_seq(ctx, "extend", pos_args[0])
         while true {
           match it.next() {

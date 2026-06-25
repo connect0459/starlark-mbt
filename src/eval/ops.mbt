@@ -343,11 +343,6 @@ let max_int32 : BigInt = 2147483647N
 let min_int32 : BigInt = -2147483648N
 
 ///|
-/// Maximum safe allocation element count, matching starlark-go's
-/// `len*i >= 1<<30` overflow guard.
-let max_alloc : Int = 1073741824
-
-///|
 /// Maximum valid byte value (255); used to range-check `in bytes` with an int
 /// needle.
 let max_byte_val : BigInt = 255N
@@ -395,7 +390,7 @@ fn checked_repeat_count(n : BigInt, elem_len : Int) -> Result[Int, String] {
   }
   let count = n.to_int()
   if elem_len > 0 &&
-    elem_len.to_int64() * count.to_int64() >= max_alloc.to_int64() {
+    elem_len.to_int64() * count.to_int64() >= max_alloc_elems.to_int64() {
     return Err("excessive repeat (\{elem_len} * \{count} elements)")
   }
   Ok(count)

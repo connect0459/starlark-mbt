@@ -2978,6 +2978,81 @@ test "exec_file: slicing double-overflow range raises no-len error" {
   }
 }
 
+// --- list(range(N)) / tuple(range(N)) oversized materialization ---
+
+///|
+test "exec_file: list from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("list(range(1073741824))").contains("excessive sequence"))
+}
+
+///|
+test "exec_file: tuple from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("tuple(range(1073741824))").contains("excessive sequence"))
+}
+
+///|
+test "exec_file: list from overflow range raises excessive-sequence error" {
+  assert_true(
+    emsg("list(range(-(1<<62), 1<<62))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: tuple from overflow range raises excessive-sequence error" {
+  assert_true(
+    emsg("tuple(range(-(1<<62), 1<<62))").contains("excessive sequence"),
+  )
+}
+
+// --- set/enumerate/dict oversized Range ---
+
+///|
+test "exec_file: set from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("set(range(1073741824))").contains("excessive sequence"))
+}
+
+///|
+test "exec_file: enumerate from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("enumerate(range(1073741824))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: dict from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("dict(range(1073741824))").contains("excessive sequence"))
+}
+
+// --- reversed/sorted/extend/star-args oversized Range ---
+
+///|
+test "exec_file: reversed from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("reversed(range(1073741824))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: sorted from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("sorted(range(1073741824))").contains("excessive sequence"))
+}
+
+///|
+test "exec_file: list extend from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("[].extend(range(1073741824))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: star-args from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("def f(*a): pass\nf(*range(1073741824))").contains(
+      "excessive sequence",
+    ),
+  )
+}
+
 // --- dict() arity error ---
 
 ///|
