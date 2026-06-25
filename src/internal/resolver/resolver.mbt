@@ -598,8 +598,9 @@ fn Resolver::bind_lhs(
   }
 }
 
-// Names the kind of a non-assignable LHS expression, as the lowercased AST type
-// name in "can't assign to <kind>".
+// Names the kind of a non-assignable LHS expression for "can't assign to <kind>".
+// Comprehension forms all return "comprehension" — starlark-go uses a single
+// Comprehension AST node for all forms; other forms use the lowercased AST type name.
 
 ///|
 fn lhs_kind(e : @syntax.Expr) -> String {
