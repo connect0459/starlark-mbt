@@ -1292,29 +1292,9 @@ fn is_ident_byte(b : Byte) -> Bool {
   is_digit_byte(b) || is_ident_start_byte(b)
 }
 
-// is_unicode_letter_rune returns true if cp is a Unicode letter (L category).
-// Backed by an exact, sorted range table (`unicode_letter_ranges`) derived from
-// the Unicode Character Database; looked up by binary search.
-
 ///|
 fn is_unicode_letter_rune(cp : Int) -> Bool {
-  let ranges = unicode_letter_ranges
-  let n = ranges.length() / 2
-  let mut lo = 0
-  let mut hi = n
-  while lo < hi {
-    let mid = (lo + hi) / 2
-    let start = ranges[mid * 2]
-    let end = ranges[mid * 2 + 1]
-    if cp < start {
-      hi = mid
-    } else if cp > end {
-      lo = mid + 1
-    } else {
-      return true
-    }
-  }
-  false
+  @utf8util.is_letter(cp)
 }
 
 ///|
