@@ -939,6 +939,7 @@ fn update_dict(
         }
       }
       v => {
+        guard_range_alloc(ctx, name, v)
         let it = match @value.iterate(v) {
           Ok(i) => i
           Err(_) =>
@@ -1043,6 +1044,7 @@ fn builtin_set(
     return @value.Value::Set(s)
   }
   let iterable = pos_args[0]
+  guard_range_alloc(ctx, "set", iterable)
   let it = match @value.iterate(iterable) {
     Err(_) =>
       raise EvalErr(
@@ -1224,6 +1226,7 @@ fn builtin_enumerate(
   } else {
     0N
   }
+  guard_range_alloc(ctx, "enumerate", pos_args[0])
   let result : Array[@value.Value] = []
   let it = match @value.iterate(pos_args[0]) {
     Ok(it) => it

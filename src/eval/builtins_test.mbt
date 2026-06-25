@@ -3004,6 +3004,25 @@ test "exec_file: tuple from overflow range raises excessive-sequence error" {
   )
 }
 
+// --- set/enumerate/dict oversized Range ---
+
+///|
+test "exec_file: set from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("set(range(1073741824))").contains("excessive sequence"))
+}
+
+///|
+test "exec_file: enumerate from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("enumerate(range(1073741824))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: dict from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("dict(range(1073741824))").contains("excessive sequence"))
+}
+
 // --- reversed/sorted/extend/star-args oversized Range ---
 
 ///|
