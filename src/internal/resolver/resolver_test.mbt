@@ -1041,6 +1041,18 @@ test "resolve: assigning to a dict comprehension reports 'comprehension'" {
 }
 
 ///|
+test "resolve: assigning to a set comprehension reports 'comprehension'" {
+  let f = parse_or_fail("{x for x in y} = 2")
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(has_error(result, "can't assign to comprehension"))
+}
+
+///|
 test "resolve: positional-after-*args anchors at leftmost token of compound arg" {
   // f(*a, b.x) — 'b' starts at col 7; expr_pos gives col 8 (the '.').
   let r = resolve_call("f(*a, b.x)")
