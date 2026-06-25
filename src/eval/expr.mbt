@@ -1772,7 +1772,7 @@ fn call_list_method(
     }
     "clear" => {
       check_positional(ctx, "clear", pos_args, kw_args, 0, 0)
-      check(ctx, l.clear()) |> ignore
+      check_pfx(ctx, "clear", l.clear()) |> ignore
       @value.Value::None
     }
     "index" => {

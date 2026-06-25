@@ -2914,6 +2914,42 @@ test "exec_file: sorted key= that mutates source list raises during-iteration er
 // --- iteration-lock error message prefixes ---
 
 ///|
+test "exec_file: list.clear during iteration error includes clear: prefix" {
+  let src =
+    #|def f():
+    #|    xs = [1, 2, 3]
+    #|    for _ in xs:
+    #|        xs.clear()
+    #|f()
+  assert_true(emsg(src).contains("clear:"))
+}
+
+///|
+test "exec_file: list.clear on frozen list error includes clear: prefix" {
+  let pre : Map[String, @value.Value] = {}
+  let list_val = @value.Value::new_list([
+    @value.Value::Int(1N),
+    @value.Value::Int(2N),
+  ])
+  if list_val is @value.Value::List(l) {
+    l.freeze()
+  }
+  pre["frozen_xs"] = list_val
+  let t = Thread::new("test")
+  let result = exec_file_with_predeclared(
+    t,
+    "<test>",
+    "frozen_xs.clear()",
+    Options::default(),
+    Predeclared::from_map(pre),
+  )
+  match result {
+    Ok(_) => assert_true(false)
+    Err(e) => assert_true(e.msg().contains("clear:"))
+  }
+}
+
+///|
 test "exec_file: list.append during iteration error includes append: prefix" {
   let src =
     #|def f():
