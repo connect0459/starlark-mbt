@@ -2206,22 +2206,13 @@ fn call_str_method(
       }
       @value.Value::Int(BigInt::from_int(result))
     }
-    "isalpha" =>
-      all_chars_satisfy(s, fn(c) {
-        let n = c.to_int()
-        @utf8util.is_upper_letter(n) ||
-        @utf8util.is_lower_letter(n) ||
-        @utf8util.is_title_letter(n)
-      })
+    "isalpha" => all_chars_satisfy(s, fn(c) { @utf8util.is_letter(c.to_int()) })
     "isdigit" =>
       all_chars_satisfy(s, fn(c) { @utf8util.is_decimal_digit(c.to_int()) })
     "isalnum" =>
       all_chars_satisfy(s, fn(c) {
         let n = c.to_int()
-        @utf8util.is_upper_letter(n) ||
-        @utf8util.is_lower_letter(n) ||
-        @utf8util.is_title_letter(n) ||
-        @utf8util.is_decimal_digit(n)
+        @utf8util.is_letter(n) || @utf8util.is_decimal_digit(n)
       })
     "islower" => {
       let raw = s.raw()

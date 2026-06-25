@@ -175,3 +175,30 @@ test "is_decimal_digit: Kirat Rai digits start at U+16D70, not U+16D60" {
   assert_false(is_decimal_digit(0x16D60)) // KIRAT RAI LETTER KA (Lo, not Nd)
   assert_false(is_decimal_digit(0x16D69)) // KIRAT RAI VOWEL SIGN AA (Mc, not Nd)
 }
+
+///|
+test "is_letter: ASCII letters are letters" {
+  assert_true(is_letter(0x41)) // A (Lu)
+  assert_true(is_letter(0x7A)) // z (Ll)
+}
+
+///|
+test "is_letter: ASCII digits and symbols are not letters" {
+  assert_false(is_letter(0x31)) // 1
+  assert_false(is_letter(0x40)) // @
+}
+
+///|
+test "is_letter: CJK ideograph (Lo) is a letter" {
+  assert_true(is_letter(0x4E00)) // CJK UNIFIED IDEOGRAPH-4E00
+}
+
+///|
+test "is_letter: Old Hungarian Capital Letter A (Lu, U+10C80) is a letter" {
+  assert_true(is_letter(0x10C80))
+}
+
+///|
+test "is_letter: Imperial Aramaic Mirrored Yod (So, U+10877) is not a letter" {
+  assert_false(is_letter(0x10877))
+}
