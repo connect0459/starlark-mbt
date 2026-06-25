@@ -11,6 +11,13 @@
 let max_call_args : Int = 255
 
 ///|
+// Maximum recursive depth of walk_expr. A flat binary/postfix chain of N terms
+// produces a left-nested AST of height N; beyond this limit the recursive walk
+// overflows the native call stack. 1000 levels is safe on all backends while
+// still allowing any realistic Starlark program.
+let max_walk_depth : Int = 1000
+
+///|
 /// The scope classification of a resolved name binding.
 ///
 /// `Local(idx)` is a function-local slot; `Global(idx)` is a module-level
@@ -412,6 +419,8 @@ priv struct Resolver {
   mut current_fn_name : String
   // Names imported via load statements (always immutable)
   load_names : Map[String, @errors.Position]
+  // Depth counter for walk_expr to catch pathologically deep AST chains.
+  mut walk_depth : Int
 }
 
 ///|
@@ -437,6 +446,7 @@ fn Resolver::new(
     ifstmts: 0,
     current_fn_name: "",
     load_names: {},
+    walk_depth: 0,
   }
 }
 
@@ -1052,22 +1062,63 @@ fn Resolver::pre_collect_lhs(self : Resolver, lhs : @syntax.Expr) -> Unit {
 
 ///|
 fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
+  self.walk_depth += 1
+  if self.walk_depth > max_walk_depth {
+    self.errorf(@syntax.expr_pos(expr), "expression too deeply nested")
+    self.walk_depth -= 1
+    return
+  }
   match expr {
     @syntax.Expr::EIdent(name, pos) => self.use_name(name, pos)
     @syntax.Expr::ELiteral(_, _) => ()
     @syntax.Expr::EUnary(_, e, _) => self.walk_expr(e)
-    @syntax.Expr::EBinary(l, _, r, _) => {
-      self.walk_expr(l)
-      self.walk_expr(r)
+    @syntax.Expr::EBinary(_, _, _, _) => {
+      // Flatten the binary-operator left-spine iteratively to avoid deep
+      // recursion on long flat chains (e.g. `1+1+...` builds a left-nested AST
+      // of height N). All operators including `and`/`or` are flattened the same
+      // way; resolution only collects identifier uses, so order is irrelevant.
+      let rights : Array[@syntax.Expr] = []
+      let mut cur = expr
+      while true {
+        match cur {
+          @syntax.Expr::EBinary(l, _, r, _) => {
+            rights.push(r)
+            cur = l
+          }
+          _ => break
+        }
+      }
+      self.walk_expr(cur)
+      let mut i = rights.length() - 1
+      while i >= 0 {
+        self.walk_expr(rights[i])
+        i -= 1
+      }
     }
     @syntax.Expr::ECond(cond, a, b, _) => {
       self.walk_expr(cond)
       self.walk_expr(a)
       self.walk_expr(b)
     }
-    @syntax.Expr::EIndex(e, idx, _) => {
-      self.walk_expr(e)
-      self.walk_expr(idx)
+    @syntax.Expr::EIndex(_, _, _) => {
+      // Flatten the subscript left-spine iteratively (e.g. `a[0][1][2]`).
+      let indices : Array[@syntax.Expr] = []
+      let mut cur = expr
+      while true {
+        match cur {
+          @syntax.Expr::EIndex(e, idx, _) => {
+            indices.push(idx)
+            cur = e
+          }
+          _ => break
+        }
+      }
+      self.walk_expr(cur)
+      let mut i = indices.length() - 1
+      while i >= 0 {
+        self.walk_expr(indices[i])
+        i -= 1
+      }
     }
     @syntax.Expr::ESlice(e, lo, hi, step, _) => {
       self.walk_expr(e)
@@ -1084,7 +1135,17 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
         None => ()
       }
     }
-    @syntax.Expr::EDot(e, _, _) => self.walk_expr(e)
+    @syntax.Expr::EDot(_, _, _) => {
+      // Flatten the attribute-access left-spine iteratively (e.g. `a.b.c.d`).
+      let mut cur = expr
+      while true {
+        match cur {
+          @syntax.Expr::EDot(e, _, _) => cur = e
+          _ => break
+        }
+      }
+      self.walk_expr(cur)
+    }
     @syntax.Expr::ECall(f, args, call_pos) => {
       self.walk_expr(f)
       let mut seen_varargs = false
@@ -1203,6 +1264,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
     @syntax.Expr::EDictComp(key, val, clauses, _) =>
       self.walk_comprehension(key, Some(val), clauses)
   }
+  self.walk_depth -= 1
 }
 
 // Walk a comprehension with an isolated scope for iteration variables.
