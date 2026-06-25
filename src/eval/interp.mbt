@@ -627,7 +627,17 @@ fn VM::run_frame(
         // [.., list, elem] -> append elem to the accumulator list, which stays.
         let elem = pop()
         match stack[stack.length() - 1] {
-          @value.Value::List(l) => check(ctx, l.push(elem))
+          @value.Value::List(l) => {
+            if l.length() >= max_alloc_native {
+              raise EvalErr(
+                make_eval_error(
+                  ctx,
+                  "list: excessive sequence (\{l.length() + 1} elements)",
+                ),
+              )
+            }
+            check(ctx, l.push(elem))
+          }
           other => abort("vm: Append expects a list, got \{other.type_name()}")
         }
       }
