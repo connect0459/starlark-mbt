@@ -893,6 +893,16 @@ fn builtin_list(
       }
       @value.Value::List(@value.StarlarkList::new(items))
     }
+    @value.Value::Range(r) => {
+      let len = r.length()
+      if len >= max_alloc_native.to_int64() {
+        raise EvalErr(
+          make_eval_error(ctx, "list: excessive sequence (\{len} elements)"),
+        )
+      }
+      let it = require_seq(ctx, "list", @value.Value::Range(r))
+      @value.Value::List(@value.StarlarkList::new(it.collect()))
+    }
     v => {
       let it = require_seq(ctx, "list", v)
       @value.Value::List(@value.StarlarkList::new(it.collect()))
@@ -910,8 +920,22 @@ fn builtin_tuple(
   if pos_args.length() == 0 {
     return @value.Value::Tuple([])
   }
-  let it = require_seq(ctx, "tuple", pos_args[0])
-  @value.Value::Tuple(it.collect())
+  match pos_args[0] {
+    @value.Value::Range(r) => {
+      let len = r.length()
+      if len >= max_alloc_native.to_int64() {
+        raise EvalErr(
+          make_eval_error(ctx, "tuple: excessive sequence (\{len} elements)"),
+        )
+      }
+      let it = require_seq(ctx, "tuple", @value.Value::Range(r))
+      @value.Value::Tuple(it.collect())
+    }
+    v => {
+      let it = require_seq(ctx, "tuple", v)
+      @value.Value::Tuple(it.collect())
+    }
+  }
 }
 
 ///|

@@ -2978,6 +2978,18 @@ test "exec_file: slicing double-overflow range raises no-len error" {
   }
 }
 
+// --- list(range(N)) / tuple(range(N)) oversized materialization ---
+
+///|
+test "exec_file: list from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("list(range(1073741824))").contains("excessive sequence"))
+}
+
+///|
+test "exec_file: tuple from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("tuple(range(1073741824))").contains("excessive sequence"))
+}
+
 // --- dict() arity error ---
 
 ///|
