@@ -9,6 +9,8 @@ import {
 // Values
 pub fn expr_pos(Expr) -> @errors.Position
 
+pub fn start(Expr) -> @errors.Position
+
 pub fn stmt_pos(Stmt) -> @errors.Position
 
 pub fn walk_expr(Expr, (Node?) -> Bool) -> Unit

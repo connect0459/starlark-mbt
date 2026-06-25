@@ -594,7 +594,7 @@ fn Resolver::bind_lhs(
         self.bind_lhs(elem, is_augmented~)
       }
     }
-    _ => self.errorf(@syntax.expr_pos(lhs), "can't assign to \{lhs_kind(lhs)}")
+    _ => self.errorf(@syntax.start(lhs), "can't assign to \{lhs_kind(lhs)}")
   }
 }
 
