@@ -2655,6 +2655,34 @@ test "exec_file: int with base out of the 2-36 range raises error" {
 }
 
 ///|
+test "exec_file: int with base 0 and invalid octal literal reports base 0 in error" {
+  assert_eq(emsg("int(\"0o18\", 0)"), "int: invalid literal with base 0: 0o18")
+}
+
+///|
+test "exec_file: int with base 0 and invalid hex literal reports base 0 in error" {
+  assert_eq(emsg("int(\"0x\", 0)"), "int: invalid literal with base 0: 0x")
+}
+
+///|
+test "exec_file: int with base 0 and invalid binary literal reports base 0 in error" {
+  assert_eq(emsg("int(\"0b2\", 0)"), "int: invalid literal with base 0: 0b2")
+}
+
+///|
+test "exec_file: int with base 0 and underscore decimal reports base 0 in error" {
+  assert_eq(
+    emsg("int(\"1_000\", 0)"),
+    "int: invalid literal with base 0: 1_000",
+  )
+}
+
+///|
+test "exec_file: int with explicit base still reports that base in error" {
+  assert_eq(emsg("int(\"0o18\", 8)"), "int: invalid literal with base 8: 0o18")
+}
+
+///|
 test "exec_file: int on a non-numeric non-string type raises a TypeError" {
   assert_true(emsg("int([1, 2])").contains("int: cannot convert list to int"))
 }
