@@ -1015,3 +1015,21 @@ test "resolve: can't assign to sliceexpr anchors at leftmost token" {
   let r = resolve(f, no_predeclared, no_universal, ResolveOptions::default())
   assert_true(error_col(r, "can't assign to sliceexpr") == Some(1))
 }
+
+///|
+test "resolve: positional-after-*args anchors at leftmost token of compound arg" {
+  // f(*a, b.x) — 'b' starts at col 7; expr_pos gives col 8 (the '.').
+  let r = resolve_call("f(*a, b.x)")
+  assert_true(
+    error_col(r, "positional argument may not follow *args") == Some(7),
+  )
+}
+
+///|
+test "resolve: positional-after-named anchors at leftmost token of compound arg" {
+  // f(x=1, b.x) — 'b' starts at col 8; expr_pos gives col 9 (the '.').
+  let r = resolve_call("f(x=1, b.x)")
+  assert_true(
+    error_col(r, "positional argument may not follow named") == Some(8),
+  )
+}

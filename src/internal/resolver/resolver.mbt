@@ -1177,7 +1177,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
           }
           @syntax.Arg::ArgPos(e) => {
             n_pos = n_pos + 1
-            let pos = @syntax.expr_pos(e)
+            let pos = @syntax.start(e)
             if seen_varargs {
               self.errorf(pos, "positional argument may not follow *args")
             } else if seen_kwargs {

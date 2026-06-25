@@ -1082,7 +1082,7 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
         }
         _ =>
           raise CompileErr(
-            "compile: invalid augmented-assignment target at \{@syntax.expr_pos(lhs).to_string()}",
+            "compile: invalid augmented-assignment target at \{@syntax.start(lhs).to_string()}",
           )
       }
     SPass(_) => ()
@@ -1295,7 +1295,7 @@ fn Fcomp::compile_assign_target(
     }
     _ =>
       raise CompileErr(
-        "compile: invalid assignment target at \{@syntax.expr_pos(target).to_string()}",
+        "compile: invalid assignment target at \{@syntax.start(target).to_string()}",
       )
   }
 }
