@@ -606,6 +606,23 @@ test "time: duration * BigInt outside int64 range raises out-of-range error" {
 }
 
 ///|
+test "time: duration / BigInt outside int64 range raises out-of-range error" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.second / (1 << 63),
+      #|  "int value out of range (want signed 64-bit value)",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time: time + duration does not overflow Int64 for year 2500" {
   let errs = run_star_string(
     (

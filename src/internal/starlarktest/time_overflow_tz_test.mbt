@@ -79,6 +79,40 @@ test "time.parse_duration: rejects overflow from large unit multiplication" {
 }
 
 ///|
+test "time.from_timestamp: rejects sec above Int64 maximum" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.from_timestamp(1 << 63),
+      #|  "from_timestamp: for parameter 1: 9223372036854775808 out of range (want value in signed 64-bit range)",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time.from_timestamp: rejects nsec above Int64 maximum" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|assert.fails(
+      #|  lambda: time.from_timestamp(0, 1 << 63),
+      #|  "from_timestamp: for parameter 2: 9223372036854775808 out of range (want value in signed 64-bit range)",
+      #|)
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time.from_timestamp: Int64 minimum second matches Go normalization" {
   let errs = run_star_string(
     (
