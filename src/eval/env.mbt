@@ -158,3 +158,32 @@ fn require_seq(
       )
   }
 }
+
+///|
+/// Raises a graceful error when `v` is a `Range` whose length would exceed the
+/// backend-specific allocation cap (`max_alloc_native`). Must be called before
+/// any `require_seq(…).collect()` or equivalent unbounded collect loop so that
+/// oversized ranges fail gracefully instead of triggering an OS overcommit
+/// page-fault on the native backend.
+fn guard_range_alloc(
+  ctx : EvalContext,
+  caller : String,
+  v : @value.Value,
+) -> Unit raise EvalErr {
+  if v is @value.Value::Range(r) {
+    let len = r.length()
+    if len < 0L {
+      raise EvalErr(
+        make_eval_error(
+          ctx,
+          "\{caller}: excessive sequence (range length overflows)",
+        ),
+      )
+    }
+    if len >= max_alloc_native.to_int64() {
+      raise EvalErr(
+        make_eval_error(ctx, "\{caller}: excessive sequence (\{len} elements)"),
+      )
+    }
+  }
+}

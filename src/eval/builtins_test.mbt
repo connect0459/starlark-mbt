@@ -2990,6 +2990,20 @@ test "exec_file: tuple from range at allocation cap raises excessive-sequence er
   assert_true(emsg("tuple(range(1073741824))").contains("excessive sequence"))
 }
 
+///|
+test "exec_file: list from overflow range raises excessive-sequence error" {
+  assert_true(
+    emsg("list(range(-(1<<62), 1<<62))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: tuple from overflow range raises excessive-sequence error" {
+  assert_true(
+    emsg("tuple(range(-(1<<62), 1<<62))").contains("excessive sequence"),
+  )
+}
+
 // --- dict() arity error ---
 
 ///|
