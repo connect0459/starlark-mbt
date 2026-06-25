@@ -1338,6 +1338,22 @@ test "exec_file: string.isalpha returns true for CJK ideograph (Lo)" {
 }
 
 ///|
+test "exec_file: string.isalpha returns true for Old Hungarian capital letter (Lu, U+10C80)" {
+  match exec_b("r = \"\u{10C80}\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalpha returns false for Imperial Aramaic Mirrored Yod (So, U+10877)" {
+  match exec_b("r = \"\u{10877}\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(false)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
 test "exec_file: string.isalpha returns true for Hiragana letter (Lo)" {
   match exec_b("r = \"\u{3042}\".isalpha()") {
     Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
