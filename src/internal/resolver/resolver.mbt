@@ -11,10 +11,6 @@
 let max_call_args : Int = 255
 
 ///|
-// Maximum recursive depth of walk_expr. A flat binary/postfix chain of N terms
-// produces a left-nested AST of height N; beyond this limit the recursive walk
-// overflows the native call stack. 1000 levels is safe on all backends while
-// still allowing any realistic Starlark program.
 let max_walk_depth : Int = 1000
 
 ///|
@@ -1073,10 +1069,6 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
     @syntax.Expr::ELiteral(_, _) => ()
     @syntax.Expr::EUnary(_, e, _) => self.walk_expr(e)
     @syntax.Expr::EBinary(_, _, _, _) => {
-      // Flatten the binary-operator left-spine iteratively to avoid deep
-      // recursion on long flat chains (e.g. `1+1+...` builds a left-nested AST
-      // of height N). All operators including `and`/`or` are flattened the same
-      // way; resolution only collects identifier uses, so order is irrelevant.
       let rights : Array[@syntax.Expr] = []
       let mut cur = expr
       while true {
@@ -1101,7 +1093,6 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       self.walk_expr(b)
     }
     @syntax.Expr::EIndex(_, _, _) => {
-      // Flatten the subscript left-spine iteratively (e.g. `a[0][1][2]`).
       let indices : Array[@syntax.Expr] = []
       let mut cur = expr
       while true {
@@ -1136,7 +1127,6 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
     }
     @syntax.Expr::EDot(_, _, _) => {
-      // Flatten the attribute-access left-spine iteratively (e.g. `a.b.c.d`).
       let mut cur = expr
       while true {
         match cur {

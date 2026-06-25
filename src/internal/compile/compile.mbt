@@ -15,8 +15,6 @@ pub suberror CompileErr {
 }
 
 ///|
-// Maximum recursive depth of compile_expr. Mirrors resolver's max_walk_depth:
-// a left-nested chain of N terms causes N levels of compile_expr recursion.
 let max_compile_depth : Int = 1000
 
 // --- program-level compiler state ---
@@ -481,7 +479,6 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_stack(base + 1)
     }
     EIndex(_, _, _) => {
-      // Flatten the subscript left-spine iteratively (e.g. `a[0][1][2]`).
       let chain : Array[(@syntax.Expr, @errors.Position)] = []
       let mut cur = e
       while true {
@@ -512,7 +509,6 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.emit0(Opcode::Slice, 4, 1)
     }
     EDot(_, _, _) => {
-      // Flatten the attribute-access left-spine iteratively (e.g. `a.b.c`).
       let chain : Array[(String, @errors.Position)] = []
       let mut cur = e
       while true {
@@ -875,8 +871,6 @@ fn Fcomp::compile_ident(self : Fcomp, name : String) -> Unit raise CompileErr {
   }
 }
 
-// Emit one non-short-circuit binary opcode for `op` at source position `pos`.
-
 ///|
 fn Fcomp::emit_arith_op(
   self : Fcomp,
@@ -919,16 +913,11 @@ fn Fcomp::compile_binary(
   r : @syntax.Expr,
   pos : @errors.Position,
 ) -> Unit raise CompileErr {
-  // `and` / `or` short-circuit via jumps, so the right operand is only
-  // evaluated when needed.
   match op {
     OpAnd => return self.compile_and(l, r)
     OpOr => return self.compile_or(l, r)
     _ => ()
   }
-  // Flatten the non-short-circuit binary left-spine iteratively. A flat chain
-  // like `a+b+c+d` builds a left-nested AST; walking it recursively overflows
-  // the call stack at ~15k terms on native.
   let rights : Array[(@syntax.BinaryOp, @syntax.Expr, @errors.Position)] = [
     (op, r, pos),
   ]
@@ -958,13 +947,11 @@ fn Fcomp::compile_binary(
 
 ///|
 /// `l or r`: evaluate `l`; if it is truthy keep it, otherwise evaluate `r`.
-/// Flattens the OR left-spine iteratively to avoid stack overflow on long chains.
 fn Fcomp::compile_or(
   self : Fcomp,
   l : @syntax.Expr,
   r : @syntax.Expr,
 ) -> Unit raise CompileErr {
-  // Collect all operands of the OR chain from the left-nested AST.
   let operands : Array[@syntax.Expr] = [r]
   let mut cur = l
   while true {
@@ -977,24 +964,18 @@ fn Fcomp::compile_or(
     }
   }
   operands.push(cur)
-  // operands = [r_outermost, r_2nd, ..., leftmost_base]; syntactic order is reversed.
   let n = operands.length()
   let base = self.cur_stack
-  // Emit: each operand short-circuits (keeps its value) when truthy.
-  // Pattern: LOAD x_i; DUP; CJMP done_i; POP; LOAD x_{i+1}; [done_i placed]; ...
   let done_labels : Array[Int] = []
   for _ in 0..<(n - 1) {
     done_labels.push(self.new_label())
   }
-  // Emit leftmost operand first (index n-1 in the collected array).
   self.compile_expr(operands[n - 1])
   if n > 1 {
     self.emit0(Opcode::Dup, 0, 1)
     self.emit_jump(Opcode::CJmp, done_labels[0], 1, 0)
     self.emit0(Opcode::Pop, 1, 0)
   }
-  // i counts syntactic position (1 = second from left, n-1 = rightmost).
-  // The element at syntactic position i is stored at operands[n-1-i].
   for i in 1..<n {
     self.compile_expr(operands[n - 1 - i])
     self.place_label(done_labels[i - 1])
@@ -1009,13 +990,11 @@ fn Fcomp::compile_or(
 
 ///|
 /// `l and r`: evaluate `l`; if it is falsy keep it, otherwise evaluate `r`.
-/// Flattens the AND left-spine iteratively to avoid stack overflow on long chains.
 fn Fcomp::compile_and(
   self : Fcomp,
   l : @syntax.Expr,
   r : @syntax.Expr,
 ) -> Unit raise CompileErr {
-  // Collect all operands of the AND chain from the left-nested AST.
   let operands : Array[@syntax.Expr] = [r]
   let mut cur = l
   while true {
@@ -1028,24 +1007,20 @@ fn Fcomp::compile_and(
     }
   }
   operands.push(cur)
-  // operands = [r_outermost, r_2nd, ..., leftmost_base]; syntactic order is reversed.
   let n = operands.length()
   let base = self.cur_stack
-  // Emit: each operand short-circuits (keeps its value) when falsy.
-  // Pattern: LOAD x_i; DUP; CJMP cont_i; JMP done; [cont_i]; POP; ... LOAD x_{n-1}; [done]
-  // i counts syntactic position; element at syntactic position i is at operands[n-1-i].
   let done = self.new_label()
   for i in 0..<(n - 1) {
     self.compile_expr(operands[n - 1 - i])
     let cont = self.new_label()
     self.emit0(Opcode::Dup, 0, 1)
-    self.emit_jump(Opcode::CJmp, cont, 1, 0) // if truthy: continue to next
-    self.emit_jump(Opcode::Jmp, done, 0, 0) // if falsy: keep value, bail out
+    self.emit_jump(Opcode::CJmp, cont, 1, 0)
+    self.emit_jump(Opcode::Jmp, done, 0, 0)
     self.place_label(cont)
     self.set_stack(base + 1)
     self.emit0(Opcode::Pop, 1, 0)
   }
-  self.compile_expr(operands[0]) // rightmost (outermost r)
+  self.compile_expr(operands[0])
   self.place_label(done)
   self.set_stack(base + 1)
 }
