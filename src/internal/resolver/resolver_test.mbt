@@ -935,3 +935,59 @@ test "resolve: cannot reassign declared-at anchors at function name" {
   assert_true(msg.contains("declared at"))
   assert_true(msg.contains(":1:5"))
 }
+
+///|
+test "resolve: accepts long binary addition chain" {
+  let n = 2000
+  let src = "x = " + Array::make(n, "1").join("+")
+  let f = parse_or_fail(src)
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.is_valid())
+}
+
+///|
+test "resolve: accepts binary chain of 100 terms" {
+  let n = 100
+  let src = "x = " + Array::make(n, "1").join("+")
+  let f = parse_or_fail(src)
+  let result = resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.is_valid())
+}
+
+///|
+test "resolve: accepts long subscript postfix chain" {
+  let n = 2000
+  let src = "x = a" + "[0]".repeat(n)
+  let f = parse_or_fail(src)
+  let result = resolve(
+    f,
+    with_predeclared(["a"]),
+    no_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.is_valid())
+}
+
+///|
+test "resolve: accepts long or-chain" {
+  let n = 2000
+  let src = "x = " + Array::make(n, "True").join(" or ")
+  let f = parse_or_fail(src)
+  let result = resolve(
+    f,
+    no_predeclared,
+    only_universal,
+    ResolveOptions::default(),
+  )
+  assert_true(result.is_valid())
+}

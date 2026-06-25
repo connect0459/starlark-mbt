@@ -14,6 +14,9 @@ pub suberror CompileErr {
   CompileErr(String)
 }
 
+///|
+let max_compile_depth : Int = 1000
+
 // --- program-level compiler state ---
 
 ///|
@@ -117,6 +120,8 @@ priv struct Fcomp {
   freevar_names : Array[String]
   freevar_srcs : Array[FreevarSource]
   freevar_index : Map[String, Int]
+  // Depth counter for compile_expr to catch pathologically deep AST chains.
+  mut expr_depth : Int
 }
 
 ///|
@@ -149,6 +154,7 @@ fn Fcomp::new(
     freevar_names: [],
     freevar_srcs: [],
     freevar_index: {},
+    expr_depth: 0,
   }
 }
 
@@ -430,6 +436,11 @@ fn cell_indices(set : Map[Int, Bool]) -> Array[Int] {
 
 ///|
 fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr {
+  self.expr_depth += 1
+  if self.expr_depth > max_compile_depth {
+    self.expr_depth -= 1
+    raise CompileErr("expression nesting too deep")
+  }
   match e {
     ELiteral(lit, pos) => {
       self.set_pos(pos)
@@ -467,11 +478,27 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.place_label(end_lbl)
       self.set_stack(base + 1)
     }
-    EIndex(x, i, pos) => {
-      self.compile_expr(x)
-      self.compile_expr(i)
-      self.set_pos(pos)
-      self.emit0(Opcode::Index, 2, 1)
+    EIndex(_, _, _) => {
+      let chain : Array[(@syntax.Expr, @errors.Position)] = []
+      let mut cur = e
+      while true {
+        match cur {
+          EIndex(inner_x, inner_i, inner_pos) => {
+            chain.push((inner_i, inner_pos))
+            cur = inner_x
+          }
+          _ => break
+        }
+      }
+      self.compile_expr(cur)
+      let mut idx = chain.length() - 1
+      while idx >= 0 {
+        let (ei, posi) = chain[idx]
+        self.compile_expr(ei)
+        self.set_pos(posi)
+        self.emit0(Opcode::Index, 2, 1)
+        idx -= 1
+      }
     }
     ESlice(x, lo, hi, step, pos) => {
       self.compile_expr(x)
@@ -481,10 +508,26 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit0(Opcode::Slice, 4, 1)
     }
-    EDot(x, name, pos) => {
-      self.compile_expr(x)
-      self.set_pos(pos)
-      self.emit1(Opcode::Attr, self.pcomp.add_name(name), 1, 1)
+    EDot(_, _, _) => {
+      let chain : Array[(String, @errors.Position)] = []
+      let mut cur = e
+      while true {
+        match cur {
+          EDot(inner_x, inner_name, inner_pos) => {
+            chain.push((inner_name, inner_pos))
+            cur = inner_x
+          }
+          _ => break
+        }
+      }
+      self.compile_expr(cur)
+      let mut idx = chain.length() - 1
+      while idx >= 0 {
+        let (n, p) = chain[idx]
+        self.set_pos(p)
+        self.emit1(Opcode::Attr, self.pcomp.add_name(n), 1, 1)
+        idx -= 1
+      }
     }
     EList(xs, pos) => {
       for x in xs {
@@ -536,6 +579,7 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.compile_make_func("lambda", params, body, pos)
     }
   }
+  self.expr_depth -= 1
 }
 
 ///|
@@ -828,22 +872,11 @@ fn Fcomp::compile_ident(self : Fcomp, name : String) -> Unit raise CompileErr {
 }
 
 ///|
-fn Fcomp::compile_binary(
+fn Fcomp::emit_arith_op(
   self : Fcomp,
-  l : @syntax.Expr,
   op : @syntax.BinaryOp,
-  r : @syntax.Expr,
   pos : @errors.Position,
-) -> Unit raise CompileErr {
-  // `and` / `or` short-circuit via jumps, so the right operand is only
-  // evaluated when needed.
-  match op {
-    OpAnd => return self.compile_and(l, r)
-    OpOr => return self.compile_or(l, r)
-    _ => ()
-  }
-  self.compile_expr(l)
-  self.compile_expr(r)
+) -> Unit {
   self.set_pos(pos)
   match op {
     OpAdd => self.emit0(Opcode::Plus, 2, 1)
@@ -873,21 +906,86 @@ fn Fcomp::compile_binary(
 }
 
 ///|
+fn Fcomp::compile_binary(
+  self : Fcomp,
+  l : @syntax.Expr,
+  op : @syntax.BinaryOp,
+  r : @syntax.Expr,
+  pos : @errors.Position,
+) -> Unit raise CompileErr {
+  match op {
+    OpAnd => return self.compile_and(l, r)
+    OpOr => return self.compile_or(l, r)
+    _ => ()
+  }
+  let rights : Array[(@syntax.BinaryOp, @syntax.Expr, @errors.Position)] = [
+    (op, r, pos),
+  ]
+  let mut cur = l
+  while true {
+    match cur {
+      @syntax.Expr::EBinary(inner_l, inner_op, inner_r, inner_pos) =>
+        match inner_op {
+          @syntax.BinaryOp::OpAnd | @syntax.BinaryOp::OpOr => break
+          _ => {
+            rights.push((inner_op, inner_r, inner_pos))
+            cur = inner_l
+          }
+        }
+      _ => break
+    }
+  }
+  self.compile_expr(cur)
+  let mut i = rights.length() - 1
+  while i >= 0 {
+    let (opi, ri, posi) = rights[i]
+    self.compile_expr(ri)
+    self.emit_arith_op(opi, posi)
+    i -= 1
+  }
+}
+
+///|
 /// `l or r`: evaluate `l`; if it is truthy keep it, otherwise evaluate `r`.
 fn Fcomp::compile_or(
   self : Fcomp,
   l : @syntax.Expr,
   r : @syntax.Expr,
 ) -> Unit raise CompileErr {
-  let done = self.new_label()
+  let operands : Array[@syntax.Expr] = [r]
+  let mut cur = l
+  while true {
+    match cur {
+      @syntax.Expr::EBinary(inner_l, @syntax.BinaryOp::OpOr, inner_r, _) => {
+        operands.push(inner_r)
+        cur = inner_l
+      }
+      _ => break
+    }
+  }
+  operands.push(cur)
+  let n = operands.length()
   let base = self.cur_stack
-  self.compile_expr(l)
-  self.emit0(Opcode::Dup, 0, 1)
-  self.emit_jump(Opcode::CJmp, done, 1, 0) // keep l when truthy
-  self.emit0(Opcode::Pop, 1, 0)
-  self.compile_expr(r)
-  self.place_label(done)
-  self.set_stack(base + 1)
+  let done_labels : Array[Int] = []
+  for _ in 0..<(n - 1) {
+    done_labels.push(self.new_label())
+  }
+  self.compile_expr(operands[n - 1])
+  if n > 1 {
+    self.emit0(Opcode::Dup, 0, 1)
+    self.emit_jump(Opcode::CJmp, done_labels[0], 1, 0)
+    self.emit0(Opcode::Pop, 1, 0)
+  }
+  for i in 1..<n {
+    self.compile_expr(operands[n - 1 - i])
+    self.place_label(done_labels[i - 1])
+    self.set_stack(base + 1)
+    if i < n - 1 {
+      self.emit0(Opcode::Dup, 0, 1)
+      self.emit_jump(Opcode::CJmp, done_labels[i], 1, 0)
+      self.emit0(Opcode::Pop, 1, 0)
+    }
+  }
 }
 
 ///|
@@ -897,17 +995,32 @@ fn Fcomp::compile_and(
   l : @syntax.Expr,
   r : @syntax.Expr,
 ) -> Unit raise CompileErr {
-  let cont = self.new_label()
-  let done = self.new_label()
+  let operands : Array[@syntax.Expr] = [r]
+  let mut cur = l
+  while true {
+    match cur {
+      @syntax.Expr::EBinary(inner_l, @syntax.BinaryOp::OpAnd, inner_r, _) => {
+        operands.push(inner_r)
+        cur = inner_l
+      }
+      _ => break
+    }
+  }
+  operands.push(cur)
+  let n = operands.length()
   let base = self.cur_stack
-  self.compile_expr(l)
-  self.emit0(Opcode::Dup, 0, 1)
-  self.emit_jump(Opcode::CJmp, cont, 1, 0) // evaluate r when l truthy
-  self.emit_jump(Opcode::Jmp, done, 0, 0) // otherwise keep l
-  self.place_label(cont)
-  self.set_stack(base + 1) // the CJMP-taken path keeps the duplicated value
-  self.emit0(Opcode::Pop, 1, 0)
-  self.compile_expr(r)
+  let done = self.new_label()
+  for i in 0..<(n - 1) {
+    self.compile_expr(operands[n - 1 - i])
+    let cont = self.new_label()
+    self.emit0(Opcode::Dup, 0, 1)
+    self.emit_jump(Opcode::CJmp, cont, 1, 0)
+    self.emit_jump(Opcode::Jmp, done, 0, 0)
+    self.place_label(cont)
+    self.set_stack(base + 1)
+    self.emit0(Opcode::Pop, 1, 0)
+  }
+  self.compile_expr(operands[0])
   self.place_label(done)
   self.set_stack(base + 1)
 }
