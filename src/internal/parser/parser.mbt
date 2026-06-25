@@ -127,7 +127,7 @@ fn Parser::expect_ident(
       self.advance()
       (name, p)
     }
-    _ => raise ParseErr(self.syntax_error("not an identifier"))
+    _ => raise ParseErr(self.scanner_error("not an identifier"))
   }
 }
 
