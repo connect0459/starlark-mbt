@@ -357,9 +357,8 @@ test "an invalid for-loop target reports its own position, not the enclosing sta
 }
 
 ///|
-test "compile_expr: accepts left-nested binary addition chain of 2000 terms" {
+test "long flat binary addition chain compiles successfully" {
   // Build EBinary(EBinary(...(1+1)...+1)+1) with 2000 terms by hand.
-  // The compiler must handle this iteratively without stack overflow.
   let one = lit_int(1)
   let mut chain = one
   for _ in 1..<2000 {

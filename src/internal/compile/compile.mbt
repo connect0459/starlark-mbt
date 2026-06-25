@@ -441,7 +441,7 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
   self.expr_depth += 1
   if self.expr_depth > max_compile_depth {
     self.expr_depth -= 1
-    raise CompileErr("expression too deeply nested")
+    raise CompileErr("expression nesting too deep")
   }
   match e {
     ELiteral(lit, pos) => {

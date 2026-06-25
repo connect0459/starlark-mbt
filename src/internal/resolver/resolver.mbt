@@ -1064,7 +1064,7 @@ fn Resolver::pre_collect_lhs(self : Resolver, lhs : @syntax.Expr) -> Unit {
 fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
   self.walk_depth += 1
   if self.walk_depth > max_walk_depth {
-    self.errorf(@syntax.expr_pos(expr), "expression too deeply nested")
+    self.errorf(@syntax.expr_pos(expr), "expression nesting too deep")
     self.walk_depth -= 1
     return
   }
