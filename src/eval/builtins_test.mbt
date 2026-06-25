@@ -1330,6 +1330,54 @@ test "exec_file: string.isalnum returns true for string with Unicode decimal dig
 }
 
 ///|
+test "exec_file: string.isalpha returns true for CJK ideograph (Lo)" {
+  match exec_b("r = \"\u{4E00}\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalpha returns true for Hiragana letter (Lo)" {
+  match exec_b("r = \"\u{3042}\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalpha returns true for Hangul syllable (Lo)" {
+  match exec_b("r = \"\u{D55C}\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalpha returns true for Hebrew letter (Lo)" {
+  match exec_b("r = \"\u{05D0}\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalpha returns true for modifier letter (Lm)" {
+  match exec_b("r = \"\u{02B0}\".isalpha()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
+test "exec_file: string.isalnum returns true for CJK ideograph (Lo)" {
+  match exec_b("r = \"\u{4E00}\".isalnum()") {
+    Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
 test "exec_file: string.islower returns true when all cased chars are lowercase" {
   match exec_b("r = \"hello\".islower()") {
     Ok(m) => assert_true(g(m, "r") == Some(@value.Value::Bool(true)))
