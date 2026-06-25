@@ -1192,8 +1192,6 @@ test "vm: unhashable dict key error anchors at the colon position" {
 ///|
 test "vm: unhashable dict comprehension key error anchors at the colon position" {
   // {([1],2):x for x in [0]} — key ([1],2) starts at col 2, colon ':' is at col 9.
-  // go anchors at the colon; the comprehension SetDict path must mirror the
-  // dict-literal SetDictUniq path.
   let r = @eval.exec_file(
     @eval.Thread::new("v"),
     "t.star",
@@ -1212,7 +1210,6 @@ test "vm: unhashable dict comprehension key error anchors at the colon position"
 ///|
 test "vm: duplicate dict key error anchors at the colon position" {
   // {"a":1,"a":2} — second "a" at col 8, its colon at col 11.
-  // set_pos(colon) before SetDictUniq covers duplicate-key errors too.
   let r = @eval.exec_file(
     @eval.Thread::new("v"),
     "t.star",
