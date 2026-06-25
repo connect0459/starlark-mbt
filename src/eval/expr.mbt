@@ -3765,7 +3765,6 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
   } else {
     base
   }
-  let report_base = base
   let digit_start = if s[start] == '0' && start + 1 < s.length() {
     let prefix = s[start + 1]
     if (prefix == 'x' || prefix == 'X') && actual_base == 16 {
@@ -3781,7 +3780,7 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
     start
   }
   if digit_start >= s.length() {
-    return Err("invalid literal with base \{report_base}: \{s}")
+    return Err("invalid literal with base \{base}: \{s}")
   }
   let digits = s[digit_start:].to_owned()
   for i in 0..<digits.length() {
@@ -3793,10 +3792,10 @@ fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
     } else if c >= 'A'.to_int() && c <= 'Z'.to_int() {
       c - 'A'.to_int() + 10
     } else {
-      return Err("invalid literal with base \{report_base}: \{s}")
+      return Err("invalid literal with base \{base}: \{s}")
     }
     if digit >= actual_base {
-      return Err("invalid literal with base \{report_base}: \{s}")
+      return Err("invalid literal with base \{base}: \{s}")
     }
   }
   let result = BigInt::from_string(digits, radix=actual_base)
