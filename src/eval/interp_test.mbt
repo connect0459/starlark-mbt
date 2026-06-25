@@ -1208,3 +1208,22 @@ test "vm: unhashable dict comprehension key error anchors at the colon position"
     Ok(_) => fail("expected unhashable-key error")
   }
 }
+
+///|
+test "vm: duplicate dict key error anchors at the colon position" {
+  // {"a":1,"a":2} — second "a" at col 8, its colon at col 11.
+  // set_pos(colon) before SetDictUniq covers duplicate-key errors too.
+  let r = @eval.exec_file(
+    @eval.Thread::new("v"),
+    "t.star",
+    "{\"a\":1,\"a\":2}",
+    @eval.Options::default(),
+  )
+  match r {
+    Err(e) => {
+      assert_true(e.msg().contains("duplicate key"))
+      assert_eq(e.call_stack().at(0).unwrap().pos().col(), 11)
+    }
+    Ok(_) => fail("expected duplicate-key error")
+  }
+}
