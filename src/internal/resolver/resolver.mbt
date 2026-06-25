@@ -598,8 +598,9 @@ fn Resolver::bind_lhs(
   }
 }
 
-// Names the kind of a non-assignable LHS expression, as the lowercased AST type
-// name in "can't assign to <kind>".
+// Names the kind of a non-assignable LHS expression for "can't assign to <kind>".
+// Comprehension forms all return "comprehension" — starlark-go uses a single
+// Comprehension AST node for all forms; other forms use the lowercased AST type name.
 
 ///|
 fn lhs_kind(e : @syntax.Expr) -> String {
@@ -613,9 +614,9 @@ fn lhs_kind(e : @syntax.Expr) -> String {
     @syntax.Expr::EDict(_, _) => "dictexpr"
     @syntax.Expr::ESet(_, _) => "setexpr"
     @syntax.Expr::ELambda(_, _, _) => "lambdaexpr"
-    @syntax.Expr::EListComp(_, _, _) => "listcomp"
-    @syntax.Expr::ESetComp(_, _, _) => "setcomp"
-    @syntax.Expr::EDictComp(_, _, _, _, _) => "dictcomp"
+    @syntax.Expr::EListComp(_, _, _) => "comprehension"
+    @syntax.Expr::ESetComp(_, _, _) => "comprehension"
+    @syntax.Expr::EDictComp(_, _, _, _, _) => "comprehension"
     _ => "expression"
   }
 }
