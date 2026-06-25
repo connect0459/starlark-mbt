@@ -138,6 +138,7 @@ fn expand_star_args(
   iterable : @value.Value,
   out : Array[@value.Value],
 ) -> Unit raise EvalErr {
+  guard_range_alloc(ctx, "argument after *", iterable)
   let it = match @value.iterate(iterable) {
     Ok(it) => it
     Err(_) =>

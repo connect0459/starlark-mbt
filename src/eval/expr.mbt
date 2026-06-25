@@ -1355,6 +1355,7 @@ fn builtin_sorted(
   }
   // starlark-go order: check iterable type first, then key, then reverse.
   // Kwarg names are quoted in error messages; positional names are not.
+  guard_range_alloc(ctx, "sorted", iterable)
   let it = match @value.iterate(iterable) {
     Ok(it) => it
     Err(_) => {
@@ -1514,6 +1515,7 @@ fn builtin_reversed(
   ctx : EvalContext,
   pos_args : Array[@value.Value],
 ) -> @value.Value raise EvalErr {
+  guard_range_alloc(ctx, "reversed", pos_args[0])
   let it = require_seq(ctx, "reversed", pos_args[0])
   let items = it.collect()
   let n = items.length()
@@ -1668,6 +1670,7 @@ fn call_list_method(
         }
       } else {
         check_pfx(ctx, "extend", l.check_mutable("extend"))
+        guard_range_alloc(ctx, "extend", pos_args[0])
         let it = require_seq(ctx, "extend", pos_args[0])
         while true {
           match it.next() {

@@ -3004,6 +3004,36 @@ test "exec_file: tuple from overflow range raises excessive-sequence error" {
   )
 }
 
+// --- reversed/sorted/extend/star-args oversized Range ---
+
+///|
+test "exec_file: reversed from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("reversed(range(1073741824))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: sorted from range at allocation cap raises excessive-sequence error" {
+  assert_true(emsg("sorted(range(1073741824))").contains("excessive sequence"))
+}
+
+///|
+test "exec_file: list extend from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("[].extend(range(1073741824))").contains("excessive sequence"),
+  )
+}
+
+///|
+test "exec_file: star-args from range at allocation cap raises excessive-sequence error" {
+  assert_true(
+    emsg("def f(*a): pass\nf(*range(1073741824))").contains(
+      "excessive sequence",
+    ),
+  )
+}
+
 // --- dict() arity error ---
 
 ///|
