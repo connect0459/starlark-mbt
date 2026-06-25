@@ -991,3 +991,45 @@ test "resolve: accepts long or-chain" {
   )
   assert_true(result.is_valid())
 }
+
+///|
+test "resolve: can't assign to callexpr anchors at leftmost token" {
+  // foobar() = 2 — foobar starts at col 1; expr_pos gives col 7 (the '(').
+  let f = parse_or_fail("foobar() = 2")
+  let r = resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+  assert_true(error_col(r, "can't assign to callexpr") == Some(1))
+}
+
+///|
+test "resolve: can't assign to binaryexpr anchors at leftmost token" {
+  // aaa + b = 0 — 'aaa' starts at col 1; expr_pos gives col 5 (the '+').
+  let f = parse_or_fail("aaa + b = 0")
+  let r = resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+  assert_true(error_col(r, "can't assign to binaryexpr") == Some(1))
+}
+
+///|
+test "resolve: can't assign to sliceexpr anchors at leftmost token" {
+  // abcdef[1:2] = 0 — 'abcdef' starts at col 1; expr_pos gives col 7 ('[').
+  let f = parse_or_fail("abcdef[1:2] = 0")
+  let r = resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+  assert_true(error_col(r, "can't assign to sliceexpr") == Some(1))
+}
+
+///|
+test "resolve: positional-after-*args anchors at leftmost token of compound arg" {
+  // f(*a, b.x) — 'b' starts at col 7; expr_pos gives col 8 (the '.').
+  let r = resolve_call("f(*a, b.x)")
+  assert_true(
+    error_col(r, "positional argument may not follow *args") == Some(7),
+  )
+}
+
+///|
+test "resolve: positional-after-named anchors at leftmost token of compound arg" {
+  // f(x=1, b.x) — 'b' starts at col 8; expr_pos gives col 9 (the '.').
+  let r = resolve_call("f(x=1, b.x)")
+  assert_true(
+    error_col(r, "positional argument may not follow named") == Some(8),
+  )
+}

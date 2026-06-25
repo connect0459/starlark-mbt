@@ -547,10 +547,10 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit0(Opcode::MakeDict, 0, 1)
       for pair in pairs {
-        let (k, v) = pair
+        let (k, v, colon) = pair
         self.compile_expr(k)
         self.compile_expr(v)
-        self.set_pos(@syntax.expr_pos(k))
+        self.set_pos(colon)
         self.emit0(Opcode::SetDictUniq, 2, 0)
       }
     }
@@ -567,8 +567,8 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
     ECall(callee, args, pos) => self.compile_call(callee, args, pos)
     EListComp(elt, clauses, pos) =>
       self.compile_comprehension(CList(elt), clauses, pos)
-    EDictComp(k, v, clauses, pos) =>
-      self.compile_comprehension(CDict(k, v), clauses, pos)
+    EDictComp(k, v, clauses, colon, pos) =>
+      self.compile_comprehension(CDict(k, v, colon), clauses, pos)
     ESetComp(elt, clauses, pos) =>
       self.compile_comprehension(CSet(elt), clauses, pos)
     ELambda(params, body_e, pos) => {
@@ -661,7 +661,7 @@ fn Fcomp::compile_call(
 priv enum CompKind {
   CList(@syntax.Expr)
   CSet(@syntax.Expr)
-  CDict(@syntax.Expr, @syntax.Expr)
+  CDict(@syntax.Expr, @syntax.Expr, @errors.Position)
 }
 
 ///|
@@ -683,7 +683,7 @@ fn Fcomp::compile_comprehension(
   match kind {
     CList(_) => self.emit1(Opcode::MakeList, 0, 0, 1)
     CSet(_) => self.emit0(Opcode::MakeSet, 0, 1)
-    CDict(_, _) => self.emit0(Opcode::MakeDict, 0, 1)
+    CDict(_, _, _) => self.emit0(Opcode::MakeDict, 0, 1)
   }
   // Collect every name a comprehension `for` clause binds, including the names
   // inside tuple/list targets, so each gets an isolated comp-local slot.
@@ -763,9 +763,10 @@ fn Fcomp::emit_comp_rest(
         self.compile_expr(elt)
         self.emit0(Opcode::SetAdd, 1, 0)
       }
-      CDict(k, v) => {
+      CDict(k, v, colon) => {
         self.compile_expr(k)
         self.compile_expr(v)
+        self.set_pos(colon)
         self.emit0(Opcode::SetDict, 2, 0)
       }
     }
@@ -1081,7 +1082,7 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
         }
         _ =>
           raise CompileErr(
-            "compile: invalid augmented-assignment target at \{@syntax.expr_pos(lhs).to_string()}",
+            "compile: invalid augmented-assignment target at \{@syntax.start(lhs).to_string()}",
           )
       }
     SPass(_) => ()
@@ -1294,7 +1295,7 @@ fn Fcomp::compile_assign_target(
     }
     _ =>
       raise CompileErr(
-        "compile: invalid assignment target at \{@syntax.expr_pos(target).to_string()}",
+        "compile: invalid assignment target at \{@syntax.start(target).to_string()}",
       )
   }
 }

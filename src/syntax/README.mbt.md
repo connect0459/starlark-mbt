@@ -68,7 +68,8 @@ Parsing from source requires `@eval.parse_file` / `@eval.parse_expr`.
 | `walk_stmt` | `(Stmt, (Node?) -> Bool) -> Unit` | Depth-first traversal of a statement; same `Some`/`None` entry/exit contract as `walk_file` |
 | `walk_expr` | `(Expr, (Node?) -> Bool) -> Unit` | Depth-first traversal of an expression; same `Some`/`None` entry/exit contract as `walk_file` |
 | `stmt_pos` | `(Stmt) -> @errors.Position` | Source position of a statement node |
-| `expr_pos` | `(Expr) -> @errors.Position` | Source position of an expression node |
+| `expr_pos` | `(Expr) -> @errors.Position` | Source position of an expression node (node's own slot: operator, bracket, etc.) |
+| `start` | `(Expr) -> @errors.Position` | Position of the leftmost token in an expression (walks into sub-expressions for compound LHS nodes) |
 
 ### `File`
 
@@ -96,12 +97,12 @@ pub(all) enum Expr {
   ECall(Expr, Array[Arg], @errors.Position) // f(args…)
   EList(Array[Expr], @errors.Position)
   ETuple(Array[Expr], @errors.Position)
-  EDict(Array[(Expr, Expr)], @errors.Position)
+  EDict(Array[(Expr, Expr, @errors.Position)], @errors.Position) // (key, val, colon_pos)
   ESet(Array[Expr], @errors.Position)
   ELambda(Array[Param], Expr, @errors.Position)
   EListComp(Expr, Array[CompClause], @errors.Position)
   ESetComp(Expr, Array[CompClause], @errors.Position)
-  EDictComp(Expr, Expr, Array[CompClause], @errors.Position)
+  EDictComp(Expr, Expr, Array[CompClause], @errors.Position, @errors.Position) // (key, val, clauses, colon_pos, brace_pos)
 }
 
 ///|

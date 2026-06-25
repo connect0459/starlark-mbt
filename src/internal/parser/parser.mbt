@@ -127,7 +127,7 @@ fn Parser::expect_ident(
       self.advance()
       (name, p)
     }
-    _ => raise ParseErr(self.syntax_error("not an identifier"))
+    _ => raise ParseErr(self.scanner_error("not an identifier"))
   }
 }
 
@@ -563,7 +563,7 @@ fn Parser::parse_param(self : Parser) -> @syntax.Param raise ParseErr {
         @syntax.Param::ParamIdent(name, p)
       }
     }
-    _ => raise ParseErr(self.syntax_error("not an identifier"))
+    _ => raise ParseErr(self.scanner_error("not an identifier"))
   }
 }
 
@@ -1498,23 +1498,27 @@ fn Parser::parse_dict_or_set(
   }
   let first = self.parse_test()
   if self.tok == @lexer.Token::Colon {
+    let first_colon = self.pos
     self.advance()
     let val = self.parse_test()
     if self.tok == @lexer.Token::For {
       let clauses = self.parse_comp_clauses()
       self.expect(@lexer.Token::RBrace)
-      @syntax.Expr::EDictComp(first, val, clauses, p)
+      @syntax.Expr::EDictComp(first, val, clauses, first_colon, p)
     } else {
-      let pairs : Array[(@syntax.Expr, @syntax.Expr)] = [(first, val)]
+      let pairs : Array[(@syntax.Expr, @syntax.Expr, @errors.Position)] = [
+        (first, val, first_colon),
+      ]
       while self.tok == @lexer.Token::Comma {
         self.advance()
         if self.tok == @lexer.Token::RBrace {
           break
         }
         let k = self.parse_test()
+        let colon = self.pos
         self.expect(@lexer.Token::Colon)
         let v = self.parse_test()
-        pairs.push((k, v))
+        pairs.push((k, v, colon))
       }
       self.expect(@lexer.Token::RBrace)
       @syntax.Expr::EDict(pairs, p)

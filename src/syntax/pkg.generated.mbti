@@ -9,6 +9,8 @@ import {
 // Values
 pub fn expr_pos(Expr) -> @errors.Position
 
+pub fn start(Expr) -> @errors.Position
+
 pub fn stmt_pos(Stmt) -> @errors.Position
 
 pub fn walk_expr(Expr, (Node?) -> Bool) -> Unit
@@ -82,12 +84,12 @@ pub(all) enum Expr {
   ECall(Expr, Array[Arg], @errors.Position)
   EList(Array[Expr], @errors.Position)
   ETuple(Array[Expr], @errors.Position)
-  EDict(Array[(Expr, Expr)], @errors.Position)
+  EDict(Array[(Expr, Expr, @errors.Position)], @errors.Position)
   ESet(Array[Expr], @errors.Position)
   ELambda(Array[Param], Expr, @errors.Position)
   EListComp(Expr, Array[CompClause], @errors.Position)
   ESetComp(Expr, Array[CompClause], @errors.Position)
-  EDictComp(Expr, Expr, Array[CompClause], @errors.Position)
+  EDictComp(Expr, Expr, Array[CompClause], @errors.Position, @errors.Position)
 }
 
 pub struct File {

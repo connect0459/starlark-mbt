@@ -594,7 +594,7 @@ fn Resolver::bind_lhs(
         self.bind_lhs(elem, is_augmented~)
       }
     }
-    _ => self.errorf(@syntax.expr_pos(lhs), "can't assign to \{lhs_kind(lhs)}")
+    _ => self.errorf(@syntax.start(lhs), "can't assign to \{lhs_kind(lhs)}")
   }
 }
 
@@ -615,7 +615,7 @@ fn lhs_kind(e : @syntax.Expr) -> String {
     @syntax.Expr::ELambda(_, _, _) => "lambdaexpr"
     @syntax.Expr::EListComp(_, _, _) => "listcomp"
     @syntax.Expr::ESetComp(_, _, _) => "setcomp"
-    @syntax.Expr::EDictComp(_, _, _, _) => "dictcomp"
+    @syntax.Expr::EDictComp(_, _, _, _, _) => "dictcomp"
     _ => "expression"
   }
 }
@@ -1177,7 +1177,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
           }
           @syntax.Arg::ArgPos(e) => {
             n_pos = n_pos + 1
-            let pos = @syntax.expr_pos(e)
+            let pos = @syntax.start(e)
             if seen_varargs {
               self.errorf(pos, "positional argument may not follow *args")
             } else if seen_kwargs {
@@ -1212,7 +1212,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
     @syntax.Expr::EDict(pairs, _) =>
       for pair in pairs {
-        let (k, v) = pair
+        let (k, v, _) = pair
         self.walk_expr(k)
         self.walk_expr(v)
       }
@@ -1251,7 +1251,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
       self.walk_comprehension(body, None, clauses)
     }
-    @syntax.Expr::EDictComp(key, val, clauses, _) =>
+    @syntax.Expr::EDictComp(key, val, clauses, _, _) =>
       self.walk_comprehension(key, Some(val), clauses)
   }
   self.walk_depth -= 1

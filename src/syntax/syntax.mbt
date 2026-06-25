@@ -170,12 +170,12 @@ pub(all) enum Expr {
   ECall(Expr, Array[Arg], @errors.Position)
   EList(Array[Expr], @errors.Position)
   ETuple(Array[Expr], @errors.Position)
-  EDict(Array[(Expr, Expr)], @errors.Position)
+  EDict(Array[(Expr, Expr, @errors.Position)], @errors.Position)
   ESet(Array[Expr], @errors.Position)
   ELambda(Array[Param], Expr, @errors.Position)
   EListComp(Expr, Array[CompClause], @errors.Position)
   ESetComp(Expr, Array[CompClause], @errors.Position)
-  EDictComp(Expr, Expr, Array[CompClause], @errors.Position)
+  EDictComp(Expr, Expr, Array[CompClause], @errors.Position, @errors.Position)
 }
 
 ///|
@@ -281,7 +281,32 @@ pub fn expr_pos(e : Expr) -> @errors.Position {
     ELambda(_, _, p) => p
     EListComp(_, _, p) => p
     ESetComp(_, _, p) => p
-    EDictComp(_, _, _, p) => p
+    EDictComp(_, _, _, _, p) => p
+  }
+}
+
+///|
+/// Returns the position of the leftmost token in an expression.
+///
+/// Unlike `expr_pos`, which returns the position stored in the node's own
+/// slot (operator, bracket, etc.), `start` walks into sub-expressions to
+/// find the leftmost token of the whole expression.  Used to anchor error
+/// messages at the beginning of a compound LHS (e.g. `foobar` in
+/// `foobar() = 2`).
+///
+/// Parameters:
+///
+/// - `e` : The expression node to inspect.
+///
+/// Returns the `Position` of the leftmost token.
+pub fn start(e : Expr) -> @errors.Position {
+  match e {
+    EBinary(lhs, _, _, _) => start(lhs)
+    ECall(callee, _, _) => start(callee)
+    ESlice(x, _, _, _, _) => start(x)
+    EIndex(x, _, _) => start(x)
+    EDot(obj, _, _) => start(obj)
+    _ => expr_pos(e)
   }
 }
 

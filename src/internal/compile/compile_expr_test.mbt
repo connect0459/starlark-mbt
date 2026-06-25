@@ -163,7 +163,7 @@ test "toplevel always ends with NONE and RETURN" {
 ///|
 test "a dict literal builds a dict and sets each unique entry" {
   // d = {1: 2}
-  let dict = @syntax.Expr::EDict([(lit_int(1), lit_int(2))], p(1, 5))
+  let dict = @syntax.Expr::EDict([(lit_int(1), lit_int(2), p(1, 2))], p(1, 5))
   let fc = compile_top([
     @syntax.Stmt::SAssign(@syntax.Expr::EIdent("d", p(1, 1)), dict, p(1, 3)),
   ])
