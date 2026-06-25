@@ -615,7 +615,7 @@ fn lhs_kind(e : @syntax.Expr) -> String {
     @syntax.Expr::ELambda(_, _, _) => "lambdaexpr"
     @syntax.Expr::EListComp(_, _, _) => "listcomp"
     @syntax.Expr::ESetComp(_, _, _) => "setcomp"
-    @syntax.Expr::EDictComp(_, _, _, _) => "dictcomp"
+    @syntax.Expr::EDictComp(_, _, _, _, _) => "dictcomp"
     _ => "expression"
   }
 }
@@ -1251,7 +1251,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
       self.walk_comprehension(body, None, clauses)
     }
-    @syntax.Expr::EDictComp(key, val, clauses, _) =>
+    @syntax.Expr::EDictComp(key, val, clauses, _, _) =>
       self.walk_comprehension(key, Some(val), clauses)
   }
   self.walk_depth -= 1

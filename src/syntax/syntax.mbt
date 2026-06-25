@@ -175,7 +175,7 @@ pub(all) enum Expr {
   ELambda(Array[Param], Expr, @errors.Position)
   EListComp(Expr, Array[CompClause], @errors.Position)
   ESetComp(Expr, Array[CompClause], @errors.Position)
-  EDictComp(Expr, Expr, Array[CompClause], @errors.Position)
+  EDictComp(Expr, Expr, Array[CompClause], @errors.Position, @errors.Position)
 }
 
 ///|
@@ -281,7 +281,7 @@ pub fn expr_pos(e : Expr) -> @errors.Position {
     ELambda(_, _, p) => p
     EListComp(_, _, p) => p
     ESetComp(_, _, p) => p
-    EDictComp(_, _, _, p) => p
+    EDictComp(_, _, _, _, p) => p
   }
 }
 

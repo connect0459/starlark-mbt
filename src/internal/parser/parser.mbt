@@ -1504,7 +1504,7 @@ fn Parser::parse_dict_or_set(
     if self.tok == @lexer.Token::For {
       let clauses = self.parse_comp_clauses()
       self.expect(@lexer.Token::RBrace)
-      @syntax.Expr::EDictComp(first, val, clauses, p)
+      @syntax.Expr::EDictComp(first, val, clauses, first_colon, p)
     } else {
       let pairs : Array[(@syntax.Expr, @syntax.Expr, @errors.Position)] = [
         (first, val, first_colon),

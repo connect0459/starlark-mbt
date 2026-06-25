@@ -167,7 +167,7 @@ pub fn walk_expr(expr : Expr, f : (Node?) -> Bool) -> Unit {
         walk_comp_clause(c, f)
       }
     }
-    EDictComp(key, val, clauses, _) => {
+    EDictComp(key, val, clauses, _, _) => {
       walk_expr(key, f)
       walk_expr(val, f)
       for c in clauses {

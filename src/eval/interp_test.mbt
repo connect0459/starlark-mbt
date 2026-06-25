@@ -1188,3 +1188,23 @@ test "vm: unhashable dict key error anchors at the colon position" {
     Ok(_) => fail("expected unhashable-key error")
   }
 }
+
+///|
+test "vm: unhashable dict comprehension key error anchors at the colon position" {
+  // {([1],2):x for x in [0]} — key ([1],2) starts at col 2, colon ':' is at col 9.
+  // go anchors at the colon; the comprehension SetDict path must mirror the
+  // dict-literal SetDictUniq path.
+  let r = @eval.exec_file(
+    @eval.Thread::new("v"),
+    "t.star",
+    "{([1],2):x for x in [0]}",
+    @eval.Options::default(),
+  )
+  match r {
+    Err(e) => {
+      assert_true(e.msg().contains("unhashable"))
+      assert_eq(e.call_stack().at(0).unwrap().pos().col(), 9)
+    }
+    Ok(_) => fail("expected unhashable-key error")
+  }
+}

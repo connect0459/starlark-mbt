@@ -114,6 +114,7 @@ test "walk visits lambda parameters and comprehension clauses" {
     ident("dv"),
     [ClauseFor(ident("dvv"), ident("dseq"), p())],
     p(),
+    p(),
   )
   let file = File::new("t.star", [
     SExpr(lambda),
@@ -282,7 +283,7 @@ test "expr_pos returns the position of every expression variant" {
     ELambda([], ident("a"), q),
     EListComp(ident("a"), [], q),
     ESetComp(ident("a"), [], q),
-    EDictComp(ident("a"), ident("b"), [], q),
+    EDictComp(ident("a"), ident("b"), [], q, q),
   ]
   for e in exprs {
     assert_eq(expr_pos(e).line(), 9)
