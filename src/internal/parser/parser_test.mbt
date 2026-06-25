@@ -1863,3 +1863,28 @@ test "parser: missing indented block after while reports got <tok>, want indent"
     Ok(_) => fail("expected error")
   }
 }
+
+///|
+test "parser: def with keyword param 'in' anchors error at token end" {
+  // def f(in): pass — 'in' starts at col 7, length 2, so token end is col 9.
+  // go uses p.in.pos (scanner lookahead = position past the bad token).
+  match @parser.parse_file("test.star", "def f(in): pass\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("not an identifier"))
+      assert_eq(e.pos().col(), 9)
+    }
+    Ok(_) => fail("expected error")
+  }
+}
+
+///|
+test "parser: def with keyword param 'lambda' anchors error at token end" {
+  // def f(lambda): pass — 'lambda' starts at col 7, length 6, token end col 13.
+  match @parser.parse_file("test.star", "def f(lambda): pass\n") {
+    Err(e) => {
+      assert_true(e.msg().contains("not an identifier"))
+      assert_eq(e.pos().col(), 13)
+    }
+    Ok(_) => fail("expected error")
+  }
+}

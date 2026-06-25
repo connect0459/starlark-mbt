@@ -563,7 +563,7 @@ fn Parser::parse_param(self : Parser) -> @syntax.Param raise ParseErr {
         @syntax.Param::ParamIdent(name, p)
       }
     }
-    _ => raise ParseErr(self.syntax_error("not an identifier"))
+    _ => raise ParseErr(self.scanner_error("not an identifier"))
   }
 }
 
