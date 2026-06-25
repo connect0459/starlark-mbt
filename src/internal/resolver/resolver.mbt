@@ -613,9 +613,9 @@ fn lhs_kind(e : @syntax.Expr) -> String {
     @syntax.Expr::EDict(_, _) => "dictexpr"
     @syntax.Expr::ESet(_, _) => "setexpr"
     @syntax.Expr::ELambda(_, _, _) => "lambdaexpr"
-    @syntax.Expr::EListComp(_, _, _) => "listcomp"
-    @syntax.Expr::ESetComp(_, _, _) => "setcomp"
-    @syntax.Expr::EDictComp(_, _, _, _, _) => "dictcomp"
+    @syntax.Expr::EListComp(_, _, _) => "comprehension"
+    @syntax.Expr::ESetComp(_, _, _) => "comprehension"
+    @syntax.Expr::EDictComp(_, _, _, _, _) => "comprehension"
     _ => "expression"
   }
 }
