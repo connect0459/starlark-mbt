@@ -202,3 +202,70 @@ test "is_letter: Old Hungarian Capital Letter A (Lu, U+10C80) is a letter" {
 test "is_letter: Imperial Aramaic Mirrored Yod (So, U+10877) is not a letter" {
   assert_false(is_letter(0x10877))
 }
+
+///|
+test "is_upper_letter: ASCII A-Z are uppercase letters" {
+  assert_true(is_upper_letter(0x41)) // A
+  assert_true(is_upper_letter(0x5A)) // Z
+}
+
+///|
+test "is_upper_letter: ASCII a-z are not uppercase letters" {
+  assert_false(is_upper_letter(0x61)) // a
+  assert_false(is_upper_letter(0x7A)) // z
+}
+
+///|
+test "is_upper_letter: Old Hungarian Capital Letter A (Lu, U+10C80) is uppercase" {
+  assert_true(is_upper_letter(0x10C80))
+}
+
+///|
+test "is_upper_letter: Cyrillic Capital Letter TJE (Lu, U+1C89) is uppercase" {
+  assert_true(is_upper_letter(0x1C89))
+}
+
+///|
+test "is_upper_letter: Garay Capital Letter A (Lu, U+10D50) is uppercase" {
+  assert_true(is_upper_letter(0x10D50))
+}
+
+///|
+test "is_lower_letter: ASCII a-z are lowercase letters" {
+  assert_true(is_lower_letter(0x61)) // a
+  assert_true(is_lower_letter(0x7A)) // z
+}
+
+///|
+test "is_lower_letter: ASCII A-Z are not lowercase letters" {
+  assert_false(is_lower_letter(0x41)) // A
+  assert_false(is_lower_letter(0x5A)) // Z
+}
+
+///|
+test "is_lower_letter: Cyrillic Small Letter TJE (Ll, U+1C8A) is lowercase" {
+  assert_true(is_lower_letter(0x1C8A))
+}
+
+///|
+test "is_lower_letter: Garay Small Letter A (Ll, U+10D70) is lowercase" {
+  assert_true(is_lower_letter(0x10D70))
+}
+
+///|
+test "is_title_letter: titlecase letters (Lt) are recognised" {
+  assert_true(is_title_letter(0x1C5)) // Dz
+  assert_true(is_title_letter(0x1C8)) // Lj
+  assert_true(is_title_letter(0x1CB)) // Nj
+  assert_true(is_title_letter(0x1F2)) // Dz (second form)
+  assert_true(is_title_letter(0x1F88)) // GREEK CAPITAL LETTER ALPHA WITH PSILI AND PROSGEGRAMMENI
+  assert_true(is_title_letter(0x1F8F))
+  assert_true(is_title_letter(0x1FFC)) // GREEK CAPITAL LETTER OMEGA WITH PROSGEGRAMMENI
+}
+
+///|
+test "is_title_letter: non-title letters are not titlecase" {
+  assert_false(is_title_letter(0x41)) // A (uppercase, not titlecase)
+  assert_false(is_title_letter(0x61)) // a (lowercase)
+  assert_false(is_title_letter(0x1C4)) // DZ (uppercase, not titlecase)
+}
