@@ -74,7 +74,7 @@ test "walk visits collection literals, calls, and attribute access" {
   let list = EList([ident("l1"), ident("l2")], p())
   let tuple = ETuple([ident("t1")], p())
   let set = ESet([ident("s1")], p())
-  let dict = EDict([(ident("k"), ident("v"))], p())
+  let dict = EDict([(ident("k"), ident("v"), p())], p())
   let file = File::new("t.star", [
     SExpr(call),
     SExpr(list),

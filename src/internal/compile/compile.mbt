@@ -547,10 +547,10 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_pos(pos)
       self.emit0(Opcode::MakeDict, 0, 1)
       for pair in pairs {
-        let (k, v) = pair
+        let (k, v, colon) = pair
         self.compile_expr(k)
         self.compile_expr(v)
-        self.set_pos(@syntax.expr_pos(k))
+        self.set_pos(colon)
         self.emit0(Opcode::SetDictUniq, 2, 0)
       }
     }

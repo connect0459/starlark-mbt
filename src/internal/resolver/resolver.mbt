@@ -1212,7 +1212,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
     @syntax.Expr::EDict(pairs, _) =>
       for pair in pairs {
-        let (k, v) = pair
+        let (k, v, _) = pair
         self.walk_expr(k)
         self.walk_expr(v)
       }

@@ -1498,6 +1498,7 @@ fn Parser::parse_dict_or_set(
   }
   let first = self.parse_test()
   if self.tok == @lexer.Token::Colon {
+    let first_colon = self.pos
     self.advance()
     let val = self.parse_test()
     if self.tok == @lexer.Token::For {
@@ -1505,16 +1506,19 @@ fn Parser::parse_dict_or_set(
       self.expect(@lexer.Token::RBrace)
       @syntax.Expr::EDictComp(first, val, clauses, p)
     } else {
-      let pairs : Array[(@syntax.Expr, @syntax.Expr)] = [(first, val)]
+      let pairs : Array[(@syntax.Expr, @syntax.Expr, @errors.Position)] = [
+        (first, val, first_colon),
+      ]
       while self.tok == @lexer.Token::Comma {
         self.advance()
         if self.tok == @lexer.Token::RBrace {
           break
         }
         let k = self.parse_test()
+        let colon = self.pos
         self.expect(@lexer.Token::Colon)
         let v = self.parse_test()
-        pairs.push((k, v))
+        pairs.push((k, v, colon))
       }
       self.expect(@lexer.Token::RBrace)
       @syntax.Expr::EDict(pairs, p)
