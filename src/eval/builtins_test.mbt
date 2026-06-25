@@ -2914,18 +2914,18 @@ test "exec_file: sorted key= that mutates source list raises during-iteration er
 // --- iteration-lock error message prefixes ---
 
 ///|
-test "exec_file: list.clear during iteration error includes clear: prefix" {
+test "exec_file: list.clear during iteration error matches go wording" {
   let src =
     #|def f():
     #|    xs = [1, 2, 3]
     #|    for _ in xs:
     #|        xs.clear()
     #|f()
-  assert_true(emsg(src).contains("clear:"))
+  assert_eq(emsg(src), "clear: cannot clear list during iteration")
 }
 
 ///|
-test "exec_file: list.clear on frozen list error includes clear: prefix" {
+test "exec_file: list.clear on frozen list error matches go wording" {
   let pre : Map[String, @value.Value] = {}
   let list_val = @value.Value::new_list([
     @value.Value::Int(1N),
@@ -2945,7 +2945,7 @@ test "exec_file: list.clear on frozen list error includes clear: prefix" {
   )
   match result {
     Ok(_) => assert_true(false)
-    Err(e) => assert_true(e.msg().contains("clear:"))
+    Err(e) => assert_eq(e.msg(), "clear: cannot clear frozen list")
   }
 }
 
