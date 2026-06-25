@@ -2435,7 +2435,14 @@ fn make_from_timestamp_fn() -> @value.Value {
       )
     }
     let sec = match pos_args[0] {
-      @value.Value::Int(n) => n.to_int64()
+      @value.Value::Int(n) =>
+        if n.compare_int64(max_int64) > 0 || n.compare_int64(min_int64) < 0 {
+          return Err(
+            "from_timestamp: for parameter 1: \{n.to_string()} out of range (want value in signed 64-bit range)",
+          )
+        } else {
+          n.to_int64()
+        }
       v =>
         return Err(
           "from_timestamp: for parameter 1: got \{v.type_name()}, want int",
@@ -2443,7 +2450,14 @@ fn make_from_timestamp_fn() -> @value.Value {
     }
     let nsec64 = if pos_args.length() >= 2 {
       match pos_args[1] {
-        @value.Value::Int(n) => n.to_int64()
+        @value.Value::Int(n) =>
+          if n.compare_int64(max_int64) > 0 || n.compare_int64(min_int64) < 0 {
+            return Err(
+              "from_timestamp: for parameter 2: \{n.to_string()} out of range (want value in signed 64-bit range)",
+            )
+          } else {
+            n.to_int64()
+          }
         v =>
           return Err(
             "from_timestamp: for parameter 2: got \{v.type_name()}, want int",
