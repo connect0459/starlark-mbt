@@ -108,6 +108,29 @@ test "unpack_args: unexpected keyword arg returns error mentioning the name" {
 }
 
 ///|
+test "unpack_args: unexpected keyword close to a param name includes did-you-mean suggestion" {
+  let pos : Array[@value.Value] = []
+  let kw = [("prefxi", @value.Value::Int(1N))]
+  match unpack_args("f", pos, kw, ["prefix", "indent"]) {
+    Err(e) =>
+      assert_eq(
+        e, "f: unexpected keyword argument \"prefxi\" (did you mean prefix?)",
+      )
+    Ok(_) => panic()
+  }
+}
+
+///|
+test "unpack_args: unexpected keyword far from all params omits suggestion" {
+  let pos : Array[@value.Value] = []
+  let kw = [("bogus", @value.Value::Int(1N))]
+  match unpack_args("f", pos, kw, ["prefix", "indent"]) {
+    Err(e) => assert_eq(e, "f: unexpected keyword argument \"bogus\"")
+    Ok(_) => panic()
+  }
+}
+
+///|
 test "unpack_args: duplicate keyword arg returns error" {
   let pos = [@value.Value::Int(1N)]
   let kw = [("a", @value.Value::Int(2N))]
