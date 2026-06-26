@@ -806,3 +806,16 @@ test "parse_go_layout: double-quote in both input and trailing extra text is ful
     Err(e) => assert_eq(e, "parsing time \"2006\\\"\": extra text: \"\\\"\"")
   }
 }
+
+///|
+test "make_parse_duration_fn: unexpected keyword argument is rejected even when positional count is valid" {
+  let result = call_time_builtin(
+    make_parse_duration_fn(),
+    [@value.Value::String(@value.StarlarkString::new("1s"))],
+    [("x", @value.Value::Int(BigInt::from_int(5)))],
+  )
+  match result {
+    Ok(v) => fail("expected Err, got: \{v.repr()}")
+    Err(msg) => assert_eq(msg, "parse_duration: unexpected keyword arguments")
+  }
+}

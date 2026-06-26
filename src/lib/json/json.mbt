@@ -1449,13 +1449,12 @@ pub fn indent_json(
 /// Builds the `json.encode` builtin function value.
 fn make_encode_fn() -> @value.Value {
   @value.Value::new_builtin("json.encode", fn(_ctx, pos_args, kw_args) {
-    if kw_args.length() != 0 {
-      return Err("json.encode: unexpected keyword arguments")
+    let result = match
+      @unpack.unpack_positional("json.encode", pos_args, kw_args, 1, 1) {
+      Ok(r) => r
+      Err(e) => return Err(e)
     }
-    if pos_args.length() != 1 {
-      return Err("json.encode: got \{pos_args.length()} arguments, want 1")
-    }
-    encode_to_json(pos_args[0]).map(fn(s) {
+    encode_to_json(result[0].unwrap()).map(fn(s) {
       @value.Value::String(@value.StarlarkString::new(s))
     })
   })

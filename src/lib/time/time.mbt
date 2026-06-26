@@ -1437,13 +1437,12 @@ fn make_time(sec : Int64, nsec : Int) -> @value.Value {
 ///|
 fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
   @value.Value::new_builtin("in_location", fn(_ctx, pos_args, kw_args) {
-    if kw_args.length() != 0 {
-      return Err("in_location: unexpected keyword arguments")
+    let result = match
+      @unpack.unpack_positional("in_location", pos_args, kw_args, 1, 1) {
+      Ok(r) => r
+      Err(e) => return Err(e)
     }
-    if pos_args.length() != 1 {
-      return Err("in_location: got \{pos_args.length()} arguments, want 1")
-    }
-    let loc = match pos_args[0] {
+    let loc = match result[0].unwrap() {
       @value.Value::String(s) => s.raw()
       v =>
         return Err(
@@ -1469,13 +1468,12 @@ fn make_format_method(
   tz_name : String,
 ) -> @value.Value {
   @value.Value::new_builtin("format", fn(_ctx, pos_args, kw_args) {
-    if kw_args.length() != 0 {
-      return Err("format: unexpected keyword arguments")
+    let result = match
+      @unpack.unpack_positional("format", pos_args, kw_args, 1, 1) {
+      Ok(r) => r
+      Err(e) => return Err(e)
     }
-    if pos_args.length() != 1 {
-      return Err("format: got \{pos_args.length()} arguments, want 1")
-    }
-    let layout = match pos_args[0] {
+    let layout = match result[0].unwrap() {
       @value.Value::String(s) => s.raw()
       v =>
         return Err("format: for parameter 1: got \{v.type_name()}, want string")
@@ -2407,11 +2405,9 @@ pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
 ///|
 fn make_now_fn() -> @value.Value {
   @value.Value::new_builtin("now", fn(ctx, pos_args, kw_args) {
-    if kw_args.length() != 0 {
-      return Err("now: unexpected keyword arguments")
-    }
-    if pos_args.length() != 0 {
-      return Err("now: got \{pos_args.length()} arguments, want 0")
+    match @unpack.unpack_positional("now", pos_args, kw_args, 0, 0) {
+      Ok(_) => ()
+      Err(e) => return Err(e)
     }
     match ctx.get_local(now_override_key) {
       Some(v) => Ok(v)
@@ -2426,18 +2422,12 @@ fn make_now_fn() -> @value.Value {
 ///|
 fn make_from_timestamp_fn() -> @value.Value {
   @value.Value::new_builtin("from_timestamp", fn(_ctx, pos_args, kw_args) {
-    if kw_args.length() != 0 {
-      return Err("from_timestamp: unexpected keyword arguments")
+    let result = match
+      @unpack.unpack_positional("from_timestamp", pos_args, kw_args, 1, 2) {
+      Ok(r) => r
+      Err(e) => return Err(e)
     }
-    if pos_args.length() < 1 {
-      return Err("from_timestamp: got 0 arguments, want at least 1")
-    }
-    if pos_args.length() > 2 {
-      return Err(
-        "from_timestamp: got \{pos_args.length()} arguments, want at most 2",
-      )
-    }
-    let sec = match pos_args[0] {
+    let sec = match result[0].unwrap() {
       @value.Value::Int(n) =>
         if n.compare_int64(max_int64) > 0 || n.compare_int64(min_int64) < 0 {
           return Err(
@@ -2451,23 +2441,20 @@ fn make_from_timestamp_fn() -> @value.Value {
           "from_timestamp: for parameter 1: got \{v.type_name()}, want int",
         )
     }
-    let nsec64 = if pos_args.length() >= 2 {
-      match pos_args[1] {
-        @value.Value::Int(n) =>
-          if n.compare_int64(max_int64) > 0 || n.compare_int64(min_int64) < 0 {
-            return Err(
-              "from_timestamp: for parameter 2: \{n.to_string()} out of range (want value in signed 64-bit range)",
-            )
-          } else {
-            n.to_int64()
-          }
-        v =>
+    let nsec64 = match result[1] {
+      Some(@value.Value::Int(n)) =>
+        if n.compare_int64(max_int64) > 0 || n.compare_int64(min_int64) < 0 {
           return Err(
-            "from_timestamp: for parameter 2: got \{v.type_name()}, want int",
+            "from_timestamp: for parameter 2: \{n.to_string()} out of range (want value in signed 64-bit range)",
           )
-      }
-    } else {
-      0L
+        } else {
+          n.to_int64()
+        }
+      Some(v) =>
+        return Err(
+          "from_timestamp: for parameter 2: got \{v.type_name()}, want int",
+        )
+      None => 0L
     }
     let extra_sec = nsec64 / ns_per_second
     let norm_nsec = nsec64 % ns_per_second
@@ -2638,10 +2625,12 @@ let default_parse_time_layout : String = "2006-01-02T15:04:05Z07:00"
 ///|
 fn make_parse_duration_fn() -> @value.Value {
   @value.Value::new_builtin("parse_duration", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 || kw_args.length() != 0 {
-      return Err("parse_duration: got \{pos_args.length()} arguments, want 1")
+    let result = match
+      @unpack.unpack_positional("parse_duration", pos_args, kw_args, 1, 1) {
+      Ok(r) => r
+      Err(e) => return Err(e)
     }
-    match pos_args[0] {
+    match result[0].unwrap() {
       @value.Value::ExtVal(_) as v =>
         match extract_duration_ns(v) {
           Some(_) => Ok(v)
@@ -2839,15 +2828,12 @@ fn make_time_constructor_fn() -> @value.Value {
 ///|
 fn make_is_valid_timezone_fn() -> @value.Value {
   @value.Value::new_builtin("is_valid_timezone", fn(_ctx, pos_args, kw_args) {
-    if kw_args.length() != 0 {
-      return Err("is_valid_timezone: unexpected keyword arguments")
+    let result = match
+      @unpack.unpack_positional("is_valid_timezone", pos_args, kw_args, 1, 1) {
+      Ok(r) => r
+      Err(e) => return Err(e)
     }
-    if pos_args.length() != 1 {
-      return Err(
-        "is_valid_timezone: got \{pos_args.length()} arguments, want 1",
-      )
-    }
-    let s = match pos_args[0] {
+    let s = match result[0].unwrap() {
       @value.Value::String(s) => s.raw()
       v =>
         return Err(
