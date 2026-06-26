@@ -137,6 +137,7 @@ pub struct StarlarkDict {
 }
 pub fn StarlarkDict::check_mutable(Self, String) -> Result[Unit, String]
 pub fn StarlarkDict::clear(Self) -> Result[Unit, String]
+pub fn StarlarkDict::contains(Self, Value) -> Result[Bool, String]
 pub fn StarlarkDict::delete(Self, Value) -> Result[Bool, String]
 pub fn StarlarkDict::each(Self, (Value, Value) -> Unit) -> Unit
 pub fn StarlarkDict::entries(Self) -> Iter[(Value, Value)]

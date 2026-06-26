@@ -38,6 +38,28 @@ test "StarlarkDict: duplicate key updates value" {
 }
 
 ///|
+test "StarlarkDict: contains returns false for absent key" {
+  let d = StarlarkDict::new()
+  let key = Value::Int(1N)
+  assert_true(d.contains(key) == Ok(false))
+}
+
+///|
+test "StarlarkDict: contains returns true for present key" {
+  let d = StarlarkDict::new()
+  let key = Value::Int(1N)
+  d.set(key, Value::None) |> ignore
+  assert_true(d.contains(key) == Ok(true))
+}
+
+///|
+test "StarlarkDict: contains returns Err for unhashable key" {
+  let d = StarlarkDict::new()
+  let key = Value::List(StarlarkList::new([]))
+  assert_true(d.contains(key) is Err(_))
+}
+
+///|
 test "StarlarkDict: delete existing key returns true" {
   let d = StarlarkDict::new()
   let key = Value::Int(5N)
