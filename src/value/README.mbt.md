@@ -227,6 +227,7 @@ Insertion-ordered mutable mapping; keys are any hashable `Value`.
 | `StarlarkDict::new()` | Empty dict |
 | `set(Value, Value) -> Result[Unit, String]` | Insert or replace |
 | `get(Value) -> Result[Value?, String]` | Look up by key (`Err` if unhashable) |
+| `contains(Value) -> Result[Bool, String]` | Membership test (`Err` if unhashable) |
 | `delete(Value) -> Result[Bool, String]` | Remove; returns whether present |
 | `clear() -> Result[Unit, String]` | Remove all entries |
 | `length() -> Int` | Number of entries |
