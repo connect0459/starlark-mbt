@@ -36,6 +36,22 @@ test "guard_accum_alloc error message includes caller name and projected element
 }
 
 ///|
+test "SetDict alloc guard condition evaluates false when key already exists in dict" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let d = @value.StarlarkDict::new()
+  let key = @value.Value::Int(1N)
+  d.set(key, @value.Value::None) |> ignore
+  assert_false(!check(ctx, d.contains(key)))
+}
+
+///|
+test "SetDict alloc guard condition evaluates true when key is absent from dict" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let d = @value.StarlarkDict::new()
+  assert_true(!check(ctx, d.contains(@value.Value::Int(1N))))
+}
+
+///|
 test "SetAdd alloc guard condition evaluates false when element already exists in set" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let s = @value.StarlarkSet::new()
