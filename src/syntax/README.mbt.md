@@ -58,6 +58,45 @@ test {
 
 Parsing from source requires `@eval.parse_file` / `@eval.parse_expr`.
 
+## Error-position anchoring policy
+
+When the compiler or resolver emits a diagnostic for an AST node it must
+choose one token as the *anchor position* — the source location shown to the
+user. The rules below are applied consistently across all four packages
+(`syntax`, `internal/parser`, `internal/resolver`, `internal/compile`) and
+mirror the behaviour of the starlark-go reference implementation.
+
+| Error class | Anchor token | How to obtain it |
+| :--- | :--- | :--- |
+| Assignment target is not assignable (e.g. `f() = 2`, `a.b = 1` on the wrong layer) | Leftmost token of the LHS expression | `syntax.start(lhs)` |
+| Augmented-assignment target is not assignable | Leftmost token of the LHS expression | `syntax.start(lhs)` |
+| Dict-literal key errors (unhashable key, duplicate key) | Colon token that separates the key from its value | `colon_pos` from the `EDict` pair tuple `(key, val, colon_pos)` |
+| `def`/`lambda` parameter is not an identifier | Scanner cursor (one position past the bad token) | `Parser::scanner_error` → `scanner.position()` |
+| Positional argument appears after `*args`, `**kwargs`, or a keyword argument | Leftmost token of the misplaced argument expression | `syntax.start(arg_expr)` |
+
+### Position accessors
+
+Three helpers cover all anchoring sites above:
+
+- **`syntax.start(e)`** — walks into `EBinary`, `ECall`, `ESlice`, `EIndex`,
+  and `EDot` sub-expressions to reach the leftmost token of a compound
+  expression. Use this whenever the error should point at the *beginning* of a
+  possibly-compound expression (LHS of assignments, misplaced arguments).
+- **`expr_pos(e)`** — returns the position stored in the node's own slot
+  (operator, opening bracket, or other delimiter). Use this when the error is
+  about the operator or delimiter itself rather than an operand.
+- **`Parser::scanner_error(msg)`** — uses `scanner.position()`, which is one
+  past the current token. Use this for unexpected-token parse errors that must
+  match starlark-go's scanner cursor convention.
+
+### Adding a new anchoring site
+
+1. Identify which rule class the new error falls into (table above).
+2. Choose the matching accessor (`syntax.start`, `expr_pos`, or
+   `scanner_error`).
+3. Add a conformance test that checks the reported column against the expected
+   source position so regressions are caught automatically.
+
 ## API reference
 
 ### Functions
