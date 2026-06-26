@@ -1110,13 +1110,14 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
     }
     @syntax.Expr::EDot(_, _, _) => {
-      let (leftmost, _) = @syntax.flatten_left_chain(expr, fn(e) {
-        match e {
-          @syntax.Expr::EDot(inner, _, _) => Some((inner, ()))
-          _ => None
+      let mut cur = expr
+      while true {
+        match cur {
+          @syntax.Expr::EDot(inner, _, _) => cur = inner
+          _ => break
         }
-      })
-      self.walk_expr(leftmost)
+      }
+      self.walk_expr(cur)
     }
     @syntax.Expr::ECall(f, args, call_pos) => {
       self.walk_expr(f)
