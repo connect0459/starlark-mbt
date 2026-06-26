@@ -62,21 +62,21 @@ Parsing from source requires `@eval.parse_file` / `@eval.parse_expr`.
 
 When the compiler or resolver emits a diagnostic for an AST node it must
 choose one token as the *anchor position* — the source location shown to the
-user. The rules below are applied consistently across all four packages
-(`syntax`, `internal/parser`, `internal/resolver`, `internal/compile`) and
-mirror the behaviour of the starlark-go reference implementation.
+user. The rules below are applied across the compilation pipeline
+(`syntax`, `internal/parser`, `internal/resolver`, `internal/compile`, `eval`)
+and mirror the behaviour of the starlark-go reference implementation.
 
 | Error class | Anchor token | How to obtain it |
 | :--- | :--- | :--- |
 | Assignment target is not assignable (e.g. `f() = 2`, `(a or b) = 1`) | Leftmost token of the LHS expression | `syntax.start(lhs)` |
 | Augmented-assignment target is not assignable | Leftmost token of the LHS expression | `syntax.start(lhs)` |
-| Dict-literal key errors (unhashable key, duplicate key) | Colon token that separates the key from its value | `colon_pos` from the `EDict` pair tuple `(key, val, colon_pos)` |
+| Dict key errors in literals and comprehensions (unhashable key, duplicate key) | Colon token separating the key from its value | `colon_pos` from `EDict`/`EDictComp`; see note below |
 | `def`/`lambda` parameter is not an identifier | Scanner cursor (one position past the bad token) | `Parser::scanner_error` → `scanner.position()` |
 | Positional argument appears after `*args`, `**kwargs`, or a keyword argument | Leftmost token of the misplaced argument expression | `syntax.start(arg_expr)` |
 
 ### Position accessors
 
-Three helpers cover all anchoring sites above:
+Four mechanisms cover all anchoring sites above:
 
 - **`syntax.start(e)`** — walks into `EBinary`, `ECall`, `ESlice`, `EIndex`,
   and `EDot` sub-expressions to reach the leftmost token of a compound
@@ -88,12 +88,19 @@ Three helpers cover all anchoring sites above:
 - **`Parser::scanner_error(msg)`** — uses `scanner.position()`, which is one
   past the current token. Use this for unexpected-token parse errors that must
   match starlark-go's scanner cursor convention.
+- **`set_pos(colon)` in `internal/compile`** — dict-literal and
+  dict-comprehension key errors use a different mechanism: the compiler calls
+  `set_pos(colon_pos)` before emitting the dict-insertion opcode
+  (`SetDictUniq` / `SetDict`), recording the colon as the error anchor. The
+  error itself is raised at runtime by the `eval` package using that recorded
+  position. Both `EDict` pairs and `EDictComp` store a `colon_pos`; compile
+  uses it in both code paths.
 
 ### Adding a new anchoring site
 
 1. Identify which rule class the new error falls into (table above).
-2. Choose the matching accessor (`syntax.start`, `expr_pos`, or
-   `scanner_error`).
+2. Choose the matching mechanism (`syntax.start`, `expr_pos`,
+   `scanner_error`, or `set_pos` in compile).
 3. Add a conformance test that checks the reported column against the expected
    source position so regressions are caught automatically.
 
