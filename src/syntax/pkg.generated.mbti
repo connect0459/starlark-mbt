@@ -9,6 +9,8 @@ import {
 // Values
 pub fn expr_pos(Expr) -> @errors.Position
 
+pub fn[A] flatten_left_chain(Expr, (Expr) -> (Expr, A)?) -> (Expr, Array[A])
+
 pub fn start(Expr) -> @errors.Position
 
 pub fn stmt_pos(Stmt) -> @errors.Position

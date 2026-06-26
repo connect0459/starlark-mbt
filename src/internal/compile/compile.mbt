@@ -479,25 +479,19 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.set_stack(base + 1)
     }
     EIndex(_, _, _) => {
-      let chain : Array[(@syntax.Expr, @errors.Position)] = []
-      let mut cur = e
-      while true {
-        match cur {
-          EIndex(inner_x, inner_i, inner_pos) => {
-            chain.push((inner_i, inner_pos))
-            cur = inner_x
-          }
-          _ => break
+      let (root, chain) = @syntax.flatten_left_chain(e, fn(c) {
+        match c {
+          EIndex(inner_x, inner_i, inner_pos) =>
+            Some((inner_x, (inner_i, inner_pos)))
+          _ => None
         }
-      }
-      self.compile_expr(cur)
-      let mut idx = chain.length() - 1
-      while idx >= 0 {
-        let (ei, posi) = chain[idx]
+      })
+      self.compile_expr(root)
+      for item in chain {
+        let (ei, posi) = item
         self.compile_expr(ei)
         self.set_pos(posi)
         self.emit0(Opcode::Index, 2, 1)
-        idx -= 1
       }
     }
     ESlice(x, lo, hi, step, pos) => {
@@ -509,24 +503,18 @@ fn Fcomp::compile_expr(self : Fcomp, e : @syntax.Expr) -> Unit raise CompileErr 
       self.emit0(Opcode::Slice, 4, 1)
     }
     EDot(_, _, _) => {
-      let chain : Array[(String, @errors.Position)] = []
-      let mut cur = e
-      while true {
-        match cur {
-          EDot(inner_x, inner_name, inner_pos) => {
-            chain.push((inner_name, inner_pos))
-            cur = inner_x
-          }
-          _ => break
+      let (root, chain) = @syntax.flatten_left_chain(e, fn(c) {
+        match c {
+          EDot(inner_x, inner_name, inner_pos) =>
+            Some((inner_x, (inner_name, inner_pos)))
+          _ => None
         }
-      }
-      self.compile_expr(cur)
-      let mut idx = chain.length() - 1
-      while idx >= 0 {
-        let (n, p) = chain[idx]
+      })
+      self.compile_expr(root)
+      for item in chain {
+        let (n, p) = item
         self.set_pos(p)
         self.emit1(Opcode::Attr, self.pcomp.add_name(n), 1, 1)
-        idx -= 1
       }
     }
     EList(xs, pos) => {
@@ -919,31 +907,24 @@ fn Fcomp::compile_binary(
     OpOr => return self.compile_or(l, r)
     _ => ()
   }
-  let rights : Array[(@syntax.BinaryOp, @syntax.Expr, @errors.Position)] = [
-    (op, r, pos),
-  ]
-  let mut cur = l
-  while true {
-    match cur {
+  let (leftmost, rest) = @syntax.flatten_left_chain(l, fn(e) {
+    match e {
       @syntax.Expr::EBinary(inner_l, inner_op, inner_r, inner_pos) =>
         match inner_op {
-          @syntax.BinaryOp::OpAnd | @syntax.BinaryOp::OpOr => break
-          _ => {
-            rights.push((inner_op, inner_r, inner_pos))
-            cur = inner_l
-          }
+          @syntax.BinaryOp::OpAnd | @syntax.BinaryOp::OpOr => None
+          _ => Some((inner_l, (inner_op, inner_r, inner_pos)))
         }
-      _ => break
+      _ => None
     }
-  }
-  self.compile_expr(cur)
-  let mut i = rights.length() - 1
-  while i >= 0 {
-    let (opi, ri, posi) = rights[i]
+  })
+  self.compile_expr(leftmost)
+  for item in rest {
+    let (opi, ri, posi) = item
     self.compile_expr(ri)
     self.emit_arith_op(opi, posi)
-    i -= 1
   }
+  self.compile_expr(r)
+  self.emit_arith_op(op, pos)
 }
 
 ///|
