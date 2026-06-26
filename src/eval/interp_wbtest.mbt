@@ -1,3 +1,44 @@
+// --- guard_accum_alloc unit tests ---
+
+///|
+test "guard_accum_alloc does not raise when current length is below allocation cap" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let raised = try {
+    guard_accum_alloc(ctx, "list", max_alloc_elems - 1)
+    false
+  } catch {
+    EvalErr(_) => true
+  }
+  assert_false(raised)
+}
+
+///|
+test "guard_accum_alloc raises excessive-sequence error when current length reaches allocation cap" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let caught = try {
+    guard_accum_alloc(ctx, "list", max_alloc_elems)
+    false
+  } catch {
+    EvalErr(e) => e.msg().contains("excessive sequence")
+  }
+  assert_true(caught)
+}
+
+///|
+test "guard_accum_alloc error message includes caller name and projected element count" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let msg = try {
+    guard_accum_alloc(ctx, "dict", max_alloc_elems)
+    ""
+  } catch {
+    EvalErr(e) => e.msg()
+  }
+  assert_true(msg.contains("dict"))
+  assert_true(msg.contains("\{max_alloc_elems + 1}"))
+}
+
+// --- vm ---
+
 ///|
 /// A name the VM resolves as predeclared but that has no binding in the base
 /// environment must raise an undefined-name error with its source position,
