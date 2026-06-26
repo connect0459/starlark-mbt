@@ -2519,7 +2519,7 @@ fn make_parse_time_fn() -> @value.Value {
             @value.Value::String(s) => fmt = s.raw()
             v =>
               return Err(
-                "parse_time: for parameter format: got \{v.type_name()}, want string",
+                "parse_time: for parameter \"format\": got \{v.type_name()}, want string",
               )
           }
         "location" =>
@@ -2527,7 +2527,7 @@ fn make_parse_time_fn() -> @value.Value {
             @value.Value::String(s) => location = s.raw()
             v =>
               return Err(
-                "parse_time: for parameter location: got \{v.type_name()}, want string",
+                "parse_time: for parameter \"location\": got \{v.type_name()}, want string",
               )
           }
         _ => return Err("parse_time: unexpected keyword argument \"\{k}\"")
