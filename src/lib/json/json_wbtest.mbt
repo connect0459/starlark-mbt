@@ -1,10 +1,11 @@
 ///|
-fn call_decode(
+fn call_builtin(
+  make_fn : () -> @value.Value,
   pos : Array[@value.Value],
   kw : Array[(String, @value.Value)],
 ) -> Result[@value.Value, String] {
-  let decode_fn = make_decode_fn()
-  guard decode_fn is @value.Value::Builtin(bf)
+  let fn_val = make_fn()
+  guard fn_val is @value.Value::Builtin(bf)
   let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
     Err("not called")
   })
@@ -12,6 +13,14 @@ fn call_decode(
     Some(r) => r
     None => Err("no body")
   }
+}
+
+///|
+fn call_decode(
+  pos : Array[@value.Value],
+  kw : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] {
+  call_builtin(make_decode_fn, pos, kw)
 }
 
 ///|
@@ -19,15 +28,7 @@ fn call_encode(
   pos : Array[@value.Value],
   kw : Array[(String, @value.Value)],
 ) -> Result[@value.Value, String] {
-  let encode_fn = make_encode_fn()
-  guard encode_fn is @value.Value::Builtin(bf)
-  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
-    Err("not called")
-  })
-  match bf.call_body(dummy_ctx, pos, kw) {
-    Some(r) => r
-    None => Err("no body")
-  }
+  call_builtin(make_encode_fn, pos, kw)
 }
 
 ///|
@@ -35,15 +36,7 @@ fn call_indent(
   pos : Array[@value.Value],
   kw : Array[(String, @value.Value)],
 ) -> Result[@value.Value, String] {
-  let indent_fn = make_indent_fn()
-  guard indent_fn is @value.Value::Builtin(bf)
-  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
-    Err("not called")
-  })
-  match bf.call_body(dummy_ctx, pos, kw) {
-    Some(r) => r
-    None => Err("no body")
-  }
+  call_builtin(make_indent_fn, pos, kw)
 }
 
 ///|
