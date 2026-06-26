@@ -2,6 +2,7 @@ import {
   "moonbitlang/x/time" @x_time,
   "connect0459/starlark/value",
   "connect0459/starlark/internal/utf8util",
+  "connect0459/starlark/unpack",
 }
 
 options(
