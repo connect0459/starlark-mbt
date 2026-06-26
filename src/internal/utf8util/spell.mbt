@@ -76,6 +76,26 @@ pub fn spell_levenshtein(x : Array[Int], y : Array[Int], max_dist : Int) -> Int 
 }
 
 ///|
+/// Returns `" (did you mean X?)"` when `spell_nearest` finds a close
+/// candidate for `x`, or `""` when none is close enough.
+///
+/// This wraps `spell_nearest` to avoid repeating the match/format
+/// boilerplate at every call site that appends a spelling hint to an error.
+///
+/// Parameters:
+///
+/// - `x` : The misspelled name.
+/// - `candidates` : The set of valid names to search.
+///
+/// Returns `" (did you mean X?)"` with the best candidate, or `""`.
+pub fn spell_hint(x : String, candidates : Array[String]) -> String {
+  match spell_nearest(x, candidates) {
+    "" => ""
+    s => " (did you mean \{s}?)"
+  }
+}
+
+///|
 /// Returns the best-matching candidate for `x` among `candidates`, or `""`
 /// when no candidate is within half the input length (rounded up).
 ///

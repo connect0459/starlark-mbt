@@ -269,3 +269,16 @@ test "is_title_letter: non-title letters are not titlecase" {
   assert_false(is_title_letter(0x61)) // a (lowercase)
   assert_false(is_title_letter(0x1C4)) // DZ (uppercase, not titlecase)
 }
+
+///|
+test "spell_hint: close match returns did-you-mean suffix" {
+  assert_eq(
+    spell_hint("prefxi", ["prefix", "indent"]),
+    " (did you mean prefix?)",
+  )
+}
+
+///|
+test "spell_hint: distant match returns empty string" {
+  assert_eq(spell_hint("bogus", ["prefix", "indent"]), "")
+}
