@@ -574,15 +574,15 @@ test "time.time: out-of-range kwarg error includes parameter name and value" {
       #|load("time.star", "time")
       #|assert.fails(
       #|  lambda: time.time(year=9999999999999999999),
-      #|  "time: for parameter year: 9999999999999999999 out of range (want value in signed 64-bit range)",
+      #|  "time: for parameter \"year\": 9999999999999999999 out of range (want value in signed 64-bit range)",
       #|)
       #|assert.fails(
       #|  lambda: time.time(month=9999999999999999999),
-      #|  "time: for parameter month: 9999999999999999999 out of range (want value in signed 64-bit range)",
+      #|  "time: for parameter \"month\": 9999999999999999999 out of range (want value in signed 64-bit range)",
       #|)
       #|assert.fails(
       #|  lambda: time.time(nanosecond=9999999999999999999),
-      #|  "time: for parameter nanosecond: 9999999999999999999 out of range (want value in signed 64-bit range)",
+      #|  "time: for parameter \"nanosecond\": 9999999999999999999 out of range (want value in signed 64-bit range)",
       #|)
     ),
   )
