@@ -1465,11 +1465,6 @@ fn make_encode_fn() -> @value.Value {
 /// Builds the `json.encode_indent` builtin function value.
 fn make_encode_indent_fn() -> @value.Value {
   @value.Value::new_builtin("json.encode_indent", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 {
-      return Err(
-        "json.encode_indent: got \{pos_args.length()} arguments, want 1",
-      )
-    }
     let mut pfx = ""
     let mut ind = "\t"
     for kw in kw_args {
@@ -1479,15 +1474,20 @@ fn make_encode_indent_fn() -> @value.Value {
         ("indent", @value.Value::String(s)) => ind = s.raw()
         ("prefix", _) =>
           return Err(
-            "json.encode_indent: for parameter prefix: got \{v.type_name()}, want string",
+            "json.encode_indent: for parameter \"prefix\": got \{v.type_name()}, want string",
           )
         ("indent", _) =>
           return Err(
-            "json.encode_indent: for parameter indent: got \{v.type_name()}, want string",
+            "json.encode_indent: for parameter \"indent\": got \{v.type_name()}, want string",
           )
         _ =>
           return Err("json.encode_indent: unexpected keyword argument \"\{k}\"")
       }
+    }
+    if pos_args.length() != 1 {
+      return Err(
+        "json.encode_indent: got \{pos_args.length()} arguments, want 1",
+      )
     }
     let state = EncodeState::new()
     match encode_inner(pos_args[0], state, 0) {
