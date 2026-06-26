@@ -4,4 +4,5 @@ import {
   "connect0459/starlark/value",
   "connect0459/starlark/internal/numeric",
   "connect0459/starlark/internal/utf8util",
+  "connect0459/starlark/unpack",
 }
