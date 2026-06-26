@@ -1,10 +1,11 @@
 ///|
-fn call_decode(
+fn call_builtin(
+  make_fn : () -> @value.Value,
   pos : Array[@value.Value],
   kw : Array[(String, @value.Value)],
 ) -> Result[@value.Value, String] {
-  let decode_fn = make_decode_fn()
-  guard decode_fn is @value.Value::Builtin(bf)
+  let fn_val = make_fn()
+  guard fn_val is @value.Value::Builtin(bf)
   let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
     Err("not called")
   })
@@ -15,19 +16,35 @@ fn call_decode(
 }
 
 ///|
+fn call_decode(
+  pos : Array[@value.Value],
+  kw : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] {
+  call_builtin(make_decode_fn, pos, kw)
+}
+
+///|
+fn call_encode_indent(
+  pos : Array[@value.Value],
+  kw : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] {
+  call_builtin(make_encode_indent_fn, pos, kw)
+}
+
+///|
 fn call_encode(
   pos : Array[@value.Value],
   kw : Array[(String, @value.Value)],
 ) -> Result[@value.Value, String] {
-  let encode_fn = make_encode_fn()
-  guard encode_fn is @value.Value::Builtin(bf)
-  let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
-    Err("not called")
-  })
-  match bf.call_body(dummy_ctx, pos, kw) {
-    Some(r) => r
-    None => Err("no body")
-  }
+  call_builtin(make_encode_fn, pos, kw)
+}
+
+///|
+fn call_indent(
+  pos : Array[@value.Value],
+  kw : Array[(String, @value.Value)],
+) -> Result[@value.Value, String] {
+  call_builtin(make_indent_fn, pos, kw)
 }
 
 ///|
@@ -100,11 +117,11 @@ test "make_decode_fn: wrong type for positional x gives for-parameter message" {
 }
 
 ///|
-test "make_decode_fn: x kwarg with wrong type gives for-parameter message" {
+test "make_decode_fn: x kwarg with wrong type gives quoted for-parameter message" {
   let result = call_decode([], [("x", @value.Value::Int(BigInt::from_int(2)))])
   match result {
     Err(msg) =>
-      assert_eq(msg, "json.decode: for parameter x: got int, want string")
+      assert_eq(msg, "json.decode: for parameter \"x\": got int, want string")
     Ok(v) => fail("expected type error, got: \{v.repr()}")
   }
 }
@@ -191,6 +208,54 @@ test "make_encode_indent_fn: unknown keyword argument name is double-quoted" {
 }
 
 ///|
+test "make_encode_indent_fn: keyword type error is checked before positional arity" {
+  let result = call_encode_indent(
+    [
+      @value.Value::Int(BigInt::from_int(1)),
+      @value.Value::Int(BigInt::from_int(2)),
+    ],
+    [("indent", @value.Value::Int(BigInt::from_int(3)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.encode_indent: for parameter \"indent\": got int, want string",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_encode_indent_fn: indent keyword parameter name is double-quoted in type error" {
+  let result = call_encode_indent(
+    [@value.Value::String(@value.StarlarkString::new("{}"))],
+    [("indent", @value.Value::Int(BigInt::from_int(1)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.encode_indent: for parameter \"indent\": got int, want string",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_encode_indent_fn: prefix keyword parameter name is double-quoted in type error" {
+  let result = call_encode_indent(
+    [@value.Value::String(@value.StarlarkString::new("{}"))],
+    [("prefix", @value.Value::Int(BigInt::from_int(1)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.encode_indent: for parameter \"prefix\": got int, want string",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "make_indent_fn: unknown keyword argument name is double-quoted" {
   let fn_val = make_indent_fn()
   guard fn_val is @value.Value::Builtin(bf)
@@ -206,6 +271,64 @@ test "make_indent_fn: unknown keyword argument name is double-quoted" {
       assert_eq(msg, "json.indent: unexpected keyword argument \"bogus\"")
     Some(Ok(v)) => fail("expected error, got: \{v.repr()}")
     None => fail("expected Some result")
+  }
+}
+
+///|
+test "make_indent_fn: indent keyword parameter name is double-quoted in type error" {
+  let result = call_indent(
+    [@value.Value::String(@value.StarlarkString::new("{}"))],
+    [("indent", @value.Value::Int(BigInt::from_int(1)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.indent: for parameter \"indent\": got int, want string",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_indent_fn: prefix keyword parameter name is double-quoted in type error" {
+  let result = call_indent(
+    [@value.Value::String(@value.StarlarkString::new("{}"))],
+    [("prefix", @value.Value::Int(BigInt::from_int(1)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.indent: for parameter \"prefix\": got int, want string",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_indent_fn: keyword type error is checked before positional arity" {
+  let result = call_indent(
+    [
+      @value.Value::Int(BigInt::from_int(1)),
+      @value.Value::Int(BigInt::from_int(2)),
+    ],
+    [("indent", @value.Value::Int(BigInt::from_int(3)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.indent: for parameter \"indent\": got int, want string",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_indent_fn: positional type error uses for-parameter-N wording" {
+  let result = call_indent([@value.Value::Int(BigInt::from_int(123))], [])
+  match result {
+    Err(msg) =>
+      assert_eq(msg, "json.indent: for parameter 1: got int, want string")
+    Ok(v) => fail("expected error, got: \{v.repr()}")
   }
 }
 
