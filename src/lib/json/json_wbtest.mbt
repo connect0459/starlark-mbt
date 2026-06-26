@@ -107,7 +107,7 @@ test "make_decode_fn: unknown kwarg rejected even alongside valid default kwarg"
 }
 
 ///|
-test "make_decode_fn: wrong type for positional x gives for-parameter message" {
+test "make_decode_fn: wrong type for positional x gives bare name in error" {
   let result = call_decode([@value.Value::Int(BigInt::from_int(2))], [])
   match result {
     Err(msg) =>

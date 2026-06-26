@@ -497,6 +497,123 @@ test "make_parse_time_fn: unknown keyword argument name is double-quoted" {
 }
 
 ///|
+test "make_parse_time_fn: wrong type for positional x gives bare name in error" {
+  let result = call_time_builtin(
+    make_parse_time_fn(),
+    [@value.Value::Int(BigInt::from_int(1))],
+    [],
+  )
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(msg, "parse_time: for parameter x: got int, want string")
+  }
+}
+
+///|
+test "make_parse_time_fn: wrong type for keyword format is double-quoted" {
+  let result = call_time_builtin(
+    make_parse_time_fn(),
+    [@value.Value::String(@value.StarlarkString::new("2021-01-01"))],
+    [("format", @value.Value::Int(BigInt::from_int(1)))],
+  )
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(
+        msg, "parse_time: for parameter \"format\": got int, want string",
+      )
+  }
+}
+
+///|
+test "make_parse_time_fn: wrong type for keyword location is double-quoted" {
+  let result = call_time_builtin(
+    make_parse_time_fn(),
+    [@value.Value::String(@value.StarlarkString::new("2021-01-01"))],
+    [("location", @value.Value::Int(BigInt::from_int(1)))],
+  )
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(
+        msg, "parse_time: for parameter \"location\": got int, want string",
+      )
+  }
+}
+
+///|
+test "make_parse_time_fn: wrong type for positional format gives bare name in error" {
+  let result = call_time_builtin(
+    make_parse_time_fn(),
+    [
+      @value.Value::String(@value.StarlarkString::new("2021-01-01")),
+      @value.Value::Int(BigInt::from_int(1)),
+    ],
+    [],
+  )
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(msg, "parse_time: for parameter format: got int, want string")
+  }
+}
+
+///|
+test "make_parse_time_fn: wrong type for positional location gives bare name in error" {
+  let result = call_time_builtin(
+    make_parse_time_fn(),
+    [
+      @value.Value::String(@value.StarlarkString::new("2021-01-01")),
+      @value.Value::String(@value.StarlarkString::new("2006-01-02")),
+      @value.Value::Int(BigInt::from_int(1)),
+    ],
+    [],
+  )
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(msg, "parse_time: for parameter location: got int, want string")
+  }
+}
+
+///|
+test "make_time_constructor_fn: wrong type for year keyword is double-quoted" {
+  let result = call_time_builtin(make_time_constructor_fn(), [], [
+    ("year", @value.Value::Float(1.5)),
+  ])
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(msg, "time: for parameter \"year\": got float, want int")
+  }
+}
+
+///|
+test "make_time_constructor_fn: wrong type for month keyword is double-quoted" {
+  let result = call_time_builtin(make_time_constructor_fn(), [], [
+    ("month", @value.Value::Float(1.5)),
+  ])
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(msg, "time: for parameter \"month\": got float, want int")
+  }
+}
+
+///|
+test "make_time_constructor_fn: wrong type for location keyword is double-quoted" {
+  let result = call_time_builtin(make_time_constructor_fn(), [], [
+    ("location", @value.Value::Int(BigInt::from_int(1))),
+  ])
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(msg, "time: for parameter \"location\": got int, want string")
+  }
+}
+
+///|
 test "make_time_constructor_fn: unknown keyword argument name is double-quoted" {
   let result = call_time_builtin(make_time_constructor_fn(), [], [
     ("foo", @value.Value::Int(BigInt::from_int(1))),
