@@ -117,11 +117,11 @@ test "make_decode_fn: wrong type for positional x gives for-parameter message" {
 }
 
 ///|
-test "make_decode_fn: x kwarg with wrong type gives for-parameter message" {
+test "make_decode_fn: x kwarg with wrong type gives quoted for-parameter message" {
   let result = call_decode([], [("x", @value.Value::Int(BigInt::from_int(2)))])
   match result {
     Err(msg) =>
-      assert_eq(msg, "json.decode: for parameter x: got int, want string")
+      assert_eq(msg, "json.decode: for parameter \"x\": got int, want string")
     Ok(v) => fail("expected type error, got: \{v.repr()}")
   }
 }

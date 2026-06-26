@@ -1548,7 +1548,7 @@ fn make_decode_fn() -> @value.Value {
               @value.Value::String(_) => x_kwarg_string = true
               _ =>
                 return Err(
-                  "json.decode: for parameter x: got \{v.type_name()}, want string",
+                  "json.decode: for parameter \"x\": got \{v.type_name()}, want string",
                 )
             }
           }
