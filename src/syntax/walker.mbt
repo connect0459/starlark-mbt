@@ -3,20 +3,23 @@
 /// payload from each step until `peel` returns `None`.
 ///
 /// Any walker that uses recursive descent over `Expr` nodes **must** handle
-/// the following left-recursive node kinds iteratively (not recursively) to
-/// prevent stack overflow on deeply chained expressions:
+/// the following left-recursive `Expr` variants iteratively (not recursively)
+/// to prevent stack overflow on deeply chained expressions:
 ///
 /// - `EBinary`  — left-associative binary operations (arithmetic, comparison,
-///               `in`/`not in`); excludes `OpAnd`/`OpOr`, which have their
-///               own short-circuit flattening.
-/// - `EAnd`     — short-circuit `and` chain (`EBinary` with `OpAnd`).
-/// - `EOr`      — short-circuit `or` chain (`EBinary` with `OpOr`).
+///               `in`/`not in`, `and`, `or`). `OpAnd`/`OpOr` are encoded as
+///               `EBinary` with those operators, not as separate variants.
+///               Their short-circuit compilation interleaves label emission
+///               with the flatten loop, so `compile_and`/`compile_or` keep
+///               their own iterative loops rather than calling
+///               `flatten_left_chain`.
 /// - `EIndex`   — chained subscript: `a[i][j][k]`.
 /// - `EDot`     — chained attribute access: `a.b.c.d`.
 ///
-/// `flatten_left_chain` provides the shared primitive for these iterative
-/// loops.  Its `peel` callback returns `Some((left_child, payload))` when the
-/// current node matches the target kind, or `None` to stop.
+/// `flatten_left_chain` provides the shared primitive for walkers that collect
+/// payloads from each step. Its `peel` callback returns
+/// `Some((left_child, payload))` when the current node matches the target
+/// kind, or `None` to stop.
 ///
 /// Returns `(leftmost, payloads)` where `payloads` are in left-to-right
 /// (source-code) order.
