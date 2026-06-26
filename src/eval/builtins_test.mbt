@@ -3251,3 +3251,27 @@ test "exec_file: NoneType dotted attribute error uses .x field or method wording
 test "exec_file: range dotted attribute error uses .x field or method wording" {
   assert_eq(emsg("range(3).foo"), "range has no .foo field or method")
 }
+
+///|
+test "exec_file: print with unknown keyword close to sep suggests did-you-mean" {
+  assert_eq(
+    emsg("print(seep=1)"),
+    "print: unexpected keyword argument \"seep\" (did you mean sep?)",
+  )
+}
+
+///|
+test "exec_file: int with unknown keyword close to base suggests did-you-mean" {
+  assert_eq(
+    emsg("int(basee=10)"),
+    "int: unexpected keyword argument \"basee\" (did you mean base?)",
+  )
+}
+
+///|
+test "exec_file: fail with unknown keyword close to sep suggests did-you-mean" {
+  assert_eq(
+    emsg("fail(seo=\"x\")"),
+    "fail: unexpected keyword argument \"seo\" (did you mean sep?)",
+  )
+}

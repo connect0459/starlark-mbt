@@ -287,13 +287,18 @@ fn call_builtin(
                     ),
                   )
               }
-            other =>
+            other => {
+              let hint = match @utf8util.spell_nearest(other, ["sep"]) {
+                "" => ""
+                s => " (did you mean \{s}?)"
+              }
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "print: unexpected keyword argument \"\{other}\"",
+                  "print: unexpected keyword argument \"\{other}\"\{hint}",
                 ),
               )
+            }
           }
         }
         found
@@ -393,13 +398,18 @@ fn call_builtin(
             x_from_kw = Some(kv.1)
           }
           "base" => base_from_kw = Some(kv.1)
-          name =>
+          name => {
+            let hint = match @utf8util.spell_nearest(name, ["x", "base"]) {
+              "" => ""
+              s => " (did you mean \{s}?)"
+            }
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "int: unexpected keyword argument \"\{name}\"",
+                "int: unexpected keyword argument \"\{name}\"\{hint}",
               ),
             )
+          }
         }
       }
       let x_val = match x_from_kw {
@@ -758,13 +768,18 @@ fn call_builtin(
                     ),
                   )
               }
-            other =>
+            other => {
+              let hint = match @utf8util.spell_nearest(other, ["sep"]) {
+                "" => ""
+                s => " (did you mean \{s}?)"
+              }
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "fail: unexpected keyword argument \"\{other}\"",
+                  "fail: unexpected keyword argument \"\{other}\"\{hint}",
                 ),
               )
+            }
           }
         }
         s
