@@ -764,6 +764,36 @@ test "parse_rfc3339: double-quote in both input and trailing extra text is fully
 }
 
 ///|
+test "make_parse_time_fn: unknown keyword close to format suggests did-you-mean" {
+  let result = call_time_builtin(
+    make_parse_time_fn(),
+    [@value.Value::String(@value.StarlarkString::new("2021-01-01"))],
+    [("formt", @value.Value::String(@value.StarlarkString::new("2006-01-02")))],
+  )
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(
+        msg, "parse_time: unexpected keyword argument \"formt\" (did you mean format?)",
+      )
+  }
+}
+
+///|
+test "make_time_constructor_fn: unknown keyword close to year suggests did-you-mean" {
+  let result = call_time_builtin(make_time_constructor_fn(), [], [
+    ("yeaar", @value.Value::Int(BigInt::from_int(2024))),
+  ])
+  match result {
+    Ok(_) => fail("expected Err")
+    Err(msg) =>
+      assert_eq(
+        msg, "time: unexpected keyword argument \"yeaar\" (did you mean year?)",
+      )
+  }
+}
+
+///|
 test "parse_go_layout: double-quote in both input and trailing extra text is fully Go-quoted" {
   let input = {
     let b = StringBuilder::new()
