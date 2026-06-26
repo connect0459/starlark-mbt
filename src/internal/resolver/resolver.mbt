@@ -1066,22 +1066,15 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
     @syntax.Expr::ELiteral(_, _) => ()
     @syntax.Expr::EUnary(_, e, _) => self.walk_expr(e)
     @syntax.Expr::EBinary(_, _, _, _) => {
-      let rights : Array[@syntax.Expr] = []
-      let mut cur = expr
-      while true {
-        match cur {
-          @syntax.Expr::EBinary(l, _, r, _) => {
-            rights.push(r)
-            cur = l
-          }
-          _ => break
+      let (leftmost, rights) = @syntax.flatten_left_chain(expr, fn(e) {
+        match e {
+          @syntax.Expr::EBinary(l, _, r, _) => Some((l, r))
+          _ => None
         }
-      }
-      self.walk_expr(cur)
-      let mut i = rights.length() - 1
-      while i >= 0 {
-        self.walk_expr(rights[i])
-        i -= 1
+      })
+      self.walk_expr(leftmost)
+      for right in rights {
+        self.walk_expr(right)
       }
     }
     @syntax.Expr::ECond(cond, a, b, _) => {
@@ -1090,22 +1083,15 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       self.walk_expr(b)
     }
     @syntax.Expr::EIndex(_, _, _) => {
-      let indices : Array[@syntax.Expr] = []
-      let mut cur = expr
-      while true {
-        match cur {
-          @syntax.Expr::EIndex(e, idx, _) => {
-            indices.push(idx)
-            cur = e
-          }
-          _ => break
+      let (leftmost, indices) = @syntax.flatten_left_chain(expr, fn(e) {
+        match e {
+          @syntax.Expr::EIndex(inner, idx, _) => Some((inner, idx))
+          _ => None
         }
-      }
-      self.walk_expr(cur)
-      let mut i = indices.length() - 1
-      while i >= 0 {
-        self.walk_expr(indices[i])
-        i -= 1
+      })
+      self.walk_expr(leftmost)
+      for idx in indices {
+        self.walk_expr(idx)
       }
     }
     @syntax.Expr::ESlice(e, lo, hi, step, _) => {
@@ -1124,14 +1110,13 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       }
     }
     @syntax.Expr::EDot(_, _, _) => {
-      let mut cur = expr
-      while true {
-        match cur {
-          @syntax.Expr::EDot(e, _, _) => cur = e
-          _ => break
+      let (leftmost, _) = @syntax.flatten_left_chain(expr, fn(e) {
+        match e {
+          @syntax.Expr::EDot(inner, _, _) => Some((inner, ()))
+          _ => None
         }
-      }
-      self.walk_expr(cur)
+      })
+      self.walk_expr(leftmost)
     }
     @syntax.Expr::ECall(f, args, call_pos) => {
       self.walk_expr(f)
