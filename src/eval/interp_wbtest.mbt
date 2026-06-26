@@ -1,5 +1,3 @@
-// --- guard_accum_alloc unit tests ---
-
 ///|
 test "guard_accum_alloc does not raise when current length is below allocation cap" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
@@ -36,8 +34,6 @@ test "guard_accum_alloc error message includes caller name and projected element
   assert_true(msg.contains("dict"))
   assert_true(msg.contains("\{max_alloc_elems + 1}"))
 }
-
-// --- vm ---
 
 ///|
 /// A name the VM resolves as predeclared but that has no binding in the base
