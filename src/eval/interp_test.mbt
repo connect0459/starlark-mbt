@@ -596,6 +596,13 @@ test "vm evaluates a dict comprehension with a guard" {
 }
 
 ///|
+test "dict comprehension keeps last value when the same key appears multiple times" {
+  assert_vm_result(
+    "pairs = [(\"k\", 1), (\"k\", 2), (\"k\", 3)]\nd = {k: v for k, v in pairs}",
+  )
+}
+
+///|
 test "vm evaluates a comprehension inside a function" {
   assert_vm_result(
     "def squares(n):\n  return [i * i for i in range(n)]\n\nxs = squares(5)",
@@ -1092,6 +1099,11 @@ test "vm evaluates a set comprehension" {
 ///|
 test "vm evaluates a guarded set comprehension" {
   assert_vm_result("s = {x for x in range(10) if x % 2 == 0}\nn = len(s)")
+}
+
+///|
+test "set comprehension deduplicates repeated values without error" {
+  assert_vm_result("elems = [1, 1, 2, 1, 3]\ns = {x for x in elems}")
 }
 
 ///|

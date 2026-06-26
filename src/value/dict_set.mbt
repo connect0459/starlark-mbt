@@ -93,6 +93,16 @@ pub fn StarlarkDict::get(
 }
 
 ///|
+/// Returns `Ok(true)` if `key` is present, `Ok(false)` if absent, or `Err`
+/// if the key is unhashable.
+pub fn StarlarkDict::contains(
+  self : StarlarkDict,
+  key : Value,
+) -> Result[Bool, String] {
+  self.ht.contains(key)
+}
+
+///|
 /// Removes the entry for `key`. Returns `true` if the key was present,
 /// `false` if absent. Returns `Err` if frozen, under active iteration,
 /// or if `key` is unhashable.
