@@ -97,10 +97,7 @@ fn eval_getattr(
               @value.StarlarkBoundMethod::new(obj, attr),
             )
           } else {
-            let hint = match @utf8util.spell_nearest(attr, ms) {
-              "" => ""
-              s => " (did you mean .\{s}?)"
-            }
+            let hint = @utf8util.spell_hint(attr, ms, prefix=".")
             raise EvalErr(
               make_eval_error(
                 ctx,
@@ -117,10 +114,7 @@ fn eval_getattr(
         Some(v) => v
         None => {
           let candidates = m.attr_names()
-          let hint = match @utf8util.spell_nearest(attr, candidates) {
-            "" => ""
-            s => " (did you mean .\{s}?)"
-          }
+          let hint = @utf8util.spell_hint(attr, candidates, prefix=".")
           raise EvalErr(
             make_eval_error(
               ctx,
@@ -287,13 +281,15 @@ fn call_builtin(
                     ),
                   )
               }
-            other =>
+            other => {
+              let hint = @utf8util.spell_hint(other, ["sep"])
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "print: unexpected keyword argument \"\{other}\"",
+                  "print: unexpected keyword argument \"\{other}\"\{hint}",
                 ),
               )
+            }
           }
         }
         found
@@ -393,13 +389,15 @@ fn call_builtin(
             x_from_kw = Some(kv.1)
           }
           "base" => base_from_kw = Some(kv.1)
-          name =>
+          name => {
+            let hint = @utf8util.spell_hint(name, ["x", "base"])
             raise EvalErr(
               make_eval_error(
                 ctx,
-                "int: unexpected keyword argument \"\{name}\"",
+                "int: unexpected keyword argument \"\{name}\"\{hint}",
               ),
             )
+          }
         }
       }
       let x_val = match x_from_kw {
@@ -758,13 +756,15 @@ fn call_builtin(
                     ),
                   )
               }
-            other =>
+            other => {
+              let hint = @utf8util.spell_hint(other, ["sep"])
               raise EvalErr(
                 make_eval_error(
                   ctx,
-                  "fail: unexpected keyword argument \"\{other}\"",
+                  "fail: unexpected keyword argument \"\{other}\"\{hint}",
                 ),
               )
+            }
           }
         }
         s
@@ -1103,10 +1103,7 @@ fn builtin_minmax(
   for kv in kw_args {
     let (kw_name, _) = kv
     if kw_name != "key" {
-      let hint = match @utf8util.spell_nearest(kw_name, ["key"]) {
-        "" => ""
-        s => " (did you mean \{s}?)"
-      }
+      let hint = @utf8util.spell_hint(kw_name, ["key"])
       raise EvalErr(
         make_eval_error(
           ctx,
@@ -1335,11 +1332,7 @@ fn builtin_sorted(
         reverse_from_kwarg = true
       }
       other => {
-        let hint = match
-          @utf8util.spell_nearest(other, ["key", "reverse", "iterable"]) {
-          "" => ""
-          s => " (did you mean \{s}?)"
-        }
+        let hint = @utf8util.spell_hint(other, ["key", "reverse", "iterable"])
         raise EvalErr(
           make_eval_error(
             ctx,

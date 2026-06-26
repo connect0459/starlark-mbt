@@ -103,7 +103,11 @@ pub fn unpack_args(
       }
     }
     if !found {
-      return Err("\{fn_name}: unexpected keyword argument \"\{kw_name}\"")
+      let names = infos.map(fn(i) { i.name })
+      let hint = @utf8util.spell_hint(kw_name, names)
+      return Err(
+        "\{fn_name}: unexpected keyword argument \"\{kw_name}\"\{hint}",
+      )
     }
   }
   for i in 0..<n {

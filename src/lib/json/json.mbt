@@ -1480,8 +1480,12 @@ fn make_encode_indent_fn() -> @value.Value {
           return Err(
             "json.encode_indent: for parameter \"indent\": got \{v.type_name()}, want string",
           )
-        _ =>
-          return Err("json.encode_indent: unexpected keyword argument \"\{k}\"")
+        _ => {
+          let hint = @utf8util.spell_hint(k, ["prefix", "indent"])
+          return Err(
+            "json.encode_indent: unexpected keyword argument \"\{k}\"\{hint}",
+          )
+        }
       }
     }
     if pos_args.length() != 1 {
@@ -1552,7 +1556,10 @@ fn make_decode_fn() -> @value.Value {
                 )
             }
           }
-        _ => return Err("json.decode: unexpected keyword argument \"\{k}\"")
+        _ => {
+          let hint = @utf8util.spell_hint(k, ["default"])
+          return Err("json.decode: unexpected keyword argument \"\{k}\"\{hint}")
+        }
       }
     }
     // deferred positional-only rejection for x string-kwarg (post-loop, like go)
@@ -1592,7 +1599,10 @@ fn make_indent_fn() -> @value.Value {
           return Err(
             "json.indent: for parameter \"indent\": got \{v.type_name()}, want string",
           )
-        _ => return Err("json.indent: unexpected keyword argument \"\{k}\"")
+        _ => {
+          let hint = @utf8util.spell_hint(k, ["prefix", "indent"])
+          return Err("json.indent: unexpected keyword argument \"\{k}\"\{hint}")
+        }
       }
     }
     if pos_args.length() != 1 {

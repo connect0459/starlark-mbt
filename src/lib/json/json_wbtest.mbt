@@ -458,6 +458,51 @@ test "encode_to_json: depth error is wrapped with json.encode prefix" {
 }
 
 ///|
+test "make_encode_indent_fn: unknown keyword close to indent suggests did-you-mean" {
+  let result = call_encode_indent(
+    [@value.Value::String(@value.StarlarkString::new("{}"))],
+    [("indet", @value.Value::String(@value.StarlarkString::new("  ")))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.encode_indent: unexpected keyword argument \"indet\" (did you mean indent?)",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_indent_fn: unknown keyword close to prefix suggests did-you-mean" {
+  let result = call_indent(
+    [@value.Value::String(@value.StarlarkString::new("{}"))],
+    [("prefxi", @value.Value::String(@value.StarlarkString::new(" ")))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.indent: unexpected keyword argument \"prefxi\" (did you mean prefix?)",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_decode_fn: unknown keyword close to default suggests did-you-mean" {
+  let result = call_decode(
+    [@value.Value::String(@value.StarlarkString::new("1"))],
+    [("defualt", @value.Value::Int(BigInt::from_int(0)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.decode: unexpected keyword argument \"defualt\" (did you mean default?)",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "str_lex_cmp: supplementary codepoints sort after all BMP characters" {
   assert_true(str_lex_cmp("\u{E000}", "\u{FFFF}") < 0)
   assert_true(str_lex_cmp("\u{FFFF}", "\u{10000}") < 0)
