@@ -1105,6 +1105,11 @@ test "vm evaluates a guarded set comprehension" {
 }
 
 ///|
+test "set comprehension deduplicates repeated values without error" {
+  assert_vm_result("elems = [1, 1, 2, 1, 3]\ns = {x for x in elems}")
+}
+
+///|
 test "vm evaluates a dict comprehension with a tuple target" {
   assert_vm_result("d = {k: v for k, v in [(\"a\", 1), (\"b\", 2)]}")
 }

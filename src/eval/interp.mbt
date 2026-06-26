@@ -640,7 +640,10 @@ fn VM::run_frame(
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::Set(s) => {
-            guard_accum_alloc(ctx, "set", s.length())
+            // Guard only when the element is absent; a duplicate keeps the count unchanged.
+            if !check(ctx, s.contains(elem)) {
+              guard_accum_alloc(ctx, "set", s.length())
+            }
             check(ctx, s.add(elem))
           }
           other => abort("vm: SetAdd expects a set, got \{other.type_name()}")

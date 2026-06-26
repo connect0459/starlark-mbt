@@ -36,6 +36,22 @@ test "guard_accum_alloc error message includes caller name and projected element
 }
 
 ///|
+test "SetAdd alloc guard condition evaluates false when element already exists in set" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let s = @value.StarlarkSet::new()
+  let elem = @value.Value::Int(1N)
+  s.add(elem) |> ignore
+  assert_false(!check(ctx, s.contains(elem)))
+}
+
+///|
+test "SetAdd alloc guard condition evaluates true when element is absent from set" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let s = @value.StarlarkSet::new()
+  assert_true(!check(ctx, s.contains(@value.Value::Int(1N))))
+}
+
+///|
 /// A name the VM resolves as predeclared but that has no binding in the base
 /// environment must raise an undefined-name error with its source position,
 /// rather than silently resolving to a fabricated (body-less) builtin.
