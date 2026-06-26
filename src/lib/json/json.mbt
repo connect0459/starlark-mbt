@@ -1481,10 +1481,7 @@ fn make_encode_indent_fn() -> @value.Value {
             "json.encode_indent: for parameter \"indent\": got \{v.type_name()}, want string",
           )
         _ => {
-          let hint = match @utf8util.spell_nearest(k, ["prefix", "indent"]) {
-            "" => ""
-            s => " (did you mean \{s}?)"
-          }
+          let hint = @utf8util.spell_hint(k, ["prefix", "indent"])
           return Err(
             "json.encode_indent: unexpected keyword argument \"\{k}\"\{hint}",
           )
@@ -1560,10 +1557,7 @@ fn make_decode_fn() -> @value.Value {
             }
           }
         _ => {
-          let hint = match @utf8util.spell_nearest(k, ["default"]) {
-            "" => ""
-            s => " (did you mean \{s}?)"
-          }
+          let hint = @utf8util.spell_hint(k, ["default"])
           return Err("json.decode: unexpected keyword argument \"\{k}\"\{hint}")
         }
       }
@@ -1606,10 +1600,7 @@ fn make_indent_fn() -> @value.Value {
             "json.indent: for parameter \"indent\": got \{v.type_name()}, want string",
           )
         _ => {
-          let hint = match @utf8util.spell_nearest(k, ["prefix", "indent"]) {
-            "" => ""
-            s => " (did you mean \{s}?)"
-          }
+          let hint = @utf8util.spell_hint(k, ["prefix", "indent"])
           return Err("json.indent: unexpected keyword argument \"\{k}\"\{hint}")
         }
       }

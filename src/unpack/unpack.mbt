@@ -104,10 +104,7 @@ pub fn unpack_args(
     }
     if !found {
       let names = infos.map(fn(i) { i.name })
-      let hint = match @utf8util.spell_nearest(kw_name, names) {
-        "" => ""
-        s => " (did you mean \{s}?)"
-      }
+      let hint = @utf8util.spell_hint(kw_name, names)
       return Err(
         "\{fn_name}: unexpected keyword argument \"\{kw_name}\"\{hint}",
       )

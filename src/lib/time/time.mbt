@@ -2492,10 +2492,7 @@ fn make_parse_time_fn() -> @value.Value {
       match k {
         "format" | "location" => ()
         _ => {
-          let hint = match @utf8util.spell_nearest(k, ["format", "location"]) {
-            "" => ""
-            s => " (did you mean \{s}?)"
-          }
+          let hint = @utf8util.spell_hint(k, ["format", "location"])
           return Err("parse_time: unexpected keyword argument \"\{k}\"\{hint}")
         }
       }
@@ -2537,10 +2534,7 @@ fn make_parse_time_fn() -> @value.Value {
               )
           }
         _ => {
-          let hint = match @utf8util.spell_nearest(k, ["format", "location"]) {
-            "" => ""
-            s => " (did you mean \{s}?)"
-          }
+          let hint = @utf8util.spell_hint(k, ["format", "location"])
           return Err("parse_time: unexpected keyword argument \"\{k}\"\{hint}")
         }
       }
@@ -2807,13 +2801,9 @@ fn make_time_constructor_fn() -> @value.Value {
               )
           }
         _ => {
-          let hint = match
-            @utf8util.spell_nearest(k, [
-              "year", "month", "day", "hour", "minute", "second", "nanosecond", "location",
-            ]) {
-            "" => ""
-            s => " (did you mean \{s}?)"
-          }
+          let hint = @utf8util.spell_hint(k, [
+            "year", "month", "day", "hour", "minute", "second", "nanosecond", "location",
+          ])
           return Err("time: unexpected keyword argument \"\{k}\"\{hint}")
         }
       }

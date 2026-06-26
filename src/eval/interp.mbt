@@ -1122,15 +1122,7 @@ fn VM::exec_load(
         m.load_bound.push(ls.locals[i])
       }
       None => {
-        let suggestion = @utf8util.spell_nearest(
-          export_name,
-          loaded.global_names(),
-        )
-        let hint = if suggestion == "" {
-          ""
-        } else {
-          " (did you mean \{suggestion}?)"
-        }
+        let hint = @utf8util.spell_hint(export_name, loaded.global_names())
         raise EvalErr(
           make_eval_error(
             ctx,
@@ -1297,10 +1289,7 @@ fn VM::bind_args(
         _ => ()
       }
     }
-    let hint = match @utf8util.spell_nearest(first_key, valid_names) {
-      "" => ""
-      s => " (did you mean \{s}?)"
-    }
+    let hint = @utf8util.spell_hint(first_key, valid_names)
     raise EvalErr(
       make_eval_error(
         self.ctx,

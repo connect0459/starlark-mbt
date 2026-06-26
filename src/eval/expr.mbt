@@ -288,10 +288,7 @@ fn call_builtin(
                   )
               }
             other => {
-              let hint = match @utf8util.spell_nearest(other, ["sep"]) {
-                "" => ""
-                s => " (did you mean \{s}?)"
-              }
+              let hint = @utf8util.spell_hint(other, ["sep"])
               raise EvalErr(
                 make_eval_error(
                   ctx,
@@ -399,10 +396,7 @@ fn call_builtin(
           }
           "base" => base_from_kw = Some(kv.1)
           name => {
-            let hint = match @utf8util.spell_nearest(name, ["x", "base"]) {
-              "" => ""
-              s => " (did you mean \{s}?)"
-            }
+            let hint = @utf8util.spell_hint(name, ["x", "base"])
             raise EvalErr(
               make_eval_error(
                 ctx,
@@ -769,10 +763,7 @@ fn call_builtin(
                   )
               }
             other => {
-              let hint = match @utf8util.spell_nearest(other, ["sep"]) {
-                "" => ""
-                s => " (did you mean \{s}?)"
-              }
+              let hint = @utf8util.spell_hint(other, ["sep"])
               raise EvalErr(
                 make_eval_error(
                   ctx,
@@ -1118,10 +1109,7 @@ fn builtin_minmax(
   for kv in kw_args {
     let (kw_name, _) = kv
     if kw_name != "key" {
-      let hint = match @utf8util.spell_nearest(kw_name, ["key"]) {
-        "" => ""
-        s => " (did you mean \{s}?)"
-      }
+      let hint = @utf8util.spell_hint(kw_name, ["key"])
       raise EvalErr(
         make_eval_error(
           ctx,
@@ -1350,11 +1338,7 @@ fn builtin_sorted(
         reverse_from_kwarg = true
       }
       other => {
-        let hint = match
-          @utf8util.spell_nearest(other, ["key", "reverse", "iterable"]) {
-          "" => ""
-          s => " (did you mean \{s}?)"
-        }
+        let hint = @utf8util.spell_hint(other, ["key", "reverse", "iterable"])
         raise EvalErr(
           make_eval_error(
             ctx,
