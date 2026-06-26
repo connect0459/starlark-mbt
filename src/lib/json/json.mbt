@@ -1593,11 +1593,11 @@ fn make_indent_fn() -> @value.Value {
         ("indent", @value.Value::String(sv)) => ind = sv.raw()
         ("prefix", _) =>
           return Err(
-            "json.indent: for parameter prefix: got \{v.type_name()}, want string",
+            "json.indent: for parameter \"prefix\": got \{v.type_name()}, want string",
           )
         ("indent", _) =>
           return Err(
-            "json.indent: for parameter indent: got \{v.type_name()}, want string",
+            "json.indent: for parameter \"indent\": got \{v.type_name()}, want string",
           )
         _ => return Err("json.indent: unexpected keyword argument \"\{k}\"")
       }
