@@ -97,10 +97,7 @@ fn eval_getattr(
               @value.StarlarkBoundMethod::new(obj, attr),
             )
           } else {
-            let hint = match @utf8util.spell_nearest(attr, ms) {
-              "" => ""
-              s => " (did you mean .\{s}?)"
-            }
+            let hint = @utf8util.spell_hint(attr, ms, prefix=".")
             raise EvalErr(
               make_eval_error(
                 ctx,
@@ -117,10 +114,7 @@ fn eval_getattr(
         Some(v) => v
         None => {
           let candidates = m.attr_names()
-          let hint = match @utf8util.spell_nearest(attr, candidates) {
-            "" => ""
-            s => " (did you mean .\{s}?)"
-          }
+          let hint = @utf8util.spell_hint(attr, candidates, prefix=".")
           raise EvalErr(
             make_eval_error(
               ctx,

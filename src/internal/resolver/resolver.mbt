@@ -679,12 +679,8 @@ fn Resolver::resolve_name_at_toplevel(
   } else {
     let candidates : Array[String] = self.globals.keys().collect() +
       extra_locals
-    let hint = @utf8util.spell_nearest(name, candidates)
-    if hint.length() > 0 {
-      self.errorf(pos, "undefined: \{name} (did you mean \{hint}?)")
-    } else {
-      self.errorf(pos, "undefined: \{name}")
-    }
+    let hint = @utf8util.spell_hint(name, candidates)
+    self.errorf(pos, "undefined: \{name}\{hint}")
   }
 }
 
