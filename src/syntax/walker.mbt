@@ -1,4 +1,45 @@
 ///|
+/// Iteratively peels a left-associative chain of `Expr` nodes, collecting a
+/// payload from each step until `peel` returns `None`.
+///
+/// Any walker that uses recursive descent over `Expr` nodes **must** handle
+/// the following left-recursive node kinds iteratively (not recursively) to
+/// prevent stack overflow on deeply chained expressions:
+///
+/// - `EBinary`  — left-associative binary operations (arithmetic, comparison,
+///               `in`/`not in`); excludes `OpAnd`/`OpOr`, which have their
+///               own short-circuit flattening.
+/// - `EAnd`     — short-circuit `and` chain (`EBinary` with `OpAnd`).
+/// - `EOr`      — short-circuit `or` chain (`EBinary` with `OpOr`).
+/// - `EIndex`   — chained subscript: `a[i][j][k]`.
+/// - `EDot`     — chained attribute access: `a.b.c.d`.
+///
+/// `flatten_left_chain` provides the shared primitive for these iterative
+/// loops.  Its `peel` callback returns `Some((left_child, payload))` when the
+/// current node matches the target kind, or `None` to stop.
+///
+/// Returns `(leftmost, payloads)` where `payloads` are in left-to-right
+/// (source-code) order.
+pub fn[A] flatten_left_chain(
+  expr : Expr,
+  peel : (Expr) -> (Expr, A)?,
+) -> (Expr, Array[A]) {
+  let payloads : Array[A] = []
+  let mut cur = expr
+  while true {
+    match peel(cur) {
+      Some((left, payload)) => {
+        payloads.push(payload)
+        cur = left
+      }
+      None => break
+    }
+  }
+  payloads.rev_in_place()
+  (cur, payloads)
+}
+
+///|
 /// A tagged union of every AST node kind, used as the argument to the visitor
 /// function passed to `walk_file`/`walk_stmt`/`walk_expr`.
 pub(all) enum Node {
