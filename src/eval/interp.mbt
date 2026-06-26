@@ -652,7 +652,10 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            guard_accum_alloc(ctx, "dict", d.length())
+            // Guard only when the key is absent; an update keeps the count unchanged.
+            if !check(ctx, d.contains(key)) {
+              guard_accum_alloc(ctx, "dict", d.length())
+            }
             check(ctx, d.set(key, value))
           }
           other => abort("vm: SetDict expects a dict, got \{other.type_name()}")

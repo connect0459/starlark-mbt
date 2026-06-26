@@ -596,6 +596,16 @@ test "vm evaluates a dict comprehension with a guard" {
 }
 
 ///|
+test "vm: SetDict key update does not raise when duplicate key rewrites existing entry" {
+  // A comprehension where multiple pairs share the same key performs key
+  // updates, not new inserts. Updating an existing key must not trigger the
+  // alloc guard (the dict does not grow).
+  assert_vm_result(
+    "pairs = [(\"k\", 1), (\"k\", 2), (\"k\", 3)]\nd = {k: v for k, v in pairs}",
+  )
+}
+
+///|
 test "vm evaluates a comprehension inside a function" {
   assert_vm_result(
     "def squares(n):\n  return [i * i for i in range(n)]\n\nxs = squares(5)",
