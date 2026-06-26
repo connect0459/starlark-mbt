@@ -187,3 +187,24 @@ fn guard_range_alloc(
     }
   }
 }
+
+///|
+/// Raises a graceful error when `current_len` — the current element count of
+/// an accumulator container — has reached the backend-specific allocation cap
+/// (`max_alloc_elems`). Must be called in the `Append`, `SetAdd`, `SetDict`,
+/// and `SetDictUniq` opcode arms before inserting a new element so that
+/// oversized comprehensions fail gracefully instead of growing without bound.
+fn guard_accum_alloc(
+  ctx : EvalContext,
+  caller : String,
+  current_len : Int,
+) -> Unit raise EvalErr {
+  if current_len >= max_alloc_elems {
+    raise EvalErr(
+      make_eval_error(
+        ctx,
+        "\{caller}: excessive sequence (\{current_len + 1} elements)",
+      ),
+    )
+  }
+}

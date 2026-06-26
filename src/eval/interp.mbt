@@ -629,14 +629,7 @@ fn VM::run_frame(
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::List(l) => {
-            if l.length() >= max_alloc_elems {
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "list: excessive sequence (\{l.length() + 1} elements)",
-                ),
-              )
-            }
+            guard_accum_alloc(ctx, "list", l.length())
             check(ctx, l.push(elem))
           }
           other => abort("vm: Append expects a list, got \{other.type_name()}")
@@ -647,14 +640,7 @@ fn VM::run_frame(
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::Set(s) => {
-            if s.length() >= max_alloc_elems {
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "set: excessive sequence (\{s.length() + 1} elements)",
-                ),
-              )
-            }
+            guard_accum_alloc(ctx, "set", s.length())
             check(ctx, s.add(elem))
           }
           other => abort("vm: SetAdd expects a set, got \{other.type_name()}")
@@ -666,14 +652,7 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            if d.length() >= max_alloc_elems {
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "dict: excessive sequence (\{d.length() + 1} elements)",
-                ),
-              )
-            }
+            guard_accum_alloc(ctx, "dict", d.length())
             check(ctx, d.set(key, value))
           }
           other => abort("vm: SetDict expects a dict, got \{other.type_name()}")
@@ -686,14 +665,7 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            if d.length() >= max_alloc_elems {
-              raise EvalErr(
-                make_eval_error(
-                  ctx,
-                  "dict: excessive sequence (\{d.length() + 1} elements)",
-                ),
-              )
-            }
+            guard_accum_alloc(ctx, "dict", d.length())
             match check(ctx, d.get(key)) {
               Some(_) => {
                 let key_str = match key.repr_checked() {
