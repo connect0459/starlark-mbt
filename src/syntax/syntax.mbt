@@ -292,7 +292,8 @@ pub fn expr_pos(e : Expr) -> @errors.Position {
 /// slot (operator, bracket, etc.), `start` walks into sub-expressions to
 /// find the leftmost token of the whole expression.  Used to anchor error
 /// messages at the beginning of a compound LHS (e.g. `foobar` in
-/// `foobar() = 2`).
+/// `foobar() = 2`).  See the "Error-position anchoring policy" section in
+/// `README.mbt.md` for the full set of anchoring rules.
 ///
 /// Parameters:
 ///
