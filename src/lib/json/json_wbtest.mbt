@@ -256,6 +256,34 @@ test "make_indent_fn: prefix keyword parameter name is double-quoted in type err
 }
 
 ///|
+test "make_indent_fn: keyword type error is checked before positional arity" {
+  let result = call_indent(
+    [
+      @value.Value::Int(BigInt::from_int(1)),
+      @value.Value::Int(BigInt::from_int(2)),
+    ],
+    [("indent", @value.Value::Int(BigInt::from_int(3)))],
+  )
+  match result {
+    Err(msg) =>
+      assert_eq(
+        msg, "json.indent: for parameter \"indent\": got int, want string",
+      )
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
+test "make_indent_fn: positional type error uses for-parameter-N wording" {
+  let result = call_indent([@value.Value::Int(BigInt::from_int(123))], [])
+  match result {
+    Err(msg) =>
+      assert_eq(msg, "json.indent: for parameter 1: got int, want string")
+    Ok(v) => fail("expected error, got: \{v.repr()}")
+  }
+}
+
+///|
 test "make_indent_fn: indent_json errors are prefixed with json.indent:" {
   let indent_fn = make_indent_fn()
   guard indent_fn is @value.Value::Builtin(bf)

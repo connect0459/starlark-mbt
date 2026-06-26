@@ -1577,13 +1577,7 @@ fn make_decode_fn() -> @value.Value {
 /// Builds the `json.indent` builtin function value.
 fn make_indent_fn() -> @value.Value {
   @value.Value::new_builtin("json.indent", fn(_ctx, pos_args, kw_args) {
-    if pos_args.length() != 1 {
-      return Err("json.indent: got \{pos_args.length()} arguments, want 1")
-    }
-    let s = match pos_args[0] {
-      @value.Value::String(s) => s.raw()
-      _ => return Err("json.indent: argument must be a string")
-    }
+    // Validate keyword types first, matching go's UnpackArgs order.
     let mut pfx = ""
     let mut ind = "\t"
     for kw in kw_args {
@@ -1601,6 +1595,16 @@ fn make_indent_fn() -> @value.Value {
           )
         _ => return Err("json.indent: unexpected keyword argument \"\{k}\"")
       }
+    }
+    if pos_args.length() != 1 {
+      return Err("json.indent: got \{pos_args.length()} arguments, want 1")
+    }
+    let s = match pos_args[0] {
+      @value.Value::String(s) => s.raw()
+      _ =>
+        return Err(
+          "json.indent: for parameter 1: got \{pos_args[0].type_name()}, want string",
+        )
     }
     match indent_json(s, pfx, ind) {
       Ok(result) => Ok(@value.Value::String(@value.StarlarkString::new(result)))
