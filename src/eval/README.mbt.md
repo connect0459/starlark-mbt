@@ -365,11 +365,15 @@ When a function call passes an unrecognised keyword argument, the error
 message includes a spell-hint:
 
 ```text
-function f got an unexpected keyword argument "nme" (did you mean "name"?)
+function f got an unexpected keyword argument "nme" (did you mean name?)
 ```
 
-starlark-go omits the parenthetical hint. This is a quality-of-life
-extension; it does not affect correctness or accepted syntax.
+The suggestion uses Levenshtein edit distance with a 50% threshold
+(mirroring starlark-go's `spell.Nearest`). mbt uses all declared
+parameter names as candidates; starlark-go considers only the first
+⌈nparams/2⌉ due to a known bug in `UnpackArgs`'s candidate-collection
+loop. This is a quality-of-life extension; it does not affect
+correctness or accepted syntax.
 
 ### `(1 << 31) in range(0, 1 << 32)` returns `True`
 
