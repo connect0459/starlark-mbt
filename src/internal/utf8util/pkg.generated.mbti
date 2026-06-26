@@ -24,7 +24,7 @@ pub fn is_valid_utf8(Bytes) -> Bool
 
 pub fn spell_fold_chars(String) -> Array[Int]
 
-pub fn spell_hint(String, Array[String]) -> String
+pub fn spell_hint(String, Array[String], prefix? : String) -> String
 
 pub fn spell_levenshtein(Array[Int], Array[Int], Int) -> Int
 

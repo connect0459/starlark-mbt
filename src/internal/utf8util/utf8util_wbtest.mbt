@@ -282,3 +282,16 @@ test "spell_hint: close match returns did-you-mean suffix" {
 test "spell_hint: distant match returns empty string" {
   assert_eq(spell_hint("bogus", ["prefix", "indent"]), "")
 }
+
+///|
+test "spell_hint: prefix parameter prepends to candidate in suffix" {
+  assert_eq(
+    spell_hint("attrr", ["attr", "value"], prefix="."),
+    " (did you mean .attr?)",
+  )
+}
+
+///|
+test "spell_hint: prefix defaults to empty string when omitted" {
+  assert_eq(spell_hint("attrr", ["attr", "value"]), " (did you mean attr?)")
+}
