@@ -1577,7 +1577,6 @@ fn make_decode_fn() -> @value.Value {
 /// Builds the `json.indent` builtin function value.
 fn make_indent_fn() -> @value.Value {
   @value.Value::new_builtin("json.indent", fn(_ctx, pos_args, kw_args) {
-    // Validate keyword types first, matching go's UnpackArgs order.
     let mut pfx = ""
     let mut ind = "\t"
     for kw in kw_args {
