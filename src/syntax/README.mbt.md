@@ -68,7 +68,7 @@ mirror the behaviour of the starlark-go reference implementation.
 
 | Error class | Anchor token | How to obtain it |
 | :--- | :--- | :--- |
-| Assignment target is not assignable (e.g. `f() = 2`, `a.b = 1` on the wrong layer) | Leftmost token of the LHS expression | `syntax.start(lhs)` |
+| Assignment target is not assignable (e.g. `f() = 2`, `(a or b) = 1`) | Leftmost token of the LHS expression | `syntax.start(lhs)` |
 | Augmented-assignment target is not assignable | Leftmost token of the LHS expression | `syntax.start(lhs)` |
 | Dict-literal key errors (unhashable key, duplicate key) | Colon token that separates the key from its value | `colon_pos` from the `EDict` pair tuple `(key, val, colon_pos)` |
 | `def`/`lambda` parameter is not an identifier | Scanner cursor (one position past the bad token) | `Parser::scanner_error` → `scanner.position()` |
