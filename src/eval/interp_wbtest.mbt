@@ -1,5 +1,5 @@
 ///|
-test "guard_accum_alloc does not raise when current length is below allocation cap" {
+test "accumulator alloc guard does not raise when current length is below allocation cap" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let raised = try {
     guard_accum_alloc(ctx, "list", max_alloc_elems - 1)
@@ -11,7 +11,7 @@ test "guard_accum_alloc does not raise when current length is below allocation c
 }
 
 ///|
-test "guard_accum_alloc raises excessive-sequence error when current length reaches allocation cap" {
+test "accumulator alloc guard raises excessive-sequence error when current length reaches allocation cap" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let caught = try {
     guard_accum_alloc(ctx, "list", max_alloc_elems)
@@ -23,7 +23,7 @@ test "guard_accum_alloc raises excessive-sequence error when current length reac
 }
 
 ///|
-test "guard_accum_alloc error message includes caller name and projected element count" {
+test "accumulator alloc guard error message includes caller name and projected element count" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let msg = try {
     guard_accum_alloc(ctx, "dict", max_alloc_elems)
@@ -36,22 +36,22 @@ test "guard_accum_alloc error message includes caller name and projected element
 }
 
 ///|
-test "swallowed_contains returns true when contains result is Ok(true)" {
+test "presence check preserves Ok(true) as present" {
   assert_true(swallowed_contains(Ok(true)))
 }
 
 ///|
-test "swallowed_contains returns false when contains result is Ok(false)" {
+test "presence check preserves Ok(false) as absent" {
   assert_false(swallowed_contains(Ok(false)))
 }
 
 ///|
-test "swallowed_contains returns false when contains result is Err" {
+test "presence check collapses Err to false so alloc guard can fire before hashability error" {
   assert_false(swallowed_contains(Err("unhashable type: list")))
 }
 
 ///|
-test "guard_accum_alloc_if_new does not raise when container has room and element is absent" {
+test "accumulator alloc guard does not fire when container has room and element is new" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let raised = try {
     guard_accum_alloc_if_new(ctx, "set", max_alloc_elems - 1, false)
@@ -63,7 +63,7 @@ test "guard_accum_alloc_if_new does not raise when container has room and elemen
 }
 
 ///|
-test "guard_accum_alloc_if_new raises excessive-sequence error at cap when element is absent" {
+test "accumulator alloc guard raises excessive-sequence error at cap when element is new" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let caught = try {
     guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, false)
@@ -75,7 +75,7 @@ test "guard_accum_alloc_if_new raises excessive-sequence error at cap when eleme
 }
 
 ///|
-test "guard_accum_alloc_if_new skips guard when element is present at allocation cap" {
+test "accumulator alloc guard is bypassed at cap when element is already present" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let raised = try {
     guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, true)
@@ -87,7 +87,50 @@ test "guard_accum_alloc_if_new skips guard when element is present at allocation
 }
 
 ///|
-test "guard_accum_alloc_if_new raises alloc error for unhashable absent element at allocation cap" {
+/// Composed path: swallowed_contains + guard_accum_alloc_if_new with a real
+/// StarlarkSet. Verifies that the two helpers are wired correctly and that
+/// an existing element (is_present=true from a real contains call) prevents
+/// the alloc guard from firing at cap.
+test "set alloc guard bypassed at cap when element already present — composed path" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let s = @value.StarlarkSet::new()
+  let elem = @value.Value::Int(1N)
+  s.add(elem) |> ignore
+  let is_present = swallowed_contains(s.contains(elem))
+  assert_true(is_present)
+  let raised = try {
+    guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, is_present)
+    false
+  } catch {
+    EvalErr(_) => true
+  }
+  assert_false(raised)
+}
+
+///|
+/// Composed path: swallowed_contains + guard_accum_alloc_if_new with a real
+/// StarlarkDict. Verifies that an existing key (is_present=true from a real
+/// contains call) prevents the alloc guard from firing at cap.
+test "dict alloc guard bypassed at cap when key already present — composed path" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let d = @value.StarlarkDict::new()
+  let key = @value.Value::Int(1N)
+  d.set(key, @value.Value::None) |> ignore
+  let is_present = swallowed_contains(d.contains(key))
+  assert_true(is_present)
+  let raised = try {
+    guard_accum_alloc_if_new(ctx, "dict", max_alloc_elems, is_present)
+    false
+  } catch {
+    EvalErr(_) => true
+  }
+  assert_false(raised)
+}
+
+///|
+/// Unhashable set element at cap: presence check collapses Err to false,
+/// so alloc guard fires before hashability error propagates.
+test "unhashable absent set element at allocation cap triggers alloc guard first" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let s = @value.StarlarkSet::new()
   let unhashable = @value.Value::List(@value.StarlarkList::new([]))
@@ -103,7 +146,9 @@ test "guard_accum_alloc_if_new raises alloc error for unhashable absent element 
 }
 
 ///|
-test "guard_accum_alloc_if_new raises alloc error for unhashable absent dict key at allocation cap" {
+/// Unhashable dict key at cap: presence check collapses Err to false,
+/// so alloc guard fires before hashability error propagates.
+test "unhashable absent dict key at allocation cap triggers alloc guard first" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let d = @value.StarlarkDict::new()
   let unhashable = @value.Value::List(@value.StarlarkList::new([]))
