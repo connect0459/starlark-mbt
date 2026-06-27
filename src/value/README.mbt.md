@@ -250,7 +250,7 @@ Insertion-ordered mutable hash set; members are any hashable `Value`.
 | :--- | :--- |
 | `StarlarkSet::new()` | Empty set |
 | `add(Value) -> Result[Unit, String]` | Add a member |
-| `contains(Value) -> Result[Bool, String]` | Membership test |
+| `contains(Value) -> Result[Bool, String]` | Membership test (Err if unhashable) |
 | `remove(Value) -> Result[Bool, String]` | Remove; returns whether present |
 | `pop_first() -> Result[Value?, String]` | Remove and return the first inserted member |
 | `clear() -> Result[Unit, String]` | Remove all members |
