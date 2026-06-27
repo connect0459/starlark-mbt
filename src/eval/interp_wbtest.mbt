@@ -155,6 +155,7 @@ test "alloc guard error for unhashable set element at cap names caller and count
   let s = @value.StarlarkSet::new()
   let unhashable = @value.Value::List(@value.StarlarkList::new([]))
   let is_present = swallowed_contains(s.contains(unhashable))
+  assert_false(is_present)
   let msg = try {
     guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, is_present)
     ""
@@ -195,6 +196,7 @@ test "alloc guard error for unhashable dict key at cap names caller and count wi
   let d = @value.StarlarkDict::new()
   let unhashable = @value.Value::List(@value.StarlarkList::new([]))
   let is_present = swallowed_contains(d.contains(unhashable))
+  assert_false(is_present)
   let msg = try {
     guard_accum_alloc_if_new(ctx, "dict", max_alloc_elems, is_present)
     ""
