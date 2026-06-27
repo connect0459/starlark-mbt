@@ -640,8 +640,11 @@ fn VM::run_frame(
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::Set(s) => {
-            // Guard only when the element is absent; a duplicate keeps the count unchanged.
-            if !check(ctx, s.contains(elem)) {
+            let is_duplicate = match s.contains(elem) {
+              Ok(b) => b
+              Err(_) => false
+            }
+            if !is_duplicate {
               guard_accum_alloc(ctx, "set", s.length())
             }
             check(ctx, s.add(elem))
