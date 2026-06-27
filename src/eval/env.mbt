@@ -191,9 +191,15 @@ fn guard_range_alloc(
 ///|
 /// Raises a graceful error when `current_len` — the current element count of
 /// an accumulator container — has reached the backend-specific allocation cap
-/// (`max_alloc_elems`). Must be called in the `Append`, `SetAdd`, `SetDict`,
-/// and `SetDictUniq` opcode arms before inserting a new element so that
-/// oversized comprehensions fail gracefully instead of growing without bound.
+/// (`max_alloc_elems`). Call sites differ by opcode semantics:
+///
+/// - `Append`: called unconditionally, because every append grows the list.
+/// - `SetAdd` / `SetDict`: called only when the element or key is absent,
+///   so that updating an existing entry does not trigger a spurious guard
+///   error.
+/// - `SetDictUniq`: the duplicate-key check runs first; this guard is called
+///   only after confirming the key is absent (i.e., when the dict will
+///   actually grow).
 fn guard_accum_alloc(
   ctx : EvalContext,
   caller : String,
