@@ -28,6 +28,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-27
+
+### Added
+
+- `value`: add `StarlarkDict::contains` for key membership testing (#347)
+
+### Fixed
+
+#### Crashes and allocation guards
+
+- `eval`: cap list/set/dict comprehension accumulators and `range`-materialization
+  paths (`builtin_set`, `enumerate`, `reversed`, `sorted`, `list.extend`,
+  `star-args`) to prevent native SIGSEGV on oversized allocations (#321)
+- `resolver`, `compile`: walk `binary` / `index` / `dot` / `and` / `or` chains
+  iteratively to prevent stack overflow on deeply nested ASTs (#322)
+
+#### Conformance: alloc-guard priority
+
+- `eval`: skip alloc guard in `SetDict` / `SetAdd` when the key already exists
+  in the container, preventing a spurious allocation-cap error on key updates
+  (#347)
+- `eval`: prioritize alloc guard over unhashable-element errors in `SetAdd` /
+  `SetDict` so the allocation limit is always the first observable error (#353)
+- `eval`: prioritize duplicate-key check over alloc guard in `SetDictUniq` so
+  a duplicate key wins over the allocation limit (#355)
+
+#### Conformance: error messages
+
+- `eval`, `json`, `time`, `unpack`: add did-you-mean suggestion to unexpected
+  keyword-argument errors across all argument binders (#337)
+- `eval`: prefix `list.clear` mutation-guard errors with `clear:` (#330)
+- `eval`: report the original `base` argument in `int(s, 0)` error messages
+  (#331)
+- `time`: quote keyword parameter names in `time()` and `parse_time` type
+  errors (#336)
+- `json`: double-quote known keyword names in `indent` type error messages;
+  quote the `x` parameter name in `decode` keyword-path type errors (#335, #336)
+
+#### Conformance: error positions
+
+- `syntax`, `parser`, `compile`: anchor unhashable dict-key errors and dict
+  comprehension key errors at the colon (#329)
+- `syntax`, `resolver`: anchor assign-LHS errors at the leftmost token (#329)
+- `parser`: anchor `not an identifier` errors in `def` params and
+  `expect_ident` at the token end (#329)
+- `resolver`, `compile`: use `syntax.start` for positional-argument ordering
+  errors (#329)
+
+#### Conformance: resolver
+
+- `resolver`: report `comprehension` instead of `listcomp` / `setcomp` /
+  `dictcomp` for all comprehension assign-target errors (#332)
+
+#### Conformance: json
+
+- `json`: align `encode_indent` arg binder with Go's `UnpackArgs` — validate
+  keyword types before checking positional arity (#335)
+- `json`: wire `json.encode` binder through `unpack_positional` (#338)
+
+#### Conformance: lib/time
+
+- `time`: wire positional-only binders (`parse_duration`, `now`,
+  `from_timestamp`, `is_valid_timezone`, `in_location`, `format`) through
+  `unpack_positional`; aligns `parse_duration` unexpected-keyword-argument
+  errors with Go's `UnpackPositionalArgs` (#338)
+- `time`: guard `from_timestamp` sec / nsec fields and `duration` / `Int`
+  arithmetic against out-of-int64 values (#323)
+
+#### Conformance: string methods
+
+- `eval`, `utf8util`: fix `isalpha` / `isalnum` to include Unicode Lo and Lm
+  categories via a corrected 677-pair range table (#326)
+
 ## [0.3.2] - 2026-06-24
 
 ### Added
@@ -516,7 +589,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.2...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.3...HEAD>
+[0.3.3]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.2...v0.3.3>
 [0.3.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.1...v0.3.2>
 [0.3.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.0...v0.3.1>
 [0.3.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.2.1...v0.3.0>
