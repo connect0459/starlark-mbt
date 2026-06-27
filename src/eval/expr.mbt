@@ -2518,9 +2518,8 @@ fn call_set_method(
       }
       let result = @value.StarlarkSet::new()
       s.each(fn(v) {
-        match other_set.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(other_set.contains(v)) {
+          ignore(result.add(v))
         }
       })
       @value.Value::Set(result)
@@ -2534,15 +2533,13 @@ fn call_set_method(
       }
       let result = @value.StarlarkSet::new()
       s.each(fn(v) {
-        match other_set.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(other_set.contains(v)) {
+          ignore(result.add(v))
         }
       })
       for v in other_items {
-        match s.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(s.contains(v)) {
+          ignore(result.add(v))
         }
       }
       @value.Value::Set(result)
