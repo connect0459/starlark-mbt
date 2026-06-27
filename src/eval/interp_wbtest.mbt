@@ -146,6 +146,28 @@ test "unhashable absent set element at allocation cap triggers alloc guard first
 }
 
 ///|
+/// Full error message check: alloc guard error for an unhashable set element
+/// at cap names the caller as "set", reports the projected element count, and
+/// does not contain "unhashable" — confirming that the allocation limit takes
+/// priority over the hashability error.
+test "alloc guard error for unhashable set element at cap names caller and count without unhashable" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let s = @value.StarlarkSet::new()
+  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
+  let is_present = swallowed_contains(s.contains(unhashable))
+  let msg = try {
+    guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, is_present)
+    ""
+  } catch {
+    EvalErr(e) => e.msg()
+  }
+  assert_true(msg.contains("set"))
+  assert_true(msg.contains("excessive sequence"))
+  assert_false(msg.contains("unhashable"))
+  assert_true(msg.contains("\{max_alloc_elems + 1}"))
+}
+
+///|
 /// Unhashable dict key at cap: presence check collapses Err to false,
 /// so alloc guard fires before hashability error propagates.
 test "unhashable absent dict key at allocation cap triggers alloc guard first" {
@@ -161,6 +183,28 @@ test "unhashable absent dict key at allocation cap triggers alloc guard first" {
     EvalErr(e) => e.msg().contains("excessive sequence")
   }
   assert_true(caught)
+}
+
+///|
+/// Full error message check: alloc guard error for an unhashable dict key at
+/// cap names the caller as "dict", reports the projected element count, and
+/// does not contain "unhashable" — confirming that the allocation limit takes
+/// priority over the hashability error.
+test "alloc guard error for unhashable dict key at cap names caller and count without unhashable" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let d = @value.StarlarkDict::new()
+  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
+  let is_present = swallowed_contains(d.contains(unhashable))
+  let msg = try {
+    guard_accum_alloc_if_new(ctx, "dict", max_alloc_elems, is_present)
+    ""
+  } catch {
+    EvalErr(e) => e.msg()
+  }
+  assert_true(msg.contains("dict"))
+  assert_true(msg.contains("excessive sequence"))
+  assert_false(msg.contains("unhashable"))
+  assert_true(msg.contains("\{max_alloc_elems + 1}"))
 }
 
 ///|
