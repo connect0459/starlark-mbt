@@ -1109,9 +1109,8 @@ fn eval_bitwise(
         }
         "land" =>
           rs.each(fn(v) {
-            match ls.contains(v) {
-              Ok(true) => ignore(result.add(v))
-              _ => ()
+            if swallowed_contains(ls.contains(v)) {
+              ignore(result.add(v))
             }
           })
         _ => {
@@ -1207,11 +1206,8 @@ fn eval_shift(
 fn set_is_subset(s1 : @value.StarlarkSet, s2 : @value.StarlarkSet) -> Bool {
   let mut all_in = true
   s1.each(fn(v) {
-    if all_in {
-      match s2.contains(v) {
-        Ok(true) => ()
-        _ => all_in = false
-      }
+    if all_in && !swallowed_contains(s2.contains(v)) {
+      all_in = false
     }
   })
   all_in
