@@ -191,15 +191,10 @@ fn guard_range_alloc(
 ///|
 /// Raises a graceful error when `current_len` — the current element count of
 /// an accumulator container — has reached the backend-specific allocation cap
-/// (`max_alloc_elems`). Call sites differ by opcode semantics:
-///
-/// - `Append`: called unconditionally, because every append grows the list.
-/// - `SetAdd` / `SetDict`: called only when the element or key is absent,
-///   so that updating an existing entry does not trigger a spurious guard
-///   error.
-/// - `SetDictUniq`: the duplicate-key check runs first; this guard is called
-///   only after confirming the key is absent (i.e., when the dict will
-///   actually grow).
+/// (`max_alloc_elems`). Called unconditionally for `Append` (every append
+/// grows the list). For `SetAdd` / `SetDict` / `SetDictUniq`, call
+/// `guard_accum_alloc_if_new` instead, which skips this check when the
+/// container would not grow.
 fn guard_accum_alloc(
   ctx : EvalContext,
   caller : String,
@@ -212,5 +207,40 @@ fn guard_accum_alloc(
         "\{caller}: excessive sequence (\{current_len + 1} elements)",
       ),
     )
+  }
+}
+
+///|
+/// Returns `false` when `result` is `Err`, collapsing the error branch to the
+/// "absent" signal. This is the canonical presence-check shape for accumulator
+/// opcodes: an `Err` means the element is unhashable, and we intentionally
+/// swallow it here so the actual insert (`s.add` / `d.set`) runs next and
+/// surfaces the hashability error through the normal check path.
+fn swallowed_contains(result : Result[Bool, String]) -> Bool {
+  match result {
+    Ok(b) => b
+    Err(_) => false
+  }
+}
+
+///|
+/// Guards the allocation cap only when the container will actually grow (i.e.,
+/// `is_present` is `false`). When `is_present` is `true` the container does
+/// not grow, so the guard is skipped. For `SetAdd` and `SetDict` this means
+/// the existing entry is silently updated. `SetDictUniq` never reaches this
+/// call with `is_present == true`: it raises the duplicate-key error upstream
+/// before calling this function.
+///
+/// Invariant: `is_present` must be the result of `swallowed_contains` applied
+/// to the container's `contains` call, so that unhashable elements are treated
+/// as absent and the alloc guard fires *before* the hashability error.
+fn guard_accum_alloc_if_new(
+  ctx : EvalContext,
+  caller : String,
+  current_len : Int,
+  is_present : Bool,
+) -> Unit raise EvalErr {
+  if !is_present {
+    guard_accum_alloc(ctx, caller, current_len)
   }
 }

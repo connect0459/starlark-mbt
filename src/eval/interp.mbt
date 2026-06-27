@@ -640,13 +640,8 @@ fn VM::run_frame(
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::Set(s) => {
-            let is_duplicate = match s.contains(elem) {
-              Ok(b) => b
-              Err(_) => false
-            }
-            if !is_duplicate {
-              guard_accum_alloc(ctx, "set", s.length())
-            }
+            let is_present = swallowed_contains(s.contains(elem))
+            guard_accum_alloc_if_new(ctx, "set", s.length(), is_present)
             check(ctx, s.add(elem))
           }
           other => abort("vm: SetAdd expects a set, got \{other.type_name()}")
@@ -658,13 +653,8 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            let is_duplicate = match d.contains(key) {
-              Ok(b) => b
-              Err(_) => false
-            }
-            if !is_duplicate {
-              guard_accum_alloc(ctx, "dict", d.length())
-            }
+            let is_present = swallowed_contains(d.contains(key))
+            guard_accum_alloc_if_new(ctx, "dict", d.length(), is_present)
             check(ctx, d.set(key, value))
           }
           other => abort("vm: SetDict expects a dict, got \{other.type_name()}")
@@ -677,10 +667,7 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            let is_present = match d.get(key) {
-              Ok(Some(_)) => true
-              Ok(None) | Err(_) => false
-            }
+            let is_present = swallowed_contains(d.contains(key))
             if is_present {
               let key_str = match key.repr_checked() {
                 Ok(s) => s
@@ -688,7 +675,7 @@ fn VM::run_frame(
               }
               raise EvalErr(make_eval_error(ctx, "duplicate key: \{key_str}"))
             }
-            guard_accum_alloc(ctx, "dict", d.length())
+            guard_accum_alloc_if_new(ctx, "dict", d.length(), is_present)
             check(ctx, d.set(key, value))
           }
           other =>
