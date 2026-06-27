@@ -1264,3 +1264,20 @@ test "vm: duplicate dict key error anchors at the colon position" {
     Ok(_) => fail("expected duplicate-key error")
   }
 }
+
+///|
+test "dict literal with a duplicate key produces duplicate-key error not alloc-limit error" {
+  let r = @eval.exec_file(
+    @eval.Thread::new("v"),
+    "t.star",
+    "{\"x\": 1, \"x\": 2}",
+    @eval.Options::default(),
+  )
+  match r {
+    Err(e) => {
+      assert_true(e.msg().contains("duplicate key"))
+      assert_false(e.msg().contains("excessive sequence"))
+    }
+    Ok(_) => fail("expected duplicate-key error")
+  }
+}
