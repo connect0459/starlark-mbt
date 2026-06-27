@@ -272,9 +272,8 @@ fn eval_arith_sub(
     (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = @value.StarlarkSet::new()
       ls.each(fn(v) {
-        match rs.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(rs.contains(v)) {
+          ignore(result.add(v))
         }
       })
       @value.Value::Set(result)
@@ -1115,15 +1114,13 @@ fn eval_bitwise(
           })
         _ => {
           ls.each(fn(v) {
-            match rs.contains(v) {
-              Ok(false) => ignore(result.add(v))
-              _ => ()
+            if confirmed_absent(rs.contains(v)) {
+              ignore(result.add(v))
             }
           })
           rs.each(fn(v) {
-            match ls.contains(v) {
-              Ok(false) => ignore(result.add(v))
-              _ => ()
+            if confirmed_absent(ls.contains(v)) {
+              ignore(result.add(v))
             }
           })
         }
