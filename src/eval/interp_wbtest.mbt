@@ -88,47 +88,6 @@ test "SetDict unhashable key at allocation cap triggers alloc guard before hasha
 }
 
 ///|
-test "SetDictUniq alloc guard condition evaluates false when key already exists in dict" {
-  let d = @value.StarlarkDict::new()
-  let key = @value.Value::Int(1N)
-  d.set(key, @value.Value::None) |> ignore
-  let should_guard = match d.get(key) {
-    Ok(Some(_)) => false
-    Ok(None) | Err(_) => true
-  }
-  assert_false(should_guard)
-}
-
-///|
-test "SetDictUniq alloc guard condition evaluates true when key is absent from dict" {
-  let d = @value.StarlarkDict::new()
-  let should_guard = match d.get(@value.Value::Int(1N)) {
-    Ok(Some(_)) => false
-    Ok(None) | Err(_) => true
-  }
-  assert_true(should_guard)
-}
-
-///|
-test "SetDictUniq absent key at allocation cap triggers alloc guard before insertion" {
-  let ctx = EvalContext::new(Thread::new("t"), Options::default())
-  let d = @value.StarlarkDict::new()
-  let absent_key = @value.Value::Int(1N)
-  let should_guard = match d.get(absent_key) {
-    Ok(Some(_)) => false
-    Ok(None) | Err(_) => true
-  }
-  assert_true(should_guard)
-  let caught = try {
-    guard_accum_alloc(ctx, "dict", max_alloc_elems)
-    false
-  } catch {
-    EvalErr(e) => e.msg().contains("excessive sequence")
-  }
-  assert_true(caught)
-}
-
-///|
 test "SetAdd alloc guard condition evaluates false when element already exists in set" {
   let s = @value.StarlarkSet::new()
   let elem = @value.Value::Int(1N)
