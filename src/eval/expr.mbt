@@ -2497,9 +2497,8 @@ fn call_set_method(
             break
           }
           Some(v) =>
-            match s.contains(v) {
-              Ok(true) => ignore(result.add(v))
-              _ => ()
+            if swallowed_contains(s.contains(v)) {
+              ignore(result.add(v))
             }
         }
       }
@@ -2519,9 +2518,8 @@ fn call_set_method(
       }
       let result = @value.StarlarkSet::new()
       s.each(fn(v) {
-        match other_set.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(other_set.contains(v)) {
+          ignore(result.add(v))
         }
       })
       @value.Value::Set(result)
@@ -2535,15 +2533,13 @@ fn call_set_method(
       }
       let result = @value.StarlarkSet::new()
       s.each(fn(v) {
-        match other_set.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(other_set.contains(v)) {
+          ignore(result.add(v))
         }
       })
       for v in other_items {
-        match s.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(s.contains(v)) {
+          ignore(result.add(v))
         }
       }
       @value.Value::Set(result)
@@ -2562,9 +2558,8 @@ fn call_set_method(
       }
       let mut all_in = true
       s.each(fn(v) {
-        match other_set.contains(v) {
-          Ok(true) => ()
-          _ => all_in = false
+        if !swallowed_contains(other_set.contains(v)) {
+          all_in = false
         }
       })
       @value.Value::Bool(all_in)
@@ -2579,13 +2574,10 @@ fn call_set_method(
             break
           }
           Some(v) =>
-            match s.contains(v) {
-              Ok(true) => ()
-              _ => {
-                it.done()
-                all_in = false
-                break
-              }
+            if !swallowed_contains(s.contains(v)) {
+              it.done()
+              all_in = false
+              break
             }
         }
       }

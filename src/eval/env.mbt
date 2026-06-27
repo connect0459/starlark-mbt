@@ -224,6 +224,19 @@ fn swallowed_contains(result : Result[Bool, String]) -> Bool {
 }
 
 ///|
+/// Returns `true` only when `result` is `Ok(false)`, confirming the element
+/// is absent from the set. `Ok(true)` and `Err` both collapse to `false` so
+/// that only confirmed-absent elements enter a difference result. This is the
+/// inverse Err policy from `swallowed_contains`: `Err` is treated as "present"
+/// (skip), not "absent" (add).
+fn confirmed_absent(result : Result[Bool, String]) -> Bool {
+  match result {
+    Ok(false) => true
+    _ => false
+  }
+}
+
+///|
 /// Guards the allocation cap only when the container will actually grow (i.e.,
 /// `is_present` is `false`). When `is_present` is `true` the container does
 /// not grow, so the guard is skipped. For `SetAdd` and `SetDict` this means

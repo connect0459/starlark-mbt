@@ -272,9 +272,8 @@ fn eval_arith_sub(
     (@value.Value::Set(ls), @value.Value::Set(rs)) => {
       let result = @value.StarlarkSet::new()
       ls.each(fn(v) {
-        match rs.contains(v) {
-          Ok(false) => ignore(result.add(v))
-          _ => ()
+        if confirmed_absent(rs.contains(v)) {
+          ignore(result.add(v))
         }
       })
       @value.Value::Set(result)
@@ -1109,22 +1108,19 @@ fn eval_bitwise(
         }
         "land" =>
           rs.each(fn(v) {
-            match ls.contains(v) {
-              Ok(true) => ignore(result.add(v))
-              _ => ()
+            if swallowed_contains(ls.contains(v)) {
+              ignore(result.add(v))
             }
           })
         _ => {
           ls.each(fn(v) {
-            match rs.contains(v) {
-              Ok(false) => ignore(result.add(v))
-              _ => ()
+            if confirmed_absent(rs.contains(v)) {
+              ignore(result.add(v))
             }
           })
           rs.each(fn(v) {
-            match ls.contains(v) {
-              Ok(false) => ignore(result.add(v))
-              _ => ()
+            if confirmed_absent(ls.contains(v)) {
+              ignore(result.add(v))
             }
           })
         }
@@ -1207,11 +1203,8 @@ fn eval_shift(
 fn set_is_subset(s1 : @value.StarlarkSet, s2 : @value.StarlarkSet) -> Bool {
   let mut all_in = true
   s1.each(fn(v) {
-    if all_in {
-      match s2.contains(v) {
-        Ok(true) => ()
-        _ => all_in = false
-      }
+    if all_in && !swallowed_contains(s2.contains(v)) {
+      all_in = false
     }
   })
   all_in
