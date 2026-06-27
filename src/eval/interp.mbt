@@ -677,17 +677,19 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            guard_accum_alloc(ctx, "dict", d.length())
-            match check(ctx, d.get(key)) {
-              Some(_) => {
-                let key_str = match key.repr_checked() {
-                  Ok(s) => s
-                  Err(_) => "<key>"
-                }
-                raise EvalErr(make_eval_error(ctx, "duplicate key: \{key_str}"))
-              }
-              None => check(ctx, d.set(key, value))
+            let is_present = match d.get(key) {
+              Ok(Some(_)) => true
+              Ok(None) | Err(_) => false
             }
+            if is_present {
+              let key_str = match key.repr_checked() {
+                Ok(s) => s
+                Err(_) => "<key>"
+              }
+              raise EvalErr(make_eval_error(ctx, "duplicate key: \{key_str}"))
+            }
+            guard_accum_alloc(ctx, "dict", d.length())
+            check(ctx, d.set(key, value))
           }
           other =>
             abort("vm: SetDictUniq expects a dict, got \{other.type_name()}")
