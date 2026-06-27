@@ -658,8 +658,11 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            // Guard only when the key is absent; an update keeps the count unchanged.
-            if !check(ctx, d.contains(key)) {
+            let is_duplicate = match d.contains(key) {
+              Ok(b) => b
+              Err(_) => false
+            }
+            if !is_duplicate {
               guard_accum_alloc(ctx, "dict", d.length())
             }
             check(ctx, d.set(key, value))
