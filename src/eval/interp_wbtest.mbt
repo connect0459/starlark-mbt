@@ -146,6 +146,27 @@ test "unhashable absent set element at allocation cap triggers alloc guard first
 }
 
 ///|
+/// Full error message check: verifies the exact output of the alloc guard when
+/// given an unhashable-derived absent signal at cap. This guards the helper
+/// contract — caller name, element count, and message format — not the opcode
+/// ordering in interp.mbt (a VM-level test for that scenario is infeasible
+/// because max_alloc_elems cannot be injected at runtime).
+test "alloc guard error for unhashable set element at cap produces exact allocation-limit message" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let s = @value.StarlarkSet::new()
+  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
+  let is_present = swallowed_contains(s.contains(unhashable))
+  assert_false(is_present)
+  let msg = try {
+    guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, is_present)
+    ""
+  } catch {
+    EvalErr(e) => e.msg()
+  }
+  assert_eq(msg, "set: excessive sequence (\{max_alloc_elems + 1} elements)")
+}
+
+///|
 /// Unhashable dict key at cap: presence check collapses Err to false,
 /// so alloc guard fires before hashability error propagates.
 test "unhashable absent dict key at allocation cap triggers alloc guard first" {
@@ -161,6 +182,27 @@ test "unhashable absent dict key at allocation cap triggers alloc guard first" {
     EvalErr(e) => e.msg().contains("excessive sequence")
   }
   assert_true(caught)
+}
+
+///|
+/// Full error message check: verifies the exact output of the alloc guard when
+/// given an unhashable-derived absent signal at cap. This guards the helper
+/// contract — caller name, element count, and message format — not the opcode
+/// ordering in interp.mbt (a VM-level test for that scenario is infeasible
+/// because max_alloc_elems cannot be injected at runtime).
+test "alloc guard error for unhashable dict key at cap produces exact allocation-limit message" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let d = @value.StarlarkDict::new()
+  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
+  let is_present = swallowed_contains(d.contains(unhashable))
+  assert_false(is_present)
+  let msg = try {
+    guard_accum_alloc_if_new(ctx, "dict", max_alloc_elems, is_present)
+    ""
+  } catch {
+    EvalErr(e) => e.msg()
+  }
+  assert_eq(msg, "dict: excessive sequence (\{max_alloc_elems + 1} elements)")
 }
 
 ///|
