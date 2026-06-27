@@ -53,18 +53,35 @@ test "SetDict alloc guard condition evaluates true when key is absent from dict"
 
 ///|
 test "SetAdd alloc guard condition evaluates false when element already exists in set" {
-  let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let s = @value.StarlarkSet::new()
   let elem = @value.Value::Int(1N)
   s.add(elem) |> ignore
-  assert_false(!check(ctx, s.contains(elem)))
+  let is_duplicate = match s.contains(elem) {
+    Ok(b) => b
+    Err(_) => false
+  }
+  assert_false(!is_duplicate)
 }
 
 ///|
 test "SetAdd alloc guard condition evaluates true when element is absent from set" {
-  let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let s = @value.StarlarkSet::new()
-  assert_true(!check(ctx, s.contains(@value.Value::Int(1N))))
+  let is_duplicate = match s.contains(@value.Value::Int(1N)) {
+    Ok(b) => b
+    Err(_) => false
+  }
+  assert_true(!is_duplicate)
+}
+
+///|
+test "SetAdd alloc guard condition treats unhashable element as absent so guard fires first" {
+  let s = @value.StarlarkSet::new()
+  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
+  let is_duplicate = match s.contains(unhashable) {
+    Ok(b) => b
+    Err(_) => false
+  }
+  assert_false(is_duplicate)
 }
 
 ///|
