@@ -36,50 +36,37 @@ test "guard_accum_alloc error message includes caller name and projected element
 }
 
 ///|
-test "SetDict alloc guard condition evaluates false when key already exists in dict" {
-  let d = @value.StarlarkDict::new()
-  let key = @value.Value::Int(1N)
-  d.set(key, @value.Value::None) |> ignore
-  let is_duplicate = match d.contains(key) {
-    Ok(b) => b
-    Err(_) => false
-  }
-  assert_false(!is_duplicate)
+test "swallowed_contains returns true when contains result is Ok(true)" {
+  assert_true(swallowed_contains(Ok(true)))
 }
 
 ///|
-test "SetDict alloc guard condition evaluates true when key is absent from dict" {
-  let d = @value.StarlarkDict::new()
-  let is_duplicate = match d.contains(@value.Value::Int(1N)) {
-    Ok(b) => b
-    Err(_) => false
-  }
-  assert_true(!is_duplicate)
+test "swallowed_contains returns false when contains result is Ok(false)" {
+  assert_false(swallowed_contains(Ok(false)))
 }
 
 ///|
-test "SetDict alloc guard condition treats unhashable key as absent so guard fires first" {
-  let d = @value.StarlarkDict::new()
-  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
-  let is_duplicate = match d.contains(unhashable) {
-    Ok(b) => b
-    Err(_) => false
-  }
-  assert_false(is_duplicate)
+test "swallowed_contains returns false when contains result is Err" {
+  assert_false(swallowed_contains(Err("unhashable type: list")))
 }
 
 ///|
-test "SetDict unhashable key at allocation cap triggers alloc guard before hashability error" {
+test "guard_accum_alloc_if_new does not raise when container has room and element is absent" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
-  let d = @value.StarlarkDict::new()
-  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
-  let is_duplicate = match d.contains(unhashable) {
-    Ok(b) => b
-    Err(_) => false
+  let raised = try {
+    guard_accum_alloc_if_new(ctx, "set", max_alloc_elems - 1, false)
+    false
+  } catch {
+    EvalErr(_) => true
   }
-  assert_false(is_duplicate)
+  assert_false(raised)
+}
+
+///|
+test "guard_accum_alloc_if_new raises excessive-sequence error at cap when element is absent" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let caught = try {
-    guard_accum_alloc(ctx, "dict", max_alloc_elems)
+    guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, false)
     false
   } catch {
     EvalErr(e) => e.msg().contains("excessive sequence")
@@ -88,50 +75,42 @@ test "SetDict unhashable key at allocation cap triggers alloc guard before hasha
 }
 
 ///|
-test "SetAdd alloc guard condition evaluates false when element already exists in set" {
-  let s = @value.StarlarkSet::new()
-  let elem = @value.Value::Int(1N)
-  s.add(elem) |> ignore
-  let is_duplicate = match s.contains(elem) {
-    Ok(b) => b
-    Err(_) => false
+test "guard_accum_alloc_if_new skips guard when element is present at allocation cap" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let raised = try {
+    guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, true)
+    false
+  } catch {
+    EvalErr(_) => true
   }
-  assert_false(!is_duplicate)
+  assert_false(raised)
 }
 
 ///|
-test "SetAdd alloc guard condition evaluates true when element is absent from set" {
-  let s = @value.StarlarkSet::new()
-  let is_duplicate = match s.contains(@value.Value::Int(1N)) {
-    Ok(b) => b
-    Err(_) => false
-  }
-  assert_true(!is_duplicate)
-}
-
-///|
-test "SetAdd alloc guard condition treats unhashable element as absent so guard fires first" {
-  let s = @value.StarlarkSet::new()
-  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
-  let is_duplicate = match s.contains(unhashable) {
-    Ok(b) => b
-    Err(_) => false
-  }
-  assert_false(is_duplicate)
-}
-
-///|
-test "SetAdd unhashable element at allocation cap triggers alloc guard before hashability error" {
+test "guard_accum_alloc_if_new raises alloc error for unhashable absent element at allocation cap" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let s = @value.StarlarkSet::new()
   let unhashable = @value.Value::List(@value.StarlarkList::new([]))
-  let is_duplicate = match s.contains(unhashable) {
-    Ok(b) => b
-    Err(_) => false
-  }
-  assert_false(is_duplicate)
+  let is_present = swallowed_contains(s.contains(unhashable))
+  assert_false(is_present)
   let caught = try {
-    guard_accum_alloc(ctx, "set", max_alloc_elems)
+    guard_accum_alloc_if_new(ctx, "set", max_alloc_elems, is_present)
+    false
+  } catch {
+    EvalErr(e) => e.msg().contains("excessive sequence")
+  }
+  assert_true(caught)
+}
+
+///|
+test "guard_accum_alloc_if_new raises alloc error for unhashable absent dict key at allocation cap" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let d = @value.StarlarkDict::new()
+  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
+  let is_present = swallowed_contains(d.contains(unhashable))
+  assert_false(is_present)
+  let caught = try {
+    guard_accum_alloc_if_new(ctx, "dict", max_alloc_elems, is_present)
     false
   } catch {
     EvalErr(e) => e.msg().contains("excessive sequence")
