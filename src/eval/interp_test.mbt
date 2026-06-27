@@ -1121,6 +1121,20 @@ test "set comprehension raises unhashable-type error for unhashable element when
 }
 
 ///|
+test "dict comprehension raises unhashable-type error for unhashable key when below allocation cap" {
+  let r = @eval.exec_file(
+    @eval.Thread::new("t"),
+    "t.star",
+    "{[1]: 0 for _ in range(1)}",
+    @eval.Options::default(),
+  )
+  match r {
+    Err(e) => assert_true(e.msg().contains("unhashable"))
+    Ok(_) => fail("expected unhashable-type error")
+  }
+}
+
+///|
 test "vm evaluates a dict comprehension with a tuple target" {
   assert_vm_result("d = {k: v for k, v in [(\"a\", 1), (\"b\", 2)]}")
 }
