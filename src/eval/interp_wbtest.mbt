@@ -85,6 +85,25 @@ test "SetAdd alloc guard condition treats unhashable element as absent so guard 
 }
 
 ///|
+test "SetAdd unhashable element at allocation cap triggers alloc guard before hashability error" {
+  let ctx = EvalContext::new(Thread::new("t"), Options::default())
+  let s = @value.StarlarkSet::new()
+  let unhashable = @value.Value::List(@value.StarlarkList::new([]))
+  let is_duplicate = match s.contains(unhashable) {
+    Ok(b) => b
+    Err(_) => false
+  }
+  assert_false(is_duplicate)
+  let caught = try {
+    guard_accum_alloc(ctx, "set", max_alloc_elems)
+    false
+  } catch {
+    EvalErr(e) => e.msg().contains("excessive sequence")
+  }
+  assert_true(caught)
+}
+
+///|
 /// A name the VM resolves as predeclared but that has no binding in the base
 /// environment must raise an undefined-name error with its source position,
 /// rather than silently resolving to a fabricated (body-less) builtin.
