@@ -226,10 +226,10 @@ fn swallowed_contains(result : Result[Bool, String]) -> Bool {
 ///|
 /// Guards the allocation cap only when the container will actually grow (i.e.,
 /// `is_present` is `false`). When `is_present` is `true` the container does
-/// not grow, so the guard is skipped and the caller's insert path runs
-/// instead — raising a duplicate-element / duplicate-key error for
-/// `SetDictUniq`, or silently updating the existing entry for `SetAdd` /
-/// `SetDict`.
+/// not grow, so the guard is skipped. For `SetAdd` and `SetDict` this means
+/// the existing entry is silently updated. `SetDictUniq` never reaches this
+/// call with `is_present == true`: it raises the duplicate-key error upstream
+/// before calling this function.
 ///
 /// Invariant: `is_present` must be the result of `swallowed_contains` applied
 /// to the container's `contains` call, so that unhashable elements are treated
