@@ -146,11 +146,12 @@ test "unhashable absent set element at allocation cap triggers alloc guard first
 }
 
 ///|
-/// Full error message check: alloc guard error for an unhashable set element
-/// at cap names the caller as "set", reports the projected element count, and
-/// does not contain "unhashable" — confirming that the allocation limit takes
-/// priority over the hashability error.
-test "alloc guard error for unhashable set element at cap names caller and count without unhashable" {
+/// Full error message check: verifies the exact output of the alloc guard when
+/// given an unhashable-derived absent signal at cap. This guards the helper
+/// contract — caller name, element count, and message format — not the opcode
+/// ordering in interp.mbt (a VM-level test for that scenario is infeasible
+/// because max_alloc_elems cannot be injected at runtime).
+test "alloc guard error for unhashable set element at cap produces exact allocation-limit message" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let s = @value.StarlarkSet::new()
   let unhashable = @value.Value::List(@value.StarlarkList::new([]))
@@ -162,10 +163,7 @@ test "alloc guard error for unhashable set element at cap names caller and count
   } catch {
     EvalErr(e) => e.msg()
   }
-  assert_true(msg.contains("set"))
-  assert_true(msg.contains("excessive sequence"))
-  assert_false(msg.contains("unhashable"))
-  assert_true(msg.contains("\{max_alloc_elems + 1}"))
+  assert_eq(msg, "set: excessive sequence (\{max_alloc_elems + 1} elements)")
 }
 
 ///|
@@ -187,11 +185,12 @@ test "unhashable absent dict key at allocation cap triggers alloc guard first" {
 }
 
 ///|
-/// Full error message check: alloc guard error for an unhashable dict key at
-/// cap names the caller as "dict", reports the projected element count, and
-/// does not contain "unhashable" — confirming that the allocation limit takes
-/// priority over the hashability error.
-test "alloc guard error for unhashable dict key at cap names caller and count without unhashable" {
+/// Full error message check: verifies the exact output of the alloc guard when
+/// given an unhashable-derived absent signal at cap. This guards the helper
+/// contract — caller name, element count, and message format — not the opcode
+/// ordering in interp.mbt (a VM-level test for that scenario is infeasible
+/// because max_alloc_elems cannot be injected at runtime).
+test "alloc guard error for unhashable dict key at cap produces exact allocation-limit message" {
   let ctx = EvalContext::new(Thread::new("t"), Options::default())
   let d = @value.StarlarkDict::new()
   let unhashable = @value.Value::List(@value.StarlarkList::new([]))
@@ -203,10 +202,7 @@ test "alloc guard error for unhashable dict key at cap names caller and count wi
   } catch {
     EvalErr(e) => e.msg()
   }
-  assert_true(msg.contains("dict"))
-  assert_true(msg.contains("excessive sequence"))
-  assert_false(msg.contains("unhashable"))
-  assert_true(msg.contains("\{max_alloc_elems + 1}"))
+  assert_eq(msg, "dict: excessive sequence (\{max_alloc_elems + 1} elements)")
 }
 
 ///|
