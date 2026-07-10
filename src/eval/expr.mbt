@@ -388,7 +388,16 @@ fn call_builtin(
             }
             x_from_kw = Some(kv.1)
           }
-          "base" => base_from_kw = Some(kv.1)
+          "base" => {
+            if pos_args.length() >= 2 {
+              raise EvalErr(
+                make_eval_error(
+                  ctx, "int: got multiple values for keyword argument \"base\"",
+                ),
+              )
+            }
+            base_from_kw = Some(kv.1)
+          }
           name => {
             let hint = @utf8util.spell_hint(name, ["x", "base"])
             raise EvalErr(
