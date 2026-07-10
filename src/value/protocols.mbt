@@ -221,8 +221,7 @@ pub fn CustomValue::new(
 /// call paths probe a key's hash more than once without caching it — for
 /// example, rejecting a duplicate key while building a dict literal — so a
 /// non-deterministic `hash_fn` can land those probes in different hash
-/// slots, producing a duplicate logical entry in a dict or set. Violating
-/// this requirement is undefined behavior.
+/// slots, silently producing a duplicate logical entry in a dict or set.
 ///
 /// Parameters:
 ///
