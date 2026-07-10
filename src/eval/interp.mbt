@@ -340,13 +340,16 @@ fn module_output(
 ///|
 /// Runs a compiled program's module-init function on a fresh VM and returns the
 /// resulting module state (its populated global slots). Shared by `exec_file_vm`
-/// and `eval_expr_vm`. Pushes and pops the `<toplevel>` call frame so backtraces
-/// begin at `<toplevel>`, matching the established interpreter.
+/// and `eval_expr_vm`. Pushes and pops a call frame named `frame_name` (default
+/// `<toplevel>`) so backtraces begin there, matching the established
+/// interpreter; `eval_expr_vm` overrides this to `<expr>` for a bare REPL
+/// expression, mirroring starlark-go's `compile.File`/`compile.Expr` split.
 fn run_program_vm(
   ctx : EvalContext,
   prog : @compile.CompiledProgram,
   filename : String,
   init? : (String) -> @value.Value? = fn(_) { None },
+  frame_name? : String = "<toplevel>",
 ) -> Result[RunModule, @errors.EvalError] {
   let vm = VM::{ ctx, active: [] }
   let m = RunModule::{
@@ -366,10 +369,7 @@ fn run_program_vm(
   ctx.vm = Some(vm)
   try {
     ctx.thread.call_stack.push(
-      @errors.CallFrame::new(
-        "<toplevel>",
-        @errors.Position::new(filename, 1, 1),
-      ),
+      @errors.CallFrame::new(frame_name, @errors.Position::new(filename, 1, 1)),
     )
     let idx = ctx.thread.call_stack.length() - 1
     let top_locals : Array[LocalSlot] = Array::make(
@@ -380,7 +380,7 @@ fn run_program_vm(
       top_locals[ci] = LBoxed(@value.Cell::new())
     }
     let no_freevars : Array[@value.Cell] = []
-    vm.run_frame(m, prog.toplevel, "<toplevel>", top_locals, no_freevars, idx)
+    vm.run_frame(m, prog.toplevel, frame_name, top_locals, no_freevars, idx)
     |> ignore
     ctx.thread.call_stack.pop() |> ignore
     Ok(m)
@@ -400,7 +400,8 @@ fn run_program_vm(
 /// a synthetic `<result> = <expr>` module (named after the expression's source
 /// file) so the VM can run it; `env` bindings are bound into the context (and
 /// treated as predeclared) so they resolve, and the result is read back from
-/// its global.
+/// its global. Its module-init frame is named `<expr>` rather than
+/// `<toplevel>`, matching starlark-go's `EvalExprOptions`.
 #internal(unsafe, "execution engine behind eval_expr; call eval_expr instead")
 fn eval_expr_vm(
   thread : Thread,
@@ -434,7 +435,7 @@ fn eval_expr_vm(
   ) catch {
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
-  let m = match run_program_vm(ctx, prog, filename) {
+  let m = match run_program_vm(ctx, prog, filename, frame_name="<expr>") {
     Ok(m) => m
     Err(e) => return Err(e)
   }
