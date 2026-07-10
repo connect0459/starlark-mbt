@@ -217,11 +217,12 @@ pub fn CustomValue::new(
 /// `Value::ExtVal`. Without this, the value is considered unhashable.
 ///
 /// `hash_fn` must be deterministic: repeated calls for the same logical
-/// value must return the same hash for the lifetime of that value. Dict/set
-/// operations probe a key's hash more than once (e.g. `contains` followed by
-/// `insert`) without caching it, so a non-deterministic `hash_fn` can place
-/// those probes in different hash slots, producing a duplicate logical entry
-/// in a dict or set. Violating this requirement is undefined behavior.
+/// value must return the same hash for the lifetime of that value. Some
+/// call paths probe a key's hash more than once without caching it — for
+/// example, rejecting a duplicate key while building a dict literal — so a
+/// non-deterministic `hash_fn` can land those probes in different hash
+/// slots, producing a duplicate logical entry in a dict or set. Violating
+/// this requirement is undefined behavior.
 ///
 /// Parameters:
 ///
