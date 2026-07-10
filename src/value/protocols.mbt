@@ -216,6 +216,13 @@ pub fn CustomValue::new(
 /// Attaches a custom hash function. Invoked by `starlark_hash` for
 /// `Value::ExtVal`. Without this, the value is considered unhashable.
 ///
+/// `hash_fn` must be deterministic: repeated calls for the same logical
+/// value must return the same hash for the lifetime of that value. Dict/set
+/// operations probe a key's hash more than once (e.g. `contains` followed by
+/// `insert`) without caching it, so a non-deterministic `hash_fn` can place
+/// those probes in different hash slots, producing a duplicate logical entry
+/// in a dict or set. Violating this requirement is undefined behavior.
+///
 /// Parameters:
 ///
 /// - `self` : The `CustomValue` to extend.
@@ -548,6 +555,10 @@ pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
 /// values can be hashed without restarting the counter. Use `hash_value_depth`
 /// (from the `value` package's public API) to hash nested `Value`s while
 /// propagating depth correctly.
+///
+/// `hash_depth_fn` must be deterministic for a given `depth`: repeated calls
+/// with the same `depth` for the same logical value must return the same
+/// hash, for the same reason documented on `CustomValue::with_hash`.
 ///
 /// Parameters:
 ///
