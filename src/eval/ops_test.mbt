@@ -168,6 +168,19 @@ test "eval_expr: negative left shift count raises negative-shift error, not out-
 }
 
 ///|
+test "eval_expr: right shift by int32-min count raises negative-shift error, not out-of-range" {
+  let err = op_err("1 >> -2147483648")
+  assert_true(err.contains("negative shift count"))
+}
+
+///|
+test "eval_expr: left shift by count beyond int32 range raises out-of-range, not shift-too-large" {
+  let err = op_err("1 << 2147483648")
+  assert_true(err.contains("out of range"))
+  assert_true(!err.contains("shift count too large"))
+}
+
+///|
 test "eval_expr: bitwise not flips all bits" {
   assert_true(eval_op("~0") is Ok(@value.Value::Int(-1N)))
   assert_true(eval_op("~(-1)") is Ok(@value.Value::Int(0N)))
