@@ -1103,7 +1103,22 @@ test "vm evaluates a guarded set comprehension" {
 
 ///|
 test "set comprehension deduplicates repeated values without error" {
-  assert_vm_result("elems = [1, 1, 2, 1, 3]\ns = {x for x in elems}")
+  let src = "elems = [1, 1, 2, 1, 3]\ns = {x for x in elems}"
+  assert_vm_result(src)
+  match
+    @eval.exec_file(
+      @eval.Thread::new("t"),
+      "t.star",
+      src,
+      @eval.Options::default(),
+    ) {
+    Err(e) => fail(e.to_string())
+    Ok(m) =>
+      match m.get("s") {
+        None => fail("global 's' missing")
+        Some(v) => assert_eq(v.repr(), "set([1, 2, 3])")
+      }
+  }
 }
 
 ///|
