@@ -382,6 +382,25 @@ test "eval_expr: a runtime error carries the caller-supplied filename" {
 }
 
 ///|
+test "eval_expr: an error raised through a called function names the expression's own frame <expr>, not <toplevel>" {
+  let t = Thread::new("test")
+  let env = @value.StringDict::new()
+  let f = match
+    exec_file(t, "lib.star", "def f():\n  return 1 / 0", Options::default()) {
+    Ok(m) => m.get("f").unwrap()
+    Err(e) => fail("setup exec_file failed: \{e.msg()}")
+  }
+  env.set("f", f)
+  match eval_expr(t, "expr.star", "f()", env) {
+    Err(e) => {
+      assert_true(e.backtrace().contains("in <expr>"))
+      assert_false(e.backtrace().contains("in <toplevel>"))
+    }
+    Ok(_) => fail("expected a division-by-zero error")
+  }
+}
+
+///|
 test "eval_expr: None predeclared identifier evaluates to None" {
   assert_true(eval_e("None") is Ok(@value.Value::None))
 }

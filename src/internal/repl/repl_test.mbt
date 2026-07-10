@@ -146,6 +146,39 @@ test "eval_input: EvalError payload exposes a backtrace for display" {
   }
 }
 
+///|
+test "eval_input: bare-expression traceback names its frame <expr>" {
+  let t = make_thread()
+  let g = empty_globals()
+  assert_true(eval_input(t, g, "def f():\n  return 1 / 0\n") is Empty)
+  match eval_input(t, g, "f()") {
+    EvalError(e) => {
+      assert_true(e.backtrace().contains("in <expr>"))
+      assert_false(e.backtrace().contains("in <toplevel>"))
+    }
+    other => {
+      println(other)
+      assert_true(false)
+    }
+  }
+}
+
+///|
+test "eval_input: multi-statement chunk traceback still names its frame <toplevel>" {
+  let t = make_thread()
+  let g = empty_globals()
+  match eval_input(t, g, "def f():\n  return 1 / 0\n\nf()\n") {
+    EvalError(e) => {
+      assert_true(e.backtrace().contains("in <toplevel>"))
+      assert_false(e.backtrace().contains("in <expr>"))
+    }
+    other => {
+      println(other)
+      assert_true(false)
+    }
+  }
+}
+
 // --- format_error ---
 
 ///|
