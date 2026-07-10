@@ -640,9 +640,17 @@ fn VM::run_frame(
         let elem = pop()
         match stack[stack.length() - 1] {
           @value.Value::Set(s) => {
-            let is_present = swallowed_contains(s.contains(elem))
-            guard_accum_alloc_if_new(ctx, "set", s.length(), is_present)
-            check(ctx, s.add(elem))
+            let len = s.length()
+            if len < max_alloc_elems {
+              // Below the cap, adding one more element can never cross it,
+              // whether or not `elem` is already present, so a single
+              // `add` probe (which itself finds-or-inserts) is enough.
+              check(ctx, s.add(elem))
+            } else {
+              let is_present = swallowed_contains(s.contains(elem))
+              guard_accum_alloc_if_new(ctx, "set", len, is_present)
+              check(ctx, s.add(elem))
+            }
           }
           other => abort("vm: SetAdd expects a set, got \{other.type_name()}")
         }
@@ -653,9 +661,16 @@ fn VM::run_frame(
         let key = pop()
         match stack[stack.length() - 1] {
           @value.Value::Dict(d) => {
-            let is_present = swallowed_contains(d.contains(key))
-            guard_accum_alloc_if_new(ctx, "dict", d.length(), is_present)
-            check(ctx, d.set(key, value))
+            let len = d.length()
+            if len < max_alloc_elems {
+              // Same reasoning as SetAdd above: below the cap, a single
+              // `set` probe is enough regardless of whether `key` exists.
+              check(ctx, d.set(key, value))
+            } else {
+              let is_present = swallowed_contains(d.contains(key))
+              guard_accum_alloc_if_new(ctx, "dict", len, is_present)
+              check(ctx, d.set(key, value))
+            }
           }
           other => abort("vm: SetDict expects a dict, got \{other.type_name()}")
         }
