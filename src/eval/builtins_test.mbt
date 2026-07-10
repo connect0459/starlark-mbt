@@ -2628,6 +2628,22 @@ test "exec_file: int with x keyword and positional argument raises conflict erro
 }
 
 ///|
+test "exec_file: int with base keyword and positional argument raises conflict error" {
+  assert_eq(
+    emsg("int(\"10\", 2, base=8)"),
+    "int: got multiple values for keyword argument \"base\"",
+  )
+}
+
+///|
+test "exec_file: int with base as keyword argument only converts the value" {
+  match exec_b("n = int(\"10\", base=8)") {
+    Ok(m) => assert_true(g(m, "n") == Some(@value.Value::Int(8N)))
+    Err(e) => fail(e.to_string())
+  }
+}
+
+///|
 test "exec_file: int with unknown keyword argument raises error" {
   assert_true(
     emsg("int(y=1)").contains("int: unexpected keyword argument \"y\""),
