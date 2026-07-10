@@ -352,12 +352,6 @@ let max_byte_val : BigInt = 255N
 let max_lshift_bits : BigInt = 512N
 
 ///|
-/// Maximum right-shift count used as a safe clamp. Beyond 1 000 000 bits the
-/// result is always 0 (positive) or −1 (negative), so clamping avoids
-/// `BigInt.to_int()` overflow.
-let max_rshift_bits : BigInt = 1_000_000N
-
-///|
 /// Maximum valid Unicode code point (U+10FFFF), used for `%c` format
 /// validation and `chr`.
 let unicode_max_cp_bigint : BigInt = 0x10FFFFN
@@ -1152,9 +1146,12 @@ fn eval_bitwise(
 }
 
 ///|
-/// Implements `<<` and `>>` for integer pairs. Left shifts at or above
-/// `max_lshift_bits` (512) raise an error; right shifts are clamped to
-/// `max_rshift_bits` to avoid `to_int()` overflow while preserving sign.
+/// Implements `<<` and `>>` for integer pairs. Both directions first require
+/// the shift count to fit in the int32 range (matching starlark-go's
+/// `AsInt32`); left shifts at or above `max_lshift_bits` (512) additionally
+/// raise an error, while right shifts within int32 range have no further
+/// cap — a large enough count simply yields `0` (positive) or `-1`
+/// (negative).
 fn eval_shift(
   ctx : EvalContext,
   lv : @value.Value,
@@ -1164,6 +1161,9 @@ fn eval_shift(
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
     (@value.Value::Int(a), @value.Value::Int(b)) => {
+      if b > max_int32 || b < min_int32 {
+        raise EvalErr(make_eval_error(ctx, "\{b} out of range"))
+      }
       if b < 0N {
         raise EvalErr(make_eval_error(ctx, "negative shift count: \{b}"))
       }
@@ -1174,16 +1174,7 @@ fn eval_shift(
           }
           @value.Value::Int(a << b.to_int())
         }
-        _ => {
-          // Right shift: no upper cap; BigInt >> large_count = 0 (positive) or -1 (negative).
-          // Clamp b to a safe int range to avoid to_int() overflow.
-          let shift = if b > max_rshift_bits {
-            max_rshift_bits.to_int()
-          } else {
-            b.to_int()
-          }
-          @value.Value::Int(a >> shift)
-        }
+        _ => @value.Value::Int(a >> b.to_int())
       }
     }
     _ => {
