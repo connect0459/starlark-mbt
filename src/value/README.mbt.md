@@ -380,6 +380,9 @@ type_name_fn)` and attach optional protocol implementations via fluent `.with_*`
 `with_freeze`, `with_get_index`, `with_set_index`, `with_set_key`, `with_set_field`,
 `with_slice`. Use `with_hash_depth` instead of `with_hash` when the value contains nested
 `Value` fields — pass the received `depth` to `hash_value_depth` so the budget is not reset.
+The hash callback passed to `with_hash`/`with_hash_depth` must be deterministic (same logical
+value produces the same hash on every call); some call paths probe a key's hash more than once
+without caching it, so a non-deterministic hash can produce duplicate logical entries.
 
 `BuiltinCallCtx` is passed to a built-in's body so it can call back into the evaluator:
 
