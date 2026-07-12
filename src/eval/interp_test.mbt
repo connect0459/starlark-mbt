@@ -418,6 +418,68 @@ test "vm reports mutual recursion when recursion is disabled" {
 }
 
 ///|
+test "vm: a rejected direct-recursive call's traceback includes its own frame" {
+  let src =
+    #|def fact(n):
+    #|  if n <= 1:
+    #|    return 1
+    #|  return n * fact(n - 1)
+    #|
+    #|x = fact(5)
+  let r = @eval.exec_file(
+    @eval.Thread::new("v"),
+    "t.star",
+    src,
+    @eval.Options::default().with_allow_recursion(false),
+  )
+  match r {
+    Err(e) => {
+      assert_true(e.msg().contains("function fact called recursively"))
+      // <toplevel> -> fact (the accepted call) -> fact (the rejected,
+      // recursive call): its own frame must be present, not just its caller's.
+      assert_eq(e.call_stack().length(), 3)
+      assert_eq(e.call_stack().at(1).unwrap().name(), "fact")
+      assert_eq(e.call_stack().at(2).unwrap().name(), "fact")
+    }
+    Ok(_) => fail("expected a recursion error")
+  }
+}
+
+///|
+test "vm: a rejected mutual-recursive call's traceback includes its own frame" {
+  let src =
+    #|def is_even(n):
+    #|  if n == 0:
+    #|    return True
+    #|  return is_odd(n - 1)
+    #|
+    #|def is_odd(n):
+    #|  if n == 0:
+    #|    return False
+    #|  return is_even(n - 1)
+    #|
+    #|x = is_even(4)
+  let r = @eval.exec_file(
+    @eval.Thread::new("v"),
+    "t.star",
+    src,
+    @eval.Options::default().with_allow_recursion(false),
+  )
+  match r {
+    Err(e) => {
+      assert_true(e.msg().contains("function is_even called recursively"))
+      // <toplevel> -> is_even -> is_odd -> is_even (rejected): 4 frames, the
+      // rejected call's own frame included.
+      assert_eq(e.call_stack().length(), 4)
+      assert_eq(e.call_stack().at(1).unwrap().name(), "is_even")
+      assert_eq(e.call_stack().at(2).unwrap().name(), "is_odd")
+      assert_eq(e.call_stack().at(3).unwrap().name(), "is_even")
+    }
+    Ok(_) => fail("expected a recursion error")
+  }
+}
+
+///|
 test "vm evaluates a non-recursive call when recursion is disabled" {
   let opts = @eval.Options::default().with_allow_recursion(false)
   assert_vm_result_opts(
