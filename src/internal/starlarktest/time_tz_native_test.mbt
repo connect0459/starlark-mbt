@@ -87,6 +87,70 @@ test "time module: from_timestamp preserves unix instant" {
 }
 
 ///|
+test "time module: time constructor normalizes a spring-forward DST gap in America/New_York" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.time(year=2024, month=3, day=10, hour=2, minute=30, location="America/New_York")
+      #|assert.eq("2024-03-10 01:30:00 -0500 EST", str(t))
+      #|assert.eq(t, time.parse_time("2024-03-10T06:30:00Z"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: parse_time normalizes a spring-forward DST gap in America/New_York" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.parse_time("2024-03-10T02:30:00", format="2006-01-02T15:04:05", location="America/New_York")
+      #|assert.eq("2024-03-10 01:30:00 -0500 EST", str(t))
+      #|assert.eq(t, time.parse_time("2024-03-10T06:30:00Z"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: time constructor normalizes a spring-forward DST gap in Europe/London" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.time(year=2024, month=3, day=31, hour=1, minute=30, location="Europe/London")
+      #|assert.eq("2024-03-31 02:30:00 +0100 BST", str(t))
+      #|assert.eq(t, time.parse_time("2024-03-31T01:30:00Z"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
+test "time module: time constructor keeps the ambiguous DST fall-back reading in America/New_York" {
+  let errs = run_star_string(
+    (
+      #|load("assert.star", "assert")
+      #|load("time.star", "time")
+      #|t = time.time(year=2024, month=11, day=3, hour=1, minute=30, location="America/New_York")
+      #|assert.eq("2024-11-03 01:30:00 -0400 EDT", str(t))
+      #|assert.eq(t, time.parse_time("2024-11-03T05:30:00Z"))
+    ),
+  )
+  if errs.length() != 0 {
+    fail(errs.join("\n"))
+  }
+}
+
+///|
 test "time module: now is after a known past date" {
   let errs = run_star_string(
     (
