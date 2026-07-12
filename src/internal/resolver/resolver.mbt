@@ -770,28 +770,28 @@ fn Resolver::walk_stmt(self : Resolver, stmt : @syntax.Stmt) -> Unit {
       self.walk_expr(rhs)
       self.bind_lhs(lhs)
     }
-    @syntax.Stmt::SAugAssign(lhs, _, rhs, pos) => {
+    @syntax.Stmt::SAugAssign(lhs, _, rhs, _) => {
       self.walk_expr(rhs)
       if self.is_at_module_scope() && !self.opts.allow_global_reassign {
         match lhs {
-          @syntax.Expr::EIdent(name, _) =>
+          @syntax.Expr::EIdent(name, ident_pos) =>
             if self.load_names.contains(name) {
               let prev = self.globals[name]
               if !self.opts.load_binds_globally {
                 self.errorf(
-                  pos,
+                  ident_pos,
                   "cannot reassign local \{name} declared at \{prev.pos.to_string()}",
                 )
               } else {
                 self.errorf(
-                  pos,
+                  ident_pos,
                   "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
                 )
               }
             } else if self.globals.contains(name) {
               let prev = self.globals[name]
               self.errorf(
-                pos,
+                ident_pos,
                 "cannot reassign global \{name} declared at \{prev.pos.to_string()}",
               )
             } else {

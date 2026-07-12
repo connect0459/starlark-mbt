@@ -242,6 +242,15 @@ test "resolve: allows global reassignment when flag is on" {
   assert_true(result.is_valid())
 }
 
+///|
+test "resolve: augmented global reassignment anchors at the identifier, like plain assignment" {
+  // l = [1, 2, 3] / l += [4, 5] — 'l' starts at col 1; the '+=' token is col 3.
+  let f = parse_or_fail("l = [1, 2, 3]\nl += [4, 5]")
+  let opts = ResolveOptions::default().with_allow_global_reassign(false)
+  let result = resolve(f, no_predeclared, no_universal, opts)
+  assert_true(error_col(result, "cannot reassign global l") == Some(1))
+}
+
 // --- Top-level control flow ---
 
 ///|
