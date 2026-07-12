@@ -1562,6 +1562,39 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
 }
 
 ///|
+/// Resolves a naive local wall-clock reading (passed as `local_sec`, a Unix
+/// second obtained by treating the calendar fields as if they were UTC) to
+/// a self-consistent `(unix_sec, tz_offset, tz_abbr)` triple for `location`.
+///
+/// Mirrors Go's `time.Date` transition-boundary handling: the offset used
+/// to compute the resolved instant may belong to a different zone period
+/// than the offset in effect at that instant — this is precisely how a DST
+/// spring-forward gap gets normalized to the nearest instant that actually
+/// existed. The returned offset/abbreviation are therefore always
+/// re-derived from the resolved instant rather than reused from an earlier
+/// lookup, so the result never claims a local reading that never occurred.
+fn resolve_local_time_at_zone(
+  location : String,
+  local_sec : Int64,
+) -> (Int64, Int, String)? {
+  let (offset_a, _) = match get_tz_abbr_at(location, local_sec) {
+    Some(v) => v
+    None => return None
+  }
+  let candidate_sec = local_sec - offset_a.to_int64()
+  let (offset_b, abbr_b) = match get_tz_abbr_at(location, candidate_sec) {
+    Some(v) => v
+    None => (offset_a, tz_name_from_offset(offset_a))
+  }
+  let final_sec = local_sec - offset_b.to_int64()
+  let (final_offset, final_abbr) = match get_tz_abbr_at(location, final_sec) {
+    Some(v) => v
+    None => (offset_b, abbr_b)
+  }
+  Some((final_sec, final_offset, final_abbr))
+}
+
+///|
 /// Parses an RFC 3339 timestamp string into its components.
 ///
 /// Parameters:
@@ -2599,20 +2632,14 @@ fn make_parse_time_fn() -> @value.Value {
         Ok(make_time_at_zone(parsed_sec, nsec, tz_off, tz_name))
       } else {
         // parsed_sec is "local time treated as UTC" → adjust for location.
-        let (offset, _) = match get_tz_abbr_at(location, parsed_sec) {
+        let (final_sec, final_offset, final_abbr) = match
+          resolve_local_time_at_zone(location, parsed_sec) {
           Some(v) => v
           None =>
             return Err(
               "time.parse_time: cannot determine offset for \"\{location}\"",
             )
         }
-        let utc_sec = parsed_sec - offset.to_int64()
-        let (final_offset, final_abbr) = match
-          get_tz_abbr_at(location, utc_sec) {
-          Some(v) => v
-          None => (offset, tz_name_from_offset(offset))
-        }
-        let final_sec = parsed_sec - final_offset.to_int64()
         Ok(make_time_at_zone(final_sec, nsec, final_offset, final_abbr))
       }
     }
@@ -2809,17 +2836,12 @@ fn make_time_constructor_fn() -> @value.Value {
       let (local_sec, ns_norm) = normalize_to_unix_sec(
         year, month, day, hour, minute, second, nanosecond,
       )
-      let (offset, _) = match get_tz_abbr_at(location, local_sec) {
+      let (final_sec, final_offset, final_abbr) = match
+        resolve_local_time_at_zone(location, local_sec) {
         Some(v) => v
         None =>
           return Err("time.time: cannot determine offset for \"\{location}\"")
       }
-      let utc_sec = local_sec - offset.to_int64()
-      let (final_offset, final_abbr) = match get_tz_abbr_at(location, utc_sec) {
-        Some(v) => v
-        None => (offset, tz_name_from_offset(offset))
-      }
-      let final_sec = local_sec - final_offset.to_int64()
       Ok(make_time_at_zone(final_sec, ns_norm, final_offset, final_abbr))
     }
   })
