@@ -3327,35 +3327,6 @@ fn find_substr_from(s : String, sub : String, from : Int) -> Int {
 }
 
 ///|
-/// Returns the byte offset of the last occurrence of `sub` in `s` ending
-/// before `before`, or `-1`. An empty `sub` returns `before`.
-fn rfind_substr_before(s : String, sub : String, before : Int) -> Int {
-  if sub.length() == 0 {
-    return before
-  }
-  let sublen = sub.length()
-  let end = (before - sublen).min(s.length() - sublen)
-  if end < 0 {
-    return -1
-  }
-  let mut i = end
-  while i >= 0 {
-    let mut match_ = true
-    for j in 0..<sublen {
-      if s[i + j] != sub[j] {
-        match_ = false
-        break
-      }
-    }
-    if match_ {
-      return i
-    }
-    i -= 1
-  }
-  -1
-}
-
-///|
 /// Splits `s` on the literal separator `sep`, producing at most `maxsplit+1`
 /// parts when `maxsplit >= 0`. Unlike whitespace splitting, empty parts are
 /// preserved.
@@ -3383,33 +3354,34 @@ fn split_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
 }
 
 ///|
-/// Right-to-left variant of `split_by_sep`. Delegates to `split_by_sep` when
-/// `maxsplit < 0` (unlimited); otherwise scans from the end and reverses the
-/// result so it is in source order.
+/// Right-to-left variant of `split_by_sep`, matching starlark-go's
+/// algorithm: compute the full non-overlapping left-to-right split, then
+/// merge the leftmost excess pieces back together with `sep` so only
+/// `maxsplit` splits remain. This must not be computed independently by
+/// scanning from the end, since a self-overlapping `sep` (e.g. `"XX"`
+/// inside `"XXX"`) picks different split boundaries in each direction.
+/// Delegates to `split_by_sep` when `maxsplit < 0` (unlimited).
 fn rsplit_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
   if maxsplit < 0 {
     return split_by_sep(s, sep, -1)
   }
-  let seplen = sep.length()
-  let slen = s.length()
-  let parts : Array[String] = []
-  let mut end = slen
-  let mut splits = 0
-  while end >= 0 {
-    if splits >= maxsplit {
-      parts.push(s[0:end].to_owned())
-      break
-    }
-    let idx = rfind_substr_before(s, sep, end)
-    if idx < 0 {
-      parts.push(s[0:end].to_owned())
-      break
-    }
-    parts.push(s[idx + seplen:end].to_owned())
-    end = idx
-    splits += 1
+  let parts = split_by_sep(s, sep, -1)
+  let excess = parts.length() - maxsplit
+  if excess <= 0 {
+    return parts
   }
-  parts.rev()
+  let merged = StringBuilder::new()
+  for i in 0..<excess {
+    if i > 0 {
+      merged.write_string(sep)
+    }
+    merged.write_string(parts[i])
+  }
+  let result : Array[String] = [merged.to_string()]
+  for i in excess..<parts.length() {
+    result.push(parts[i])
+  }
+  result
 }
 
 ///|

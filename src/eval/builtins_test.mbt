@@ -2308,6 +2308,28 @@ test "exec_file: str.rsplit with maxsplit limits from right" {
   }
 }
 
+///|
+test "exec_file: str.rsplit with a self-overlapping separator matches the left-to-right split boundaries" {
+  match exec_b("r = \"aXXbXXXc\".rsplit(\"XX\", 1)") {
+    Ok(m) =>
+      match g(m, "r") {
+        Some(@value.Value::List(l)) => {
+          assert_eq(l.length(), 2)
+          match l[0] {
+            @value.Value::String(s) => assert_eq(s.raw(), "aXXb")
+            _ => assert_true(false)
+          }
+          match l[1] {
+            @value.Value::String(s) => assert_eq(s.raw(), "Xc")
+            _ => assert_true(false)
+          }
+        }
+        _ => assert_true(false)
+      }
+    Err(e) => fail(e.to_string())
+  }
+}
+
 // --- string.codepoints and codepoint_ords ---
 
 ///|
