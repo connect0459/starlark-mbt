@@ -1024,9 +1024,18 @@ fn VM::call_compiled(
       if fpos.line() == gpos.line() &&
         fpos.col() == gpos.col() &&
         fpos.filename() == gpos.filename() {
-        raise EvalErr(
-          make_eval_error(self.ctx, "function \{f.name()} called recursively"),
+        // The rejected call's own frame isn't on `call_stack` yet (it's only
+        // pushed once the call is accepted, below), but starlark-go's
+        // traceback for this error includes it: push it just long enough to
+        // capture the backtrace, then pop it back off before raising, since
+        // this call never actually runs.
+        self.ctx.thread.call_stack.push(@errors.CallFrame::new(f.name(), pos))
+        let err = make_eval_error(
+          self.ctx,
+          "function \{f.name()} called recursively",
         )
+        self.ctx.thread.call_stack.pop() |> ignore
+        raise EvalErr(err)
       }
     }
   }
