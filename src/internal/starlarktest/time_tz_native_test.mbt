@@ -88,6 +88,10 @@ test "time module: from_timestamp preserves unix instant" {
 
 ///|
 test "time module: time constructor normalizes a spring-forward DST gap in America/New_York" {
+  // These DST transition-boundary tests live here rather than in
+  // time_zone_test.mbt because the wasm/js stub timezone table returns a
+  // fixed offset regardless of the queried instant and cannot represent DST
+  // transitions at all; only the native backend's OS tzdata lookup can.
   let errs = run_star_string(
     (
       #|load("assert.star", "assert")
