@@ -28,6 +28,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-12
+
+### Changed
+
+- `eval`: skip the `contains` probe in `SetAdd` / `SetDict` while the
+  container is below the allocation cap, letting `add`/`set`'s own probe
+  decide new-vs-existing instead of paying two hash-table lookups per
+  element (#369)
+
+### Fixed
+
+#### Conformance: eval
+
+- `eval`: guard `>>` shift count against int32-range overflow, sharing the
+  same bound as `<<` instead of silently clamping an oversized count to `0`
+  or `-1` (#373)
+- `eval`: guard `int()`'s `base` parameter against duplicate binding
+  (positional and keyword), matching the existing check on `x` (#374)
+- `eval`: name a bare-expression REPL eval frame `<expr>` instead of
+  `<toplevel>`, matching starlark-go's `compile.Expr` (#375)
+- `eval`: include the offending call's own frame in a rejected recursive
+  call's traceback (#376)
+- `eval`: match starlark-go's split-then-merge algorithm for `str.rsplit` so
+  results agree with `split` once `maxsplit` truncates output from a
+  self-overlapping separator (#378)
+
+#### Conformance: resolver
+
+- `resolver`: anchor the "cannot reassign global" error for augmented
+  assignment (`+=` etc.) at the LHS identifier instead of the operator
+  token, matching plain assignment (#379)
+
+#### Conformance: lib/time
+
+- `lib/time`: re-derive `time.time` / `time.parse_time`'s display offset
+  from the final resolved instant, fixing self-contradictory output for
+  local times inside a DST spring-forward gap (#377)
+
 ## [0.4.0] - 2026-06-27
 
 ### Added
@@ -605,7 +643,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.0...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.1...HEAD>
+[0.4.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.0...v0.4.1>
 [0.4.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.2...v0.4.0>
 [0.3.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.1...v0.3.2>
 [0.3.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.0...v0.3.1>
