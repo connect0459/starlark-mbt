@@ -97,7 +97,7 @@ tidy(hashtable): name initial_capacity constant
 
 ## Pull request process
 
-1. Fork the repository and create a branch: `feature/xxx`, `fix/xxx`, `docs/xxx`.
+1. Fork the repository and create a branch: `feat/xxx`, `fix/xxx`, `docs/xxx`.
 2. Follow the Red → Green → Refactor cycle.
 3. Run `just verify` and commit any resulting diffs.
 4. If the change touches the public API, update documentation so it reflects

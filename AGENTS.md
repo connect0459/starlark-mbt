@@ -160,4 +160,4 @@ Scope is optional; use the package name when the change targets a specific packa
 
 ### Branch naming
 
-`feature/xxx`, `fix/xxx`, `docs/xxx`
+`feat/xxx`, `fix/xxx`, `docs/xxx`
