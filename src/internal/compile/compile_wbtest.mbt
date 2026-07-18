@@ -13,10 +13,10 @@ fn empty_pcomp() -> Pcomp {
   {
     constants: [],
     names: [],
-    name_index: {},
+    name_index: Map([]),
     functions: [],
     globals: [],
-    global_index: {},
+    global_index: Map([]),
     loads: [],
     load_stmts: [],
     is_predeclared: fn(_) { false },

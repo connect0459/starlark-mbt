@@ -331,7 +331,7 @@ pub struct Universe {
 ///|
 /// Creates an empty `Universe` with no predeclared names.
 pub fn Universe::new() -> Universe {
-  { bindings: {} }
+  { bindings: Map([]) }
 }
 
 ///|
@@ -350,7 +350,7 @@ pub fn Universe::from_map(m : Map[String, @value.Value]) -> Universe {
 /// Creates a `Universe` pre-populated with all standard Starlark built-ins
 /// (`None`, `True`, `False`, `print`, `range`, etc.).
 pub fn Universe::standard() -> Universe {
-  let m : Map[String, @value.Value] = {}
+  let m : Map[String, @value.Value] = Map([])
   m["None"] = @value.Value::None
   m["True"] = @value.Value::Bool(true)
   m["False"] = @value.Value::Bool(false)
@@ -470,7 +470,7 @@ pub struct Predeclared {
 ///|
 /// Creates an empty `Predeclared` set.
 pub fn Predeclared::new() -> Predeclared {
-  { bindings: {} }
+  { bindings: Map([]) }
 }
 
 ///|
@@ -624,7 +624,7 @@ pub fn Thread::new(name : String) -> Thread {
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
-    locals: {},
+    locals: Map([]),
   }
 }
 
@@ -653,7 +653,7 @@ pub fn Thread::with_print(
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
-    locals: {},
+    locals: Map([]),
   }
 }
 
@@ -682,7 +682,7 @@ pub fn Thread::with_loader(
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
-    locals: {},
+    locals: Map([]),
   }
 }
 
@@ -709,7 +709,7 @@ pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
     steps: 0,
     cancel_reason: None,
     on_max_steps: None,
-    locals: {},
+    locals: Map([]),
   }
 }
 
@@ -913,7 +913,7 @@ pub struct Module {
 ///|
 /// Creates an empty, unfrozen `Module`.
 pub fn Module::new() -> Module {
-  { globals: @value.StarlarkDict::new(), frozen: false, predeclared: {} }
+  { globals: @value.StarlarkDict::new(), frozen: false, predeclared: Map([]) }
 }
 
 ///|

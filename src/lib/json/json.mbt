@@ -1637,7 +1637,7 @@ fn make_indent_fn() -> @value.Value {
 /// }
 /// ```
 pub fn json_module() -> @value.Value {
-  let attrs : Map[String, @value.Value] = {}
+  let attrs : Map[String, @value.Value] = Map([])
   attrs["encode"] = make_encode_fn()
   attrs["encode_indent"] = make_encode_indent_fn()
   attrs["decode"] = make_decode_fn()

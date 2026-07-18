@@ -359,13 +359,13 @@ test "compare_values: different types are not orderable" {
 
 ///|
 test "starlark_hash: module is unhashable" {
-  let m = StarlarkModule::new("assert", {})
+  let m = StarlarkModule::new("assert", Map([]))
   assert_true(Value::hash(Value::Module(m)) is Err(_))
 }
 
 ///|
 test "to_str: module returns repr" {
-  let m = StarlarkModule::new("assert", {})
+  let m = StarlarkModule::new("assert", Map([]))
   assert_eq(Value::Module(m).to_str(), "<module \"assert\">")
 }
 
@@ -380,8 +380,8 @@ test "starlark_equals: two distinct BoundMethod objects are unequal" {
 
 ///|
 test "starlark_equals: Module is never equal to another Module" {
-  let m1 = Value::Module(StarlarkModule::new("a", {}))
-  let m2 = Value::Module(StarlarkModule::new("a", {}))
+  let m1 = Value::Module(StarlarkModule::new("a", Map([])))
+  let m2 = Value::Module(StarlarkModule::new("a", Map([])))
   assert_false(m1.starlark_equals(m2))
 }
 
@@ -649,7 +649,7 @@ test "starlark_equals_depth: bound methods are equal only when they share identi
 
 ///|
 test "starlark_equals: same Module object is equal to itself" {
-  let m = StarlarkModule::new("a", {})
+  let m = StarlarkModule::new("a", Map([]))
   assert_true(Value::Module(m).starlark_equals(Value::Module(m)))
 }
 
@@ -675,7 +675,7 @@ test "starlark_equals: same BytesElems is equal to itself" {
 
 ///|
 test "starlark_equals_depth: same Module object is equal to itself" {
-  let m = StarlarkModule::new("a", {})
+  let m = StarlarkModule::new("a", Map([]))
   assert_true(
     starlark_equals_depth(Value::Module(m), Value::Module(m), 10) == Ok(true),
   )

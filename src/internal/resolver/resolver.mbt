@@ -425,12 +425,12 @@ fn Resolver::new(
   is_universal : (String) -> Bool,
   opts : ResolveOptions,
 ) -> Resolver {
-  let file_block : Block = { parent: None, bindings: {}, uses: [] }
+  let file_block : Block = { parent: None, bindings: Map([]), uses: [] }
   {
     env: file_block,
     file_block,
-    globals: {},
-    predeclared_cache: {},
+    globals: Map([]),
+    predeclared_cache: Map([]),
     module_globals: [],
     module_locals: [],
     errors: [],
@@ -441,7 +441,7 @@ fn Resolver::new(
     in_func: 0,
     ifstmts: 0,
     current_fn_name: "",
-    load_names: {},
+    load_names: Map([]),
     walk_depth: 0,
   }
 }
@@ -474,7 +474,7 @@ fn Resolver::is_at_file_block(self : Resolver) -> Bool {
 ///|
 fn Resolver::push_block(self : Resolver) -> Block {
   let saved = self.env
-  self.env = { parent: Some(saved), bindings: {}, uses: [] }
+  self.env = { parent: Some(saved), bindings: Map([]), uses: [] }
   saved
 }
 
@@ -911,7 +911,7 @@ fn Resolver::walk_params(
   params : Array[@syntax.Param],
   def_pos : @errors.Position,
 ) -> Unit {
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   let mut seen_optional = false
   let mut seen_star = false
   let mut star_is_bare = false
@@ -1123,7 +1123,7 @@ fn Resolver::walk_expr(self : Resolver, expr : @syntax.Expr) -> Unit {
       self.walk_expr(f)
       let mut seen_varargs = false
       let mut seen_kwargs = false
-      let seen_names : Map[String, Bool] = {}
+      let seen_names : Map[String, Bool] = Map([])
       let mut n_pos = 0
       let mut n_kw = 0
       for arg in args {

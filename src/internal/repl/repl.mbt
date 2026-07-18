@@ -120,7 +120,7 @@ fn make_load_with_cache(
 pub fn make_load(
   base_dir : String,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
-  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = Map([])
   make_load_with_cache(base_dir, cache)
 }
 

@@ -10,7 +10,7 @@ pub struct StringDict {
 ///
 /// Returns a new `StringDict` with no bindings.
 pub fn StringDict::new() -> StringDict {
-  { data: {} }
+  { data: Map([]) }
 }
 
 ///|

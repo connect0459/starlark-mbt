@@ -1,6 +1,6 @@
 ///|
 test "cycle in load graph is detected via sentinel already in cache" {
-  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = Map([])
   cache["/a.star"] = Err(@errors.EvalError::simple("cycle in load graph"))
   let loader = make_loader_with_cache(
     ".",
@@ -17,7 +17,7 @@ test "cycle in load graph is detected via sentinel already in cache" {
 
 ///|
 test "pre-populated failure in cache is returned without re-loading" {
-  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = Map([])
   cache["/missing.star"] = Err(@errors.EvalError::simple("cannot load"))
   let loader = make_loader_with_cache(
     ".",
@@ -37,7 +37,7 @@ test "failed load result is written to cache and returned on subsequent calls" {
   // @fs.read_file_to_string raises IOError for missing files on all targets;
   // starting from an empty cache exercises the full
   // sentinel -> IOError -> cache write path.
-  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = Map([])
   let loader = make_loader_with_cache(
     ".",
     @eval.Options::default(),
@@ -55,7 +55,7 @@ test "failed load result is written to cache and returned on subsequent calls" {
 ///|
 test "absolute path with dot-dot segments is normalized before use as cache key" {
   // /dir/../foo.star must resolve to /foo.star, not be stored verbatim.
-  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = Map([])
   cache["/foo.star"] = Err(@errors.EvalError::simple("cycle in load graph"))
   let loader = make_loader_with_cache(
     "/base",

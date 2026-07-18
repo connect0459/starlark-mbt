@@ -28,12 +28,12 @@ priv struct EvalContext {
 
 ///|
 fn EvalEnv::new() -> EvalEnv {
-  { locals: {}, parent: None }
+  { locals: Map([]), parent: None }
 }
 
 ///|
 fn EvalEnv::for_module(parent : EvalEnv) -> EvalEnv {
-  { locals: {}, parent: Some(parent) }
+  { locals: Map([]), parent: Some(parent) }
 }
 
 ///|

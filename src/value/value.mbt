@@ -696,7 +696,7 @@ pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] 
     // Compiled function: build the name->value map from the module's global
     // bindings and their current slot values.
     Some(prog) => {
-      let m : Map[String, Value] = {}
+      let m : Map[String, Value] = Map([])
       for i, b in prog.globals {
         if i < self.module_slots.length() {
           match self.module_slots[i] {
@@ -707,7 +707,7 @@ pub fn StarlarkFunction::globals(self : StarlarkFunction) -> Map[String, Value] 
       }
       m
     }
-    None => {}
+    None => Map([])
   }
 }
 

@@ -171,7 +171,7 @@ test "exec_file: augmented extend from range on frozen list raises error" {
   if frozen is @value.Value::List(l) {
     l.freeze()
   }
-  let pre : Map[String, @value.Value] = {}
+  let pre : Map[String, @value.Value] = Map([])
   pre["frozen_lst"] = frozen
   let t = Thread::new("test")
   let result = exec_file_with_predeclared(
@@ -383,7 +383,7 @@ test "exec_file: load statement raises error when no loader is set" {
 
 ///|
 test "exec_file: load statement makes symbol usable within the file" {
-  let exported : Map[String, @value.Value] = {}
+  let exported : Map[String, @value.Value] = Map([])
   exported["answer"] = @value.Value::Int(42N)
   let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
     _thread,
@@ -406,7 +406,7 @@ test "exec_file: load statement makes symbol usable within the file" {
 
 ///|
 test "exec_file: load statement supports aliased bindings" {
-  let exported : Map[String, @value.Value] = {}
+  let exported : Map[String, @value.Value] = Map([])
   exported["foo"] = @value.Value::Int(1N)
   let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
     _thread,
@@ -433,7 +433,7 @@ test "exec_file: load statement raises error when symbol not found in module" {
     _thread,
     _path,
   ) {
-    Ok(Module::from_map({}))
+    Ok(Module::from_map(Map([])))
   }
   let t = Thread::with_loader("test", loader)
   let result = exec_file(
