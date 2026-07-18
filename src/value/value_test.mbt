@@ -199,19 +199,19 @@ test "Value: repr for Bytes with non-printable bytes" {
 
 ///|
 test "StarlarkModule: type_name is module" {
-  let m = StarlarkModule::new("assert", {})
+  let m = StarlarkModule::new("assert", Map([]))
   assert_eq(Value::Module(m).type_name(), "module")
 }
 
 ///|
 test "StarlarkModule: truth is always true" {
-  let m = StarlarkModule::new("assert", {})
+  let m = StarlarkModule::new("assert", Map([]))
   assert_true(Value::Module(m).truth())
 }
 
 ///|
 test "StarlarkModule: repr shows module name" {
-  let m = StarlarkModule::new("assert", {})
+  let m = StarlarkModule::new("assert", Map([]))
   assert_eq(Value::Module(m).repr(), "<module \"assert\">")
 }
 

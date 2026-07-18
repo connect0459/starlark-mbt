@@ -446,7 +446,7 @@ fn make_freeze_fn() -> @value.Value {
 
 ///|
 fn build_assert_module(errors : Array[String]) -> @value.Value {
-  let attrs : Map[String, @value.Value] = {}
+  let attrs : Map[String, @value.Value] = Map([])
   attrs["fail"] = make_error_fn(errors)
   attrs["eq"] = make_eq_fn(errors)
   attrs["ne"] = make_ne_fn(errors)
@@ -652,7 +652,7 @@ fn spell_suggest(name : String, candidates : Array[String]) -> String? {
 ///|
 fn make_hasfields_fn() -> @value.Value {
   @value.Value::new_builtin("hasfields", fn(_call_ctx, _pos_args, _kw_args) {
-    let storage : Map[String, @value.Value] = {}
+    let storage : Map[String, @value.Value] = Map([])
     let frozen : Ref[Bool] = { val: false }
     let cv = @value.CustomValue::new(fn() { "hasfields" }, fn() { true }, fn() {
         "<hasfields>"
@@ -765,24 +765,24 @@ fn exec_chunk_raw(
     path,
   ) {
     if path == "assert.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["assert"] = assert_module
       exports["freeze"] = make_freeze_fn()
       Ok(@eval.Module::from_map(exports))
     } else if path == "json.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["json"] = @json.json_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "math.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["math"] = @math.math_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "time.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["time"] = @time.time_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "struct.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["struct"] = @struct.struct_builtin()
       exports["gensym"] = @struct.gensym_builtin()
       exports["module"] = @struct.module_builtin()
@@ -821,7 +821,7 @@ pub fn run_chunked_string(src : String) -> Array[String] {
   let failures : Array[String] = []
   let chunks = split_chunks(src)
   for chunk in chunks {
-    let want_errs : Map[Int, String] = {}
+    let want_errs : Map[Int, String] = Map([])
     let mut line_num = 1
     for line in chunk.split("\n") {
       match parse_hash_annotation(line.to_owned()) {
@@ -908,24 +908,24 @@ pub fn run_with_predeclared(
     path,
   ) {
     if path == "assert.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["assert"] = assert_module
       exports["freeze"] = make_freeze_fn()
       Ok(@eval.Module::from_map(exports))
     } else if path == "json.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["json"] = @json.json_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "math.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["math"] = @math.math_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "time.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["time"] = @time.time_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "struct.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["struct"] = @struct.struct_builtin()
       exports["gensym"] = @struct.gensym_builtin()
       exports["module"] = @struct.module_builtin()
@@ -994,24 +994,24 @@ pub fn run_star_string(src : String) -> Array[String] {
     path,
   ) {
     if path == "assert.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["assert"] = assert_module
       exports["freeze"] = make_freeze_fn()
       Ok(@eval.Module::from_map(exports))
     } else if path == "json.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["json"] = @json.json_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "math.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["math"] = @math.math_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "time.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["time"] = @time.time_module()
       Ok(@eval.Module::from_map(exports))
     } else if path == "struct.star" {
-      let exports : Map[String, @value.Value] = {}
+      let exports : Map[String, @value.Value] = Map([])
       exports["struct"] = @struct.struct_builtin()
       exports["gensym"] = @struct.gensym_builtin()
       exports["module"] = @struct.module_builtin()

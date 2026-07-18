@@ -2890,7 +2890,7 @@ fn make_is_valid_timezone_fn() -> @value.Value {
 /// }
 /// ```
 pub fn time_module() -> @value.Value {
-  let attrs : Map[String, @value.Value] = {}
+  let attrs : Map[String, @value.Value] = Map([])
   attrs["now"] = make_now_fn()
   attrs["from_timestamp"] = make_from_timestamp_fn()
   attrs["parse_time"] = make_parse_time_fn()

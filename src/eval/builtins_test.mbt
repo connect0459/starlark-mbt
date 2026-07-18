@@ -2957,7 +2957,7 @@ test "exec_file: dict.pop on empty dict with unhashable key and default returns 
 
 ///|
 test "exec_file: dict.pop on frozen dict with missing key and default raises frozen error" {
-  let pre : Map[String, @value.Value] = {}
+  let pre : Map[String, @value.Value] = Map([])
   let d_val = @value.Value::new_dict()
   if d_val is @value.Value::Dict(d) {
     ignore(d.set(@value.Value::Int(1N), @value.Value::Int(2N)))
@@ -3014,7 +3014,7 @@ test "exec_file: list.clear during iteration error matches go wording" {
 
 ///|
 test "exec_file: list.clear on frozen list error matches go wording" {
-  let pre : Map[String, @value.Value] = {}
+  let pre : Map[String, @value.Value] = Map([])
   let list_val = @value.Value::new_list([
     @value.Value::Int(1N),
     @value.Value::Int(2N),

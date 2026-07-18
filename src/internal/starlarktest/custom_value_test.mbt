@@ -241,7 +241,7 @@ test "ExtVal compare_fn: < operator dispatches to compare_fn" {
 
 ///|
 test "ExtVal HasSetField: x.field=v dispatches to set_field_fn" {
-  let storage : Map[String, @value.Value] = {}
+  let storage : Map[String, @value.Value] = Map([])
   let cv = @value.CustomValue::new(fn() { "myobj" }, fn() { true }, fn() {
       "<myobj>"
     })

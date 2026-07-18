@@ -35,7 +35,7 @@ test "Universe: each, values, and delete round out the registry surface" {
     "a": @value.Value::Int(1N),
     "b": @value.Value::Int(2N),
   })
-  let seen : Map[String, @value.Value] = {}
+  let seen : Map[String, @value.Value] = Map([])
   u.each((k, v) => seen[k] = v)
   assert_eq(seen.length(), 2)
   assert_eq(u.values().length(), 2)
@@ -51,7 +51,7 @@ test "Predeclared: each, values, and delete round out the registry surface" {
     "x": @value.Value::Int(10N),
     "y": @value.Value::Int(20N),
   })
-  let seen : Map[String, @value.Value] = {}
+  let seen : Map[String, @value.Value] = Map([])
   p.each((k, v) => seen[k] = v)
   assert_eq(seen.length(), 2)
   assert_eq(p.values().length(), 2)

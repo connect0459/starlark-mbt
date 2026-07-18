@@ -30,6 +30,12 @@ impl IterableMapping for SimpleMap with fn items(self) {
 }
 
 ///|
+extend SimpleMap with Mapping::{mapping_get, mapping_keys, mapping_len}
+
+///|
+extend SimpleMap with IterableMapping::{items}
+
+///|
 test "Mapping protocol: get returns value for existing key" {
   let m : SimpleMap = { data: [(Value::Int(1N), Value::Bool(true))] }
   let result = m.mapping_get(Value::Int(1N))
@@ -103,6 +109,15 @@ impl Sliceable for SimpleSeq with fn slice(self, start, stop, step) {
 }
 
 ///|
+extend SimpleSeq with Indexable::{indexable_get, indexable_len}
+
+///|
+extend SimpleSeq with HasSetIndex::{set_index}
+
+///|
+extend SimpleSeq with Sliceable::{slice}
+
+///|
 struct SimpleInt {
   val : Int
 }
@@ -114,6 +129,9 @@ impl TotallyOrdered for SimpleInt with fn cmp(self, other) {
     _ => None
   }
 }
+
+///|
+extend SimpleInt with TotallyOrdered::{cmp}
 
 ///|
 test "Indexable protocol: get returns element at index" {

@@ -164,7 +164,7 @@ fn make_loader(
   opts : @eval.Options,
   universe : @eval.Universe,
 ) -> (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] {
-  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = {}
+  let cache : Map[String, Result[@eval.Module, @errors.EvalError]] = Map([])
   make_loader_with_cache(base_dir, opts, cache, universe)
 }
 

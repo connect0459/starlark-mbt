@@ -139,7 +139,7 @@ fn Fcomp::new(
     instrs: [],
     label_at: [],
     locals: [],
-    local_index: {},
+    local_index: Map([]),
     loop_stack: [],
     pending_pos: None,
     cur_stack: 0,
@@ -150,10 +150,10 @@ fn Fcomp::new(
     has_kwargs: false,
     params: [],
     parent,
-    cell_set: {},
+    cell_set: Map([]),
     freevar_names: [],
     freevar_srcs: [],
-    freevar_index: {},
+    freevar_index: Map([]),
     expr_depth: 0,
   }
 }
@@ -697,7 +697,7 @@ fn Fcomp::compile_comprehension(
   // duplicate entries and leave the name pointing at a comp-local slot after
   // the comprehension ends.
   let saved : Array[(String, Int?)] = []
-  let bound : Map[String, Unit] = {}
+  let bound : Map[String, Unit] = Map([])
   for t in targets {
     let (name, tp) = t
     if bound.contains(name) {
@@ -1494,10 +1494,10 @@ pub fn compile(
   let pcomp : Pcomp = {
     constants: [],
     names: [],
-    name_index: {},
+    name_index: Map([]),
     functions: [],
     globals: [],
-    global_index: {},
+    global_index: Map([]),
     loads: [],
     load_stmts: [],
     is_predeclared,

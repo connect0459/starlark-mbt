@@ -516,7 +516,7 @@ fn make_rounding(name : String, round : (Double) -> Double) -> @value.Value {
 /// }
 /// ```
 pub fn math_module() -> @value.Value {
-  let attrs : Map[String, @value.Value] = {}
+  let attrs : Map[String, @value.Value] = Map([])
   attrs["e"] = @value.Value::Float(2.718281828459045)
   attrs["pi"] = @value.Value::Float(@std_math.PI)
   attrs["ceil"] = make_rounding("ceil", @std_math.ceil)

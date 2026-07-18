@@ -212,7 +212,7 @@ fn merge_entries(
   // MoonBit's Map is a sorted tree map, so inserting left then right gives the
   // right operand priority on key collisions and yields the merged fields in
   // sorted-name order (matching how struct fields are otherwise enumerated).
-  let m : Map[String, @value.Value] = {}
+  let m : Map[String, @value.Value] = Map([])
   for e in left {
     m[e.0] = e.1
   }

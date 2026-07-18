@@ -6,7 +6,7 @@
 ///|
 /// Extracts a module's globals as a name -> value map.
 fn globals_map(m : @eval.Module) -> Map[String, @value.Value] {
-  let out : Map[String, @value.Value] = {}
+  let out : Map[String, @value.Value] = Map([])
   for name in m.global_names() {
     match m.get(name) {
       Some(v) => out[name] = v

@@ -324,7 +324,7 @@ fn module_output(
   m : RunModule,
   opts : Options,
 ) -> Map[String, @value.Value] {
-  let out : Map[String, @value.Value] = {}
+  let out : Map[String, @value.Value] = Map([])
   for i, binding in prog.globals {
     match m.globals[i] {
       Some(v) =>
@@ -1161,7 +1161,7 @@ fn VM::bind_args(
     }
     return
   }
-  let kw_map : Map[String, @value.Value] = {}
+  let kw_map : Map[String, @value.Value] = Map([])
   for kw in kw_args {
     let (kn, kv) = kw
     if kw_map.contains(kn) {

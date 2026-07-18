@@ -3,6 +3,4 @@ import {
   "connect0459/starlark/internal/cli",
 }
 
-options(
-  "is-main": true,
-)
+pkgtype(kind: "executable")

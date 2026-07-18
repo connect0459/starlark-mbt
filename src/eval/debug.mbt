@@ -23,7 +23,7 @@ fn DebugFrame::from_active(af : ActiveCallFrame) -> DebugFrame {
   // Recover the frame's named locals (parameters first, then body locals) and
   // their current values from the live slot array.
   let all_local_names : Array[String] = []
-  let locals_map : Map[String, @value.Value] = {}
+  let locals_map : Map[String, @value.Value] = Map([])
   for i, b in af.funcode.locals {
     let name = b.name()
     if !all_local_names.contains(name) {

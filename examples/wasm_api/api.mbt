@@ -152,7 +152,7 @@ fn parse_env_json(env_json : String) -> Result[@eval.Predeclared, String] {
   }
   match parsed {
     @value.Value::Dict(d) => {
-      let map : Map[String, @value.Value] = {}
+      let map : Map[String, @value.Value] = Map([])
       d.each(fn(k, v) { if k is @value.Value::String(s) { map[s.raw()] = v } })
       Ok(@eval.Predeclared::from_map(map))
     }
