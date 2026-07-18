@@ -141,6 +141,10 @@ This project may be released publicly. All of the following must be written in *
 
 Scope is optional; use the package name when the change targets a specific package (e.g., `uri`, `parser`). Omit for project-wide changes.
 
+### Type vs. Scope Precedence
+
+The type vocabulary above mixes two axes: an **impact axis** (`feat`, `fix`, `perf`, `refactor` — the SemVer-relevant effect of a change) and a **domain axis** (`docs`, `style`, `test`, `chore`, `ci`, `tidy` — a layer with no runtime/SemVer effect). When a change is fully contained within a domain, use that domain as `type` (e.g. `docs: fix typo`); do not use it as `scope` on an impact-axis type (avoid `fix(docs): ...`). `scope` sub-divides whatever `type` already established (e.g. `feat(auth)`); it is not a substitute classification axis. This also matches how release automation typically bumps versions from `type` alone, without inspecting `scope`.
+
 ### Subject Line
 
 - Use the imperative mood: "add", "fix", "remove" — not "added" or "adds"
@@ -160,4 +164,4 @@ Scope is optional; use the package name when the change targets a specific packa
 
 ### Branch naming
 
-`feature/xxx`, `fix/xxx`, `docs/xxx`
+`feat/xxx`, `fix/xxx`, `docs/xxx`
