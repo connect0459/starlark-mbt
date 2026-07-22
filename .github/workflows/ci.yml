@@ -35,6 +35,7 @@ jobs:
           filters: |
             code:
               - '.github/workflows/ci.yml'
+              - '**/*.mbt.md'
               - 'examples/**'
               - 'moon.mod'
               - 'moon.work'
@@ -86,6 +87,7 @@ jobs:
           filters: |
             code:
               - '.github/workflows/ci.yml'
+              - '**/*.mbt.md'
               - 'examples/**'
               - 'moon.mod'
               - 'moon.work'
