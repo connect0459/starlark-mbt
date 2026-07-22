@@ -42,7 +42,7 @@ jobs:
               - 'src/**'
 
       - name: Setup Moonbit
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         uses: hustcer/setup-moonbit@9199da0ab63ea0c0bab1dc15f03d76e17ed4f75f # v1.22
         with:
           version: latest
@@ -50,23 +50,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update package registry
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon update
 
       - name: Check formatting
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon fmt --check
 
       - name: Check packages
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon check --deny-warn --target all
 
       - name: Verify generated interfaces are current
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon info && git diff --exit-code
 
       - name: Skip CI checks (no relevant changes)
-        if: steps.filter.outputs.code != 'true'
+        if: steps.filter.outputs.code != 'true' && github.event_name != 'workflow_dispatch'
         run: echo "No changes detected in code-related files."
 
   test:
@@ -93,7 +93,7 @@ jobs:
               - 'src/**'
 
       - name: Setup Moonbit
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         uses: hustcer/setup-moonbit@9199da0ab63ea0c0bab1dc15f03d76e17ed4f75f # v1.22
         with:
           version: latest
@@ -101,21 +101,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update package registry
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon update
 
       - name: Test all targets
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon test --target all
 
       - name: Run examples
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: bash scripts/run-examples.sh > /dev/null
 
       - name: Run REPL piped integration tests
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: bash scripts/test-repl-piped.sh > /dev/null
 
       - name: Skip CI checks (no relevant changes)
-        if: steps.filter.outputs.code != 'true'
+        if: steps.filter.outputs.code != 'true' && github.event_name != 'workflow_dispatch'
         run: echo "No changes detected in code-related files."
