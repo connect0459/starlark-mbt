@@ -1,6 +1,7 @@
 # Setup after clone
 setup:
     moon update
+    pre-commit install
 
 # Run a single example: accepts a .star file, .mbt file, or a directory (runs both)
 run-example path:
