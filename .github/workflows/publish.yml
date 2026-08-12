@@ -89,10 +89,11 @@ jobs:
             exit 1
           fi
 
-          # Append a Full Changelog comparison link, reusing the compare URL
-          # CHANGELOG.md's own reference-link section already tracks for this
-          # version (skipped for the very first release, which links to the
-          # tag itself rather than a compare view).
+          # Append a Full Changelog link, reusing the compare URL that
+          # CHANGELOG.md's own reference-link section already records for
+          # this version. The very first release's reference link points at
+          # the tag itself rather than a compare view, so link the tag name
+          # to its commit history instead.
           COMPARE_URL="$(awk -v ver="$RELEASE_VERSION" '
             index($0, "[" ver "]: ") == 1 {
               sub(/^\[[^]]*\]: </, "")
@@ -104,6 +105,10 @@ jobs:
 
           if [[ "$COMPARE_URL" == *"/compare/"* ]]; then
             printf '\n**Full Changelog**: %s\n' "$COMPARE_URL" >> release-notes.md
+          elif [ -n "$COMPARE_URL" ]; then
+            printf '\n**Full Changelog**: [%s](%s/%s/commits/%s)\n' \
+              "$GITHUB_REF_NAME" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" \
+              >> release-notes.md
           fi
 
       - name: Create GitHub Release
