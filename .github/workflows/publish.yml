@@ -76,7 +76,11 @@ jobs:
         run: |
           RELEASE_VERSION="${GITHUB_REF_NAME#v}"
           awk -v ver="$RELEASE_VERSION" '
-            /^## \[/ { if (capture) exit; if ($0 ~ "\\[" ver "\\]") { capture=1; next } }
+            /^## \[/ {
+              if (capture) exit
+              if (index($0, "## [" ver "]") == 1) { capture = 1; next }
+            }
+            /^---/ { if (capture) exit }
             capture { print }
           ' CHANGELOG.md > release-notes.md
 
