@@ -18,17 +18,14 @@
 It is difficult to review without knowing the specifications and background.
 ```
 
-## GitHub Release draft
+## GitHub Release Notes
 
-<details>
-
-<summary>Expand the GitHub Release draft</summary>
-
-<!-- # vX.Y.Z -->
-
-<!-- Paste the GitHub Release draft notes here. -->
-
-</details>
+<!--
+The GitHub Release body is generated automatically from this file's
+CHANGELOG.md section when the release tag is pushed (see .github/workflows/
+publish.yml). Review the CHANGELOG.md diff in this PR instead of pasting
+notes here.
+-->
 
 ## Scope of Change
 
