@@ -5,7 +5,12 @@ fn dir_of(filepath : String) -> String {
 
 ///|
 fn resolve_load(base_dir : String, load_path : String) -> String {
-  @path.Path(base_dir).join(@path.Path(load_path)).normalize().to_string()
+  let path = @path.Path(load_path)
+  if path.is_absolute() {
+    path.normalize().to_string()
+  } else {
+    @path.Path(base_dir).join(path).normalize().to_string()
+  }
 }
 
 ///|

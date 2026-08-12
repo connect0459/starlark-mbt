@@ -186,6 +186,8 @@ pub fn StarlarkIterator::next(Self) -> Value?
 pub struct StarlarkList {
   // private fields
 }
+#alias("_[_]")
+pub fn StarlarkList::at(Self, Int) -> Value
 pub fn StarlarkList::check_mutable(Self, String) -> Result[Unit, String]
 pub fn StarlarkList::clear(Self) -> Result[Unit, String]
 pub fn StarlarkList::copy_items(Self) -> Array[Value]
@@ -199,7 +201,6 @@ pub fn StarlarkList::is_frozen(Self) -> Bool
 pub fn StarlarkList::iter(Self) -> Iter[Value]
 pub fn StarlarkList::length(Self) -> Int
 pub fn StarlarkList::new(Array[Value]) -> Self
-pub fn StarlarkList::op_get(Self, Int) -> Value
 pub fn StarlarkList::pop(Self) -> Result[Value?, String]
 pub fn StarlarkList::pop_at(Self, Int, String) -> Result[Value, String]
 pub fn StarlarkList::push(Self, Value) -> Result[Unit, String]
@@ -379,4 +380,3 @@ pub trait TotallyOrdered {
 pub(open) trait Unpacker {
   fn unpack(Self, Value) -> Result[Unit, String]
 }
-
