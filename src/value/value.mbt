@@ -190,7 +190,8 @@ pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value? {
 ///|
 /// Returns the `Value` at index `i`, aborting if `i` is out of bounds.
 /// Mirrors `Array`'s indexed access; use `get` for a bounds-checked option.
-pub fn StarlarkList::op_get(self : StarlarkList, i : Int) -> Value {
+#alias("_[_]")
+pub fn StarlarkList::at(self : StarlarkList, i : Int) -> Value {
   self.items[i]
 }
 

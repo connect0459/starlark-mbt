@@ -48,4 +48,3 @@ pub fn ReplState::pending(Self) -> Bool
 // Type aliases
 
 // Traits
-

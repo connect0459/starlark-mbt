@@ -79,4 +79,3 @@ pub(all) enum SyntaxErrorKind {
 // Type aliases
 
 // Traits
-

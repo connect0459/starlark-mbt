@@ -472,7 +472,7 @@ fn call_time_builtin(
   pos_args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
 ) -> Result[@value.Value, String] {
-  guard builtin is @value.Value::Builtin(bf)
+  guard! builtin is @value.Value::Builtin(bf)
   let ctx = @value.BuiltinCallCtx::new(fn(_v, _p, _k) {
     Err("nested calls are not exercised here")
   })

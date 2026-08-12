@@ -25,4 +25,3 @@ pub fn struct_builtin() -> @value.Value
 // Type aliases
 
 // Traits
-

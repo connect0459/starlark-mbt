@@ -15,4 +15,3 @@ pub fn exec_script_with_options(String, String) -> String
 // Type aliases
 
 // Traits
-

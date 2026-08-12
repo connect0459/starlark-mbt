@@ -21,4 +21,3 @@ pub fn Parser::parse_test(Self) -> @syntax.Expr raise ParseErr
 // Type aliases
 
 // Traits
-

@@ -5,7 +5,7 @@ fn call_builtin(
   kw : Array[(String, @value.Value)],
 ) -> Result[@value.Value, String] {
   let fn_val = make_fn()
-  guard fn_val is @value.Value::Builtin(bf)
+  guard! fn_val is @value.Value::Builtin(bf)
   let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
     Err("not called")
   })
@@ -189,7 +189,7 @@ test "make_decode_fn: positional type error precedes unknown kwarg error" {
 ///|
 test "make_encode_indent_fn: unknown keyword argument name is double-quoted" {
   let fn_val = make_encode_indent_fn()
-  guard fn_val is @value.Value::Builtin(bf)
+  guard! fn_val is @value.Value::Builtin(bf)
   let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
     Err("not called")
   })
@@ -258,7 +258,7 @@ test "make_encode_indent_fn: prefix keyword parameter name is double-quoted in t
 ///|
 test "make_indent_fn: unknown keyword argument name is double-quoted" {
   let fn_val = make_indent_fn()
-  guard fn_val is @value.Value::Builtin(bf)
+  guard! fn_val is @value.Value::Builtin(bf)
   let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
     Err("not called")
   })
@@ -335,7 +335,7 @@ test "make_indent_fn: positional type error uses for-parameter-N wording" {
 ///|
 test "make_indent_fn: indent_json errors are prefixed with json.indent:" {
   let indent_fn = make_indent_fn()
-  guard indent_fn is @value.Value::Builtin(bf)
+  guard! indent_fn is @value.Value::Builtin(bf)
   let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
     Err("not called")
   })
@@ -351,7 +351,7 @@ test "make_indent_fn: indent_json errors are prefixed with json.indent:" {
 ///|
 test "make_indent_fn: does not reject syntactically-valid but Float64-overflowing number tokens" {
   let indent_fn = make_indent_fn()
-  guard indent_fn is @value.Value::Builtin(bf)
+  guard! indent_fn is @value.Value::Builtin(bf)
   let dummy_ctx = @value.BuiltinCallCtx::new(fn(_callee, _args, _kwargs) {
     Err("not called")
   })
@@ -443,7 +443,8 @@ test "encode_inner: primitives at depth limit succeed" {
 ///|
 test "decode_from_json: depth error is wrapped with json.decode prefix" {
   let chars = "[".to_array()
-  guard parse_json_value(chars, 0, json_max_nesting_depth) is Err((offset, raw))
+  guard! parse_json_value(chars, 0, json_max_nesting_depth)
+    is Err((offset, raw))
   let expected = "json.decode: at offset \{offset}, \{raw}"
   assert_eq(expected, "json.decode: at offset 0, nesting depth limit exceeded")
 }
@@ -452,7 +453,7 @@ test "decode_from_json: depth error is wrapped with json.decode prefix" {
 test "encode_to_json: depth error is wrapped with json.encode prefix" {
   let state = EncodeState::new()
   let v = @value.Value::List(@value.StarlarkList::new([]))
-  guard encode_inner(v, state, json_max_nesting_depth) is Err(raw)
+  guard! encode_inner(v, state, json_max_nesting_depth) is Err(raw)
   let expected = "json.encode: \{raw}"
   assert_eq(expected, "json.encode: nesting depth limit exceeded")
 }

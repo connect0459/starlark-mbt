@@ -200,7 +200,7 @@ parent's depth budget.
 | `length() -> Int` | Number of elements |
 | `is_empty() -> Bool` | Whether the list has no elements |
 | `get(Int) -> Value?` | Element at index; `None` if out of range |
-| `op_get(Int) -> Value` | Element at index (panics if out of range; backs `list[i]` syntax) |
+| `at(Int) -> Value` | Element at index (panics if out of range; backs `list[i]` syntax) |
 | `set(Int, Value) -> Result[Unit, String]` | Replace the element at index |
 | `push(Value) -> Result[Unit, String]` | Append (`Err` if frozen) |
 | `insert(Int, Value) -> Result[Unit, String]` | Insert at index |

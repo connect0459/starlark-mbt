@@ -53,4 +53,3 @@ pub fn write_hex8(StringBuilder, Int) -> Unit
 // Type aliases
 
 // Traits
-

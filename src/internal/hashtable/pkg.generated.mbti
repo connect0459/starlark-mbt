@@ -29,4 +29,3 @@ pub fn[K, V] Hashtable::pop_first(Self[K, V]) -> Result[(K, V)?, String]
 // Type aliases
 
 // Traits
-
