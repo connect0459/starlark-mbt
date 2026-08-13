@@ -100,7 +100,7 @@ jobs:
             exit 1
           fi
 
-          # Append a Full Changelog link, reusing the compare URL that
+          # Append a Full Changelog section, reusing the compare URL that
           # CHANGELOG.md's own reference-link section already records for
           # this version. The very first release's reference link points at
           # the tag itself rather than a compare view, so link the tag name
@@ -115,11 +115,16 @@ jobs:
           ' CHANGELOG.md)"
 
           if [[ "$COMPARE_URL" == *"/compare/"* ]]; then
-            printf '\n**Full Changelog**: %s\n' "$COMPARE_URL" >> release-notes.md
+            FULL_CHANGELOG_LABEL="${COMPARE_URL##*/}"
+            FULL_CHANGELOG_URL="$COMPARE_URL"
           elif [ -n "$COMPARE_URL" ]; then
-            printf '\n**Full Changelog**: [%s](%s/%s/commits/%s)\n' \
-              "$GITHUB_REF_NAME" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" \
-              >> release-notes.md
+            FULL_CHANGELOG_LABEL="$GITHUB_REF_NAME"
+            FULL_CHANGELOG_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME"
+          fi
+
+          if [ -n "$FULL_CHANGELOG_URL" ]; then
+            printf '\n---\n\n## Full Changelog\n\n[%s](%s)\n' \
+              "$FULL_CHANGELOG_LABEL" "$FULL_CHANGELOG_URL" >> release-notes.md
           fi
 
       - name: Create GitHub Release
