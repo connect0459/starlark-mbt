@@ -84,6 +84,11 @@ jobs:
             capture { print }
           ' CHANGELOG.md > release-notes.md
 
+          # Drop trailing blank lines so appending the Full Changelog link
+          # below doesn't leave two blank lines before it.
+          awk '{a[NR]=$0} END {n=NR; while (n>0 && a[n] ~ /^[[:space:]]*$/) n--; for (i=1;i<=n;i++) print a[i]}' release-notes.md > release-notes.md.tmp
+          mv release-notes.md.tmp release-notes.md
+
           # Keep a Changelog nests each entry's subsections one level deeper
           # (###, ####, ...) than the version heading (##) this extraction
           # strips out. Promote every heading by one level so the release
