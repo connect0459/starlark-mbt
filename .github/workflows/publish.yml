@@ -114,6 +114,8 @@ jobs:
             }
           ' CHANGELOG.md)"
 
+          FULL_CHANGELOG_LABEL=""
+          FULL_CHANGELOG_URL=""
           if [[ "$COMPARE_URL" == *"/compare/"* ]]; then
             FULL_CHANGELOG_LABEL="${COMPARE_URL##*/}"
             FULL_CHANGELOG_URL="$COMPARE_URL"
