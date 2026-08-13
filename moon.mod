@@ -1,6 +1,6 @@
 name = "connect0459/starlark"
 
-version = "0.4.1"
+version = "0.4.2"
 
 readme = "README.mbt.md"
 

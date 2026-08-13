@@ -30,6 +30,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-08-13
+
+### Changed
+
+#### BREAKING: `StarlarkList::op_get` renamed to `at`
+
+- `value`: rename `StarlarkList::op_get` to `StarlarkList::at`, matching the
+  latest MoonBit toolchain's removal of the custom `_[_]` operator-declaration
+  syntax; the `list[i]` operator itself is unaffected (aliased via
+  `#alias("_[_]")`) (#397)
+
+### Fixed
+
+#### MoonBit toolchain compatibility
+
+- `compile`, `resolver`, `eval`, `interp`, `cli`, `repl`, and library/test
+  packages: spell out empty `Map` literals as `Map([])` instead of the now-
+  ambiguous bare `{}`, which the latest MoonBit toolchain flags as
+  `ambiguous_braces` (E0082) (#391)
+- `value`: add explicit `extend Type with Trait::{method, ..}` declarations
+  for `SimpleMap`/`SimpleSeq`/`SimpleInt`'s trait-only methods, no longer
+  implicitly promoted by the latest MoonBit toolchain (E0020) (#391)
+- `cmd/starlark`, `cli`: migrate `options("is-main": true)` to
+  `pkgtype(kind: "executable")`, per the latest `moon fmt` (#397)
+- bump pinned `moonbitlang/x` from 0.4.45 to 0.4.49, required by the latest
+  `moonc` (#397)
+- `internal/cli`, `internal/repl`: resolve absolute load paths directly
+  instead of via `Path::join`, whose latest behavior no longer lets an
+  absolute right-hand path override the base (#397)
+- mark non-exhaustive `guard PATTERN is CASE` sites in whitebox tests as
+  `guard!`, and replace deprecated `@sys.get_cli_args()` with `@env.args()`
+  (#397)
+- regenerate `pkg.generated.mbti` for the latest `moon info` output (#397)
+
+### Miscellaneous
+
+- **docs**: add Type vs. Scope Precedence section (#392)
+- **docs**: reorder README badges to put repo badges before external ones
+  (#393)
+- **docs**: list pre-commit in Prerequisites and auto-install via
+  `just setup` (#396)
+- **ci**: skip CI steps when no code-related files changed (#394)
+- **ci**: create GitHub Release from CHANGELOG.md on tag push, and append a
+  Full Changelog comparison link to the Release body (#398, #399)
+- **chore**: nest PR template and add release template (#395)
+
 ## [0.4.1] - 2026-07-12
 
 ### Changed
@@ -645,7 +691,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.1...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.2...HEAD>
+[0.4.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.1...v0.4.2>
 [0.4.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.0...v0.4.1>
 [0.4.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.2...v0.4.0>
 [0.3.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.1...v0.3.2>
