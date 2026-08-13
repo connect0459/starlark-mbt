@@ -84,6 +84,12 @@ jobs:
             capture { print }
           ' CHANGELOG.md > release-notes.md
 
+          # Keep a Changelog nests each entry's subsections one level deeper
+          # (###, ####, ...) than the version heading (##) this extraction
+          # strips out. Promote every heading by one level so the release
+          # body reads as a normal document instead of starting at H3.
+          sed -i -E 's/^#(#{2,}) /\1 /' release-notes.md
+
           if [ ! -s release-notes.md ]; then
             echo "::error::No CHANGELOG.md section found for [$RELEASE_VERSION]. Retitle [Unreleased] to [$RELEASE_VERSION] - YYYY-MM-DD before tagging."
             exit 1
