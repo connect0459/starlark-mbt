@@ -14,8 +14,7 @@ cd starlark-mbt
 just setup
 ```
 
-`just setup` runs `moon update` to fetch package dependencies and installs
-the pre-commit hooks (`pre-commit install`).
+`just setup` runs `moon update` to fetch package dependencies and installs the pre-commit hooks (`pre-commit install`).
 
 ### pre-commit hooks
 
@@ -36,8 +35,7 @@ pre-commit run --all-files
 | `moon info` | Regenerate `.mbti` interface files |
 | `just verify` | Run the full CI-equivalent check locally |
 
-The pre-commit hooks enforce formatting and lint checks on every commit. To
-run them manually across all files:
+The pre-commit hooks enforce formatting and lint checks on every commit. To run them manually across all files:
 
 ```sh
 pre-commit run --all-files

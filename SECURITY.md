@@ -14,10 +14,7 @@ Older versions do not receive security fixes.
 
 **Please do not open a public GitHub issue for security vulnerabilities.**
 
-Use GitHub's [private vulnerability reporting][private-report] feature to
-disclose issues confidentially. You will receive an acknowledgment within
-**5 business days** and a resolution timeline once the report has been
-triaged.
+Use GitHub's [private vulnerability reporting][private-report] feature to disclose issues confidentially. You will receive an acknowledgment within **5 business days** and a resolution timeline once the report has been triaged.
 
 [private-report]: https://github.com/connect0459/starlark-mbt/security/advisories/new
 
@@ -48,7 +45,4 @@ The following are **out of scope**:
 
 ## Disclosure Policy
 
-Once a fix is ready and released, a GitHub Security Advisory will be published
-with full details. The typical timeline from report to public disclosure is
-**30 days**, though this may be extended by mutual agreement when a fix
-requires significant changes.
+Once a fix is ready and released, a GitHub Security Advisory will be published with full details. The typical timeline from report to public disclosure is **30 days**, though this may be extended by mutual agreement when a fix requires significant changes.
