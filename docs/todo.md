@@ -1,11 +1,6 @@
 # Starlark.mbt Implementation Plan
 
-Reference target: **starlark-go** semantics. Standard features
-(`allow_set`, `allow_lambda`, `allow_bytes`, `allow_float`) default to
-`true`. Non-standard extensions (`allow_recursion`, `allow_while`,
-`allow_top_level_control`, `allow_global_reassign`, `load_binds_globally`)
-default to `false`, matching starlark-go's zero-value `FileOptions`.
-(`allow_set` diverges intentionally: sets are now part of the Starlark spec.)
+Reference target: **starlark-go** semantics. Standard features (`allow_set`, `allow_lambda`, `allow_bytes`, `allow_float`) default to `true`. Non-standard extensions (`allow_recursion`, `allow_while`, `allow_top_level_control`, `allow_global_reassign`, `load_binds_globally`) default to `false`, matching starlark-go's zero-value `FileOptions`. (`allow_set` diverges intentionally: sets are now part of the Starlark spec.)
 
 ## Phase 0: Project Setup ✅
 
@@ -28,9 +23,7 @@ default to `false`, matching starlark-go's zero-value `FileOptions`.
 > (removed `options(source: "src")`), so these directories now live at the
 > repository root (`internal/*`, `lib/*`, `eval/`, …). Import paths are unchanged.
 
-Follow the urllib.mbt convention: keep `src/starlark/` as a thin public
-façade and place implementation details under `src/internal/*` so they
-are not part of the published API.
+Follow the urllib.mbt convention: keep `src/starlark/` as a thin public façade and place implementation details under `src/internal/*` so they are not part of the published API.
 
 - `src/starlark/` — public façade: re-exports `Thread`, `Module`, `Value`,
   `Options`, `exec_file`, `eval`, error types
@@ -124,8 +117,7 @@ Write error formatting tests first; implementation is trivial but used everywher
 
 ## Phase 0.75: Public API & Embedding Surface ✅
 
-Settle the public API shape before bulk implementation, so subsequent
-phases don't churn the `.mbti`.
+Settle the public API shape before bulk implementation, so subsequent phases don't churn the `.mbti`.
 
 - [x] `Thread` — print callback, load callback, call stack, recursion depth limit, max execution steps
 - [x] `Module` — execution result; `globals` dict; frozen after `exec_file` returns
@@ -244,8 +236,7 @@ Core Starlark value representation. All values share a common interface.
 
 ### TDD scope
 
-Reference: `starlark-go/starlark/value_test.go`, `starlark-go/starlark/int_test.go`,
-`starlark-go/starlark/hashtable_test.go`, `starlark-go/starlark/iterator_test.go`.
+Reference: `starlark-go/starlark/value_test.go`, `starlark-go/starlark/int_test.go`, `starlark-go/starlark/hashtable_test.go`, `starlark-go/starlark/iterator_test.go`.
 
 ---
 
@@ -625,9 +616,7 @@ End-to-end tests that execute `.star` scripts and assert output.
 
 ## Phase 7.5: `json` Extension Library ✅
 
-Port `starlarkjson` so embedders can read/write JSON from Starlark.
-Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are
-**out of scope** for the initial release — see "Future work" below.
+Port `starlarkjson` so embedders can read/write JSON from Starlark. Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are **out of scope** for the initial release — see "Future work" below.
 
 - [x] `json.encode(value) -> string` — None/bool/int/float/str/list/tuple/dict/range;
       cycle detection via `physical_equal`; dict keys sorted; non-ASCII via `\uXXXX`
@@ -1209,9 +1198,7 @@ Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 
 ### Third-pass gap analysis (MISSING-86..101)
 
-Fresh four-axis comparison against starlark-go after MISSING-1..85 closed.
-Behavioral and message-only divergences fixed via TDD; design-decision items
-resolved with the user.
+Fresh four-axis comparison against starlark-go after MISSING-1..85 closed. Behavioral and message-only divergences fixed via TDD; design-decision items resolved with the user.
 
 - [x] **MISSING-86**: `splitlines()` now splits on `\n` only (carriage return is
       an ordinary character), matching starlark-go. Commit: `splitlines \n only`.
@@ -1254,15 +1241,11 @@ resolved with the user.
       non-associative chained-comparison error reports one column past the
       operator via a new `Scanner::position()` accessor / `Parser::scanner_error`.
 
-All earlier-pass deferrals now closed: MISSING-69 (%e/%f round-half-to-even),
-70 (hash neg bigint), 71 (repeat boundary), 72 (Unicode is*/title/capitalize),
-80 (undefined "did you mean"), 81 (non-ASCII ident `unicode.IsLetter`),
-83 (pre-parsed expr eval entry point).
+All earlier-pass deferrals now closed: MISSING-69 (%e/%f round-half-to-even), 70 (hash neg bigint), 71 (repeat boundary), 72 (Unicode is*/title/capitalize), 80 (undefined "did you mean"), 81 (non-ASCII ident `unicode.IsLetter`), 83 (pre-parsed expr eval entry point).
 
 ### Fourth-pass gap analysis (MISSING-102..116)
 
-Fresh four-axis comparison against starlark-go plus first comparison of the
-extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
+Fresh four-axis comparison against starlark-go plus first comparison of the extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
 
 - [x] **MISSING-102** / **MISSING-111** / **MISSING-115**: `dict()` and
       `dict.update` now share a single `update_dict` helper mirroring
@@ -1315,8 +1298,7 @@ extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
 
 ### Fifth-pass gap analysis (MISSING-117..128)
 
-Fresh four-axis comparison against starlark-go after MISSING-1..116 closed.
-Each behavioral item confirmed empirically; fixed via TDD (Red test first).
+Fresh four-axis comparison against starlark-go after MISSING-1..116 closed. Each behavioral item confirmed empirically; fixed via TDD (Red test first).
 
 - [x] **MISSING-117** [HIGH]: Module/load freeze was **shallow** — contained
       List/Dict/Set values stayed mutable after `exec_file`/`load`. `Module::freeze`
@@ -1379,9 +1361,7 @@ Each behavioral item confirmed empirically; fixed via TDD (Red test first).
 
 ### Sixth-pass gap analysis (MISSING-129..131)
 
-Fresh comparison against starlark-go focused on the call/argument-expansion
-path (`*args`/`**kwargs` splat error handling), which earlier passes did not
-cover. Each fixed via TDD (Red test first).
+Fresh comparison against starlark-go focused on the call/argument-expansion path (`*args`/`**kwargs` splat error handling), which earlier passes did not cover. Each fixed via TDD (Red test first).
 
 - [x] **MISSING-129** [MED]: `**kwargs` expansion with a non-string key silently
       dropped the entry instead of erroring. `eval_args` (`eval/expr.mbt`) now
@@ -1400,8 +1380,7 @@ cover. Each fixed via TDD (Red test first).
 
 ### Seventh-pass gap analysis (MISSING-132..)
 
-Fresh comparison against starlark-go focused on Unicode-aware string methods
-and builtin argument-error wording. Each fixed via TDD (Red test first).
+Fresh comparison against starlark-go focused on Unicode-aware string methods and builtin argument-error wording. Each fixed via TDD (Red test first).
 
 - [x] **MISSING-132** [behavioral]: `str.upper`/`lower`/`title`/`capitalize`
       used MoonBit's ASCII-only `String::to_upper`/`to_lower` plus a small
@@ -1439,8 +1418,7 @@ and builtin argument-error wording. Each fixed via TDD (Red test first).
 
 ### Eighth-pass gap analysis (MISSING-136..155)
 
-Fresh four-axis comparison against starlark-go after MISSING-1..135 / BUG-1..34
-closed. Each fixed via TDD (Red test first).
+Fresh four-axis comparison against starlark-go after MISSING-1..135 / BUG-1..34 closed. Each fixed via TDD (Red test first).
 
 - [x] **MISSING-136** [message + behavioral]: `bind_args` positional-argument-count
       errors diverged from Go in four ways: singular/plural (1 "argument" vs "arguments"),
@@ -1510,9 +1488,7 @@ closed. Each fixed via TDD (Red test first).
 
 ### Ninth-pass gap analysis (MISSING-156..167)
 
-Fresh comparison against starlark-go covering slicing/indexing semantics,
-`repr`/`str` escape tables, comparison-operator error wording, and the
-json/struct extension libraries. Each fixed via TDD (Red test first).
+Fresh comparison against starlark-go covering slicing/indexing semantics, `repr`/`str` escape tables, comparison-operator error wording, and the json/struct extension libraries. Each fixed via TDD (Red test first).
 
 - [x] **MISSING-158** [message]: non-int slice index/step errors now read
       "invalid start/end index: got T, want int" and "invalid slice step: got T,
@@ -1571,8 +1547,7 @@ json/struct extension libraries. Each fixed via TDD (Red test first).
 
 ### Eleventh-pass gap analysis (MISSING-168..180)
 
-Fresh five-area parallel comparison against starlark-go after MISSING-1..167 /
-BUG-1..34 closed. Each fixed via TDD (Red test first).
+Fresh five-area parallel comparison against starlark-go after MISSING-1..167 / BUG-1..34 closed. Each fixed via TDD (Red test first).
 
 - [x] **MISSING-168** [behavioral]: set intersection (`&` and `.intersection()`)
       now iterates the other/RHS operand and keeps elements present in the
@@ -1660,14 +1635,7 @@ Fresh five-area comparison against starlark-go after MISSING-1..180 closed.
 
 ### Thirteenth-pass gap analysis (MISSING-192..199)
 
-Fresh six-area parallel comparison against starlark-go after MISSING-1..191
-closed (slicing/indexing, string methods, numerics, builtins+arg-binding,
-lexer/parser/resolver, dict/set/list/tuple). Slicing/indexing,
-dict/set/list/tuple, and user-function arg-binding had no divergences.
-Excluded as intentional (feature flags default-on by design): top-level
-`if`/`for`/`while`, `while`, top-level global reassign, custom
-Python-keyword rejection messages. Also excluded: ASCII-only
-`isalpha`/`isdigit`/`isalnum` (MISSING-72); `float("0x1p4")` hex floats.
+Fresh six-area parallel comparison against starlark-go after MISSING-1..191 closed (slicing/indexing, string methods, numerics, builtins+arg-binding, lexer/parser/resolver, dict/set/list/tuple). Slicing/indexing, dict/set/list/tuple, and user-function arg-binding had no divergences. Excluded as intentional (feature flags default-on by design): top-level `if`/`for`/`while`, `while`, top-level global reassign, custom Python-keyword rejection messages. Also excluded: ASCII-only `isalpha`/`isdigit`/`isalnum` (MISSING-72); `float("0x1p4")` hex floats.
 
 - [x] **MISSING-192** [message]: `abs()` type error no longer carries the
       spurious `abs:` prefix; matches Go's bare `got T, want int or float`
@@ -1701,8 +1669,7 @@ Python-keyword rejection messages. Also excluded: ASCII-only
 
 ### Fourteenth-pass gap analysis (MISSING-200..204)
 
-Fresh five-area comparison against starlark-go after MISSING-1..199 closed.
-Focused on resolver messages, bytes operator, load errors, and function frame positions.
+Fresh five-area comparison against starlark-go after MISSING-1..199 closed. Focused on resolver messages, bytes operator, load errors, and function frame positions.
 
 - [x] **MISSING-200** [message]: Reassigning a load-imported name via regular
       assignment now emits `"cannot reassign local x declared at pos"` (matching
@@ -1728,9 +1695,7 @@ Focused on resolver messages, bytes operator, load errors, and function frame po
 
 ### Fifteenth-pass gap analysis (MISSING-205..209)
 
-Fresh comparison after MISSING-1..204 closed. Focused on dot-assignment error
-wording, print kwarg validation, sorted argument-validation order, and kwarg
-name quoting across fail/sorted/min/max.
+Fresh comparison after MISSING-1..204 closed. Focused on dot-assignment error wording, print kwarg validation, sorted argument-validation order, and kwarg name quoting across fail/sorted/min/max.
 
 - [x] **MISSING-205** [message]: `"can't assign to .X field of TYPE"` no longer
       appends `value` for non-module types — was `"can't assign to .foo field of
@@ -1760,8 +1725,7 @@ name quoting across fail/sorted/min/max.
 
 ### Sixteenth-pass gap analysis (MISSING-210..212)
 
-Fresh comparison after MISSING-1..209 closed. All three items are test-only
-gaps (implementations were already correct). Commit: `190d060`
+Fresh comparison after MISSING-1..209 closed. All three items are test-only gaps (implementations were already correct). Commit: `190d060`
 
 - [x] **MISSING-210** [test]: `misc.star` lines 79–81 cross-cyclic equality —
       `cyclic5 == cyclic6` where the two cycles have identical structure but are
@@ -1780,9 +1744,7 @@ gaps (implementations were already correct). Commit: `190d060`
 
 ### `lib/time` formatter bug fixes & coverage pass (BUG-35..36)
 
-Found while raising `lib/time` coverage: the Go reference-time formatter
-diverged from `parse_time` and Go semantics in two places. Fixed via TDD
-(failing tests first). Fix commit: `1a0601d`; tests: `fdef52d`.
+Found while raising `lib/time` coverage: the Go reference-time formatter diverged from `parse_time` and Go semantics in two places. Fixed via TDD (failing tests first). Fix commit: `1a0601d`; tests: `fdef52d`.
 
 - [x] **BUG-35** [behavioral]: `time.time.format()` with a fixed-width
       fractional verb (e.g. `.000`) corrupted the digits when the nanosecond
@@ -1804,8 +1766,7 @@ diverged from `parse_time` and Go semantics in two places. Fixed via TDD
 
 ### Pre-v0.1.0 gap fixes (time extension, M.4 items)
 
-Previously-unverified lower-confidence notes from the ninth-pass (M.4), now
-confirmed and fixed via TDD. Commit: `e6e1935`
+Previously-unverified lower-confidence notes from the ninth-pass (M.4), now confirmed and fixed via TDD. Commit: `e6e1935`
 
 - [x] **M.4-A** [behavioral]: `time.from_timestamp` with 3+ positional args
       silently ignored excess arguments instead of erroring. Added max-arity guard:
@@ -1986,8 +1947,7 @@ confirmed and fixed via TDD. Commit: `e6e1935`
 
 ## Post-Release Code Quality Pass
 
-Quality audit pass covering Immutable First, magic numbers, non-obvious
-comments, and doc-comments on public functions.
+Quality audit pass covering Immutable First, magic numbers, non-obvious comments, and doc-comments on public functions.
 
 - [x] **Immutable First audit** — mutable containers (List, Dict, Set) and runtime
       state (Thread, Module.freeze) are all spec-justified mutations; no violations found.
@@ -2227,9 +2187,7 @@ comments, and doc-comments on public functions.
 
 ## Architecture Refactoring
 
-Resolve the `internal/` visibility mismatch and align the package layout
-with starlark-go's convention. Three sequential phases (each phase maps to
-one commit group):
+Resolve the `internal/` visibility mismatch and align the package layout with starlark-go's convention. Three sequential phases (each phase maps to one commit group):
 
 1. **Phase R1** — Move stdlib extension packages under `src/lib/`
    (matches starlark-go's `lib/json`, `lib/math`, etc.; do this first because
@@ -2300,12 +2258,9 @@ Each package is moved independently. Commit each move separately.
 
 ### Phase R2: Promote public-API packages from `src/internal/`
 
-Move the three packages whose types form the embedder-facing API out of
-`internal/` so external callers can use constructors and methods directly
-without wrapper functions in the façade.
+Move the three packages whose types form the embedder-facing API out of `internal/` so external callers can use constructors and methods directly without wrapper functions in the façade.
 
-**Order**: `errors/` first (fewest dependents) → `value/` → `eval/`.
-Commit each package promotion separately; run the full test suite after each.
+**Order**: `errors/` first (fewest dependents) → `value/` → `eval/`. Commit each package promotion separately; run the full test suite after each.
 
 #### `src/internal/errors/` → `src/errors/`
 
@@ -2365,9 +2320,7 @@ Commit each package promotion separately; run the full test suite after each.
 
 ### Phase R3: Wrapper cleanup in `src/starlark.mbt`
 
-Remove façade functions that became pure E4037 workarounds after R2. Keep
-only those with genuine semantic value (main entry points, starlark-go API
-parity, multi-step convenience).
+Remove façade functions that became pure E4037 workarounds after R2. Keep only those with genuine semantic value (main entry points, starlark-go API parity, multi-step convenience).
 
 **Remove** (redundant after R2; callers use the type directly):
 
@@ -2407,34 +2360,19 @@ parity, multi-step convenience).
 - [x] `moon info` — `.mbti` diff shows only removed functions (no type-level changes)
 - [x] Commit: `refactor: remove redundant facade wrappers after internal promotion`
 
-**Implementation note**: `repr`, `to_str`, `type_name`, `truth`, and `starlark_equals`
-were free functions (not methods), so `v.repr()` dot syntax did not work from external
-callers (E4015). As a prerequisite, these five functions were converted from
-`pub fn repr(v : Value)` to `pub fn Value::repr(v : Value)` method form and all ~185
-internal call sites updated before removing the facade wrappers.
+**Implementation note**: `repr`, `to_str`, `type_name`, `truth`, and `starlark_equals` were free functions (not methods), so `v.repr()` dot syntax did not work from external callers (E4015). As a prerequisite, these five functions were converted from `pub fn repr(v : Value)` to `pub fn Value::repr(v : Value)` method form and all ~185 internal call sites updated before removing the facade wrappers.
 
 ---
 
 ### Phase R4: Remove type aliases from `src/starlark.mbt`
 
-**Motivation**: After R2, `@eval`, `@value`, and `@errors` are public packages.
-The 23 `pub type X = @pkg.X` declarations in `src/starlark.mbt` are now
-redundant re-exports. They cause stale-facade risk (every new type must be
-manually added) and diverge from the reference implementation
-(`tonyfettes/starlark`), which exposes types directly from sub-packages.
-Embedders import the specific package they need; the `@starlark` facade
-becomes a function-only entry point.
+**Motivation**: After R2, `@eval`, `@value`, and `@errors` are public packages. The 23 `pub type X = @pkg.X` declarations in `src/starlark.mbt` are now redundant re-exports. They cause stale-facade risk (every new type must be manually added) and diverge from the reference implementation (`tonyfettes/starlark`), which exposes types directly from sub-packages. Embedders import the specific package they need; the `@starlark` facade becomes a function-only entry point.
 
 **Two sequential sub-phases:**
 
 #### Phase R4a: Promote `src/internal/syntax/` → `src/syntax/`
 
-`SyntaxFile` / `SyntaxExpr` alias `@syntax.File` / `@syntax.Expr`, which live
-in `internal/syntax`. Removing the aliases without first promoting the package
-would leave external callers unable to name these types (MoonBit restricts
-`internal` import to within the module). Additionally, `StarlarkFunction::params()`
-and `::body()` in the public `value` package already leak `@syntax.Param` /
-`@syntax.Stmt` — promoting `syntax` makes these usable rather than invisible.
+`SyntaxFile` / `SyntaxExpr` alias `@syntax.File` / `@syntax.Expr`, which live in `internal/syntax`. Removing the aliases without first promoting the package would leave external callers unable to name these types (MoonBit restricts `internal` import to within the module). Additionally, `StarlarkFunction::params()` and `::body()` in the public `value` package already leak `@syntax.Param` / `@syntax.Stmt` — promoting `syntax` makes these usable rather than invisible.
 
 - [x] Move all `.mbt` + `moon.pkg` files from `src/internal/syntax/` to `src/syntax/`
 - [x] Update every `moon.pkg` import: `"internal/syntax"` → `"syntax"`
@@ -2507,22 +2445,9 @@ and `::body()` in the public `value` package already leak `@syntax.Param` /
 
 ### Phase R5: Eliminate the `@starlark` facade entirely
 
-**Motivation**: After R4 removed the type aliases, the top-level
-`connect0459/starlark` facade lost its only remaining justification (single
-import). Embedders must import `@eval`/`@value`/`@errors` directly for types
-anyway. An audit of `src/starlark.mbt` showed its 24 public symbols split into:
-(1) 15 **pure pass-throughs** to `@eval` (`exec_file`, `eval_expr*`, `call`,
-`binary`, `unary`, `compare`, `source_program*`, `file_program`,
-`compiled_program`, `exec_repl_chunk`) — identical signatures, zero added value
-and a **second public path** for every entry point; (2) 5 functions that are
-the only public path to an internal package (`parse_file`/`parse_expr` →
-`@parser`; `unpack_args`/`unpack_positional`/`unpack_args_with` → `@unpack`);
-(3) value-inspection helpers (`equal`, `equal_depth`, `compare_depth`, `len_of`,
-`iterate`, `as_float`, `as_string`, `number_to_int`, `compare_limit`,
-`new_thread_with_loader`) that only touch `@value`+`@errors`.
+**Motivation**: After R4 removed the type aliases, the top-level `connect0459/starlark` facade lost its only remaining justification (single import). Embedders must import `@eval`/`@value`/`@errors` directly for types anyway. An audit of `src/starlark.mbt` showed its 24 public symbols split into: (1) 15 **pure pass-throughs** to `@eval` (`exec_file`, `eval_expr*`, `call`, `binary`, `unary`, `compare`, `source_program*`, `file_program`, `compiled_program`, `exec_repl_chunk`) — identical signatures, zero added value and a **second public path** for every entry point; (2) 5 functions that are the only public path to an internal package (`parse_file`/`parse_expr` → `@parser`; `unpack_args`/`unpack_positional`/`unpack_args_with` → `@unpack`); (3) value-inspection helpers (`equal`, `equal_depth`, `compare_depth`, `len_of`, `iterate`, `as_float`, `as_string`, `number_to_int`, `compare_limit`, `new_thread_with_loader`) that only touch `@value`+`@errors`.
 
-Decision (user): **remove the facade**; everything lives in its natural package
-(matches `tonyfettes/starlark`). Top-level `@starlark` keeps no functions.
+Decision (user): **remove the facade**; everything lives in its natural package (matches `tonyfettes/starlark`). Top-level `@starlark` keeps no functions.
 
 **Symbol re-homing:**
 
@@ -2536,9 +2461,7 @@ Decision (user): **remove the facade**; everything lives in its natural package
 | `compare_limit` | already `pub` in `@value` | just re-point callers |
 | `new_thread_with_loader` | drop | use `@eval.Thread::with_loader` |
 
-**B-6 folded in**: mark engine-only primitives `#internal` once the public
-parity layer exists — `compare_values`, `compare_values_depth`, `length_of`,
-`starlark_equals_depth`, `format_float`. (`Value::starlark_equals` stays public.)
+**B-6 folded in**: mark engine-only primitives `#internal` once the public parity layer exists — `compare_values`, `compare_values_depth`, `length_of`, `starlark_equals_depth`, `format_float`. (`Value::starlark_equals` stays public.)
 
 **Steps (each a green commit):**
 
@@ -2562,8 +2485,7 @@ parity layer exists — `compare_values`, `compare_values_depth`, `length_of`,
 
 ### Phase R5-docs: `docs/api.md` drift fixes (group A) ✅
 
-`docs/api.md` is plain `.md` (not `.mbt.md`), so its code blocks are never
-compiled and had drifted. All fixed (commit `<api>`):
+`docs/api.md` is plain `.md` (not `.mbt.md`), so its code blocks are never compiled and had drifted. All fixed (commit `<api>`):
 
 - [x] `eval_expr` env type: `@value.StarlarkDict` → `@value.StringDict`; the
       broken `@value.StarlarkDict::new()` example corrected.
@@ -2582,10 +2504,7 @@ compiled and had drifted. All fixed (commit `<api>`):
 
 ### Phase R5-doctest: make README.mbt.md and docs/api.md verified doc tests ✅
 
-Root cause of doc drift was the **fence tag**, not the `readme` binding
-(`moon.mod` — not `.json` — already has `readme = "README.mbt.md"`, but that is
-publishing metadata only; it does not make moon compile the file). Verified via
-probes:
+Root cause of doc drift was the **fence tag**, not the `readme` binding (`moon.mod` — not `.json` — already has `readme = "README.mbt.md"`, but that is publishing metadata only; it does not make moon compile the file). Verified via probes:
 
 - ` ```moonbit ` → **display only**, never compiled (what README/api.md used).
 - ` ```mbt check ` → top-level source context (accepts `///|` + `test {}`);
@@ -2607,9 +2526,7 @@ Done:
       example asserted spaced `{"key": [1, 2, 3]}` but `json.encode` emits compact
       `{"key":[1,2,3]}`. 1560 tests pass. Commit: `<apidoc>`.
 
-Convention going forward: GitHub-facing docs stay real files at their normal path;
-add a `src/*.mbt.md` symlink to make moon test them; use ` ```mbt check ` for
-runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
+Convention going forward: GitHub-facing docs stay real files at their normal path; add a `src/*.mbt.md` symlink to make moon test them; use ` ```mbt check ` for runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
 
 ### Phase R5-symmetry: registry & constructor polish (groups B-7/B-8) ✅
 
@@ -2663,21 +2580,9 @@ runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
 
 ### Phase R6: Reintroduce a minimal root entry point (revisits R5) ✅
 
-**Motivation**: R5 left the root `connect0459/starlark` package completely
-empty (test-only), so a new embedder's natural first handhold — `@starlark.exec`,
-mirroring starlark-go's `starlark.ExecFile` — came up unbound, hurting
-discoverability. An audit against the reference `tonyfettes/starlark` showed R5
-over-corrected: tonyfettes uses the *same* public sub-package layout
-(`.../eval`, `.../value`) **and** keeps a small root facade (`eval`, `eval_expr`,
-`new_environment`, `set_builtin`). The R5 mistake that justified removal — a
-*full* 24-symbol pass-through facade with a second public path for every entry
-point — does not apply to a minimal, additive front door.
+**Motivation**: R5 left the root `connect0459/starlark` package completely empty (test-only), so a new embedder's natural first handhold — `@starlark.exec`, mirroring starlark-go's `starlark.ExecFile` — came up unbound, hurting discoverability. An audit against the reference `tonyfettes/starlark` showed R5 over-corrected: tonyfettes uses the *same* public sub-package layout (`.../eval`, `.../value`) **and** keeps a small root facade (`eval`, `eval_expr`, `new_environment`, `set_builtin`). The R5 mistake that justified removal — a *full* 24-symbol pass-through facade with a second public path for every entry point — does not apply to a minimal, additive front door.
 
-Decision (user): add **省力ラッパ＋型エイリアス** — zero-ceremony helpers plus a
-few re-exported types, not a full facade. This avoids R5's "two ways to do
-everything" problem because `exec`/`eval` are *new* convenience wrappers (default
-thread + options created internally), not duplicate names for existing `@eval`
-entry points.
+Decision (user): add **省力ラッパ＋型エイリアス** — zero-ceremony helpers plus a few re-exported types, not a full facade. This avoids R5's "two ways to do everything" problem because `exec`/`eval` are *new* convenience wrappers (default thread + options created internally), not duplicate names for existing `@eval` entry points.
 
 - [x] `src/facade.mbt`: `exec(src, filename~) -> Result[Module, EvalError]` and
       `eval(src, filename~) -> Result[Value, EvalError]`, each constructing a
@@ -2701,19 +2606,9 @@ entry points.
 
 ### Phase R7: Flatten source layout (remove `options(source: "src")`) ✅
 
-**Motivation**: an audit of the canonical MoonBit libraries showed that
-`moonbitlang/core` and `moonbitlang/x` both use a **flat** layout — package
-directories (`crypto/`, `time/`, `json5/`, …) sit at the module root with no
-`src/` and no `source` option. The `src/` convention (used by `mizchi/bitflow`
-and the urllib.mbt scaffold this project started from) is equally valid, but the
-flat form is the official-library standard.
+**Motivation**: an audit of the canonical MoonBit libraries showed that `moonbitlang/core` and `moonbitlang/x` both use a **flat** layout — package directories (`crypto/`, `time/`, `json5/`, …) sit at the module root with no `src/` and no `source` option. The `src/` convention (used by `mizchi/bitflow` and the urllib.mbt scaffold this project started from) is equally valid, but the flat form is the official-library standard.
 
-Decision (user): adopt the flat layout. `options(source: "src")` only controls
-the on-disk source root; package import paths (`connect0459/starlark/eval`, …)
-derive from the module name and package directories, so the change is **invisible
-to downstream consumers** — every generated `.mbti` is a pure rename with no
-content change, and it can be done safely at any time (it does not block or
-depend on publishing).
+Decision (user): adopt the flat layout. `options(source: "src")` only controls the on-disk source root; package import paths (`connect0459/starlark/eval`, …) derive from the module name and package directories, so the change is **invisible to downstream consumers** — every generated `.mbti` is a pure rename with no content change, and it can be done safely at any time (it does not block or depend on publishing).
 
 - [x] Move all packages from `src/` to the repository root: the root package
       files (`facade.mbt`, `starlark_test.mbt`, `moon.pkg`, …) plus `cmd/`,
@@ -2743,17 +2638,9 @@ depend on publishing).
 
 ### Phase R8: Re-adopt `src/` layout and add `moon.work` workspace ✅
 
-**Context**: Phase R7 flattened the layout to the module root, citing
-`moonbitlang/core` and `moonbitlang/x` as the reference. However, those
-libraries have no `examples/` sub-module at the same level. This project
-does — and with a flat layout, `eval/`, `syntax/`, and `examples/` appear
-as siblings in `ls` output, despite `examples/` being a *separate MoonBit
-module* (with its own `moon.mod`) rather than a package of this module.
-The visual boundary between the library and the examples sub-module was
-non-obvious to contributors.
+**Context**: Phase R7 flattened the layout to the module root, citing `moonbitlang/core` and `moonbitlang/x` as the reference. However, those libraries have no `examples/` sub-module at the same level. This project does — and with a flat layout, `eval/`, `syntax/`, and `examples/` appear as siblings in `ls` output, despite `examples/` being a *separate MoonBit module* (with its own `moon.mod`) rather than a package of this module. The visual boundary between the library and the examples sub-module was non-obvious to contributors.
 
-**Reference**: `moonbitlang/async` — a published async runtime library —
-uses exactly the layout described here:
+**Reference**: `moonbitlang/async` — a published async runtime library — uses exactly the layout described here:
 
 ```text
 async/
@@ -2763,23 +2650,11 @@ async/
 └── examples/       ← separate module (moon.mod with @0.0.0 sentinel dep)
 ```
 
-The `source: "src"` field makes `src/` the package root; import paths
-(`connect0459/starlark/eval`, …) are **unchanged for external users**.
-`moon.work` ties the library root and `examples/` into a single workspace
-so IDE tooling and `moon fmt` span both modules.
+The `source: "src"` field makes `src/` the package root; import paths (`connect0459/starlark/eval`, …) are **unchanged for external users**. `moon.work` ties the library root and `examples/` into a single workspace so IDE tooling and `moon fmt` span both modules.
 
-**Why the version pin is `@0.0.0`**: `moonbitlang/async` uses the sentinel
-`@0.0.0` in `examples/moon.mod` rather than the actual library version.
-The workspace resolver always shadows it with the local source, so the pin
-is never used for resolution and does not need to track the root version on
-bumps. This was confirmed via `moon work sync` — the tool exists precisely
-because workspace members are expected to pin versions and sync them.
+**Why the version pin is `@0.0.0`**: `moonbitlang/async` uses the sentinel `@0.0.0` in `examples/moon.mod` rather than the actual library version. The workspace resolver always shadows it with the local source, so the pin is never used for resolution and does not need to track the root version on bumps. This was confirmed via `moon work sync` — the tool exists precisely because workspace members are expected to pin versions and sync them.
 
-**Why the module is named `connect0459/starlark_examples`**: mooncakes
-requires `username/modulename` format. The bare `"examples"` name used
-since Phase 0 was rule-non-compliant (though harmless in a local workspace,
-since `moon publish` would reject it). The rename follows the
-`moonbitlang/async_examples` naming pattern.
+**Why the module is named `connect0459/starlark_examples`**: mooncakes requires `username/modulename` format. The bare `"examples"` name used since Phase 0 was rule-non-compliant (though harmless in a local workspace, since `moon publish` would reject it). The rename follows the `moonbitlang/async_examples` naming pattern.
 
 **Changes (PR #297, Issue #296)**:
 
@@ -2800,37 +2675,13 @@ since `moon publish` would reject it). The rename follows the
 
 ## Bytecode Compiler + VM Migration ✅
 
-**Status: complete.** The flip has landed — the AST walker is deleted and the
-bytecode VM is the sole execution engine behind every public entry (`exec_file`,
-`eval_expr`, REPL, `Program`). `value` no longer imports `syntax`, programs
-serialize as bytecode (`SerialVersion=2`), and step counting is per-instruction
-on the VM dispatch loop. The planning narrative below is retained for history;
-the milestone checkboxes record what shipped.
+**Status: complete.** The flip has landed — the AST walker is deleted and the bytecode VM is the sole execution engine behind every public entry (`exec_file`, `eval_expr`, REPL, `Program`). `value` no longer imports `syntax`, programs serialize as bytecode (`SerialVersion=2`), and step counting is per-instruction on the VM dispatch loop. The planning narrative below is retained for history; the milestone checkboxes record what shipped.
 
-Replace the AST-walking interpreter with a bytecode compiler + VM, modeled on
-starlark-go (`internal/compile` + `interp.go`). **Motivation**: the runtime
-function value `@value.StarlarkFunction` holds `Array[@syntax.Stmt]`/`Param`,
-leaking the AST into the embedder-facing `value` package. Both starlark-go and
-starlark-rust avoid this because their runtime function holds *compiled* code
-(`Funcode`/`Bc`) in an internal package, never the syntax AST. Implementing the
-bytecode layer eliminates the leak at the root and improves performance.
+Replace the AST-walking interpreter with a bytecode compiler + VM, modeled on starlark-go (`internal/compile` + `interp.go`). **Motivation**: the runtime function value `@value.StarlarkFunction` holds `Array[@syntax.Stmt]`/`Param`, leaking the AST into the embedder-facing `value` package. Both starlark-go and starlark-rust avoid this because their runtime function holds *compiled* code (`Funcode`/`Bc`) in an internal package, never the syntax AST. Implementing the bytecode layer eliminates the leak at the root and improves performance.
 
-Decision (user, pre-release): full bytecode migration, **dual-engine + diff
-testing** (keep the AST walker as default; bring up the VM feature-by-feature
-behind an internal flag, asserting VM results equal walker results; flip the
-default only when the full suite is green under the VM, then delete the walker).
-Step counting becomes **per-instruction** (go-faithful); step-budget thresholds
-recalibrated in an isolated commit. Serialization stays AST-based until the flip,
-then switches to bytecode (`SerialVersion=2`). Full plan and risk analysis
-recorded outside the repo.
+Decision (user, pre-release): full bytecode migration, **dual-engine + diff testing** (keep the AST walker as default; bring up the VM feature-by-feature behind an internal flag, asserting VM results equal walker results; flip the default only when the full suite is green under the VM, then delete the walker). Step counting becomes **per-instruction** (go-faithful); step-budget thresholds recalibrated in an isolated commit. Serialization stays AST-based until the flip, then switches to bytecode (`SerialVersion=2`). Full plan and risk analysis recorded outside the repo.
 
-Architecture: new `internal/compile/` holds the syntax-free `Funcode`
-(`code: Bytes` + AST-free metadata, fields name only `@errors` + primitives),
-`CompiledProgram`, the `Opcode` set, and a `Const` pool (primitive literal
-carriers, never `Value`). Import edges: `value → compile → errors` (no cycle;
-the constant pool avoids `Value`, so `compile` never imports `value`). The
-compiler does its own scope/slot + cell/free layout; the existing resolver stays
-a validation-only pre-pass and `@syntax` stays immutable.
+Architecture: new `internal/compile/` holds the syntax-free `Funcode` (`code: Bytes` + AST-free metadata, fields name only `@errors` + primitives), `CompiledProgram`, the `Opcode` set, and a `Const` pool (primitive literal carriers, never `Value`). Import edges: `value → compile → errors` (no cycle; the constant pool avoids `Value`, so `compile` never imports `value`). The compiler does its own scope/slot + cell/free layout; the existing resolver stays a validation-only pre-pass and `@syntax` stays immutable.
 
 - [x] **M1**: `internal/compile` skeleton — `Opcode` (byte encode/decode +
       `has_arg`), `Const` pool, `Funcode`/`CompiledProgram`, pc→position recovery
@@ -3052,8 +2903,7 @@ a validation-only pre-pass and `@syntax` stays immutable.
 
 ## Follow-up: starlark-go verbatim embed (issue #22)
 
-Removing the remaining test-level workarounds left after the PR #21 verbatim
-embed, so upstream testdata updates stay copy-paste.
+Removing the remaining test-level workarounds left after the PR #21 verbatim embed, so upstream testdata updates stay copy-paste.
 
 - [x] **F**: `sorted([1, "one"])` now reports `string < int not implemented`,
       matching starlark-go's `sort.Stable` insertion sort (compares
@@ -3074,10 +2924,7 @@ embed, so upstream testdata updates stay copy-paste.
 
 ## Follow-up: enhance `internal/repl` (issue #67)
 
-Close the interactive-experience gap against starlark-go's `repl` package.
-Scope agreed with the user: Phases 0–2 (output parity, structured error kind,
-multi-line input, Ctrl-C); line editing / history (Phase 3, linenoise) is
-deferred.
+Close the interactive-experience gap against starlark-go's `repl` package. Scope agreed with the user: Phases 0–2 (output parity, structured error kind, multi-line input, Ctrl-C); line editing / history (Phase 3, linenoise) is deferred.
 
 - [x] **Phase 0.5** — structured `SyntaxErrorKind` (`UnexpectedEof`,
       `UnterminatedString`, `Other`) on `@errors.SyntaxError`, so the REPL
@@ -3124,8 +2971,7 @@ deferred.
 
 ## Follow-up: coverage-driven bug audit (issue #76)
 
-Coverage-driven + semantic audit run on 2026-06-10 (`.connect0459/tmp.md`).
-10 HIGH / 18 MEDIUM / 17+ LOW findings. Tracked via issue #76.
+Coverage-driven + semantic audit run on 2026-06-10 (`.connect0459/tmp.md`). 10 HIGH / 18 MEDIUM / 17+ LOW findings. Tracked via issue #76.
 
 Since the owner decided not to include tracking status in `todo.md`, the checklist of this issue has been removed.
 
