@@ -1,8 +1,6 @@
 # `eval` package
 
-The main entry point for parsing, resolving, and executing Starlark. Import
-`connect0459/starlark/eval` to run scripts, evaluate expressions, compile reusable
-programs, and configure the Starlark dialect.
+The main entry point for parsing, resolving, and executing Starlark. Import `connect0459/starlark/eval` to run scripts, evaluate expressions, compile reusable programs, and configure the Starlark dialect.
 
 ## Key types
 
@@ -183,8 +181,7 @@ Holds execution context: print callback, load callback, call stack, and step bud
 | `Thread::with_loader` | `(String, (Thread, String) -> Result[Module, @errors.EvalError]) -> Thread` | Thread with a module loader |
 | `Thread::with_step_budget` | `(String, Int) -> Thread` | Thread that halts after `n` evaluation steps |
 
-The `with_*` constructors are composable: start from `Thread::new(name)` then call
-`set_print`, `set_loader`, `set_max_steps`, and `set_on_max_steps` in any combination.
+The `with_*` constructors are composable: start from `Thread::new(name)` then call `set_print`, `set_loader`, `set_max_steps`, and `set_on_max_steps` in any combination.
 
 ### Accessors
 
@@ -232,8 +229,7 @@ The `with_*` constructors are composable: start from `Thread::new(name)` then ca
 
 ## `Options`
 
-Feature flags that control the Starlark dialect. `Options::default()` is the
-spec-conformant dialect.
+Feature flags that control the Starlark dialect. `Options::default()` is the spec-conformant dialect.
 
 Standard features — part of the Starlark spec, enabled by default:
 
@@ -291,11 +287,9 @@ The result of a successful `exec_file` call. Its globals dict is frozen on retur
 
 ## `Program`
 
-A parsed-and-resolved Starlark program that can be executed multiple times without
-re-parsing. Unlike `exec_file`, `Program::init` does **not** freeze the returned module.
+A parsed-and-resolved Starlark program that can be executed multiple times without re-parsing. Unlike `exec_file`, `Program::init` does **not** freeze the returned module.
 
-`Program::write() -> Bytes` serializes a compiled program so it can be persisted and
-reloaded with `compiled_program`. The format is **not** byte-compatible with starlark-go.
+`Program::write() -> Bytes` serializes a compiled program so it can be persisted and reloaded with `compiled_program`. The format is **not** byte-compatible with starlark-go.
 
 | Method | Signature | Description |
 | :--- | :--- | :--- |
@@ -310,9 +304,7 @@ reloaded with `compiled_program`. The format is **not** byte-compatible with sta
 
 ## `Predeclared` and `Universe`
 
-`Predeclared` holds extra bindings injected before user globals; scripts can read but
-not reassign them. `Universe` is the predeclared built-in environment shared across all
-threads.
+`Predeclared` holds extra bindings injected before user globals; scripts can read but not reassign them. `Universe` is the predeclared built-in environment shared across all threads.
 
 | Constructor / Method | `Predeclared` | `Universe` |
 | :--- | :--- | :--- |
@@ -335,20 +327,13 @@ The following behaviours differ from starlark-go by design.
 
 ### Set literal and set comprehension syntax
 
-mbt accepts `{1, 2, 3}` (set literal) and `{x for x in iterable}` (set comprehension)
-as valid Starlark syntax that evaluates to a `set`. starlark-go rejects both forms with
-a parse error because the Starlark spec defines no set literal grammar.
+mbt accepts `{1, 2, 3}` (set literal) and `{x for x in iterable}` (set comprehension) as valid Starlark syntax that evaluates to a `set`. starlark-go rejects both forms with a parse error because the Starlark spec defines no set literal grammar.
 
-The `set()` constructor (e.g., `set([1, 2, 3])`) is spec-standard and is supported by
-both implementations. The `{...}` notation is a mbt extension gated by `allow_set`
-(enabled by default). Scripts that disable `allow_set` are restricted to the
-spec-standard constructor form.
+The `set()` constructor (e.g., `set([1, 2, 3])`) is spec-standard and is supported by both implementations. The `{...}` notation is a mbt extension gated by `allow_set` (enabled by default). Scripts that disable `allow_set` are restricted to the spec-standard constructor form.
 
 ### Recursive-traversal depth guards
 
-mbt enforces explicit depth limits on every recursive traversal path as a safety
-hardening measure, preventing native stack overflow on deeply-nested input.
-starlark-go relies on goroutine-stack growth and has no hard cap.
+mbt enforces explicit depth limits on every recursive traversal path as a safety hardening measure, preventing native stack overflow on deeply-nested input. starlark-go relies on goroutine-stack growth and has no hard cap.
 
 | Path | Limit | Details |
 | :--- | :--- | :--- |
@@ -356,34 +341,21 @@ starlark-go relies on goroutine-stack growth and has no hard cap.
 | `repr` / `str` / `print` value nesting | 200 | See `value/README.mbt.md` |
 | `json.encode` / `json.decode` nesting | 10 000 | See `lib/json/README.mbt.md` |
 
-Exceeding any limit raises a Starlark runtime or parse error rather than crashing
-the process.
+Exceeding any limit raises a Starlark runtime or parse error rather than crashing the process.
 
 ### Spell-hint on unexpected keyword argument
 
-When a function call passes an unrecognised keyword argument, the error
-message includes a spell-hint:
+When a function call passes an unrecognised keyword argument, the error message includes a spell-hint:
 
 ```text
 function f got an unexpected keyword argument "nme" (did you mean name?)
 ```
 
-The suggestion uses Levenshtein edit distance with a 50% threshold
-(mirroring starlark-go's `spell.Nearest`). mbt uses all declared
-parameter names as candidates; starlark-go considers only the first
-⌈nparams/2⌉ due to a known bug in `UnpackArgs`'s candidate-collection
-loop. This is a quality-of-life extension; it does not affect
-correctness or accepted syntax.
+The suggestion uses Levenshtein edit distance with a 50% threshold (mirroring starlark-go's `spell.Nearest`). mbt uses all declared parameter names as candidates; starlark-go considers only the first ⌈nparams/2⌉ due to a known bug in `UnpackArgs`'s candidate-collection loop. This is a quality-of-life extension; it does not affect correctness or accepted syntax.
 
 ### `(1 << 31) in range(0, 1 << 32)` returns `True`
 
-starlark-go evaluates this as `False` because `rangeValue.contains` calls
-`AsInt32` to classify the needle, and `AsInt32` returns an error for any
-value outside the signed 32-bit range. `1<<31 = 2,147,483,648` exceeds
-`math.MaxInt32`, causing `AsInt32` to return an out-of-range error; `contains`
-treats any such error as "not in range" and returns `false` without evaluating
-the bounds. This implementation performs the containment check with full Int64
-precision, returning `True`.
+starlark-go evaluates this as `False` because `rangeValue.contains` calls `AsInt32` to classify the needle, and `AsInt32` returns an error for any value outside the signed 32-bit range. `1<<31 = 2,147,483,648` exceeds `math.MaxInt32`, causing `AsInt32` to return an out-of-range error; `contains` treats any such error as "not in range" and returns `false` without evaluating the bounds. This implementation performs the containment check with full Int64 precision, returning `True`.
 
 ---
 

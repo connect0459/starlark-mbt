@@ -1,8 +1,6 @@
 # `value` package
 
-The Starlark value system. Import `connect0459/starlark/value` for the `Value` enum,
-every concrete value type (`StarlarkList`, `StarlarkDict`, `StarlarkSet`, …),
-the host-side `StringDict`, embedder-extension helpers, and the embedder protocol traits.
+The Starlark value system. Import `connect0459/starlark/value` for the `Value` enum, every concrete value type (`StarlarkList`, `StarlarkDict`, `StarlarkSet`, …), the host-side `StringDict`, embedder-extension helpers, and the embedder protocol traits.
 
 ## Key types
 
@@ -130,8 +128,7 @@ pub enum Value {
 
 ### Value-inspection helpers
 
-Mirrors of starlark-go's package-level helpers; errors are plain `String`
-(value-level operations carry no source position).
+Mirrors of starlark-go's package-level helpers; errors are plain `String` (value-level operations carry no source position).
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
@@ -160,14 +157,9 @@ These guard against infinite recursion on cyclic data structures.
 
 ### Depth-limited repr / str
 
-`Value::repr` and `Value::repr_checked` cap recursive nesting at `repr_limit` (200)
-to prevent a native stack overflow on deeply-nested acyclic values. Exceeding the
-limit in `repr_checked` returns an `Err`; `repr` aborts (it is intended for contexts
-where the depth is already known to be safe).
+`Value::repr` and `Value::repr_checked` cap recursive nesting at `repr_limit` (200) to prevent a native stack overflow on deeply-nested acyclic values. Exceeding the limit in `repr_checked` returns an `Err`; `repr` aborts (it is intended for contexts where the depth is already known to be safe).
 
-`repr_at_depth` lets callers pass an explicit remaining-depth budget — useful for
-`CustomValue` implementations that call `repr` on nested values and want to share the
-parent's depth budget.
+`repr_at_depth` lets callers pass an explicit remaining-depth budget — useful for `CustomValue` implementations that call `repr` on nested values and want to share the parent's depth budget.
 
 | Symbol | Signature | Description |
 | :--- | :--- | :--- |
@@ -278,8 +270,7 @@ The lazy integer sequence returned by `range()`; not a list.
 
 ### `StringDict`
 
-A `Map[String, Value]` wrapper for host-side string-keyed environments; the type
-accepted by `eval_expr` and `exec_repl_chunk`.
+A `Map[String, Value]` wrapper for host-side string-keyed environments; the type accepted by `eval_expr` and `exec_repl_chunk`.
 
 | Method | Description |
 | :--- | :--- |
@@ -348,8 +339,7 @@ test {
 
 ### String and bytes iterables
 
-The lazy iterables returned by `str.elems()`, `str.codepoints()`, and `bytes.elems()`.
-Each appears as a dedicated `Value` variant and reports its own `type()` string.
+The lazy iterables returned by `str.elems()`, `str.codepoints()`, and `bytes.elems()`. Each appears as a dedicated `Value` variant and reports its own `type()` string.
 
 | Type | Constructor | Accessors | Description |
 | :--- | :--- | :--- | :--- |
@@ -372,17 +362,7 @@ Each appears as a dedicated `Value` variant and reports its own `type()` string.
 
 ### `CustomValue` and `BuiltinCallCtx`
 
-`CustomValue` is an embedder-defined custom type that participates in the Starlark value
-system as `Value::ExtVal(cv)`. Construct with `CustomValue::new(repr_fn, truth_fn,
-type_name_fn)` and attach optional protocol implementations via fluent `.with_*` methods:
-`with_attrs`, `with_call`, `with_binary`, `with_unary`, `with_compare`, `with_contains`,
-`with_equals`, `with_hash`, `with_hash_depth`, `with_iterate`, `with_length`, `with_items`,
-`with_freeze`, `with_get_index`, `with_set_index`, `with_set_key`, `with_set_field`,
-`with_slice`. Use `with_hash_depth` instead of `with_hash` when the value contains nested
-`Value` fields — pass the received `depth` to `hash_value_depth` so the budget is not reset.
-The hash callback passed to `with_hash`/`with_hash_depth` must be deterministic (same logical
-value produces the same hash on every call); some call paths probe a key's hash more than once
-without caching it, so a non-deterministic hash can produce duplicate logical entries.
+`CustomValue` is an embedder-defined custom type that participates in the Starlark value system as `Value::ExtVal(cv)`. Construct with `CustomValue::new(repr_fn, truth_fn, type_name_fn)` and attach optional protocol implementations via fluent `.with_*` methods: `with_attrs`, `with_call`, `with_binary`, `with_unary`, `with_compare`, `with_contains`, `with_equals`, `with_hash`, `with_hash_depth`, `with_iterate`, `with_length`, `with_items`, `with_freeze`, `with_get_index`, `with_set_index`, `with_set_key`, `with_set_field`, `with_slice`. Use `with_hash_depth` instead of `with_hash` when the value contains nested `Value` fields — pass the received `depth` to `hash_value_depth` so the budget is not reset. The hash callback passed to `with_hash`/`with_hash_depth` must be deterministic (same logical value produces the same hash on every call); some call paths probe a key's hash more than once without caching it, so a non-deterministic hash can produce duplicate logical entries.
 
 `BuiltinCallCtx` is passed to a built-in's body so it can call back into the evaluator:
 

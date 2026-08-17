@@ -1,8 +1,6 @@
 # `lib/time` package
 
-Time and duration types for Starlark (analogous to `starlark-go/lib/starlarktime`).
-Import `connect0459/starlark/lib/time` and inject `time_module()` as a predeclared
-binding to expose the `time` namespace in Starlark scripts.
+Time and duration types for Starlark (analogous to `starlark-go/lib/starlarktime`). Import `connect0459/starlark/lib/time` and inject `time_module()` as a predeclared binding to expose the `time` namespace in Starlark scripts.
 
 ## MoonBit-level API
 
@@ -22,8 +20,7 @@ binding to expose the `time` namespace in Starlark scripts.
 | `wasm-gc` | Stub | — | `extern "js"` not supported for this target |
 | `wasm` | Stub | — | Real-time requires WASI or a custom host import |
 
-When the stub is active, `time.now()` always returns the Unix epoch. Override via
-`now_override_key` in thread-local storage for deterministic tests.
+When the stub is active, `time.now()` always returns the Unix epoch. Override via `now_override_key` in thread-local storage for deterministic tests.
 
 ## Starlark-level API (inside scripts)
 
@@ -62,26 +59,13 @@ When the stub is active, `time.now()` always returns the Unix epoch. Override vi
 | `d / n` | `time.duration` | Divide by integer or float |
 | `d // d2` | `int` | Integer floor-division of two durations |
 
-`time + duration`, `time - duration`, and `duration + time` preserve the
-operand's fixed UTC offset and abbreviation. The unix instant is computed
-correctly, but the zone is transferred as-is: no DST recalculation is
-performed. For named-location times obtained via `t.in_location("America/New_York")`,
-adding a duration that crosses a DST boundary will keep the pre-addition
-offset rather than re-deriving the correct post-addition offset, which
-differs from Go's `Time.Add`. Fixed-offset times (e.g., `+05:30`) are
-fully correct.
+`time + duration`, `time - duration`, and `duration + time` preserve the operand's fixed UTC offset and abbreviation. The unix instant is computed correctly, but the zone is transferred as-is: no DST recalculation is performed. For named-location times obtained via `t.in_location("America/New_York")`, adding a duration that crosses a DST boundary will keep the pre-addition offset rather than re-deriving the correct post-addition offset, which differs from Go's `Time.Add`. Fixed-offset times (e.g., `+05:30`) are fully correct.
 
-Note: `duration - time` raises `unsupported binary op`. The Starlark spec does not
-define this operation; starlark-go silently computes `time - duration` instead, which
-is a dialect difference.
+Note: `duration - time` raises `unsupported binary op`. The Starlark spec does not define this operation; starlark-go silently computes `time - duration` instead, which is a dialect difference.
 
 ## RFC 3339 parsing behavior
 
-The default `parse_time` format follows RFC 3339. Inputs rejected by Go's
-`time.Parse(time.RFC3339, …)` are also rejected here (*rejection parity*).
-Error message wording differs from Go's — mbt uses `cannot parse "…" as
-"<token>"` throughout, while Go emits `<field> out of range`. Message-format
-parity is tracked separately.
+The default `parse_time` format follows RFC 3339. Inputs rejected by Go's `time.Parse(time.RFC3339, …)` are also rejected here (*rejection parity*). Error message wording differs from Go's — mbt uses `cannot parse "…" as "<token>"` throughout, while Go emits `<field> out of range`. Message-format parity is tracked separately.
 
 | Input form | Example | Behavior |
 | :--- | :--- | :--- |

@@ -1,10 +1,8 @@
 # `syntax` package
 
-AST node types for the Starlark language. Import `connect0459/starlark/syntax` to work
-with parsed source trees: inspect nodes, walk the tree, or build ASTs for testing.
+AST node types for the Starlark language. Import `connect0459/starlark/syntax` to work with parsed source trees: inspect nodes, walk the tree, or build ASTs for testing.
 
-Obtain a `File` by calling `@eval.parse_file`; use the node types and walker functions
-to analyse or transform it.
+Obtain a `File` by calling `@eval.parse_file`; use the node types and walker functions to analyse or transform it.
 
 ## Key types and functions
 
@@ -60,11 +58,7 @@ Parsing from source requires `@eval.parse_file` / `@eval.parse_expr`.
 
 ## Error-position anchoring policy
 
-When the compiler or resolver emits a diagnostic for an AST node it must
-choose one token as the *anchor position* — the source location shown to the
-user. The rules below are applied across the compilation pipeline
-(`syntax`, `internal/parser`, `internal/resolver`, `internal/compile`, `eval`)
-and mirror the behaviour of the starlark-go reference implementation.
+When the compiler or resolver emits a diagnostic for an AST node it must choose one token as the *anchor position* — the source location shown to the user. The rules below are applied across the compilation pipeline (`syntax`, `internal/parser`, `internal/resolver`, `internal/compile`, `eval`) and mirror the behaviour of the starlark-go reference implementation.
 
 | Error class | Anchor token | How to obtain it |
 | :--- | :--- | :--- |
