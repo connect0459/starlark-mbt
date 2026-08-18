@@ -78,31 +78,16 @@ and mirror the behaviour of the starlark-go reference implementation.
 
 Four mechanisms cover all anchoring sites above:
 
-- **`syntax.start(e)`** — walks into `EBinary`, `ECall`, `ESlice`, `EIndex`,
-  and `EDot` sub-expressions to reach the leftmost token of a compound
-  expression. Use this whenever the error should point at the *beginning* of a
-  possibly-compound expression (LHS of assignments, misplaced arguments).
-- **`expr_pos(e)`** — returns the position stored in the node's own slot
-  (operator, opening bracket, or other delimiter). Use this when the error is
-  about the operator or delimiter itself rather than an operand.
-- **`Parser::scanner_error(msg)`** — uses `scanner.position()`, which is one
-  past the current token. Use this for unexpected-token parse errors that must
-  match starlark-go's scanner cursor convention.
-- **`set_pos(colon)` in `internal/compile`** — dict-literal and
-  dict-comprehension key errors use a different mechanism: the compiler calls
-  `set_pos(colon_pos)` before emitting the dict-insertion opcode
-  (`SetDictUniq` / `SetDict`), recording the colon as the error anchor. The
-  error itself is raised at runtime by the `eval` package using that recorded
-  position. Both `EDict` pairs and `EDictComp` store a `colon_pos`; compile
-  uses it in both code paths.
+- **`syntax.start(e)`** — walks into `EBinary`, `ECall`, `ESlice`, `EIndex`, and `EDot` sub-expressions to reach the leftmost token of a compound expression. Use this whenever the error should point at the *beginning* of a possibly-compound expression (LHS of assignments, misplaced arguments).
+- **`expr_pos(e)`** — returns the position stored in the node's own slot (operator, opening bracket, or other delimiter). Use this when the error is about the operator or delimiter itself rather than an operand.
+- **`Parser::scanner_error(msg)`** — uses `scanner.position()`, which is one past the current token. Use this for unexpected-token parse errors that must match starlark-go's scanner cursor convention.
+- **`set_pos(colon)` in `internal/compile`** — dict-literal and dict-comprehension key errors use a different mechanism: the compiler calls `set_pos(colon_pos)` before emitting the dict-insertion opcode (`SetDictUniq` / `SetDict`), recording the colon as the error anchor. The error itself is raised at runtime by the `eval` package using that recorded position. Both `EDict` pairs and `EDictComp` store a `colon_pos`; compile uses it in both code paths.
 
 ### Adding a new anchoring site
 
 1. Identify which rule class the new error falls into (table above).
-2. Choose the matching mechanism (`syntax.start`, `expr_pos`,
-   `scanner_error`, or `set_pos` in compile).
-3. Add a conformance test that checks the reported column against the expected
-   source position so regressions are caught automatically.
+2. Choose the matching mechanism (`syntax.start`, `expr_pos`, `scanner_error`, or `set_pos` in compile).
+3. Add a conformance test that checks the reported column against the expected source position so regressions are caught automatically.
 
 ## API reference
 
