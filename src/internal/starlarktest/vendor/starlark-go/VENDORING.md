@@ -28,13 +28,10 @@ Upstream files intentionally **not** vendored (not consumed):
 
 ## Updating
 
-1. Copy the new `.star` files from the upstream repository at the target
-   commit into `starlark/testdata/`.
+1. Copy the new `.star` files from the upstream repository at the target commit into `starlark/testdata/`.
 2. Update the pinned commit above.
 3. Run `just verify` to confirm all four backends pass.
-4. If new chunks rely on application-defined builtins not in the standard
-   test dialect, add `skip_chunks_containing` calls in the corresponding
-   `*_test.mbt` file.
+4. If new chunks rely on application-defined builtins not in the standard test dialect, add `skip_chunks_containing` calls in the corresponding `*_test.mbt` file.
 
 Do not edit the vendored `.star` files; all local integration lives in the
 `*_test.mbt` files in the parent directory.

@@ -20,13 +20,10 @@ or provide test infrastructure. They can be freely edited.
 
 ## Syncing with upstream
 
-1. Copy the updated `.star` files from starlark-go into
-   `vendor/starlark-go/starlark/testdata/`.
+1. Copy the updated `.star` files from starlark-go into `vendor/starlark-go/starlark/testdata/`.
 2. Update the pinned commit in `vendor/starlark-go/VENDORING.md`.
 3. Run `just verify` to confirm all four backends pass.
-4. If new chunks rely on application-defined builtins not in the standard test
-   dialect, add `skip_chunks_containing()` calls in the corresponding
-   `*_test.mbt` file.
+4. If new chunks rely on application-defined builtins not in the standard test dialect, add `skip_chunks_containing()` calls in the corresponding `*_test.mbt` file.
 
 The generated `*_star_test.mbt` files are rebuilt automatically — no manual
 copy-paste is needed.
