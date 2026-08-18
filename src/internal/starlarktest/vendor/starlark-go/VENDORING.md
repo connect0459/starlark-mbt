@@ -1,9 +1,6 @@
 # Vendored: starlark-go testdata
 
-[starlark-go](https://github.com/google/starlark-go) is the reference Go
-implementation of the Starlark language. The files under
-`starlark/testdata/` are the upstream conformance test suite consumed by
-`internal/starlarktest`.
+[starlark-go](https://github.com/google/starlark-go) is the reference Go implementation of the Starlark language. The files under `starlark/testdata/` are the upstream conformance test suite consumed by `internal/starlarktest`.
 
 - **Upstream**: <https://github.com/google/starlark-go>
 - **License**: BSD-3-Clause (see `LICENSE`)
@@ -11,10 +8,7 @@ implementation of the Starlark language. The files under
 
 ## Layout
 
-Only the 19 `.star` files actively consumed by `internal/starlarktest` are
-vendored. The path mirrors the upstream layout verbatim so that
-`diff -r upstream/starlark/testdata vendor/starlark-go/starlark/testdata`
-produces a path-symmetric drift report.
+Only the 19 `.star` files actively consumed by `internal/starlarktest` are vendored. The path mirrors the upstream layout verbatim so that `diff -r upstream/starlark/testdata vendor/starlark-go/starlark/testdata` produces a path-symmetric drift report.
 
 Upstream files intentionally **not** vendored (not consumed):
 
@@ -28,13 +22,9 @@ Upstream files intentionally **not** vendored (not consumed):
 
 ## Updating
 
-1. Copy the new `.star` files from the upstream repository at the target
-   commit into `starlark/testdata/`.
+1. Copy the new `.star` files from the upstream repository at the target commit into `starlark/testdata/`.
 2. Update the pinned commit above.
 3. Run `just verify` to confirm all four backends pass.
-4. If new chunks rely on application-defined builtins not in the standard
-   test dialect, add `skip_chunks_containing` calls in the corresponding
-   `*_test.mbt` file.
+4. If new chunks rely on application-defined builtins not in the standard test dialect, add `skip_chunks_containing` calls in the corresponding `*_test.mbt` file.
 
-Do not edit the vendored `.star` files; all local integration lives in the
-`*_test.mbt` files in the parent directory.
+Do not edit the vendored `.star` files; all local integration lives in the `*_test.mbt` files in the parent directory.

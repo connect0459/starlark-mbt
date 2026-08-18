@@ -1,10 +1,6 @@
 # `lib/struct` package
 
-`struct` and `module` extensions for Starlark (analogous to
-`starlark-go/lib/starlarkstruct`), plus `gensym` — a MoonBit-only
-extension with no starlark-go counterpart. Import
-`connect0459/starlark/lib/struct` and inject the callables you need as
-predeclared bindings.
+`struct` and `module` extensions for Starlark (analogous to `starlark-go/lib/starlarkstruct`), plus `gensym` — a MoonBit-only extension with no starlark-go counterpart. Import `connect0459/starlark/lib/struct` and inject the callables you need as predeclared bindings.
 
 > **Extension note — `gensym`**: `gensym(name=…)` is not part of the
 > Starlark specification and has no equivalent in `starlark-go/lib/starlarkstruct`.

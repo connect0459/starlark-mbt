@@ -1,8 +1,6 @@
 # `lib/math` package
 
-Floating-point math extension for Starlark. Import `connect0459/starlark/lib/math`
-and inject `math_module()` as a predeclared binding to expose math functions and
-constants under the `math` namespace in Starlark scripts.
+Floating-point math extension for Starlark. Import `connect0459/starlark/lib/math` and inject `math_module()` as a predeclared binding to expose math functions and constants under the `math` namespace in Starlark scripts.
 
 ## MoonBit-level API
 

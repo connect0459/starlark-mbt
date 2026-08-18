@@ -1,11 +1,8 @@
 # `errors` package
 
-All error and source-location types used across the Starlark interpreter. Import
-`connect0459/starlark/errors` for `EvalError`, `SyntaxError`, `ResolveError`,
-`Position`, `Binding`, `CallStack`, and `CallFrame`.
+All error and source-location types used across the Starlark interpreter. Import `connect0459/starlark/errors` for `EvalError`, `SyntaxError`, `ResolveError`, `Position`, `Binding`, `CallStack`, and `CallFrame`.
 
-`exec_file` wraps `SyntaxError` and `ResolveError` into `EvalError` before returning,
-so most callers only need to handle `EvalError`.
+`exec_file` wraps `SyntaxError` and `ResolveError` into `EvalError` before returning, so most callers only need to handle `EvalError`.
 
 ## Key types
 
@@ -57,10 +54,7 @@ test {
 }
 ```
 
-Errors returned from `@eval.exec_file` include source location information.
-Runtime errors carry a structured call stack; parse and resolve failures embed
-the position in the error message string. See `@eval` for usage in execution
-context.
+Errors returned from `@eval.exec_file` include source location information. Runtime errors carry a structured call stack; parse and resolve failures embed the position in the error message string. See `@eval` for usage in execution context.
 
 ## API reference
 
@@ -77,16 +71,11 @@ context.
 | `call_stack()` | `CallStack` | The captured call stack as structured frames |
 | `cause()` | `EvalError?` | The wrapped inner error, if this error chains one |
 
-`backtrace()` always ends the output with `Error: <msg>` (or `Error in <builtin>: <msg>`
-when the innermost frame is a built-in). This format is intentional — the mbt CLI
-uses `backtrace()` directly to display errors, so the `Error:` prefix appears in all
-CLI output. starlark-go omits the prefix and prints the message directly; the
-difference is a deliberate quality-of-life choice.
+`backtrace()` always ends the output with `Error: <msg>` (or `Error in <builtin>: <msg>` when the innermost frame is a built-in). This format is intentional — the mbt CLI uses `backtrace()` directly to display errors, so the `Error:` prefix appears in all CLI output. starlark-go omits the prefix and prints the message directly; the difference is a deliberate quality-of-life choice.
 
 ### `SyntaxError` and `ResolveError`
 
-Both carry a `Position` and a message; `exec_file` wraps these into `EvalError`
-before returning.
+Both carry a `Position` and a message; `exec_file` wraps these into `EvalError` before returning.
 
 | Method | Returns | Description |
 | :--- | :--- | :--- |
@@ -98,9 +87,7 @@ before returning.
 | `SyntaxError::kind()` | `SyntaxErrorKind` | Structural classification of the error |
 | `to_string()` | `String` | `"<file>:<line>:<col>: <msg>"` |
 
-`SyntaxErrorKind` classifies a `SyntaxError` by structural cause so consumers
-(such as the REPL's continuation detector) can branch on the kind instead of
-matching the English message text:
+`SyntaxErrorKind` classifies a `SyntaxError` by structural cause so consumers (such as the REPL's continuation detector) can branch on the kind instead of matching the English message text:
 
 | Variant | Meaning |
 | :--- | :--- |

@@ -12,8 +12,7 @@ Argument-binding helpers for host-defined built-in functions. Import
 | `unpack_positional` | Bind positional-only args, requiring between `min` and `max` values; returns `Result[Array[@value.Value?], String]` |
 | `unpack_args_with` | Like `unpack_args` but dispatches each value to a custom `@value.Unpacker` target; returns `Result[Unit, String]` |
 
-Implement `@value.Unpacker` (`unpack(Self, Value) -> Result[Unit, String]`) on a
-host type for per-argument validation and coercion.
+Implement `@value.Unpacker` (`unpack(Self, Value) -> Result[Unit, String]`) on a host type for per-argument validation and coercion.
 
 ## Quick start
 
