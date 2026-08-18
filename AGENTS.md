@@ -17,70 +17,39 @@ This project may be released publicly. All of the following must be written in *
 
 ## Project Structure
 
-- MoonBit packages are organized per directory; each directory contains a
-  `moon.pkg` file listing its dependencies. Each package has its files and
-  blackbox test files (ending in `_test.mbt`) and whitebox test files (ending in
-  `_wbtest.mbt`).
+- MoonBit packages are organized per directory; each directory contains a `moon.pkg` file listing its dependencies. Each package has its files and blackbox test files (ending in `_test.mbt`) and whitebox test files (ending in `_wbtest.mbt`).
 
-- In the toplevel directory, there is a `moon.mod` file listing module
-  metadata.
+- In the toplevel directory, there is a `moon.mod` file listing module metadata.
 
 ## Coding convention
 
-- MoonBit code is organized in block style, each block is separated by `///|`,
-  the order of each block is irrelevant. In some refactorings, you can process
-  block by block independently.
+- MoonBit code is organized in block style, each block is separated by `///|`, the order of each block is irrelevant. In some refactorings, you can process block by block independently.
 
-- Try to keep deprecated blocks in file called `deprecated.mbt` in each
-  directory.
+- Try to keep deprecated blocks in file called `deprecated.mbt` in each directory.
 
 ## Tooling
 
 - `moon fmt` is used to format your code properly.
 
-- `moon ide` provides project navigation helpers like `peek-def`, `outline`, and
-  `find-references`. See $moonbit-agent-guide for details.
+- `moon ide` provides project navigation helpers like `peek-def`, `outline`, and `find-references`. See $moonbit-agent-guide for details.
 
-- `moon info` is used to update the generated interface of the package, each
-  package has a generated interface file `.mbti`, it is a brief formal
-  description of the package. If nothing in `.mbti` changes, this means your
-  change does not bring the visible changes to the external package users, it is
-  typically a safe refactoring.
+- `moon info` is used to update the generated interface of the package, each package has a generated interface file `.mbti`, it is a brief formal description of the package. If nothing in `.mbti` changes, this means your change does not bring the visible changes to the external package users, it is typically a safe refactoring.
 
-- In the last step, run `moon info && moon fmt` to update the interface and
-  format the code. Check the diffs of `.mbti` file to see if the changes are
-  expected.
+- In the last step, run `moon info && moon fmt` to update the interface and format the code. Check the diffs of `.mbti` file to see if the changes are expected.
 
-- Run `moon test` to check tests pass. MoonBit supports snapshot testing; when
-  changes affect outputs, run `moon test --update` to refresh snapshots.
+- Run `moon test` to check tests pass. MoonBit supports snapshot testing; when changes affect outputs, run `moon test --update` to refresh snapshots.
 
 - For local quality verification, use two mechanisms:
-  - **pre-commit hooks** — catch formatting and lint issues on every commit
-    (`pre-commit run --all-files` to run manually).
-  - **`just verify`** — run the full CI-equivalent check across all four
-    backends (`js`, `wasm`, `wasm-gc`, `native`) before opening a PR.
+  - **pre-commit hooks** — catch formatting and lint issues on every commit (`pre-commit run --all-files` to run manually).
+  - **`just verify`** — run the full CI-equivalent check across all four backends (`js`, `wasm`, `wasm-gc`, `native`) before opening a PR.
 
-- `examples/moon.mod` imports `connect0459/starlark@0.0.0` as a sentinel.
-  The `@0.0.0` version is intentional: the workspace resolver (`moon.work`)
-  always shadows it with the local source, so the pin is never used for
-  resolution and does not need to track `moon.mod`'s version on bumps.
-  Do not change it to a real version number.
+- `examples/moon.mod` imports `connect0459/starlark@0.0.0` as a sentinel. The `@0.0.0` version is intentional: the workspace resolver (`moon.work`) always shadows it with the local source, so the pin is never used for resolution and does not need to track `moon.mod`'s version on bumps. Do not change it to a real version number.
 
-- When a change affects the public API, update the documentation in the same PR
-  so it stays in sync with the implementation:
-  - **Per-package `README.mbt.md`** — the single documentation source for each
-    public package; update the API reference tables, key types, or examples as
-    needed.
-  - **`.mbti` interface file** (updated by `moon info`) — the authoritative formal
-    spec for signatures; run `moon info` and verify the diff is expected. The two
-    layers are complementary: `README.mbt.md` provides prose and examples,
-    `.mbti` provides the machine-readable ground truth.
+- When a change affects the public API, update the documentation in the same PR so it stays in sync with the implementation:
+  - **Per-package `README.mbt.md`** — the single documentation source for each public package; update the API reference tables, key types, or examples as needed.
+  - **`.mbti` interface file** (updated by `moon info`) — the authoritative formal spec for signatures; run `moon info` and verify the diff is expected. The two layers are complementary: `README.mbt.md` provides prose and examples, `.mbti` provides the machine-readable ground truth.
 
-- Prefer `assert_eq` or `assert_true(pattern is Pattern(...))` for results that
-  are stable or very unlikely to change. Use snapshot tests to record current
-  behavior. For solid, well-defined results (e.g. scientific computations),
-  prefer assertion tests. You can use `moon coverage analyze > uncovered.log` to
-  see which parts of your code are not covered by tests.
+- Prefer `assert_eq` or `assert_true(pattern is Pattern(...))` for results that are stable or very unlikely to change. Use snapshot tests to record current behavior. For solid, well-defined results (e.g. scientific computations), prefer assertion tests. You can use `moon coverage analyze > uncovered.log` to see which parts of your code are not covered by tests.
 
 ## Development Philosophy
 

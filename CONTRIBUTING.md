@@ -93,18 +93,14 @@ tidy(hashtable): name initial_capacity constant
 1. Fork the repository and create a branch: `feat/xxx`, `fix/xxx`, `docs/xxx`.
 2. Follow the Red → Green → Refactor cycle.
 3. Run `just verify` and commit any resulting diffs.
-4. If the change touches the public API, update documentation so it reflects
-   the new behaviour:
-   - **Per-package `README.mbt.md`** — the sole documentation source for each public
-     package; update the API reference tables, key types, or examples as needed.
-   - Run `moon info` and verify the `.mbti` diff is expected (it is the authoritative
-     formal spec for signatures).
+4. If the change touches the public API, update documentation so it reflects the new behaviour:
+   - **Per-package `README.mbt.md`** — the sole documentation source for each public package; update the API reference tables, key types, or examples as needed.
+   - Run `moon info` and verify the `.mbti` diff is expected (it is the authoritative formal spec for signatures).
 5. Open a pull request — the CI matrix tests `js`, `wasm`, `wasm-gc`, and `native`.
 
 ## Code style
 
 - No code comments unless the **why** is genuinely non-obvious.
 - Prefer immutability; avoid mutable state unless necessary.
-- Internal packages under `internal/` are not part of the public API and
-  must not be re-exported through the root `connect0459/starlark` package.
+- Internal packages under `internal/` are not part of the public API and must not be re-exported through the root `connect0459/starlark` package.
 - All user-facing strings (test names, error messages, doc comments) must be in **English**.

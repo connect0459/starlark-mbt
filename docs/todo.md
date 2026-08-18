@@ -6,11 +6,8 @@ Reference target: **starlark-go** semantics. Standard features (`allow_set`, `al
 
 ### Submodule: bazelbuild/starlark ✅ (removed)
 
-- [x] Added `bazelbuild/starlark` as a shallow git submodule at `testdata/bazelbuild-starlark/`
-      during Phase 0 for reference; all 11 official spec compliance test cases have since been
-      ported as inline MoonBit string literals in `src/internal/starlarktest/*_test.mbt`.
-- [x] Submodule removed (no runtime file I/O; CI sparse-clone step also removed);
-      `justfile` `setup` target simplified to `moon update` only.
+- [x] Added `bazelbuild/starlark` as a shallow git submodule at `testdata/bazelbuild-starlark/` during Phase 0 for reference; all 11 official spec compliance test cases have since been ported as inline MoonBit string literals in `src/internal/starlarktest/*_test.mbt`.
+- [x] Submodule removed (no runtime file I/O; CI sparse-clone step also removed); `justfile` `setup` target simplified to `moon update` only.
 
 - [x] Migrate to `src/` directory structure (urllib.mbt pattern) — later flattened in Phase R7
 - [x] Update `moon.mod` with `options(source: "src")` — later removed in Phase R7
@@ -25,17 +22,9 @@ Reference target: **starlark-go** semantics. Standard features (`allow_set`, `al
 
 Follow the urllib.mbt convention: keep `src/starlark/` as a thin public façade and place implementation details under `src/internal/*` so they are not part of the published API.
 
-- `src/starlark/` — public façade: re-exports `Thread`, `Module`, `Value`,
-  `Options`, `exec_file`, `eval`, error types
-- `src/internal/errors/` — `Position`, `SyntaxError`,
-  `ResolveError`, `EvalError`, `CallFrame`, `CallStack`
-- `src/internal/hashtable/` — insertion-ordered hashtable for `Dict` and `Set`
-  (doubly-linked list + open-addressing hash table; required because Starlark
-  dicts must preserve insertion order and support iteration-safe freezing).
-  **Decision**: MoonBit `Map[K,V]` is a sorted tree map (NOT insertion-ordered);
-  this sub-package IS required. Keys must be arbitrary Starlark hashable values
-  (`None`, `Bool`, `Int`, `Float`, `String`, `Bytes`, `Tuple` of hashables) —
-  not restricted to `String` as in the bitflow reference implementation.
+- `src/starlark/` — public façade: re-exports `Thread`, `Module`, `Value`, `Options`, `exec_file`, `eval`, error types
+- `src/internal/errors/` — `Position`, `SyntaxError`, `ResolveError`, `EvalError`, `CallFrame`, `CallStack`
+- `src/internal/hashtable/` — insertion-ordered hashtable for `Dict` and `Set` (doubly-linked list + open-addressing hash table; required because Starlark dicts must preserve insertion order and support iteration-safe freezing). **Decision**: MoonBit `Map[K,V]` is a sorted tree map (NOT insertion-ordered); this sub-package IS required. Keys must be arbitrary Starlark hashable values (`None`, `Bool`, `Int`, `Float`, `String`, `Bytes`, `Tuple` of hashables) — not restricted to `String` as in the bitflow reference implementation.
 - `src/internal/value/` — `Value` enum, traits, freeze logic
 - `src/internal/lexer/` — scanner / token / quote helpers
 - `src/internal/syntax/` — AST node types + walker
@@ -45,9 +34,7 @@ Follow the urllib.mbt convention: keep `src/starlark/` as a thin public façade 
 - `src/internal/builtins/` — predeclared functions + per-type methods
 - ~~`src/internal/format/`~~ — removed (YAGNI; format logic lives in `eval/ops.mbt`)
 - `src/internal/unpack/` — argument binding helper for built-ins
-- `src/internal/starlarktest/` — test harness for executing `.star` scripts as
-  MoonBit tests; embeds `assert.star` as a `const` string; not part of the
-  public API (internal only). Created in Phase 6 before porting `.star` files.
+- `src/internal/starlarktest/` — test harness for executing `.star` scripts as MoonBit tests; embeds `assert.star` as a `const` string; not part of the public API (internal only). Created in Phase 6 before porting `.star` files.
 - `src/cmd/` — CLI entry point (renamed from `src/main/` in Phase 8)
 - `src/internal/repl/` — REPL implementation (internal to CLI; embedders use `exec_repl_chunk` from the façade)
 - `src/lib/json/` — `starlarkjson` extension (moved from `src/json/` in Phase R1)
@@ -61,30 +48,16 @@ Sub-packages may be added or split when any file exceeds ~600 LOC.
 
 **These must be completed before any Phase 0.5+ coding begins.**
 
-- [x] Fix `.github/workflows/ci.yml`: remove the "Setup WPT submodule" step
-      that was copied from urllib.mbt — it is not needed for this project.
-      Keep multi-target matrix (`js`, `wasm`, `wasm-gc`, `native`) and add a
-      `moon coverage analyze` step in a follow-up (Phase 7).
-      Replaced with bazelbuild/starlark sparse clone (see below).
-- [x] Add `moonbitlang/x` to `moon.mod` imports (required for future BigInt
-      support and other extended utilities). Pinned to `0.4.43`; verified with
-      `moon check`.
-- [x] Create directory skeleton for all `src/internal/*` packages:
-      `errors`, `hashtable`, `value`, `lexer`, `syntax`, `parser`, `resolver`,
-      `eval`, `builtins`, `format`, `unpack`. Each directory needs:
+- [x] Fix `.github/workflows/ci.yml`: remove the "Setup WPT submodule" step that was copied from urllib.mbt — it is not needed for this project. Keep multi-target matrix (`js`, `wasm`, `wasm-gc`, `native`) and add a `moon coverage analyze` step in a follow-up (Phase 7). Replaced with bazelbuild/starlark sparse clone (see below).
+- [x] Add `moonbitlang/x` to `moon.mod` imports (required for future BigInt support and other extended utilities). Pinned to `0.4.43`; verified with `moon check`.
+- [x] Create directory skeleton for all `src/internal/*` packages: `errors`, `hashtable`, `value`, `lexer`, `syntax`, `parser`, `resolver`, `eval`, `builtins`, `format`, `unpack`. Each directory needs:
       - a `moon.pkg` file (empty or with import stubs)
       - a minimal placeholder `.mbt` file so `moon check` recognises the package
 - [x] Update `src/starlark/moon.pkg` to import each internal package as needed
-- [x] Verify `moon check` passes on the empty skeleton before Phase 0.5 coding
-      begins (confirm no broken imports or missing package declarations)
-- **Decision**: MoonBit `Map[K,V]` is a sorted tree map (NOT insertion-ordered);
-  `src/internal/hashtable/` is required (see package layout note above)
-- [x] Design the `Hashable` trait / key-hash protocol for hashtable, Dict, and Set;
-      define hash functions for each primitive type (None, Bool, Int, Float, String, Bytes, Tuple)
-      **Implementation**: generic `Hashtable[K,V]` with hash/eq fn params; no `Hashable` trait needed
-- **Design decision**: `Position` column convention — use 1-based line AND 1-based column
-      to match starlark-go (`Position{Line: 1, Col: 1}` for start of file). Document in
-      `src/internal/errors/`.
+- [x] Verify `moon check` passes on the empty skeleton before Phase 0.5 coding begins (confirm no broken imports or missing package declarations)
+- **Decision**: MoonBit `Map[K,V]` is a sorted tree map (NOT insertion-ordered); `src/internal/hashtable/` is required (see package layout note above)
+- [x] Design the `Hashable` trait / key-hash protocol for hashtable, Dict, and Set; define hash functions for each primitive type (None, Bool, Int, Float, String, Bytes, Tuple) **Implementation**: generic `Hashtable[K,V]` with hash/eq fn params; no `Hashable` trait needed
+- **Design decision**: `Position` column convention — use 1-based line AND 1-based column to match starlark-go (`Position{Line: 1, Col: 1}` for start of file). Document in `src/internal/errors/`.
 
 ---
 
@@ -92,10 +65,8 @@ Sub-packages may be added or split when any file exceeds ~600 LOC.
 
 Foundational error types and position tracking needed by all subsequent phases.
 
-- [x] `Position` — filename, line, column. **Decision: 1-based line, 1-based col;
-      0 means unknown (matches starlark-go)**. Implemented in `src/internal/errors/`.
-- [x] ~~`Span` — start + end `Position` for ranged diagnostics~~ (removed:
-      attached to no AST node and no public API; see API hygiene pass)
+- [x] `Position` — filename, line, column. **Decision: 1-based line, 1-based col; 0 means unknown (matches starlark-go)**. Implemented in `src/internal/errors/`.
+- [x] ~~`Span` — start + end `Position` for ranged diagnostics~~ (removed: attached to no AST node and no public API; see API hygiene pass)
 - [x] `SyntaxError` — lexer/parser errors with `Position`
 - [x] `ResolveError` — resolver errors with `Position`
 - [x] `EvalError` — runtime errors with `Position` and call stack; `cause: String?` for chaining
@@ -105,9 +76,7 @@ Foundational error types and position tracking needed by all subsequent phases.
   - starlark-go has no equivalent — starlark-rust has `ErrorKind` for programmatic error classification; implement if embedder demand arises
 - [x] Error chaining (carry inner cause for wrapped errors) — `cause: String?` in `EvalError`
 - [x] Error formatting: `"<filename>:<line>:<col>: <message>"` plus backtrace
-- [x] ~~`Halt` / cancellation signal distinct from `EvalError`~~ (removed:
-      cancellation flows through `Thread.cancel_reason` + `EvalError`, matching
-      starlark-go which has no `Halt` type; see API hygiene pass)
+- [x] ~~`Halt` / cancellation signal distinct from `EvalError`~~ (removed: cancellation flows through `Thread.cancel_reason` + `EvalError`, matching starlark-go which has no `Halt` type; see API hygiene pass)
 
 ### TDD scope
 
@@ -122,21 +91,12 @@ Settle the public API shape before bulk implementation, so subsequent phases don
 - [x] `Thread` — print callback, load callback, call stack, recursion depth limit, max execution steps
 - [x] `Module` — execution result; `globals` dict; frozen after `exec_file` returns
 - [x] `Universe` — predeclared bindings (built-ins) injected into modules
-- [x] `Options` — feature flags. All default to **true** unless noted:
-      `allow_set`, `allow_recursion`, `allow_lambda`, `allow_while`,
-      `allow_bytes`, `allow_float`, `allow_global_reassign`,
-      `allow_top_level_control` (top-level `if` / `for` / `while`),
-      `load_binds_globally` (deprecated starlark-go flag; kept for parity)
-- [x] `Predeclared` / `Universe` distinction — `Universe` is the built-in
-      set (frozen, shared across threads); `Predeclared` is per-execution
-      extra bindings injected before user globals
+- [x] `Options` — feature flags. All default to **true** unless noted: `allow_set`, `allow_recursion`, `allow_lambda`, `allow_while`, `allow_bytes`, `allow_float`, `allow_global_reassign`, `allow_top_level_control` (top-level `if` / `for` / `while`), `load_binds_globally` (deprecated starlark-go flag; kept for parity)
+- [x] `Predeclared` / `Universe` distinction — `Universe` is the built-in set (frozen, shared across threads); `Predeclared` is per-execution extra bindings injected before user globals
 - [x] `exec_file(thread, filename, src, options) -> Module` — stub (returns Err until Phase 5)
 - [x] `eval(thread, filename, expr, env) -> Value` — stub (returns Err until Phase 5)
-- [x] Loader contract — `(Thread, module_path) -> Result[Module, EvalError]`
-      (the loader receives the active `Thread` so it can make nested calls)
-- [x] Wire up `src/starlark/` as a thin public façade: re-export `Thread`, `Module`,
-      `Value`, `Options`, `exec_file`, `eval`, and error types from `src/internal/*`;
-      verify `.mbti` contains only the intended public surface
+- [x] Loader contract — `(Thread, module_path) -> Result[Module, EvalError]` (the loader receives the active `Thread` so it can make nested calls)
+- [x] Wire up `src/starlark/` as a thin public façade: re-export `Thread`, `Module`, `Value`, `Options`, `exec_file`, `eval`, and error types from `src/internal/*`; verify `.mbti` contains only the intended public surface
 
 ### TDD scope
 
@@ -152,27 +112,15 @@ Core Starlark value representation. All values share a common interface.
 
 - [x] `Value` — top-level enum covering all built-in types (primitives + List/Tuple stubs; Dict/Set/Function/Range pending)
 - [x] `NoneType` — singleton `NoneVal`
-- [x] `Bool` — `BoolVal(Bool)`; `truth`, `repr` implemented
-      **Key semantics**: `Bool` is its own type and does NOT participate in int arithmetic.
-      `True + True` raises a TypeError (unlike Python). `int(True) == 1` is valid via the
-      `int()` built-in. `Bool` comparison operators (`<`, `<=`, etc.) treat False < True.
-      `hash(True) == hash(1)` and `hash(False) == hash(0)` (equal values of compatible
-      types must share the same hash).
-- [x] `Int` — `IntVal(Int64)`; `floor_div` and `starlark_mod` implemented with
-      correct negative-operand semantics (floor toward -inf, sign of divisor).
-      Tests cover: `-7 // 2 == -4`, `-7 % 2 == 1`. BigInt upgrade deferred.
-- [x] `Float` — `FloatVal(Double)`; `format_float` handles inf/nan/decimal-point.
-      **Key semantics**: Float and Int values that compare equal must produce the same
-      hash (`hash(1.0) == hash(1)`, `hash(0.0) == hash(0)`).
-- [x] `String` — `StarlarkString { raw: String, bytes: Bytes }` with UTF-8 byte backing.
-      `byte_len()`, `byte_at(i)`, `equals()` implemented. MoonBit UTF-16 divergence resolved.
+- [x] `Bool` — `BoolVal(Bool)`; `truth`, `repr` implemented **Key semantics**: `Bool` is its own type and does NOT participate in int arithmetic. `True + True` raises a TypeError (unlike Python). `int(True) == 1` is valid via the `int()` built-in. `Bool` comparison operators (`<`, `<=`, etc.) treat False < True. `hash(True) == hash(1)` and `hash(False) == hash(0)` (equal values of compatible types must share the same hash).
+- [x] `Int` — `IntVal(Int64)`; `floor_div` and `starlark_mod` implemented with correct negative-operand semantics (floor toward -inf, sign of divisor). Tests cover: `-7 // 2 == -4`, `-7 % 2 == 1`. BigInt upgrade deferred.
+- [x] `Float` — `FloatVal(Double)`; `format_float` handles inf/nan/decimal-point. **Key semantics**: Float and Int values that compare equal must produce the same hash (`hash(1.0) == hash(1)`, `hash(0.0) == hash(0)`).
+- [x] `String` — `StarlarkString { raw: String, bytes: Bytes }` with UTF-8 byte backing. `byte_len()`, `byte_at(i)`, `equals()` implemented. MoonBit UTF-16 divergence resolved.
 - [x] `Bytes` — `BytesVal(Bytes)`; `repr` produces `b"..."` with `\xNN` escapes.
 - [x] `List` — `StarlarkList { mut items, mut frozen }`; `truth`, `repr` implemented (stub)
 - [x] `Tuple` — `TupleVal(Array[Value])`; `repr` includes trailing comma for singleton
-- [x] `Dict` — mutable mapping (insertion-ordered); keys are any hashable
-      Starlark value — `StarlarkDict` wraps `Hashtable[Value, Value]`
-- [x] `Set` — mutable hash-set; keys are any hashable value, insertion-ordered.
-      `StarlarkSet` wraps `Hashtable[Value, Value]` (value=NoneVal)
+- [x] `Dict` — mutable mapping (insertion-ordered); keys are any hashable Starlark value — `StarlarkDict` wraps `Hashtable[Value, Value]`
+- [x] `Set` — mutable hash-set; keys are any hashable value, insertion-ordered. `StarlarkSet` wraps `Hashtable[Value, Value]` (value=NoneVal)
 - [x] `Function` — user-defined (Starlark source); `StarlarkFunction { name, params, body, defaults, freevars }`
 - [x] `BuiltinFunction` — host-provided callable; `StarlarkBuiltinFunc { name }`
 - [x] `BoundMethod` — method bound to a receiver (e.g., `"abc".upper`); `StarlarkBoundMethod { recv, method_name }`
@@ -184,21 +132,16 @@ Core Starlark value representation. All values share a common interface.
 - [x] `truth` — truthiness for `if`, `while`, `and`, `or` (all current variants)
 - [x] `to_str` — `str()` output (unquoted string for Str, repr for others); in `traits.mbt`
 - [x] `starlark_equals` — structural equality; cross-type Int==Float supported
-- [x] `starlark_hash` — FNV-1a for strings/bytes; starlark-go formula for Int/Float;
-      Python tuple hash algorithm; List → `Err("unhashable type: list")`
-- [x] `compare_values` — total ordering for `<`, `<=`, `>`, `>=`; same-type only
-      (NaN > +Inf per starlark-go; mixed types → `Err`)
+- [x] `starlark_hash` — FNV-1a for strings/bytes; starlark-go formula for Int/Float; Python tuple hash algorithm; List → `Err("unhashable type: list")`
+- [x] `compare_values` — total ordering for `<`, `<=`, `>`, `>=`; same-type only (NaN > +Inf per starlark-go; mixed types → `Err`)
 - [x] `type_name` — `type()` built-in support; canonical names implemented
-- [x] `Comparable` trait — total ordering protocol needed by `sorted()`, `min()`, `max()`
-      (`StarlarkComparable` stub added in `src/internal/value/protocols.mbt`)
-- [x] `Attr` trait — attribute access protocol for `getattr()`, `hasattr()`, `dir()`
-      (`HasAttrs`, `HasSetField` stubs added in `src/internal/value/protocols.mbt`)
+- [x] `Comparable` trait — total ordering protocol needed by `sorted()`, `min()`, `max()` (`StarlarkComparable` stub added in `src/internal/value/protocols.mbt`)
+- [x] `Attr` trait — attribute access protocol for `getattr()`, `hasattr()`, `dir()` (`HasAttrs`, `HasSetField` stubs added in `src/internal/value/protocols.mbt`)
 
 ### Iterator / sequence / mapping protocols
 
 - [x] `Iterable` — `iterate(Value) -> Result[StarlarkIterator, String]` in `iter.mbt`
-- [x] `Iterator` — `StarlarkIterator { next_fn, done_fn }` with `next()/done()` methods;
-      `done()` decrements `itercount` on List/Dict/Set; must be called even on early exit
+- [x] `Iterator` — `StarlarkIterator { next_fn, done_fn }` with `next()/done()` methods; `done()` decrements `itercount` on List/Dict/Set; must be called even on early exit
 - [x] `IterableMapping` — dict/set iteration yields keys via `dict_key_iter`/`set_key_iter`
 - [x] `Sequence` — `length_of(Value) -> Result[Int, String]` covers List/Tuple/String/Bytes/Range
 - [x] `Mapping` — `Dict` key/value access protocol (embedder extension trait in `protocols.mbt`)
@@ -207,32 +150,16 @@ Core Starlark value representation. All values share a common interface.
 ### Frozen value semantics
 
 - [x] `freeze()` operation on mutable types (List, Dict, Set) — `freeze_value` propagates transitively
-- [x] Mutation after freeze raises `EvalError` — `check_mutable(verb)` on StarlarkList;
-      Hashtable `insert`/`delete` check `itercount > 0` (enforced at eval time in Phase 5)
+- [x] Mutation after freeze raises `EvalError` — `check_mutable(verb)` on StarlarkList; Hashtable `insert`/`delete` check `itercount > 0` (enforced at eval time in Phase 5)
 - [x] Freezing propagates transitively through contained values (`freeze_value` in `traits.mbt`)
 - [x] Module dict frozen automatically when `exec_file` returns (wired in Phase 5)
-- [x] **Iterator freezing**: iterating a mutable container (List, Dict, Set) with a `for`
-      loop **freezes** it for the duration of the loop. Any mutation during iteration
-      raises an `EvalError` ("cannot insert into frozen hash table", etc.).
+- [x] **Iterator freezing**: iterating a mutable container (List, Dict, Set) with a `for` loop **freezes** it for the duration of the loop. Any mutation during iteration raises an `EvalError` ("cannot insert into frozen hash table", etc.).
 
 ### Implementation notes
 
-- **MoonBit byte-string indexing**: MoonBit `String` is UTF-16 internally; `s[i]`
-  must return the i-th **byte** (not UTF-16 code unit). String must be converted to
-  a byte buffer (`Bytes` / `Array[Byte]`) for indexing, slicing, and length operations.
-  Reference: `starlark-go/starlark/value.go` (`String` type), where `s[1]` on
-  `"aΩb"` returns `"\xce"` (one byte). The internal representation in MoonBit should
-  store a cached `Array[Byte]` alongside the original String for O(1) access.
-  **Design decision**: `StarlarkString` is a struct `{ raw: String, bytes: Array[Byte] }`;
-  the byte array is computed once at construction and never mutated (strings are immutable).
-  All `len`, `s[i]`, and slice operations use `bytes`; `==` comparison and hashing also
-  use the byte representation.
-- **Int64 overflow tests**: write tests that trigger `Int64` overflow to establish
-  the baseline before planning the BigInt upgrade. These tests must exist before
-  implementing `**` (power) with large exponents.
-- **`moonbitlang/x` BigInt availability**: before switching from `Int64` to BigInt,
-  verify the exact package path and API with `moon ide doc '@moonbitlang/x'` after
-  adding the dependency. Do not assume the API name — check first.
+- **MoonBit byte-string indexing**: MoonBit `String` is UTF-16 internally; `s[i]` must return the i-th **byte** (not UTF-16 code unit). String must be converted to a byte buffer (`Bytes` / `Array[Byte]`) for indexing, slicing, and length operations. Reference: `starlark-go/starlark/value.go` (`String` type), where `s[1]` on `"aΩb"` returns `"\xce"` (one byte). The internal representation in MoonBit should store a cached `Array[Byte]` alongside the original String for O(1) access. **Design decision**: `StarlarkString` is a struct `{ raw: String, bytes: Array[Byte] }`; the byte array is computed once at construction and never mutated (strings are immutable). All `len`, `s[i]`, and slice operations use `bytes`; `==` comparison and hashing also use the byte representation.
+- **Int64 overflow tests**: write tests that trigger `Int64` overflow to establish the baseline before planning the BigInt upgrade. These tests must exist before implementing `**` (power) with large exponents.
+- **`moonbitlang/x` BigInt availability**: before switching from `Int64` to BigInt, verify the exact package path and API with `moon ide doc '@moonbitlang/x'` after adding the dependency. Do not assume the API name — check first.
 
 ### TDD scope
 
@@ -253,14 +180,10 @@ Tokenise Starlark source into a flat token stream.
   - Raw strings: `r"..."`, `r'...'`, `r"""..."""`
   - Bytes literals: `b"..."`, `b'...'`, `b"""..."""`
   - String escape sequences: `\n`, `\t`, `\r`, `\\`, `\'`, `\"`, `\a`, `\b`, `\f`, `\v`, `\0`, octal `\NNN`, hex `\xNN`, Unicode `\uNNNN`, `\UNNNNNNNN`
-  - **Bytes literal Unicode escapes**: `b"..."` accepts `\uNNNN` and `\UNNNNNNNN`
-    and encodes the codepoint as UTF-8 bytes, matching starlark-go behavior
-    (earlier implementation rejected them — changed in MISSING-61 fix).
+  - **Bytes literal Unicode escapes**: `b"..."` accepts `\uNNNN` and `\UNNNNNNNN` and encodes the codepoint as UTF-8 bytes, matching starlark-go behavior (earlier implementation rejected them — changed in MISSING-61 fix).
   - Triple-quoted string termination rules
 - [x] Keywords: `and`, `break`, `continue`, `def`, `elif`, `else`, `for`, `if`, `in`, `lambda`, `load`, `not`, `or`, `pass`, `return`, `while`
-- [x] Keyword literals: `None`, `True`, `False` — scanned as `NoneKw`/`TrueKw`/`FalseKw`
-      tokens (not `Ident`), matching starlark-go scanner behavior; parser matches
-      them directly in parse_primary; rejected in identifier positions (e.g. param names)
+- [x] Keyword literals: `None`, `True`, `False` — scanned as `NoneKw`/`TrueKw`/`FalseKw` tokens (not `Ident`), matching starlark-go scanner behavior; parser matches them directly in parse_primary; rejected in identifier positions (e.g. param names)
 - [x] Note: old-style octal (`0755`) is **NOT** supported; only `0o755` is valid (error emitted)
 - [x] Identifiers (including leading `_`)
 - [x] Operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `~`, `&`, `|`, `^`, `<<`, `>>`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `=`, `+=`, `-=`, `*=`, `/=`, `//=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
@@ -275,8 +198,7 @@ Tokenise Starlark source into a flat token stream.
 ### String literal quoting helper
 
 - [x] `unquote(literal) -> (String, is_bytes)` — decode source-level escapes
-- [x] `quote(string, is_bytes) -> String` — produce a Starlark-safe literal
-      with appropriate escapes (used by `repr`, error messages)
+- [x] `quote(string, is_bytes) -> String` — produce a Starlark-safe literal with appropriate escapes (used by `repr`, error messages)
 - [x] Reference: `starlark-go/syntax/quote.go`
 
 ### TDD scope
@@ -295,10 +217,7 @@ Build an AST from the token stream. Each node carries a `Position`.
 - [x] `Ident` — identifier reference
 - [x] `UnaryExpr` — `-`, `+`, `~`, `not`
 - [x] `BinaryExpr` — all binary operators incl. `in`, `not in`, `%` (string format)
-- [x] `ChainedComparison` — Starlark spec: comparisons are **non-associative**;
-      `a < b < c` raises `SyntaxError: "< does not associate with <"`.
-      Parser now rejects chained comparisons in both `parse_comparison` and
-      `finish_comparison_from`.
+- [x] `ChainedComparison` — Starlark spec: comparisons are **non-associative**; `a < b < c` raises `SyntaxError: "< does not associate with <"`. Parser now rejects chained comparisons in both `parse_comparison` and `finish_comparison_from`.
 - [x] `IfExpr` — `x if cond else y`
 - [x] `IndexExpr` — `a[i]`
 - [x] `SliceExpr` — `a[start:end:step]`
@@ -308,9 +227,7 @@ Build an AST from the token stream. Each node carries a `Position`.
 - [x] `TupleExpr` — `(a, b, …)`; single-element tuple `(x,)` distinguished from grouping `(x)`
 - [x] `DictExpr` — `{k: v, …}` (trailing comma allowed)
 - [x] `SetExpr` — `{x, …}` (gated by `allow_set`)
-- [x] `Comprehension` — list/dict/set comp with multiple `for`-clauses and nested
-      `if`-guards: `[x+y for x in xs for y in ys if p(x,y)]`. Each `for`-clause
-      introduces a new scope; inner variables shadow outer ones.
+- [x] `Comprehension` — list/dict/set comp with multiple `for`-clauses and nested `if`-guards: `[x+y for x in xs for y in ys if p(x,y)]`. Each `for`-clause introduces a new scope; inner variables shadow outer ones.
 - [x] `LambdaExpr` — `lambda params: expr` (body restricted to single Test; gated by `allow_lambda`)
 
 ### Statements
@@ -346,8 +263,7 @@ The parser must emit a `SyntaxError` for these Python features absent from Starl
 
 ### AST walker
 
-- [x] `walk(node, visit)` — depth-first traversal visiting every child node;
-      used by the resolver and any future linter / tooling
+- [x] `walk(node, visit)` — depth-first traversal visiting every child node; used by the resolver and any future linter / tooling
 - [x] Reference: `starlark-go/syntax/walk.go`
 
 ### TDD scope
@@ -396,8 +312,7 @@ Execute resolved AST nodes with an environment (binding stack).
 - [x] Literals — return wrapped Value
 - [x] Identifiers — environment lookup (per resolver classification)
 - [x] Unary / binary operators — dispatch on value types:
-  - Arithmetic: `+`, `-`, `*`, `//` (floor-div toward -inf), `%` (sign = divisor),
-    `/` (true division → Float; requires `allow_float`), `**` (power)
+  - Arithmetic: `+`, `-`, `*`, `//` (floor-div toward -inf), `%` (sign = divisor), `/` (true division → Float; requires `allow_float`), `**` (power)
   - Bitwise (Int only): `&`, `|`, `^`, `<<`, `>>`; unary `~` (bitwise NOT)
   - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=` (same-type only; mixed → TypeError)
   - Membership: `in`, `not in`
@@ -409,8 +324,7 @@ Execute resolved AST nodes with an environment (binding stack).
 - [x] Function call — full argument binding (positional, keyword, `*args`, `**kwargs`, defaults captured at def time, errors for missing/excess args)
 - [x] Lambda evaluation — create `Function` value inline
 - [x] Comprehensions (list, dict, set) with multiple `for`-clauses and nested `if`-guards
-- [x] Chained comparison — non-associative per spec; parser now rejects `a < b < c`
-      with SyntaxError (no evaluator change needed)
+- [x] Chained comparison — non-associative per spec; parser now rejects `a < b < c` with SyntaxError (no evaluator change needed)
 
 ### Statement execution
 
@@ -437,10 +351,7 @@ Execute resolved AST nodes with an environment (binding stack).
 
 ### Built-in argument binding helper
 
-- [x] `unpack_args(name, positional, keyword, spec) -> Result` — extract
-      typed arguments for built-in implementations with explicit names,
-      required/optional markers, and type checks
-      (`unpack_args`, `unpack_positional` implemented in `src/internal/unpack/`)
+- [x] `unpack_args(name, positional, keyword, spec) -> Result` — extract typed arguments for built-in implementations with explicit names, required/optional markers, and type checks (`unpack_args`, `unpack_positional` implemented in `src/internal/unpack/`)
 - [x] Reference: `starlark-go/starlark/unpack.go`
 
 ### TDD scope
@@ -488,18 +399,11 @@ Implement the standard Starlark built-in functions.
 
 ### Built-in methods per type
 
-- [x] `string`: `capitalize`, `count`, `elem_ords`, `elems`, `endswith`, `find`,
-      `format` (partial: `{}` only), `index`, `isalnum`, `isalpha`, `isdigit`,
-      `islower`, `isspace`, `istitle`, `isupper`, `join`, `lower`, `lstrip`,
-      `partition`, `removeprefix`, `removesuffix`, `replace`, `rfind`, `rindex`,
-      `rpartition`, `rstrip`, `split`, `splitlines`, `startswith`, `strip`,
-      `title`, `upper`
-      — all implemented including `codepoint_ords`, `codepoints`, `rsplit`
+- [x] `string`: `capitalize`, `count`, `elem_ords`, `elems`, `endswith`, `find`, `format` (partial: `{}` only), `index`, `isalnum`, `isalpha`, `isdigit`, `islower`, `isspace`, `istitle`, `isupper`, `join`, `lower`, `lstrip`, `partition`, `removeprefix`, `removesuffix`, `replace`, `rfind`, `rindex`, `rpartition`, `rstrip`, `split`, `splitlines`, `startswith`, `strip`, `title`, `upper` — all implemented including `codepoint_ords`, `codepoints`, `rsplit`
 - [x] `bytes`: `elems` (returns list of int byte values); `elem_ords` not in starlark-go bytes methods
 - [x] `list`: `append`, `clear`, `count`, `extend`, `index`, `insert`, `pop`, `remove`, `reverse`, `sort`
 - [x] `dict`: `clear`, `get`, `items`, `keys`, `pop`, `popitem`, `setdefault`, `update`, `values`
-- [x] `set`: `add`, `clear`, `difference`, `discard`, `intersection`, `issubset`,
-      `issuperset`, `pop`, `remove`, `symmetric_difference`, `union`, `update`
+- [x] `set`: `add`, `clear`, `difference`, `discard`, `intersection`, `issubset`, `issuperset`, `pop`, `remove`, `symmetric_difference`, `union`, `update`
 
 ### `str.format()` (complex)
 
@@ -511,18 +415,10 @@ Implement the standard Starlark built-in functions.
 ### `assert` helper module
 
 - [x] Create `src/internal/starlarktest/` package with:
-      - `run_star_string(src) -> Array[String]` — executes a Starlark source
-        string as a MoonBit test; collects assertion failure messages
-      - Assert module built directly in MoonBit (eq, ne, true, lt, contains,
-        fails, fail); injected as the `"assert.star"` load target
-      - **Architecture note**: assert module implemented in MoonBit (not via
-        exec of assert.star) to avoid the issue that StarlarkFunction.call_func
-        uses the caller's global_env, not the defining module's global_env.
-        Predeclared functions like `catch` would be invisible to `_fails` when
-        called from a different module context.
-- [x] `StarlarkBuiltinFunc.body` — optional callable closure with `BuiltinCallCtx`
-      that allows custom built-ins to call back into the evaluator (needed for
-      `assert.fails` to invoke Starlark callables and catch errors)
+      - `run_star_string(src) -> Array[String]` — executes a Starlark source string as a MoonBit test; collects assertion failure messages
+      - Assert module built directly in MoonBit (eq, ne, true, lt, contains, fails, fail); injected as the `"assert.star"` load target
+      - **Architecture note**: assert module implemented in MoonBit (not via exec of assert.star) to avoid the issue that StarlarkFunction.call_func uses the caller's global_env, not the defining module's global_env. Predeclared functions like `catch` would be invisible to `_fails` when called from a different module context.
+- [x] `StarlarkBuiltinFunc.body` — optional callable closure with `BuiltinCallCtx` that allows custom built-ins to call back into the evaluator (needed for `assert.fails` to invoke Starlark callables and catch errors)
 - [x] `exec_file_with_predeclared` — inject extra predeclared bindings before exec
 
 ### TDD scope
@@ -535,82 +431,31 @@ Reference: `starlark-go/starlark/library.go`, `starlark-go/starlark/testdata/*.s
 
 End-to-end tests that execute `.star` scripts and assert output.
 
-- [x] Implement `starlarktest` equivalent — `run_chunked_string` in
-      `src/internal/starlarktest/`. Supports `### "pattern"` and
-      `` ### `pattern` `` error-comment format with `---` chunk separation;
-      `pattern_matches` handles `.*` wildcards and `$` end-anchor.
-      Error-comment chunks from `assign.star`, `dict.star`, `builtins.star`,
-      `misc.star` added to respective `*_test.mbt` files.
-- [x] Port key cases from `starlark-go/starlark/eval_test.go`
-      (TestParameterPassing: positional, keyword, *args/**kwargs, keyword-only, required keyword-only)
-- [x] Port key cases from `starlark-go/starlark/value_test.go`
-      (TestStringMethod: covered by existing traits_test.mbt/value_test.mbt;
-       TestListAppend: StarlarkList push+index tests added;
-       TestParamDefault: whitebox test for StarlarkFunction.defaults in value_api_wbtest.mbt)
-- [x] Port `.star` test files from `starlark-go/starlark/testdata/`
-      Priority order: `int.star`, `bool.star`, `string.star`, `list.star`,
-      `dict.star`, `tuple.star`, `function.star`, `control.star`, `assign.star`,
-      `builtins.star`, `float.star`, `bytes.star`, `set.star`, `while.star`,
-      `recursion.star`, `misc.star`, `function_param.star`
+- [x] Implement `starlarktest` equivalent — `run_chunked_string` in `src/internal/starlarktest/`. Supports `### "pattern"` and `` ### `pattern` `` error-comment format with `---` chunk separation; `pattern_matches` handles `.*` wildcards and `$` end-anchor. Error-comment chunks from `assign.star`, `dict.star`, `builtins.star`, `misc.star` added to respective `*_test.mbt` files.
+- [x] Port key cases from `starlark-go/starlark/eval_test.go` (TestParameterPassing: positional, keyword, *args/**kwargs, keyword-only, required keyword-only)
+- [x] Port key cases from `starlark-go/starlark/value_test.go` (TestStringMethod: covered by existing traits_test.mbt/value_test.mbt; TestListAppend: StarlarkList push+index tests added; TestParamDefault: whitebox test for StarlarkFunction.defaults in value_api_wbtest.mbt)
+- [x] Port `.star` test files from `starlark-go/starlark/testdata/` Priority order: `int.star`, `bool.star`, `string.star`, `list.star`, `dict.star`, `tuple.star`, `function.star`, `control.star`, `assign.star`, `builtins.star`, `float.star`, `bytes.star`, `set.star`, `while.star`, `recursion.star`, `misc.star`, `function_param.star`
   - [x] `int.star` — bigint cases excluded; shift/int()/% formatting fixed to pass
   - [x] `bool.star` — all assertions pass
-  - [x] `string.star` — all assertions pass; unicode iterable-string multi-byte tests
-        now included (codepoints/elem_ords/elems for "abcЙ😿"); ord() error message
-        aligned with starlark-go ("string encodes N Unicode code points, want 1");
-        hash parity assertions (lines 161-170) now included after fixing hash() to
-        use java.lang.String.hashCode instead of FNV-1a; string-not-iterable error
-        assertions (lines 424-430) now included (enumerate/sorted/zip/dict/for/comp)
-  - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases now
-        included (fix: parser accepts lambda in comprehension if-clause);
-        f7 (hasfields) excluded; f4 (local-var-before-assignment via +=) excluded
-        (runtime does not yet distinguish unbound locals from globals)
+  - [x] `string.star` — all assertions pass; unicode iterable-string multi-byte tests now included (codepoints/elem_ords/elems for "abcЙ😿"); ord() error message aligned with starlark-go ("string encodes N Unicode code points, want 1"); hash parity assertions (lines 161-170) now included after fixing hash() to use java.lang.String.hashCode instead of FNV-1a; string-not-iterable error assertions (lines 424-430) now included (enumerate/sorted/zip/dict/for/comp)
+  - [x] `list.star` — all assertions pass; lambda-in-if-clause corner cases now included (fix: parser accepts lambda in comprehension if-clause); f7 (hasfields) excluded; f4 (local-var-before-assignment via +=) excluded (runtime does not yet distinguish unbound locals from globals)
   - [x] `tuple.star` — all assertions pass; tuple multiplication with overflow checks
-  - [x] `dict.star` — all assertions pass including dict union (|, |=); hasfields-
-        based tests excluded
-  - [x] `control.star` — if/elif/else, for loops with break/continue, return
-        semantics, scoping; fibonacci predeclared as 100-element list
-  - [x] `function.star` — closures, lexical scope, stateful closures, freeze,
-        mutable defaults, lambda parsing, missing/duplicate param errors, dynamic
-        **kwargs checks, CALL_VAR_KW, eval order, recursive closures, forward refs,
-        trailing commas; recursion detection (fib/Y-combinator), hasfields(),
-        and unbound-cell detection excluded (not yet implemented); "did you mean"
-        spell-check for unexpected kwargs now included (min keg→key)
+  - [x] `dict.star` — all assertions pass including dict union (|, |=); hasfields-based tests excluded
+  - [x] `control.star` — if/elif/else, for loops with break/continue, return semantics, scoping; fibonacci predeclared as 100-element list
+  - [x] `function.star` — closures, lexical scope, stateful closures, freeze, mutable defaults, lambda parsing, missing/duplicate param errors, dynamic **kwargs checks, CALL_VAR_KW, eval order, recursive closures, forward refs, trailing commas; recursion detection (fib/Y-combinator), hasfields(), and unbound-cell detection excluded (not yet implemented); "did you mean" spell-check for unexpected kwargs now included (min keg→key)
   - [x] `while.star` — basic accumulation, break, continue all pass
   - [x] `recursion.star` — fibonacci (fib(5)=8) and depth-limit enforcement pass
-  - [x] `set.star` — all assertions pass; covers constructor, truth, binary ops
-        (|, &, ^, -), comparison, iteration, all set methods
-  - [x] `builtins.star` — all assertions pass; hasfields() tests excluded
-        (application-defined type not available in harness)
-  - [x] `bytes.star` — all assertions pass; type(hello.elems())=="bytes.elems"
-        and str(hello.elems()) now included (BytesElems type properly implemented)
-  - [x] `assign.star` — all assertions pass; passing-case dialect chunks for
-        option:globalreassign and option:loadbindsglobally added; error chunks
-        requiring unbound-cell detection excluded; hasfields() tests excluded.
-        Also fixed: resolver now allows load-imported name reassignment when
-        allow_global_reassign=true (matching starlark-go semantics).
-  - [x] `float.star` — all assertions pass; BigInt cases excluded. Fixes made:
-        NaN equality (starlark-go semantics), -0.0 display, float literal
-        parsing precision via @math.pow, int(NaN/Inf) errors, float floor-mod.
-  - [x] `misc.star` — all assertions pass; cyclic data structure tests (repr
-        with ellipsis, "maximum recursion" on equality) now included; "did you
-        mean" typo suggestion in load errors now included.
-  - [x] `function_param.star` — no assertions (only function definitions used
-        by Go unit tests); no port needed.
-  - [x] `module.star` — type/str/dir/hash/assign/missing-field; "did you mean"
-        suggestion excluded (not implemented)
-- [x] **`assert.star` embedding**: implemented as MoonBit-native builtins
-      (`build_assert_module()` in `src/internal/starlarktest/starlarktest.mbt`);
-      injected via the loader for `"assert.star"` in both `run_star_string` and
-      `run_chunked_string`. The original `const`-string-exec approach was
-      abandoned (see Phase 6 architecture note) because StarlarkFunction
-      uses the caller's global_env, making predeclared helpers invisible
-      inside loaded modules.
-- [x] Snapshot tests for error message formats
-      (9 tests in `error_format_test.mbt`: syntax/resolve/type/div-zero/index-OOB
-       errors, full backtrace, no-frame backtrace, wrong-arg-count, recursion limit)
-- [x] Benchmark suite — `bench_test.mbt` in `src/internal/starlarktest/` using
-      `moonbitlang/core/bench` `(it : @bench.T)` API; covers range, calling,
-      arithmetic, dict/set, strings, list comprehensions, Fibonacci pipeline
+  - [x] `set.star` — all assertions pass; covers constructor, truth, binary ops (|, &, ^, -), comparison, iteration, all set methods
+  - [x] `builtins.star` — all assertions pass; hasfields() tests excluded (application-defined type not available in harness)
+  - [x] `bytes.star` — all assertions pass; type(hello.elems())=="bytes.elems" and str(hello.elems()) now included (BytesElems type properly implemented)
+  - [x] `assign.star` — all assertions pass; passing-case dialect chunks for option:globalreassign and option:loadbindsglobally added; error chunks requiring unbound-cell detection excluded; hasfields() tests excluded. Also fixed: resolver now allows load-imported name reassignment when allow_global_reassign=true (matching starlark-go semantics).
+  - [x] `float.star` — all assertions pass; BigInt cases excluded. Fixes made: NaN equality (starlark-go semantics), -0.0 display, float literal parsing precision via @math.pow, int(NaN/Inf) errors, float floor-mod.
+  - [x] `misc.star` — all assertions pass; cyclic data structure tests (repr with ellipsis, "maximum recursion" on equality) now included; "did you mean" typo suggestion in load errors now included.
+  - [x] `function_param.star` — no assertions (only function definitions used by Go unit tests); no port needed.
+  - [x] `module.star` — type/str/dir/hash/assign/missing-field; "did you mean" suggestion excluded (not implemented)
+- [x] **`assert.star` embedding**: implemented as MoonBit-native builtins (`build_assert_module()` in `src/internal/starlarktest/starlarktest.mbt`); injected via the loader for `"assert.star"` in both `run_star_string` and `run_chunked_string`. The original `const`-string-exec approach was abandoned (see Phase 6 architecture note) because StarlarkFunction uses the caller's global_env, making predeclared helpers invisible inside loaded modules.
+- [x] Snapshot tests for error message formats (9 tests in `error_format_test.mbt`: syntax/resolve/type/div-zero/index-OOB errors, full backtrace, no-frame backtrace, wrong-arg-count, recursion limit)
+- [x] Benchmark suite — `bench_test.mbt` in `src/internal/starlarktest/` using `moonbitlang/core/bench` `(it : @bench.T)` API; covers range, calling, arithmetic, dict/set, strings, list comprehensions, Fibonacci pipeline
 
 ---
 
@@ -618,14 +463,11 @@ End-to-end tests that execute `.star` scripts and assert output.
 
 Port `starlarkjson` so embedders can read/write JSON from Starlark. Other starlark-go extensions (`math`, `time`, `proto`, `struct`) are **out of scope** for the initial release — see "Future work" below.
 
-- [x] `json.encode(value) -> string` — None/bool/int/float/str/list/tuple/dict/range;
-      cycle detection via `physical_equal`; dict keys sorted; non-ASCII via `\uXXXX`
+- [x] `json.encode(value) -> string` — None/bool/int/float/str/list/tuple/dict/range; cycle detection via `physical_equal`; dict keys sorted; non-ASCII via `\uXXXX`
 - [x] `json.encode_indent(value, prefix=, indent=)` — combines encode + indent
-- [x] `json.decode(string, default=) -> value` — recursive-descent parser; surrogate-pair
-      decode; `default` fallback on invalid input; numbers as Int64 or Float64
+- [x] `json.decode(string, default=) -> value` — recursive-descent parser; surrogate-pair decode; `default` fallback on invalid input; numbers as Int64 or Float64
 - [x] `json.indent(string, prefix=, indent=)` — pretty-print JSON; empty containers inline
-- [x] Error reporting via descriptive string messages (starlark-go json also uses string errors,
-      not Position-based; source Position not applicable for this extension)
+- [x] Error reporting via descriptive string messages (starlark-go json also uses string errors, not Position-based; source Position not applicable for this extension)
 - [x] Lives as a separate package: `src/lib/json/` (importable, not auto-injected)
 - [x] Reference: `starlark-go/lib/json/json.go`
 
@@ -635,116 +477,33 @@ Port `starlarkjson` so embedders can read/write JSON from Starlark. Other starla
 
 ### Public API hardening (from pre-release audit)
 
-- [x] **[HIGH]** Restrict `Thread` mutable field visibility — `mut steps` and `mut call_stack`
-      are currently `pub(all)`, allowing callers to corrupt interpreter state
-      (`thread.steps = 0`, `thread.call_stack = []`). Expose read-only accessors instead.
-      Reference: `starlark-go/starlark/eval.go` `Thread.CallStackDepth()` / `ExecutionSteps()`.
-- [x] **[MED]** Implement `Thread.cancel()` / `Thread.uncancel()` — graceful execution halt
-      for timeout and quota enforcement. Without this, embedders cannot safely bound execution
-      time. Reference: `starlark-go/starlark/eval.go` `Thread.Cancel`.
-- [x] **[LOW]** Add `Thread.execution_steps() -> Int` read-only accessor
-      (currently only the mutable `steps` field is accessible once the above is restricted).
-- [x] **[LOW]** Restrict `Hashtable[K,V]` internal fields — `mut slots`, `mut entries`,
-      `free_head`, `head`, `tail`, and function fields (`hash_fn`, `eq_fn`, etc.) are
-      `pub(all)` in `src/internal/hashtable/`. Not re-exported through the public façade,
-      but still reachable within `src/internal/*`. Scope-limit to what other internal
-      packages actually need.
-- [x] **[LOW]** Value convenience constructors — embedders currently construct values by
-      matching on `Value` enum variants directly; helper factories (`new_builtin`,
-      `new_list`, `new_dict`, `new_set`) would improve ergonomics.
-      Reference: `starlark-go/starlark/value.go` `NewBuiltin`, `NewList`, `NewDict`, `NewSet`.
-- [x] **[MED]** Second-pass API audit — hide `StarlarkDict.ht`, `StarlarkSet.ht`,
-      `StarlarkModule.attrs`, `Module.globals/frozen`, `Universe.bindings`,
-      `Predeclared.bindings`, `CallStack.frames`; add string-keyed `Module::get()`,
-      `Module::globals_count()`, `Module::is_frozen()`, `StarlarkModule::attr_names()`
-      accessors. Named constants for hash-algorithm magic numbers (traits.mbt),
-      initial hashtable capacity, and Starlark tab width.
-- [x] **[LOW]** Third-pass magic-number audit — `Hashtable::clear()` was using literal `8`
-      instead of `initial_capacity`; Thread constructors used literal `100` for
-      `max_recursion_depth` instead of `default_max_recursion_depth`.
-- [x] **[LOW]** Fourth-pass quality audit — fixed float format specifier bugs (`%E`
-      uppercase not applied; `%G` uppercased NaN/Inf; `%e`/`%f`/`%g`/`%G` returned
-      `"inf"` instead of `"+inf"` for positive infinity); removed YAGNI `_unused : Bool`
-      parameter from `eval_cmp` (4 call sites); extracted `float_floor_mod` helper to
-      eliminate 3-way DRY violation in `eval_mod`; deduplicated `builtin_names` array in
-      `EvalContext::new` (was shadowing module-level constant); fixed `check_steps` to
-      always increment step counter regardless of whether a budget is set (previously
-      `execution_steps()` always returned 0 on uncapped threads); added 5 tests covering
-      `Thread.cancel`, `Thread.uncancel`, `Thread.execution_steps`, and
-      `Thread.with_step_budget`.
-- [x] **[MED]** Fifth-pass audit — restricted `pub(all)` struct fields to private on
-      `StarlarkString` (`bytes`), `StarlarkRange` (`start`/`stop`/`step`), and
-      `StarlarkBuiltinFunc` (`body`); added accessor methods (`to_bytes()`,
-      `start()`/`stop()`/`step()`, `call_body()`) and factory constructor
-      `StarlarkBuiltinFunc::dispatch()`; updated all call sites in `eval`, `json`,
-      and test packages. Removed the empty `src/internal/format/` placeholder package
-      (YAGNI: no exports, no dependents).
-- [x] **[LOW]** Sixth-pass DRY audit — extracted `hex_char`, `utf8_decode_rune`,
-      `is_unicode_printable`, and `write_hex2/4/8` from three separate packages
-      (`value`, `lexer/quote`, `starlark/json`) into a single `src/internal/utf8util/`
-      package (~270 lines removed). Functions had identical logic under different names
-      (`hex_digit`, `utf8_decode_rune_q`, `is_unicode_print`).
+- [x] **[HIGH]** Restrict `Thread` mutable field visibility — `mut steps` and `mut call_stack` are currently `pub(all)`, allowing callers to corrupt interpreter state (`thread.steps = 0`, `thread.call_stack = []`). Expose read-only accessors instead. Reference: `starlark-go/starlark/eval.go` `Thread.CallStackDepth()` / `ExecutionSteps()`.
+- [x] **[MED]** Implement `Thread.cancel()` / `Thread.uncancel()` — graceful execution halt for timeout and quota enforcement. Without this, embedders cannot safely bound execution time. Reference: `starlark-go/starlark/eval.go` `Thread.Cancel`.
+- [x] **[LOW]** Add `Thread.execution_steps() -> Int` read-only accessor (currently only the mutable `steps` field is accessible once the above is restricted).
+- [x] **[LOW]** Restrict `Hashtable[K,V]` internal fields — `mut slots`, `mut entries`, `free_head`, `head`, `tail`, and function fields (`hash_fn`, `eq_fn`, etc.) are `pub(all)` in `src/internal/hashtable/`. Not re-exported through the public façade, but still reachable within `src/internal/*`. Scope-limit to what other internal packages actually need.
+- [x] **[LOW]** Value convenience constructors — embedders currently construct values by matching on `Value` enum variants directly; helper factories (`new_builtin`, `new_list`, `new_dict`, `new_set`) would improve ergonomics. Reference: `starlark-go/starlark/value.go` `NewBuiltin`, `NewList`, `NewDict`, `NewSet`.
+- [x] **[MED]** Second-pass API audit — hide `StarlarkDict.ht`, `StarlarkSet.ht`, `StarlarkModule.attrs`, `Module.globals/frozen`, `Universe.bindings`, `Predeclared.bindings`, `CallStack.frames`; add string-keyed `Module::get()`, `Module::globals_count()`, `Module::is_frozen()`, `StarlarkModule::attr_names()` accessors. Named constants for hash-algorithm magic numbers (traits.mbt), initial hashtable capacity, and Starlark tab width.
+- [x] **[LOW]** Third-pass magic-number audit — `Hashtable::clear()` was using literal `8` instead of `initial_capacity`; Thread constructors used literal `100` for `max_recursion_depth` instead of `default_max_recursion_depth`.
+- [x] **[LOW]** Fourth-pass quality audit — fixed float format specifier bugs (`%E` uppercase not applied; `%G` uppercased NaN/Inf; `%e`/`%f`/`%g`/`%G` returned `"inf"` instead of `"+inf"` for positive infinity); removed YAGNI `_unused : Bool` parameter from `eval_cmp` (4 call sites); extracted `float_floor_mod` helper to eliminate 3-way DRY violation in `eval_mod`; deduplicated `builtin_names` array in `EvalContext::new` (was shadowing module-level constant); fixed `check_steps` to always increment step counter regardless of whether a budget is set (previously `execution_steps()` always returned 0 on uncapped threads); added 5 tests covering `Thread.cancel`, `Thread.uncancel`, `Thread.execution_steps`, and `Thread.with_step_budget`.
+- [x] **[MED]** Fifth-pass audit — restricted `pub(all)` struct fields to private on `StarlarkString` (`bytes`), `StarlarkRange` (`start`/`stop`/`step`), and `StarlarkBuiltinFunc` (`body`); added accessor methods (`to_bytes()`, `start()`/`stop()`/`step()`, `call_body()`) and factory constructor `StarlarkBuiltinFunc::dispatch()`; updated all call sites in `eval`, `json`, and test packages. Removed the empty `src/internal/format/` placeholder package (YAGNI: no exports, no dependents).
+- [x] **[LOW]** Sixth-pass DRY audit — extracted `hex_char`, `utf8_decode_rune`, `is_unicode_printable`, and `write_hex2/4/8` from three separate packages (`value`, `lexer/quote`, `starlark/json`) into a single `src/internal/utf8util/` package (~270 lines removed). Functions had identical logic under different names (`hex_digit`, `utf8_decode_rune_q`, `is_unicode_print`).
 
-- [x] **[MED]** Seventh-pass audit — restricted all remaining `pub`/`pub(all)` struct
-      fields to `priv` with accessor methods across every package:
-      `resolver` (`Binding.name/pos/scope`, `ResolvedFile.globals/locals/errors`,
-      `ResolveOptions` all nine flags); added `with_allow_*` fluent mutators to
-      `ResolveOptions` replacing struct-update syntax in tests.
-      `syntax` (`File.path/stmts`); added `File::new` constructor.
-      `eval` (`Options` all nine flags + `with_load_binds_globally`; `Thread.name`,
-      `Thread.max_recursion_depth`, `Thread.max_steps`).
-      `value` (`StarlarkFunction.name`, `StarlarkBuiltinFunc.name`,
-      `StarlarkModule.name`, `StarlarkIterator.next_fn/done_fn`,
-      `StarlarkString.raw`).
+- [x] **[MED]** Seventh-pass audit — restricted all remaining `pub`/`pub(all)` struct fields to `priv` with accessor methods across every package: `resolver` (`Binding.name/pos/scope`, `ResolvedFile.globals/locals/errors`, `ResolveOptions` all nine flags); added `with_allow_*` fluent mutators to `ResolveOptions` replacing struct-update syntax in tests. `syntax` (`File.path/stmts`); added `File::new` constructor. `eval` (`Options` all nine flags + `with_load_binds_globally`; `Thread.name`, `Thread.max_recursion_depth`, `Thread.max_steps`). `value` (`StarlarkFunction.name`, `StarlarkBuiltinFunc.name`, `StarlarkModule.name`, `StarlarkIterator.next_fn/done_fn`, `StarlarkString.raw`).
 
-- [x] **[MED]** Eighth-pass audit — extracted the low-level numeric helpers
-      (`floor_div`, `starlark_mod`, `format_float`, `bigint_to_double`,
-      `double_to_bigint`, `bigint_to_finite_double`, `java_string_hash`) out of
-      the public `value` package into a new `src/internal/numeric/` package.
-      These were `pub` (though `#internal`-tagged) interpreter building blocks
-      that leaked into the published `value` interface; they are now invisible to
-      embedders. Rewired the evaluator, `lib/json`, `lib/math`, and
-      `starlarktest` to `@numeric`; `java_string_hash` now takes `Bytes` instead
-      of `StarlarkString` to drop its value-type dependency. Compared against
-      starlark-go (~85 exported symbols in the core `starlark` package) the
-      public surface is now in the same ballpark, well below starlark-rust.
-- [x] **[LOW]** Ninth-pass dead-API audit — removed two orphan public types from
-      the `errors` package: `Halt` (never raised or constructed; cancellation
-      flows through `Thread.cancel_reason` + `EvalError`, and starlark-go has no
-      `Halt` type — its doc comment described a non-existent code path) and
-      `Span` (attached to no AST node, which carry `Position`; produced/consumed
-      by no public API; no starlark-go counterpart). Added
-      `EvalError::call_stack()` to expose the captured stack as structured data
-      (previously reachable only as the `backtrace()` string), mirroring
-      starlark-go's public `EvalError.CallStack`. Re-confirmed that the
-      `CallStack`/`CallFrame` family is a live contract reachable via
-      `Thread.call_stack()` / `Thread.call_frame()`, not dead code.
+- [x] **[MED]** Eighth-pass audit — extracted the low-level numeric helpers (`floor_div`, `starlark_mod`, `format_float`, `bigint_to_double`, `double_to_bigint`, `bigint_to_finite_double`, `java_string_hash`) out of the public `value` package into a new `src/internal/numeric/` package. These were `pub` (though `#internal`-tagged) interpreter building blocks that leaked into the published `value` interface; they are now invisible to embedders. Rewired the evaluator, `lib/json`, `lib/math`, and `starlarktest` to `@numeric`; `java_string_hash` now takes `Bytes` instead of `StarlarkString` to drop its value-type dependency. Compared against starlark-go (~85 exported symbols in the core `starlark` package) the public surface is now in the same ballpark, well below starlark-rust.
+- [x] **[LOW]** Ninth-pass dead-API audit — removed two orphan public types from the `errors` package: `Halt` (never raised or constructed; cancellation flows through `Thread.cancel_reason` + `EvalError`, and starlark-go has no `Halt` type — its doc comment described a non-existent code path) and `Span` (attached to no AST node, which carry `Position`; produced/consumed by no public API; no starlark-go counterpart). Added `EvalError::call_stack()` to expose the captured stack as structured data (previously reachable only as the `backtrace()` string), mirroring starlark-go's public `EvalError.CallStack`. Re-confirmed that the `CallStack`/`CallFrame` family is a live contract reachable via `Thread.call_stack()` / `Thread.call_frame()`, not dead code.
 
 ### Deferred API hardening (requires large eval refactoring)
 
-- [x] **[LOW]** Restrict `StarlarkList` mutable fields — `items`, `frozen`, `itercount`
-      are `pub(all)`, allowing external code to bypass freeze and mutation checks.
-      Requires adding index/slice/length methods to StarlarkList and updating all
-      direct field accesses in `src/internal/eval/ops.mbt` and tests (~50 sites).
-- [x] **[LOW]** Restrict `StarlarkFunction` fields — `params`, `body`, `defaults`,
-      `captured_scope` are `pub(all)`, exposing AST internals through the value API.
-      Requires providing accessor methods and updating all direct accesses in eval.
-- [x] **[LOW]** `EvalError` fields `call_stack` and `cause` — currently `pub(all)`;
-      `call_stack` is exposed as a named field in starlark-go but could be hidden behind
-      `backtrace()` only. Low priority since users legitimately inspect `msg` and `call_stack`.
-- [x] **[LOW]** `BuiltinCallCtx` is `pub(all)`, making the `call` field publicly
-      writable. Embedders receive this type in their builtin callback; they do not need
-      to construct it externally. Reducing to `pub` (not `pub(all)`) closes the gap.
-- [x] **[LOW]** Remove `src/internal/builtins/builtins.mbt` placeholder — the file
-      contains only a comment; builtins were implemented in `eval/expr.mbt` instead.
-      No package currently imports `src/internal/builtins/`; the directory is dead code.
+- [x] **[LOW]** Restrict `StarlarkList` mutable fields — `items`, `frozen`, `itercount` are `pub(all)`, allowing external code to bypass freeze and mutation checks. Requires adding index/slice/length methods to StarlarkList and updating all direct field accesses in `src/internal/eval/ops.mbt` and tests (~50 sites).
+- [x] **[LOW]** Restrict `StarlarkFunction` fields — `params`, `body`, `defaults`, `captured_scope` are `pub(all)`, exposing AST internals through the value API. Requires providing accessor methods and updating all direct accesses in eval.
+- [x] **[LOW]** `EvalError` fields `call_stack` and `cause` — currently `pub(all)`; `call_stack` is exposed as a named field in starlark-go but could be hidden behind `backtrace()` only. Low priority since users legitimately inspect `msg` and `call_stack`.
+- [x] **[LOW]** `BuiltinCallCtx` is `pub(all)`, making the `call` field publicly writable. Embedders receive this type in their builtin callback; they do not need to construct it externally. Reducing to `pub` (not `pub(all)`) closes the gap.
+- [x] **[LOW]** Remove `src/internal/builtins/builtins.mbt` placeholder — the file contains only a comment; builtins were implemented in `eval/expr.mbt` instead. No package currently imports `src/internal/builtins/`; the directory is dead code.
 
 ### General release tasks
 
-- [x] Finalise public API; review `.mbti` diff
-      — Removed `Val` suffix from all `Value` enum constructors (1535 sites)
-      — Added `repr`, `to_str`, `type_name`, `truth`, `starlark_equals` to public facade
-      — Updated `docs/api.md` and `README.mbt.md` to match new constructor names
+- [x] Finalise public API; review `.mbti` diff — Removed `Val` suffix from all `Value` enum constructors (1535 sites) — Added `repr`, `to_str`, `type_name`, `truth`, `starlark_equals` to public facade — Updated `docs/api.md` and `README.mbt.md` to match new constructor names
 - [x] CLI implementation in `src/cmd/` — run `.star` files; `src/main/` renamed to `src/cmd/`
 - [x] Optional REPL — interactive `read → eval → print` loop (public `src/repl/` library)
 - [x] Usage examples as doc tests in `README.mbt.md`; detailed API reference in `docs/api.md`
@@ -778,8 +537,7 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 - [x] `binary(op, x, y) -> Result[Value, EvalError]` — string-keyed binary operator dispatch
 - [x] `unary(op, x) -> Result[Value, EvalError]` — string-keyed unary operator dispatch
 - [x] `compare(op, x, y) -> Result[Bool, EvalError]` — string-keyed comparison dispatch
-- [x] `StringDict` named type — wrapper around `Map[String, Value]` with `keys()`, `has()`,
-      `freeze()`, `get()`, `set()`, `from_map()` methods; `keys()` returns lexicographic order
+- [x] `StringDict` named type — wrapper around `Map[String, Value]` with `keys()`, `has()`, `freeze()`, `get()`, `set()`, `from_map()` methods; `keys()` returns lexicographic order
 
 ### Additional type re-exports
 
@@ -788,40 +546,21 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 
 ### Remaining low-cost items (not yet implemented)
 
-- [x] **Cycle detection** — `repr`/`str` truncates circular references as `[...]`;
-      `==` / `<` on cyclic structures raises "maximum recursion" (`misc_test`)
-- [x] **Unbound cell detection** — referencing a local before assignment raises an error
-      (`list_test`, `function_test`)
-- [x] **`BoundMethod` hash identity** — each method access creates a unique ID so
-      `{x.f, x.f}` produces a 10-element set (`function_test`)
-- [x] **`option:globalreassign` / `option:loadbindsglobally` test chunks** — dialect flag
-      parsing added to `run_chunked_string`; passing-case chunks added (`assign_test`)
-- [x] **"did you mean" suggestion** — Levenshtein-based typo hint in `load` errors
-      (`misc_test`)
+- [x] **Cycle detection** — `repr`/`str` truncates circular references as `[...]`; `==` / `<` on cyclic structures raises "maximum recursion" (`misc_test`)
+- [x] **Unbound cell detection** — referencing a local before assignment raises an error (`list_test`, `function_test`)
+- [x] **`BoundMethod` hash identity** — each method access creates a unique ID so `{x.f, x.f}` produces a 10-element set (`function_test`)
+- [x] **`option:globalreassign` / `option:loadbindsglobally` test chunks** — dialect flag parsing added to `run_chunked_string`; passing-case chunks added (`assign_test`)
+- [x] **"did you mean" suggestion** — Levenshtein-based typo hint in `load` errors (`misc_test`)
 
-- [x] **Additional embedder protocols** — standalone traits `HasBinary`, `HasUnary`,
-      `HasSetIndex`, `TotallyOrdered`, `Sliceable`, `IterableMapping` added to
-      `protocols.mbt`; `CustomValue` vtable extended with `get_index_fn`,
-      `set_index_fn`, `slice_fn`, `items_fn`; `eval_index`/`set_index`/`eval_slice`
-      in `ops.mbt` now dispatch to `ExtVal` for subscript read/write and slicing.
+- [x] **Additional embedder protocols** — standalone traits `HasBinary`, `HasUnary`, `HasSetIndex`, `TotallyOrdered`, `Sliceable`, `IterableMapping` added to `protocols.mbt`; `CustomValue` vtable extended with `get_index_fn`, `set_index_fn`, `slice_fn`, `items_fn`; `eval_index`/`set_index`/`eval_slice` in `ops.mbt` now dispatch to `ExtVal` for subscript read/write and slicing.
 
 ### Debugger API (カテゴリ4, 9)
 
-- [x] **DebugFrame API** — `Thread.debug_frame(depth)` returns a `DebugFrame` snapshot
-      of an active call frame (depth 0 = innermost Starlark function); `DebugFrame`
-      exposes `callable()`, `num_locals()`, `frame_local(i)`, `local_by_name(name)`,
-      and `position()`. `Binding` type carries local name + position.
-      `Thread.debug_stack` is maintained by `call_func` push/pop around Starlark calls.
+- [x] **DebugFrame API** — `Thread.debug_frame(depth)` returns a `DebugFrame` snapshot of an active call frame (depth 0 = innermost Starlark function); `DebugFrame` exposes `callable()`, `num_locals()`, `frame_local(i)`, `local_by_name(name)`, and `position()`. `Binding` type carries local name + position. `Thread.debug_stack` is maintained by `call_func` push/pop around Starlark calls.
 
 ### Program API (カテゴリ10, 20)
 
-- [x] **Program API** — `source_program(filename, src, opts, is_predeclared)` parses and
-      resolves a file without executing it, returning an immutable `Program` value.
-      `Program.init(thread, predeclared)` executes the resolved AST and returns an
-      unfrozen `Module`; may be called multiple times with different `predeclared`
-      dictionaries. Includes `Program.filename()`, `Program.num_loads()`,
-      `Program.load(i)` for inspecting load statements.
-      Unlike `exec_file`, `Program.init` does NOT freeze the returned module.
+- [x] **Program API** — `source_program(filename, src, opts, is_predeclared)` parses and resolves a file without executing it, returning an immutable `Program` value. `Program.init(thread, predeclared)` executes the resolved AST and returns an unfrozen `Module`; may be called multiple times with different `predeclared` dictionaries. Includes `Program.filename()`, `Program.num_loads()`, `Program.load(i)` for inspecting load statements. Unlike `exec_file`, `Program.init` does NOT freeze the returned module.
 
 ---
 
@@ -829,417 +568,130 @@ Low-cost public API additions derived from gap analysis against starlark-go.
 
 Fixes derived from `.connect0459/bugfix.md` comparison against starlark-go.
 
-- [x] **BUG-1**: `hash()` used FNV-1a instead of Java `String.hashCode` for strings — fixed
-      in `value/traits.mbt` (`java_string_hash`); `expr.mbt` dispatch updated. Commit: `d24583c`
-- [x] **BUG-2**: String `+` corrupted bytes when operands contained invalid UTF-8 — fixed
-      in `eval/ops.mbt`: concat now joins `to_bytes()` arrays directly instead of via `raw`. Commit: `21e555c`
-- [x] **BUG-3**: String `*` corrupted bytes when string contained invalid UTF-8 — fixed
-      in `eval/ops.mbt` `repeat_string`: now iterates over `to_bytes()` instead of `raw()`. Commit: `21e555c`
-- [x] **BUG-4**: `xs.extend(xs)` / `xs += xs` raised error or silently no-op'd — fixed
-      in `eval/expr.mbt` and `eval/stmt.mbt`: both paths now snapshot source items via
-      `StarlarkList::copy_items()` when the argument is a `List`, bypassing iterator
-      protocol to match starlark-go `listExtend` fast path. Commit: `b950f33`
-- [x] **MISSING-3**: Test coverage for partial/invalid UTF-8 string operations — added
-      in `starlarktest/string_test.mbt`: ord on continuation bytes, repr of single-byte
-      slices, codepoint_ords/elem_ords/elems on concat with invalid bytes.
-- [x] **MISSING-4**: `str(b"\xED\xB0\x80")` == U+FFFD × 3 — fixed `str(Bytes)` to re-encode
-      via `from_bytes().raw() + new()`. MoonBit `decode_lossy` gives 3 U+FFFD per byte.
-      Commit: `a6d20d1`
-- [x] **BUG-5**: `range()` with BigInt arg overflowing Int64 silently truncated — fixed
-      in `eval/expr.mbt`: `range_arg_to_int64` checks bounds via `BigInt::compare_int64`
-      and raises `"N out of range (want value in signed 64-bit range)"`. Matches
-      starlark-go `AsInt` error format. Commit: `6915be5`
-- [x] **BUG-6** (bugfix.md BUG-2): `bigint_to_double` silently returned `+Infinity`
-      for huge BigInts instead of raising "int too large to convert to float" — fixed
-      in `value/traits.mbt`: added `bigint_to_finite_double` helper; replaced all
-      mixed Int+Float arithmetic call sites in `eval/ops.mbt` and `float()` builtin
-      in `eval/expr.mbt` via `finite_double` helper. Commit: `c23ab13`
-- [x] **BUG-7** (bugfix.md BUG-3): `<toplevel>` frame missing from call stack during
-      `exec_file` — fixed by pushing/popping `CallFrame("<toplevel>")` in `exec_file`,
-      `exec_file_with_predeclared`, `exec_repl_chunk`, and `Program::init`;
-      `exec_stmts` performs live PC tracking to update the toplevel frame position
-      before each statement dispatch. Commit: `7467150`
-- [x] **BUG-8** (bugfix.md BUG-4): `float()` string error messages differed from
-      starlark-go — fixed in `eval/expr.mbt`: empty string → "float: empty string";
-      syntactically-invalid → "invalid float literal: ..."; valid-format overflow →
-      "floating-point number too large"; `is_float_syntax` helper distinguishes cases.
-      Commit: `c23ab13`
-- [x] **MISSING-5**: Tests for `float(huge_bigint)` overflow — added in
-      `starlarktest/float_test.mbt` covering all mixed Int+Float arithmetic with huge
-      int. Commit: `c23ab13`
-- [x] **MISSING-6**: `set("abc")` and `set() | "abc"` error tests — added to
-      `string_not_iterable_src` in `starlarktest/string_test.mbt`. Commit: `01d4b23`
-- [x] **BUG-9** (bugfix.md BUG-5): `%(name)s` dict-keyed `%` string formatting not
-      implemented — fixed in `eval/ops.mbt`: `percent_format` now detects `%(key)spec`
-      syntax, looks up key in a Dict arg, and skips "too many arguments" check when the
-      arg is a Mapping. Commit: `f3ecb44`
-- [x] **BUG-10** (bugfix.md BUG-6): `%e` and `%f` format specifiers used
-      `f.to_string()` (shortest repr) instead of 6-decimal printf precision — fixed in
-      `eval/ops.mbt`: `format_float_e` now uses `@math.log10` + adjustment loop for
-      `"1.230000e+02"` output; `format_float_f` added for `"123.000000"` output; error
-      message changed to `"%e format requires float, not string"`. Commit: `f3ecb44`
-- [x] **MISSING-7**: `%e`/`%f` test cases from `float.star` lines 410–434 — enabled in
-      `starlarktest/float_test.mbt`. Commit: `f3ecb44`
-- [x] **MISSING-8**: Dict-keyed `%` format test cases from `string.star` lines 177–178
-      — added to `starlarktest/string_test.mbt`. Commit: `f3ecb44`
-- [x] **BUG-11**: Step budget exceeded message differs from starlark-go — fixed in
-      `eval/env.mbt`: no-callback overflow path now calls `thread.cancel("too many steps")`
-      and raises `"Starlark computation cancelled: too many steps"` to match starlark-go.
-      Commit: `ad4541c`
-- [x] **BUG-12**: `Thread::set_max_steps()` does not reset step counter — fixed by
-      having `set_max_steps` call the new `Thread::reset_steps()` method.
-      Commit: `ad4541c`
-- [x] **BUG-13**: `fail()` silently ignores unknown keyword arguments — fixed in
-      `eval/expr.mbt`: unknown kwargs raise `"fail: unexpected keyword argument X"`;
-      non-string `sep` raises `"fail: for parameter sep: got T, want string"`.
-      Commit: `e2ce568`
-- [x] **BUG-14**: `list.count()` / `list.reverse()` / `list.sort()` callable but absent
-      from `dir([])` — removed from `call_list_method`; these are Python-only methods
-      absent from the Starlark spec. Commit: `0f0df20`
-- [x] **MISSING-9**: `Thread::call_frame(n)` single-frame accessor — added to `eval.mbt`;
-      returns `call_stack[length-1-n]` or `None` if out of range. Commit: `ad4541c`
-- [x] **MISSING-10**: `Thread::reset_steps()` public method — added to `eval.mbt`.
-      Commit: `ad4541c`
-- [x] **MISSING-11**: `str.format()` edge-case tests from `string.star` lines 206–215 —
-      added to `starlarktest/string_test.mbt`. Commit: `6823ad6`
-- [x] **MISSING-12**: `str_format` conv/spec split diverges for `{name!conv:spec}` — fixed
-      in `eval/expr.mbt`: post-`!` portion split on `:` to separate conv from spec; empty
-      conv raises `"format: unknown conversion"` (no value). Commit: `6823ad6`
-- [x] **BUG-15**: `hasattr`/attribute access on built-in types returned a `BoundMethod` for
-      any name — fixed in `eval/expr.mbt`: `eval_getattr` now validates attribute names
-      against each type's method set and raises with spell-check hint for unknowns.
-      `dir(string)` also extended with `rsplit`, `codepoints`, `codepoint_ords`.
-      Commit: `67191bb`
-- [x] **BUG-16**: `chr()` error messages did not match starlark-go format — fixed in
-      `eval/expr.mbt`: two branches for `n<0` and `n>0x10FFFF` with exact format.
-      Commit: `67191bb`
-- [x] **BUG-17**: Index out-of-range error format differed from starlark-go — fixed in
-      `eval/ops.mbt`: `adjust_index` now accepts `type_name` and produces
-      `"T index N out of range [-len:len-1]"` / `"index N out of range: empty T"`.
-      Commit: `2b2ac82`
-- [x] **BUG-18**: `'in <string>'` error missing `, not {type}` suffix — fixed in
-      `eval/ops.mbt`. Commit: `67191bb`
-- [x] **BUG-19**: `bytes()` constructor errors missing `"bytes: "` prefix — fixed in
-      `eval/expr.mbt`. Commit: `67191bb`
-- [x] **MISSING-13**: Method spell-check tests for built-in string type — added to
-      `starlarktest/string_test.mbt`. Commit: `2b2ac82`
-- [x] **MISSING-14**: `int("0o123")` / `int("-0o123")` base-10 error tests — added to
-      `starlarktest/int_test.mbt`. Commit: `2b2ac82`
-- [x] **MISSING-15**: `"abc" * (1000000 * 1000000)` repeat-count-too-large test — added to
-      `starlarktest/string_test.mbt`. Commit: `2b2ac82`
-- [x] **MISSING-16**: `abs(+/-123 * maxint32)` BigInt test — added to
-      `starlarktest/builtins_test.mbt`. Commit: `2b2ac82`
-- [x] **MISSING-17**: `"%c" % 0x3b1` and `"%c" % "α"` non-ASCII tests — added to
-      `starlarktest/string_test.mbt`. Commit: `2b2ac82`
-- [x] **MISSING-18**: `%g` format for normal float/int values — fixed `format_float_g` to
-      match starlark-go (negative zero, integer `.0` append, >= 1e6 → scientific notation);
-      tests added to `starlarktest/float_test.mbt`. Commit: `2b2ac82`
-- [x] **MISSING-19**: `%e`/`%f`/`%d` with edge-case large/tiny floats — fixed `%d`/`%o`/
-      `%x`/`%X` for Float to use `double_to_bigint` (full BigInt precision); tests added.
-      Commit: `2b2ac82`
-- [x] **MISSING-20**: Float `%` modulo with negative operands — tests added to
-      `starlarktest/float_test.mbt`. Commit: `2b2ac82`
-- [x] **MISSING-21**: `int()` from 20-digit decimal string — tests added to
-      `starlarktest/int_test.mbt`. Commit: `2b2ac82`
-- [x] **BUG-20**: `number_to_int` silently returned wrong values for BigInt overflow
-      and NaN/Inf — fixed in `src/starlark.mbt`: added `compare_int64` bounds check
-      for BigInt and `is_nan()`/`is_inf()` guard for Float; added `int64` import to
-      `src/moon.pkg`. Commit: `7e27117`
-- [x] **MISSING-22**: `number_to_int` edge-case tests — added four tests covering
-      BigInt overflow, NaN, positive Inf, and negative Inf. Commit: `7e27117`
-- [x] **BUG-21**: Backtrace non-toplevel frame positions showed call-site instead of
-      position within the caller — fixed in `eval/expr.mbt`: `call_value` now stamps
-      the current top-of-stack frame with the call expression's position before
-      dispatching to the callee, so intermediate frames show where within the caller
-      the next call was made. Commit: `c79a41c`
-- [x] **MISSING-23**: Backtrace exact position assertions — added two snapshot tests in
-      `starlarktest/error_format_test.mbt`: one for the simple `f→g` chain verifying
-      `f` shows 4:4 (fixed), and one for the deep `i→h→min→g→f` chain verifying each
-      intermediate frame shows the call-site within that function. Commit: `c79a41c`
-- [x] **BUG-22**: `int()` error message for unsupported types changed from
-      `"int() argument must be a number or string, not 'T'"` to
-      `"int: cannot convert T to int"`, matching starlark-go `NumberToInt` format.
-      Commit: `022b898`
-- [x] **MISSING-24**: BigInt arithmetic boundary tests — ported starlark-go `TestIntOpts`
-      coverage: Add/Mul/Div/And/Or/Xor/Not/Shift at MaxInt32/MinInt32/MaxUint32 boundaries
-      verifying results that cross int32 range. Tests pass immediately since MoonBit uses
-      native BigInt. Commit: `45ae3e2`
-- [x] **BUG-23**: `str.format()` rejected `{name:}` (empty spec) as invalid — fixed in
-      `eval/expr.mbt`: the no-`!` branch now splits `field` on `:` to extract name and
-      spec; an empty spec is valid and returns the value unchanged. Commit: `9c02894`
-- [x] **BUG-24**: `str.format()` error message for non-empty spec omitted the spec value
-      — fixed in `eval/expr.mbt`: both the `!` and no-`!` branches now include the spec
-      string in the error: "format spec features not supported in replacement fields: X",
-      matching starlark-go. Commit: `9c02894`
-- [x] **MISSING-25**: Load error outer backtrace not tested — added snapshot test in
-      `starlarktest/error_format_test.mbt` asserting the `<toplevel>` frame appears at
-      the load statement position. Commit: `e812479`
-- [x] **MISSING-26**: Load error inner backtrace inaccessible — added `cause: EvalError?`
-      field to `EvalError` with `with_cause()` constructor and `cause()` accessor;
-      `exec_load` now uses `with_cause()` so callers can unwrap the inner error's full
-      call stack. Snapshot test verifies both outer and inner backtraces. Commit: `9be5e86`
-- [x] **BUG-25**: `print()` output `Bytes` in repr format instead of raw bytes — fixed in
-      `eval/expr.mbt`: added `Bytes` special case inside the print loop; decodes via
-      `StarlarkString::from_bytes(b).raw()` (lossy UTF-8, consistent with `str(bytes)` and
-      starlark-go's `string(b)` transcoding). Commit: `a94faea`
-- [x] **BUG-26**: Global/module-scope variable accessed before assignment gave wrong error
-      message — fixed in `eval/env.mbt` and `eval/eval.mbt`: added `known_module_globals`
-      pre-scan that collects all module-level bindings before execution; `EvalEnv::lookup`
-      now returns `LUnboundModule` for names that are known-but-not-yet-assigned, raising
-      "global variable X referenced before assignment" to match starlark-go. Commit: `aa4c4a8`
-- [x] **BUG-27**: Built-in name shadowed by later module-level assignment returned built-in
-      instead of raising "global variable X referenced before assignment" — same fix as
-      BUG-26; `known_module_globals` pre-scan correctly overrides built-in lookup for names
-      that are assigned anywhere in the module, even before the assignment executes.
-      Commit: `aa4c4a8`
-- [x] **MISSING-27**: `allow_recursion=false` recursion detection diverged from starlark-go
-      in message and timing — moved from resolver-time name-based detection to runtime
-      call-stack identity check using source position as funcode; error message changed from
-      "recursion not allowed: f" to "function f called recursively"; Y-combinator and mutual
-      recursion now detected; lambda renamed from "<lambda>" to "lambda";
-      `option:norecursion` flag added to `run_chunked_string`. Commit: `2b971c8`
-- [x] **BUG-28**: Comprehension scope: subsequent for-clause target variables were bound
-      AFTER their iterable was walked (in both resolver and evaluator), causing
-      `[x for _ in [3] for x in x]` to silently succeed instead of raising
-      "local variable x referenced before assignment". Fixed by: (1) resolver now walks
-      first clause's iterable in the outer scope before pushing the comp block, then for
-      subsequent clauses binds the target variable BEFORE walking the iterable (matching
-      starlark-go `resolve.go` lines 686–711); (2) evaluator now creates a single shared
-      `comp_env` with all for-clause target names as `known_locals`, evaluates the first
-      clause's iterable in the outer env, and evaluates subsequent iterables in the comp
-      env (where the target is known-but-unassigned → `LUnbound`). Removed dead
-      `EvalEnv::with_parent`. Commit: `262c2ae`
-- [x] **MISSING-28**: `assign.star` lines 337–343 load-binding-used-before-load-stmt error
-      tests added to `assign_test.mbt`. Commit: `41d5a81`
-- [x] **MISSING-29**: `assign.star` line 253 comprehension scope unbound variable test
-      added to `assign_test.mbt` (unblocked by BUG-28 fix). Commit: `41d5a81`
-- [x] **BUG-30**: Right-shift count wrongly capped at 512 — fixed in `eval/ops.mbt`:
-      only left shift is capped at 512; right shift by any non-negative count now works
-      (`1 >> 1000 == 0`, `(-1) >> 1000 == -1`). Error messages now include the shift
-      count value. Commit: `0e3aeec`
-- [x] **BUG-31**: `str()`/`repr()` float formatting threshold differed from starlark-go —
-      `format_float` in `value/value.mbt` now uses Go-compatible 'g' format: scientific
-      notation for integer-form strings with 7+ digits (e.g. `str(1e20)` → "1e+20") and
-      for small decimals with exp < -4 (e.g. `str(1e-5)` → "1e-05"); normalizes exponent
-      format to "e+XX"/"e-XX". `format_float_g` in `eval/ops.mbt` now delegates to
-      `@value.format_float` for consistency. Commit: `680c1e9`
-- [x] **BUG-32**: `float("  1.0  ")` was accepted by `float()` builtin (`.trim()` call
-      in `expr.mbt`); now raises "invalid float literal" matching starlark-go. Commit: `0e3aeec`
-- [x] **BUG-33**: `%c` format rejected astral codepoints (UTF-16 length == 2) — fixed in
-      `eval/ops.mbt`: now uses `utf8_decode_rune` on UTF-8 bytes to verify exactly one
-      rune spans the whole string. Commit: `5ab5df8`
-- [x] **BUG-34**: `int(s, base)` accepted out-of-range base without error — fixed in
-      `eval/expr.mbt`: validates `base == 0 || 2 <= base <= 36` before parsing. Commit: `0e3aeec`
-- [x] **BUG-29**: String search methods used UTF-16 char indices instead of UTF-8
-      byte offsets — fixed in `eval/expr.mbt`: `find`/`rfind`/`index`/`rindex`/`count`/
-      `partition`/`rpartition` and the slice form of `startswith`/`endswith` now operate
-      on byte offsets into the UTF-8 representation (via new `bytes_index_in`/
-      `bytes_last_index_in`/`bytes_count_in`/`bytes_has_prefix`/`bytes_has_suffix`/
-      `str_byte_slice`/`clamp_byte_index` helpers), consistent with subscript and
-      `len()`. Removed the now-unused String-based `rfind_substr`/`count_substr`.
-      Commit: `e4d407c`
-- [x] **MISSING-30/31/32/33**: String methods silently ignored excess positional
-      args, unknown keyword args, and wrong-typed optionals — fixed in `eval/expr.mbt`
-      with shared `check_positional`/`arg_as_string`/`arg_as_int` helpers mirroring
-      starlark-go `UnpackPositionalArgs`. `find`/`count`/`index`/`rindex`/`rfind`/
-      `startswith`/`endswith` reject excess/keyword args; `strip`/`lstrip`/`rstrip`
-      reject non-string chars; `replace` rejects a non-int count; `split`/`rsplit`
-      reject keyword args and validate separator/maxsplit types. Commit: `5db0691`
-- [x] **MISSING-34/35/36**: Builtins silently ignored argument errors — fixed in
-      `eval/expr.mbt`: `dict.update` rejects >1 positional arg and reports element
-      index/length in bad-pair errors; `enumerate`/`range` report the offending
-      parameter and reject keyword/excess args instead of defaulting non-int values;
-      `bytes`/`chr` reject keyword arguments and `abs`/`hash` route arity through
-      `check_positional`. Commit: `48918c7`
-- [x] **MISSING-37/40**: Division/modulo/slice-step error messages now match
-      starlark-go: `/` → "floating-point division by zero", `//` → "floored division
-      by zero", `%` → "integer modulo by zero" / "floating-point modulo by zero",
-      zero slice step → "zero is not a valid slice step" (`eval/ops.mbt`,
-      `value/value.mbt`). Commits: `f0972a2`
-- [x] **MISSING-38/39**: Unsupported `*`/`/`/`//`/`%`/`**` now use the uniform
-      "unknown binary op: LT OP RT" form (matching `+`/`-`); shift errors already
-      carried the count value and fell through to "unknown binary op" on type
-      mismatch (BUG-30). Commit: `3145218`
-- [x] **MISSING-41**: Builtin/method error messages use starlark-go's nameErr
-      prefix — `min`/`max` empty/not-iterable, `list.index`, the `getattr` builtin,
-      `float` non-convertible, and `startswith`/`endswith` tuple-element errors
-      (with the real element index) all aligned (`eval/expr.mbt`). Commit: `e5be4b5`
-- [x] **MISSING-42**: Indentation tabs now expand by source column (rune position),
-      not accumulated width, matching `scan.go` for mixed space+tab indentation
-      (`lexer/scanner.mbt`). Commit: `27ec7c5`
-- [x] **MISSING-43/44**: Parser rejects `load("m")` with no symbols ("load statement
-      must import at least 1 symbol") and unparenthesized trailing-comma tuples
-      ("unparenthesized tuple with trailing comma"); `(x,)` still allowed
-      (`parser/parser.mbt`). Commit: `a63d8af`
-- [x] **MISSING-45**: For-loop / comprehension targets parsed with `parse_primary`
-      (primary-with-suffix) instead of a full test, rejecting `for a + b in xs`
-      (`parser/parser.mbt`). Commit: `a956cda`
-- [x] **MISSING-46/47/48**: Resolver walks index/dot assignment targets as uses
-      (`undef[0]=1` → undefined), rejects non-assignable LHS ("can't assign to
-      <kind>"), and rejects augmented assignment to tuple/list LHS
-      (`resolver/resolver.mbt`). Commit: `da34349`
-- [x] **MISSING-49**: Resolver validates call-argument ordering — multiple
-      `*args`/`**kwargs`, `*args` after `**kwargs`, keyword/positional after
-      `*args`/`**kwargs`, positional after named, repeated keyword, 255-arg limits
-      (`resolver/resolver.mbt`). Commit: `1d35a1f`
-- [x] **MISSING-50**: Resolver enforces full parameter-ordering rules — required
-      after optional, bare `*` must be followed by keyword-only, a `*` or parameter
-      following `**kwargs`, multiple `*` or `**` parameters
-      (`resolver/resolver.mbt`). Commit: `a653ef1`
-- [x] **MISSING-51**: Set literals/comprehensions gated on `allow_set` in the
-      resolver ("this Starlark dialect does not support sets"); the flag is now wired
-      from `Options` through to `ResolveOptions` (`resolver/resolver.mbt`,
-      `eval/eval.mbt`, `eval/program.mbt`). Commit: `5cbcfd2`
-- [x] **MISSING-52**: `load` rejects empty / leading-underscore source identifiers
-      ("load: empty identifier" / "load: names with leading underscores are not
-      exported: NAME") (`resolver/resolver.mbt`). Commit: `3fe9c9e`
-- [x] **MISSING-53**: `Thread.set_print` / `set_loader` allow a single thread to
-      carry print, loader, and step budget together instead of mutually-exclusive
-      constructors (`eval/eval.mbt`). Commit: `1368603`
-- [x] **MISSING-56**: `exec_repl_chunk` re-exported from the public façade
-      (`src/starlark.mbt`). Commit: `1368603`
-- [x] **MISSING-57**: `HasSetKey` hook — `CustomValue.with_set_key` lets embedders
-      implement `x[k]=v` for arbitrary keys; `set_index` dispatch tries it before the
-      integer-indexed hook (`value/protocols.mbt`, `eval/ops.mbt`). Commit: `7c55622`
-- [x] **MISSING-59**: `set_max_steps` no longer resets the accumulated step counter
-      (matching starlark-go `SetMaxExecutionSteps`); reverts the incorrect BUG-12
-      side effect. Use `reset_steps` to zero it (`eval/eval.mbt`). Commit: `1368603`
-- [x] **MISSING-65**: `sorted` is now stable via an explicit original-index
-      tie-break (never reversed), independent of `Array::sort_by` stability
-      (`eval/expr.mbt`). Commit: `20553a7`
-- [x] **MISSING-67**: `Function` and `Builtin` are now usable as dict/set keys —
-      `starlark_hash` returns `Ok(fnv1a(name))` for both; `Function` equality
-      uses `physical_equal` (identity). Commit: `8544f61`
-- [x] **MISSING-68**: `<float> in range(...)` now truncates toward zero (matching
-      starlark-go `NumberToInt`); NaN/Inf raise error instead of silently
-      returning `false`. Commit: `8544f61`
-- [x] **MISSING-74**: `list`/`tuple`/`set`/`reversed`/`zip`/`any`/`all`/`bool`/
-      `type`/`len`/`repr` now reject keyword arguments via `reject_kwargs`.
-      Commit: `8544f61`
-- [x] **MISSING-75**: `str()` with zero arguments now raises
-      "str: got 0 arguments, want exactly 1" instead of returning `""`.
-      Commit: `8544f61`
-- [x] **MISSING-76**: `string.index`/`rindex` "not found" error now has the
-      method-name prefix: "index: substring not found" / "rindex: substring not
-      found". Commit: `8544f61`
-- [x] **MISSING-77**: `loops` counter now saved/restored (set to 0) when entering
-      a `def` or `lambda` body, so `break`/`continue` inside a nested function
-      within a loop correctly raise "not in a loop". Commit: `d32f18b`
-- [x] **MISSING-79**: `\uXXXX` (4-digit) surrogate escapes now rejected in
-      strings and bytes literals with "invalid Unicode surrogate code point".
-      Commit: `b7f1c2f`
-- [x] **MISSING-82** (partial): resolver messages aligned with starlark-go:
-      "break/continue not in a loop", "return statement not within a function",
-      "if/for/while loop not within a function";
-      parser messages: "conditional expression without else clause",
-      "original name of loaded symbol must be quoted: NAME=\"originalname\"".
-      Commits: `d32f18b`, `30f77e9`
+- [x] **BUG-1**: `hash()` used FNV-1a instead of Java `String.hashCode` for strings — fixed in `value/traits.mbt` (`java_string_hash`); `expr.mbt` dispatch updated. Commit: `d24583c`
+- [x] **BUG-2**: String `+` corrupted bytes when operands contained invalid UTF-8 — fixed in `eval/ops.mbt`: concat now joins `to_bytes()` arrays directly instead of via `raw`. Commit: `21e555c`
+- [x] **BUG-3**: String `*` corrupted bytes when string contained invalid UTF-8 — fixed in `eval/ops.mbt` `repeat_string`: now iterates over `to_bytes()` instead of `raw()`. Commit: `21e555c`
+- [x] **BUG-4**: `xs.extend(xs)` / `xs += xs` raised error or silently no-op'd — fixed in `eval/expr.mbt` and `eval/stmt.mbt`: both paths now snapshot source items via `StarlarkList::copy_items()` when the argument is a `List`, bypassing iterator protocol to match starlark-go `listExtend` fast path. Commit: `b950f33`
+- [x] **MISSING-3**: Test coverage for partial/invalid UTF-8 string operations — added in `starlarktest/string_test.mbt`: ord on continuation bytes, repr of single-byte slices, codepoint_ords/elem_ords/elems on concat with invalid bytes.
+- [x] **MISSING-4**: `str(b"\xED\xB0\x80")` == U+FFFD × 3 — fixed `str(Bytes)` to re-encode via `from_bytes().raw() + new()`. MoonBit `decode_lossy` gives 3 U+FFFD per byte. Commit: `a6d20d1`
+- [x] **BUG-5**: `range()` with BigInt arg overflowing Int64 silently truncated — fixed in `eval/expr.mbt`: `range_arg_to_int64` checks bounds via `BigInt::compare_int64` and raises `"N out of range (want value in signed 64-bit range)"`. Matches starlark-go `AsInt` error format. Commit: `6915be5`
+- [x] **BUG-6** (bugfix.md BUG-2): `bigint_to_double` silently returned `+Infinity` for huge BigInts instead of raising "int too large to convert to float" — fixed in `value/traits.mbt`: added `bigint_to_finite_double` helper; replaced all mixed Int+Float arithmetic call sites in `eval/ops.mbt` and `float()` builtin in `eval/expr.mbt` via `finite_double` helper. Commit: `c23ab13`
+- [x] **BUG-7** (bugfix.md BUG-3): `<toplevel>` frame missing from call stack during `exec_file` — fixed by pushing/popping `CallFrame("<toplevel>")` in `exec_file`, `exec_file_with_predeclared`, `exec_repl_chunk`, and `Program::init`; `exec_stmts` performs live PC tracking to update the toplevel frame position before each statement dispatch. Commit: `7467150`
+- [x] **BUG-8** (bugfix.md BUG-4): `float()` string error messages differed from starlark-go — fixed in `eval/expr.mbt`: empty string → "float: empty string"; syntactically-invalid → "invalid float literal: ..."; valid-format overflow → "floating-point number too large"; `is_float_syntax` helper distinguishes cases. Commit: `c23ab13`
+- [x] **MISSING-5**: Tests for `float(huge_bigint)` overflow — added in `starlarktest/float_test.mbt` covering all mixed Int+Float arithmetic with huge int. Commit: `c23ab13`
+- [x] **MISSING-6**: `set("abc")` and `set() | "abc"` error tests — added to `string_not_iterable_src` in `starlarktest/string_test.mbt`. Commit: `01d4b23`
+- [x] **BUG-9** (bugfix.md BUG-5): `%(name)s` dict-keyed `%` string formatting not implemented — fixed in `eval/ops.mbt`: `percent_format` now detects `%(key)spec` syntax, looks up key in a Dict arg, and skips "too many arguments" check when the arg is a Mapping. Commit: `f3ecb44`
+- [x] **BUG-10** (bugfix.md BUG-6): `%e` and `%f` format specifiers used `f.to_string()` (shortest repr) instead of 6-decimal printf precision — fixed in `eval/ops.mbt`: `format_float_e` now uses `@math.log10` + adjustment loop for `"1.230000e+02"` output; `format_float_f` added for `"123.000000"` output; error message changed to `"%e format requires float, not string"`. Commit: `f3ecb44`
+- [x] **MISSING-7**: `%e`/`%f` test cases from `float.star` lines 410–434 — enabled in `starlarktest/float_test.mbt`. Commit: `f3ecb44`
+- [x] **MISSING-8**: Dict-keyed `%` format test cases from `string.star` lines 177–178 — added to `starlarktest/string_test.mbt`. Commit: `f3ecb44`
+- [x] **BUG-11**: Step budget exceeded message differs from starlark-go — fixed in `eval/env.mbt`: no-callback overflow path now calls `thread.cancel("too many steps")` and raises `"Starlark computation cancelled: too many steps"` to match starlark-go. Commit: `ad4541c`
+- [x] **BUG-12**: `Thread::set_max_steps()` does not reset step counter — fixed by having `set_max_steps` call the new `Thread::reset_steps()` method. Commit: `ad4541c`
+- [x] **BUG-13**: `fail()` silently ignores unknown keyword arguments — fixed in `eval/expr.mbt`: unknown kwargs raise `"fail: unexpected keyword argument X"`; non-string `sep` raises `"fail: for parameter sep: got T, want string"`. Commit: `e2ce568`
+- [x] **BUG-14**: `list.count()` / `list.reverse()` / `list.sort()` callable but absent from `dir([])` — removed from `call_list_method`; these are Python-only methods absent from the Starlark spec. Commit: `0f0df20`
+- [x] **MISSING-9**: `Thread::call_frame(n)` single-frame accessor — added to `eval.mbt`; returns `call_stack[length-1-n]` or `None` if out of range. Commit: `ad4541c`
+- [x] **MISSING-10**: `Thread::reset_steps()` public method — added to `eval.mbt`. Commit: `ad4541c`
+- [x] **MISSING-11**: `str.format()` edge-case tests from `string.star` lines 206–215 — added to `starlarktest/string_test.mbt`. Commit: `6823ad6`
+- [x] **MISSING-12**: `str_format` conv/spec split diverges for `{name!conv:spec}` — fixed in `eval/expr.mbt`: post-`!` portion split on `:` to separate conv from spec; empty conv raises `"format: unknown conversion"` (no value). Commit: `6823ad6`
+- [x] **BUG-15**: `hasattr`/attribute access on built-in types returned a `BoundMethod` for any name — fixed in `eval/expr.mbt`: `eval_getattr` now validates attribute names against each type's method set and raises with spell-check hint for unknowns. `dir(string)` also extended with `rsplit`, `codepoints`, `codepoint_ords`. Commit: `67191bb`
+- [x] **BUG-16**: `chr()` error messages did not match starlark-go format — fixed in `eval/expr.mbt`: two branches for `n<0` and `n>0x10FFFF` with exact format. Commit: `67191bb`
+- [x] **BUG-17**: Index out-of-range error format differed from starlark-go — fixed in `eval/ops.mbt`: `adjust_index` now accepts `type_name` and produces `"T index N out of range [-len:len-1]"` / `"index N out of range: empty T"`. Commit: `2b2ac82`
+- [x] **BUG-18**: `'in <string>'` error missing `, not {type}` suffix — fixed in `eval/ops.mbt`. Commit: `67191bb`
+- [x] **BUG-19**: `bytes()` constructor errors missing `"bytes: "` prefix — fixed in `eval/expr.mbt`. Commit: `67191bb`
+- [x] **MISSING-13**: Method spell-check tests for built-in string type — added to `starlarktest/string_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-14**: `int("0o123")` / `int("-0o123")` base-10 error tests — added to `starlarktest/int_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-15**: `"abc" * (1000000 * 1000000)` repeat-count-too-large test — added to `starlarktest/string_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-16**: `abs(+/-123 * maxint32)` BigInt test — added to `starlarktest/builtins_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-17**: `"%c" % 0x3b1` and `"%c" % "α"` non-ASCII tests — added to `starlarktest/string_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-18**: `%g` format for normal float/int values — fixed `format_float_g` to match starlark-go (negative zero, integer `.0` append, >= 1e6 → scientific notation); tests added to `starlarktest/float_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-19**: `%e`/`%f`/`%d` with edge-case large/tiny floats — fixed `%d`/`%o`/`%x`/`%X` for Float to use `double_to_bigint` (full BigInt precision); tests added. Commit: `2b2ac82`
+- [x] **MISSING-20**: Float `%` modulo with negative operands — tests added to `starlarktest/float_test.mbt`. Commit: `2b2ac82`
+- [x] **MISSING-21**: `int()` from 20-digit decimal string — tests added to `starlarktest/int_test.mbt`. Commit: `2b2ac82`
+- [x] **BUG-20**: `number_to_int` silently returned wrong values for BigInt overflow and NaN/Inf — fixed in `src/starlark.mbt`: added `compare_int64` bounds check for BigInt and `is_nan()`/`is_inf()` guard for Float; added `int64` import to `src/moon.pkg`. Commit: `7e27117`
+- [x] **MISSING-22**: `number_to_int` edge-case tests — added four tests covering BigInt overflow, NaN, positive Inf, and negative Inf. Commit: `7e27117`
+- [x] **BUG-21**: Backtrace non-toplevel frame positions showed call-site instead of position within the caller — fixed in `eval/expr.mbt`: `call_value` now stamps the current top-of-stack frame with the call expression's position before dispatching to the callee, so intermediate frames show where within the caller the next call was made. Commit: `c79a41c`
+- [x] **MISSING-23**: Backtrace exact position assertions — added two snapshot tests in `starlarktest/error_format_test.mbt`: one for the simple `f→g` chain verifying `f` shows 4:4 (fixed), and one for the deep `i→h→min→g→f` chain verifying each intermediate frame shows the call-site within that function. Commit: `c79a41c`
+- [x] **BUG-22**: `int()` error message for unsupported types changed from `"int() argument must be a number or string, not 'T'"` to `"int: cannot convert T to int"`, matching starlark-go `NumberToInt` format. Commit: `022b898`
+- [x] **MISSING-24**: BigInt arithmetic boundary tests — ported starlark-go `TestIntOpts` coverage: Add/Mul/Div/And/Or/Xor/Not/Shift at MaxInt32/MinInt32/MaxUint32 boundaries verifying results that cross int32 range. Tests pass immediately since MoonBit uses native BigInt. Commit: `45ae3e2`
+- [x] **BUG-23**: `str.format()` rejected `{name:}` (empty spec) as invalid — fixed in `eval/expr.mbt`: the no-`!` branch now splits `field` on `:` to extract name and spec; an empty spec is valid and returns the value unchanged. Commit: `9c02894`
+- [x] **BUG-24**: `str.format()` error message for non-empty spec omitted the spec value — fixed in `eval/expr.mbt`: both the `!` and no-`!` branches now include the spec string in the error: "format spec features not supported in replacement fields: X", matching starlark-go. Commit: `9c02894`
+- [x] **MISSING-25**: Load error outer backtrace not tested — added snapshot test in `starlarktest/error_format_test.mbt` asserting the `<toplevel>` frame appears at the load statement position. Commit: `e812479`
+- [x] **MISSING-26**: Load error inner backtrace inaccessible — added `cause: EvalError?` field to `EvalError` with `with_cause()` constructor and `cause()` accessor; `exec_load` now uses `with_cause()` so callers can unwrap the inner error's full call stack. Snapshot test verifies both outer and inner backtraces. Commit: `9be5e86`
+- [x] **BUG-25**: `print()` output `Bytes` in repr format instead of raw bytes — fixed in `eval/expr.mbt`: added `Bytes` special case inside the print loop; decodes via `StarlarkString::from_bytes(b).raw()` (lossy UTF-8, consistent with `str(bytes)` and starlark-go's `string(b)` transcoding). Commit: `a94faea`
+- [x] **BUG-26**: Global/module-scope variable accessed before assignment gave wrong error message — fixed in `eval/env.mbt` and `eval/eval.mbt`: added `known_module_globals` pre-scan that collects all module-level bindings before execution; `EvalEnv::lookup` now returns `LUnboundModule` for names that are known-but-not-yet-assigned, raising "global variable X referenced before assignment" to match starlark-go. Commit: `aa4c4a8`
+- [x] **BUG-27**: Built-in name shadowed by later module-level assignment returned built-in instead of raising "global variable X referenced before assignment" — same fix as BUG-26; `known_module_globals` pre-scan correctly overrides built-in lookup for names that are assigned anywhere in the module, even before the assignment executes. Commit: `aa4c4a8`
+- [x] **MISSING-27**: `allow_recursion=false` recursion detection diverged from starlark-go in message and timing — moved from resolver-time name-based detection to runtime call-stack identity check using source position as funcode; error message changed from "recursion not allowed: f" to "function f called recursively"; Y-combinator and mutual recursion now detected; lambda renamed from "<lambda>" to "lambda"; `option:norecursion` flag added to `run_chunked_string`. Commit: `2b971c8`
+- [x] **BUG-28**: Comprehension scope: subsequent for-clause target variables were bound AFTER their iterable was walked (in both resolver and evaluator), causing `[x for _ in [3] for x in x]` to silently succeed instead of raising "local variable x referenced before assignment". Fixed by: (1) resolver now walks first clause's iterable in the outer scope before pushing the comp block, then for subsequent clauses binds the target variable BEFORE walking the iterable (matching starlark-go `resolve.go` lines 686–711); (2) evaluator now creates a single shared `comp_env` with all for-clause target names as `known_locals`, evaluates the first clause's iterable in the outer env, and evaluates subsequent iterables in the comp env (where the target is known-but-unassigned → `LUnbound`). Removed dead `EvalEnv::with_parent`. Commit: `262c2ae`
+- [x] **MISSING-28**: `assign.star` lines 337–343 load-binding-used-before-load-stmt error tests added to `assign_test.mbt`. Commit: `41d5a81`
+- [x] **MISSING-29**: `assign.star` line 253 comprehension scope unbound variable test added to `assign_test.mbt` (unblocked by BUG-28 fix). Commit: `41d5a81`
+- [x] **BUG-30**: Right-shift count wrongly capped at 512 — fixed in `eval/ops.mbt`: only left shift is capped at 512; right shift by any non-negative count now works (`1 >> 1000 == 0`, `(-1) >> 1000 == -1`). Error messages now include the shift count value. Commit: `0e3aeec`
+- [x] **BUG-31**: `str()`/`repr()` float formatting threshold differed from starlark-go — `format_float` in `value/value.mbt` now uses Go-compatible 'g' format: scientific notation for integer-form strings with 7+ digits (e.g. `str(1e20)` → "1e+20") and for small decimals with exp < -4 (e.g. `str(1e-5)` → "1e-05"); normalizes exponent format to "e+XX"/"e-XX". `format_float_g` in `eval/ops.mbt` now delegates to `@value.format_float` for consistency. Commit: `680c1e9`
+- [x] **BUG-32**: `float("  1.0  ")` was accepted by `float()` builtin (`.trim()` call in `expr.mbt`); now raises "invalid float literal" matching starlark-go. Commit: `0e3aeec`
+- [x] **BUG-33**: `%c` format rejected astral codepoints (UTF-16 length == 2) — fixed in `eval/ops.mbt`: now uses `utf8_decode_rune` on UTF-8 bytes to verify exactly one rune spans the whole string. Commit: `5ab5df8`
+- [x] **BUG-34**: `int(s, base)` accepted out-of-range base without error — fixed in `eval/expr.mbt`: validates `base == 0 || 2 <= base <= 36` before parsing. Commit: `0e3aeec`
+- [x] **BUG-29**: String search methods used UTF-16 char indices instead of UTF-8 byte offsets — fixed in `eval/expr.mbt`: `find`/`rfind`/`index`/`rindex`/`count`/`partition`/`rpartition` and the slice form of `startswith`/`endswith` now operate on byte offsets into the UTF-8 representation (via new `bytes_index_in`/`bytes_last_index_in`/`bytes_count_in`/`bytes_has_prefix`/`bytes_has_suffix`/`str_byte_slice`/`clamp_byte_index` helpers), consistent with subscript and `len()`. Removed the now-unused String-based `rfind_substr`/`count_substr`. Commit: `e4d407c`
+- [x] **MISSING-30/31/32/33**: String methods silently ignored excess positional args, unknown keyword args, and wrong-typed optionals — fixed in `eval/expr.mbt` with shared `check_positional`/`arg_as_string`/`arg_as_int` helpers mirroring starlark-go `UnpackPositionalArgs`. `find`/`count`/`index`/`rindex`/`rfind`/`startswith`/`endswith` reject excess/keyword args; `strip`/`lstrip`/`rstrip` reject non-string chars; `replace` rejects a non-int count; `split`/`rsplit` reject keyword args and validate separator/maxsplit types. Commit: `5db0691`
+- [x] **MISSING-34/35/36**: Builtins silently ignored argument errors — fixed in `eval/expr.mbt`: `dict.update` rejects >1 positional arg and reports element index/length in bad-pair errors; `enumerate`/`range` report the offending parameter and reject keyword/excess args instead of defaulting non-int values; `bytes`/`chr` reject keyword arguments and `abs`/`hash` route arity through `check_positional`. Commit: `48918c7`
+- [x] **MISSING-37/40**: Division/modulo/slice-step error messages now match starlark-go: `/` → "floating-point division by zero", `//` → "floored division by zero", `%` → "integer modulo by zero" / "floating-point modulo by zero", zero slice step → "zero is not a valid slice step" (`eval/ops.mbt`, `value/value.mbt`). Commits: `f0972a2`
+- [x] **MISSING-38/39**: Unsupported `*`/`/`/`//`/`%`/`**` now use the uniform "unknown binary op: LT OP RT" form (matching `+`/`-`); shift errors already carried the count value and fell through to "unknown binary op" on type mismatch (BUG-30). Commit: `3145218`
+- [x] **MISSING-41**: Builtin/method error messages use starlark-go's nameErr prefix — `min`/`max` empty/not-iterable, `list.index`, the `getattr` builtin, `float` non-convertible, and `startswith`/`endswith` tuple-element errors (with the real element index) all aligned (`eval/expr.mbt`). Commit: `e5be4b5`
+- [x] **MISSING-42**: Indentation tabs now expand by source column (rune position), not accumulated width, matching `scan.go` for mixed space+tab indentation (`lexer/scanner.mbt`). Commit: `27ec7c5`
+- [x] **MISSING-43/44**: Parser rejects `load("m")` with no symbols ("load statement must import at least 1 symbol") and unparenthesized trailing-comma tuples ("unparenthesized tuple with trailing comma"); `(x,)` still allowed (`parser/parser.mbt`). Commit: `a63d8af`
+- [x] **MISSING-45**: For-loop / comprehension targets parsed with `parse_primary` (primary-with-suffix) instead of a full test, rejecting `for a + b in xs` (`parser/parser.mbt`). Commit: `a956cda`
+- [x] **MISSING-46/47/48**: Resolver walks index/dot assignment targets as uses (`undef[0]=1` → undefined), rejects non-assignable LHS ("can't assign to <kind>"), and rejects augmented assignment to tuple/list LHS (`resolver/resolver.mbt`). Commit: `da34349`
+- [x] **MISSING-49**: Resolver validates call-argument ordering — multiple `*args`/`**kwargs`, `*args` after `**kwargs`, keyword/positional after `*args`/`**kwargs`, positional after named, repeated keyword, 255-arg limits (`resolver/resolver.mbt`). Commit: `1d35a1f`
+- [x] **MISSING-50**: Resolver enforces full parameter-ordering rules — required after optional, bare `*` must be followed by keyword-only, a `*` or parameter following `**kwargs`, multiple `*` or `**` parameters (`resolver/resolver.mbt`). Commit: `a653ef1`
+- [x] **MISSING-51**: Set literals/comprehensions gated on `allow_set` in the resolver ("this Starlark dialect does not support sets"); the flag is now wired from `Options` through to `ResolveOptions` (`resolver/resolver.mbt`, `eval/eval.mbt`, `eval/program.mbt`). Commit: `5cbcfd2`
+- [x] **MISSING-52**: `load` rejects empty / leading-underscore source identifiers ("load: empty identifier" / "load: names with leading underscores are not exported: NAME") (`resolver/resolver.mbt`). Commit: `3fe9c9e`
+- [x] **MISSING-53**: `Thread.set_print` / `set_loader` allow a single thread to carry print, loader, and step budget together instead of mutually-exclusive constructors (`eval/eval.mbt`). Commit: `1368603`
+- [x] **MISSING-56**: `exec_repl_chunk` re-exported from the public façade (`src/starlark.mbt`). Commit: `1368603`
+- [x] **MISSING-57**: `HasSetKey` hook — `CustomValue.with_set_key` lets embedders implement `x[k]=v` for arbitrary keys; `set_index` dispatch tries it before the integer-indexed hook (`value/protocols.mbt`, `eval/ops.mbt`). Commit: `7c55622`
+- [x] **MISSING-59**: `set_max_steps` no longer resets the accumulated step counter (matching starlark-go `SetMaxExecutionSteps`); reverts the incorrect BUG-12 side effect. Use `reset_steps` to zero it (`eval/eval.mbt`). Commit: `1368603`
+- [x] **MISSING-65**: `sorted` is now stable via an explicit original-index tie-break (never reversed), independent of `Array::sort_by` stability (`eval/expr.mbt`). Commit: `20553a7`
+- [x] **MISSING-67**: `Function` and `Builtin` are now usable as dict/set keys — `starlark_hash` returns `Ok(fnv1a(name))` for both; `Function` equality uses `physical_equal` (identity). Commit: `8544f61`
+- [x] **MISSING-68**: `<float> in range(...)` now truncates toward zero (matching starlark-go `NumberToInt`); NaN/Inf raise error instead of silently returning `false`. Commit: `8544f61`
+- [x] **MISSING-74**: `list`/`tuple`/`set`/`reversed`/`zip`/`any`/`all`/`bool`/`type`/`len`/`repr` now reject keyword arguments via `reject_kwargs`. Commit: `8544f61`
+- [x] **MISSING-75**: `str()` with zero arguments now raises "str: got 0 arguments, want exactly 1" instead of returning `""`. Commit: `8544f61`
+- [x] **MISSING-76**: `string.index`/`rindex` "not found" error now has the method-name prefix: "index: substring not found" / "rindex: substring not found". Commit: `8544f61`
+- [x] **MISSING-77**: `loops` counter now saved/restored (set to 0) when entering a `def` or `lambda` body, so `break`/`continue` inside a nested function within a loop correctly raise "not in a loop". Commit: `d32f18b`
+- [x] **MISSING-79**: `\uXXXX` (4-digit) surrogate escapes now rejected in strings and bytes literals with "invalid Unicode surrogate code point". Commit: `b7f1c2f`
+- [x] **MISSING-82** (partial): resolver messages aligned with starlark-go: "break/continue not in a loop", "return statement not within a function", "if/for/while loop not within a function"; parser messages: "conditional expression without else clause", "original name of loaded symbol must be quoted: NAME=\"originalname\"". Commits: `d32f18b`, `30f77e9`
 
 ### Deferred second-pass items (MISSING-69..86)
 
-- [x] **MISSING-69**: `%e`/`%E`/`%f`/`%F` now round the six fractional digits
-      with round-half-to-even on the exact binary value (mantissa*2^exp
-      decomposed and `mantissa * 10^scale` rounded via big-integer division),
-      matching Go's correctly-rounded `strconv.FormatFloat`. Replaces the
-      previous half-up-on-inexact-`frac*1e6`-intermediate algorithm; e.g.
-      `"%f" % 5e-07` → `0.000000` (was `0.000001`). Commit: `da5b01a`
-- [x] **MISSING-70**: `hash_bigint` now uses the low 32 bits of the absolute
-      value (magnitude) for BigInts outside the Int64 range, matching
-      starlark-go's `iBig.Bits()[0]` formula. Int64-range values remain
-      unchanged (two's-complement, same as before). Commit: `433beae`
-- [x] **MISSING-71**: String/list/tuple/bytes repeat checks now use multiplication
-      (`elem_len * count >= max_alloc`) matching starlark-go's `len*i >= 1<<30`.
-      The integer-division form allowed products of exactly 2^30 that Go rejects.
-      Commit: `d0c8187`
-- [x] **MISSING-72**: Unicode-aware `capitalize`/`islower`/`isupper`/`title`/
-      `istitle`/`isspace` — `capitalize`/`title` now use a small digraph table
-      (U+01C4..U+01CC, U+01F1..U+01F3) for `to_title`, `islower`/`isupper` use
-      string-level `to_lower()`/`to_upper()` comparison with digraph-aware
-      `has_cased` detection, `isspace` delegates to `Char::is_whitespace()` (full
-      Unicode White_Space property), and `istitle` extends with `unicode_is_title_codepoint`
-      / `unicode_is_upper/lower_codepoint_strict` for the four digraph triples.
-      `isalpha`/`isdigit`/`isalnum` remain ASCII-only (no Unicode test coverage in
-      reference test suite). Commit: `b477d5e`
-- [x] **MISSING-73**: String search methods (`find`/`count`/`index`/`rfind`/
-      `rindex`/`startswith`/`endswith`) silently default a non-int / non-None
-      `start`/`end` argument instead of erroring. Fixed via `parse_search_index`
-      helper; raises "METHOD: invalid start/end index: got T, want int".
-      Commit: `a673113`
-- [x] **MISSING-76** (part 2): `rindex() argument must be a string` — also
-      needs "rindex:" prefix (only the not-found branch was fixed). Fixed by
-      refactoring to use `arg_as_string` for find/count/index/rfind/rindex.
-      Commit: `a673113`
-- [x] **MISSING-78**: `load` nested inside a top-level `if`/`for`/`while` not
-      rejected; Go emits "load statement within a loop/conditional". Fixed by
-      adding `ifstmts` counter to Resolver; load now emits context-specific
-      error. Commit: `70d8e1a`
-- [x] **MISSING-80**: Undefined-variable error appends "(did you mean X?)"
-      when a module global is within edit distance of the misspelled name.
-      Function-local candidates are not included (deferred uses lose block
-      context); covers the most common module-level typo case.
-      Commit: `0761989`
-- [x] **MISSING-81**: Non-ASCII identifier-start now decodes the full UTF-8
-      rune and checks `is_unicode_letter_rune` (explicit Unicode letter-block
-      ranges matching `unicode.IsLetter`); `→` (U+2192, So) now produces
-      "unexpected input character"; cased letters (é, α) and CJK ideographs
-      remain valid. `collect_ident_bytes` validates continuation runes the
-      same way. Commit: `6a2afe3`
-- [x] **MISSING-82** (remaining): `"load statement within a function"` vs
-      `"load statement must be at module level"` distinction for load inside a
-      function vs loop/conditional; `"dialect does not support while loops"`
-      message when `allow_while=false`. Both fixed in `70d8e1a`.
-- [x] **MISSING-83**: Pre-parsed expression eval entry point added:
-      `SyntaxExpr` type alias, `parse_expr(filename, src)`, and
-      `eval_parsed_expr(thread, expr, opts, env)` re-exported in the
-      public façade. Mirrors starlark-go `EvalExpr`. Commit: `238d4fb`
-- [ ] **MISSING-84** [INTENTIONAL]: `Module` does not retain originating
-      `Program`. Architectural divergence, WONTFIX.
+- [x] **MISSING-69**: `%e`/`%E`/`%f`/`%F` now round the six fractional digits with round-half-to-even on the exact binary value (mantissa*2^exp decomposed and `mantissa * 10^scale` rounded via big-integer division), matching Go's correctly-rounded `strconv.FormatFloat`. Replaces the previous half-up-on-inexact-`frac*1e6`-intermediate algorithm; e.g. `"%f" % 5e-07` → `0.000000` (was `0.000001`). Commit: `da5b01a`
+- [x] **MISSING-70**: `hash_bigint` now uses the low 32 bits of the absolute value (magnitude) for BigInts outside the Int64 range, matching starlark-go's `iBig.Bits()[0]` formula. Int64-range values remain unchanged (two's-complement, same as before). Commit: `433beae`
+- [x] **MISSING-71**: String/list/tuple/bytes repeat checks now use multiplication (`elem_len * count >= max_alloc`) matching starlark-go's `len*i >= 1<<30`. The integer-division form allowed products of exactly 2^30 that Go rejects. Commit: `d0c8187`
+- [x] **MISSING-72**: Unicode-aware `capitalize`/`islower`/`isupper`/`title`/`istitle`/`isspace` — `capitalize`/`title` now use a small digraph table (U+01C4..U+01CC, U+01F1..U+01F3) for `to_title`, `islower`/`isupper` use string-level `to_lower()`/`to_upper()` comparison with digraph-aware `has_cased` detection, `isspace` delegates to `Char::is_whitespace()` (full Unicode White_Space property), and `istitle` extends with `unicode_is_title_codepoint` / `unicode_is_upper/lower_codepoint_strict` for the four digraph triples. `isalpha`/`isdigit`/`isalnum` remain ASCII-only (no Unicode test coverage in reference test suite). Commit: `b477d5e`
+- [x] **MISSING-73**: String search methods (`find`/`count`/`index`/`rfind`/`rindex`/`startswith`/`endswith`) silently default a non-int / non-None `start`/`end` argument instead of erroring. Fixed via `parse_search_index` helper; raises "METHOD: invalid start/end index: got T, want int". Commit: `a673113`
+- [x] **MISSING-76** (part 2): `rindex() argument must be a string` — also needs "rindex:" prefix (only the not-found branch was fixed). Fixed by refactoring to use `arg_as_string` for find/count/index/rfind/rindex. Commit: `a673113`
+- [x] **MISSING-78**: `load` nested inside a top-level `if`/`for`/`while` not rejected; Go emits "load statement within a loop/conditional". Fixed by adding `ifstmts` counter to Resolver; load now emits context-specific error. Commit: `70d8e1a`
+- [x] **MISSING-80**: Undefined-variable error appends "(did you mean X?)" when a module global is within edit distance of the misspelled name. Function-local candidates are not included (deferred uses lose block context); covers the most common module-level typo case. Commit: `0761989`
+- [x] **MISSING-81**: Non-ASCII identifier-start now decodes the full UTF-8 rune and checks `is_unicode_letter_rune` (explicit Unicode letter-block ranges matching `unicode.IsLetter`); `→` (U+2192, So) now produces "unexpected input character"; cased letters (é, α) and CJK ideographs remain valid. `collect_ident_bytes` validates continuation runes the same way. Commit: `6a2afe3`
+- [x] **MISSING-82** (remaining): `"load statement within a function"` vs `"load statement must be at module level"` distinction for load inside a function vs loop/conditional; `"dialect does not support while loops"` message when `allow_while=false`. Both fixed in `70d8e1a`.
+- [x] **MISSING-83**: Pre-parsed expression eval entry point added: `SyntaxExpr` type alias, `parse_expr(filename, src)`, and `eval_parsed_expr(thread, expr, opts, env)` re-exported in the public façade. Mirrors starlark-go `EvalExpr`. Commit: `238d4fb`
+- [ ] **MISSING-84** [INTENTIONAL]: `Module` does not retain originating `Program`. Architectural divergence, WONTFIX.
 - [ ] **MISSING-85** [out of scope]: No global profiler `StartProfile/StopProfile`.
 
 ### Third-pass gap analysis (MISSING-86..101)
 
 Fresh four-axis comparison against starlark-go after MISSING-1..85 closed. Behavioral and message-only divergences fixed via TDD; design-decision items resolved with the user.
 
-- [x] **MISSING-86**: `splitlines()` now splits on `\n` only (carriage return is
-      an ordinary character), matching starlark-go. Commit: `splitlines \n only`.
-- [x] **MISSING-87**: `sorted()` accepts `key`/`reverse` positionally, rejects a
-      4th positional arg, type-errors a non-bool `reverse`, and rejects duplicate /
-      unknown keyword arguments (UnpackArgs parity).
-- [x] **MISSING-88**: `list.index` rejects more than three positional args
-      ("index: got N arguments, want at most 3").
-- [x] **MISSING-89**: `enumerate(non_iterable)` error now carries the
-      "enumerate:" name prefix.
-- [x] **MISSING-90**: Integer format verbs `%d/%i/%o/%x/%X` wrap the NumberToInt
-      cause as "%<verb> format requires integer: <cause>".
-- [x] **MISSING-91**: `%c` reports the offending value when out of range and the
-      "int or single-character string" requirement for non-int/non-string args.
+- [x] **MISSING-86**: `splitlines()` now splits on `\n` only (carriage return is an ordinary character), matching starlark-go. Commit: `splitlines \n only`.
+- [x] **MISSING-87**: `sorted()` accepts `key`/`reverse` positionally, rejects a 4th positional arg, type-errors a non-bool `reverse`, and rejects duplicate / unknown keyword arguments (UnpackArgs parity).
+- [x] **MISSING-88**: `list.index` rejects more than three positional args ("index: got N arguments, want at most 3").
+- [x] **MISSING-89**: `enumerate(non_iterable)` error now carries the "enumerate:" name prefix.
+- [x] **MISSING-90**: Integer format verbs `%d/%i/%o/%x/%X` wrap the NumberToInt cause as "%<verb> format requires integer: <cause>".
+- [x] **MISSING-91**: `%c` reports the offending value when out of range and the "int or single-character string" requirement for non-int/non-string args.
 - [x] **MISSING-92**: Unknown conversion verb → "unknown conversion %<c>".
-- [x] **MISSING-93**: Trailing `%` checks argument availability before reporting
-      the missing verb ("not enough arguments for format string" / "incomplete
-      format").
+- [x] **MISSING-93**: Trailing `%` checks argument availability before reporting the missing verb ("not enough arguments for format string" / "incomplete format").
 - [x] **MISSING-94**: Unary-op type error → "unknown unary op: <op> <type>".
-- [x] **MISSING-95**: Tuple-unpack mismatch uses "(got M, want N)" order with no
-      inline position prefix.
-- [x] **MISSING-96**: Item assignment → "<type> value does not support item
-      assignment".
-- [x] **MISSING-97**: Float `**` with a non-integral exponent now computes the real
-      power via `@math.pow` (was NaN).
-- [x] **MISSING-98**: `**` power operator removed. It was a MoonBit extension
-      absent from starlark-go (where `**` is kwargs/params syntax only). With no
-      clear use case it was dropped for strict starlark-go parity: `2 ** 10` is
-      now a syntax error. `OpPow` removed from `@syntax.BinaryOp`; `eval_pow`/
-      `float_pow` and the `binary("**")` dispatch removed; the `**` token is
-      retained for `**kwargs`. MISSING-97 (Float `**`) is now moot.
-- [x] **MISSING-99**: Adjacent string-literal concatenation (`"a" "b"`) removed;
-      now a syntax error, matching starlark-go (decision: Go parity).
-- [x] **MISSING-100**: Malformed keyword argument (`f(a.b=1)`) → "keyword argument
-      must have form name=expr".
-- [x] **MISSING-101**: Parser/lexer error *positions* now match starlark-go,
-      which points diagnostics at `scanner.pos` (one column past the last
-      consumed byte). Number-literal errors (obsolete octal, invalid float/int)
-      report at the scanner's `current_pos()` instead of the literal start; the
-      non-associative chained-comparison error reports one column past the
-      operator via a new `Scanner::position()` accessor / `Parser::scanner_error`.
+- [x] **MISSING-95**: Tuple-unpack mismatch uses "(got M, want N)" order with no inline position prefix.
+- [x] **MISSING-96**: Item assignment → "<type> value does not support item assignment".
+- [x] **MISSING-97**: Float `**` with a non-integral exponent now computes the real power via `@math.pow` (was NaN).
+- [x] **MISSING-98**: `**` power operator removed. It was a MoonBit extension absent from starlark-go (where `**` is kwargs/params syntax only). With no clear use case it was dropped for strict starlark-go parity: `2 ** 10` is now a syntax error. `OpPow` removed from `@syntax.BinaryOp`; `eval_pow`/`float_pow` and the `binary("**")` dispatch removed; the `**` token is retained for `**kwargs`. MISSING-97 (Float `**`) is now moot.
+- [x] **MISSING-99**: Adjacent string-literal concatenation (`"a" "b"`) removed; now a syntax error, matching starlark-go (decision: Go parity).
+- [x] **MISSING-100**: Malformed keyword argument (`f(a.b=1)`) → "keyword argument must have form name=expr".
+- [x] **MISSING-101**: Parser/lexer error *positions* now match starlark-go, which points diagnostics at `scanner.pos` (one column past the last consumed byte). Number-literal errors (obsolete octal, invalid float/int) report at the scanner's `current_pos()` instead of the literal start; the non-associative chained-comparison error reports one column past the operator via a new `Scanner::position()` accessor / `Parser::scanner_error`.
 
 All earlier-pass deferrals now closed: MISSING-69 (%e/%f round-half-to-even), 70 (hash neg bigint), 71 (repeat boundary), 72 (Unicode is*/title/capitalize), 80 (undefined "did you mean"), 81 (non-ASCII ident `unicode.IsLetter`), 83 (pre-parsed expr eval entry point).
 
@@ -1247,701 +699,239 @@ All earlier-pass deferrals now closed: MISSING-69 (%e/%f round-half-to-even), 70
 
 Fresh four-axis comparison against starlark-go plus first comparison of the extension libraries (`json`, `math`, `time`, `struct`). Each fixed via TDD.
 
-- [x] **MISSING-102** / **MISSING-111** / **MISSING-115**: `dict()` and
-      `dict.update` now share a single `update_dict` helper mirroring
-      starlark-go's `updateDict`. `dict.update` accepts any iterable of
-      two-element pairs (e.g. `range`), not just tuple/list elements; both
-      paths report "dictionary update sequence element #N has length M, want 2"
-      with a `dict:`/`update:` prefix. `dict.popitem` empty error now reads
-      "popitem: empty dict".
-- [x] **MISSING-103**: `int(x, base)` validates the base argument's type in the
-      string branch ("int: for base, got T, want int") instead of silently
-      defaulting to base 10; a non-string `x` with any explicit base reports
-      "int: can't convert non-string with explicit base".
-- [x] **MISSING-104**: `dict.get`/`pop`/`setdefault` route through
-      `check_positional`, rejecting excess positional args ("got N arguments,
-      want at most 2") and keyword args.
-- [x] **MISSING-105**: `format_float` switches a decimal-form value with a
-      7-or-more-digit integer part (decimal exponent >= 6) to scientific
-      notation, matching Go's `strconv.FormatFloat('g')`; e.g.
-      `str(9999999.9)` → `"9.9999999e+06"`.
-- [x] **MISSING-106**: a name bound only by an augmented assignment inside a
-      function is pre-collected as a local, so a nested closure referencing it
-      resolves cleanly instead of raising a false "undefined".
-- [x] **MISSING-107**: `time.parse_time(x, format=...)` honors the layout via a
-      Go reference-time parser (`parse_go_layout`) instead of discarding it and
-      always parsing RFC3339; supports date/time verbs, 12-hour + AM/PM, month
-      and weekday names, fractional seconds, and numeric/Z timezone tokens.
-- [x] **MISSING-112**: `list.pop`/`insert`/`remove`/`index` use the nameErr style
-      ("pop: got T, want int", "pop: index -1 out of range: empty list",
-      "insert: got N arguments, want 2", "remove: got N arguments, want 1",
-      "index: invalid start/end index: got T, want int").
-- [x] **MISSING-113**: `int()` error messages carry the `int:` prefix
-      ("int: missing argument for x", "int: cannot convert float NaN/infinity
-      to integer").
-- [x] **MISSING-114**: `chr`/`ord` arity and type messages use the nameErr style;
-      `ord` also rejects keyword arguments and prefixes the codepoint-count error.
-- [x] **MISSING-116**: `removeprefix`/`removesuffix` arity/type messages match
-      starlark-go's UnpackPositionalArgs wording.
-- [x] **MISSING-109**: added the `module(name, **kwargs)` builtin to
-      `src/lib/struct/` (port of starlarkstruct's `MakeModule`): a "module"-typed
-      value with `<module "name">` repr, member attributes, unhashable, frozen
-      transitively. Wired into the `struct.star` load target.
-- [x] **MISSING-110**: `struct + non_struct` now returns unhandled (None) so the
-      evaluator emits the standard "unknown binary op: struct + T" message,
-      matching starlark-go's `Binary` returning nil.
-- [x] **MISSING-108**: thread-local clock override for `time.now()` (Go's
-      `SetNow`). `BuiltinCallCtx` now exposes `get_local` (wired to the active
-      thread's thread-local store); `time.now()` returns an embedder-provided
-      fixed `time.time` stored under `now_override_key`, else the real clock.
-      Public helpers `time_value(sec, nsec)` and `now_override_key` added.
+- [x] **MISSING-102** / **MISSING-111** / **MISSING-115**: `dict()` and `dict.update` now share a single `update_dict` helper mirroring starlark-go's `updateDict`. `dict.update` accepts any iterable of two-element pairs (e.g. `range`), not just tuple/list elements; both paths report "dictionary update sequence element #N has length M, want 2" with a `dict:`/`update:` prefix. `dict.popitem` empty error now reads "popitem: empty dict".
+- [x] **MISSING-103**: `int(x, base)` validates the base argument's type in the string branch ("int: for base, got T, want int") instead of silently defaulting to base 10; a non-string `x` with any explicit base reports "int: can't convert non-string with explicit base".
+- [x] **MISSING-104**: `dict.get`/`pop`/`setdefault` route through `check_positional`, rejecting excess positional args ("got N arguments, want at most 2") and keyword args.
+- [x] **MISSING-105**: `format_float` switches a decimal-form value with a 7-or-more-digit integer part (decimal exponent >= 6) to scientific notation, matching Go's `strconv.FormatFloat('g')`; e.g. `str(9999999.9)` → `"9.9999999e+06"`.
+- [x] **MISSING-106**: a name bound only by an augmented assignment inside a function is pre-collected as a local, so a nested closure referencing it resolves cleanly instead of raising a false "undefined".
+- [x] **MISSING-107**: `time.parse_time(x, format=...)` honors the layout via a Go reference-time parser (`parse_go_layout`) instead of discarding it and always parsing RFC3339; supports date/time verbs, 12-hour + AM/PM, month and weekday names, fractional seconds, and numeric/Z timezone tokens.
+- [x] **MISSING-112**: `list.pop`/`insert`/`remove`/`index` use the nameErr style ("pop: got T, want int", "pop: index -1 out of range: empty list", "insert: got N arguments, want 2", "remove: got N arguments, want 1", "index: invalid start/end index: got T, want int").
+- [x] **MISSING-113**: `int()` error messages carry the `int:` prefix ("int: missing argument for x", "int: cannot convert float NaN/infinity to integer").
+- [x] **MISSING-114**: `chr`/`ord` arity and type messages use the nameErr style; `ord` also rejects keyword arguments and prefixes the codepoint-count error.
+- [x] **MISSING-116**: `removeprefix`/`removesuffix` arity/type messages match starlark-go's UnpackPositionalArgs wording.
+- [x] **MISSING-109**: added the `module(name, **kwargs)` builtin to `src/lib/struct/` (port of starlarkstruct's `MakeModule`): a "module"-typed value with `<module "name">` repr, member attributes, unhashable, frozen transitively. Wired into the `struct.star` load target.
+- [x] **MISSING-110**: `struct + non_struct` now returns unhandled (None) so the evaluator emits the standard "unknown binary op: struct + T" message, matching starlark-go's `Binary` returning nil.
+- [x] **MISSING-108**: thread-local clock override for `time.now()` (Go's `SetNow`). `BuiltinCallCtx` now exposes `get_local` (wired to the active thread's thread-local store); `time.now()` returns an embedder-provided fixed `time.time` stored under `now_override_key`, else the real clock. Public helpers `time_value(sec, nsec)` and `now_override_key` added.
 
 ### Fifth-pass gap analysis (MISSING-117..128)
 
 Fresh four-axis comparison against starlark-go after MISSING-1..116 closed. Each behavioral item confirmed empirically; fixed via TDD (Red test first).
 
-- [x] **MISSING-117** [HIGH]: Module/load freeze was **shallow** — contained
-      List/Dict/Set values stayed mutable after `exec_file`/`load`. `Module::freeze`
-      only set the container's own frozen flag (`StarlarkDict::freeze` →
-      `Hashtable::freeze`) and never recursed into the values. starlark-go
-      deep-freezes loaded globals per value. Fixed by driving the recursive
-      `@value.freeze_value` over each global value from `Module::freeze` (the
-      generic `Hashtable` cannot reach it). Now mutating a loaded
-      list/dict/set raises a frozen error. Commit: `ef5d9ac`
-- [x] **MISSING-118**: `len(b"...".elems())` returned the byte count; Go's
-      `bytesIterable` is only `Iterable` (not `Indexable`/`Sequence`) so `len()`
-      errors `"object of type 'bytes.elems' has no len()"`. `length_of`
-      (`value/iter.mbt`) now errors for `BytesElems`; `string.elems` stays
-      `Indexable`. Commit: `0a94cf6`
-- [x] **MISSING-119**: Single-element trailing-comma for/comprehension target
-      (`for a, in ...`) bound the whole iterated value instead of unpacking the
-      one-tuple. `parse_expr_list_as_expr` (`parser.mbt`) collapsed a one-element
-      target list to the bare identifier; Go returns a `TupleExpr` whenever a
-      comma was seen. Now always yields an `ETuple` once a comma is consumed.
-      Commit: `a588176`
-- [x] **MISSING-120**: `math.round` used `floor(x+0.5)`/`ceil(x-0.5)`, losing
-      precision near the halfway point (`round(0.49999999999999994)`→`1.0`) and
-      for large integral mantissas. Reimplemented as Go's `math.Round` via
-      `trunc` + half-away-from-zero on the fractional remainder (exact, preserves
-      `-0.0`) in `src/lib/math/math.mbt`. Commit: `5136144`
-- [x] **MISSING-121** [low]: `math.pow(-1.0, ±Inf)` returned `nan`; C99/IEEE-754
-      mandates `1`. Added a `float_pow` wrapper guarding the special case before
-      delegating to `@std_math.pow` (`src/lib/math/math.mbt`). Commit: `99364ef`
-- [x] **MISSING-122** [low-med]: `is_unicode_letter_rune` block ranges diverged
-      from Go's `unicode.IsLetter` in both directions (under-accepted µ/ª/º/Vai/
-      most SMP letters; over-accepted Devanagari digits Nd, currency Sc). Replaced
-      with an exact, sorted L-category range table (`unicode_letters.mbt`, 677
-      ranges from the UCD) looked up by binary search in `scanner.mbt`.
-      Commit: `6303838`
-- [x] **MISSING-123** [message]: `string.partition`/`rpartition` arity & type
-      errors used Python style; routed through `check_positional`/`arg_as_string`
-      for the nameErr form (`partition: got N arguments, want 1` /
-      `partition: for parameter 1: got int, want string`). Commit: `e9ba873`
-- [x] **MISSING-124** [message]: `string.join` arity & non-iterable errors used
-      Python style; arity via `check_positional`, iterable type via inline
-      `join: for parameter iterable: got int, want iterable`. Commit: `4cfd1dd`
-- [x] **MISSING-125** [message]: set ops `intersection`/`difference`/`issubset`/
-      `issuperset`/`symmetric_difference` arity & non-iterable errors; Go declares
-      min=0 so >1 args → `want at most 1` and non-iterable → `for parameter 1: got
-      int, want iterable`. Extracted shared `set_other_iter` helper. Commit: `eef12c5`
-- [x] **MISSING-126** [message]: `str.format` divergences — unknown conversion
-      uses `%q` double quotes; unmatched-brace gains `format:` prefix; attribute/
-      element syntax errors match Go phrasing and append the field name.
-      Commit: `be9f2d2`
-- [x] **MISSING-127** [message]: non-integer subscript — getIndex form
-      `<type> index: got <type>, want int` for reads; bare `got <type>, want int`
-      for `setIndex` writes (`ops.mbt`). Commit: `172b9a8`
-- [x] **MISSING-128** [message]: `*`/`**` in a non-assignment expression
-      position used to report the assignment-target error regardless of context.
-      Now routed through `parse_atom`'s default error as
-      `got '*'/'**', want primary expression`, matching starlark-go's
-      `parsePrimary` (`parse.go:868`). Added `Token::go_string` to single-quote
-      punctuation tokens like Go's `GoString`. The incomplete-expression case
-      (`x = (`) now also reads `got end of file, want primary expression`.
+- [x] **MISSING-117** [HIGH]: Module/load freeze was **shallow** — contained List/Dict/Set values stayed mutable after `exec_file`/`load`. `Module::freeze` only set the container's own frozen flag (`StarlarkDict::freeze` → `Hashtable::freeze`) and never recursed into the values. starlark-go deep-freezes loaded globals per value. Fixed by driving the recursive `@value.freeze_value` over each global value from `Module::freeze` (the generic `Hashtable` cannot reach it). Now mutating a loaded list/dict/set raises a frozen error. Commit: `ef5d9ac`
+- [x] **MISSING-118**: `len(b"...".elems())` returned the byte count; Go's `bytesIterable` is only `Iterable` (not `Indexable`/`Sequence`) so `len()` errors `"object of type 'bytes.elems' has no len()"`. `length_of` (`value/iter.mbt`) now errors for `BytesElems`; `string.elems` stays `Indexable`. Commit: `0a94cf6`
+- [x] **MISSING-119**: Single-element trailing-comma for/comprehension target (`for a, in ...`) bound the whole iterated value instead of unpacking the one-tuple. `parse_expr_list_as_expr` (`parser.mbt`) collapsed a one-element target list to the bare identifier; Go returns a `TupleExpr` whenever a comma was seen. Now always yields an `ETuple` once a comma is consumed. Commit: `a588176`
+- [x] **MISSING-120**: `math.round` used `floor(x+0.5)`/`ceil(x-0.5)`, losing precision near the halfway point (`round(0.49999999999999994)`→`1.0`) and for large integral mantissas. Reimplemented as Go's `math.Round` via `trunc` + half-away-from-zero on the fractional remainder (exact, preserves `-0.0`) in `src/lib/math/math.mbt`. Commit: `5136144`
+- [x] **MISSING-121** [low]: `math.pow(-1.0, ±Inf)` returned `nan`; C99/IEEE-754 mandates `1`. Added a `float_pow` wrapper guarding the special case before delegating to `@std_math.pow` (`src/lib/math/math.mbt`). Commit: `99364ef`
+- [x] **MISSING-122** [low-med]: `is_unicode_letter_rune` block ranges diverged from Go's `unicode.IsLetter` in both directions (under-accepted µ/ª/º/Vai/ most SMP letters; over-accepted Devanagari digits Nd, currency Sc). Replaced with an exact, sorted L-category range table (`unicode_letters.mbt`, 677 ranges from the UCD) looked up by binary search in `scanner.mbt`. Commit: `6303838`
+- [x] **MISSING-123** [message]: `string.partition`/`rpartition` arity & type errors used Python style; routed through `check_positional`/`arg_as_string` for the nameErr form (`partition: got N arguments, want 1` / `partition: for parameter 1: got int, want string`). Commit: `e9ba873`
+- [x] **MISSING-124** [message]: `string.join` arity & non-iterable errors used Python style; arity via `check_positional`, iterable type via inline `join: for parameter iterable: got int, want iterable`. Commit: `4cfd1dd`
+- [x] **MISSING-125** [message]: set ops `intersection`/`difference`/`issubset`/`issuperset`/`symmetric_difference` arity & non-iterable errors; Go declares min=0 so >1 args → `want at most 1` and non-iterable → `for parameter 1: got int, want iterable`. Extracted shared `set_other_iter` helper. Commit: `eef12c5`
+- [x] **MISSING-126** [message]: `str.format` divergences — unknown conversion uses `%q` double quotes; unmatched-brace gains `format:` prefix; attribute/ element syntax errors match Go phrasing and append the field name. Commit: `be9f2d2`
+- [x] **MISSING-127** [message]: non-integer subscript — getIndex form `<type> index: got <type>, want int` for reads; bare `got <type>, want int` for `setIndex` writes (`ops.mbt`). Commit: `172b9a8`
+- [x] **MISSING-128** [message]: `*`/`**` in a non-assignment expression position used to report the assignment-target error regardless of context. Now routed through `parse_atom`'s default error as `got '*'/'**', want primary expression`, matching starlark-go's `parsePrimary` (`parse.go:868`). Added `Token::go_string` to single-quote punctuation tokens like Go's `GoString`. The incomplete-expression case (`x = (`) now also reads `got end of file, want primary expression`.
 
 ### Sixth-pass gap analysis (MISSING-129..131)
 
 Fresh comparison against starlark-go focused on the call/argument-expansion path (`*args`/`**kwargs` splat error handling), which earlier passes did not cover. Each fixed via TDD (Red test first).
 
-- [x] **MISSING-129** [MED]: `**kwargs` expansion with a non-string key silently
-      dropped the entry instead of erroring. `eval_args` (`eval/expr.mbt`) now
-      iterates the mapping and raises `"keywords must be strings, not <type>"`
-      for any non-string key (matching `interp.go:330`), checking every key
-      before binding. Commit: `aa87d3b`
-- [x] **MISSING-130** [message]: `*`/`**` splat-operand type errors now match Go's
-      wording. `f(*5)` / `f(*"abc")` → `"argument after * must be iterable, not
-      <type>"`; `f(**5)` → `"argument after ** must be a mapping, not <type>"`
-      (`interp.go:324,358`). The non-iterable `*` path now routes the generic
-      `iterate` failure through the uniform message. Commit: `aa87d3b`
-- [x] **MISSING-131** [message]: calling a non-callable value reported the Python
-      style `"'<type>' object is not callable"`; now `"invalid call of
-      non-function (<type>)"` (`eval.go:1197`) for both the `ExtVal` and generic
-      branches of `call_value` (`eval/expr.mbt`). Commit: `aa87d3b`
+- [x] **MISSING-129** [MED]: `**kwargs` expansion with a non-string key silently dropped the entry instead of erroring. `eval_args` (`eval/expr.mbt`) now iterates the mapping and raises `"keywords must be strings, not <type>"` for any non-string key (matching `interp.go:330`), checking every key before binding. Commit: `aa87d3b`
+- [x] **MISSING-130** [message]: `*`/`**` splat-operand type errors now match Go's wording. `f(*5)` / `f(*"abc")` → `"argument after * must be iterable, not <type>"`; `f(**5)` → `"argument after ** must be a mapping, not <type>"` (`interp.go:324,358`). The non-iterable `*` path now routes the generic `iterate` failure through the uniform message. Commit: `aa87d3b`
+- [x] **MISSING-131** [message]: calling a non-callable value reported the Python style `"'<type>' object is not callable"`; now `"invalid call of non-function (<type>)"` (`eval.go:1197`) for both the `ExtVal` and generic branches of `call_value` (`eval/expr.mbt`). Commit: `aa87d3b`
 
 ### Seventh-pass gap analysis (MISSING-132..)
 
 Fresh comparison against starlark-go focused on Unicode-aware string methods and builtin argument-error wording. Each fixed via TDD (Red test first).
 
-- [x] **MISSING-132** [behavioral]: `str.upper`/`lower`/`title`/`capitalize`
-      used MoonBit's ASCII-only `String::to_upper`/`to_lower` plus a small
-      digraph table, so non-ASCII letters were never recased
-      (`"café".upper()` → `"CAFé"`, `"αβγ".upper()` → `"αβγ"`). starlark-go
-      uses Go's `unicode.ToUpper`/`ToLower`/`ToTitle` (full simple case
-      mapping). Added `src/internal/utf8util/case_mapping.mbt` carrying the
-      `unicode.CaseRanges` table (328 entries) and Go's per-rune `to()` lookup
-      (including the alternating Upper/Lower sequence delta); routed the four
-      string methods through `to_upper_rune`/`to_lower_rune`/`to_title_rune`.
-      Commit: `afe64a8`
-- [x] **MISSING-133** [message]: `list`/`tuple`/`reversed`/`enumerate`/`any`/
-      `all`/`set` and `list.extend` bind their iterable argument via
-      starlark-go's `UnpackPositionalArgs`, which reports `"NAME: for parameter
-      1: got T, want iterable"`. The previous messages dropped the prefix
-      (`list`/`tuple`/`reversed`/`set` → bare `"got string, want iterable"`) or
-      carried only the name (`enumerate`). Threaded the builtin name through
-      `require_seq` (`eval/env.mbt`) and aligned the `enumerate`/`set` inline
-      errors. Behavior unchanged. Commit: `0eae31b`
-- [x] **MISSING-134** [behavioral]: `str.islower`/`isupper` derived "is cased"
-      from MoonBit's ASCII-only case folding plus a digraph table, so
-      `"é".islower()` and `"αβγ".islower()` returned false. Reimplemented via
-      `utf8util` Unicode case mapping as starlark-go's `isCasedString(s) && s ==
-      ToLower(s)` / `ToUpper(s)`; refined `is_cased_rune` to match Go's
-      `isCasedRune` for the three fold-orbit special cases (ß cased; U+0130/
-      U+0131 not). Commit: `cb99d8e`
-- [x] **MISSING-135** [behavioral]: `str.istitle` only recognized the eight
-      digraph codepoints, so non-ASCII letters were treated as uncased
-      (`"Greek: Αβγ".istitle()` wrongly true, `"Hello Wörld".istitle()` wrongly
-      false). Added Lu/Ll/Lt category range tables (stride-encoded, from Go's
-      `unicode` rangetables) + `is_upper`/`lower`/`title_letter` to `utf8util`,
-      then rewrote `istitle` to mirror starlark-go's exact branch structure
-      (ASCII A-Z or Lt leads; any other Lu disqualifies; Ll must follow a cased
-      letter). Commit: `af78161`
+- [x] **MISSING-132** [behavioral]: `str.upper`/`lower`/`title`/`capitalize` used MoonBit's ASCII-only `String::to_upper`/`to_lower` plus a small digraph table, so non-ASCII letters were never recased (`"café".upper()` → `"CAFé"`, `"αβγ".upper()` → `"αβγ"`). starlark-go uses Go's `unicode.ToUpper`/`ToLower`/`ToTitle` (full simple case mapping). Added `src/internal/utf8util/case_mapping.mbt` carrying the `unicode.CaseRanges` table (328 entries) and Go's per-rune `to()` lookup (including the alternating Upper/Lower sequence delta); routed the four string methods through `to_upper_rune`/`to_lower_rune`/`to_title_rune`. Commit: `afe64a8`
+- [x] **MISSING-133** [message]: `list`/`tuple`/`reversed`/`enumerate`/`any`/`all`/`set` and `list.extend` bind their iterable argument via starlark-go's `UnpackPositionalArgs`, which reports `"NAME: for parameter 1: got T, want iterable"`. The previous messages dropped the prefix (`list`/`tuple`/`reversed`/`set` → bare `"got string, want iterable"`) or carried only the name (`enumerate`). Threaded the builtin name through `require_seq` (`eval/env.mbt`) and aligned the `enumerate`/`set` inline errors. Behavior unchanged. Commit: `0eae31b`
+- [x] **MISSING-134** [behavioral]: `str.islower`/`isupper` derived "is cased" from MoonBit's ASCII-only case folding plus a digraph table, so `"é".islower()` and `"αβγ".islower()` returned false. Reimplemented via `utf8util` Unicode case mapping as starlark-go's `isCasedString(s) && s == ToLower(s)` / `ToUpper(s)`; refined `is_cased_rune` to match Go's `isCasedRune` for the three fold-orbit special cases (ß cased; U+0130/ U+0131 not). Commit: `cb99d8e`
+- [x] **MISSING-135** [behavioral]: `str.istitle` only recognized the eight digraph codepoints, so non-ASCII letters were treated as uncased (`"Greek: Αβγ".istitle()` wrongly true, `"Hello Wörld".istitle()` wrongly false). Added Lu/Ll/Lt category range tables (stride-encoded, from Go's `unicode` rangetables) + `is_upper`/`lower`/`title_letter` to `utf8util`, then rewrote `istitle` to mirror starlark-go's exact branch structure (ASCII A-Z or Lt leads; any other Lu disqualifies; Ll must follow a cased letter). Commit: `af78161`
 
 ### Eighth-pass gap analysis (MISSING-136..155)
 
 Fresh four-axis comparison against starlark-go after MISSING-1..135 / BUG-1..34 closed. Each fixed via TDD (Red test first).
 
-- [x] **MISSING-136** [message + behavioral]: `bind_args` positional-argument-count
-      errors diverged from Go in four ways: singular/plural (1 "argument" vs "arguments"),
-      missing "at most" prefix for optional params, nullary message ("no arguments" vs
-      "0 positional arguments"), and nullary not counting kwargs in total. Fixed in
-      `eval/expr.mbt`: added nullary check, `has_optional_pos` helper for "at most"
-      detection, `pos_arg_count_msg` helper for consistent formatting.
-- [x] **MISSING-137** [behavioral]: list methods silently ignored keyword arguments.
-      Fixed by threading `kw_args` into `call_list_method` and routing
-      `append`/`extend`/`remove`/`insert`/`index`/`clear` through `check_positional`.
-- [x] **MISSING-138** [message]: `list.append`/`list.extend` arity used ad-hoc text
-      ("takes exactly one argument"); now uses nameErr form ("got N arguments, want 1").
-- [x] **MISSING-139** [behavioral]: zero-arg dict/list/set methods ignored excess
-      positional args. Fixed via `check_positional` with min=max=0 for `list.clear`,
-      `dict.keys/values/items/clear/popitem`, `set.clear/pop`.
-- [x] **MISSING-140** [behavioral]: set methods `add`/`discard`/`remove` ignored
-      keyword arguments. `union` silently accepted kwargs. Fixed via `check_positional`
-      for one-arg methods; `union` now emits "does not accept keyword arguments".
-- [x] **MISSING-141** [message]: `min`/`max`/`sorted` accepted a non-callable `key`
-      and failed only at call time. Fixed by validating key is callable before iteration:
-      emits "<name>: for parameter key: got T, want callable".
-- [x] **MISSING-142** [behavioral + message]: string search-index args (`find`/`rfind`/
-      `index`/`rindex`/`count`/`startswith`/`endswith`) used `BigInt::to_int()` (32-bit
-      wraparound) instead of `to_int64()`. Fixed in `parse_search_index`: use int64 range
-      check and raise "METHOD: invalid N index: M out of range" for out-of-int64 BigInts.
-- [x] **MISSING-143** [message + behavioral]: string-escape error messages diverged from
-      Go's `unquote` (`quote.go`). Fixed: octal checks n > 127 before n >= 256; non-ASCII
-      octal message includes sequence and hex encoding; `\x` with valid h1 and visible non-hex
-      h2 gives "invalid" not "truncated"; `\uNNNN`/`\UNNNNNNNN` track partial sequence for
-      truncated vs invalid distinction; surrogate → "invalid Unicode code point U+XXXX";
-      out-of-range → "code point out of range: \UXXXXXXXX (max \U0010ffff)".
-- [x] **MISSING-144** [message]: `Parser::expect`/`expect_ident` and newline paths used
-      `tok.to_string()` instead of `go_string()` (which single-quotes punctuation), and some
-      messages reversed the `got X, want Y` order. Fixed: `expect` uses `go_string()`; newline
-      path changed to "got X, want newline".
-- [x] **MISSING-145** [message]: `not an identifier` cases used "expected identifier, got X"
-      / "expected parameter, got X". Fixed: `expect_ident` and param parser emit "not an
-      identifier" for any non-Ident token.
-- [x] **MISSING-146** [message]: comprehension-clause error dropped the "for, or if"
-      alternatives. Fixed: `parse_comp_clauses` emits "got X, want ']', for, or if" when
-      breaking on an unexpected non-bracket token.
-- [x] **MISSING-147** [message]: `not` not followed by `in` used "'not' in comparison must
-      be followed by 'in'". Fixed: emits "got X, want in" using `go_string()`.
-- [x] **MISSING-149** [position]: `invalid int literal` was reported at the end column
-      instead of the start. Fixed: use `start` position in the `invalid int literal` branch.
-- [x] **MISSING-150** [message]: `load` operand errors used different text than Go's
-      `parse.go`. Fixed: non-string first arg → "first operand of load statement must be
-      a string literal"; non-string operand → "load operand must be \"name\" or
-      localname=\"name\" (got T)"; ident without `=` → "load operand must be \"x\" or
-      x=\"originalname\"".
-- [x] **MISSING-151** [behavioral + message]: math builtins used prefixed names
-      (`math.sqrt`). Fixed: all builtins registered with bare names (`sqrt`, `log`, etc.)
-      so `repr(math.sqrt)` → `"<built-in function sqrt>"`.
-- [x] **MISSING-152** [message]: math arity/type error wording differed from Go.
-      Fixed: arity says "got N arguments, want 1" (no "positional"); type errors include
-      "for parameter N:" prefix via updated `to_float_param`; `math.log` uses "at least 1"
-      / "at most 2" arity messages.
-- [x] **MISSING-153** [behavioral + message]: time builtins used prefixed names
-      (`time.now`, `time.from_timestamp`, etc.). Fixed: all registered with bare names.
-- [x] **MISSING-154** [behavioral + message]: `time.parse_duration` only accepted a string;
-      Go's `Duration.Unpack` also accepts an existing `time.duration` (returns it unchanged).
-      Fixed: check for `time.duration` ExtVal before string; type-mismatch error now uses
-      "parse_duration: for parameter 1: got T, want a duration, string, or int".
-- [x] **MISSING-155** [message]: `time.time()` positional-arg rejection used "time.time:
-      unexpected positional argument" (singular, prefixed name); Go uses "time: unexpected
-      positional arguments". Fixed.
+- [x] **MISSING-136** [message + behavioral]: `bind_args` positional-argument-count errors diverged from Go in four ways: singular/plural (1 "argument" vs "arguments"), missing "at most" prefix for optional params, nullary message ("no arguments" vs "0 positional arguments"), and nullary not counting kwargs in total. Fixed in `eval/expr.mbt`: added nullary check, `has_optional_pos` helper for "at most" detection, `pos_arg_count_msg` helper for consistent formatting.
+- [x] **MISSING-137** [behavioral]: list methods silently ignored keyword arguments. Fixed by threading `kw_args` into `call_list_method` and routing `append`/`extend`/`remove`/`insert`/`index`/`clear` through `check_positional`.
+- [x] **MISSING-138** [message]: `list.append`/`list.extend` arity used ad-hoc text ("takes exactly one argument"); now uses nameErr form ("got N arguments, want 1").
+- [x] **MISSING-139** [behavioral]: zero-arg dict/list/set methods ignored excess positional args. Fixed via `check_positional` with min=max=0 for `list.clear`, `dict.keys/values/items/clear/popitem`, `set.clear/pop`.
+- [x] **MISSING-140** [behavioral]: set methods `add`/`discard`/`remove` ignored keyword arguments. `union` silently accepted kwargs. Fixed via `check_positional` for one-arg methods; `union` now emits "does not accept keyword arguments".
+- [x] **MISSING-141** [message]: `min`/`max`/`sorted` accepted a non-callable `key` and failed only at call time. Fixed by validating key is callable before iteration: emits "<name>: for parameter key: got T, want callable".
+- [x] **MISSING-142** [behavioral + message]: string search-index args (`find`/`rfind`/`index`/`rindex`/`count`/`startswith`/`endswith`) used `BigInt::to_int()` (32-bit wraparound) instead of `to_int64()`. Fixed in `parse_search_index`: use int64 range check and raise "METHOD: invalid N index: M out of range" for out-of-int64 BigInts.
+- [x] **MISSING-143** [message + behavioral]: string-escape error messages diverged from Go's `unquote` (`quote.go`). Fixed: octal checks n > 127 before n >= 256; non-ASCII octal message includes sequence and hex encoding; `\x` with valid h1 and visible non-hex h2 gives "invalid" not "truncated"; `\uNNNN`/`\UNNNNNNNN` track partial sequence for truncated vs invalid distinction; surrogate → "invalid Unicode code point U+XXXX"; out-of-range → "code point out of range: \UXXXXXXXX (max \U0010ffff)".
+- [x] **MISSING-144** [message]: `Parser::expect`/`expect_ident` and newline paths used `tok.to_string()` instead of `go_string()` (which single-quotes punctuation), and some messages reversed the `got X, want Y` order. Fixed: `expect` uses `go_string()`; newline path changed to "got X, want newline".
+- [x] **MISSING-145** [message]: `not an identifier` cases used "expected identifier, got X" / "expected parameter, got X". Fixed: `expect_ident` and param parser emit "not an identifier" for any non-Ident token.
+- [x] **MISSING-146** [message]: comprehension-clause error dropped the "for, or if" alternatives. Fixed: `parse_comp_clauses` emits "got X, want ']', for, or if" when breaking on an unexpected non-bracket token.
+- [x] **MISSING-147** [message]: `not` not followed by `in` used "'not' in comparison must be followed by 'in'". Fixed: emits "got X, want in" using `go_string()`.
+- [x] **MISSING-149** [position]: `invalid int literal` was reported at the end column instead of the start. Fixed: use `start` position in the `invalid int literal` branch.
+- [x] **MISSING-150** [message]: `load` operand errors used different text than Go's `parse.go`. Fixed: non-string first arg → "first operand of load statement must be a string literal"; non-string operand → "load operand must be \"name\" or localname=\"name\" (got T)"; ident without `=` → "load operand must be \"x\" or x=\"originalname\"".
+- [x] **MISSING-151** [behavioral + message]: math builtins used prefixed names (`math.sqrt`). Fixed: all builtins registered with bare names (`sqrt`, `log`, etc.) so `repr(math.sqrt)` → `"<built-in function sqrt>"`.
+- [x] **MISSING-152** [message]: math arity/type error wording differed from Go. Fixed: arity says "got N arguments, want 1" (no "positional"); type errors include "for parameter N:" prefix via updated `to_float_param`; `math.log` uses "at least 1" / "at most 2" arity messages.
+- [x] **MISSING-153** [behavioral + message]: time builtins used prefixed names (`time.now`, `time.from_timestamp`, etc.). Fixed: all registered with bare names.
+- [x] **MISSING-154** [behavioral + message]: `time.parse_duration` only accepted a string; Go's `Duration.Unpack` also accepts an existing `time.duration` (returns it unchanged). Fixed: check for `time.duration` ExtVal before string; type-mismatch error now uses "parse_duration: for parameter 1: got T, want a duration, string, or int".
+- [x] **MISSING-155** [message]: `time.time()` positional-arg rejection used "time.time: unexpected positional argument" (singular, prefixed name); Go uses "time: unexpected positional arguments". Fixed.
 
 ### Ninth-pass gap analysis (MISSING-156..167)
 
 Fresh comparison against starlark-go covering slicing/indexing semantics, `repr`/`str` escape tables, comparison-operator error wording, and the json/struct extension libraries. Each fixed via TDD (Red test first).
 
-- [x] **MISSING-158** [message]: non-int slice index/step errors now read
-      "invalid start/end index: got T, want int" and "invalid slice step: got T,
-      want int" (was "slice indices must be integers" / "slice step must be an
-      integer"), matching `eval.go:1265,1330,1341`. Fixed in `eval/expr.mbt`.
-- [x] **MISSING-159** [message]: the unhandled-index fallback now names both
-      operand types — "unhandled index operation int[int]" (was "unhandled index
-      operation: int"), matching `eval.go:707`. Fixed in `eval/ops.mbt`.
-- [x] **MISSING-160** [message]: non-sliceable operand now reports "invalid slice
-      operand bool" (was "'bool' object is not sliceable"), matching
-      `eval.go:1256`. Fixed in `eval/ops.mbt` (three sites).
-- [x] **MISSING-161** [message]: `repr` emits named escapes `\a`/`\b`/`\f`/`\v`
-      for 0x07/0x08/0x0c/0x0b instead of `\xNN`, matching `quote.go:271-285`.
-      Affects string and bytes repr (shared `repr_bytes_inner`).
-- [x] **MISSING-163** [message]: ordered-comparison type errors now carry the
-      actual operator ("int <= string not implemented", etc.) instead of always
-      "<". Threaded an `op` label through `compare_values`/`compare_values_depth`/
-      `slice_cmp_depth` (`value/traits.mbt`); `eval_cmp` (`eval/ops.mbt`) derives
-      the operator from the comparison direction. Matches `value.go:1529,1573`.
-- [x] **MISSING-156** [message]: BigInt subscript index now produces the
-      conversion-error format `"<type> index: N out of range"` when the value
-      exceeds int32 range (matching Go's `AsInt32` path via `eval.go:697`).
-      Added int32 range check in `adjust_index` (`eval/ops.mbt`).
-- [x] **MISSING-157** [behavioral + message]: BigInt slice bounds and step
-      outside int32 range now raise `"invalid start/end index: N out of range"`
-      / `"invalid slice step: N out of range"` instead of silently truncating.
-      Added int32 guards in slice parsing in `eval/expr.mbt`.
-- [x] **MISSING-162** [message]: `is_unicode_printable` extended to exclude
-      C1 controls (U+0080-U+009F), NBSP (U+00A0), private-use BMP (U+E000-U+F8FF),
-      noncharacters (FDD0-FDEF, FFFE, FFFF), and supplemental private-use planes
-      (U+F0000+), matching Go's `strconv.IsPrint` for repr escaping.
-- [x] **MISSING-148** [behavioral]: unbalanced closing brackets `)`, `]`, `}`
-      at scanner depth 0 now produce `"unexpected '<c>'"` error, matching
-      starlark-go `scan.go:728-729`.
-- [x] **MISSING-164** [message]: `json.decode` now reports the actual consumed
-      offset for parse errors instead of always 0. All parse functions carry
-      `(Int, String)` errors; `decode_from_json` uses the offset from failures.
-      Matches starlark-go `json.go:543`.
-- [x] **MISSING-165** [message]: `json.decode` now parses an object key as a
-      value and reports "got T for object key, want string" for a non-string key,
-      matching `json.go:461-463` (was a generic unexpected-character error).
-- [x] **MISSING-166** [behavioral]: `json.encode` escapes the DEL byte (0x7f) as
-      `\x7f` via the AppendQuote path instead of writing it raw (`json.go:101-110`).
-- [x] **MISSING-167** [message]: dot access on a custom value (e.g. `module()`)
-      whose `get_attr` returns no value now reports "T has no .x field or method"
-      (was "T has no attribute 'x'"), matching `eval.go:649`. Fixed in
-      `eval/expr.mbt` ExtVal branch.
-- [x] **json non-ASCII encoding** (was `bugfix.md` M.5): `json.encode` now mirrors
-      starlark-go's two-branch quoting — printable-ASCII strings use a
-      `strconv.AppendQuote` emulation, while any string with a control or
-      non-ASCII byte uses an `encoding/json.Marshal` emulation that emits raw
-      UTF-8, replaces invalid bytes with U+FFFD, escapes `<`/`>`/`&` and
-      U+2028/U+2029, and uses `\n`/`\r`/`\t` shortcuts. Previously all non-ASCII
-      was escaped as `\uXXXX`. (Reverses the earlier Phase 7.5 "non-ASCII via
-      `\uXXXX`" choice, per user decision to prefer Go parity.)
+- [x] **MISSING-158** [message]: non-int slice index/step errors now read "invalid start/end index: got T, want int" and "invalid slice step: got T, want int" (was "slice indices must be integers" / "slice step must be an integer"), matching `eval.go:1265,1330,1341`. Fixed in `eval/expr.mbt`.
+- [x] **MISSING-159** [message]: the unhandled-index fallback now names both operand types — "unhandled index operation int[int]" (was "unhandled index operation: int"), matching `eval.go:707`. Fixed in `eval/ops.mbt`.
+- [x] **MISSING-160** [message]: non-sliceable operand now reports "invalid slice operand bool" (was "'bool' object is not sliceable"), matching `eval.go:1256`. Fixed in `eval/ops.mbt` (three sites).
+- [x] **MISSING-161** [message]: `repr` emits named escapes `\a`/`\b`/`\f`/`\v` for 0x07/0x08/0x0c/0x0b instead of `\xNN`, matching `quote.go:271-285`. Affects string and bytes repr (shared `repr_bytes_inner`).
+- [x] **MISSING-163** [message]: ordered-comparison type errors now carry the actual operator ("int <= string not implemented", etc.) instead of always "<". Threaded an `op` label through `compare_values`/`compare_values_depth`/`slice_cmp_depth` (`value/traits.mbt`); `eval_cmp` (`eval/ops.mbt`) derives the operator from the comparison direction. Matches `value.go:1529,1573`.
+- [x] **MISSING-156** [message]: BigInt subscript index now produces the conversion-error format `"<type> index: N out of range"` when the value exceeds int32 range (matching Go's `AsInt32` path via `eval.go:697`). Added int32 range check in `adjust_index` (`eval/ops.mbt`).
+- [x] **MISSING-157** [behavioral + message]: BigInt slice bounds and step outside int32 range now raise `"invalid start/end index: N out of range"` / `"invalid slice step: N out of range"` instead of silently truncating. Added int32 guards in slice parsing in `eval/expr.mbt`.
+- [x] **MISSING-162** [message]: `is_unicode_printable` extended to exclude C1 controls (U+0080-U+009F), NBSP (U+00A0), private-use BMP (U+E000-U+F8FF), noncharacters (FDD0-FDEF, FFFE, FFFF), and supplemental private-use planes (U+F0000+), matching Go's `strconv.IsPrint` for repr escaping.
+- [x] **MISSING-148** [behavioral]: unbalanced closing brackets `)`, `]`, `}` at scanner depth 0 now produce `"unexpected '<c>'"` error, matching starlark-go `scan.go:728-729`.
+- [x] **MISSING-164** [message]: `json.decode` now reports the actual consumed offset for parse errors instead of always 0. All parse functions carry `(Int, String)` errors; `decode_from_json` uses the offset from failures. Matches starlark-go `json.go:543`.
+- [x] **MISSING-165** [message]: `json.decode` now parses an object key as a value and reports "got T for object key, want string" for a non-string key, matching `json.go:461-463` (was a generic unexpected-character error).
+- [x] **MISSING-166** [behavioral]: `json.encode` escapes the DEL byte (0x7f) as `\x7f` via the AppendQuote path instead of writing it raw (`json.go:101-110`).
+- [x] **MISSING-167** [message]: dot access on a custom value (e.g. `module()`) whose `get_attr` returns no value now reports "T has no .x field or method" (was "T has no attribute 'x'"), matching `eval.go:649`. Fixed in `eval/expr.mbt` ExtVal branch.
+- [x] **json non-ASCII encoding** (was `bugfix.md` M.5): `json.encode` now mirrors starlark-go's two-branch quoting — printable-ASCII strings use a `strconv.AppendQuote` emulation, while any string with a control or non-ASCII byte uses an `encoding/json.Marshal` emulation that emits raw UTF-8, replaces invalid bytes with U+FFFD, escapes `<`/`>`/`&` and U+2028/U+2029, and uses `\n`/`\r`/`\t` shortcuts. Previously all non-ASCII was escaped as `\uXXXX`. (Reverses the earlier Phase 7.5 "non-ASCII via `\uXXXX`" choice, per user decision to prefer Go parity.)
 
 ### Eleventh-pass gap analysis (MISSING-168..180)
 
 Fresh five-area parallel comparison against starlark-go after MISSING-1..167 / BUG-1..34 closed. Each fixed via TDD (Red test first).
 
-- [x] **MISSING-168** [behavioral]: set intersection (`&` and `.intersection()`)
-      now iterates the other/RHS operand and keeps elements present in the
-      receiver, so the result follows the other operand's order (e.g.
-      `{1,2,3} & {3,2,4}` → `set([3, 2])`), matching `value.go`/`eval.go`.
-- [x] **MISSING-169** [behavioral]: `int(string)` no longer trims surrounding
-      whitespace (`int(" 10")` raises), matching Go's `big.Int.SetString`.
-- [x] **MISSING-170** [message]: `int()` invalid-literal error now carries the
-      `int:` name prefix (`int: invalid literal with base 10: xyz`).
-- [x] **MISSING-171** [message]: `len()` on a non-sized value reports
-      `len: value of type T has no len` instead of the CPython form; covers the
-      generic, bytes.elems, string.codepoints, and custom-value paths.
-- [x] **MISSING-172** [behavioral]: an all-digit `str.format` field name that
-      overflows the int range is treated as a keyword (`keyword N not found`)
-      rather than a tuple index, matching Go's `decimal()`.
-- [x] **MISSING-173** [message]: nested-replacement-field error now carries the
-      `format:` prefix.
-- [x] **MISSING-174** [behavioral + message]: `getattr` (2..3 args) and `hasattr`
-      (exactly 2) route through `check_positional`/`arg_as_string`, rejecting
-      excess args, keyword args, and non-string attribute names with the
-      UnpackPositionalArgs wording.
-- [x] **MISSING-175** [message]: unpacking a non-iterable reports
-      `got T in sequence assignment` with no inline position prefix.
-- [x] **MISSING-176** [behavioral]: `json.encode` formats floats via the shared
-      Go-faithful `format_float` (`1234567.0` → `1.234567e+06`, `1e-7` → `1e-07`).
-- [x] **MISSING-177** [message]: `math.ceil`/`floor` errors drop the name and
-      `for parameter 1:` prefix (Go unpacks them into a plain Value).
-- [x] **MISSING-178** [behavioral]: `json.indent`/`encode_indent` validate their
-      input and reject malformed JSON instead of silently reformatting.
-- [x] **MISSING-179** [message]: `time.parse_duration` reports
-      `time: invalid duration "<orig>"` with the full original string instead of
-      the invented `invalid duration component`/`number` stems.
-- [x] **MISSING-180** [message]: `json.indent`/`encode_indent` report a non-string
-      `prefix`/`indent` with `for parameter X: got T, want string`.
+- [x] **MISSING-168** [behavioral]: set intersection (`&` and `.intersection()`) now iterates the other/RHS operand and keeps elements present in the receiver, so the result follows the other operand's order (e.g. `{1,2,3} & {3,2,4}` → `set([3, 2])`), matching `value.go`/`eval.go`.
+- [x] **MISSING-169** [behavioral]: `int(string)` no longer trims surrounding whitespace (`int(" 10")` raises), matching Go's `big.Int.SetString`.
+- [x] **MISSING-170** [message]: `int()` invalid-literal error now carries the `int:` name prefix (`int: invalid literal with base 10: xyz`).
+- [x] **MISSING-171** [message]: `len()` on a non-sized value reports `len: value of type T has no len` instead of the CPython form; covers the generic, bytes.elems, string.codepoints, and custom-value paths.
+- [x] **MISSING-172** [behavioral]: an all-digit `str.format` field name that overflows the int range is treated as a keyword (`keyword N not found`) rather than a tuple index, matching Go's `decimal()`.
+- [x] **MISSING-173** [message]: nested-replacement-field error now carries the `format:` prefix.
+- [x] **MISSING-174** [behavioral + message]: `getattr` (2..3 args) and `hasattr` (exactly 2) route through `check_positional`/`arg_as_string`, rejecting excess args, keyword args, and non-string attribute names with the UnpackPositionalArgs wording.
+- [x] **MISSING-175** [message]: unpacking a non-iterable reports `got T in sequence assignment` with no inline position prefix.
+- [x] **MISSING-176** [behavioral]: `json.encode` formats floats via the shared Go-faithful `format_float` (`1234567.0` → `1.234567e+06`, `1e-7` → `1e-07`).
+- [x] **MISSING-177** [message]: `math.ceil`/`floor` errors drop the name and `for parameter 1:` prefix (Go unpacks them into a plain Value).
+- [x] **MISSING-178** [behavioral]: `json.indent`/`encode_indent` validate their input and reject malformed JSON instead of silently reformatting.
+- [x] **MISSING-179** [message]: `time.parse_duration` reports `time: invalid duration "<orig>"` with the full original string instead of the invented `invalid duration component`/`number` stems.
+- [x] **MISSING-180** [message]: `json.indent`/`encode_indent` report a non-string `prefix`/`indent` with `for parameter X: got T, want string`.
 
 ### Twelfth-pass gap analysis (MISSING-181..191)
 
 Fresh five-area comparison against starlark-go after MISSING-1..180 closed.
 
-- [x] **MISSING-181** [behavioral + message]: `int()` builtin now accepts `x`
-      as a keyword argument, rejects unknown kwargs ("int: unexpected keyword
-      argument NAME"), rejects >2 positional args ("int: got N arguments, want
-      at most 2"), and detects duplicate values for `x` ("int: got multiple
-      values for keyword argument x"). Source: `eval/expr.mbt`. Commit: `bae53ba`
-- [x] **MISSING-182** [behavioral + message]: `float()` builtin now rejects all
-      keyword arguments with "float does not accept keyword arguments" (not silently
-      ignored) and reports the arity error as "float got N arguments, wants 1" (not
-      "float() takes at most one argument"). Commit: `bae53ba`
-- [x] **MISSING-183** [message]: `list.pop` and `list.insert` with a non-int
-      argument now include "for parameter 1:" prefix: "pop: for parameter 1: got
-      T, want int" / "insert: for parameter 1: got T, want int". Commit: `638146c`
-- [x] **MISSING-184** [behavioral + message]: `list.insert` / `list.pop` with a
-      BigInt index outside the signed 64-bit range now raise "for parameter 1: N
-      out of range (want value in signed 64-bit range)" instead of silently clamping
-      (insert) or reporting a misleading index-range error (pop). Commit: `638146c`
-- [x] **MISSING-185** [message]: `\U` code-point-out-of-range error now feeds the
-      offending value into both slots of the message ("code point out of range:
-      \\U00110000 (max \\U00110000)"), matching Go's format where both %s and %08x
-      receive the same value n. Commit: `557f5ec`
-- [x] **MISSING-186** [message]: `\x` followed by two present-but-non-hex chars
-      now reports "invalid escape sequence \xNN" (not "truncated"). "truncated" is
-      reserved for when a required digit slot is occupied by EOF or a string
-      delimiter. Commit: `557f5ec`
-- [x] **MISSING-187** [position]: escape-sequence errors inside prefixed string/bytes
-      literals (`b"..."`, `r"..."`) are now reported at the opening-quote column
-      rather than the prefix-character column, matching Go's `sc.pos` capture after
-      consuming the prefix. Commit: `557f5ec`
-- [x] **MISSING-188** [message]: a bare `*` parameter followed by a non-comma token
-      now reports "want ','" instead of "want ')'". Added check inside the param loop
-      that the next token is `,` or `)`, mirroring Go's unconditional consume(COMMA)
-      loop. Source: `parser/parser.mbt`. Commit: `f051940`
-- [x] **MISSING-189** [position]: `load` per-symbol errors (empty identifier,
-      leading-underscore) now reported at each symbol's position instead of the
-      load-keyword position. `SLoad` binding tuples extended from `(local, original)`
-      to `(local, original, sym_pos)`; parser captures `self.pos` before consuming
-      each symbol token; resolver uses `sym_pos` for the two per-symbol error sites.
-      Matches starlark-go `resolve.go:584,588` (`from.NamePos`). Commit: `113a6ed`
-- [x] **MISSING-190** [message]: `math` unary/binary builtins (`make_unary`,
-      `make_binary`, `make_ceil`, `make_floor`) now check `kw_args.length() != 0`
-      first and return "NAME: unexpected keyword arguments", matching Go's
-      `UnpackPositionalArgs` kwargs-before-arity check. Commit: `1565b69`
-- [x] **MISSING-191** [behavioral]: `time.duration * int` with a multiplier outside
-      the signed 64-bit range now raises "int value out of range (want signed 64-bit
-      value)" instead of silently wrapping. Commit: `84cdb6f`
+- [x] **MISSING-181** [behavioral + message]: `int()` builtin now accepts `x` as a keyword argument, rejects unknown kwargs ("int: unexpected keyword argument NAME"), rejects >2 positional args ("int: got N arguments, want at most 2"), and detects duplicate values for `x` ("int: got multiple values for keyword argument x"). Source: `eval/expr.mbt`. Commit: `bae53ba`
+- [x] **MISSING-182** [behavioral + message]: `float()` builtin now rejects all keyword arguments with "float does not accept keyword arguments" (not silently ignored) and reports the arity error as "float got N arguments, wants 1" (not "float() takes at most one argument"). Commit: `bae53ba`
+- [x] **MISSING-183** [message]: `list.pop` and `list.insert` with a non-int argument now include "for parameter 1:" prefix: "pop: for parameter 1: got T, want int" / "insert: for parameter 1: got T, want int". Commit: `638146c`
+- [x] **MISSING-184** [behavioral + message]: `list.insert` / `list.pop` with a BigInt index outside the signed 64-bit range now raise "for parameter 1: N out of range (want value in signed 64-bit range)" instead of silently clamping (insert) or reporting a misleading index-range error (pop). Commit: `638146c`
+- [x] **MISSING-185** [message]: `\U` code-point-out-of-range error now feeds the offending value into both slots of the message ("code point out of range: \\U00110000 (max \\U00110000)"), matching Go's format where both %s and %08x receive the same value n. Commit: `557f5ec`
+- [x] **MISSING-186** [message]: `\x` followed by two present-but-non-hex chars now reports "invalid escape sequence \xNN" (not "truncated"). "truncated" is reserved for when a required digit slot is occupied by EOF or a string delimiter. Commit: `557f5ec`
+- [x] **MISSING-187** [position]: escape-sequence errors inside prefixed string/bytes literals (`b"..."`, `r"..."`) are now reported at the opening-quote column rather than the prefix-character column, matching Go's `sc.pos` capture after consuming the prefix. Commit: `557f5ec`
+- [x] **MISSING-188** [message]: a bare `*` parameter followed by a non-comma token now reports "want ','" instead of "want ')'". Added check inside the param loop that the next token is `,` or `)`, mirroring Go's unconditional consume(COMMA) loop. Source: `parser/parser.mbt`. Commit: `f051940`
+- [x] **MISSING-189** [position]: `load` per-symbol errors (empty identifier, leading-underscore) now reported at each symbol's position instead of the load-keyword position. `SLoad` binding tuples extended from `(local, original)` to `(local, original, sym_pos)`; parser captures `self.pos` before consuming each symbol token; resolver uses `sym_pos` for the two per-symbol error sites. Matches starlark-go `resolve.go:584,588` (`from.NamePos`). Commit: `113a6ed`
+- [x] **MISSING-190** [message]: `math` unary/binary builtins (`make_unary`, `make_binary`, `make_ceil`, `make_floor`) now check `kw_args.length() != 0` first and return "NAME: unexpected keyword arguments", matching Go's `UnpackPositionalArgs` kwargs-before-arity check. Commit: `1565b69`
+- [x] **MISSING-191** [behavioral]: `time.duration * int` with a multiplier outside the signed 64-bit range now raises "int value out of range (want signed 64-bit value)" instead of silently wrapping. Commit: `84cdb6f`
 
 ### Thirteenth-pass gap analysis (MISSING-192..199)
 
 Fresh six-area parallel comparison against starlark-go after MISSING-1..191 closed (slicing/indexing, string methods, numerics, builtins+arg-binding, lexer/parser/resolver, dict/set/list/tuple). Slicing/indexing, dict/set/list/tuple, and user-function arg-binding had no divergences. Excluded as intentional (feature flags default-on by design): top-level `if`/`for`/`while`, `while`, top-level global reassign, custom Python-keyword rejection messages. Also excluded: ASCII-only `isalpha`/`isdigit`/`isalnum` (MISSING-72); `float("0x1p4")` hex floats.
 
-- [x] **MISSING-192** [message]: `abs()` type error no longer carries the
-      spurious `abs:` prefix; matches Go's bare `got T, want int or float`
-      (`library.go:193`, `testdata/builtins.star:31`).
-- [x] **MISSING-193** [message]: builtins routed through `UnpackPositionalArgs`
-      (`len`, `repr`, `reversed`, `dir`, `all`, `any`, `bool`, `list`, `tuple`,
-      `set`) report arg counts as `<name>: got N arguments, want [at most ]M`
-      via the shared `check_positional` helper, replacing ad-hoc
-      `X() takes ... argument` wording.
-- [x] **MISSING-194** [message]: the same `UnpackPositionalArgs` builtins reject
-      keyword args with `<name>: unexpected keyword arguments`; `dir`, `str`,
-      `bytes`, `chr`, `ord`, `type`, `zip`, `float` keep the `does not accept
-      keyword arguments` form per `library.go`.
-- [x] **MISSING-195** [message]: `str()`/`bytes()` excess-argument errors are
-      now `<name>: got N arguments, want exactly 1` (`library.go:1096`, `:246`).
-- [x] **MISSING-196** [behavioral + message]: `sorted` accepts `iterable` as a
-      keyword (Go uses `UnpackArgs` with a named `iterable` param,
-      `library.go:1024`) and reports `sorted: missing argument for iterable`
-      when absent, replacing the positional-only handling.
-- [x] **MISSING-197** [message + order]: `min`/`max` check for at least one
-      positional argument before processing kwargs (so `min(default=5)` reports
-      the missing positional, `library.go:701`); unexpected keywords emit
-      `<name>: unexpected keyword argument <kw>` (UnpackArgs form).
-- [x] **MISSING-198** [message]: `str.splitlines(non-bool)` and
-      `str.join(non-iterable)` include the `for parameter 1:` segment
-      (`unpack.go:213`), replacing the bare message / parameter name.
-- [x] **MISSING-199** [behavioral]: whitespace-based `split`/`rsplit`/`strip`/
-      `lstrip`/`rstrip` and `isspace` now match Go's `unicode.IsSpace` (NEL,
-      no-break space, U+2000-200A, U+2028/9, U+202F, U+205F, U+3000) instead of
-      ASCII-only, removing the prior split/strip vs isspace inconsistency.
+- [x] **MISSING-192** [message]: `abs()` type error no longer carries the spurious `abs:` prefix; matches Go's bare `got T, want int or float` (`library.go:193`, `testdata/builtins.star:31`).
+- [x] **MISSING-193** [message]: builtins routed through `UnpackPositionalArgs` (`len`, `repr`, `reversed`, `dir`, `all`, `any`, `bool`, `list`, `tuple`, `set`) report arg counts as `<name>: got N arguments, want [at most ]M` via the shared `check_positional` helper, replacing ad-hoc `X() takes ... argument` wording.
+- [x] **MISSING-194** [message]: the same `UnpackPositionalArgs` builtins reject keyword args with `<name>: unexpected keyword arguments`; `dir`, `str`, `bytes`, `chr`, `ord`, `type`, `zip`, `float` keep the `does not accept keyword arguments` form per `library.go`.
+- [x] **MISSING-195** [message]: `str()`/`bytes()` excess-argument errors are now `<name>: got N arguments, want exactly 1` (`library.go:1096`, `:246`).
+- [x] **MISSING-196** [behavioral + message]: `sorted` accepts `iterable` as a keyword (Go uses `UnpackArgs` with a named `iterable` param, `library.go:1024`) and reports `sorted: missing argument for iterable` when absent, replacing the positional-only handling.
+- [x] **MISSING-197** [message + order]: `min`/`max` check for at least one positional argument before processing kwargs (so `min(default=5)` reports the missing positional, `library.go:701`); unexpected keywords emit `<name>: unexpected keyword argument <kw>` (UnpackArgs form).
+- [x] **MISSING-198** [message]: `str.splitlines(non-bool)` and `str.join(non-iterable)` include the `for parameter 1:` segment (`unpack.go:213`), replacing the bare message / parameter name.
+- [x] **MISSING-199** [behavioral]: whitespace-based `split`/`rsplit`/`strip`/`lstrip`/`rstrip` and `isspace` now match Go's `unicode.IsSpace` (NEL, no-break space, U+2000-200A, U+2028/9, U+202F, U+205F, U+3000) instead of ASCII-only, removing the prior split/strip vs isspace inconsistency.
 
 ### Fourteenth-pass gap analysis (MISSING-200..204)
 
 Fresh five-area comparison against starlark-go after MISSING-1..199 closed. Focused on resolver messages, bytes operator, load errors, and function frame positions.
 
-- [x] **MISSING-200** [message]: Reassigning a load-imported name via regular
-      assignment now emits `"cannot reassign local x declared at pos"` (matching
-      starlark-go's `bind.Scope == Local` for file-local load bindings) instead of
-      the MoonBit-specific "cannot reassign name 'x' imported from a load statement".
-      With `LoadBindsGlobally=true`, falls through to the "global" variant.
-      Commit: `f2a53ca`
-- [x] **MISSING-201** [message]: Re-importing a name via a second `load` statement
-      now emits `"cannot reassign top-level x"` (matching `resolve.go:598` and the
-      "Global is a misnomer for toplevel" comment) instead of "cannot reassign global x".
-      With `LoadBindsGlobally=true`, produces "cannot reassign global x declared at pos".
-      Commit: `f2a53ca`
-- [x] **MISSING-202** [message]: `'in bytes'` operator type error removed the spurious
-      angle brackets — was `"'in <bytes>' requires bytes or int..."`, now
-      `"'in bytes' requires bytes or int..."` matching `value.go:1700`. Commit: `92e6dc4`
-- [x] **MISSING-203** [message]: Load "name not found" error no longer embeds a
-      redundant position prefix in the message string — was `"{pos}: load: name X not
-      found in module Y"`, now `"load: name X not found in module Y"`, matching
-      `interp.go:588`. Position appears once via the EvalError call stack. Commit: `d967404`
-- [x] **MISSING-204** [message]: "load not implemented" error now reads
-      `"load not implemented by this application"` (matching `interp.go:569`)
-      instead of `"{pos}: load is not supported"`. Commit: `d967404`
+- [x] **MISSING-200** [message]: Reassigning a load-imported name via regular assignment now emits `"cannot reassign local x declared at pos"` (matching starlark-go's `bind.Scope == Local` for file-local load bindings) instead of the MoonBit-specific "cannot reassign name 'x' imported from a load statement". With `LoadBindsGlobally=true`, falls through to the "global" variant. Commit: `f2a53ca`
+- [x] **MISSING-201** [message]: Re-importing a name via a second `load` statement now emits `"cannot reassign top-level x"` (matching `resolve.go:598` and the "Global is a misnomer for toplevel" comment) instead of "cannot reassign global x". With `LoadBindsGlobally=true`, produces "cannot reassign global x declared at pos". Commit: `f2a53ca`
+- [x] **MISSING-202** [message]: `'in bytes'` operator type error removed the spurious angle brackets — was `"'in <bytes>' requires bytes or int..."`, now `"'in bytes' requires bytes or int..."` matching `value.go:1700`. Commit: `92e6dc4`
+- [x] **MISSING-203** [message]: Load "name not found" error no longer embeds a redundant position prefix in the message string — was `"{pos}: load: name X not found in module Y"`, now `"load: name X not found in module Y"`, matching `interp.go:588`. Position appears once via the EvalError call stack. Commit: `d967404`
+- [x] **MISSING-204** [message]: "load not implemented" error now reads `"load not implemented by this application"` (matching `interp.go:569`) instead of `"{pos}: load is not supported"`. Commit: `d967404`
 
 ### Fifteenth-pass gap analysis (MISSING-205..209)
 
 Fresh comparison after MISSING-1..204 closed. Focused on dot-assignment error wording, print kwarg validation, sorted argument-validation order, and kwarg name quoting across fail/sorted/min/max.
 
-- [x] **MISSING-205** [message]: `"can't assign to .X field of TYPE"` no longer
-      appends `value` for non-module types — was `"can't assign to .foo field of
-      list value"`, now `"can't assign to .foo field of list"`, matching
-      `eval.go:677`. Source: `stmt.mbt:226`. Commit: `dc4ac49`
-- [x] **MISSING-206** [behavioral + message]: `print` now validates kwargs.
-      `print(sep=3)` raises `'print: for parameter "sep": got int, want string'`;
-      `print(end="\n")` raises `'print: unexpected keyword argument "end"'`,
-      matching starlark-go's `UnpackArgs("print", nil, kwargs, "sep?", &sep)`.
-      Source: `library.go:800`, `expr.mbt`. Commit: `4bf9a7e`
-- [x] **MISSING-207** [behavioral]: `sorted` now validates iterable type before
-      key and reverse. `sorted(1, 2)` reports `"sorted: for parameter iterable:
-      got int, want iterable"` (was `"for parameter key: got int, want callable"`);
-      `sorted(1, 2, 3)` similarly reports the iterable error first. Matches
-      starlark-go's `UnpackArgs` positional-order processing. Commit: `3b16649`
-- [x] **MISSING-208** [message]: Kwarg parameter names are now double-quoted in
-      error messages for `fail`, `sorted`, `min`, and `max`, matching starlark-go's
-      `UnpackArgs` which formats kwarg names as Starlark `String` values (repr).
-      `fail(sep=None)` → `'fail: for parameter "sep": ...'`; `fail(foo=1)` →
-      `'fail: unexpected keyword argument "foo"'`; sorted/min/max similarly.
-      Positional parameter names remain unquoted. Source: `unpack.go:148,153`,
-      `expr.mbt`. Commit: `eb801a9`
-- [x] **MISSING-209** [message]: `sorted` unexpected kwarg now includes the
-      "did you mean?" spell-check hint (parity with `min`/`max`). `sorted([], keg=1)`
-      → `'sorted: unexpected keyword argument "keg" (did you mean key?)'`.
-      Source: `unpack.go:159`, `expr.mbt`. Commit: `eb801a9`
+- [x] **MISSING-205** [message]: `"can't assign to .X field of TYPE"` no longer appends `value` for non-module types — was `"can't assign to .foo field of list value"`, now `"can't assign to .foo field of list"`, matching `eval.go:677`. Source: `stmt.mbt:226`. Commit: `dc4ac49`
+- [x] **MISSING-206** [behavioral + message]: `print` now validates kwargs. `print(sep=3)` raises `'print: for parameter "sep": got int, want string'`; `print(end="\n")` raises `'print: unexpected keyword argument "end"'`, matching starlark-go's `UnpackArgs("print", nil, kwargs, "sep?", &sep)`. Source: `library.go:800`, `expr.mbt`. Commit: `4bf9a7e`
+- [x] **MISSING-207** [behavioral]: `sorted` now validates iterable type before key and reverse. `sorted(1, 2)` reports `"sorted: for parameter iterable: got int, want iterable"` (was `"for parameter key: got int, want callable"`); `sorted(1, 2, 3)` similarly reports the iterable error first. Matches starlark-go's `UnpackArgs` positional-order processing. Commit: `3b16649`
+- [x] **MISSING-208** [message]: Kwarg parameter names are now double-quoted in error messages for `fail`, `sorted`, `min`, and `max`, matching starlark-go's `UnpackArgs` which formats kwarg names as Starlark `String` values (repr). `fail(sep=None)` → `'fail: for parameter "sep": ...'`; `fail(foo=1)` → `'fail: unexpected keyword argument "foo"'`; sorted/min/max similarly. Positional parameter names remain unquoted. Source: `unpack.go:148,153`, `expr.mbt`. Commit: `eb801a9`
+- [x] **MISSING-209** [message]: `sorted` unexpected kwarg now includes the "did you mean?" spell-check hint (parity with `min`/`max`). `sorted([], keg=1)` → `'sorted: unexpected keyword argument "keg" (did you mean key?)'`. Source: `unpack.go:159`, `expr.mbt`. Commit: `eb801a9`
 
 ### Sixteenth-pass gap analysis (MISSING-210..212)
 
 Fresh comparison after MISSING-1..209 closed. All three items are test-only gaps (implementations were already correct). Commit: `190d060`
 
-- [x] **MISSING-210** [test]: `misc.star` lines 79–81 cross-cyclic equality —
-      `cyclic5 == cyclic6` where the two cycles have identical structure but are
-      distinct objects. Added as a new chunk in `misc_cycle_eq_chunked` in
-      `starlarktest/misc_test.mbt`.
-- [x] **MISSING-211** [test]: `StarlarkFunction::param_default(i)` indexed
-      accessor coverage. Added `get_func` helper and seven targeted tests using
-      `param_default(i)` for all eight parameter-list shapes including
-      out-of-bounds (negative and past-end) returning `None`.
-      (`starlarktest/value_api_wbtest.mbt`).
-- [x] **MISSING-212** [test]: `TestPrint` position parity — verified that
-      `thread.call_frame(1)` inside a `with_print` callback returns the exact
-      `file:line:col` of the `print()` call site and the caller's function name.
-      Output matches starlark-go's `eval_test.go:462`.
-      (`starlarktest/error_format_test.mbt`).
+- [x] **MISSING-210** [test]: `misc.star` lines 79–81 cross-cyclic equality — `cyclic5 == cyclic6` where the two cycles have identical structure but are distinct objects. Added as a new chunk in `misc_cycle_eq_chunked` in `starlarktest/misc_test.mbt`.
+- [x] **MISSING-211** [test]: `StarlarkFunction::param_default(i)` indexed accessor coverage. Added `get_func` helper and seven targeted tests using `param_default(i)` for all eight parameter-list shapes including out-of-bounds (negative and past-end) returning `None`. (`starlarktest/value_api_wbtest.mbt`).
+- [x] **MISSING-212** [test]: `TestPrint` position parity — verified that `thread.call_frame(1)` inside a `with_print` callback returns the exact `file:line:col` of the `print()` call site and the caller's function name. Output matches starlark-go's `eval_test.go:462`. (`starlarktest/error_format_test.mbt`).
 
 ### `lib/time` formatter bug fixes & coverage pass (BUG-35..36)
 
 Found while raising `lib/time` coverage: the Go reference-time formatter diverged from `parse_time` and Go semantics in two places. Fixed via TDD (failing tests first). Fix commit: `1a0601d`; tests: `fdef52d`.
 
-- [x] **BUG-35** [behavioral]: `time.time.format()` with a fixed-width
-      fractional verb (e.g. `.000`) corrupted the digits when the nanosecond
-      value had trailing zeros — `fmt_nsec_frac` fed the trailing-trimmed
-      output of `fmt_frac9` back through left zero-padding. Now pads the raw
-      nanosecond value to nine digits directly: `0.12s` formats as `.120`
-      (was `.000`).
-- [x] **BUG-36** [behavioral]: `time.time.format()` emitted the colon
-      timezone layouts `Z07:00` / `-07:00` literally, although `parse_go_layout`
-      already accepted them. Added colon-form branches to `fmt_go_layout` and a
-      `colon~` option to `write_tz_offset`, restoring parse/format symmetry.
-- [x] **Coverage** [test]: added `time_format_test.mbt`, `time_parse_test.mbt`,
-      and `time_zone_test.mbt` in `starlarktest`. `lib/time/time.mbt` 718/1187
-      → 1110/1195 (~93%); `tz_stub.mbt` 6/78 → 77/78; overall 88.0% → 92.1%.
-      Offset assertions use only daylight-saving-free zones so they hold on all
-      four backends (DST-aware native vs. fixed-offset wasm/js table); broader
-      region coverage relies on the instant-preserving invariant of
-      `in_location`.
+- [x] **BUG-35** [behavioral]: `time.time.format()` with a fixed-width fractional verb (e.g. `.000`) corrupted the digits when the nanosecond value had trailing zeros — `fmt_nsec_frac` fed the trailing-trimmed output of `fmt_frac9` back through left zero-padding. Now pads the raw nanosecond value to nine digits directly: `0.12s` formats as `.120` (was `.000`).
+- [x] **BUG-36** [behavioral]: `time.time.format()` emitted the colon timezone layouts `Z07:00` / `-07:00` literally, although `parse_go_layout` already accepted them. Added colon-form branches to `fmt_go_layout` and a `colon~` option to `write_tz_offset`, restoring parse/format symmetry.
+- [x] **Coverage** [test]: added `time_format_test.mbt`, `time_parse_test.mbt`, and `time_zone_test.mbt` in `starlarktest`. `lib/time/time.mbt` 718/1187 → 1110/1195 (~93%); `tz_stub.mbt` 6/78 → 77/78; overall 88.0% → 92.1%. Offset assertions use only daylight-saving-free zones so they hold on all four backends (DST-aware native vs. fixed-offset wasm/js table); broader region coverage relies on the instant-preserving invariant of `in_location`.
 
 ### Pre-v0.1.0 gap fixes (time extension, M.4 items)
 
 Previously-unverified lower-confidence notes from the ninth-pass (M.4), now confirmed and fixed via TDD. Commit: `e6e1935`
 
-- [x] **M.4-A** [behavioral]: `time.from_timestamp` with 3+ positional args
-      silently ignored excess arguments instead of erroring. Added max-arity guard:
-      raises "from_timestamp: got N arguments, want at most 2", matching
-      starlark-go's `UnpackPositionalArgs("from_timestamp", args, kwargs, 1, &sec, &nsec)`.
-- [x] **M.4-B** [message]: `duration_attr` returned `Ok(None)` for unknown
-      attribute names, deferring to the generic evaluator message. Changed to
-      `Err("unrecognized time.duration attribute \"name\"")`, matching
-      starlark-go's `Duration.Attr` (`time.go:227`).
+- [x] **M.4-A** [behavioral]: `time.from_timestamp` with 3+ positional args silently ignored excess arguments instead of erroring. Added max-arity guard: raises "from_timestamp: got N arguments, want at most 2", matching starlark-go's `UnpackPositionalArgs("from_timestamp", args, kwargs, 1, &sec, &nsec)`.
+- [x] **M.4-B** [message]: `duration_attr` returned `Ok(None)` for unknown attribute names, deferring to the generic evaluator message. Changed to `Err("unrecognized time.duration attribute \"name\"")`, matching starlark-go's `Duration.Attr` (`time.go:227`).
 
 ### Resolved post-release API additions
 
-- [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added;
-      `eval_expr` delegates to it with default options. Re-exported in public façade.
-- [x] **MISSING-55**: `file_program(file, opts, is_predeclared)` and
-      `source_program_with_file` added; `SyntaxFile` type alias and `parse_file`
-      re-exported in public façade. Enables parse-once-exec-many pattern.
-- [x] **MISSING-58**: `Universe::set(name, value)` added; `exec_file_with_universe`
-      wires a custom universe into both the resolver and eval env.
-- [x] **MISSING-60**: Closed — closed `Value` enum via `ExtVal(CustomValue)` is
-      the confirmed design.
+- [x] **MISSING-54**: `eval_expr_with_opts(thread, filename, src, opts, env)` added; `eval_expr` delegates to it with default options. Re-exported in public façade.
+- [x] **MISSING-55**: `file_program(file, opts, is_predeclared)` and `source_program_with_file` added; `SyntaxFile` type alias and `parse_file` re-exported in public façade. Enables parse-once-exec-many pattern.
+- [x] **MISSING-58**: `Universe::set(name, value)` added; `exec_file_with_universe` wires a custom universe into both the resolver and eval env.
+- [x] **MISSING-60**: Closed — closed `Value` enum via `ExtVal(CustomValue)` is the confirmed design.
 - [x] **MISSING-61**: `\u`/`\U` accepted in bytes literals; encodes as UTF-8 bytes.
 - [x] **MISSING-63**: `br"..."` now rejected; only `rb"..."` is valid raw-bytes.
-- [x] **MISSING-66**: `hash_float` uses `double_to_bigint` ensuring cross-type
-      hash parity for large integers (e.g. `hash(1e20) == hash(10**20)`).
+- [x] **MISSING-66**: `hash_float` uses `double_to_bigint` ensuring cross-type hash parity for large integers (e.g. `hash(1e20) == hash(10**20)`).
 
 ### Post-R3 API quality pass
 
 - [x] Remove `StarlarkList::to_iter` (exact duplicate of `iter`)
 - [x] Remove `StarlarkDict::to_keys` (unused; just `keys().iter()`)
-- [x] Fix `equal()` to delegate to `equal_depth(a, b, compare_limit)` so
-      cyclic structures return `Err` instead of potentially stack-overflowing,
-      matching starlark-go `Equal` semantics
-- [x] Add `Options::with_allow_lambda`, `with_allow_while`, `with_allow_bytes`,
-      `with_allow_float`, `with_allow_top_level_control` — completing the
-      fluent-setter API for all nine dialect flags
-- [x] Restrict `StarlarkDict::iter_begin/iter_end`, `StarlarkSet::iter_begin/iter_end`,
-      `StarlarkDict::is_same_storage`, `StarlarkList::is_same_storage` to package
-      scope — all were called only within `src/value/`; `lib/json` cycle detection
-      for lists now uses `physical_equal` directly.
-- [x] Replace `Module::globals_map/predeclared_map` (raw map leakage) with
-      `Module::global_names() -> Array[String]` and
-      `Module::predeclared_names() -> Array[String]`; embedders enumerate names
-      then call `get()` per name.
-- [x] Mark eval-internal helpers in `src/value/` with `#internal(unsafe, "...")`:
-      `check_mutable`, `pop_at`, `with_module_globals`, `BuiltinCallCtx::new`,
-      `StarlarkBuiltinFunc::dispatch`, `floor_div`, `starlark_mod`,
-      `bigint_to_double`, `bigint_to_finite_double`, `double_to_bigint`,
-      `java_string_hash`, `starlark_equals_depth` — must stay `pub` for the
-      eval package but are not part of the public embedding API; the attribute
-      causes the compiler to warn any caller outside the module.
-- [x] **Value method consistency pass** — convert `starlark_hash(v)` free
-      function to `Value::hash(self)` method (consistent with `repr`, `to_str`,
-      `truth`, `type_name`, `starlark_equals`); convert `freeze_value(v)` to
-      `Value::freeze(self)` method (consistent with `StarlarkList/Dict/Set::freeze`);
-      rename `StarlarkSet::to_iter` → `StarlarkSet::iter` (consistent with
-      `StarlarkList::iter`); add `Value::of_int(Int64)` and `Value::of_float(Double)`
-      convenience constructors alongside `Value::of_string`; remove labeled optional
-      `verb?` from `StarlarkList::pop_at` (now a plain positional `String`).
-- [x] **HasSetField wired** — `CustomValue::with_set_field` hooks are now
-      dispatched in `eval/stmt.mbt` for `EDot` assignment on `ExtVal`;
-      `get_set_field` return type changed from `Result[Unit, String]` to
-      `Result[Unit, String]?` (consistent with other optional-capability
-      dispatchers). Previously the hook was never invoked.
-- [x] **`Options::with_global_reassign` renamed** → `with_allow_global_reassign`
-      to match the `allow_global_reassign` getter and all other `with_allow_*`
-      fluent setters.
-- [x] **`StringDict` extended** — added `delete(key) -> Bool`,
-      `each((String, Value) -> Unit)`, and `values() -> Array[Value]`.
-- [x] **Remaining `#internal` visibility** — `java_string_hash`, `starlark_equals_depth`,
-      `bigint_to_*`, `floor_div`, `starlark_mod`, `check_mutable`, `copy_items`,
-      `pop_at`, `BuiltinCallCtx::new`, `StarlarkBuiltinFunc::dispatch/call_body`,
-      `StarlarkFunction::body/params/captured_scope/globals/with_module_globals/new`
-      appear in `.mbti` due to MoonBit package visibility constraints (no
-      module-internal visibility like Go's `internal/`); accepted as-is —
-      `#internal` warnings protect embedders at compile time.
+- [x] Fix `equal()` to delegate to `equal_depth(a, b, compare_limit)` so cyclic structures return `Err` instead of potentially stack-overflowing, matching starlark-go `Equal` semantics
+- [x] Add `Options::with_allow_lambda`, `with_allow_while`, `with_allow_bytes`, `with_allow_float`, `with_allow_top_level_control` — completing the fluent-setter API for all nine dialect flags
+- [x] Restrict `StarlarkDict::iter_begin/iter_end`, `StarlarkSet::iter_begin/iter_end`, `StarlarkDict::is_same_storage`, `StarlarkList::is_same_storage` to package scope — all were called only within `src/value/`; `lib/json` cycle detection for lists now uses `physical_equal` directly.
+- [x] Replace `Module::globals_map/predeclared_map` (raw map leakage) with `Module::global_names() -> Array[String]` and `Module::predeclared_names() -> Array[String]`; embedders enumerate names then call `get()` per name.
+- [x] Mark eval-internal helpers in `src/value/` with `#internal(unsafe, "...")`: `check_mutable`, `pop_at`, `with_module_globals`, `BuiltinCallCtx::new`, `StarlarkBuiltinFunc::dispatch`, `floor_div`, `starlark_mod`, `bigint_to_double`, `bigint_to_finite_double`, `double_to_bigint`, `java_string_hash`, `starlark_equals_depth` — must stay `pub` for the eval package but are not part of the public embedding API; the attribute causes the compiler to warn any caller outside the module.
+- [x] **Value method consistency pass** — convert `starlark_hash(v)` free function to `Value::hash(self)` method (consistent with `repr`, `to_str`, `truth`, `type_name`, `starlark_equals`); convert `freeze_value(v)` to `Value::freeze(self)` method (consistent with `StarlarkList/Dict/Set::freeze`); rename `StarlarkSet::to_iter` → `StarlarkSet::iter` (consistent with `StarlarkList::iter`); add `Value::of_int(Int64)` and `Value::of_float(Double)` convenience constructors alongside `Value::of_string`; remove labeled optional `verb?` from `StarlarkList::pop_at` (now a plain positional `String`).
+- [x] **HasSetField wired** — `CustomValue::with_set_field` hooks are now dispatched in `eval/stmt.mbt` for `EDot` assignment on `ExtVal`; `get_set_field` return type changed from `Result[Unit, String]` to `Result[Unit, String]?` (consistent with other optional-capability dispatchers). Previously the hook was never invoked.
+- [x] **`Options::with_global_reassign` renamed** → `with_allow_global_reassign` to match the `allow_global_reassign` getter and all other `with_allow_*` fluent setters.
+- [x] **`StringDict` extended** — added `delete(key) -> Bool`, `each((String, Value) -> Unit)`, and `values() -> Array[Value]`.
+- [x] **Remaining `#internal` visibility** — `java_string_hash`, `starlark_equals_depth`, `bigint_to_*`, `floor_div`, `starlark_mod`, `check_mutable`, `copy_items`, `pop_at`, `BuiltinCallCtx::new`, `StarlarkBuiltinFunc::dispatch/call_body`, `StarlarkFunction::body/params/captured_scope/globals/with_module_globals/new` appear in `.mbti` due to MoonBit package visibility constraints (no module-internal visibility like Go's `internal/`); accepted as-is — `#internal` warnings protect embedders at compile time.
 
 ### Pre-v0.1.0 API hygiene pass (issue #41)
 
-- [x] **Depublicize `exec_file_vm` / `eval_expr_vm`** — both were bytecode VM
-      entry points behind the public `exec_file` / `eval_expr` façades; made
-      package-private (`fn`). Tests in `eval/interp_test.mbt` migrated to the
-      public façade functions.
-- [x] **Annotate `StarlarkFunction::new` + `::defaults`** — marked both with
-      `#internal(unsafe, ...)` to signal they are not part of the public embedding
-      API. `StarlarkFunction::new` stays `pub fn` to avoid a spurious
-      `unused_value` warning under `moon check --deny-warn` (MoonBit does not see
-      wbtest callers during check). Tests that called `StarlarkFunction::new`
-      migrated into `value/function_wbtest.mbt`.
-- [x] **Fix stale `lib-json.mbt.md` description** — updated `json.encode` entry to
-      accurately reflect Go-faithful behavior: non-ASCII Unicode as raw UTF-8,
-      with U+2028/U+2029 and `<`/`>`/`&` escaped for HTML/JS safety.
-- [x] **Remove `globals()` from `value.mbt.md`** — `StarlarkFunction::globals()`
-      was marked `#internal(unsafe, "eval engine only")` when the bytecode VM
-      was introduced (it builds a name→value map from raw module slots), but the
-      docs were not updated. Removed the method row from the "Closure / module"
-      table and replaced the `f.globals().contains("CONST")` assertion in the
-      code example with `f.defining_module()` + `StarlarkModule::get()`, which is
-      the intended public path. Commit: `e9323d5`
+- [x] **Depublicize `exec_file_vm` / `eval_expr_vm`** — both were bytecode VM entry points behind the public `exec_file` / `eval_expr` façades; made package-private (`fn`). Tests in `eval/interp_test.mbt` migrated to the public façade functions.
+- [x] **Annotate `StarlarkFunction::new` + `::defaults`** — marked both with `#internal(unsafe, ...)` to signal they are not part of the public embedding API. `StarlarkFunction::new` stays `pub fn` to avoid a spurious `unused_value` warning under `moon check --deny-warn` (MoonBit does not see wbtest callers during check). Tests that called `StarlarkFunction::new` migrated into `value/function_wbtest.mbt`.
+- [x] **Fix stale `lib-json.mbt.md` description** — updated `json.encode` entry to accurately reflect Go-faithful behavior: non-ASCII Unicode as raw UTF-8, with U+2028/U+2029 and `<`/`>`/`&` escaped for HTML/JS safety.
+- [x] **Remove `globals()` from `value.mbt.md`** — `StarlarkFunction::globals()` was marked `#internal(unsafe, "eval engine only")` when the bytecode VM was introduced (it builds a name→value map from raw module slots), but the docs were not updated. Removed the method row from the "Closure / module" table and replaced the `f.globals().contains("CONST")` assertion in the code example with `f.defining_module()` + `StarlarkModule::get()`, which is the intended public path. Commit: `e9323d5`
 
 ### Post-R4 API consistency pass
 
-- [x] **`StringDict` wired into the eval entry points** — moved `StringDict` from
-      the facade into the `value` package (the only package `eval` can import) and
-      switched the env/globals parameter of `eval_expr`, `eval_expr_with_opts`,
-      `eval_parsed_expr`, and `exec_repl_chunk` from `StarlarkDict` to `StringDict`.
-      Previously the env was a value-keyed `StarlarkDict` whose non-string keys were
-      silently dropped, while `StringDict` (the natural string-keyed env type) was
-      defined but consumed by nothing. BREAKING: those four signatures now take
-      `@value.StringDict`, and `StringDict` is re-homed under
-      `connect0459/starlark/value`.
-- [x] **`StarlarkFunction` AST internals marked `#internal`** — `body`, `params`,
-      `captured_scope`, `globals`, and `new` join the already-annotated
-      `with_module_globals`; they expose AST nodes and closure/globals runtime
-      state that belong to the eval engine. Public `.mbti` surface is unchanged;
-      external callers get a compile-time warning. Introspection accessors
-      (`name`, `position`, `defaults`, `num_params`, `param`, `param_default`,
-      `defining_module`, `free_var`, …) stay public, mirroring starlark-go's
-      `Function` API.
-- [x] **`StarlarkList::each` added** — `StarlarkDict` and `StarlarkSet` both expose
-      `each()`; `StarlarkList` only had `eachi()`. Added `each((Value) -> Unit)` for
-      symmetry, mirroring the core `Array` `each`/`eachi` pair (additive, non-breaking).
-- [x] **`compare_limit` facade re-export reviewed, kept** — it is an intentional
-      mirror of starlark-go's top-level `CompareLimit`, paired with the facade
-      `equal_depth`/`compare_depth` entry points; not a redundant duplicate.
+- [x] **`StringDict` wired into the eval entry points** — moved `StringDict` from the facade into the `value` package (the only package `eval` can import) and switched the env/globals parameter of `eval_expr`, `eval_expr_with_opts`, `eval_parsed_expr`, and `exec_repl_chunk` from `StarlarkDict` to `StringDict`. Previously the env was a value-keyed `StarlarkDict` whose non-string keys were silently dropped, while `StringDict` (the natural string-keyed env type) was defined but consumed by nothing. BREAKING: those four signatures now take `@value.StringDict`, and `StringDict` is re-homed under `connect0459/starlark/value`.
+- [x] **`StarlarkFunction` AST internals marked `#internal`** — `body`, `params`, `captured_scope`, `globals`, and `new` join the already-annotated `with_module_globals`; they expose AST nodes and closure/globals runtime state that belong to the eval engine. Public `.mbti` surface is unchanged; external callers get a compile-time warning. Introspection accessors (`name`, `position`, `defaults`, `num_params`, `param`, `param_default`, `defining_module`, `free_var`, …) stay public, mirroring starlark-go's `Function` API.
+- [x] **`StarlarkList::each` added** — `StarlarkDict` and `StarlarkSet` both expose `each()`; `StarlarkList` only had `eachi()`. Added `each((Value) -> Unit)` for symmetry, mirroring the core `Array` `each`/`eachi` pair (additive, non-breaking).
+- [x] **`compare_limit` facade re-export reviewed, kept** — it is an intentional mirror of starlark-go's top-level `CompareLimit`, paired with the facade `equal_depth`/`compare_depth` entry points; not a redundant duplicate.
 
 ### Post-R4 API symmetry & safety pass
 
-- [x] **`StarlarkList::get` made bounds-safe** — it was the only container
-      accessor that aborted on an out-of-bounds index (every other accessor
-      returns `Result`/`Option`). Now returns `Value?` like core `Array::get`;
-      added `StarlarkList::op_get` to back the aborting `list[i]` indexed syntax
-      used on already-bounds-checked internal paths. BREAKING (return type).
-- [x] **`Value` scalar constructors unified under `new_` prefix** — renamed
-      `Value::of_int`/`of_float`/`of_string` to `new_int`/`new_float`/`new_string`
-      so all `Value` factories share one prefix with `new_list`/`new_dict`/
-      `new_set`/`new_builtin`, matching starlark-go's `New*` family. BREAKING.
-- [x] **Name-value registry APIs unified** — `Universe` and `Predeclared` now
-      share the same core surface as `StringDict`: renamed `Universe::empty` →
-      `new`, added `Universe::from_map`/`keys` and `Predeclared::has`/`keys`.
-      `keys()` returns lexicographic order on all three. `Universe::empty` BREAKING.
-- [x] **Container/Module symmetry additions** — added `StarlarkDict::iter`
-      (lazy key iterator mirroring `StarlarkList::iter`/`StarlarkSet::iter`;
-      dict iteration yields keys) and `Module::predeclared_count` (counterpart to
-      `globals_count`, alongside the existing `predeclared_names`). Additive.
+- [x] **`StarlarkList::get` made bounds-safe** — it was the only container accessor that aborted on an out-of-bounds index (every other accessor returns `Result`/`Option`). Now returns `Value?` like core `Array::get`; added `StarlarkList::op_get` to back the aborting `list[i]` indexed syntax used on already-bounds-checked internal paths. BREAKING (return type).
+- [x] **`Value` scalar constructors unified under `new_` prefix** — renamed `Value::of_int`/`of_float`/`of_string` to `new_int`/`new_float`/`new_string` so all `Value` factories share one prefix with `new_list`/`new_dict`/`new_set`/`new_builtin`, matching starlark-go's `New*` family. BREAKING.
+- [x] **Name-value registry APIs unified** — `Universe` and `Predeclared` now share the same core surface as `StringDict`: renamed `Universe::empty` → `new`, added `Universe::from_map`/`keys` and `Predeclared::has`/`keys`. `keys()` returns lexicographic order on all three. `Universe::empty` BREAKING.
+- [x] **Container/Module symmetry additions** — added `StarlarkDict::iter` (lazy key iterator mirroring `StarlarkList::iter`/`StarlarkSet::iter`; dict iteration yields keys) and `Module::predeclared_count` (counterpart to `globals_count`, alongside the existing `predeclared_names`). Additive.
 
 ### Program serialization & embedder-unpack pass (MISSING-62 / MISSING-64)
 
-- [x] **MISSING-62**: `Program::write() -> Bytes` and
-      `compiled_program(Bytes) -> Result[Program, EvalError]` added (re-exported
-      via the facade). Delivers starlark-go's parse-once / load-many capability.
-      As a **tree-walking** interpreter the serialized form is the resolved AST
-      plus the program's `Options`, encoded as a versioned, magic-tagged
-      (`"smbt"`, version 1) binary in `src/eval/serial.mbt` — **intentionally not
-      byte-compatible** with starlark-go's bytecode `Program.Write`. The decoder
-      trusts the input was produced by `write` from a valid program and skips
-      re-resolution (which would require the original `is_predeclared`).
-      Positions are reconstructed from the file path (affects only error text).
-      Round-trip tests cover the full AST incl. comprehensions, lambdas, slices,
-      `load`, and bigint/float/bytes literals.
-- [x] **MISSING-64 (Unpacker)**: `Unpacker` protocol (`pub(open) trait` in
-      `value/protocols.mbt`) + `unpack_args_with` dispatching each matched
-      argument to a custom target, mirroring starlark-go's `UnpackArgs`. The
-      `unpack` package (was unused under `internal/`) is now exposed publicly:
-      `unpack_args`/`unpack_positional`/`unpack_args_with` re-exported via the
-      facade. (Closes the stale claim that these were already public.)
-- [x] **MISSING-64 (FileOptions)**: resolved by `Program::options() -> Options`.
-      A `Program` already bundles an immutable, per-file `Options` set (it
-      survives serialization), which is exactly the role starlark-go's
-      `syntax.FileOptions` plays — per-file dialect config instead of global
-      flags. A separate `FileOptions` type was deliberately **not** added: it
-      would duplicate `Options`, and `syntax.File` cannot depend on
-      `eval.Options` (layer boundary), so `Program` is the correct owner.
-- [x] **MISSING-64 (thread-local)**: already implemented earlier
-      (`Thread::set_local`/`get_local`). No work remaining.
+- [x] **MISSING-62**: `Program::write() -> Bytes` and `compiled_program(Bytes) -> Result[Program, EvalError]` added (re-exported via the facade). Delivers starlark-go's parse-once / load-many capability. As a **tree-walking** interpreter the serialized form is the resolved AST plus the program's `Options`, encoded as a versioned, magic-tagged (`"smbt"`, version 1) binary in `src/eval/serial.mbt` — **intentionally not byte-compatible** with starlark-go's bytecode `Program.Write`. The decoder trusts the input was produced by `write` from a valid program and skips re-resolution (which would require the original `is_predeclared`). Positions are reconstructed from the file path (affects only error text). Round-trip tests cover the full AST incl. comprehensions, lambdas, slices, `load`, and bigint/float/bytes literals.
+- [x] **MISSING-64 (Unpacker)**: `Unpacker` protocol (`pub(open) trait` in `value/protocols.mbt`) + `unpack_args_with` dispatching each matched argument to a custom target, mirroring starlark-go's `UnpackArgs`. The `unpack` package (was unused under `internal/`) is now exposed publicly: `unpack_args`/`unpack_positional`/`unpack_args_with` re-exported via the facade. (Closes the stale claim that these were already public.)
+- [x] **MISSING-64 (FileOptions)**: resolved by `Program::options() -> Options`. A `Program` already bundles an immutable, per-file `Options` set (it survives serialization), which is exactly the role starlark-go's `syntax.FileOptions` plays — per-file dialect config instead of global flags. A separate `FileOptions` type was deliberately **not** added: it would duplicate `Options`, and `syntax.File` cannot depend on `eval.Options` (layer boundary), so `Program` is the correct owner.
+- [x] **MISSING-64 (thread-local)**: already implemented earlier (`Thread::set_local`/`get_local`). No work remaining.
 
 ---
 
@@ -1949,239 +939,35 @@ Previously-unverified lower-confidence notes from the ninth-pass (M.4), now conf
 
 Quality audit pass covering Immutable First, magic numbers, non-obvious comments, and doc-comments on public functions.
 
-- [x] **Immutable First audit** — mutable containers (List, Dict, Set) and runtime
-      state (Thread, Module.freeze) are all spec-justified mutations; no violations found.
-- [x] **Magic number extraction (first pass)** — IEEE 754 bit-layout constants
-      (`ieee754_sign_shift`, `ieee754_mantissa_bits`, `ieee754_exponent_mask`,
-      `ieee754_exponent_bias`, `ieee754_mantissa_mask`, `ieee754_implicit_bit`); Java
-      hashCode prime (`java_hash_prime = 31`); Unicode replacement rune
-      (`unicode_replacement_rune = 0xFFFD`); 2^32 modulus (`bigint_uint32_modulus`) —
-      all named in `traits.mbt`.
-- [x] **Magic number extraction (second pass)** — Unicode surrogate bounds and
-      max-codepoint in `lexer/scanner.mbt` extracted to module-level constants
-      (`unicode_surr_lo`, `unicode_surr_hi`, `unicode_max_codepoint`); struct rolling-hash
-      seed and primes in `struct/struct.mbt` named (`struct_hash_seed`,
-      `struct_hash_mult_init`, `struct_hash_mult_step`); seconds-per-hour/minute in
-      `time/time.mbt` replaced by `secs_per_hour` / `secs_per_minute`.
-- [x] **Non-obvious comments** — `hash_zero_sentinel` design (0 reserved as deleted-entry
-      marker) and `normalize_hash` invariant documented in `hashtable.mbt`.
-- [x] **Doc-comments on public functions (first pass)** — `///` descriptions added to all
-      `pub fn` and `pub struct` in `src/starlark.mbt`, `src/internal/errors/errors.mbt`,
-      `src/internal/eval/eval.mbt` (Thread, Module, Options, Universe, Predeclared),
-      `src/internal/value/value.mbt` (Value, StarlarkString, StarlarkList, StarlarkRange,
-      floor_div, starlark_mod, format_float, repr), `src/internal/value/traits.mbt`
-      (starlark_hash, starlark_equals, compare_values, freeze_value, double_to_bigint, etc.),
-      and `src/internal/hashtable/hashtable.mbt` (Hashtable struct and all public methods).
-- [x] **Doc-comments on public functions (second pass)** — remaining packages covered:
-      `eval/program.mbt` (Program + 8 methods), `eval/debug.mbt` (DebugFrame + 5 methods),
-      `value/iter.mbt` (StarlarkIterator + iterate + length_of), `value/dict_set.mbt`
-      (StarlarkDict 17 methods + StarlarkSet 14 methods), `value/protocols.mbt`
-      (CustomValue::new + 17 with_* builders + 21 get_*/do_* dispatchers),
-      `repl/repl.mbt` (ReplOutput + 4 functions), `json/json.mbt` (4 public functions),
-      `math/math.mbt` (math_module), `time/time.mbt` (now_override_key + time_value +
-      time_module), `struct/struct.mbt` (4 public declarations),
-      `struct/module.mbt` (make_module + module_builtin).
-- [x] **Doc-comments on public functions (third pass)** — internal implementation
-      packages covered: `value/value.mbt` (fix // → /// for BuiltinCallCtx::get_local),
-      `unpack/unpack.mbt` (unpack_args + unpack_positional), `utf8util/utf8util.mbt`
-      (hex_char, write_hex2/4/8, utf8_decode_rune, is_unicode_printable),
-      `std_math/std_math.mbt` (all 21 math wrapper functions), `lexer/lexer.mbt`
-      (Token::to_string, keyword_token), `lexer/scanner.mbt` (ScannedToken struct/
-      accessors, Scanner struct/new/next_token), `syntax/syntax.mbt` (File struct/new/
-      path/stmts, expr_pos, stmt_pos), `syntax/walker.mbt` (Node enum, walk_file/stmt/
-      expr), `parser/parser.mbt` (parse_file, parse_expr, Parser::parse_test),
-      `resolver/resolver.mbt` (Binding + accessors, ResolveOptions struct + 9 getters +
-      6 builders, ResolvedFile + accessors, resolve).
-- [x] **Magic number extraction (third pass)** — ASCII codepoint constants in
-      `utf8util/case_mapping.mbt` (`ascii_upper_a/z`, `ascii_lower_a/z`, `ascii_max`,
-      `ascii_case_shift`) replacing bare hex literals in the ASCII fast-paths of
-      `to_upper/lower/title_rune`.
-- [x] **Doc-comments fourth pass (Parameters:/Returns)** — added `Parameters:` and
-      `Returns` sections to all 437 pub declarations across all 24 public files,
-      following the MoonBit core library convention. Complex multi-param functions
-      got full `Parameters:` blocks; self-only accessors got `Returns` only;
-      bare `///|` functions also received summary text. Committed per package
-      (15 commits): `starlark`, `eval`, `errors`, `hashtable`, `value`, `unpack`,
-      `utf8util`, `lexer`, `syntax`, `parser`, `resolver`, `repl`, `json`, `math`,
-      `time`, `struct`.
-- [x] **Magic number extraction (fourth pass)** — `eval/ops.mbt` and `eval/expr.mbt`:
-      added `min_int32` alongside `max_int32`; replaced bare `2147483647N`/`-2147483648N`
-      literals in `adjust_index` and slice-bound checks; added comment to `max_alloc`
-      (= `1<<30`, starlark-go cap); extracted `max_lshift_bits` (512) and
-      `max_rshift_bits` (1_000_000) with explaining comments; extracted
-      `unicode_max_cp_bigint` (U+10FFFF), `unicode_surr_first`/`unicode_surr_last`
-      (U+D800..U+DFFF) for `%c` format validation; added inline comments to
-      `decompose_double` explaining each IEEE 754 bit-layout constant.
-- [x] **Magic number extraction (fifth pass)** — `resolver/resolver.mbt`:
-      extracted `max_call_args = 255` (starlark-go bytecode cap) replacing bare
-      `256` in two call-arity checks and embedding the limit value in the error
-      message via the constant. `lexer/scanner.mbt`: extracted `max_ascii = 127`
-      and `max_byte_exclusive = 256` for octal/hex escape validation; added comment
-      explaining why the non-ASCII check must precede the invalid-range check.
-      `struct/struct.mbt`: added comment documenting origin of hash constants
-      (8731/9839/7349 and `3 * name_hash` factor ported from starlark-go's
-      starlarkstruct without modification).
-- [x] **Magic number extraction (sixth pass)** — `value/value.mbt`: extracted
-      `ascii_space` (0x20), `ascii_del` (0x7F), and `utf8_multibyte_lo` (0x80)
-      as named constants replacing bare hex literals in `repr_bytes_inner` (the
-      printable-ASCII range bounds and the UTF-8 multi-byte threshold).
-      `lexer/scanner.mbt`: extracted `ascii_digit_zero` (0x30) replacing bare
-      `0x30` in `decode_escape`, `int_to_octal`, `xdigit_to_int`, and
-      `parse_int_base`; added one-line comment to `append_utf8_codepoint`
-      explaining the leading-byte masks (0xC0/0xE0/0xF0), continuation-byte
-      marker (0x80), and 6-bit payload mask (0x3F).
-- [x] **Magic number extraction (seventh pass)** — `eval/ops.mbt`: extracted
-      `printf_float_precision = 6` (C printf `%.6e`/`%.6f` decimal places)
-      replacing bare `6`/`7` literals in `format_float_e` and `format_float_f`;
-      added comment explaining `[10^p, 10^(p+1))` normalization range.
-      `eval/stmt.mbt` and `resolver/resolver.mbt`: extracted ASCII constants
-      (`ascii_upper_a`, `ascii_upper_z`, `ascii_case_shift`, `ascii_underscore`)
-      for the `spell_fold_chars` helper, replacing bare 65/90/32/95 literals.
-- [x] **Non-obvious comments (additional pass)** — added comment to
-      `spell_nearest` explaining `(len+1)/2` as the half-word-length acceptance
-      threshold; added comment to `hash_tuple` documenting the Python
-      `tuplehash` `len + len` step formula origin.
-- [x] **DRY consolidation (spell-check)** — `spell_fold_chars`,
-      `spell_levenshtein`, and `spell_nearest` were duplicated verbatim in
-      `eval/stmt.mbt` and `resolver/resolver.mbt` (~80 lines each). Moved to
-      `utf8util/spell.mbt` as `pub fn`; added `utf8util` import to
-      `resolver/moon.pkg`; updated all six call sites in eval to
-      `@utf8util.spell_nearest(...)`.
-- [x] **Non-obvious comments (eighth pass)** — `hashtable/hashtable.mbt`
-      `maybe_grow`: added inline comment explaining the rearranged inequality
-      `live_count * 3 >= capacity * 2` is a 2/3 load factor threshold.
-      `lexer/scanner.mbt` `append_utf8_codepoint`: added Boundaries line
-      documenting the four UTF-8 sequence ranges (1/2/3/4-byte).
-      `utf8util/utf8util.mbt` `utf8_decode_rune`: added RFC 3629 comment
-      explaining why the leading-byte bounds are 0xC2/0xF4 (not 0xC0/0xF7)
-      — 0xC0/0xC1 are overlong, 0xF5..0xF7 encode codepoints above U+10FFFF.
-- [x] **Magic number + DRY (extension/util pass)** — `time/time.mbt`
-      `fmt_go_layout`: the numeric-offset branch used bare `3600`/`60` while its
-      sibling already used `secs_per_hour`/`secs_per_minute`; both branches
-      duplicated the sign+hh+mm writing logic — extracted `write_tz_offset`.
-      `math/math.mbt` `float_gamma`: named `gamma_factorial_max` (21.0) and
-      `lanczos_g` (7.0), tied the coefficient loop to `lanczos_c.length()`
-      instead of a literal `9`, replaced the `7.5` t-offset with
-      `lanczos_g + 0.5`. `repl/repl.mbt` `eval_input`: collapsed the two
-      identical `exec_repl_chunk` branches into a single guarded path.
-- [x] **Non-obvious comments (ninth pass)** — `time/time.mbt` `fmt_go_layout`:
-      documented the Go reference-time mnemonics ("Mon Jan 2 15:04:05 MST 2006")
-      so the layout-token matching and length advances are no longer opaque.
-      `math/math.mbt`: documented the Lanczos g=7/n=9 coefficient set, the
-      reflection formula, and the `1.0 / y < 0.0` negative-zero detection trick
-      in `float_copysign`. `hashtable/hashtable.mbt` `slot_of`: documented that
-      `h & (cap - 1)` substitutes for `h % cap` only under the power-of-two
-      capacity invariant. `repl/repl.mbt`: documented the `_` last-value binding.
-- [x] **Magic number + DRY (tenth pass)** — `eval/expr.mbt` `chr()`: the
-      out-of-range guard hard-coded `BigInt::from_int(0x10ffff)` while the same
-      `eval` package already defines `unicode_max_cp_bigint` for the `%c` format
-      path; reuse the constant. `json/json.mbt`: named the surrogate-pair decode
-      magic numbers (`high_surrogate_lo/hi`, `low_surrogate_lo/hi`,
-      `supplementary_plane_base`, `surrogate_high_scale`, `json_replacement_rune`)
-      so the recombination formula reads as the UTF-16 algorithm; extracted
-      `write_indent_line` to dedupe the newline+prefix+indent sequence repeated
-      at three `indent_json` call sites.
-- [x] **DRY + non-obvious comments (eleventh pass)** — `eval/expr.mbt`: the
-      `EList` and `ETuple` match arms ran the identical evaluate-each-element
-      loop, differing only in the final constructor; extracted `eval_exprs`
-      so both arms reduce to one line. `utf8util/utf8util.mbt` `utf8_decode_rune`:
-      documented the rune reassembly arithmetic (leading byte keeps 7-len payload
-      bits shifted by 6*(len-1); each continuation fills the next-lower 6-bit slot,
-      18→12→6→0) — previously only the byte-range validation was commented.
-      A broad scan of the less-audited files (`value/dict_set.mbt`,
-      `value/protocols.mbt`, `value/iter.mbt`, `unpack/unpack.mbt`,
-      `eval/env.mbt`, `eval/stmt.mbt`, `parser/parser.mbt`) found no remaining
-      bare magic numbers.
-- [x] **DRY consolidation (twelfth pass)** — `hashtable/hashtable.mbt`: the
-      two-message frozen/itercount guard was repeated verbatim in `clear`,
-      `pop_first`, `insert`, and `delete` (only the verb phrase varied);
-      extracted `Hashtable::check_mutable(verb)` so the wording lives in one
-      place, mirroring the existing `StarlarkList::check_mutable` precedent.
-      `eval/expr.mbt`: extracted `clamp_slice_index` for the identical
-      negative-index normalize + `[0, n]` clamp used by `list.index`'s start
-      and end parameters, and `match_affix` for the string-or-tuple-of-strings
-      matching shared verbatim by `startswith`/`endswith` (differing only in the
-      name prefix and the prefix/suffix check). The iterator byte→Int expressions
-      in `value/iter.mbt` were inspected and left as-is: the per-type cursor
-      closures are only superficially similar, so a shared helper would not be a
-      true semantic match.
-- [x] **DRY consolidation (thirteenth pass)** — `eval/expr.mbt`: the slice
-      bound decoding in `ESlice` ran the identical None/Int-range/type-error
-      match three times (start/end/step), differing only in the diagnostic
-      label; extracted `slice_int_arg(ctx, v, label)`. `dir()` carried verbatim
-      copies of the String/List/Dict/Set/Bytes method-name lists already held by
-      `builtin_type_methods`, so a method added to one path would silently
-      desync `dir()` from `getattr`/`hasattr` validation; `dir()` now reuses
-      `builtin_type_methods` and the duplicated module/ext-value name-sort
-      closure became `sort_starlark_names`. `eval/ops.mbt`: `repeat_string`/
-      `repeat_list`/`repeat_tuple`/`repeat_bytes` shared the same non-positive
-      short-circuit + int32-range cap + `elem_len*count` allocation guard (and
-      its two error strings); extracted `checked_repeat_count`, which returns a
-      0 count for the empty case so the existing loop yields the empty result.
-- [x] **Non-obvious comments (tenth pass)** — `math/math.mbt` `float_pow`:
-      documented that the `pow(-1, ±Inf) == 1` guard follows Go's `math.Pow` /
-      IEEE 754 Annex F rather than the oscillating mathematical limit (a naive
-      call yields NaN). A scan of the json/struct/time/utf8util extension files
-      found them already well-commented.
-- [x] **DRY consolidation (fourteenth pass)** — `value/iter.mbt`: the
-      drain-an-iterator-into-an-array loop (`next`/`done`/`break`/`push`) was
-      repeated verbatim at five builtin sites (`list`, `tuple`, `sorted`,
-      `reversed`, set `symmetric_difference`); extracted
-      `StarlarkIterator::collect()` so the cleanup contract (always call `done`)
-      lives once. `eval/ops.mbt`: the negative-zero detection
-      `f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)` was duplicated in
-      `format_float_e`/`format_float_f`; extracted `signbit`.
-- [x] **Non-obvious comments (eleventh pass)** — `eval/ops.mbt`: documented the
-      `signbit` divide-by-zero trick (`1.0 / -0.0 = -inf`) and why
-      `float_floor_mod` adds the divisor back when remainder and divisor differ
-      in sign (`%` truncates toward zero; floor-mod must carry the divisor's
-      sign). A scan of the resolver local-scope walk and the conditional-expr
-      evaluator found them already self-documenting (the file-block stop is
-      commented; `ECond` destructures to `then_e`/`cond_e`/`else_e`).
-- [x] **DRY consolidation (fifteenth pass)** — `eval/expr.mbt`: three
-      verbatim-repeated patterns collapsed. `check_int64_range(ctx, b, msg)`
-      replaces the signed-64-bit bound guard duplicated at four sites (`range`,
-      `list.pop`, `list.insert`, and the bytes/string search-index decode);
-      only the diagnostic message varied. `all_chars_satisfy(s, pred)` backs
-      `isalpha`/`isdigit`/`isalnum`/`isspace`, which shared the
-      empty-string-false-then-every-character predicate loop. `partition_string`
-      backs `str.partition`/`rpartition`, whose separator-found branch
-      (before/sep/after slice) was identical and differed only in search
-      direction and which slot holds the whole string when the separator is
-      absent. NO `.mbti` change (behavior-only).
-- [x] **Non-obvious comments (twelfth pass)** — explained six implementation
-      details: `value/value.mbt` `is_neg_zero` reads the IEEE 754 sign bit
-      because `-0.0 == +0.0`; `floor_div`/`starlark_mod` adjust the truncated
-      quotient/remainder when operand signs disagree (BigInt counterparts of the
-      already-commented `eval/ops.mbt` float helper). `value/traits.mbt`
-      `int_float_eq` uses `f != f.trunc()` as the has-fractional-part test.
-      `time/time.mbt` duration parsing accepts both U+00B5 (MICRO SIGN) and
-      U+03BC (GREEK SMALL LETTER MU). `parser/parser.mbt` documented the `no_in`
-      flag (suppresses `in` inside loop-variable targets). `lexer/scanner.mbt`
-      noted that a non-positive `utf8_decode_rune` result doubles as the
-      invalid-UTF-8 rejection.
-- [x] **DRY consolidation (sixteenth pass)** — extended the audit to the
-      less-churned extension files. `math/math.mbt`: `make_ceil`/`make_floor`
-      were identical except for the `@std_math` function and the builtin name;
-      extracted `make_rounding(name, round)` (kept distinct from `make_unary`
-      because the rounding builtins pass `Int` through unchanged and route
-      `Float` through `float_to_int`, and intentionally omit the name prefix on
-      the type error per MISSING-177). `time/time.mbt`: `duration_hash` and
-      `time_hash` both folded a 64-bit value into a 32-bit hash via the same
-      high/low XOR; extracted `hash_int64_fold`. Skipped the cross-package
-      `parse_uint_str` (struct, `Int`) / `parse_int64_str` (time, `Int64`)
-      digit-accumulator pair: a shared helper would couple two unrelated
-      extension packages for a superficial match across differing numeric types.
-- [x] **Non-obvious comments (thirteenth pass)** — `json/json.mbt`: documented
-      the UTF-16 surrogate-pair recombination formula (high 10 bits + low 10
-      bits offset onto the supplementary plane). `struct/struct.mbt`
-      `merge_entries`: documented that the merge relies on MoonBit's sorted
-      `Map` for right-operand-wins collision handling and sorted-name output.
-      `time/time.mbt`: documented the fractional-seconds-to-nanoseconds
-      normalization (divide to drop excess precision vs multiply to pad). The
-      `hash_int64_fold` helper above also carries the XOR-fold rationale.
-      Verified the resolver file-block scope-stop and the parser `no_in` flag
-      were already commented in earlier passes.
+- [x] **Immutable First audit** — mutable containers (List, Dict, Set) and runtime state (Thread, Module.freeze) are all spec-justified mutations; no violations found.
+- [x] **Magic number extraction (first pass)** — IEEE 754 bit-layout constants (`ieee754_sign_shift`, `ieee754_mantissa_bits`, `ieee754_exponent_mask`, `ieee754_exponent_bias`, `ieee754_mantissa_mask`, `ieee754_implicit_bit`); Java hashCode prime (`java_hash_prime = 31`); Unicode replacement rune (`unicode_replacement_rune = 0xFFFD`); 2^32 modulus (`bigint_uint32_modulus`) — all named in `traits.mbt`.
+- [x] **Magic number extraction (second pass)** — Unicode surrogate bounds and max-codepoint in `lexer/scanner.mbt` extracted to module-level constants (`unicode_surr_lo`, `unicode_surr_hi`, `unicode_max_codepoint`); struct rolling-hash seed and primes in `struct/struct.mbt` named (`struct_hash_seed`, `struct_hash_mult_init`, `struct_hash_mult_step`); seconds-per-hour/minute in `time/time.mbt` replaced by `secs_per_hour` / `secs_per_minute`.
+- [x] **Non-obvious comments** — `hash_zero_sentinel` design (0 reserved as deleted-entry marker) and `normalize_hash` invariant documented in `hashtable.mbt`.
+- [x] **Doc-comments on public functions (first pass)** — `///` descriptions added to all `pub fn` and `pub struct` in `src/starlark.mbt`, `src/internal/errors/errors.mbt`, `src/internal/eval/eval.mbt` (Thread, Module, Options, Universe, Predeclared), `src/internal/value/value.mbt` (Value, StarlarkString, StarlarkList, StarlarkRange, floor_div, starlark_mod, format_float, repr), `src/internal/value/traits.mbt` (starlark_hash, starlark_equals, compare_values, freeze_value, double_to_bigint, etc.), and `src/internal/hashtable/hashtable.mbt` (Hashtable struct and all public methods).
+- [x] **Doc-comments on public functions (second pass)** — remaining packages covered: `eval/program.mbt` (Program + 8 methods), `eval/debug.mbt` (DebugFrame + 5 methods), `value/iter.mbt` (StarlarkIterator + iterate + length_of), `value/dict_set.mbt` (StarlarkDict 17 methods + StarlarkSet 14 methods), `value/protocols.mbt` (CustomValue::new + 17 with_* builders + 21 get_*/do_* dispatchers), `repl/repl.mbt` (ReplOutput + 4 functions), `json/json.mbt` (4 public functions), `math/math.mbt` (math_module), `time/time.mbt` (now_override_key + time_value + time_module), `struct/struct.mbt` (4 public declarations), `struct/module.mbt` (make_module + module_builtin).
+- [x] **Doc-comments on public functions (third pass)** — internal implementation packages covered: `value/value.mbt` (fix // → /// for BuiltinCallCtx::get_local), `unpack/unpack.mbt` (unpack_args + unpack_positional), `utf8util/utf8util.mbt` (hex_char, write_hex2/4/8, utf8_decode_rune, is_unicode_printable), `std_math/std_math.mbt` (all 21 math wrapper functions), `lexer/lexer.mbt` (Token::to_string, keyword_token), `lexer/scanner.mbt` (ScannedToken struct/ accessors, Scanner struct/new/next_token), `syntax/syntax.mbt` (File struct/new/ path/stmts, expr_pos, stmt_pos), `syntax/walker.mbt` (Node enum, walk_file/stmt/ expr), `parser/parser.mbt` (parse_file, parse_expr, Parser::parse_test), `resolver/resolver.mbt` (Binding + accessors, ResolveOptions struct + 9 getters + 6 builders, ResolvedFile + accessors, resolve).
+- [x] **Magic number extraction (third pass)** — ASCII codepoint constants in `utf8util/case_mapping.mbt` (`ascii_upper_a/z`, `ascii_lower_a/z`, `ascii_max`, `ascii_case_shift`) replacing bare hex literals in the ASCII fast-paths of `to_upper/lower/title_rune`.
+- [x] **Doc-comments fourth pass (Parameters:/Returns)** — added `Parameters:` and `Returns` sections to all 437 pub declarations across all 24 public files, following the MoonBit core library convention. Complex multi-param functions got full `Parameters:` blocks; self-only accessors got `Returns` only; bare `///|` functions also received summary text. Committed per package (15 commits): `starlark`, `eval`, `errors`, `hashtable`, `value`, `unpack`, `utf8util`, `lexer`, `syntax`, `parser`, `resolver`, `repl`, `json`, `math`, `time`, `struct`.
+- [x] **Magic number extraction (fourth pass)** — `eval/ops.mbt` and `eval/expr.mbt`: added `min_int32` alongside `max_int32`; replaced bare `2147483647N`/`-2147483648N` literals in `adjust_index` and slice-bound checks; added comment to `max_alloc` (= `1<<30`, starlark-go cap); extracted `max_lshift_bits` (512) and `max_rshift_bits` (1_000_000) with explaining comments; extracted `unicode_max_cp_bigint` (U+10FFFF), `unicode_surr_first`/`unicode_surr_last` (U+D800..U+DFFF) for `%c` format validation; added inline comments to `decompose_double` explaining each IEEE 754 bit-layout constant.
+- [x] **Magic number extraction (fifth pass)** — `resolver/resolver.mbt`: extracted `max_call_args = 255` (starlark-go bytecode cap) replacing bare `256` in two call-arity checks and embedding the limit value in the error message via the constant. `lexer/scanner.mbt`: extracted `max_ascii = 127` and `max_byte_exclusive = 256` for octal/hex escape validation; added comment explaining why the non-ASCII check must precede the invalid-range check. `struct/struct.mbt`: added comment documenting origin of hash constants (8731/9839/7349 and `3 * name_hash` factor ported from starlark-go's starlarkstruct without modification).
+- [x] **Magic number extraction (sixth pass)** — `value/value.mbt`: extracted `ascii_space` (0x20), `ascii_del` (0x7F), and `utf8_multibyte_lo` (0x80) as named constants replacing bare hex literals in `repr_bytes_inner` (the printable-ASCII range bounds and the UTF-8 multi-byte threshold). `lexer/scanner.mbt`: extracted `ascii_digit_zero` (0x30) replacing bare `0x30` in `decode_escape`, `int_to_octal`, `xdigit_to_int`, and `parse_int_base`; added one-line comment to `append_utf8_codepoint` explaining the leading-byte masks (0xC0/0xE0/0xF0), continuation-byte marker (0x80), and 6-bit payload mask (0x3F).
+- [x] **Magic number extraction (seventh pass)** — `eval/ops.mbt`: extracted `printf_float_precision = 6` (C printf `%.6e`/`%.6f` decimal places) replacing bare `6`/`7` literals in `format_float_e` and `format_float_f`; added comment explaining `[10^p, 10^(p+1))` normalization range. `eval/stmt.mbt` and `resolver/resolver.mbt`: extracted ASCII constants (`ascii_upper_a`, `ascii_upper_z`, `ascii_case_shift`, `ascii_underscore`) for the `spell_fold_chars` helper, replacing bare 65/90/32/95 literals.
+- [x] **Non-obvious comments (additional pass)** — added comment to `spell_nearest` explaining `(len+1)/2` as the half-word-length acceptance threshold; added comment to `hash_tuple` documenting the Python `tuplehash` `len + len` step formula origin.
+- [x] **DRY consolidation (spell-check)** — `spell_fold_chars`, `spell_levenshtein`, and `spell_nearest` were duplicated verbatim in `eval/stmt.mbt` and `resolver/resolver.mbt` (~80 lines each). Moved to `utf8util/spell.mbt` as `pub fn`; added `utf8util` import to `resolver/moon.pkg`; updated all six call sites in eval to `@utf8util.spell_nearest(...)`.
+- [x] **Non-obvious comments (eighth pass)** — `hashtable/hashtable.mbt` `maybe_grow`: added inline comment explaining the rearranged inequality `live_count * 3 >= capacity * 2` is a 2/3 load factor threshold. `lexer/scanner.mbt` `append_utf8_codepoint`: added Boundaries line documenting the four UTF-8 sequence ranges (1/2/3/4-byte). `utf8util/utf8util.mbt` `utf8_decode_rune`: added RFC 3629 comment explaining why the leading-byte bounds are 0xC2/0xF4 (not 0xC0/0xF7) — 0xC0/0xC1 are overlong, 0xF5..0xF7 encode codepoints above U+10FFFF.
+- [x] **Magic number + DRY (extension/util pass)** — `time/time.mbt` `fmt_go_layout`: the numeric-offset branch used bare `3600`/`60` while its sibling already used `secs_per_hour`/`secs_per_minute`; both branches duplicated the sign+hh+mm writing logic — extracted `write_tz_offset`. `math/math.mbt` `float_gamma`: named `gamma_factorial_max` (21.0) and `lanczos_g` (7.0), tied the coefficient loop to `lanczos_c.length()` instead of a literal `9`, replaced the `7.5` t-offset with `lanczos_g + 0.5`. `repl/repl.mbt` `eval_input`: collapsed the two identical `exec_repl_chunk` branches into a single guarded path.
+- [x] **Non-obvious comments (ninth pass)** — `time/time.mbt` `fmt_go_layout`: documented the Go reference-time mnemonics ("Mon Jan 2 15:04:05 MST 2006") so the layout-token matching and length advances are no longer opaque. `math/math.mbt`: documented the Lanczos g=7/n=9 coefficient set, the reflection formula, and the `1.0 / y < 0.0` negative-zero detection trick in `float_copysign`. `hashtable/hashtable.mbt` `slot_of`: documented that `h & (cap - 1)` substitutes for `h % cap` only under the power-of-two capacity invariant. `repl/repl.mbt`: documented the `_` last-value binding.
+- [x] **Magic number + DRY (tenth pass)** — `eval/expr.mbt` `chr()`: the out-of-range guard hard-coded `BigInt::from_int(0x10ffff)` while the same `eval` package already defines `unicode_max_cp_bigint` for the `%c` format path; reuse the constant. `json/json.mbt`: named the surrogate-pair decode magic numbers (`high_surrogate_lo/hi`, `low_surrogate_lo/hi`, `supplementary_plane_base`, `surrogate_high_scale`, `json_replacement_rune`) so the recombination formula reads as the UTF-16 algorithm; extracted `write_indent_line` to dedupe the newline+prefix+indent sequence repeated at three `indent_json` call sites.
+- [x] **DRY + non-obvious comments (eleventh pass)** — `eval/expr.mbt`: the `EList` and `ETuple` match arms ran the identical evaluate-each-element loop, differing only in the final constructor; extracted `eval_exprs` so both arms reduce to one line. `utf8util/utf8util.mbt` `utf8_decode_rune`: documented the rune reassembly arithmetic (leading byte keeps 7-len payload bits shifted by 6*(len-1); each continuation fills the next-lower 6-bit slot, 18→12→6→0) — previously only the byte-range validation was commented. A broad scan of the less-audited files (`value/dict_set.mbt`, `value/protocols.mbt`, `value/iter.mbt`, `unpack/unpack.mbt`, `eval/env.mbt`, `eval/stmt.mbt`, `parser/parser.mbt`) found no remaining bare magic numbers.
+- [x] **DRY consolidation (twelfth pass)** — `hashtable/hashtable.mbt`: the two-message frozen/itercount guard was repeated verbatim in `clear`, `pop_first`, `insert`, and `delete` (only the verb phrase varied); extracted `Hashtable::check_mutable(verb)` so the wording lives in one place, mirroring the existing `StarlarkList::check_mutable` precedent. `eval/expr.mbt`: extracted `clamp_slice_index` for the identical negative-index normalize + `[0, n]` clamp used by `list.index`'s start and end parameters, and `match_affix` for the string-or-tuple-of-strings matching shared verbatim by `startswith`/`endswith` (differing only in the name prefix and the prefix/suffix check). The iterator byte→Int expressions in `value/iter.mbt` were inspected and left as-is: the per-type cursor closures are only superficially similar, so a shared helper would not be a true semantic match.
+- [x] **DRY consolidation (thirteenth pass)** — `eval/expr.mbt`: the slice bound decoding in `ESlice` ran the identical None/Int-range/type-error match three times (start/end/step), differing only in the diagnostic label; extracted `slice_int_arg(ctx, v, label)`. `dir()` carried verbatim copies of the String/List/Dict/Set/Bytes method-name lists already held by `builtin_type_methods`, so a method added to one path would silently desync `dir()` from `getattr`/`hasattr` validation; `dir()` now reuses `builtin_type_methods` and the duplicated module/ext-value name-sort closure became `sort_starlark_names`. `eval/ops.mbt`: `repeat_string`/`repeat_list`/`repeat_tuple`/`repeat_bytes` shared the same non-positive short-circuit + int32-range cap + `elem_len*count` allocation guard (and its two error strings); extracted `checked_repeat_count`, which returns a 0 count for the empty case so the existing loop yields the empty result.
+- [x] **Non-obvious comments (tenth pass)** — `math/math.mbt` `float_pow`: documented that the `pow(-1, ±Inf) == 1` guard follows Go's `math.Pow` / IEEE 754 Annex F rather than the oscillating mathematical limit (a naive call yields NaN). A scan of the json/struct/time/utf8util extension files found them already well-commented.
+- [x] **DRY consolidation (fourteenth pass)** — `value/iter.mbt`: the drain-an-iterator-into-an-array loop (`next`/`done`/`break`/`push`) was repeated verbatim at five builtin sites (`list`, `tuple`, `sorted`, `reversed`, set `symmetric_difference`); extracted `StarlarkIterator::collect()` so the cleanup contract (always call `done`) lives once. `eval/ops.mbt`: the negative-zero detection `f < 0.0 || (f == 0.0 && 1.0 / f < 0.0)` was duplicated in `format_float_e`/`format_float_f`; extracted `signbit`.
+- [x] **Non-obvious comments (eleventh pass)** — `eval/ops.mbt`: documented the `signbit` divide-by-zero trick (`1.0 / -0.0 = -inf`) and why `float_floor_mod` adds the divisor back when remainder and divisor differ in sign (`%` truncates toward zero; floor-mod must carry the divisor's sign). A scan of the resolver local-scope walk and the conditional-expr evaluator found them already self-documenting (the file-block stop is commented; `ECond` destructures to `then_e`/`cond_e`/`else_e`).
+- [x] **DRY consolidation (fifteenth pass)** — `eval/expr.mbt`: three verbatim-repeated patterns collapsed. `check_int64_range(ctx, b, msg)` replaces the signed-64-bit bound guard duplicated at four sites (`range`, `list.pop`, `list.insert`, and the bytes/string search-index decode); only the diagnostic message varied. `all_chars_satisfy(s, pred)` backs `isalpha`/`isdigit`/`isalnum`/`isspace`, which shared the empty-string-false-then-every-character predicate loop. `partition_string` backs `str.partition`/`rpartition`, whose separator-found branch (before/sep/after slice) was identical and differed only in search direction and which slot holds the whole string when the separator is absent. NO `.mbti` change (behavior-only).
+- [x] **Non-obvious comments (twelfth pass)** — explained six implementation details: `value/value.mbt` `is_neg_zero` reads the IEEE 754 sign bit because `-0.0 == +0.0`; `floor_div`/`starlark_mod` adjust the truncated quotient/remainder when operand signs disagree (BigInt counterparts of the already-commented `eval/ops.mbt` float helper). `value/traits.mbt` `int_float_eq` uses `f != f.trunc()` as the has-fractional-part test. `time/time.mbt` duration parsing accepts both U+00B5 (MICRO SIGN) and U+03BC (GREEK SMALL LETTER MU). `parser/parser.mbt` documented the `no_in` flag (suppresses `in` inside loop-variable targets). `lexer/scanner.mbt` noted that a non-positive `utf8_decode_rune` result doubles as the invalid-UTF-8 rejection.
+- [x] **DRY consolidation (sixteenth pass)** — extended the audit to the less-churned extension files. `math/math.mbt`: `make_ceil`/`make_floor` were identical except for the `@std_math` function and the builtin name; extracted `make_rounding(name, round)` (kept distinct from `make_unary` because the rounding builtins pass `Int` through unchanged and route `Float` through `float_to_int`, and intentionally omit the name prefix on the type error per MISSING-177). `time/time.mbt`: `duration_hash` and `time_hash` both folded a 64-bit value into a 32-bit hash via the same high/low XOR; extracted `hash_int64_fold`. Skipped the cross-package `parse_uint_str` (struct, `Int`) / `parse_int64_str` (time, `Int64`) digit-accumulator pair: a shared helper would couple two unrelated extension packages for a superficial match across differing numeric types.
+- [x] **Non-obvious comments (thirteenth pass)** — `json/json.mbt`: documented the UTF-16 surrogate-pair recombination formula (high 10 bits + low 10 bits offset onto the supplementary plane). `struct/struct.mbt` `merge_entries`: documented that the merge relies on MoonBit's sorted `Map` for right-operand-wins collision handling and sorted-name output. `time/time.mbt`: documented the fractional-seconds-to-nanoseconds normalization (divide to drop excess precision vs multiply to pad). The `hash_int64_fold` helper above also carries the XOR-fold rationale. Verified the resolver file-block scope-stop and the parser `no_in` flag were already commented in earlier passes.
 
 ---
 
@@ -2189,14 +975,9 @@ Quality audit pass covering Immutable First, magic numbers, non-obvious comments
 
 Resolve the `internal/` visibility mismatch and align the package layout with starlark-go's convention. Three sequential phases (each phase maps to one commit group):
 
-1. **Phase R1** — Move stdlib extension packages under `src/lib/`
-   (matches starlark-go's `lib/json`, `lib/math`, etc.; do this first because
-   the moves are self-contained and remove confusing naming before the
-   harder internal-promotion work begins).
-2. **Phase R2** — Promote public-API packages out of `src/internal/` to `src/`
-   so external callers can reach constructors and methods without E4037.
-3. **Phase R3** — Wrapper cleanup: remove façade functions that became
-   redundant after R2; keep only wrappers with real semantic value.
+1. **Phase R1** — Move stdlib extension packages under `src/lib/` (matches starlark-go's `lib/json`, `lib/math`, etc.; do this first because the moves are self-contained and remove confusing naming before the harder internal-promotion work begins).
+2. **Phase R2** — Promote public-API packages out of `src/internal/` to `src/` so external callers can reach constructors and methods without E4037.
+3. **Phase R3** — Wrapper cleanup: remove façade functions that became redundant after R2; keep only wrappers with real semantic value.
 
 ### Phase R1: Move stdlib extensions to `src/lib/`
 
@@ -2206,8 +987,7 @@ Each package is moved independently. Commit each move separately.
 
 - [x] Create `src/lib/` directory
 - [x] Move all `.mbt` + `moon.pkg` files from `src/json/` into `src/lib/json/`
-- [x] Update every `moon.pkg` that imports `"json"` → `"lib/json"`
-      (find with: `grep -r '"json"' src/ --include='moon.pkg'`)
+- [x] Update every `moon.pkg` that imports `"json"` → `"lib/json"` (find with: `grep -r '"json"' src/ --include='moon.pkg'`)
 - [x] Delete the now-empty `src/json/` directory
 - [x] `moon check && moon test` — all tests pass
 - [x] Commit: `refactor(json): move src/json to src/lib/json`
@@ -2238,18 +1018,11 @@ Each package is moved independently. Commit each move separately.
 
 #### R1 post-move cleanup
 
-- [x] `docs/api.md` — package overview table: update four rows
-      `connect0459/starlark/json` → `connect0459/starlark/lib/json`
-      (same for `math`, `struct`, `time`)
-- [x] `docs/api.md` — `## starlark/json package` section: update header title,
-      `moon.pkg` example path (`"connect0459/starlark/lib/json"`),
-      and `@json` alias note
-- [x] `docs/api.md` — same for `## starlark/math`, `## starlark/struct`,
-      `## starlark/time` sections
-- [x] `docs/api.md` — `CustomValue` section: update `src/struct/` and `src/time/`
-      cross-references to `src/lib/struct/` and `src/lib/time/`
-- [x] `README.mbt.md` — package table (four rows): update mooncakes paths
-      `connect0459/starlark/json` → `connect0459/starlark/lib/json` etc.
+- [x] `docs/api.md` — package overview table: update four rows `connect0459/starlark/json` → `connect0459/starlark/lib/json` (same for `math`, `struct`, `time`)
+- [x] `docs/api.md` — `## starlark/json package` section: update header title, `moon.pkg` example path (`"connect0459/starlark/lib/json"`), and `@json` alias note
+- [x] `docs/api.md` — same for `## starlark/math`, `## starlark/struct`, `## starlark/time` sections
+- [x] `docs/api.md` — `CustomValue` section: update `src/struct/` and `src/time/` cross-references to `src/lib/struct/` and `src/lib/time/`
+- [x] `README.mbt.md` — package table (four rows): update mooncakes paths `connect0459/starlark/json` → `connect0459/starlark/lib/json` etc.
 - [x] `README.mbt.md` — `moon.mod` example block: update import path strings
 - [x] Update Phase 0 package layout table in this file to reflect new paths
 - [x] `moon info` — verify `.mbti` diff for `src/` is empty (no public API change)
@@ -2265,8 +1038,7 @@ Move the three packages whose types form the embedder-facing API out of `interna
 #### `src/internal/errors/` → `src/errors/`
 
 - [x] Move all `.mbt` + `moon.pkg` files from `src/internal/errors/` to `src/errors/`
-- [x] Update every `moon.pkg` `import` entry that references `"internal/errors"` → `"errors"`
-      (find with: `grep -r '"internal/errors"' src/ --include='moon.pkg'`)
+- [x] Update every `moon.pkg` `import` entry that references `"internal/errors"` → `"errors"` (find with: `grep -r '"internal/errors"' src/ --include='moon.pkg'`)
 - [x] Update all `@internal/errors.*` / `@errors.*` qualified names in `src/internal/*` sources
 - [x] Update `src/starlark.mbt` type aliases: `@internal/errors.X` → `@errors.X`
 - [x] Delete the now-empty `src/internal/errors/` directory
@@ -2298,21 +1070,12 @@ Move the three packages whose types form the embedder-facing API out of `interna
 
 #### R2 post-promotion cleanup
 
-- [x] Verify `src/internal/` now contains only truly-internal packages:
-      `hashtable/`, `lexer/`, `parser/`, `resolver/`, `repl/`,
-      `starlarktest/`, `std_math/`, `syntax/`, `unpack/`, `utf8util/`
-- [x] `docs/api.md` — opening paragraph: update `src/internal/*` description to
-      note that `src/errors/`, `src/value/`, `src/eval/` are now public packages
-- [x] `docs/api.md` — `StarlarkList` / `StarlarkDict` / `StarlarkSet` sections:
-      remove any "access through the `Value` enum or methods; do not import
-      the internal package" notes (direct import is now valid)
-- [x] `docs/api.md` — façade function list: remove or mark deprecated any
-      wrapper functions that were eliminated (e.g. `new_thread_with_loader`);
-      add a note that `Thread::with_loader` etc. are now directly callable
-- [x] `README.mbt.md` — quick-start section: update `@starlark.` usage examples
-      if any now prefer direct package imports (e.g. `@eval.Thread::new`)
-- [x] `src/starlark.mbt` doc-comment header: update the "Packages" section if
-      it lists internal package paths
+- [x] Verify `src/internal/` now contains only truly-internal packages: `hashtable/`, `lexer/`, `parser/`, `resolver/`, `repl/`, `starlarktest/`, `std_math/`, `syntax/`, `unpack/`, `utf8util/`
+- [x] `docs/api.md` — opening paragraph: update `src/internal/*` description to note that `src/errors/`, `src/value/`, `src/eval/` are now public packages
+- [x] `docs/api.md` — `StarlarkList` / `StarlarkDict` / `StarlarkSet` sections: remove any "access through the `Value` enum or methods; do not import the internal package" notes (direct import is now valid)
+- [x] `docs/api.md` — façade function list: remove or mark deprecated any wrapper functions that were eliminated (e.g. `new_thread_with_loader`); add a note that `Thread::with_loader` etc. are now directly callable
+- [x] `README.mbt.md` — quick-start section: update `@starlark.` usage examples if any now prefer direct package imports (e.g. `@eval.Thread::new`)
+- [x] `src/starlark.mbt` doc-comment header: update the "Packages" section if it lists internal package paths
 - [x] Update Phase 0 package layout table in this file
 - [x] Final `moon check && moon test && moon info`
 
@@ -2353,8 +1116,7 @@ Remove façade functions that became pure E4037 workarounds after R2. Keep only 
 **Steps:**
 
 - [x] Delete each wrapper listed in the "Remove" table from `src/starlark.mbt`
-- [x] Update `src/starlark_test.mbt` / `src/starlark_wbtest.mbt`: replace calls
-      to removed wrappers with direct type method calls
+- [x] Update `src/starlark_test.mbt` / `src/starlark_wbtest.mbt`: replace calls to removed wrappers with direct type method calls
 - [x] Update example files under `examples/`: switch to direct method calls
 - [x] `moon check && moon test`
 - [x] `moon info` — `.mbti` diff shows only removed functions (no type-level changes)
@@ -2375,9 +1137,7 @@ Remove façade functions that became pure E4037 workarounds after R2. Keep only 
 `SyntaxFile` / `SyntaxExpr` alias `@syntax.File` / `@syntax.Expr`, which live in `internal/syntax`. Removing the aliases without first promoting the package would leave external callers unable to name these types (MoonBit restricts `internal` import to within the module). Additionally, `StarlarkFunction::params()` and `::body()` in the public `value` package already leak `@syntax.Param` / `@syntax.Stmt` — promoting `syntax` makes these usable rather than invisible.
 
 - [x] Move all `.mbt` + `moon.pkg` files from `src/internal/syntax/` to `src/syntax/`
-- [x] Update every `moon.pkg` import: `"internal/syntax"` → `"syntax"`
-      (internal packages that import syntax: `lexer`, `parser`, `resolver`, `eval`,
-      `value`, `starlarktest`, `unpack`)
+- [x] Update every `moon.pkg` import: `"internal/syntax"` → `"syntax"` (internal packages that import syntax: `lexer`, `parser`, `resolver`, `eval`, `value`, `starlarktest`, `unpack`)
 - [x] Update all `@internal/syntax.*` qualified names in source files
 - [x] Update `src/starlark.mbt`: `@syntax.File` / `@syntax.Expr` in signatures
 - [x] Delete the now-empty `src/internal/syntax/` directory
@@ -2418,10 +1178,8 @@ Remove façade functions that became pure E4037 workarounds after R2. Keep only 
 **Steps:**
 
 - [x] Remove all 23 `pub type X = @pkg.X` declarations from `src/starlark.mbt`
-- [x] Update function signatures in `src/starlark.mbt`: replace alias names with
-      fully-qualified names (e.g. `thread : Thread` → `thread : @eval.Thread`)
-- [x] Update `src/starlark_test.mbt`: replace `@starlark.Thread` → `@eval.Thread`,
-      `@starlark.Value` → `@value.Value`, etc. across all test call sites
+- [x] Update function signatures in `src/starlark.mbt`: replace alias names with fully-qualified names (e.g. `thread : Thread` → `thread : @eval.Thread`)
+- [x] Update `src/starlark_test.mbt`: replace `@starlark.Thread` → `@eval.Thread`, `@starlark.Value` → `@value.Value`, etc. across all test call sites
 - [x] Update `examples/*/main.mbt` and `examples/*/moon.pkg`: add sub-package imports
 - [x] Update `docs/api.md`: import examples now require individual sub-package imports
 - [x] Update `README.mbt.md`: embedding quick-start now shows `@eval`/`@value`/`@errors`
@@ -2431,13 +1189,9 @@ Remove façade functions that became pure E4037 workarounds after R2. Keep only 
 
 **After R4b, `src/starlark.mbt` contains only:**
 
-- High-level entry functions: `exec_file`, `eval_expr`, `exec_repl_chunk`,
-  `exec_file_with_predeclared`, `exec_file_with_universe`, `eval_expr_with_opts`,
-  `eval_parsed_expr`, `parse_file`, `parse_expr`
+- High-level entry functions: `exec_file`, `eval_expr`, `exec_repl_chunk`, `exec_file_with_predeclared`, `exec_file_with_universe`, `eval_expr_with_opts`, `eval_parsed_expr`, `parse_file`, `parse_expr`
 - Program API: `source_program`, `source_program_with_file`, `file_program`
-- Utility functions: `call`, `equal`, `equal_depth`, `binary`, `unary`, `compare`,
-  `compare_depth`, `number_to_int`, `as_float`, `as_string`, `len_of`, `iterate`,
-  `new_thread_with_loader`
+- Utility functions: `call`, `equal`, `equal_depth`, `binary`, `unary`, `compare`, `compare_depth`, `number_to_int`, `as_float`, `as_string`, `len_of`, `iterate`, `new_thread_with_loader`
 - `StringDict` struct and methods (defined here, not a wrapper)
 - `compare_limit` constant
 
@@ -2465,118 +1219,54 @@ Decision (user): **remove the facade**; everything lives in its natural package 
 
 **Steps (each a green commit):**
 
-- [x] Promote `@unpack`: moved `src/internal/unpack/` → `src/unpack/`. Its only
-      importer was the facade. Commit: `afcbb79`.
-- [x] Added `parse_file`/`parse_expr` to `@eval` (in `program.mbt`); added
-      `equal`/`equal_depth`/`compare_depth`/`len_of`/`as_float`/`as_string`/
-      `number_to_int` to `@value` (new `value/inspect.mbt`, **String** errors);
-      annotated `compare_values`/`compare_values_depth`/`length_of`/`format_float`
-      `#internal` (`starlark_equals_depth` already was). Public `@value.iterate`
-      (String) kept as canonical; the EvalError wrapper dropped. Commit: `cc25091`.
-- [x] Deleted `src/starlark.mbt`; rewrote `src/starlark_test.mbt` to
-      `@eval.*`/`@value.*`/`@unpack.*`; `src/starlark_wbtest.mbt` had no facade
-      refs. Pruned `src/moon.pkg` and switched it to `import { … } for "test"`
-      (the root package is now test-only). Commit: `46cad40`.
-- [x] Updated the 6 `examples/*` (`main.mbt` + `moon.pkg`) and `README.mbt.md`.
-      Commit: `643b0aa`.
-- [x] `moon fmt && moon info && moon test`: `src/pkg.generated.mbti` now has an
-      empty `Values` block; sub-package `.mbti` carry the moved symbols; 1545 tests
-      pass.
+- [x] Promote `@unpack`: moved `src/internal/unpack/` → `src/unpack/`. Its only importer was the facade. Commit: `afcbb79`.
+- [x] Added `parse_file`/`parse_expr` to `@eval` (in `program.mbt`); added `equal`/`equal_depth`/`compare_depth`/`len_of`/`as_float`/`as_string`/`number_to_int` to `@value` (new `value/inspect.mbt`, **String** errors); annotated `compare_values`/`compare_values_depth`/`length_of`/`format_float` `#internal` (`starlark_equals_depth` already was). Public `@value.iterate` (String) kept as canonical; the EvalError wrapper dropped. Commit: `cc25091`.
+- [x] Deleted `src/starlark.mbt`; rewrote `src/starlark_test.mbt` to `@eval.*`/`@value.*`/`@unpack.*`; `src/starlark_wbtest.mbt` had no facade refs. Pruned `src/moon.pkg` and switched it to `import { … } for "test"` (the root package is now test-only). Commit: `46cad40`.
+- [x] Updated the 6 `examples/*` (`main.mbt` + `moon.pkg`) and `README.mbt.md`. Commit: `643b0aa`.
+- [x] `moon fmt && moon info && moon test`: `src/pkg.generated.mbti` now has an empty `Values` block; sub-package `.mbti` carry the moved symbols; 1545 tests pass.
 
 ### Phase R5-docs: `docs/api.md` drift fixes (group A) ✅
 
 `docs/api.md` is plain `.md` (not `.mbt.md`), so its code blocks are never compiled and had drifted. All fixed (commit `<api>`):
 
-- [x] `eval_expr` env type: `@value.StarlarkDict` → `@value.StringDict`; the
-      broken `@value.StarlarkDict::new()` example corrected.
-- [x] `StarlarkDict` methods: `insert`/`get_value` → `set`/`get` (now
-      `Result[Value?, String]`); added `keys`/`each`/`iter`/`to_entries`/`popitem`/
-      `is_frozen`/`freeze`.
-- [x] `Thread` note rewritten: `with_print` takes `(Thread, String)`; constructors
-      compose via `set_print`/`set_loader`/`set_max_steps`/`set_on_max_steps`.
-      Also fixed stale `on_max_steps` → `set_on_max_steps`, `set_max_steps(Int?)` →
-      `(Int)`, added `reset_steps`, `call_frame`, and a Mutators subsection.
-- [x] ~~Documented `@errors.Span` and `@errors.Halt`~~ (both removed as dead
-      API; doc sections deleted accordingly — see API hygiene pass)
-- [x] Repointed every `@starlark.*` example to `@eval.*`/`@value.*`/`@unpack.*`;
-      removed the facade row + section; reorganized the helper tables under the
-      package that now owns them (`@eval`/`@value`/`@unpack`).
+- [x] `eval_expr` env type: `@value.StarlarkDict` → `@value.StringDict`; the broken `@value.StarlarkDict::new()` example corrected.
+- [x] `StarlarkDict` methods: `insert`/`get_value` → `set`/`get` (now `Result[Value?, String]`); added `keys`/`each`/`iter`/`to_entries`/`popitem`/`is_frozen`/`freeze`.
+- [x] `Thread` note rewritten: `with_print` takes `(Thread, String)`; constructors compose via `set_print`/`set_loader`/`set_max_steps`/`set_on_max_steps`. Also fixed stale `on_max_steps` → `set_on_max_steps`, `set_max_steps(Int?)` → `(Int)`, added `reset_steps`, `call_frame`, and a Mutators subsection.
+- [x] ~~Documented `@errors.Span` and `@errors.Halt`~~ (both removed as dead API; doc sections deleted accordingly — see API hygiene pass)
+- [x] Repointed every `@starlark.*` example to `@eval.*`/`@value.*`/`@unpack.*`; removed the facade row + section; reorganized the helper tables under the package that now owns them (`@eval`/`@value`/`@unpack`).
 
 ### Phase R5-doctest: make README.mbt.md and docs/api.md verified doc tests ✅
 
 Root cause of doc drift was the **fence tag**, not the `readme` binding (`moon.mod` — not `.json` — already has `readme = "README.mbt.md"`, but that is publishing metadata only; it does not make moon compile the file). Verified via probes:
 
 - ` ```moonbit ` → **display only**, never compiled (what README/api.md used).
-- ` ```mbt check ` → top-level source context (accepts `///|` + `test {}`);
-  compiled by `moon check` and its `test {}` blocks run under `moon test`.
+- ` ```mbt check ` → top-level source context (accepts `///|` + `test {}`); compiled by `moon check` and its `test {}` blocks run under `moon test`.
 - ` ```mbt test ` → bare test body (auto-wrapped; no explicit `test {}`).
-- moon only scans under `source: "src"`, **but follows symlinks** there — so a
-  real doc at repo root / `docs/` becomes testable via a symlink inside `src/`.
+- moon only scans under `source: "src"`, **but follows symlinks** there — so a real doc at repo root / `docs/` becomes testable via a symlink inside `src/`.
 
 Done:
 
-- [x] `README.mbt.md` usage example → ` ```mbt check ` + `test {}`; symlink
-      `src/readme.mbt.md → ../README.mbt.md`. Caught a real bug: the example used
-      `sum(...)` (not a Starlark builtin) → changed to `max(...)`. Commit: `<readme>`.
-- [x] `docs/api.md` → `docs/api.mbt.md` (real file renders on GitHub; README links
-      updated). Symlink `src/api.mbt.md → ../docs/api.mbt.md`. Converted the 14
-      runnable example blocks to ` ```mbt check ` (kept the 15 `pub struct`/`pub enum`
-      signature blocks as ` ```moonbit `, display-only). Added json/math/struct/time
-      to the root package's `for "test"` imports. Caught a real drift: the json
-      example asserted spaced `{"key": [1, 2, 3]}` but `json.encode` emits compact
-      `{"key":[1,2,3]}`. 1560 tests pass. Commit: `<apidoc>`.
+- [x] `README.mbt.md` usage example → ` ```mbt check ` + `test {}`; symlink `src/readme.mbt.md → ../README.mbt.md`. Caught a real bug: the example used `sum(...)` (not a Starlark builtin) → changed to `max(...)`. Commit: `<readme>`.
+- [x] `docs/api.md` → `docs/api.mbt.md` (real file renders on GitHub; README links updated). Symlink `src/api.mbt.md → ../docs/api.mbt.md`. Converted the 14 runnable example blocks to ` ```mbt check ` (kept the 15 `pub struct`/`pub enum` signature blocks as ` ```moonbit `, display-only). Added json/math/struct/time to the root package's `for "test"` imports. Caught a real drift: the json example asserted spaced `{"key": [1, 2, 3]}` but `json.encode` emits compact `{"key":[1,2,3]}`. 1560 tests pass. Commit: `<apidoc>`.
 
 Convention going forward: GitHub-facing docs stay real files at their normal path; add a `src/*.mbt.md` symlink to make moon test them; use ` ```mbt check ` for runnable examples and ` ```moonbit ` only for non-compilable signature snippets.
 
 ### Phase R5-symmetry: registry & constructor polish (groups B-7/B-8) ✅
 
-- [x] `Universe`/`Predeclared`: added `each`/`values`/`delete` (mirroring
-      `StringDict`'s core). `freeze` deliberately **omitted** — these registries
-      have no transitive-freeze semantics (unlike `StringDict::freeze`), so a
-      no-op `freeze()` would mislead. Commit: `<sym>`.
-- [x] `errors` constructor arg order: **kept** as an intentional convention, not
-      reordered. The orders are internally consistent within each semantic group —
-      entity constructors lead with identity (`Binding::new(name, pos)`,
-      `CallFrame::new(name, pos)`), error constructors lead with location
-      (`ResolveError::new(pos, msg)`, `SyntaxError::new(pos, msg)`, matching the
-      `file:line:col: msg` render order). Reordering would be a breaking change for
-      purely cosmetic uniformity across types that carry different data.
+- [x] `Universe`/`Predeclared`: added `each`/`values`/`delete` (mirroring `StringDict`'s core). `freeze` deliberately **omitted** — these registries have no transitive-freeze semantics (unlike `StringDict::freeze`), so a no-op `freeze()` would mislead. Commit: `<sym>`.
+- [x] `errors` constructor arg order: **kept** as an intentional convention, not reordered. The orders are internally consistent within each semantic group — entity constructors lead with identity (`Binding::new(name, pos)`, `CallFrame::new(name, pos)`), error constructors lead with location (`ResolveError::new(pos, msg)`, `SyntaxError::new(pos, msg)`, matching the `file:line:col: msg` render order). Reordering would be a breaking change for purely cosmetic uniformity across types that carry different data.
 
 ### Phase R5-apicover: api.mbt.md per-package restructure & full coverage ✅
 
-- [x] Split `docs/api.mbt.md` so every public package owns a top-level `##`
-      heading (`eval`, `value`, `errors`, `syntax`, `unpack`, `lib/*`). Previously
-      `value`/`errors`/`syntax`/`unpack` types were nested as `###` under the
-      `eval` package section.
-- [x] Cover every public item against the `.mbti` surface: all concrete value
-      types (`StarlarkString`/`StarlarkList`/`StarlarkSet`/`StarlarkRange`/
-      `StarlarkModule`/`StarlarkIterator`/`StarlarkBoundMethod`, the string/bytes
-      iterables) plus `BuiltinCallCtx`; `Value::` constructors and value-level
-      methods; the low-level numeric/conversion helpers (`floor_div`,
-      `starlark_mod`, `format_float`, `bigint_to_double`, …); the embedder
-      protocol traits; `Predeclared`/`Universe` collection accessors; the eight
-      `Options::with_allow_*` mutators; `EvalError::cause`/`with_cause`; the
-      `syntax` walkers and full AST node enums.
-- [x] Fixed `Module` accessor drift in prose tables (not caught by doc tests,
-      since prose isn't compiled): listed `globals_map`/`predeclared_map`, which
-      do not exist; real accessors are `global_names`, `predeclared_names`,
-      `predeclared_count`. All 14 `mbt check` blocks still pass (`moon test`).
+- [x] Split `docs/api.mbt.md` so every public package owns a top-level `##` heading (`eval`, `value`, `errors`, `syntax`, `unpack`, `lib/*`). Previously `value`/`errors`/`syntax`/`unpack` types were nested as `###` under the `eval` package section.
+- [x] Cover every public item against the `.mbti` surface: all concrete value types (`StarlarkString`/`StarlarkList`/`StarlarkSet`/`StarlarkRange`/`StarlarkModule`/`StarlarkIterator`/`StarlarkBoundMethod`, the string/bytes iterables) plus `BuiltinCallCtx`; `Value::` constructors and value-level methods; the low-level numeric/conversion helpers (`floor_div`, `starlark_mod`, `format_float`, `bigint_to_double`, …); the embedder protocol traits; `Predeclared`/`Universe` collection accessors; the eight `Options::with_allow_*` mutators; `EvalError::cause`/`with_cause`; the `syntax` walkers and full AST node enums.
+- [x] Fixed `Module` accessor drift in prose tables (not caught by doc tests, since prose isn't compiled): listed `globals_map`/`predeclared_map`, which do not exist; real accessors are `global_names`, `predeclared_names`, `predeclared_count`. All 14 `mbt check` blocks still pass (`moon test`).
 
 ### Phase R5-docpkg: relocate doc-test markdown into a dedicated src/docs package ✅
 
-- [x] Replaced the `src/api-*.mbt.md → ../docs/api/*.mbt.md` file-symlink scheme
-      (and its `link-api-docs` / `link-api-docs-check` justfile machinery) with a
-      real `connect0459/starlark/docs` package tree. moon discovers doc tests by
-      scanning `.mbt.md` files inside a package directory and does not follow
-      directory symlinks, so the pages now live in the source tree directly.
-- [x] `src/docs/README.mbt.md → ../../README.mbt.md` (doc test for the top-level
-      README); `src/docs/api/*.mbt.md` holds one page per public package. Both are
-      otherwise-empty packages (empty `.mbti`) so they add nothing to the public
-      API surface. Per-package `moon.pkg` declares the `for "test"` imports each
-      page needs, which let the root `src/moon.pkg` drop its `lib/*` test imports.
-- [x] Added `docs/README.md` pointing readers from `docs/` to the doc-test pages
-      under `src/docs/`, explaining why they live in the source tree. 1560 tests
-      pass (`moon test`); `moon check --deny-warn` and `moon fmt --check` clean.
+- [x] Replaced the `src/api-*.mbt.md → ../docs/api/*.mbt.md` file-symlink scheme (and its `link-api-docs` / `link-api-docs-check` justfile machinery) with a real `connect0459/starlark/docs` package tree. moon discovers doc tests by scanning `.mbt.md` files inside a package directory and does not follow directory symlinks, so the pages now live in the source tree directly.
+- [x] `src/docs/README.mbt.md → ../../README.mbt.md` (doc test for the top-level README); `src/docs/api/*.mbt.md` holds one page per public package. Both are otherwise-empty packages (empty `.mbti`) so they add nothing to the public API surface. Per-package `moon.pkg` declares the `for "test"` imports each page needs, which let the root `src/moon.pkg` drop its `lib/*` test imports.
+- [x] Added `docs/README.md` pointing readers from `docs/` to the doc-test pages under `src/docs/`, explaining why they live in the source tree. 1560 tests pass (`moon test`); `moon check --deny-warn` and `moon fmt --check` clean.
 
 ### Phase R6: Reintroduce a minimal root entry point (revisits R5) ✅
 
@@ -2584,23 +1274,11 @@ Convention going forward: GitHub-facing docs stay real files at their normal pat
 
 Decision (user): add **省力ラッパ＋型エイリアス** — zero-ceremony helpers plus a few re-exported types, not a full facade. This avoids R5's "two ways to do everything" problem because `exec`/`eval` are *new* convenience wrappers (default thread + options created internally), not duplicate names for existing `@eval` entry points.
 
-- [x] `src/facade.mbt`: `exec(src, filename~) -> Result[Module, EvalError]` and
-      `eval(src, filename~) -> Result[Value, EvalError]`, each constructing a
-      default `Thread` and `Options::default()` internally. Power-user APIs
-      (custom threads, options, loaders, `Program` serialization, `CustomValue`)
-      stay in the sub-packages, unchanged.
-- [x] Re-exported `Value` / `Module` / `EvalError` via `pub using @pkg { type X }`
-      so the helper signatures are nameable from `@starlark`. (`Error` rejected as
-      an alias name — it collides with MoonBit's built-in `Error` type; used the
-      underlying type name `EvalError`.)
-- [x] `src/moon.pkg`: moved `eval`/`errors`/`value` from `for "test"` to normal
-      imports (the root package now has real source). `unpack` stays test-only.
-- [x] `README.mbt.md`: added a "Quick start" doc-test using `@starlark.exec`/`eval`,
-      kept the full-control `@eval.exec_file` example below it, and added the root
-      package to the package table + import list. `src/docs/moon.pkg` imports the
-      root package for the new doc test.
-- [x] `moon info && moon fmt && moon test`: root `.mbti` now exposes exactly
-      `exec`, `eval`, and the three `pub using` aliases; 1571 tests pass.
+- [x] `src/facade.mbt`: `exec(src, filename~) -> Result[Module, EvalError]` and `eval(src, filename~) -> Result[Value, EvalError]`, each constructing a default `Thread` and `Options::default()` internally. Power-user APIs (custom threads, options, loaders, `Program` serialization, `CustomValue`) stay in the sub-packages, unchanged.
+- [x] Re-exported `Value` / `Module` / `EvalError` via `pub using @pkg { type X }` so the helper signatures are nameable from `@starlark`. (`Error` rejected as an alias name — it collides with MoonBit's built-in `Error` type; used the underlying type name `EvalError`.)
+- [x] `src/moon.pkg`: moved `eval`/`errors`/`value` from `for "test"` to normal imports (the root package now has real source). `unpack` stays test-only.
+- [x] `README.mbt.md`: added a "Quick start" doc-test using `@starlark.exec`/`eval`, kept the full-control `@eval.exec_file` example below it, and added the root package to the package table + import list. `src/docs/moon.pkg` imports the root package for the new doc test.
+- [x] `moon info && moon fmt && moon test`: root `.mbti` now exposes exactly `exec`, `eval`, and the three `pub using` aliases; 1571 tests pass.
 
 ---
 
@@ -2610,29 +1288,12 @@ Decision (user): add **省力ラッパ＋型エイリアス** — zero-ceremony 
 
 Decision (user): adopt the flat layout. `options(source: "src")` only controls the on-disk source root; package import paths (`connect0459/starlark/eval`, …) derive from the module name and package directories, so the change is **invisible to downstream consumers** — every generated `.mbti` is a pure rename with no content change, and it can be done safely at any time (it does not block or depend on publishing).
 
-- [x] Move all packages from `src/` to the repository root: the root package
-      files (`facade.mbt`, `starlark_test.mbt`, `moon.pkg`, …) plus `cmd/`,
-      `errors/`, `eval/`, `internal/*`, `lib/*`, `syntax/`, `unpack/`, `value/`.
-      Removed `options(source: "src")` from `moon.mod`.
-- [x] Dropped the source-tree-only `connect0459/starlark/docs` package: the
-      top-level `README.mbt.md` now serves as the **root package's** doc test
-      directly (verified `@starlark` self-reference compiles), eliminating the
-      `src/docs/README.mbt.md` symlink. The verified API reference pages moved to
-      `docs/api/` (package `connect0459/starlark/docs/api`), merging cleanly into
-      the existing top-level `docs/` tree.
-- [x] Updated path references in `justfile` (`moon run src/cmd` → `moon run cmd` → `moon run cmd/starlark` in #64),
-      `README.mbt.md`, `CONTRIBUTING.md`, `docs/README.md`, and the doc-test pages.
-      Also corrected stale `docs/api/index.md` (now renamed to `docs/api/README.md`) prose claiming "no top-level
-      facade" (superseded by R6).
-- [x] Verified no scan hazards: `examples/` and `.connect0459/ref-repos/*` are
-      nested modules (own `moon.mod`) and `apm_modules/` carries no packages, so
-      scanning from the new root picks up only this module's packages.
-- [x] `moon check --deny-warn`, `moon fmt --check`, `moon test` (1571 pass),
-      `moon info` clean; `just run-examples` confirms the `examples` module's
-      `path: ".."` dependency still resolves.
-- [x] Renamed the root package's primary files after the package itself now that
-      it sits at the repository root: `facade.mbt` → `starlark.mbt`, and folded
-      `facade_test.mbt` into the existing `starlark_test.mbt`. `.mbti` unchanged.
+- [x] Move all packages from `src/` to the repository root: the root package files (`facade.mbt`, `starlark_test.mbt`, `moon.pkg`, …) plus `cmd/`, `errors/`, `eval/`, `internal/*`, `lib/*`, `syntax/`, `unpack/`, `value/`. Removed `options(source: "src")` from `moon.mod`.
+- [x] Dropped the source-tree-only `connect0459/starlark/docs` package: the top-level `README.mbt.md` now serves as the **root package's** doc test directly (verified `@starlark` self-reference compiles), eliminating the `src/docs/README.mbt.md` symlink. The verified API reference pages moved to `docs/api/` (package `connect0459/starlark/docs/api`), merging cleanly into the existing top-level `docs/` tree.
+- [x] Updated path references in `justfile` (`moon run src/cmd` → `moon run cmd` → `moon run cmd/starlark` in #64), `README.mbt.md`, `CONTRIBUTING.md`, `docs/README.md`, and the doc-test pages. Also corrected stale `docs/api/index.md` (now renamed to `docs/api/README.md`) prose claiming "no top-level facade" (superseded by R6).
+- [x] Verified no scan hazards: `examples/` and `.connect0459/ref-repos/*` are nested modules (own `moon.mod`) and `apm_modules/` carries no packages, so scanning from the new root picks up only this module's packages.
+- [x] `moon check --deny-warn`, `moon fmt --check`, `moon test` (1571 pass), `moon info` clean; `just run-examples` confirms the `examples` module's `path: ".."` dependency still resolves.
+- [x] Renamed the root package's primary files after the package itself now that it sits at the repository root: `facade.mbt` → `starlark.mbt`, and folded `facade_test.mbt` into the existing `starlark_test.mbt`. `.mbti` unchanged.
 
 ---
 
@@ -2658,17 +1319,12 @@ The `source: "src"` field makes `src/` the package root; import paths (`connect0
 
 **Changes (PR #297, Issue #296)**:
 
-- [x] `moon.mod` — `options(source: "src")` added (toolchain auto-migrated
-  the file from deprecated JSON to TOML format)
+- [x] `moon.mod` — `options(source: "src")` added (toolchain auto-migrated the file from deprecated JSON to TOML format)
 - [x] `moon.work` — new file; members `[".", "./examples"]`
-- [x] All library packages moved from module root into `src/`:
-  `errors`, `eval`, `syntax`, `value`, `unpack`, `lib`, `internal`, `cmd`
-- [x] `examples/moon.mod.json` → `examples/moon.mod` (TOML); module renamed
-  to `connect0459/starlark_examples`; dependency pin changed to `@0.0.0`
-- [x] `.pre-commit-config.yaml` — vendor exclusion globs updated from
-  `^internal/` to `^src/internal/`
-- [x] `scripts/run-star.sh`, `scripts/test-repl-piped.sh` — CLI build
-  target updated from `cmd/starlark` to `src/cmd/starlark`
+- [x] All library packages moved from module root into `src/`: `errors`, `eval`, `syntax`, `value`, `unpack`, `lib`, `internal`, `cmd`
+- [x] `examples/moon.mod.json` → `examples/moon.mod` (TOML); module renamed to `connect0459/starlark_examples`; dependency pin changed to `@0.0.0`
+- [x] `.pre-commit-config.yaml` — vendor exclusion globs updated from `^internal/` to `^src/internal/`
+- [x] `scripts/run-star.sh`, `scripts/test-repl-piped.sh` — CLI build target updated from `cmd/starlark` to `src/cmd/starlark`
 - [x] `AGENTS.md` — `@0.0.0` sentinel convention documented
 
 ---
@@ -2683,221 +1339,46 @@ Decision (user, pre-release): full bytecode migration, **dual-engine + diff test
 
 Architecture: new `internal/compile/` holds the syntax-free `Funcode` (`code: Bytes` + AST-free metadata, fields name only `@errors` + primitives), `CompiledProgram`, the `Opcode` set, and a `Const` pool (primitive literal carriers, never `Value`). Import edges: `value → compile → errors` (no cycle; the constant pool avoids `Value`, so `compile` never imports `value`). The compiler does its own scope/slot + cell/free layout; the existing resolver stays a validation-only pre-pass and `@syntax` stays immutable.
 
-- [x] **M1**: `internal/compile` skeleton — `Opcode` (byte encode/decode +
-      `has_arg`), `Const` pool, `Funcode`/`CompiledProgram`, pc→position recovery
-      (`pclinetab` equivalent). Types only; no compiler logic. 5 tests.
-- [x] **M2**: bytecode compiler for the straight-line expression subset + module
-      init — emitter (constant/name pools, global slot assignment, operand-stack
-      tracking, pclinetab), lowering for literals/idents/unary/binary/list/tuple/
-      index/slice/attr and module-level expr/assign/pass; disassembler for tests.
-      Unhandled nodes raise `CompileErr`. (and/or, calls, control flow, functions,
-      comprehensions, load deferred to their milestones.) 8 tests.
-- [x] **M3**: bytecode VM (`eval/interp.mbt`) reachable via an internal
-      experimental entry (`exec_file_vm`, `#internal`); operator semantics reused
-      from `ops.mbt` with positions from the funcode line table. Differential-test
-      harness runs every program through both walker and VM and asserts agreement
-      on results and errors. Covers constants/arith/comparison/unary/membership/
-      list+tuple/index. 13 differential tests. Default `exec_file` unchanged.
-- [x] **M4**: module globals on the VM — `SetGlobal`/`Global`, unbound sentinel,
-      and the same "global variable X referenced before assignment" error as the
-      walker (verified by the harness). (Function-local slots arrive with
-      functions in M6, since the compiler emits no locals until then.)
-- [x] **M5**: control flow + iteration. The emitter now uses a pseudo-instruction
-      stream + symbolic labels + a two-pass assembler (jump targets resolved to
-      byte offsets, operand widths iterated to a fixpoint; jump-free output
-      unchanged). Lowers `and`/`or`, the conditional expression, `if`/`else`,
-      `while`, `for` (iterator stack), and `break`/`continue`; the VM gains
-      `Jmp`/`CJmp`/`IterPush`/`IterJmp`/`IterPop`. Verified by control-flow
-      differential tests. (Iterator release on the error-unwind path is deferred
-      to the flip; not observable here. For-loop destructuring targets arrive with
-      tuple unpacking.)
+- [x] **M1**: `internal/compile` skeleton — `Opcode` (byte encode/decode + `has_arg`), `Const` pool, `Funcode`/`CompiledProgram`, pc→position recovery (`pclinetab` equivalent). Types only; no compiler logic. 5 tests.
+- [x] **M2**: bytecode compiler for the straight-line expression subset + module init — emitter (constant/name pools, global slot assignment, operand-stack tracking, pclinetab), lowering for literals/idents/unary/binary/list/tuple/ index/slice/attr and module-level expr/assign/pass; disassembler for tests. Unhandled nodes raise `CompileErr`. (and/or, calls, control flow, functions, comprehensions, load deferred to their milestones.) 8 tests.
+- [x] **M3**: bytecode VM (`eval/interp.mbt`) reachable via an internal experimental entry (`exec_file_vm`, `#internal`); operator semantics reused from `ops.mbt` with positions from the funcode line table. Differential-test harness runs every program through both walker and VM and asserts agreement on results and errors. Covers constants/arith/comparison/unary/membership/ list+tuple/index. 13 differential tests. Default `exec_file` unchanged.
+- [x] **M4**: module globals on the VM — `SetGlobal`/`Global`, unbound sentinel, and the same "global variable X referenced before assignment" error as the walker (verified by the harness). (Function-local slots arrive with functions in M6, since the compiler emits no locals until then.)
+- [x] **M5**: control flow + iteration. The emitter now uses a pseudo-instruction stream + symbolic labels + a two-pass assembler (jump targets resolved to byte offsets, operand widths iterated to a fixpoint; jump-free output unchanged). Lowers `and`/`or`, the conditional expression, `if`/`else`, `while`, `for` (iterator stack), and `break`/`continue`; the VM gains `Jmp`/`CJmp`/`IterPush`/`IterJmp`/`IterPop`. Verified by control-flow differential tests. (Iterator release on the error-unwind path is deferred to the flip; not observable here. For-loop destructuring targets arrive with tuple unpacking.)
 - [x] **M6**: function defs + calls.
-      - [x] **M6a**: `def`/`lambda` → nested funcodes with per-function local
-        slots; positional `Call`, `Return`, `MakeFunc`; recursion/depth; live
-        per-frame backtrace stamping (verified by full `to_string()` comparison
-        incl. deep + max-recursion backtraces). Per issue #1, `StarlarkFunction`
-        gained a private optional `funcode` + `#internal from_compiled` (M11
-        representation introduced early); `value` now imports the AST-free
-        `compile` (no syntax leak). Harness compares globals by `repr`.
+      - [x] **M6a**: `def`/`lambda` → nested funcodes with per-function local slots; positional `Call`, `Return`, `MakeFunc`; recursion/depth; live per-frame backtrace stamping (verified by full `to_string()` comparison incl. deep + max-recursion backtraces). Per issue #1, `StarlarkFunction` gained a private optional `funcode` + `#internal from_compiled` (M11 representation introduced early); `value` now imports the AST-free `compile` (no syntax leak). Harness compares globals by `repr`.
       - [x] **M6b**: builtin calls + full argument binding.
-        - [x] **M6b-1**: builtin calls from the VM — the VM intercepts compiled
-          user functions (frames) and delegates all other callees (builtins,
-          bound methods, custom values, non-callable errors) to the existing
-          value-level call dispatch, reusing every builtin. Unlocks positional
-          builtin calls (`len`/`abs`/`str`/`int`/`min`/`max`/`sorted`/`list`/
-          `tuple`/`range`/...) and `range()`-driven loops; errors/backtraces
-          match. A builtin that receives a function positionally (e.g.
-          `sorted(iterable, key)`) re-enters the VM via `ctx.vm`, so the callback
-          runs on a VM frame with matching recursion/backtrace semantics;
-          keyword/splat callbacks await M6b-2.
-        - [x] **M6b-2**: full user-function argument binding — defaults, keyword
-          args, `*args`/`**kwargs`, keyword-only params. Each funcode carries an
-          AST-free `ParamSpec` list; defaults are gathered at definition time and
-          aligned onto optional params at `MakeFunc`; keyword call arguments
-          compile to name/value pairs. The VM binds with a direct port of the
-          walker's `bind_args` over the param specs, so defaults, `*args`/
-          `**kwargs` collection, and all four arg-count error variants (too many
-          positional, missing required, unexpected keyword + did-you-mean,
-          multiple values) match. Keyword args reach builtins too. (Splat *call
-          sites* — `f(*xs)`/`f(**kw)` — landed in PR-B.)
-- [x] **M7**: closures via captured cells. Free variables resolve up the
-      enclosing-function chain; the originating local is promoted to a cell and
-      the capture is threaded through intermediate functions (FromLocal/FromFree
-      sources on the funcode). A deferred pass rewrites the defining function's
-      `Local`/`SetLocal` to `LocalCell`/`SetLocalCell`. VM frames hold boxed local
-      slots; cell locals are boxed at entry, `MakeFunc` gathers the closure's
-      cells from the defining frame, and `LocalCell`/`SetLocalCell`/`FreeCell`
-      share state. The spike validated single- AND multi-level closures
-      (`a(1)(2)(3)`), independent closures, multi-var capture, lambda closures,
-      cell mutated in a loop, and same-named-global-is-not-captured. (Closures
-      that index-assign a captured container await index/attribute assignment
-      targets — a separate compiler feature, not closure-specific.)
-- [x] **M8**: comprehensions. List and dict comprehensions lower to an
-      accumulator (`MakeList`/`MakeDict`) plus a nest of iterator loops and
-      if-guards (`Append`/`SetDict`); comp variables are isolated comp-local
-      slots (saved/restored), first iterable in the enclosing scope, all targets
-      known in later iterables (BUG-28 scoping). The module-init frame now
-      allocates locals (module-scope comp vars). Verified by differential tests
-      (simple/guarded/nested/multi-guard/range/in-function list comps; dict comps
-      with/without guards; later-iterable-references-target). Set comprehensions
-      landed in PR-B via the `MakeSet`/`SetAdd` accumulator opcodes.
-- [x] **M9**: `load` statements on the VM. Each `load` compiles to a `Load`
-      opcode indexing a per-program load table (path + exports + module-global
-      slots); the VM's handler invokes the thread loader, binds each export into
-      its global slot, and tracks load-bound names so module-local load bindings
-      are excluded from exported globals unless `load_binds_globally` — mirroring
-      the walker, including the no-loader / cannot-load (with cause) / name-not-
-      found (did-you-mean) errors. A function loaded from a walker-compiled module
-      is AST-backed, so the VM delegates such calls to the walker. Differential
-      tests: basic load, aliasing, load-and-call, `load_binds_globally`,
-      missing-name error, no-loader error.
-- [x] **Flip prerequisites**: the remaining constructs the walker handles but the
-      compiler did not, split into two PRs so the flip can switch the default
-      with full coverage. The VM now lowers every walker construct. (M10
-      step counting is per-instruction on the VM dispatch loop, now that the VM
-      is the default engine.)
-  - [x] **PR-A**: assignment targets + augmented assignment. Plain assignment
-        evaluates the right-hand side first, then assigns to the target;
-        `compile_assign_target` handles identifier, index (`SetIndex`), attribute
-        (`SetField`), and tuple/list targets (`Unpack` + recursive assignment,
-        supporting nesting). Augmented assignment to an identifier loads the
-        current value, applies the operator (`AugApply`), and stores back; the VM
-        reuses the walker's `set_index`/`eval_aug_val`/iteration helpers, so
-        in-place list/dict mutation and the unpack length/type errors match.
-        Module- and function-local binding pre-passes now collect names from every
-        assignment and tuple/list target. Differential tests: index/attribute
-        assignment, tuple and nested unpacking, swap, augmented identifier
-        assignment, in-place list extend, augmented assignment inside a function.
-        (Augmented assignment to index/attribute targets is still unsupported;
-        deferred to the flip.)
-  - [x] **PR-B**: the remaining walker constructs the compiler did not lower.
-        Tuple/list targets in `for` loops and comprehension `for` clauses route
-        through `compile_assign_target`, with every bound name (including those
-        inside a tuple/list target) collected as an isolated comp-local slot.
-        Dict literals build a dict and set each entry via `SetDictUniq` (erroring
-        on a duplicate literal key); set literals and set comprehensions build a
-        set and add each element via two new no-argument opcodes `MakeSet`/
-        `SetAdd` (shifting `op_arg_min` and the argument-carrying opcodes up by
-        two — internal only, no serialized bytecode yet). Splat call sites
-        compile to `CallVar`/`CallKw`/`CallVarKw`; the VM expands the `*args`
-        iterable and `**kwargs` mapping into the shared call path, reusing the
-        walker's expansion and its not-iterable / not-a-mapping / non-string-key
-        errors. Undefined-name parity is provided by the shared resolver pass and
-        pinned by differential tests. With every expression variant now lowered,
-        the compiler's unsupported-expression fallback is removed.
-        Augmented assignment to index/attribute targets (`xs[i] += v`,
-        `obj.f += v`) also lowers: the container/index are read once via
-        `Dup`/`Dup2` and stored back, with `SetIndex`/`SetField` adopting the
-        object-then-value stack layout (plain assignment reorders through
-        `Exch`). This surfaced and closed a pre-existing VM gap — the `Attr`
-        opcode was unhandled, so every attribute read and method call aborted;
-        `Attr` now dispatches through the shared attribute lookup. With this the
-        VM lowers every construct the walker handles.
-- [x] **Compiled-function representation** (split out of the flip so it lands and
-      is proven before the default switches): a bytecode-compiled function now
-      carries the program and live module-global slots it was defined in, and the
-      VM runs each frame against the executing function's module rather than the
-      caller's (mirroring starlark-go/rust `fn.module`). This fixes cross-module
-      calls — a loaded function reads its own constant pool, module globals, and
-      sibling functions — and makes a compiled function callable from the host
-      (`call` routes through the VM). Reflection (`param`/`doc`/`free_var`/
-      `globals`/`defining_module`/arity) is recovered from the funcode + carried
-      module, so it behaves the same for AST- and bytecode-backed functions; the
-      compiler records a function's leading-string docstring. **Known divergence:**
-      the walker resolves a called function's globals against the caller, so it
-      cannot see a loaded function's own module globals/siblings ("undefined");
-      the VM is correct (verified against starlark-go/rust) and diverges there.
-      The differential harness asserts equality only where the engines agree;
-      corrected cases are pinned by VM-only tests. (At this milestone `exec_file`
-      still ran the walker; the flip below moved every entry onto the VM.)
-- [x] **M12a** (flip): every public execution entry now runs on the VM, with the
-      walker retained behind the flip for rollback and the differential harness.
-  - [x] `exec_file` + `eval_expr`/`eval_expr_with_opts`/`eval_parsed_expr` (an
-        expression is lowered as a synthetic `<result> = <expr>` module; `env`
-        bindings resolve as predeclared via the context base environment). Parity
-        gaps fixed: the load-local "referenced before assignment" message says
-        "local" (matching the walker/conformance); backtraces report each frame's
-        precise position (the walker advanced a function frame only on a call, so
-        the innermost frame showed its call site — the VM matches starlark-go's
-        pc→line table and shows the failing expression, with the `error_format`
-        expectations updated); and the `Attr` and `Slice` opcodes (which had no
-        VM handler) are implemented.
-  - [x] `exec_file_with_universe`, `exec_file_with_predeclared`,
-        `exec_repl_chunk`, and `Program::init` — they share one compile-and-run
-        path; the REPL seeds each chunk's module globals from prior chunks. This
-        moves the whole conformance suite (driven through
-        `exec_file_with_predeclared`) onto the VM. Two gaps closed: freezing a
-        function now freezes the values its bytecode closure captured through
-        cells (frozen-list error parity); and the VM records call frames for
-        `Thread::debug_frame`, reading locals from the live slot array, so the
-        `DebugFrame` API works under the VM.
-- [x] **M11 + M12b** (cleanup — the goal): the AST walker is deleted —
-      `exec_file_walker`, the statement executor / expression evaluator and the
-      walker's call/closure/comprehension machinery, the `Signal` enum
-      (`signal.mbt`), and the walker-only `EvalEnv` scope chain
-      (`LookupResult`/`collect_local_scopes`). `EvalEnv` is reduced to the
-      two-level predeclared/universal name environment the VM needs; `DebugFrame`
-      is slot-based. `StarlarkFunction` no longer stores the AST (`params`/`body`/
-      `captured_scope` and their accessors are gone) — a function value carries
-      only its `Funcode`, module, cells, and defaults; `new` is a minimal
-      name+position constructor and `from_compiled` builds every executable
-      function. **`value` no longer imports `syntax`** — the root architectural
-      blemish the migration set out to remove. (The differential harness now
-      runs the VM on both sides; the conformance suite is the behavioral gate.)
-- [x] **M13**: programs serialize as bytecode (the compiled program — constants,
-      function table, global/load tables, module-init funcode — plus options),
-      not the AST; `compiled_program` decodes straight to the runnable program
-      (no re-parse/resolve/compile). `SerialVersion` bumped to 2 so an older
-      AST-format blob is rejected cleanly. `Program` drops its AST `File`
-      (`filename`/`num_loads`/`load` derive from the compiled load table), and the
-      AST serializers are deleted — `serial.mbt` is now `@syntax`-free. The
-      existing write/read round-trip tests validate the new format.
+        - [x] **M6b-1**: builtin calls from the VM — the VM intercepts compiled user functions (frames) and delegates all other callees (builtins, bound methods, custom values, non-callable errors) to the existing value-level call dispatch, reusing every builtin. Unlocks positional builtin calls (`len`/`abs`/`str`/`int`/`min`/`max`/`sorted`/`list`/`tuple`/`range`/...) and `range()`-driven loops; errors/backtraces match. A builtin that receives a function positionally (e.g. `sorted(iterable, key)`) re-enters the VM via `ctx.vm`, so the callback runs on a VM frame with matching recursion/backtrace semantics; keyword/splat callbacks await M6b-2.
+        - [x] **M6b-2**: full user-function argument binding — defaults, keyword args, `*args`/`**kwargs`, keyword-only params. Each funcode carries an AST-free `ParamSpec` list; defaults are gathered at definition time and aligned onto optional params at `MakeFunc`; keyword call arguments compile to name/value pairs. The VM binds with a direct port of the walker's `bind_args` over the param specs, so defaults, `*args`/`**kwargs` collection, and all four arg-count error variants (too many positional, missing required, unexpected keyword + did-you-mean, multiple values) match. Keyword args reach builtins too. (Splat *call sites* — `f(*xs)`/`f(**kw)` — landed in PR-B.)
+- [x] **M7**: closures via captured cells. Free variables resolve up the enclosing-function chain; the originating local is promoted to a cell and the capture is threaded through intermediate functions (FromLocal/FromFree sources on the funcode). A deferred pass rewrites the defining function's `Local`/`SetLocal` to `LocalCell`/`SetLocalCell`. VM frames hold boxed local slots; cell locals are boxed at entry, `MakeFunc` gathers the closure's cells from the defining frame, and `LocalCell`/`SetLocalCell`/`FreeCell` share state. The spike validated single- AND multi-level closures (`a(1)(2)(3)`), independent closures, multi-var capture, lambda closures, cell mutated in a loop, and same-named-global-is-not-captured. (Closures that index-assign a captured container await index/attribute assignment targets — a separate compiler feature, not closure-specific.)
+- [x] **M8**: comprehensions. List and dict comprehensions lower to an accumulator (`MakeList`/`MakeDict`) plus a nest of iterator loops and if-guards (`Append`/`SetDict`); comp variables are isolated comp-local slots (saved/restored), first iterable in the enclosing scope, all targets known in later iterables (BUG-28 scoping). The module-init frame now allocates locals (module-scope comp vars). Verified by differential tests (simple/guarded/nested/multi-guard/range/in-function list comps; dict comps with/without guards; later-iterable-references-target). Set comprehensions landed in PR-B via the `MakeSet`/`SetAdd` accumulator opcodes.
+- [x] **M9**: `load` statements on the VM. Each `load` compiles to a `Load` opcode indexing a per-program load table (path + exports + module-global slots); the VM's handler invokes the thread loader, binds each export into its global slot, and tracks load-bound names so module-local load bindings are excluded from exported globals unless `load_binds_globally` — mirroring the walker, including the no-loader / cannot-load (with cause) / name-not-found (did-you-mean) errors. A function loaded from a walker-compiled module is AST-backed, so the VM delegates such calls to the walker. Differential tests: basic load, aliasing, load-and-call, `load_binds_globally`, missing-name error, no-loader error.
+- [x] **Flip prerequisites**: the remaining constructs the walker handles but the compiler did not, split into two PRs so the flip can switch the default with full coverage. The VM now lowers every walker construct. (M10 step counting is per-instruction on the VM dispatch loop, now that the VM is the default engine.)
+  - [x] **PR-A**: assignment targets + augmented assignment. Plain assignment evaluates the right-hand side first, then assigns to the target; `compile_assign_target` handles identifier, index (`SetIndex`), attribute (`SetField`), and tuple/list targets (`Unpack` + recursive assignment, supporting nesting). Augmented assignment to an identifier loads the current value, applies the operator (`AugApply`), and stores back; the VM reuses the walker's `set_index`/`eval_aug_val`/iteration helpers, so in-place list/dict mutation and the unpack length/type errors match. Module- and function-local binding pre-passes now collect names from every assignment and tuple/list target. Differential tests: index/attribute assignment, tuple and nested unpacking, swap, augmented identifier assignment, in-place list extend, augmented assignment inside a function. (Augmented assignment to index/attribute targets is still unsupported; deferred to the flip.)
+  - [x] **PR-B**: the remaining walker constructs the compiler did not lower. Tuple/list targets in `for` loops and comprehension `for` clauses route through `compile_assign_target`, with every bound name (including those inside a tuple/list target) collected as an isolated comp-local slot. Dict literals build a dict and set each entry via `SetDictUniq` (erroring on a duplicate literal key); set literals and set comprehensions build a set and add each element via two new no-argument opcodes `MakeSet`/`SetAdd` (shifting `op_arg_min` and the argument-carrying opcodes up by two — internal only, no serialized bytecode yet). Splat call sites compile to `CallVar`/`CallKw`/`CallVarKw`; the VM expands the `*args` iterable and `**kwargs` mapping into the shared call path, reusing the walker's expansion and its not-iterable / not-a-mapping / non-string-key errors. Undefined-name parity is provided by the shared resolver pass and pinned by differential tests. With every expression variant now lowered, the compiler's unsupported-expression fallback is removed. Augmented assignment to index/attribute targets (`xs[i] += v`, `obj.f += v`) also lowers: the container/index are read once via `Dup`/`Dup2` and stored back, with `SetIndex`/`SetField` adopting the object-then-value stack layout (plain assignment reorders through `Exch`). This surfaced and closed a pre-existing VM gap — the `Attr` opcode was unhandled, so every attribute read and method call aborted; `Attr` now dispatches through the shared attribute lookup. With this the VM lowers every construct the walker handles.
+- [x] **Compiled-function representation** (split out of the flip so it lands and is proven before the default switches): a bytecode-compiled function now carries the program and live module-global slots it was defined in, and the VM runs each frame against the executing function's module rather than the caller's (mirroring starlark-go/rust `fn.module`). This fixes cross-module calls — a loaded function reads its own constant pool, module globals, and sibling functions — and makes a compiled function callable from the host (`call` routes through the VM). Reflection (`param`/`doc`/`free_var`/`globals`/`defining_module`/arity) is recovered from the funcode + carried module, so it behaves the same for AST- and bytecode-backed functions; the compiler records a function's leading-string docstring. **Known divergence:** the walker resolves a called function's globals against the caller, so it cannot see a loaded function's own module globals/siblings ("undefined"); the VM is correct (verified against starlark-go/rust) and diverges there. The differential harness asserts equality only where the engines agree; corrected cases are pinned by VM-only tests. (At this milestone `exec_file` still ran the walker; the flip below moved every entry onto the VM.)
+- [x] **M12a** (flip): every public execution entry now runs on the VM, with the walker retained behind the flip for rollback and the differential harness.
+  - [x] `exec_file` + `eval_expr`/`eval_expr_with_opts`/`eval_parsed_expr` (an expression is lowered as a synthetic `<result> = <expr>` module; `env` bindings resolve as predeclared via the context base environment). Parity gaps fixed: the load-local "referenced before assignment" message says "local" (matching the walker/conformance); backtraces report each frame's precise position (the walker advanced a function frame only on a call, so the innermost frame showed its call site — the VM matches starlark-go's pc→line table and shows the failing expression, with the `error_format` expectations updated); and the `Attr` and `Slice` opcodes (which had no VM handler) are implemented.
+  - [x] `exec_file_with_universe`, `exec_file_with_predeclared`, `exec_repl_chunk`, and `Program::init` — they share one compile-and-run path; the REPL seeds each chunk's module globals from prior chunks. This moves the whole conformance suite (driven through `exec_file_with_predeclared`) onto the VM. Two gaps closed: freezing a function now freezes the values its bytecode closure captured through cells (frozen-list error parity); and the VM records call frames for `Thread::debug_frame`, reading locals from the live slot array, so the `DebugFrame` API works under the VM.
+- [x] **M11 + M12b** (cleanup — the goal): the AST walker is deleted — `exec_file_walker`, the statement executor / expression evaluator and the walker's call/closure/comprehension machinery, the `Signal` enum (`signal.mbt`), and the walker-only `EvalEnv` scope chain (`LookupResult`/`collect_local_scopes`). `EvalEnv` is reduced to the two-level predeclared/universal name environment the VM needs; `DebugFrame` is slot-based. `StarlarkFunction` no longer stores the AST (`params`/`body`/`captured_scope` and their accessors are gone) — a function value carries only its `Funcode`, module, cells, and defaults; `new` is a minimal name+position constructor and `from_compiled` builds every executable function. **`value` no longer imports `syntax`** — the root architectural blemish the migration set out to remove. (The differential harness now runs the VM on both sides; the conformance suite is the behavioral gate.)
+- [x] **M13**: programs serialize as bytecode (the compiled program — constants, function table, global/load tables, module-init funcode — plus options), not the AST; `compiled_program` decodes straight to the runnable program (no re-parse/resolve/compile). `SerialVersion` bumped to 2 so an older AST-format blob is rejected cleanly. `Program` drops its AST `File` (`filename`/`num_loads`/`load` derive from the compiled load table), and the AST serializers are deleted — `serial.mbt` is now `@syntax`-free. The existing write/read round-trip tests validate the new format.
 
 ---
 
 ## Future work (out of initial release scope)
 
-- ~~Hide `StarlarkFunction.body/params/captured_scope` from public API~~ — being
-  addressed by the **Bytecode Compiler + VM Migration** above: the compiled
-  `Funcode` replaces the AST body/params so `value` no longer depends on `@syntax`.
+- ~~Hide `StarlarkFunction.body/params/captured_scope` from public API~~ — being addressed by the **Bytecode Compiler + VM Migration** above: the compiled `Funcode` replaces the AST body/params so `value` no longer depends on `@syntax`.
 - `math` extension library — implemented as `src/lib/math/`
 - ~~`time` extension library~~ — implemented as `src/lib/time/`; non-UTC timezones via IANA tzdb (native) / static table (wasm/js); native-only DST tests in `time_tz_native_test.mbt`
 - `proto` extension library (`starlark-go/lib/proto`)
 - ~~`starlarkstruct`~~ — implemented as `src/lib/struct/`; `struct()` builtin, `gensym()` callable symbols, `+` merge, `make_struct` API
-- ~~Bytecode compilation / interpreter~~ — MISSING-62; **done**, see the
-  "Bytecode Compiler + VM Migration" section above (VM is the sole engine)
+- ~~Bytecode compilation / interpreter~~ — MISSING-62; **done**, see the "Bytecode Compiler + VM Migration" section above (VM is the sole engine)
 - Profiling and debugging hooks (`starlark-go/starlark/profile.go`)
 - ~~Big-integer `Int`~~ — implemented; `Value::Int` now uses MoonBit `BigInt` (arbitrary precision)
-- Thread-local storage `Thread.set_local()` / `Thread.local()` for embedder context
-  (request IDs, profiling state, etc.) — reference: `starlark-go` `Thread.SetLocal`
-- Custom Unpacker protocol for user-defined `Value` types — reference:
-  `starlark-go/starlark/unpack.go` `Unpacker` interface
-- ~~"did you mean" for module attribute access~~ — implemented; spell_nearest called in
-  eval_getattr for Module variant; module.star line 17 now covered
-- ~~Print callback thread context~~ — implemented; `Thread.print_fn` changed from
-  `(String) -> Unit` to `(Thread, String) -> Unit`; breaking API change to `with_print`
-- ~~Full `TestPrint` position parity~~ — implemented and tested; `call_frame(1)` inside
-  print callback returns exact call-site position (MISSING-212)
+- Thread-local storage `Thread.set_local()` / `Thread.local()` for embedder context (request IDs, profiling state, etc.) — reference: `starlark-go` `Thread.SetLocal`
+- Custom Unpacker protocol for user-defined `Value` types — reference: `starlark-go/starlark/unpack.go` `Unpacker` interface
+- ~~"did you mean" for module attribute access~~ — implemented; spell_nearest called in eval_getattr for Module variant; module.star line 17 now covered
+- ~~Print callback thread context~~ — implemented; `Thread.print_fn` changed from `(String) -> Unit` to `(Thread, String) -> Unit`; breaking API change to `with_print`
+- ~~Full `TestPrint` position parity~~ — implemented and tested; `call_frame(1)` inside print callback returns exact call-site position (MISSING-212)
 
 ---
 
@@ -2905,20 +1386,9 @@ Architecture: new `internal/compile/` holds the syntax-free `Funcode` (`code: By
 
 Removing the remaining test-level workarounds left after the PR #21 verbatim embed, so upstream testdata updates stay copy-paste.
 
-- [x] **F**: `sorted([1, "one"])` now reports `string < int not implemented`,
-      matching starlark-go's `sort.Stable` insertion sort (compares
-      `less(j, j-1)`, keeps the last failing comparison's error). The
-      `errs.filter` workaround in `builtins_test.mbt` is removed.
-- [x] **H**: `bytes(string)` and `str(bytes)` replace invalid UTF-8 with U+FFFD
-      using Go's per-byte decoder (`utf8util.decode_utf8_lossy`) rather than
-      `moonbitlang/core`'s WHATWG maximal-subpart `decode_lossy`. The
-      `errs.filter` workaround in `bytes_test.mbt` is removed.
-- [x] **E** (breaking): `Options::default()` now defaults `allow_recursion` to
-      `false`, matching starlark-go. The `# option:norecursion` prepend in
-      `function_test.mbt` is removed; `# option:recursion` is supported for the
-      chunks that need it. Tests that exercise recursion now opt in explicitly
-      via `with_allow_recursion(true)`. README, API docs, and the feature-gate
-      note above are updated as the migration note.
+- [x] **F**: `sorted([1, "one"])` now reports `string < int not implemented`, matching starlark-go's `sort.Stable` insertion sort (compares `less(j, j-1)`, keeps the last failing comparison's error). The `errs.filter` workaround in `builtins_test.mbt` is removed.
+- [x] **H**: `bytes(string)` and `str(bytes)` replace invalid UTF-8 with U+FFFD using Go's per-byte decoder (`utf8util.decode_utf8_lossy`) rather than `moonbitlang/core`'s WHATWG maximal-subpart `decode_lossy`. The `errs.filter` workaround in `bytes_test.mbt` is removed.
+- [x] **E** (breaking): `Options::default()` now defaults `allow_recursion` to `false`, matching starlark-go. The `# option:norecursion` prepend in `function_test.mbt` is removed; `# option:recursion` is supported for the chunks that need it. Tests that exercise recursion now opt in explicitly via `with_allow_recursion(true)`. README, API docs, and the feature-gate note above are updated as the migration note.
 
 ---
 
@@ -2926,46 +1396,12 @@ Removing the remaining test-level workarounds left after the PR #21 verbatim emb
 
 Close the interactive-experience gap against starlark-go's `repl` package. Scope agreed with the user: Phases 0–2 (output parity, structured error kind, multi-line input, Ctrl-C); line editing / history (Phase 3, linenoise) is deferred.
 
-- [x] **Phase 0.5** — structured `SyntaxErrorKind` (`UnexpectedEof`,
-      `UnterminatedString`, `Other`) on `@errors.SyntaxError`, so the REPL
-      branches on the structural cause rather than the English message text.
-      The parser tags errors raised at the EOF token; the lexer tags
-      unterminated-string errors. Message text is unchanged.
-- [x] **Phase 0** — output semantics parity: prompts and error backtraces go to
-      stderr (piped stdout stays clean), value output stays on stdout.
-      `ReplOutput::EvalError` now carries `@errors.EvalError` (not a lossy
-      message string), so the loop displays the full `backtrace()`. Native
-      stderr FFI (`starlark_repl_write_stderr`); no-op stub on other backends.
-- [x] **Phase 1** — multi-line input with a `...` continuation prompt, driven by
-      a pure, IO-free `ReplState::feed` state machine
-      (`Complete | NeedMore | Invalid`). Compound openers (`def`/`if`/`for`/
-      `while`) read their suite until a blank line; unclosed brackets/strings
-      complete as soon as they parse. Backend-independent tests.
-- [x] **Phase 2** — Ctrl-C interrupts a running evaluation: native SIGINT
-      handler sets a read-and-clear flag, polled via `set_max_steps` +
-      `set_on_max_steps` (cancel when set, else re-arm — unbounded but
-      interruptible, as starlark-go does). The thread is uncancelled before each
-      line so one Ctrl-C does not brick the session. The handler omits
-      `SA_RESTART` so a Ctrl-C during input returns EINTR and discards the
-      partial chunk instead of exiting. No-op stubs on non-native backends.
-- [x] **Adjacent fix** — `read_line` decoded stdin bytes as UTF-16 via
-      `to_unchecked_string`, garbling every line; now decodes as UTF-8
-      (`@utf8.decode_lossy`). This FFI path was never covered by unit tests.
-- [x] **Phase 3** — line editing / history via vendored **isocline** (MIT,
-      pinned commit) under `internal/repl/vendor/isocline/`, chosen over
-      linenoise because it has native Windows console support (no `_WIN32`
-      fgets fallback needed) and proper UTF-8 handling. On a terminal, input
-      goes through `ic_readline` (readline-style editing + in-session history,
-      `↑`/`↓`); isocline's own multi-line editing is disabled so the existing
-      continuation state machine still assembles chunks. Non-terminal stdin
-      uses a small dynamic getline instead — isocline's non-tty reader
-      conflates a blank line with EOF, which would truncate piped multi-line
-      input; the custom reader returns "" for a blank line and NULL only at
-      genuine EOF, also resolving the 4096-byte truncation bug on both paths.
-      The Ctrl-C eval interrupt is preserved (isocline saves/restores the
-      SIGINT handler around each read). Vendored as a self-contained tarball
-      requirement for `moon publish` (submodule / external C package manager
-      are not resolved by mooncakes packaging).
+- [x] **Phase 0.5** — structured `SyntaxErrorKind` (`UnexpectedEof`, `UnterminatedString`, `Other`) on `@errors.SyntaxError`, so the REPL branches on the structural cause rather than the English message text. The parser tags errors raised at the EOF token; the lexer tags unterminated-string errors. Message text is unchanged.
+- [x] **Phase 0** — output semantics parity: prompts and error backtraces go to stderr (piped stdout stays clean), value output stays on stdout. `ReplOutput::EvalError` now carries `@errors.EvalError` (not a lossy message string), so the loop displays the full `backtrace()`. Native stderr FFI (`starlark_repl_write_stderr`); no-op stub on other backends.
+- [x] **Phase 1** — multi-line input with a `...` continuation prompt, driven by a pure, IO-free `ReplState::feed` state machine (`Complete | NeedMore | Invalid`). Compound openers (`def`/`if`/`for`/`while`) read their suite until a blank line; unclosed brackets/strings complete as soon as they parse. Backend-independent tests.
+- [x] **Phase 2** — Ctrl-C interrupts a running evaluation: native SIGINT handler sets a read-and-clear flag, polled via `set_max_steps` + `set_on_max_steps` (cancel when set, else re-arm — unbounded but interruptible, as starlark-go does). The thread is uncancelled before each line so one Ctrl-C does not brick the session. The handler omits `SA_RESTART` so a Ctrl-C during input returns EINTR and discards the partial chunk instead of exiting. No-op stubs on non-native backends.
+- [x] **Adjacent fix** — `read_line` decoded stdin bytes as UTF-16 via `to_unchecked_string`, garbling every line; now decodes as UTF-8 (`@utf8.decode_lossy`). This FFI path was never covered by unit tests.
+- [x] **Phase 3** — line editing / history via vendored **isocline** (MIT, pinned commit) under `internal/repl/vendor/isocline/`, chosen over linenoise because it has native Windows console support (no `_WIN32` fgets fallback needed) and proper UTF-8 handling. On a terminal, input goes through `ic_readline` (readline-style editing + in-session history, `↑`/`↓`); isocline's own multi-line editing is disabled so the existing continuation state machine still assembles chunks. Non-terminal stdin uses a small dynamic getline instead — isocline's non-tty reader conflates a blank line with EOF, which would truncate piped multi-line input; the custom reader returns "" for a blank line and NULL only at genuine EOF, also resolving the 4096-byte truncation bug on both paths. The Ctrl-C eval interrupt is preserved (isocline saves/restores the SIGINT handler around each read). Vendored as a self-contained tarball requirement for `moon publish` (submodule / external C package manager are not resolved by mooncakes packaging).
 
 ---
 
@@ -2999,15 +1435,8 @@ Track with `moon coverage analyze > uncovered.log` after each phase.
 
 ### Achieved coverage
 
-- **Lexer** (`src/internal/lexer/`): ~93% — `scanner.mbt` 716/766, `quote.mbt`
-  199/216, `lexer.mbt` 114/128. Added dedicated tests for `quote`/`unquote`
-  escape and error paths, scanner escape/number/indentation error branches,
-  and `Token::to_string` rendering. Remaining gaps are unreachable defensive
-  branches (e.g. empty/invalid-digit checks in the integer parsers).
-- **Syntax/AST** (`src/internal/syntax/`): ~98% — `walker.mbt` 116/119,
-  `syntax.mbt` fully covered. Added a whitebox suite exercising the AST walker
-  across every node kind (including visitor short-circuit), `expr_pos`/
-  `stmt_pos` for all variants, and `File` accessors.
+- **Lexer** (`src/internal/lexer/`): ~93% — `scanner.mbt` 716/766, `quote.mbt` 199/216, `lexer.mbt` 114/128. Added dedicated tests for `quote`/`unquote` escape and error paths, scanner escape/number/indentation error branches, and `Token::to_string` rendering. Remaining gaps are unreachable defensive branches (e.g. empty/invalid-digit checks in the integer parsers).
+- **Syntax/AST** (`src/internal/syntax/`): ~98% — `walker.mbt` 116/119, `syntax.mbt` fully covered. Added a whitebox suite exercising the AST walker across every node kind (including visitor short-circuit), `expr_pos`/`stmt_pos` for all variants, and `File` accessors.
 
 ---
 
@@ -3023,12 +1452,7 @@ Track with `moon coverage analyze > uncovered.log` after each phase.
 ## Notes
 
 - Starlark strings are **byte** strings: `s[i]` returns the i-th byte, not Unicode codepoint
-- Feature gates default to the **spec-conformant** dialect (issue #26): standard
-  features (`set`, `lambda`, `bytes`, `float`) are **enabled**; non-standard
-  extensions (`recursion`, `while`, `top_level_control`, `global_reassign`) are
-  **disabled** and must be opted into — matching starlark-go's zero-value
-  `FileOptions` for the extensions. `set` intentionally diverges from that zero
-  value (`Set = false`) because it is now part of the Starlark spec
+- Feature gates default to the **spec-conformant** dialect (issue #26): standard features (`set`, `lambda`, `bytes`, `float`) are **enabled**; non-standard extensions (`recursion`, `while`, `top_level_control`, `global_reassign`) are **disabled** and must be opted into — matching starlark-go's zero-value `FileOptions` for the extensions. `set` intentionally diverges from that zero value (`Set = false`) because it is now part of the Starlark spec
 - Arbitrary-precision `Int`: start with `Int64`, plan upgrade when arithmetic overflow tests fail
 - `load` statement requires a pluggable loader; implement a no-op loader for testing
 - Mutable containers (List, Dict, Set) can self-reference; equality / repr / hash must handle cycles
