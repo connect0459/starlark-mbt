@@ -73,7 +73,7 @@ jobs:
       - name: Extract changelog section for this version
         if: github.event_name == 'push'
         id: changelog
-        uses: connect0459/extract-changelog@d1a123486c1f4d24327a5d28c7ffa5c788b02a04 # v1.0.0
+        uses: connect0459/extract-changelog-entry@d1a123486c1f4d24327a5d28c7ffa5c788b02a04 # v1.0.0
         with:
           ref-name: ${{ github.ref_name }}
 
