@@ -104,4 +104,4 @@ See [CONTRIBUTING.md](https://github.com/connect0459/starlark-mbt/blob/main/CONT
 
 ## License
 
-Apache-2.0
+[Apache-2.0](https://github.com/connect0459/starlark-mbt/blob/main/LICENSE)
