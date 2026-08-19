@@ -1172,7 +1172,8 @@ fn builtin_minmax(
         make_eval_error(ctx, "\{fn_name}: argument is an empty sequence"),
       )
     }
-    let result = try {
+    errdefer it.done()
+    let result = {
       let mut best = items[0]
       let mut best_key = key_of(best)
       for i in 1..<items.length() {
@@ -1188,11 +1189,6 @@ fn builtin_minmax(
         }
       }
       best
-    } catch {
-      e => {
-        it.done()
-        raise e
-      }
     }
     it.done()
     result
@@ -1380,7 +1376,8 @@ fn builtin_sorted(
       Some(v) => items.push(v)
     }
   }
-  let sorted_result = try {
+  errdefer it.done()
+  let sorted_result = {
     match key_fn {
       Some(f) =>
         match f {
@@ -1455,11 +1452,6 @@ fn builtin_sorted(
     }
     let result : Array[@value.Value] = indices.map(fn(i) { items[i] })
     @value.Value::List(@value.StarlarkList::new(result))
-  } catch {
-    e => {
-      it.done()
-      raise e
-    }
   }
   it.done()
   sorted_result
