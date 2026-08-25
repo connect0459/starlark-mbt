@@ -27,6 +27,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-25
+
+### Fixed
+
+#### MoonBit toolchain compatibility
+
+- `eval`: replace a `try ... catch` cleanup pattern used purely to call `it.done()` before re-raising with `errdefer`, since the latest MoonBit toolchain's `fragile_catch_all` lint now rejects catch-all blocks that aren't guaranteed to run under async cancellation (#411)
+- multiple packages: replace deprecated `StringBuilder::new()` calls with the bare `StringBuilder()` constructor, no longer accepted under `--deny-warn` by the latest MoonBit toolchain (#414)
+
+### Miscellaneous
+
+- **ci**: promote CHANGELOG heading levels in extracted release notes (#402)
+- **ci**: render the Full Changelog link as its own section and fix related label/formatting issues in extracted release notes (#403)
+- **ci**: replace inline changelog extraction with the extract-changelog action, later repointed at its renamed repository (#404, #409)
+- **docs**: unwrap hard-wrapped prose and list items across README, CHANGELOG, and docs/todo.md; drop the commit body 72-char wrap convention (#405, #406, #407)
+- **chore**: bump moonbitlang/x to 0.4.50 (#408)
+- **ci**: consolidate required checks into a single gate job (#410)
+- **docs**: link the License section to the LICENSE file, then reorder README sections so Documentation precedes Contributing and License (#412, #413)
+- **chore**: flatten the PR template into a single file (#415)
+
 ## [0.5.0] - 2026-08-13
 
 ### Changed
@@ -469,7 +489,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.0...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.1...HEAD>
+[0.5.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.0...v0.5.1>
 [0.5.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.1...v0.5.0>
 [0.4.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.0...v0.4.1>
 [0.4.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.3.2...v0.4.0>
