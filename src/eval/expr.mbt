@@ -695,7 +695,7 @@ fn call_builtin(
           } else {
             cp.unsafe_to_char()
           }
-          let buf = StringBuilder::new()
+          let buf = StringBuilder()
           buf.write_char(c)
           @value.Value::String(@value.StarlarkString::new(buf.to_string()))
         }
@@ -2133,7 +2133,7 @@ fn call_str_method(
       if raw.length() == 0 {
         @value.Value::String(s)
       } else {
-        let buf = StringBuilder::new()
+        let buf = StringBuilder()
         let mut is_first = true
         for c in raw {
           let cp = c.to_int()
@@ -2228,7 +2228,7 @@ fn call_str_method(
     }
     "isspace" => all_chars_satisfy(s, is_whitespace)
     "title" => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       let mut prev_cased = false
       for c in s.raw() {
         let cp = c.to_int()
@@ -2284,7 +2284,7 @@ fn call_str_method(
       let parts : Array[@value.Value] = []
       let chars = s.raw().to_array()
       let n = chars.length()
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       let mut i = 0
       while i < n {
         let c = chars[i]
@@ -3199,7 +3199,7 @@ fn is_whitespace(c : Char) -> Bool {
 ///|
 /// Applies a per-rune mapping to every codepoint of a string and rebuilds it.
 fn map_string_runes(raw : String, f : (Int) -> Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in raw {
     buf.write_char(f(c.to_int()).unsafe_to_char())
   }
@@ -3232,7 +3232,7 @@ fn split_whitespace(s : String, maxsplit : Int) -> Array[String] {
         if maxsplit >= 0 && result.length() == maxsplit {
           break
         }
-        let buf = StringBuilder::new()
+        let buf = StringBuilder()
         for k in start..<i {
           buf.write_char(chars[k])
         }
@@ -3244,7 +3244,7 @@ fn split_whitespace(s : String, maxsplit : Int) -> Array[String] {
     }
   }
   if start >= 0 {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for k in start..<n {
       buf.write_char(chars[k])
     }
@@ -3269,7 +3269,7 @@ fn rsplit_whitespace(s : String, maxsplit : Int) -> Array[String] {
         if maxsplit >= 0 && result.length() == maxsplit {
           break
         }
-        let buf = StringBuilder::new()
+        let buf = StringBuilder()
         for k in (i + 1)..<end_pos {
           buf.write_char(chars[k])
         }
@@ -3282,7 +3282,7 @@ fn rsplit_whitespace(s : String, maxsplit : Int) -> Array[String] {
     i -= 1
   }
   if end_pos >= 0 {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for k in 0..<end_pos {
       buf.write_char(chars[k])
     }
@@ -3362,7 +3362,7 @@ fn rsplit_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
   if excess <= 0 {
     return parts
   }
-  let merged = StringBuilder::new()
+  let merged = StringBuilder()
   for i in 0..<excess {
     if i > 0 {
       merged.write_string(sep)
@@ -3395,7 +3395,7 @@ fn strip_whitespace(s : String, from_left : Bool, from_right : Bool) -> String {
       end -= 1
     }
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i in start..<end {
     buf.write_char(chars[i])
   }
@@ -3437,7 +3437,7 @@ fn strip_chars(
       }
     }
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i in start..<end {
     buf.write_char(s_chars[i])
   }
@@ -3455,7 +3455,7 @@ fn str_replace_count(
   count : Int,
 ) -> String {
   if old.length() == 0 {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     let chars = s.to_array()
     let mut replacements = 0
     for i in 0..<chars.length() {
@@ -3470,7 +3470,7 @@ fn str_replace_count(
     }
     return buf.to_string()
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let slen = s.length()
   let oldlen = old.length()
   let mut start = 0

@@ -157,7 +157,7 @@ pub fn is_valid_utf8(b : Bytes) -> Bool {
 ///
 /// Returns the decoded string with invalid sequences replaced by U+FFFD.
 pub fn decode_utf8_lossy(b : Bytes) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let len = b.length()
   let mut i = 0
   while i < len {

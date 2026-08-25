@@ -1609,7 +1609,7 @@ fn repr_bytes_inner(b : Bytes, buf : StringBuilder, quote_char : Char) -> Unit {
 
 ///|
 fn repr_string_val(s : StarlarkString) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('"')
   repr_bytes_inner(s.bytes, buf, '"')
   buf.write_char('"')
@@ -1618,7 +1618,7 @@ fn repr_string_val(s : StarlarkString) -> String {
 
 ///|
 fn repr_bytes_val(b : Bytes) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("b\"")
   repr_bytes_inner(b, buf, '"')
   buf.write_char('"')
@@ -1801,7 +1801,7 @@ fn repr_dict_inner(
     return Ok("{}")
   }
   seen_dicts.push(d)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('{')
   let mut first = true
   for kv in d.entries() {
@@ -1840,7 +1840,7 @@ fn repr_set_inner(
   seen_dicts : Array[StarlarkDict],
   depth : Int,
 ) -> Result[String, String] {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("set([")
   let mut first = true
   for k in s.iter() {
@@ -1870,7 +1870,7 @@ fn repr_list_inner(
     return Ok("[...]")
   }
   seen_lists.push(l)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('[')
   for i in 0..<l.items.length() {
     match repr_inner(l.items[i], seen_lists, seen_dicts, depth) {
@@ -1898,7 +1898,7 @@ fn repr_tuple_inner(
   seen_dicts : Array[StarlarkDict],
   depth : Int,
 ) -> Result[String, String] {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('(')
   for i in 0..<t.length() {
     match repr_inner(t[i], seen_lists, seen_dicts, depth) {

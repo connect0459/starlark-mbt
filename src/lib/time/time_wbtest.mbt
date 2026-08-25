@@ -657,7 +657,7 @@ test "time_quote: tab (0x09) is escaped as \\x09" {
 ///|
 test "time_quote: bell (0x07) is escaped as \\x07" {
   let bell = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char((7).unsafe_to_char())
     b.to_string()
   }
@@ -667,7 +667,7 @@ test "time_quote: bell (0x07) is escaped as \\x07" {
 ///|
 test "time_quote: backspace (0x08) is escaped as \\x08" {
   let bs = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char((8).unsafe_to_char())
     b.to_string()
   }
@@ -677,7 +677,7 @@ test "time_quote: backspace (0x08) is escaped as \\x08" {
 ///|
 test "time_quote: vertical tab (0x0b) is escaped as \\x0b" {
   let vt = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char((11).unsafe_to_char())
     b.to_string()
   }
@@ -687,7 +687,7 @@ test "time_quote: vertical tab (0x0b) is escaped as \\x0b" {
 ///|
 test "time_quote: form feed (0x0c) is escaped as \\x0c" {
   let ff = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char((12).unsafe_to_char())
     b.to_string()
   }
@@ -702,7 +702,7 @@ test "time_quote: carriage return (0x0d) is escaped as \\x0d" {
 ///|
 test "time_quote: NUL (0x00) is escaped as \\x00" {
   let nul = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char((0).unsafe_to_char())
     b.to_string()
   }
@@ -712,12 +712,12 @@ test "time_quote: NUL (0x00) is escaped as \\x00" {
 ///|
 test "time_quote: DEL (0x7f) passes through as raw byte" {
   let del = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char((0x7F).unsafe_to_char())
     b.to_string()
   }
   let expected = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char('"')
     b.write_char((0x7F).unsafe_to_char())
     b.write_char('"')
@@ -729,7 +729,7 @@ test "time_quote: DEL (0x7f) passes through as raw byte" {
 ///|
 test "time_quote: non-ASCII U+0080 is UTF-8 encoded as \\xc2\\x80" {
   let s = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char((0x80).unsafe_to_char())
     b.to_string()
   }
@@ -739,7 +739,7 @@ test "time_quote: non-ASCII U+0080 is UTF-8 encoded as \\xc2\\x80" {
 ///|
 test "time_quote: U+00B5 micro sign is UTF-8 encoded as \\xc2\\xb5" {
   let s = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_char('µ')
     b.to_string()
   }
@@ -749,7 +749,7 @@ test "time_quote: U+00B5 micro sign is UTF-8 encoded as \\xc2\\xb5" {
 ///|
 test "parse_rfc3339: double-quote in both input and trailing extra text is fully Go-quoted" {
   let input = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_string("2021-03-22T23:20:50Z")
     b.write_char('"')
     b.to_string()
@@ -796,7 +796,7 @@ test "make_time_constructor_fn: unknown keyword close to year suggests did-you-m
 ///|
 test "parse_go_layout: double-quote in both input and trailing extra text is fully Go-quoted" {
   let input = {
-    let b = StringBuilder::new()
+    let b = StringBuilder()
     b.write_string("2006")
     b.write_char('"')
     b.to_string()

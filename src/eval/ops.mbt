@@ -690,7 +690,7 @@ fn percent_format(
     let mut spec : Char = ' '
     if chars[i] == '(' {
       i += 1 // skip '('
-      let key_buf = StringBuilder::new()
+      let key_buf = StringBuilder()
       while i < n && chars[i] != ')' {
         key_buf.write_char(chars[i])
         i += 1
@@ -855,7 +855,7 @@ fn int64_to_octal(n : BigInt) -> String {
   if n.is_zero() {
     return "0"
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut v = n
   let digits : Array[Int] = []
   while v > 0N {
@@ -877,7 +877,7 @@ fn int64_to_hex(n : BigInt, upper : Bool) -> String {
   if n.is_zero() {
     return "0"
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut v = n
   let digits : Array[Int] = []
   while v > 0N {
@@ -917,7 +917,7 @@ fn pad_bigint(n : BigInt, width : Int) -> String {
   if pad <= 0 {
     return s
   }
-  let pbuf = StringBuilder::new()
+  let pbuf = StringBuilder()
   for _ in 0..<pad {
     pbuf.write_char('0')
   }

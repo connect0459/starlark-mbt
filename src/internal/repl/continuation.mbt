@@ -57,7 +57,7 @@ pub fn ReplState::discard(self : ReplState) -> Unit {
 
 ///|
 fn ReplState::buffer(self : ReplState) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for i, line in self.lines {
     if i > 0 {
       sb.write_char('\n')
@@ -175,7 +175,7 @@ fn is_blank(line : String) -> Bool {
 /// True when `line`'s first identifier-like token opens an indented compound
 /// statement (`def` / `if` / `for` / `while`), which requires a suite.
 fn is_compound_opener(line : String) -> Bool {
-  let word = StringBuilder::new()
+  let word = StringBuilder()
   let mut started = false
   for c in line.iter() {
     if !started {

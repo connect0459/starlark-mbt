@@ -318,7 +318,7 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
   //   ".+"   → ".*"  (one-or-more → zero-or-more; permissive but sufficient)
   //   "[|]"  → "|"   (single-char class containing '|')
   let pat = {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     let mut first = true
     for part in pat.split("...") {
       if !first {
@@ -330,7 +330,7 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
     buf.to_string()
   }
   let pat = {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     let mut first = true
     for part in pat.split(".+") {
       if !first {
@@ -342,7 +342,7 @@ fn pattern_matches(pattern : String, text : String) -> Bool {
     buf.to_string()
   }
   let pat = {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     let mut first = true
     for part in pat.split("[|]") {
       if !first {
@@ -474,7 +474,7 @@ fn trim_start(s : String) -> String {
 
 ///|
 fn unquote_double(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let chars = s.iter().to_array()
   let mut i = 0
   while i < chars.length() {
@@ -622,7 +622,7 @@ fn levenshtein(a : String, b : String) -> Int {
 
 ///|
 fn norm_field_name(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s.iter() {
     let code = c.to_int()
     if code >= 'A'.to_int() && code <= 'Z'.to_int() {
