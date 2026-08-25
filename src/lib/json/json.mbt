@@ -152,7 +152,7 @@ fn marshal_string(bytes : Bytes, buf : StringBuilder) -> Unit {
 /// Produces the JSON-quoted form of a Starlark string, choosing between
 /// printable-ASCII fast path and full Unicode marshal as appropriate.
 fn json_quote_string(s : @value.StarlarkString) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let bytes = s.to_bytes()
   if is_printable_ascii(bytes) {
     quote_printable_ascii(bytes, buf)
@@ -315,7 +315,7 @@ fn encode_ext_val_as_object(
 ) -> Result[String, String] {
   let sorted = names.copy()
   sorted.sort_by(fn(a, b) { str_lex_cmp(a, b) })
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('{')
   let mut first = true
   for name in sorted {
@@ -361,7 +361,7 @@ fn encode_sequence(
   state : EncodeState,
   depth : Int,
 ) -> Result[String, String] {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('[')
   let mut first = true
   let mut i = 0
@@ -410,7 +410,7 @@ fn encode_dict_val(
     return Err(e)
   }
   pairs.sort_by(fn(a, b) { str_lex_cmp(a.0, b.0) })
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('{')
   let mut first = true
   for pair in pairs {
@@ -539,7 +539,7 @@ fn parse_json_string(
   start : Int,
 ) -> Result[(String, Int), (Int, String)] {
   let len = chars.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = start + 1
   while i < len {
     let c = chars[i]
@@ -908,7 +908,7 @@ fn parse_json_number(
       break
     }
   }
-  let nbuf = StringBuilder::new()
+  let nbuf = StringBuilder()
   for idx in i..<j {
     nbuf.write_char(chars[idx])
   }
@@ -1173,7 +1173,7 @@ pub fn indent_json(
   }
   let chars = s.to_array()
   let len = chars.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let stack : Array[Context] = []
   let mut top_done = false
   let mut i = 0
@@ -1420,7 +1420,7 @@ pub fn indent_json(
           break
         }
       }
-      let tok_buf = StringBuilder::new()
+      let tok_buf = StringBuilder()
       for k in tok_start..<i {
         tok_buf.write_char(chars[k])
       }

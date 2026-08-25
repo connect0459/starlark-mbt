@@ -600,7 +600,7 @@ test "encode surfaces an advertised attribute that resolves to nothing" {
 
 ///|
 test "decode nesting depth limit: moderate nesting (100 levels) succeeds" {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for _ in 0..<100 {
     buf.write_char('[')
   }

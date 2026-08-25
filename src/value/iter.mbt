@@ -277,7 +277,7 @@ fn string_codepoints_iter(c : StarlarkStringCodepoints) -> StarlarkIterator {
     {
       next_fn: fn() -> Value? {
         if cur.pos < chars.length() {
-          let buf = StringBuilder::new()
+          let buf = StringBuilder()
           buf.write_char(chars[cur.pos])
           cur.pos += 1
           Some(String(StarlarkString::new(buf.to_string())))

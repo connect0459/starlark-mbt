@@ -27,7 +27,7 @@ fn value_to_json(v : @value.Value) -> String {
 /// Formats a successfully executed `Module` as the standard JSON response
 /// `{"globals":{...},"output":"..."}`.
 fn format_module(m : @eval.Module, out_buf : @buffer.Buffer) -> String {
-  let gbuf = StringBuilder::new()
+  let gbuf = StringBuilder()
   gbuf.write_string("{")
   let mut first = true
   for name in m.global_names() {

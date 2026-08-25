@@ -50,7 +50,7 @@ extern "C" fn ffi_get_local_tz_at(unix_time : Int64, abbr_out : Bytes) -> Int = 
 
 ///|
 fn bytes_to_ascii_string(buf : Bytes) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let mut i = 0
   while i < buf.length() {
     let b = buf[i].to_int()

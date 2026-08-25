@@ -65,7 +65,7 @@ fn struct_repr_depth(
   entries : Array[(String, @value.Value)],
   depth : Int,
 ) -> Result[String, String] {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(ctor_display(ctor))
   buf.write_char('(')
   for i, e in entries {

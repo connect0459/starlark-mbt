@@ -1217,7 +1217,7 @@ fn int_to_octal(n : Int) -> String {
     return "0"
   }
   let mut v = n
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut shift = 1
   while shift * 8 <= v {
     shift *= 8
@@ -1250,7 +1250,7 @@ fn hex_char_upper(n : Int) -> Char {
 
 ///|
 fn int_to_hex4_upper(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char(hex_char_upper((n >> 12) & 0xF))
   buf.write_char(hex_char_upper((n >> 8) & 0xF))
   buf.write_char(hex_char_upper((n >> 4) & 0xF))

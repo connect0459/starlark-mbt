@@ -351,7 +351,7 @@ pub fn CallStack::to_string(self : CallStack) -> String {
   if self.frames.is_empty() {
     return ""
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("Traceback (most recent call last):\n")
   for frame in self.frames {
     buf.write_string("  \{frame.pos.to_string()}: in \{frame.name}\n")

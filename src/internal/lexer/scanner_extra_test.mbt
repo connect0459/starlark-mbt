@@ -4,7 +4,7 @@
 
 ///|
 fn rep(c : String, n : Int) -> String {
-  let b = StringBuilder::new()
+  let b = StringBuilder()
   for _ in 0..<n {
     b.write_string(c)
   }

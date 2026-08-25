@@ -4,7 +4,7 @@
 ///|
 fn scan(src : String) -> String {
   let sc = Scanner::new("foo.star", src)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut first = true
   while true {
     let result = sc.next_token()
@@ -100,7 +100,7 @@ fn pad_left_zeros(s : String, width : Int) -> String {
 
 ///|
 fn quote_str(s : String) -> String {
-  let b = StringBuilder::new()
+  let b = StringBuilder()
   b.write_char('"')
   for c in s {
     match c {
@@ -131,7 +131,7 @@ fn quote_str(s : String) -> String {
 
 ///|
 fn quote_bytes(bs : Bytes) -> String {
-  let b = StringBuilder::new()
+  let b = StringBuilder()
   b.write_string("b\"")
   for i in 0..<bs.length() {
     let n = bs[i].to_int()

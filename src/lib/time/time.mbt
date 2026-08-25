@@ -500,7 +500,7 @@ fn duration_binary(
 fn fmt_frac_digits(frac : Int64, prec : Int) -> String {
   let s = frac.to_string()
   let pad_len = prec - s.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for _ in 0..<pad_len {
     buf.write_char('0')
   }
@@ -532,7 +532,7 @@ fn fmt_duration(ns : Int64) -> String {
   }
   let u_secs_per_hour : UInt64 = 3600UL
   let u_secs_per_minute : UInt64 = 60UL
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let abs_ns : UInt64 = if ns < 0L {
     0UL - ns.reinterpret_as_uint64()
   } else {
@@ -615,7 +615,7 @@ fn make_duration(ns : Int64) -> @value.Value {
 
 ///|
 fn parse_digits_at(chars : Array[Char], i : Int) -> (String, Int) {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut j = i
   while j < chars.length() && chars[j] >= '0' && chars[j] <= '9' {
     buf.write_char(chars[j])
@@ -738,7 +738,7 @@ fn parse_duration_component(
     return Err("time: invalid duration \"\{orig}\"")
   }
   let mut i = 0
-  let num_buf = StringBuilder::new()
+  let num_buf = StringBuilder()
   while i < len && (chars[i] == '.' || (chars[i] >= '0' && chars[i] <= '9')) {
     num_buf.write_char(chars[i])
     i += 1
@@ -747,7 +747,7 @@ fn parse_duration_component(
   if num_str.is_empty() {
     return Err("time: invalid duration \"\{orig}\"")
   }
-  let unit_buf = StringBuilder::new()
+  let unit_buf = StringBuilder()
   while i < len {
     let c = chars[i]
     // Accept both the MICRO SIGN (U+00B5) and GREEK SMALL LETTER MU (U+03BC),
@@ -888,7 +888,7 @@ fn fmt_time_at_zone(
   let (year, month, day, hour, minute, second) = decompose_unix_sec(
     sec, tz_offset,
   )
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   write_year_pad4(buf, year)
   buf.write_char('-')
   write_pad2(buf, month)
@@ -950,7 +950,7 @@ fn weekday_index(year : Int64, month : Int, day : Int) -> Int {
 ///|
 fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
   let s = nsec.to_string()
-  let padded = StringBuilder::new()
+  let padded = StringBuilder()
   let pad_len = 9 - s.length()
   for _ in 0..<pad_len {
     padded.write_char('0')
@@ -963,7 +963,7 @@ fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
     let chars = full.to_array()
     chars[0:digits]
     .iter()
-    .fold(init=StringBuilder::new(), fn(buf, c) {
+    .fold(init=StringBuilder(), fn(buf, c) {
       buf.write_char(c)
       buf
     })
@@ -1014,7 +1014,7 @@ fn fmt_go_layout(
   tz_name : String,
   layout : String,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let lchars = layout.to_array()
   let n = lchars.length()
   let mut i = 0
@@ -1507,7 +1507,7 @@ fn write_hex_escape(buf : StringBuilder, b : Int) -> Unit {
 
 ///|
 fn time_quote(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('"')
   for c in s {
     let cp = c.to_int()
@@ -1555,7 +1555,7 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
   if offset_sec == 0 {
     "UTC"
   } else {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     write_tz_offset(buf, offset_sec)
     buf.to_string()
   }
@@ -1609,7 +1609,7 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
   let len = chars.length()
   let rfc_layout = "2006-01-02T15:04:05Z07:00"
   fn cp_err(pos : Int, tok : String) -> String {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for k in pos..<chars.length() {
       buf.write_char(chars[k])
     }
@@ -1734,14 +1734,14 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
       return Err("parsing time \"\{s}\": time zone offset minute out of range")
     }
     let offset = sign * (tz_hour * secs_per_hour + tz_minute * secs_per_minute)
-    let name_buf = StringBuilder::new()
+    let name_buf = StringBuilder()
     write_tz_offset(name_buf, offset)
     (offset, j, name_buf.to_string())
   } else {
     return Err(cp_err(i, "Z07:00"))
   }
   if tz_end != len {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for k in tz_end..<chars.length() {
       buf.write_char(chars[k])
     }
@@ -1969,7 +1969,7 @@ fn parse_go_layout(
   let err = fn(
     tok : String,
   ) -> Result[(Int, Int, Int, Int, Int, Int, Int, (Int, String)?), String] {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for k in vi..<vn {
       buf.write_char(vc[k])
     }
@@ -2018,7 +2018,7 @@ fn parse_go_layout(
           None => false
           Some((mm, k)) => {
             let offset = sign * (hh * secs_per_hour + mm * secs_per_minute)
-            let name_buf = StringBuilder::new()
+            let name_buf = StringBuilder()
             write_tz_offset(name_buf, offset)
             parsed_tz = Some((offset, name_buf.to_string()))
             vi = k
@@ -2048,7 +2048,7 @@ fn parse_go_layout(
           return false
         }
         let offset = sign * hh * secs_per_hour
-        let name_buf = StringBuilder::new()
+        let name_buf = StringBuilder()
         write_tz_offset(name_buf, offset)
         parsed_tz = Some((offset, name_buf.to_string()))
         vi = j
@@ -2295,7 +2295,7 @@ fn parse_go_layout(
       }
       let max_digits = lj - li - 1
       let frac_tok = {
-        let b = StringBuilder::new()
+        let b = StringBuilder()
         for k in li..<lj {
           b.write_char(lc[k])
         }
@@ -2333,7 +2333,7 @@ fn parse_go_layout(
     }
   }
   if vi != vn {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for k in vi..<vn {
       buf.write_char(vc[k])
     }
