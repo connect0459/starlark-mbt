@@ -28,12 +28,12 @@ priv struct EvalContext {
 
 ///|
 fn EvalEnv::new() -> EvalEnv {
-  { locals: Map([]), parent: None }
+  { locals: Map([]), parent: None, }
 }
 
 ///|
 fn EvalEnv::for_module(parent : EvalEnv) -> EvalEnv {
-  { locals: Map([]), parent: Some(parent) }
+  { locals: Map([]), parent: Some(parent), }
 }
 
 ///|
@@ -68,7 +68,7 @@ fn EvalContext::new(thread : Thread, opts : Options) -> EvalContext {
     )
   }
   let global_env = EvalEnv::for_module(base)
-  { thread, opts, global_env, vm: None }
+  { thread, opts, global_env, vm: None, }
 }
 
 ///|

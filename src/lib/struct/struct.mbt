@@ -342,7 +342,7 @@ pub fn make_struct(
 ) -> @value.Value {
   let sorted = entries.copy()
   sorted.sort_by(fn(a, b) { str_lex_cmp(a.0, b.0) })
-  let frozen_ref : Ref[Bool] = { val: false }
+  let frozen_ref : Ref[Bool] = { val: false, }
   @value.Value::ExtVal(
     @value.CustomValue::new(fn() { "struct" }, fn() { true }, fn() {
       struct_repr(ctor, sorted)
@@ -458,7 +458,7 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
 }
 
 ///|
-let symbol_counter : Ref[Int] = { val: 0 }
+let symbol_counter : Ref[Int] = { val: 0, }
 
 ///|
 fn next_symbol_id() -> Int {

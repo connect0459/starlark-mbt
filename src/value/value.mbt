@@ -24,7 +24,7 @@ pub struct StarlarkString {
 /// Returns a new `StarlarkString` backed by the UTF-8 encoding of `raw`.
 pub fn StarlarkString::new(raw : String) -> StarlarkString {
   let bytes = @utf8.encode(raw)
-  { raw, bytes }
+  { raw, bytes, }
 }
 
 ///|
@@ -39,7 +39,7 @@ pub fn StarlarkString::new(raw : String) -> StarlarkString {
 /// sequences with U+FFFD.
 pub fn StarlarkString::from_bytes(bytes : Bytes) -> StarlarkString {
   let raw = @utf8.decode_lossy(bytes[:])
-  { raw, bytes }
+  { raw, bytes, }
 }
 
 ///|
@@ -114,7 +114,7 @@ pub struct StarlarkList {
 ///
 /// Returns a new mutable `StarlarkList` containing `items`.
 pub fn StarlarkList::new(items : Array[Value]) -> StarlarkList {
-  { items, frozen: false, itercount: 0 }
+  { items, frozen: false, itercount: 0, }
 }
 
 ///|
@@ -454,7 +454,7 @@ pub fn StarlarkRange::new(
   stop : Int64,
   step : Int64,
 ) -> StarlarkRange {
-  { start, stop, step }
+  { start, stop, step, }
 }
 
 ///|
@@ -903,7 +903,7 @@ pub fn BuiltinCallCtx::new(
   call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String],
   get_local? : (String) -> Value? = fn(_) { None },
 ) -> BuiltinCallCtx {
-  { call, get_local_fn: get_local }
+  { call, get_local_fn: get_local, }
 }
 
 ///|
@@ -964,7 +964,7 @@ pub struct StarlarkBuiltinFunc {
 /// Returns a `StarlarkBuiltinFunc` with `body` set to `None`.
 #internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkBuiltinFunc::dispatch(name : String) -> StarlarkBuiltinFunc {
-  { name, body: None, recv: None }
+  { name, body: None, recv: None, }
 }
 
 ///|
@@ -997,7 +997,7 @@ pub fn StarlarkBuiltinFunc::bind_receiver(
   self : StarlarkBuiltinFunc,
   recv : Value,
 ) -> StarlarkBuiltinFunc {
-  { ..self, recv: Some(recv) }
+  { ..self, recv: Some(recv), }
 }
 
 ///|
@@ -1031,7 +1031,7 @@ pub fn StarlarkBuiltinFunc::call_body(
 /// identity comparison (`==`) and hashing of bound methods, since two distinct
 /// bound-method values wrapping the same receiver and name must still compare
 /// unequal.
-let bound_method_id_counter : Ref[Int] = { val: 0 }
+let bound_method_id_counter : Ref[Int] = { val: 0, }
 
 ///|
 /// A built-in method bound to a specific receiver. Each value is assigned a
@@ -1060,7 +1060,7 @@ pub fn StarlarkBoundMethod::new(
 ) -> StarlarkBoundMethod {
   let id = bound_method_id_counter.val
   bound_method_id_counter.val += 1
-  { recv, method_name, id }
+  { recv, method_name, id, }
 }
 
 ///|
@@ -1102,7 +1102,7 @@ pub fn StarlarkModule::new(
   name : String,
   attrs : Map[String, Value],
 ) -> StarlarkModule {
-  { name, attrs }
+  { name, attrs, }
 }
 
 ///|
@@ -1158,7 +1158,7 @@ pub fn StarlarkStringElems::new(
   s : StarlarkString,
   ords : Bool,
 ) -> StarlarkStringElems {
-  { s, ords }
+  { s, ords, }
 }
 
 ///|
@@ -1205,7 +1205,7 @@ pub fn StarlarkStringCodepoints::new(
   s : StarlarkString,
   ords : Bool,
 ) -> StarlarkStringCodepoints {
-  { s, ords }
+  { s, ords, }
 }
 
 ///|
@@ -1405,7 +1405,7 @@ pub fn Value::new_builtin(
     String,
   ],
 ) -> Value {
-  Builtin({ name, body: Some(body), recv: None })
+  Builtin({ name, body: Some(body), recv: None, })
 }
 
 ///|

@@ -67,7 +67,7 @@ fn decode_code(code : Bytes) -> Array[Instr] raise DisasmErr {
     } else {
       0
     }
-    out.push(Instr::{ pc: start, op, arg })
+    out.push(Instr::{ pc: start, op, arg, })
   }
   out
 }

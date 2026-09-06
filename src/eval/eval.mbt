@@ -138,7 +138,7 @@ pub fn Options::load_binds_globally(self : Options) -> Bool {
 /// }
 /// ```
 pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
-  { ..self, load_binds_globally: v }
+  { ..self, load_binds_globally: v, }
 }
 
 ///|
@@ -160,7 +160,7 @@ pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
 /// }
 /// ```
 pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
-  { ..self, allow_recursion: v }
+  { ..self, allow_recursion: v, }
 }
 
 ///|
@@ -182,7 +182,7 @@ pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
 /// }
 /// ```
 pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
-  { ..self, allow_set: v }
+  { ..self, allow_set: v, }
 }
 
 ///|
@@ -204,7 +204,7 @@ pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
 /// }
 /// ```
 pub fn Options::with_allow_global_reassign(self : Options, v : Bool) -> Options {
-  { ..self, allow_global_reassign: v }
+  { ..self, allow_global_reassign: v, }
 }
 
 ///|
@@ -226,7 +226,7 @@ pub fn Options::with_allow_global_reassign(self : Options, v : Bool) -> Options 
 /// }
 /// ```
 pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
-  { ..self, allow_lambda: v }
+  { ..self, allow_lambda: v, }
 }
 
 ///|
@@ -248,7 +248,7 @@ pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
 /// }
 /// ```
 pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
-  { ..self, allow_while: v }
+  { ..self, allow_while: v, }
 }
 
 ///|
@@ -270,7 +270,7 @@ pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
 /// }
 /// ```
 pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
-  { ..self, allow_bytes: v }
+  { ..self, allow_bytes: v, }
 }
 
 ///|
@@ -292,7 +292,7 @@ pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
 /// }
 /// ```
 pub fn Options::with_allow_float(self : Options, v : Bool) -> Options {
-  { ..self, allow_float: v }
+  { ..self, allow_float: v, }
 }
 
 ///|
@@ -317,7 +317,7 @@ pub fn Options::with_allow_top_level_control(
   self : Options,
   v : Bool,
 ) -> Options {
-  { ..self, allow_top_level_control: v }
+  { ..self, allow_top_level_control: v, }
 }
 
 ///|
@@ -331,7 +331,7 @@ pub struct Universe {
 ///|
 /// Creates an empty `Universe` with no predeclared names.
 pub fn Universe::new() -> Universe {
-  { bindings: Map([]) }
+  { bindings: Map([]), }
 }
 
 ///|
@@ -343,7 +343,7 @@ pub fn Universe::new() -> Universe {
 ///
 /// Returns a `Universe` backed by `m`.
 pub fn Universe::from_map(m : Map[String, @value.Value]) -> Universe {
-  { bindings: m }
+  { bindings: m, }
 }
 
 ///|
@@ -357,7 +357,7 @@ pub fn Universe::standard() -> Universe {
   for name in builtin_names {
     m[name] = @value.Value::Builtin(@value.StarlarkBuiltinFunc::dispatch(name))
   }
-  { bindings: m }
+  { bindings: m, }
 }
 
 ///|
@@ -470,7 +470,7 @@ pub struct Predeclared {
 ///|
 /// Creates an empty `Predeclared` set.
 pub fn Predeclared::new() -> Predeclared {
-  { bindings: Map([]) }
+  { bindings: Map([]), }
 }
 
 ///|
@@ -482,7 +482,7 @@ pub fn Predeclared::new() -> Predeclared {
 ///
 /// Returns a `Predeclared` backed by `m`.
 pub fn Predeclared::from_map(m : Map[String, @value.Value]) -> Predeclared {
-  { bindings: m }
+  { bindings: m, }
 }
 
 ///|
@@ -913,7 +913,7 @@ pub struct Module {
 ///|
 /// Creates an empty, unfrozen `Module`.
 pub fn Module::new() -> Module {
-  { globals: @value.StarlarkDict::new(), frozen: false, predeclared: Map([]) }
+  { globals: @value.StarlarkDict::new(), frozen: false, predeclared: Map([]), }
 }
 
 ///|
@@ -1072,7 +1072,7 @@ pub fn call(
   // Route through a VM so a bytecode-compiled function (which carries its own
   // module) runs on a VM frame; builtins and bound methods are dispatched
   // through the shared value-level `call_value`.
-  let vm = VM::{ ctx, active: [] }
+  let vm = VM::{ ctx, active: [], }
   ctx.vm = Some(vm)
   Ok(vm.call_value(func, args, kwargs, pos)) catch {
     EvalErr(e) => Err(e)
@@ -1339,7 +1339,7 @@ pub fn exec_file_with_predeclared(
     Ok(pair) => pair
     Err(e) => return Err(e)
   }
-  let m = { ..Module::new(), predeclared: predeclared.bindings }
+  let m = { ..Module::new(), predeclared: predeclared.bindings, }
   module_output(prog, rm, opts).each(fn(name, v) {
     let key = @value.Value::String(@value.StarlarkString::new(name))
     m.globals.set(key, v) |> ignore
@@ -1390,7 +1390,7 @@ pub fn exec_repl_chunk(
     Err(e) => return Err(@errors.EvalError::simple(e.to_string()))
   }
   // REPL chunks bind globally so each chunk's bindings persist into the next.
-  let chunk_opts = { ..opts, load_binds_globally: true }
+  let chunk_opts = { ..opts, load_binds_globally: true, }
   let ctx = EvalContext::new(thread, chunk_opts)
   globals.each(fn(k, v) { ctx.global_env.bind(k, v) })
   let extra_names = globals.keys()

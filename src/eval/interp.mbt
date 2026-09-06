@@ -351,7 +351,7 @@ fn run_program_vm(
   init? : (String) -> @value.Value? = fn(_) { None },
   frame_name? : String = "<toplevel>",
 ) -> Result[RunModule, @errors.EvalError] {
-  let vm = VM::{ ctx, active: [] }
+  let vm = VM::{ ctx, active: [], }
   let m = RunModule::{
     prog,
     globals: Array::make(prog.globals.length(), None),

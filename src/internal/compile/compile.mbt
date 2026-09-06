@@ -240,7 +240,7 @@ fn Fcomp::set_stack(self : Fcomp, h : Int) -> Unit {
 
 ///|
 fn Fcomp::emit0(self : Fcomp, op : Opcode, pop : Int, push : Int) -> Unit {
-  self.instrs.push({ op, arg: 0, is_jump: false, pos: self.pending_pos })
+  self.instrs.push({ op, arg: 0, is_jump: false, pos: self.pending_pos, })
   self.stack(pop, push)
 }
 
@@ -252,7 +252,7 @@ fn Fcomp::emit1(
   pop : Int,
   push : Int,
 ) -> Unit {
-  self.instrs.push({ op, arg, is_jump: false, pos: self.pending_pos })
+  self.instrs.push({ op, arg, is_jump: false, pos: self.pending_pos, })
   self.stack(pop, push)
 }
 
@@ -266,7 +266,7 @@ fn Fcomp::emit_jump(
   pop : Int,
   push : Int,
 ) -> Unit {
-  self.instrs.push({ op, arg: label, is_jump: true, pos: self.pending_pos })
+  self.instrs.push({ op, arg: label, is_jump: true, pos: self.pending_pos, })
   self.stack(pop, push)
 }
 
@@ -383,7 +383,7 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
         let line = pp.line()
         let col = pp.col()
         if line != last_line || col != last_col {
-          pclinetab.push(PcLine::{ pc: code.length(), line, col })
+          pclinetab.push(PcLine::{ pc: code.length(), line, col, })
           last_line = line
           last_col = col
         }
@@ -1141,7 +1141,7 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
         slots.push(slot)
       }
       let idx = self.pcomp.load_stmts.length()
-      self.pcomp.load_stmts.push({ path, pos, exports, locals, slots })
+      self.pcomp.load_stmts.push({ path, pos, exports, locals, slots, })
       self.set_pos(pos)
       self.emit1(Opcode::Load, idx, 0, 0)
     }

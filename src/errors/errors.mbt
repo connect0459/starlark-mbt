@@ -18,7 +18,7 @@ pub struct Position {
 ///
 /// Returns a new `Position` value.
 pub fn Position::new(filename : String, line : Int, col : Int) -> Position {
-  { filename, line, col }
+  { filename, line, col, }
 }
 
 ///|
@@ -116,7 +116,7 @@ pub(all) enum SyntaxErrorKind {
 ///
 /// Returns a new `SyntaxError` value.
 pub fn SyntaxError::new(pos : Position, msg : String) -> SyntaxError {
-  { pos, msg, kind: Other }
+  { pos, msg, kind: Other, }
 }
 
 ///|
@@ -134,7 +134,7 @@ pub fn SyntaxError::with_kind(
   msg : String,
   kind : SyntaxErrorKind,
 ) -> SyntaxError {
-  { pos, msg, kind }
+  { pos, msg, kind, }
 }
 
 ///|
@@ -186,7 +186,7 @@ pub struct ResolveError {
 ///
 /// Returns a new `ResolveError` value.
 pub fn ResolveError::new(pos : Position, msg : String) -> ResolveError {
-  { pos, msg }
+  { pos, msg, }
 }
 
 ///|
@@ -231,7 +231,7 @@ pub struct Binding {
 ///
 /// Returns a new `Binding` value.
 pub fn Binding::new(name : String, pos : Position) -> Binding {
-  { name, pos }
+  { name, pos, }
 }
 
 ///|
@@ -268,7 +268,7 @@ pub struct CallFrame {
 ///
 /// Returns a new `CallFrame` value.
 pub fn CallFrame::new(name : String, pos : Position) -> CallFrame {
-  { name, pos }
+  { name, pos, }
 }
 
 ///|
@@ -377,7 +377,7 @@ pub struct EvalError {
 ///
 /// Returns a new `EvalError` with an empty call stack and no cause.
 pub fn EvalError::simple(msg : String) -> EvalError {
-  { msg, call_stack: CallStack::new([]), cause: None }
+  { msg, call_stack: CallStack::new([]), cause: None, }
 }
 
 ///|
@@ -390,7 +390,7 @@ pub fn EvalError::simple(msg : String) -> EvalError {
 ///
 /// Returns a new `EvalError` with the given message and stack, and no cause.
 pub fn EvalError::with_stack(msg : String, call_stack : CallStack) -> EvalError {
-  { msg, call_stack, cause: None }
+  { msg, call_stack, cause: None, }
 }
 
 ///|
@@ -409,7 +409,7 @@ pub fn EvalError::with_cause(
   call_stack : CallStack,
   cause : EvalError,
 ) -> EvalError {
-  { msg, call_stack, cause: Some(cause) }
+  { msg, call_stack, cause: Some(cause), }
 }
 
 ///|

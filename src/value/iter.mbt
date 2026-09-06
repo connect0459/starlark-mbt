@@ -126,7 +126,7 @@ fn list_iter(l : StarlarkList) -> StarlarkIterator {
   if !l.frozen {
     l.itercount += 1
   }
-  let cur = IterCursor::{ pos: 0 }
+  let cur = IterCursor::{ pos: 0, }
   {
     next_fn: fn() -> Value? {
       if cur.pos < l.items.length() {
@@ -143,7 +143,7 @@ fn list_iter(l : StarlarkList) -> StarlarkIterator {
 
 ///|
 fn tuple_iter(t : Array[Value]) -> StarlarkIterator {
-  let cur = IterCursor::{ pos: 0 }
+  let cur = IterCursor::{ pos: 0, }
   {
     next_fn: fn() -> Value? {
       if cur.pos < t.length() {
@@ -162,7 +162,7 @@ fn tuple_iter(t : Array[Value]) -> StarlarkIterator {
 fn dict_key_iter(d : StarlarkDict) -> StarlarkIterator {
   d.iter_begin()
   let snap = d.keys()
-  let cur = IterCursor::{ pos: 0 }
+  let cur = IterCursor::{ pos: 0, }
   {
     next_fn: fn() -> Value? {
       if cur.pos < snap.length() {
@@ -182,7 +182,7 @@ fn set_key_iter(s : StarlarkSet) -> StarlarkIterator {
   s.iter_begin()
   let snap : Array[Value] = []
   s.each(fn(k) { snap.push(k) })
-  let cur = IterCursor::{ pos: 0 }
+  let cur = IterCursor::{ pos: 0, }
   {
     next_fn: fn() -> Value? {
       if cur.pos < snap.length() {
@@ -222,7 +222,7 @@ fn range_iter(r : StarlarkRange) -> StarlarkIterator {
 /// yields each byte as a one-byte `String`.
 fn string_elems_iter(e : StarlarkStringElems) -> StarlarkIterator {
   let bytes = e.s.bytes
-  let cur = IterCursor::{ pos: 0 }
+  let cur = IterCursor::{ pos: 0, }
   if e.ords {
     {
       next_fn: fn() -> Value? {
@@ -259,7 +259,7 @@ fn string_elems_iter(e : StarlarkStringElems) -> StarlarkIterator {
 /// yields each codepoint as a single-character `String`.
 fn string_codepoints_iter(c : StarlarkStringCodepoints) -> StarlarkIterator {
   let chars = c.s.raw.to_array()
-  let cur = IterCursor::{ pos: 0 }
+  let cur = IterCursor::{ pos: 0, }
   if c.ords {
     {
       next_fn: fn() -> Value? {
@@ -293,7 +293,7 @@ fn string_codepoints_iter(c : StarlarkStringCodepoints) -> StarlarkIterator {
 ///|
 fn bytes_elems_iter(e : StarlarkBytesElems) -> StarlarkIterator {
   let b = e.b
-  let cur = IterCursor::{ pos: 0 }
+  let cur = IterCursor::{ pos: 0, }
   {
     next_fn: fn() -> Value? {
       if cur.pos < b.length() {

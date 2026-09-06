@@ -24,8 +24,8 @@ impl @value.Unpacker for IntCell with fn unpack(self, v) {
 
 ///|
 test "unpack_args_with dispatches matched arguments to custom Unpacker targets" {
-  let n = IntCell::{ value: 0 }
-  let m = IntCell::{ value: -1 }
+  let n = IntCell::{ value: 0, }
+  let m = IntCell::{ value: -1, }
   let result = @unpack.unpack_args_with(
     "f",
     [@value.Value::new_int(7L)],
@@ -39,7 +39,7 @@ test "unpack_args_with dispatches matched arguments to custom Unpacker targets" 
 
 ///|
 test "unpack_args_with surfaces an error when a target rejects its value" {
-  let n = IntCell::{ value: 0 }
+  let n = IntCell::{ value: 0, }
   let result = @unpack.unpack_args_with(
     "f",
     [@value.Value::new_string("nope")],

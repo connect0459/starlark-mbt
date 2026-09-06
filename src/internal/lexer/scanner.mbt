@@ -267,10 +267,10 @@ pub fn Scanner::next_token(
       let pos = self.current_pos()
       if self.dents < 0 {
         self.dents += 1
-        return Ok({ tok: Outdent, pos })
+        return Ok({ tok: Outdent, pos, })
       } else {
         self.dents -= 1
-        return Ok({ tok: Indent, pos })
+        return Ok({ tok: Indent, pos, })
       }
     }
 
@@ -305,7 +305,7 @@ pub fn Scanner::next_token(
       }
       let pos = self.current_pos()
       self.read_byte() |> ignore
-      return Ok({ tok: Newline, pos })
+      return Ok({ tok: Newline, pos, })
     }
 
     // EOF.
@@ -319,11 +319,11 @@ pub fn Scanner::next_token(
           // Emit synthetic NEWLINE before closing OUTDENTs.
           self.line_start = true
           let pos = self.current_pos()
-          return Ok({ tok: Newline, pos })
+          return Ok({ tok: Newline, pos, })
         }
       }
       let pos = self.current_pos()
-      return Ok({ tok: EOF, pos })
+      return Ok({ tok: EOF, pos, })
     }
 
     // Explicit line continuation.
@@ -385,8 +385,8 @@ pub fn Scanner::next_token(
       let raw_bytes = self.collect_ident_bytes()
       let name = @utf8.decode_lossy(raw_bytes[:])
       match keyword_token(name) {
-        Some(kw) => return Ok({ tok: kw, pos: start })
-        None => return Ok({ tok: Ident(name), pos: start })
+        Some(kw) => return Ok({ tok: kw, pos: start, })
+        None => return Ok({ tok: Ident(name), pos: start, })
       }
     }
 
@@ -401,7 +401,7 @@ pub fn Scanner::next_token(
       } else {
         LBrace
       }
-      return Ok({ tok, pos: start })
+      return Ok({ tok, pos: start, })
     }
 
     // Closing brackets.
@@ -419,13 +419,13 @@ pub fn Scanner::next_token(
       } else {
         RBrace
       }
-      return Ok({ tok, pos: start })
+      return Ok({ tok, pos: start, })
     }
 
     // Comma.
     if c == b',' {
       self.read_byte() |> ignore
-      return Ok({ tok: Comma, pos: start })
+      return Ok({ tok: Comma, pos: start, })
     }
 
     // Number or dot.
@@ -481,29 +481,29 @@ fn Scanner::scan_operator(
       // + or +=
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: PlusAssign, pos: start })
+        return Ok({ tok: PlusAssign, pos: start, })
       }
-      Ok({ tok: Plus, pos: start })
+      Ok({ tok: Plus, pos: start, })
     }
     0x2D => {
       // - or -=
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: MinusAssign, pos: start })
+        return Ok({ tok: MinusAssign, pos: start, })
       }
-      Ok({ tok: Minus, pos: start })
+      Ok({ tok: Minus, pos: start, })
     }
     0x2A => {
       // * or *= or **
       if self.peek_byte() == b'*' {
         self.read_byte() |> ignore
-        return Ok({ tok: StarStar, pos: start })
+        return Ok({ tok: StarStar, pos: start, })
       }
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: StarAssign, pos: start })
+        return Ok({ tok: StarAssign, pos: start, })
       }
-      Ok({ tok: Star, pos: start })
+      Ok({ tok: Star, pos: start, })
     }
     0x2F => {
       // / or /= or // or //=
@@ -511,47 +511,47 @@ fn Scanner::scan_operator(
         self.read_byte() |> ignore
         if self.peek_byte() == b'=' {
           self.read_byte() |> ignore
-          return Ok({ tok: SlashSlashAssign, pos: start })
+          return Ok({ tok: SlashSlashAssign, pos: start, })
         }
-        return Ok({ tok: SlashSlash, pos: start })
+        return Ok({ tok: SlashSlash, pos: start, })
       }
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: SlashAssign, pos: start })
+        return Ok({ tok: SlashAssign, pos: start, })
       }
-      Ok({ tok: Slash, pos: start })
+      Ok({ tok: Slash, pos: start, })
     }
     0x25 => {
       // % or %=
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: PercentAssign, pos: start })
+        return Ok({ tok: PercentAssign, pos: start, })
       }
-      Ok({ tok: Percent, pos: start })
+      Ok({ tok: Percent, pos: start, })
     }
     0x26 => {
       // & or &=
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: AmpAssign, pos: start })
+        return Ok({ tok: AmpAssign, pos: start, })
       }
-      Ok({ tok: Amp, pos: start })
+      Ok({ tok: Amp, pos: start, })
     }
     0x7C => {
       // | or |=
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: PipeAssign, pos: start })
+        return Ok({ tok: PipeAssign, pos: start, })
       }
-      Ok({ tok: Pipe, pos: start })
+      Ok({ tok: Pipe, pos: start, })
     }
     0x5E => {
       // ^ or ^=
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: CircumflexAssign, pos: start })
+        return Ok({ tok: CircumflexAssign, pos: start, })
       }
-      Ok({ tok: Circumflex, pos: start })
+      Ok({ tok: Circumflex, pos: start, })
     }
     0x3C => {
       // < or <= or << or <<=
@@ -559,15 +559,15 @@ fn Scanner::scan_operator(
         self.read_byte() |> ignore
         if self.peek_byte() == b'=' {
           self.read_byte() |> ignore
-          return Ok({ tok: LtLtAssign, pos: start })
+          return Ok({ tok: LtLtAssign, pos: start, })
         }
-        return Ok({ tok: LtLt, pos: start })
+        return Ok({ tok: LtLt, pos: start, })
       }
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: Le, pos: start })
+        return Ok({ tok: Le, pos: start, })
       }
-      Ok({ tok: Lt, pos: start })
+      Ok({ tok: Lt, pos: start, })
     }
     0x3E => {
       // > or >= or >> or >>=
@@ -575,35 +575,35 @@ fn Scanner::scan_operator(
         self.read_byte() |> ignore
         if self.peek_byte() == b'=' {
           self.read_byte() |> ignore
-          return Ok({ tok: GtGtAssign, pos: start })
+          return Ok({ tok: GtGtAssign, pos: start, })
         }
-        return Ok({ tok: GtGt, pos: start })
+        return Ok({ tok: GtGt, pos: start, })
       }
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: Ge, pos: start })
+        return Ok({ tok: Ge, pos: start, })
       }
-      Ok({ tok: Gt, pos: start })
+      Ok({ tok: Gt, pos: start, })
     }
     0x3D => {
       // = or ==
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: Eql, pos: start })
+        return Ok({ tok: Eql, pos: start, })
       }
-      Ok({ tok: Assign, pos: start })
+      Ok({ tok: Assign, pos: start, })
     }
     0x21 => {
       // ! or !=
       if self.peek_byte() == b'=' {
         self.read_byte() |> ignore
-        return Ok({ tok: Neq, pos: start })
+        return Ok({ tok: Neq, pos: start, })
       }
       Err(self.make_error(start, "unexpected input character '!'"))
     }
-    0x7E => Ok({ tok: Tilde, pos: start }) // ~
-    0x3B => Ok({ tok: Semi, pos: start }) // ;
-    0x3A => Ok({ tok: Colon, pos: start }) // :
+    0x7E => Ok({ tok: Tilde, pos: start, }) // ~
+    0x3B => Ok({ tok: Semi, pos: start, }) // ;
+    0x3A => Ok({ tok: Colon, pos: start, }) // :
     _ => {
       // For ASCII (cn < 0x80) the single byte is the full rune.
       // For multi-byte UTF-8: read_byte() already consumed the leading byte;
@@ -644,7 +644,7 @@ fn Scanner::scan_number(
     // Dot: float if followed by digit, otherwise DOT token.
     self.read_byte() |> ignore
     if !is_digit_byte(self.peek_byte()) {
-      return Ok({ tok: Dot, pos: start })
+      return Ok({ tok: Dot, pos: start, })
     }
     raw.push(b'.')
     fraction = true
@@ -673,7 +673,7 @@ fn Scanner::scan_number(
       let s = @utf8.decode_lossy(Bytes::from_array(digits)[:])
       match parse_int_hex(s) {
         Err(e) => return Err(self.make_error(start, e))
-        Ok(v) => return Ok({ tok: Int(v), pos: start })
+        Ok(v) => return Ok({ tok: Int(v), pos: start, })
       }
     } else if n == b'o' || n == b'O' {
       // Octal: 0o[0-7]+
@@ -689,7 +689,7 @@ fn Scanner::scan_number(
       let s = @utf8.decode_lossy(Bytes::from_array(digits)[:])
       match parse_int_base(s, 8) {
         Err(e) => return Err(self.make_error(start, e))
-        Ok(v) => return Ok({ tok: Int(v), pos: start })
+        Ok(v) => return Ok({ tok: Int(v), pos: start, })
       }
     } else if n == b'b' || n == b'B' {
       // Binary: 0b[01]+
@@ -707,7 +707,7 @@ fn Scanner::scan_number(
       let s = @utf8.decode_lossy(Bytes::from_array(digits)[:])
       match parse_int_base(s, 2) {
         Err(e) => return Err(self.make_error(start, e))
-        Ok(v) => return Ok({ tok: Int(v), pos: start })
+        Ok(v) => return Ok({ tok: Int(v), pos: start, })
       }
     } else if n == b'.' {
       fraction = true
@@ -751,7 +751,7 @@ fn Scanner::scan_number(
         return Err(self.make_error(start, "invalid int literal"))
       } else {
         // Just 0 (or 00...0 which equals 0)
-        return Ok({ tok: Int(0N), pos: start })
+        return Ok({ tok: Int(0N), pos: start, })
       }
     }
   } else {
@@ -803,13 +803,13 @@ fn Scanner::scan_number(
   if fraction || exponent {
     match parse_float_str(raw_str) {
       Err(e) => Err(self.make_error(self.current_pos(), e))
-      Ok(f) => Ok({ tok: Float(f), pos: start })
+      Ok(f) => Ok({ tok: Float(f), pos: start, })
     }
   } else {
     match parse_int_decimal(raw_str) {
       Err(_) =>
         Err(self.make_error(self.current_pos(), "invalid decimal literal"))
-      Ok(n) => Ok({ tok: Int(n), pos: start })
+      Ok(n) => Ok({ tok: Int(n), pos: start, })
     }
   }
 }
@@ -850,9 +850,9 @@ fn Scanner::scan_string(
   }
   let content = Bytes::from_array(buf)
   if is_bytes {
-    Ok({ tok: Bytes(content), pos: start })
+    Ok({ tok: Bytes(content), pos: start, })
   } else {
-    Ok({ tok: Str(@utf8.decode_lossy(content[:])), pos: start })
+    Ok({ tok: Str(@utf8.decode_lossy(content[:])), pos: start, })
   }
 }
 

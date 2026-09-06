@@ -32,7 +32,7 @@ pub struct ReplState {
 ///|
 /// Creates an empty continuation state.
 pub fn ReplState::new() -> ReplState {
-  { lines: [], in_suite: false }
+  { lines: [], in_suite: false, }
 }
 
 ///|

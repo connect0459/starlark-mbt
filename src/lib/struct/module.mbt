@@ -48,7 +48,7 @@ pub fn make_module(
 ) -> @value.Value {
   let sorted = members.copy()
   sorted.sort_by(fn(a, b) { str_lex_cmp(a.0, b.0) })
-  let frozen_ref : Ref[Bool] = { val: false }
+  let frozen_ref : Ref[Bool] = { val: false, }
   @value.Value::ExtVal(
     @value.CustomValue::new(fn() { "module" }, fn() { true }, fn() {
       module_repr(name)

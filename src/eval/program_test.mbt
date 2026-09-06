@@ -2,7 +2,7 @@
 
 ///|
 test "Program: source_program parses and resolves without executing" {
-  let side_effects : Ref[Int] = { val: 0 }
+  let side_effects : Ref[Int] = { val: 0, }
   let pred = Predeclared::new()
   pred.set(
     "inc",
