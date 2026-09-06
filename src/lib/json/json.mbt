@@ -190,7 +190,7 @@ priv struct EncodeState {
 ///|
 /// Creates a fresh `EncodeState` with empty ancestor paths.
 fn EncodeState::new() -> EncodeState {
-  { list_path: [], dict_path: [], tuple_path: [] }
+  { list_path: [], dict_path: [], tuple_path: [], }
 }
 
 ///|

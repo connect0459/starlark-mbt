@@ -23,11 +23,11 @@ priv struct ParamInfo {
 /// - `"??"` suffix — optional; a caller-supplied `None` value is also treated as absent
 fn parse_param_spec(s : String) -> ParamInfo {
   if s.has_suffix("??") {
-    { name: s[0:s.length() - 2].to_owned(), optional: true, skip_none: true }
+    { name: s[0:s.length() - 2].to_owned(), optional: true, skip_none: true, }
   } else if s.has_suffix("?") {
-    { name: s[0:s.length() - 1].to_owned(), optional: true, skip_none: false }
+    { name: s[0:s.length() - 1].to_owned(), optional: true, skip_none: false, }
   } else {
-    { name: s, optional: false, skip_none: false }
+    { name: s, optional: false, skip_none: false, }
   }
 }
 
@@ -63,7 +63,7 @@ pub fn unpack_args(
     if infos[i].optional {
       seen_optional = true
     } else if seen_optional {
-      infos[i] = { ..infos[i], optional: true }
+      infos[i] = { ..infos[i], optional: true, }
     }
   }
   let result : Array[@value.Value?] = Array::make(n, None)

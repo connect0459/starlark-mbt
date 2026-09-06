@@ -133,7 +133,7 @@ pub fn file_program(
   let compiled = compile_resolved(file, opts) catch {
     @compile.CompileErr(msg) => return Err(@errors.EvalError::simple(msg))
   }
-  Ok({ filename: file.path(), opts, compiled })
+  Ok({ filename: file.path(), opts, compiled, })
 }
 
 ///|
@@ -264,7 +264,7 @@ pub fn Program::init(
     Err(e) => return Err(e)
   }
   // Unlike `exec_file`, the returned module is left unfrozen.
-  let m = { ..Module::new(), predeclared: predeclared.bindings }
+  let m = { ..Module::new(), predeclared: predeclared.bindings, }
   module_output(self.compiled, rm, self.opts).each(fn(name, v) {
     let key = @value.Value::String(@value.StarlarkString::new(name))
     m.globals.set(key, v) |> ignore

@@ -234,7 +234,7 @@ pub fn CustomValue::with_hash(
   self : CustomValue,
   hash_fn : () -> Result[UInt, String],
 ) -> CustomValue {
-  { ..self, hash_fn: Some(hash_fn) }
+  { ..self, hash_fn: Some(hash_fn), }
 }
 
 ///|
@@ -257,7 +257,7 @@ pub fn CustomValue::with_equals(
   self : CustomValue,
   equals_fn : (Value, Int) -> Result[Bool, String],
 ) -> CustomValue {
-  { ..self, equals_fn: Some(equals_fn) }
+  { ..self, equals_fn: Some(equals_fn), }
 }
 
 ///|
@@ -276,7 +276,11 @@ pub fn CustomValue::with_attrs(
   get_attr_fn : (String) -> Result[Value?, String],
   attr_names_fn : () -> Array[String],
 ) -> CustomValue {
-  { ..self, get_attr_fn: Some(get_attr_fn), attr_names_fn: Some(attr_names_fn) }
+  {
+    ..self,
+    get_attr_fn: Some(get_attr_fn),
+    attr_names_fn: Some(attr_names_fn),
+  }
 }
 
 ///|
@@ -297,7 +301,7 @@ pub fn CustomValue::with_internal_get_attr(
   self : CustomValue,
   internal_get_attr_fn : (String) -> Result[Value?, String],
 ) -> CustomValue {
-  { ..self, internal_get_attr_fn: Some(internal_get_attr_fn) }
+  { ..self, internal_get_attr_fn: Some(internal_get_attr_fn), }
 }
 
 ///|
@@ -313,7 +317,7 @@ pub fn CustomValue::with_set_field(
   self : CustomValue,
   set_field_fn : (String, Value) -> Result[Unit, String],
 ) -> CustomValue {
-  { ..self, set_field_fn: Some(set_field_fn) }
+  { ..self, set_field_fn: Some(set_field_fn), }
 }
 
 ///|
@@ -329,7 +333,7 @@ pub fn CustomValue::with_contains(
   self : CustomValue,
   contains_fn : (Value) -> Result[Bool, String],
 ) -> CustomValue {
-  { ..self, contains_fn: Some(contains_fn) }
+  { ..self, contains_fn: Some(contains_fn), }
 }
 
 ///|
@@ -346,7 +350,7 @@ pub fn CustomValue::with_iterate(
   self : CustomValue,
   iterate_fn : () -> Result[StarlarkIterator, String],
 ) -> CustomValue {
-  { ..self, iterate_fn: Some(iterate_fn) }
+  { ..self, iterate_fn: Some(iterate_fn), }
 }
 
 ///|
@@ -362,7 +366,7 @@ pub fn CustomValue::with_length(
   self : CustomValue,
   length_fn : () -> Int,
 ) -> CustomValue {
-  { ..self, length_fn: Some(length_fn) }
+  { ..self, length_fn: Some(length_fn), }
 }
 
 ///|
@@ -379,7 +383,7 @@ pub fn CustomValue::with_freeze(
   self : CustomValue,
   freeze_fn : () -> Unit,
 ) -> CustomValue {
-  { ..self, freeze_fn: Some(freeze_fn) }
+  { ..self, freeze_fn: Some(freeze_fn), }
 }
 
 ///|
@@ -398,7 +402,7 @@ pub fn CustomValue::with_binary(
   self : CustomValue,
   binary_fn : (String, Value, Bool) -> Result[Value, String]?,
 ) -> CustomValue {
-  { ..self, binary_fn: Some(binary_fn) }
+  { ..self, binary_fn: Some(binary_fn), }
 }
 
 ///|
@@ -416,7 +420,7 @@ pub fn CustomValue::with_unary(
   self : CustomValue,
   unary_fn : (String) -> Result[Value, String]?,
 ) -> CustomValue {
-  { ..self, unary_fn: Some(unary_fn) }
+  { ..self, unary_fn: Some(unary_fn), }
 }
 
 ///|
@@ -436,7 +440,7 @@ pub fn CustomValue::with_compare(
   self : CustomValue,
   compare_fn : (Value) -> Int?,
 ) -> CustomValue {
-  { ..self, compare_fn: Some(compare_fn) }
+  { ..self, compare_fn: Some(compare_fn), }
 }
 
 ///|
@@ -507,7 +511,7 @@ pub fn CustomValue::with_repr_depth(
   self : CustomValue,
   repr_depth_fn : (Int) -> Result[String, String],
 ) -> CustomValue {
-  { ..self, repr_depth_fn: Some(repr_depth_fn) }
+  { ..self, repr_depth_fn: Some(repr_depth_fn), }
 }
 
 ///|
@@ -571,7 +575,7 @@ pub fn CustomValue::with_hash_depth(
   self : CustomValue,
   hash_depth_fn : (Int) -> Result[UInt, String],
 ) -> CustomValue {
-  { ..self, hash_depth_fn: Some(hash_depth_fn) }
+  { ..self, hash_depth_fn: Some(hash_depth_fn), }
 }
 
 ///|
@@ -820,7 +824,7 @@ pub fn CustomValue::with_get_index(
   self : CustomValue,
   get_index_fn : (Int) -> Result[Value, String],
 ) -> CustomValue {
-  { ..self, get_index_fn: Some(get_index_fn) }
+  { ..self, get_index_fn: Some(get_index_fn), }
 }
 
 ///|
@@ -859,7 +863,7 @@ pub fn CustomValue::with_set_index(
   self : CustomValue,
   set_index_fn : (Int, Value) -> Result[Unit, String],
 ) -> CustomValue {
-  { ..self, set_index_fn: Some(set_index_fn) }
+  { ..self, set_index_fn: Some(set_index_fn), }
 }
 
 ///|
@@ -901,7 +905,7 @@ pub fn CustomValue::with_set_key(
   self : CustomValue,
   set_key_fn : (Value, Value) -> Result[Unit, String],
 ) -> CustomValue {
-  { ..self, set_key_fn: Some(set_key_fn) }
+  { ..self, set_key_fn: Some(set_key_fn), }
 }
 
 ///|
@@ -941,7 +945,7 @@ pub fn CustomValue::with_slice(
   self : CustomValue,
   slice_fn : (Int, Int, Int) -> Result[Value, String],
 ) -> CustomValue {
-  { ..self, slice_fn: Some(slice_fn) }
+  { ..self, slice_fn: Some(slice_fn), }
 }
 
 ///|
@@ -983,7 +987,7 @@ pub fn CustomValue::with_items(
   self : CustomValue,
   items_fn : () -> Result[Array[(Value, Value)], String],
 ) -> CustomValue {
-  { ..self, items_fn: Some(items_fn) }
+  { ..self, items_fn: Some(items_fn), }
 }
 
 ///|
@@ -1015,7 +1019,7 @@ pub fn CustomValue::with_call(
   self : CustomValue,
   call_fn : (Array[Value], Array[(String, Value)]) -> Result[Value, String],
 ) -> CustomValue {
-  { ..self, call_fn: Some(call_fn) }
+  { ..self, call_fn: Some(call_fn), }
 }
 
 ///|

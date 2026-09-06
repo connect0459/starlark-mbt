@@ -653,7 +653,7 @@ fn spell_suggest(name : String, candidates : Array[String]) -> String? {
 fn make_hasfields_fn() -> @value.Value {
   @value.Value::new_builtin("hasfields", fn(_call_ctx, _pos_args, _kw_args) {
     let storage : Map[String, @value.Value] = Map([])
-    let frozen : Ref[Bool] = { val: false }
+    let frozen : Ref[Bool] = { val: false, }
     let cv = @value.CustomValue::new(fn() { "hasfields" }, fn() { true }, fn() {
         "<hasfields>"
       })

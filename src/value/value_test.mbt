@@ -521,7 +521,7 @@ test "hash: nesting exactly at depth limit succeeds" {
 
 ///|
 test "hash: ExtVal with with_hash_depth threads depth to callback" {
-  let received_depth : Ref[Int] = { val: -1 }
+  let received_depth : Ref[Int] = { val: -1, }
   let cv = CustomValue::new(fn() { "T" }, fn() { true }, fn() { "T()" }).with_hash_depth(fn(
       d,
     ) {

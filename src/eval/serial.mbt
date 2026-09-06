@@ -36,7 +36,7 @@ priv struct Encoder {
 
 ///|
 fn Encoder::new() -> Encoder {
-  { buf: [] }
+  { buf: [], }
 }
 
 ///|
@@ -377,7 +377,7 @@ fn Decoder::decode_funcode(self : Decoder) -> @compile.Funcode raise SerialErr {
     let pc = self.uint()
     let line = self.uint()
     let col = self.uint()
-    pclinetab.push({ pc, line, col })
+    pclinetab.push({ pc, line, col, })
   }
   let locals : Array[@errors.Binding] = []
   for _ in 0..<self.uint() {
@@ -459,7 +459,7 @@ fn Decoder::decode_load_stmt(
   for _ in 0..<self.uint() {
     slots.push(self.uint())
   }
-  { path, pos, exports, locals, slots }
+  { path, pos, exports, locals, slots, }
 }
 
 ///|
@@ -572,7 +572,7 @@ pub fn compiled_program(data : Bytes) -> Result[Program, @errors.EvalError] {
 
 ///|
 fn decode_program(data : Bytes) -> Program raise SerialErr {
-  let header = { data, filename: "", pos: 0 }
+  let header = { data, filename: "", pos: 0, }
   if header.byte() != SerialMagic0 ||
     header.byte() != SerialMagic1 ||
     header.byte() != SerialMagic2 ||
@@ -584,8 +584,8 @@ fn decode_program(data : Bytes) -> Program raise SerialErr {
     raise SerialErr("unsupported version \{version}, expected \{SerialVersion}")
   }
   let path = header.str()
-  let dec = { ..header, filename: path }
+  let dec = { ..header, filename: path, }
   let opts = dec.decode_options()
   let compiled = dec.decode_compiled()
-  { filename: path, opts, compiled }
+  { filename: path, opts, compiled, }
 }

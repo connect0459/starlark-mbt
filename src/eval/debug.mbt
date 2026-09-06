@@ -39,7 +39,7 @@ fn DebugFrame::from_active(af : ActiveCallFrame) -> DebugFrame {
       None => ()
     }
   }
-  { callable_val: af.func_val, all_local_names, locals_map }
+  { callable_val: af.func_val, all_local_names, locals_map, }
 }
 
 ///|

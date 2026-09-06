@@ -228,7 +228,7 @@ pub struct File {
 ///
 /// Returns a new `File` AST node.
 pub fn File::new(path : String, stmts : Array[Stmt]) -> File {
-  { path, stmts }
+  { path, stmts, }
 }
 
 ///|

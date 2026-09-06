@@ -15,7 +15,7 @@ pub struct Cell {
 /// Creates an empty (unassigned) cell.
 #internal(unsafe, "closure machinery; not part of the public embedding API")
 pub fn Cell::new() -> Cell {
-  { v: None }
+  { v: None, }
 }
 
 ///|

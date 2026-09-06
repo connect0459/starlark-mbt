@@ -37,14 +37,14 @@ extend SimpleMap with IterableMapping::{items}
 
 ///|
 test "Mapping protocol: get returns value for existing key" {
-  let m : SimpleMap = { data: [(Value::Int(1N), Value::Bool(true))] }
+  let m : SimpleMap = { data: [(Value::Int(1N), Value::Bool(true))], }
   let result = m.mapping_get(Value::Int(1N))
   assert_true(result is Ok(Some(Value::Bool(true))))
 }
 
 ///|
 test "Mapping protocol: get returns None for missing key" {
-  let m : SimpleMap = { data: [] }
+  let m : SimpleMap = { data: [], }
   let result = m.mapping_get(Value::Int(42N))
   assert_true(result is Ok(None))
 }
@@ -135,14 +135,14 @@ extend SimpleInt with TotallyOrdered::{cmp}
 
 ///|
 test "Indexable protocol: get returns element at index" {
-  let s : SimpleSeq = { items: [Value::Int(10N), Value::Int(20N)] }
+  let s : SimpleSeq = { items: [Value::Int(10N), Value::Int(20N)], }
   assert_true(s.indexable_get(0) is Ok(Value::Int(10N)))
   assert_true(s.indexable_get(1) is Ok(Value::Int(20N)))
 }
 
 ///|
 test "Indexable protocol: len returns sequence length" {
-  let s : SimpleSeq = { items: [Value::None, Value::None, Value::None] }
+  let s : SimpleSeq = { items: [Value::None, Value::None, Value::None], }
   assert_eq(s.indexable_len(), 3)
 }
 
@@ -464,7 +464,7 @@ test "HasSetIndex protocol: set_index updates element" {
 
 ///|
 test "TotallyOrdered protocol: cmp returns negative when less" {
-  let a : SimpleInt = { val: 3 }
+  let a : SimpleInt = { val: 3, }
   match a.cmp(Value::Int(5N)) {
     Some(n) => assert_true(n < 0)
     None => fail("expected Some")
@@ -473,7 +473,7 @@ test "TotallyOrdered protocol: cmp returns negative when less" {
 
 ///|
 test "TotallyOrdered protocol: cmp returns zero when equal" {
-  let a : SimpleInt = { val: 5 }
+  let a : SimpleInt = { val: 5, }
   match a.cmp(Value::Int(5N)) {
     Some(n) => assert_eq(n, 0)
     None => fail("expected Some")
@@ -482,7 +482,7 @@ test "TotallyOrdered protocol: cmp returns zero when equal" {
 
 ///|
 test "TotallyOrdered protocol: cmp returns positive when greater" {
-  let a : SimpleInt = { val: 7 }
+  let a : SimpleInt = { val: 7, }
   match a.cmp(Value::Int(5N)) {
     Some(n) => assert_true(n > 0)
     None => fail("expected Some")
@@ -491,7 +491,7 @@ test "TotallyOrdered protocol: cmp returns positive when greater" {
 
 ///|
 test "TotallyOrdered protocol: cmp returns None for incompatible type" {
-  let a : SimpleInt = { val: 3 }
+  let a : SimpleInt = { val: 3, }
   assert_true(a.cmp(Value::None) == None)
 }
 

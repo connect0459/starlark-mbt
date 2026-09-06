@@ -232,7 +232,7 @@ pub fn ResolveOptions::with_allow_global_reassign(
   self : ResolveOptions,
   v : Bool,
 ) -> ResolveOptions {
-  { ..self, allow_global_reassign: v }
+  { ..self, allow_global_reassign: v, }
 }
 
 ///|
@@ -248,7 +248,7 @@ pub fn ResolveOptions::with_allow_top_level_control(
   self : ResolveOptions,
   v : Bool,
 ) -> ResolveOptions {
-  { ..self, allow_top_level_control: v }
+  { ..self, allow_top_level_control: v, }
 }
 
 ///|
@@ -264,7 +264,7 @@ pub fn ResolveOptions::with_allow_recursion(
   self : ResolveOptions,
   v : Bool,
 ) -> ResolveOptions {
-  { ..self, allow_recursion: v }
+  { ..self, allow_recursion: v, }
 }
 
 ///|
@@ -280,7 +280,7 @@ pub fn ResolveOptions::with_allow_set(
   self : ResolveOptions,
   v : Bool,
 ) -> ResolveOptions {
-  { ..self, allow_set: v }
+  { ..self, allow_set: v, }
 }
 
 ///|
@@ -296,7 +296,7 @@ pub fn ResolveOptions::with_allow_while(
   self : ResolveOptions,
   v : Bool,
 ) -> ResolveOptions {
-  { ..self, allow_while: v }
+  { ..self, allow_while: v, }
 }
 
 ///|
@@ -312,7 +312,7 @@ pub fn ResolveOptions::with_load_binds_globally(
   self : ResolveOptions,
   v : Bool,
 ) -> ResolveOptions {
-  { ..self, load_binds_globally: v }
+  { ..self, load_binds_globally: v, }
 }
 
 ///|
@@ -425,7 +425,7 @@ fn Resolver::new(
   is_universal : (String) -> Bool,
   opts : ResolveOptions,
 ) -> Resolver {
-  let file_block : Block = { parent: None, bindings: Map([]), uses: [] }
+  let file_block : Block = { parent: None, bindings: Map([]), uses: [], }
   {
     env: file_block,
     file_block,
@@ -474,7 +474,7 @@ fn Resolver::is_at_file_block(self : Resolver) -> Bool {
 ///|
 fn Resolver::push_block(self : Resolver) -> Block {
   let saved = self.env
-  self.env = { parent: Some(saved), bindings: Map([]), uses: [] }
+  self.env = { parent: Some(saved), bindings: Map([]), uses: [], }
   saved
 }
 
@@ -510,7 +510,7 @@ fn Resolver::bind_global(
     }
   } else {
     let idx = self.module_globals.length()
-    let b : Binding = { name, pos, scope: Global(idx) }
+    let b : Binding = { name, pos, scope: Global(idx), }
     self.globals[name] = b
     self.module_globals.push(b)
   }
@@ -540,7 +540,7 @@ fn Resolver::bind_load(
     }
   } else {
     let idx = self.module_globals.length()
-    let b : Binding = { name, pos, scope: Global(idx) }
+    let b : Binding = { name, pos, scope: Global(idx), }
     self.globals[name] = b
     self.module_globals.push(b)
   }
@@ -557,7 +557,7 @@ fn Resolver::bind_local(
 ) -> Unit {
   if !self.env.bindings.contains(name) {
     let idx = self.env.bindings.length()
-    let b : Binding = { name, pos, scope: Local(idx) }
+    let b : Binding = { name, pos, scope: Local(idx), }
     self.env.bindings[name] = b
   }
 }
@@ -671,10 +671,10 @@ fn Resolver::resolve_name_at_toplevel(
   if self.globals.contains(name) || self.predeclared_cache.contains(name) {
     ()
   } else if (self.is_predeclared)(name) {
-    let b : Binding = { name, pos, scope: Predeclared }
+    let b : Binding = { name, pos, scope: Predeclared, }
     self.predeclared_cache[name] = b
   } else if (self.is_universal)(name) {
-    let b : Binding = { name, pos, scope: Universal }
+    let b : Binding = { name, pos, scope: Universal, }
     self.predeclared_cache[name] = b
   } else {
     let candidates : Array[String] = self.globals.keys().collect() +
@@ -704,10 +704,10 @@ fn Resolver::resolve_function_uses(
         } else if self.predeclared_cache.contains(name) {
           ()
         } else if (self.is_predeclared)(name) {
-          let b : Binding = { name, pos, scope: Predeclared }
+          let b : Binding = { name, pos, scope: Predeclared, }
           self.predeclared_cache[name] = b
         } else if (self.is_universal)(name) {
-          let b : Binding = { name, pos, scope: Universal }
+          let b : Binding = { name, pos, scope: Universal, }
           self.predeclared_cache[name] = b
         } else {
           // Could be a forward-referenced global; defer resolution.
@@ -1306,5 +1306,5 @@ pub fn resolve(
   let r = Resolver::new(is_predeclared, is_universal, opts)
   r.walk_stmts(file.stmts())
   r.resolve_deferred_uses()
-  { globals: r.module_globals, locals: r.module_locals, errors: r.errors }
+  { globals: r.module_globals, locals: r.module_locals, errors: r.errors, }
 }

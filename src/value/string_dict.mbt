@@ -10,7 +10,7 @@ pub struct StringDict {
 ///
 /// Returns a new `StringDict` with no bindings.
 pub fn StringDict::new() -> StringDict {
-  { data: Map([]) }
+  { data: Map([]), }
 }
 
 ///|
@@ -22,7 +22,7 @@ pub fn StringDict::new() -> StringDict {
 ///
 /// Returns a `StringDict` backed by `m`.
 pub fn StringDict::from_map(m : Map[String, Value]) -> StringDict {
-  { data: m }
+  { data: m, }
 }
 
 ///|

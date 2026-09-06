@@ -49,9 +49,9 @@ test "funcode position recovers source line and column from pc" {
     doc: "",
     code: Bytes::from_array([]),
     pclinetab: [
-      @compile.PcLine::{ pc: 0, line: 2, col: 3 },
-      @compile.PcLine::{ pc: 5, line: 4, col: 1 },
-      @compile.PcLine::{ pc: 9, line: 7, col: 8 },
+      @compile.PcLine::{ pc: 0, line: 2, col: 3, },
+      @compile.PcLine::{ pc: 5, line: 4, col: 1, },
+      @compile.PcLine::{ pc: 9, line: 7, col: 8, },
     ],
     locals: [],
     cells: [],

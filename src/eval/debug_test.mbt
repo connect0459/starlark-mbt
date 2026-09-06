@@ -9,7 +9,7 @@
 ///|
 test "DebugFrame: trace captures param values across nested Starlark frames" {
   let thread = Thread::new("test")
-  let got : Ref[String] = { val: "" }
+  let got : Ref[String] = { val: "", }
   let trace_fn = @value.Value::new_builtin("trace", fn(_ctx, _args, _kwargs) {
     let lines : Array[String] = []
     let depth = thread.call_stack_depth()

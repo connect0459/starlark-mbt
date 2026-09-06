@@ -189,7 +189,7 @@ test "Thread without step budget completes a long computation" {
 
 ///|
 test "Thread::set_on_max_steps callback is invoked when step budget is exceeded" {
-  let called : Ref[Bool] = { val: false }
+  let called : Ref[Bool] = { val: false, }
   let t = Thread::with_step_budget("test", 5)
   t.set_on_max_steps(fn(th) {
     called.val = true
@@ -212,7 +212,7 @@ test "Thread::set_on_max_steps callback is invoked when step budget is exceeded"
 
 ///|
 test "Thread::set_on_max_steps callback can extend the step budget" {
-  let call_count : Ref[Int] = { val: 0 }
+  let call_count : Ref[Int] = { val: 0, }
   let t = Thread::with_step_budget("test", 10)
   t.set_on_max_steps(fn(th) {
     call_count.val += 1
