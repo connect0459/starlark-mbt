@@ -44,6 +44,7 @@ jobs:
 
   lint:
     needs: changes
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -53,7 +54,6 @@ jobs:
           persist-credentials: false
 
       - name: Setup Moonbit
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         uses: hustcer/setup-moonbit@9199da0ab63ea0c0bab1dc15f03d76e17ed4f75f # v1.22
         with:
           version: latest
@@ -61,27 +61,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update package registry
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon update
 
       - name: Check formatting
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon fmt --check
 
       - name: Check packages
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon check --deny-warn --target all
 
       - name: Verify generated interfaces are current
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon info && git diff --exit-code
-
-      - name: Skip CI checks (no relevant changes)
-        if: needs.changes.outputs.code != 'true' && github.event_name != 'workflow_dispatch'
-        run: echo "No changes detected in code-related files."
 
   test:
     needs: changes
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -91,7 +84,6 @@ jobs:
           persist-credentials: false
 
       - name: Setup Moonbit
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         uses: hustcer/setup-moonbit@9199da0ab63ea0c0bab1dc15f03d76e17ed4f75f # v1.22
         with:
           version: latest
@@ -99,24 +91,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update package registry
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon update
 
       - name: Test all targets
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: moon test --target all
 
       - name: Run examples
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: bash scripts/run-examples.sh > /dev/null
 
       - name: Run REPL piped integration tests
-        if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
         run: bash scripts/test-repl-piped.sh > /dev/null
-
-      - name: Skip CI checks (no relevant changes)
-        if: needs.changes.outputs.code != 'true' && github.event_name != 'workflow_dispatch'
-        run: echo "No changes detected in code-related files."
 
   # Single point of truth for branch protection
   gate:
