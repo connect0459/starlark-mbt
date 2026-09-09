@@ -1,11 +1,13 @@
 lockfile_version: '1'
-generated_at: '2026-06-03T13:44:01.873604+00:00'
-apm_version: 0.14.1
+generated_at: '2026-09-09T15:02:08.346840+00:00'
+apm_version: 0.30.0
 dependencies:
 - repo_url: moonbitlang/skills
+  name: moonbit-skills
   host: github.com
   resolved_commit: ac2d94cdd62ddcc10962fa42111f460b2c3743d4
   resolved_ref: ac2d94cdd62ddcc10962fa42111f460b2c3743d4
+  version: ac2d94c
   package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/make-moonbit-c-bindings
@@ -26,4 +28,167 @@ dependencies:
   - .claude/skills/moonbit-refactoring
   - .claude/skills/moonbit-spec-test-development
   - .claude/skills/ocaml2moonbit-migration
-  content_hash: sha256:3792314f14069bbde51771672c10df8cba51a0f971b57717c9fd9d45f598706a
+  content_hash: sha256:75cfa5caad290c8e6b23250464c737c3bf4af6c8c4793ced6246e7437e553e7f
+deployments:
+- kind: project-relative
+  target: claude
+  value: .claude/skills/make-moonbit-c-bindings
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/moonbit-agent-guide
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/moonbit-c-binding
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/moonbit-extract-spec-test
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/moonbit-orientation
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/moonbit-proof
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/moonbit-refactoring
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/moonbit-spec-test-development
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/ocaml2moonbit-migration
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/make-moonbit-c-bindings
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/moonbit-agent-guide
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/moonbit-c-binding
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/moonbit-extract-spec-test
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/moonbit-orientation
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/moonbit-proof
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/moonbit-refactoring
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/moonbit-spec-test-development
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/ocaml2moonbit-migration
+  runtime: null
+  scope: project
+  owners:
+  - moonbitlang/skills
+  active_owner: moonbitlang/skills
+  content_hash: null
