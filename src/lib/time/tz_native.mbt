@@ -1,6 +1,6 @@
 ///|
 fn string_to_c_bytes(s : String) -> Bytes {
-  let res : Array[Byte] = Array::new(capacity=s.length() + 1)
+  let res : Array[Byte] = Array(capacity=s.length() + 1)
   let n = s.length()
   let mut i = 0
   while i < n {

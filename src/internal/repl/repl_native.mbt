@@ -46,7 +46,7 @@ pub fn repl_available() -> Bool {
 /// Writes `s` followed by a newline to stderr, so diagnostics stay separate
 /// from value output on stdout.
 fn write_err_line(s : String) -> Unit {
-  write_stderr_ffi(@utf8.encode(s + "\n"))
+  write_stderr_ffi(utf8_encode(s + "\n"))
 }
 
 ///|
@@ -85,7 +85,7 @@ fn read_line(prompt : String) -> String? {
   })
   match read_line_ffi(Bytes::from_array(arr)) {
     None => None
-    Some(bytes) => Some(@utf8.decode_lossy(bytes[:]))
+    Some(bytes) => Some(utf8_decode_lossy(bytes))
   }
 }
 

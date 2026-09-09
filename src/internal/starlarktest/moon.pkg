@@ -1,6 +1,4 @@
 import {
-  "moonbitlang/core/bench",
-  "moonbitlang/core/encoding/utf8",
   "connect0459/starlark/errors",
   "connect0459/starlark/eval",
   "connect0459/starlark/value",
@@ -10,6 +8,11 @@ import {
   "connect0459/starlark/lib/time",
   "connect0459/starlark/internal/numeric",
 }
+
+import {
+  "moonbitlang/core/bench",
+  "moonbitlang/core/encoding/utf8",
+} for "test"
 
 options(
   targets: { "time_tz_native_test.mbt": [ "native", "llvm" ] },
