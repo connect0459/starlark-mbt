@@ -189,7 +189,7 @@ fn get_other_entries(c : @value.CustomValue) -> Array[(String, @value.Value)]? {
     Ok(Some(@value.Value::Int(n))) => n.to_int()
     _ => return None
   }
-  let entries : Array[(String, @value.Value)] = Array::new(capacity=n)
+  let entries : Array[(String, @value.Value)] = Array(capacity=n)
   for i in 0..<n {
     let name = match c.get_internal_attr("__name_\{i}") {
       Ok(Some(@value.Value::String(s))) => s.raw()

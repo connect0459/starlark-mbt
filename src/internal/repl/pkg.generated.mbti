@@ -20,6 +20,10 @@ pub fn repl_available() -> Bool
 
 pub fn run(@eval.Thread, @value.StringDict, opts? : @eval.Options) -> Unit
 
+pub fn utf8_decode_lossy(Bytes) -> String
+
+pub fn utf8_encode(String) -> Bytes
+
 // Errors
 
 // Types and methods

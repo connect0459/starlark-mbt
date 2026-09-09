@@ -1,10 +1,13 @@
 import {
   "moonbitlang/core/buffer",
-  "moonbitlang/core/double",
   "connect0459/starlark/eval",
   "connect0459/starlark/value",
   "connect0459/starlark/lib/json",
 }
+
+import {
+  "moonbitlang/core/double",
+} for "wbtest"
 
 options(
   link: {
