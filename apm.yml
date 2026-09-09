@@ -4,7 +4,7 @@ description: APM project for starlark-mbt
 author: connect0459
 dependencies:
   apm:
-  - moonbitlang/skills#ac2d94cdd62ddcc10962fa42111f460b2c3743d4
+  - moonbitlang/skills#607f93a413cac702e75d946aa53c81b40edbcb50
   mcp: []
 includes: auto
 scripts: {}

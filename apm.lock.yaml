@@ -1,13 +1,13 @@
 lockfile_version: '1'
-generated_at: '2026-09-09T15:02:08.346840+00:00'
+generated_at: '2026-09-09T15:36:37.924540+00:00'
 apm_version: 0.30.0
 dependencies:
 - repo_url: moonbitlang/skills
   name: moonbit-skills
   host: github.com
-  resolved_commit: ac2d94cdd62ddcc10962fa42111f460b2c3743d4
-  resolved_ref: ac2d94cdd62ddcc10962fa42111f460b2c3743d4
-  version: ac2d94c
+  resolved_commit: 607f93a413cac702e75d946aa53c81b40edbcb50
+  resolved_ref: 607f93a413cac702e75d946aa53c81b40edbcb50
+  version: 607f93a
   package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/make-moonbit-c-bindings
@@ -28,7 +28,7 @@ dependencies:
   - .claude/skills/moonbit-refactoring
   - .claude/skills/moonbit-spec-test-development
   - .claude/skills/ocaml2moonbit-migration
-  content_hash: sha256:75cfa5caad290c8e6b23250464c737c3bf4af6c8c4793ced6246e7437e553e7f
+  content_hash: sha256:103ec2024fd686a02d94b2dea877174915e34c888f2272ddf7cb4e82a10b4c0f
 deployments:
 - kind: project-relative
   target: claude
