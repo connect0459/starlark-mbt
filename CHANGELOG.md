@@ -27,6 +27,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-20
+
+### Fixed
+
+#### MoonBit toolchain compatibility
+
+- `src/*`: apply `moon fmt`'s newly-enforced trailing comma in single-line struct/record literals across `errors`, `eval`, `internal/compile`, `internal/lexer`, `internal/repl`, `internal/resolver`, `internal/starlarktest`, `lib/json`, `lib/struct`, `syntax`, `unpack`, `value`, and `starlark_test.mbt` (#418)
+- `internal/lexer`, `lib/struct`, `lib/time`: drop an unused `moonbitlang/core/math` import and replace the deprecated `Array::new(capacity=...)` with `Array(capacity=...)`, both flagged by the latest MoonBit toolchain's `moon check --deny-warn` (#422)
+- `internal/lexer`, `internal/starlarktest`, `bench`, `internal/repl`, `examples/wasm_api`: move `moonbitlang/core/double`/`encoding/utf8` imports referenced only by test code into `for "test"`/`for "wbtest"` blocks, and wrap `internal/repl`'s native-only UTF-8 calls behind a file with no target restriction so its declared dependency is genuinely exercised on every backend (#422)
+- `internal/lexer`, `value`, `internal/resolver`, `lib/json`: drop unused `moonbitlang/core/double`/`string` imports, a redundant `for "test"` redeclaration of `connect0459/starlark/errors` already provided by the main import block, and move a doc-comment-only `moonbitlang/core/double` import into its `for "test"` block (#423)
+- `errors`, `internal/compile`, `internal/lexer`, `internal/repl`, `value`: add explicit `pub extend T with Trait::{methods}` declarations for trait methods no longer implicitly promoted by `derive(Eq)`/`pub impl Trait for T` (#422, #423)
+- all packages' test files and doc-comment examples: qualify bare references to a package's own public symbols as `@pkg.Symbol`, no longer implicitly self-imported by the latest MoonBit toolchain (#422, #423)
+
+### Miscellaneous
+
+- **ci**: skip the `lint`/`test` jobs at the job level (rather than per-step) when no relevant files changed, so GitHub reports them as skipped instead of a misleadingly green success (#417)
+- **chore**: refresh the pinned `markdownlint-cli2` pre-commit revision and regenerate `apm.lock.yaml` (#419)
+- **chore**: bump the pinned `moonbitlang/skills` revision in `apm.yml` and regenerate `apm.lock.yaml` (#420)
+- **ci**: pin workflow actions to their latest release hashes and enforce `shell: bash` on every `run:` step (#421)
+
 ## [0.5.1] - 2026-08-25
 
 ### Fixed
@@ -489,7 +509,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.1...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.2...HEAD>
+[0.5.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.1...v0.5.2>
 [0.5.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.0...v0.5.1>
 [0.5.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.1...v0.5.0>
 [0.4.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.0...v0.4.1>
