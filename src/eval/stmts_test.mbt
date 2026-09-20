@@ -1,17 +1,17 @@
 // Statement tests: while, augmented assignment, tuple unpacking, loop control.
 
 ///|
-fn exec_s(src : String) -> Result[Module, @errors.EvalError] {
-  let t = Thread::new("test")
-  let opts = Options::default()
+fn exec_s(src : String) -> Result[@eval.Module, @errors.EvalError] {
+  let t = @eval.Thread::new("test")
+  let opts = @eval.Options::default()
     .with_allow_while(true)
     .with_allow_top_level_control(true)
     .with_allow_global_reassign(true)
-  exec_file(t, "<test>", src, opts)
+  @eval.exec_file(t, "<test>", src, opts)
 }
 
 ///|
-fn get_s(m : Module, name : String) -> @value.Value? {
+fn get_s(m : @eval.Module, name : String) -> @value.Value? {
   m.get(name)
 }
 
@@ -173,13 +173,13 @@ test "exec_file: augmented extend from range on frozen list raises error" {
   }
   let pre : Map[String, @value.Value] = Map([])
   pre["frozen_lst"] = frozen
-  let t = Thread::new("test")
-  let result = exec_file_with_predeclared(
+  let t = @eval.Thread::new("test")
+  let result = @eval.exec_file_with_predeclared(
     t,
     "<test>",
     "def f(x):\n  x += range(3)\nf(frozen_lst)",
-    Options::default(),
-    Predeclared::from_map(pre),
+    @eval.Options::default(),
+    @eval.Predeclared::from_map(pre),
   )
   assert_true(result is Err(_))
 }
@@ -194,8 +194,8 @@ test "exec_file: dict |= empty rhs during iteration raises apply-to error" {
     #|  for k in d:
     #|    d |= {}
     #|f()
-  let t = Thread::new("test")
-  let result = exec_file(t, "<test>", src, Options::default())
+  let t = @eval.Thread::new("test")
+  let result = @eval.exec_file(t, "<test>", src, @eval.Options::default())
   match result {
     Ok(_) => assert_true(false)
     Err(e) => assert_true(e.msg().contains("apply |= to"))
@@ -210,8 +210,8 @@ test "exec_file: dict |= non-empty rhs during iteration raises apply-to error" {
     #|  for k in d:
     #|    d |= {3: 4}
     #|f()
-  let t = Thread::new("test")
-  let result = exec_file(t, "<test>", src, Options::default())
+  let t = @eval.Thread::new("test")
+  let result = @eval.exec_file(t, "<test>", src, @eval.Options::default())
   match result {
     Ok(_) => assert_true(false)
     Err(e) => assert_true(e.msg().contains("apply |= to"))
@@ -385,18 +385,18 @@ test "exec_file: load statement raises error when no loader is set" {
 test "exec_file: load statement makes symbol usable within the file" {
   let exported : Map[String, @value.Value] = Map([])
   exported["answer"] = @value.Value::Int(42N)
-  let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
+  let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
     _thread,
     _path,
   ) {
-    Ok(Module::from_map(exported))
+    Ok(@eval.Module::from_map(exported))
   }
-  let t = Thread::with_loader("test", loader)
-  let result = exec_file(
+  let t = @eval.Thread::with_loader("test", loader)
+  let result = @eval.exec_file(
     t,
     "<test>",
     "load(\"mylib\", \"answer\")\nx = answer + 1",
-    Options::default(),
+    @eval.Options::default(),
   )
   match result {
     Ok(m) => assert_true(m.get("x") == Some(@value.Value::Int(43N)))
@@ -408,18 +408,18 @@ test "exec_file: load statement makes symbol usable within the file" {
 test "exec_file: load statement supports aliased bindings" {
   let exported : Map[String, @value.Value] = Map([])
   exported["foo"] = @value.Value::Int(1N)
-  let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
+  let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
     _thread,
     _path,
   ) {
-    Ok(Module::from_map(exported))
+    Ok(@eval.Module::from_map(exported))
   }
-  let t = Thread::with_loader("test", loader)
-  let result = exec_file(
+  let t = @eval.Thread::with_loader("test", loader)
+  let result = @eval.exec_file(
     t,
     "<test>",
     "load(\"mylib\", bar=\"foo\")\ny = bar + 1",
-    Options::default(),
+    @eval.Options::default(),
   )
   match result {
     Ok(m) => assert_true(m.get("y") == Some(@value.Value::Int(2N)))
@@ -429,18 +429,18 @@ test "exec_file: load statement supports aliased bindings" {
 
 ///|
 test "exec_file: load statement raises error when symbol not found in module" {
-  let loader : (Thread, String) -> Result[Module, @errors.EvalError] = fn(
+  let loader : (@eval.Thread, String) -> Result[@eval.Module, @errors.EvalError] = fn(
     _thread,
     _path,
   ) {
-    Ok(Module::from_map(Map([])))
+    Ok(@eval.Module::from_map(Map([])))
   }
-  let t = Thread::with_loader("test", loader)
-  let result = exec_file(
+  let t = @eval.Thread::with_loader("test", loader)
+  let result = @eval.exec_file(
     t,
     "<test>",
     "load(\"mylib\", \"missing\")",
-    Options::default(),
+    @eval.Options::default(),
   )
   assert_true(result is Err(_))
 }

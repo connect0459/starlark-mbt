@@ -1293,7 +1293,7 @@ pub(all) enum Value {
 ///
 /// ```mbt check
 /// test {
-///   let v = Value::new_string("hello")
+///   let v = @value.Value::new_string("hello")
 ///   inspect(v.repr(), content="\"hello\"")
 /// }
 /// ```
@@ -1312,7 +1312,7 @@ pub fn Value::new_string(s : String) -> Value {
 ///
 /// ```mbt check
 /// test {
-///   let v = Value::new_int(42L)
+///   let v = @value.Value::new_int(42L)
 ///   inspect(v.repr(), content="42")
 /// }
 /// ```
@@ -1331,7 +1331,7 @@ pub fn Value::new_int(n : Int64) -> Value {
 ///
 /// ```mbt check
 /// test {
-///   let v = Value::new_float(1.5)
+///   let v = @value.Value::new_float(1.5)
 ///   inspect(v.repr(), content="1.5")
 /// }
 /// ```
@@ -1350,7 +1350,11 @@ pub fn Value::new_float(f : Double) -> Value {
 ///
 /// ```mbt check
 /// test {
-///   let v = Value::new_list([Value::Int(1N), Value::Int(2N), Value::Int(3N)])
+///   let v = @value.Value::new_list([
+///     @value.Value::Int(1N),
+///     @value.Value::Int(2N),
+///     @value.Value::Int(3N),
+///   ])
 ///   inspect(v.repr(), content="[1, 2, 3]")
 /// }
 /// ```
@@ -1365,7 +1369,7 @@ pub fn Value::new_list(items : Array[Value]) -> Value {
 ///
 /// ```mbt check
 /// test {
-///   let v = Value::new_dict()
+///   let v = @value.Value::new_dict()
 ///   inspect(v.repr(), content="{}")
 /// }
 /// ```
@@ -1380,7 +1384,7 @@ pub fn Value::new_dict() -> Value {
 ///
 /// ```mbt check
 /// test {
-///   let v = Value::new_set()
+///   let v = @value.Value::new_set()
 ///   inspect(v.repr(), content="set([])")
 /// }
 /// ```
@@ -1419,10 +1423,10 @@ pub fn Value::new_builtin(
 ///
 /// ```mbt check
 /// test {
-///   inspect(Value::None.type_name(), content="NoneType")
-///   inspect(Value::Int(1N).type_name(), content="int")
-///   inspect(Value::Bool(true).type_name(), content="bool")
-///   inspect(Value::new_string("").type_name(), content="string")
+///   inspect(@value.Value::None.type_name(), content="NoneType")
+///   inspect(@value.Value::Int(1N).type_name(), content="int")
+///   inspect(@value.Value::Bool(true).type_name(), content="bool")
+///   inspect(@value.Value::new_string("").type_name(), content="string")
 /// }
 /// ```
 pub fn Value::type_name(v : Value) -> String {
@@ -1461,11 +1465,11 @@ pub fn Value::type_name(v : Value) -> String {
 ///
 /// ```mbt check
 /// test {
-///   inspect(Value::None.truth(), content="false")
-///   inspect(Value::Int(0N).truth(), content="false")
-///   inspect(Value::new_string("").truth(), content="false")
-///   inspect(Value::Int(1N).truth(), content="true")
-///   inspect(Value::Bool(true).truth(), content="true")
+///   inspect(@value.Value::None.truth(), content="false")
+///   inspect(@value.Value::Int(0N).truth(), content="false")
+///   inspect(@value.Value::new_string("").truth(), content="false")
+///   inspect(@value.Value::Int(1N).truth(), content="true")
+///   inspect(@value.Value::Bool(true).truth(), content="true")
 /// }
 /// ```
 pub fn Value::truth(v : Value) -> Bool {
@@ -1643,14 +1647,14 @@ pub let repr_limit : Int = 200
 ///
 /// ```mbt check
 /// test {
-///   inspect(Value::None.repr(), content="None")
-///   inspect(Value::Bool(true).repr(), content="True")
-///   inspect(Value::Int(42N).repr(), content="42")
-///   inspect(Value::new_string("hi").repr(), content="\"hi\"")
+///   inspect(@value.Value::None.repr(), content="None")
+///   inspect(@value.Value::Bool(true).repr(), content="True")
+///   inspect(@value.Value::Int(42N).repr(), content="42")
+///   inspect(@value.Value::new_string("hi").repr(), content="\"hi\"")
 ///   // Cyclic list is shown with a placeholder rather than crashing.
-///   let l = StarlarkList::new([Value::Int(0N)])
-///   l.push(Value::List(l)) |> ignore
-///   inspect(Value::List(l).repr().contains("[...]"), content="true")
+///   let l = @value.StarlarkList::new([@value.Value::Int(0N)])
+///   l.push(@value.Value::List(l)) |> ignore
+///   inspect(@value.Value::List(l).repr().contains("[...]"), content="true")
 /// }
 /// ```
 pub fn Value::repr(v : Value) -> String {
@@ -1667,11 +1671,11 @@ pub fn Value::repr(v : Value) -> String {
 ///
 /// ```mbt check
 /// test {
-///   inspect(Value::Int(99N).repr_checked().unwrap(), content="99")
+///   inspect(@value.Value::Int(99N).repr_checked().unwrap(), content="99")
 ///   // Exceeding the depth limit yields an Err rather than aborting.
-///   let mut v : Value = Value::Int(0N)
-///   for _ in 0..<(repr_limit + 1) {
-///     v = Value::new_list([v])
+///   let mut v : @value.Value = @value.Value::Int(0N)
+///   for _ in 0..<(@value.repr_limit + 1) {
+///     v = @value.Value::new_list([v])
 ///   }
 ///   inspect(v.repr_checked() is Err(_), content="true")
 /// }

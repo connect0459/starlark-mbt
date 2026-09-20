@@ -149,7 +149,7 @@ let paths_star_src : String =
 
 ///|
 test "paths.star: pure-Starlark path manipulation library" {
-  let errs = run_star_string(paths_star_src)
+  let errs = @starlarktest.run_star_string(paths_star_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

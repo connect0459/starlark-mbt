@@ -35,12 +35,12 @@ fn with_universal(names : Array[String]) -> (String) -> Bool {
 }
 
 ///|
-fn has_error(result : ResolvedFile, substr : String) -> Bool {
+fn has_error(result : @resolver.ResolvedFile, substr : String) -> Bool {
   result.errors().any(fn(e) { e.msg().contains(substr) })
 }
 
 ///|
-fn error_col(result : ResolvedFile, substr : String) -> Int? {
+fn error_col(result : @resolver.ResolvedFile, substr : String) -> Int? {
   for e in result.errors() {
     if e.msg().contains(substr) {
       return Some(e.pos().col())
@@ -54,11 +54,11 @@ fn error_col(result : ResolvedFile, substr : String) -> Int? {
 ///|
 test "resolve: accepts empty file" {
   let f = parse_or_fail("")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -66,11 +66,11 @@ test "resolve: accepts empty file" {
 ///|
 test "resolve: accepts simple global assignment" {
   let f = parse_or_fail("x = 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -78,11 +78,11 @@ test "resolve: accepts simple global assignment" {
 ///|
 test "resolve: accepts use of previously defined global" {
   let f = parse_or_fail("x = 1\ny = x + 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -90,11 +90,11 @@ test "resolve: accepts use of previously defined global" {
 ///|
 test "resolve: allows forward reference to global in function body" {
   let f = parse_or_fail("def f():\n  return x\nx = 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -102,11 +102,11 @@ test "resolve: allows forward reference to global in function body" {
 ///|
 test "resolve: accepts use of predeclared name" {
   let f = parse_or_fail("M()")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     with_predeclared(["M"]),
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -114,11 +114,11 @@ test "resolve: accepts use of predeclared name" {
 ///|
 test "resolve: accepts use of universal name" {
   let f = parse_or_fail("len([])")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     with_universal(["len"]),
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -126,11 +126,11 @@ test "resolve: accepts use of universal name" {
 ///|
 test "resolve: accepts local variable defined in function" {
   let f = parse_or_fail("def f():\n  x = 1\n  return x")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -138,11 +138,11 @@ test "resolve: accepts local variable defined in function" {
 ///|
 test "resolve: local variable shadows global of same name" {
   let f = parse_or_fail("x = 1\ndef f():\n  x = 2\n  return x")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -152,11 +152,11 @@ test "resolve: local variable shadows global of same name" {
 ///|
 test "resolve: reports error for undefined global" {
   let f = parse_or_fail("y = x + 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "undefined: x"))
 }
@@ -164,11 +164,11 @@ test "resolve: reports error for undefined global" {
 ///|
 test "resolve: reports error for undefined variable in function" {
   let f = parse_or_fail("def f():\n  return z")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "undefined: z"))
 }
@@ -178,11 +178,11 @@ test "resolve: augmented-assigned-only name is visible to a nested closure" {
   // `n` is bound only by `n += 1` in f; the inner def g closes over it.
   // It must resolve as local-to-f / free-in-g, not raise "undefined: n".
   let f = parse_or_fail("def f():\n  def g(): return n\n  n += 1\n  return g")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_false(has_error(result, "undefined: n"))
 }
@@ -190,11 +190,11 @@ test "resolve: augmented-assigned-only name is visible to a nested closure" {
 ///|
 test "resolve: undefined suggests did-you-mean for close global name" {
   let f = parse_or_fail("hello = 1\nprint(hollo)")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     fn(n) { n == "print" },
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "undefined: hollo (did you mean hello?)"))
 }
@@ -202,11 +202,11 @@ test "resolve: undefined suggests did-you-mean for close global name" {
 ///|
 test "resolve: undefined suggests did-you-mean for close local parameter name" {
   let f = parse_or_fail("def f(param):\n  return parma")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     fn(_) { false },
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "undefined: parma (did you mean param?)"))
 }
@@ -214,11 +214,11 @@ test "resolve: undefined suggests did-you-mean for close local parameter name" {
 ///|
 test "resolve: undefined with no close match gives no hint" {
   let f = parse_or_fail("hello = 1\nprint(goodbye)")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     fn(n) { n == "print" },
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   // "goodbye" is far from "hello" — no hint appended
   assert_true(has_error(result, "undefined: goodbye"))
@@ -229,16 +229,20 @@ test "resolve: undefined with no close match gives no hint" {
 ///|
 test "resolve: rejects global reassignment when flag is off" {
   let f = parse_or_fail("x = 1\nx = 2")
-  let opts = ResolveOptions::default().with_allow_global_reassign(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign global x"))
 }
 
 ///|
 test "resolve: allows global reassignment when flag is on" {
   let f = parse_or_fail("x = 1\nx = 2")
-  let opts = ResolveOptions::default().with_allow_global_reassign(true)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    true,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(result.is_valid())
 }
 
@@ -246,8 +250,10 @@ test "resolve: allows global reassignment when flag is on" {
 test "resolve: augmented global reassignment anchors at the identifier, like plain assignment" {
   // l = [1, 2, 3] / l += [4, 5] — 'l' starts at col 1; the '+=' token is col 3.
   let f = parse_or_fail("l = [1, 2, 3]\nl += [4, 5]")
-  let opts = ResolveOptions::default().with_allow_global_reassign(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(error_col(result, "cannot reassign global l") == Some(1))
 }
 
@@ -256,42 +262,50 @@ test "resolve: augmented global reassignment anchors at the identifier, like pla
 ///|
 test "resolve: rejects top-level if when flag is off" {
   let f = parse_or_fail("if True:\n  x = 1")
-  let opts = ResolveOptions::default().with_allow_top_level_control(false)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "if"))
 }
 
 ///|
 test "resolve: accepts top-level if when flag is on" {
   let f = parse_or_fail("if True:\n  x = 1")
-  let opts = ResolveOptions::default().with_allow_top_level_control(true)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    true,
+  )
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(result.is_valid())
 }
 
 ///|
 test "resolve: rejects top-level for when flag is off" {
   let f = parse_or_fail("for x in []:\n  pass")
-  let opts = ResolveOptions::default().with_allow_top_level_control(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "for"))
 }
 
 ///|
 test "resolve: rejects top-level while when flag is off" {
   let f = parse_or_fail("while True:\n  pass")
-  let opts = ResolveOptions::default()
+  let opts = @resolver.ResolveOptions::default()
     .with_allow_top_level_control(false)
     .with_allow_recursion(true)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "while"))
 }
 
 ///|
 test "resolve: accepts top-level while when flag is on" {
   let f = parse_or_fail("while True:\n  pass")
-  let opts = ResolveOptions::default().with_allow_top_level_control(true)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    true,
+  )
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(result.is_valid())
 }
 
@@ -300,11 +314,11 @@ test "resolve: accepts top-level while when flag is on" {
 ///|
 test "resolve: rejects duplicate parameter names" {
   let f = parse_or_fail("def f(x, x):\n  pass")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "duplicate parameter: x"))
 }
@@ -312,11 +326,11 @@ test "resolve: rejects duplicate parameter names" {
 ///|
 test "resolve: rejects positional param after star" {
   let f = parse_or_fail("def f(*args, x):\n  pass")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   // *args followed by non-kw parameter is a syntax error in some cases
   // In Starlark, positional params cannot follow *args — kw-only params come after *
@@ -327,11 +341,11 @@ test "resolve: rejects positional param after star" {
 ///|
 test "resolve: rejects positional param after star-bare" {
   let f = parse_or_fail("def f(*, x=1):\n  pass")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -341,11 +355,11 @@ test "resolve: rejects positional param after star-bare" {
 ///|
 test "resolve: rejects load inside function" {
   let f = parse_or_fail("def f():\n  load('m', 'x')")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "load"))
 }
@@ -353,11 +367,11 @@ test "resolve: rejects load inside function" {
 ///|
 test "resolve: accepts load at module scope" {
   let f = parse_or_fail("load('module', 'name')")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -365,60 +379,70 @@ test "resolve: accepts load at module scope" {
 ///|
 test "resolve: rejects reassignment of load-imported name when global_reassign is off" {
   let f = parse_or_fail("load('m', 'x')\nx = 1")
-  let opts = ResolveOptions::default().with_allow_global_reassign(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign local x"))
 }
 
 ///|
 test "resolve: allows load-imported reassignment when allow_global_reassign is on" {
   let f = parse_or_fail("load('m', 'x')\nx = 1")
-  let opts = ResolveOptions::default().with_allow_global_reassign(true)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    true,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(result.is_valid())
 }
 
 ///|
 test "resolve: augmented assignment to load-imported name rejected when global_reassign is off" {
   let f = parse_or_fail("load('m', 'x')\nx += 1")
-  let opts = ResolveOptions::default().with_allow_global_reassign(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign local x"))
 }
 
 ///|
 test "resolve: load with alias rejects reassignment of alias when global_reassign is off" {
   let f = parse_or_fail("load('m', y='x')\ny = 1")
-  let opts = ResolveOptions::default().with_allow_global_reassign(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign local y"))
 }
 
 ///|
 test "resolve: second load of same name gives cannot-reassign-top-level message" {
   let f = parse_or_fail("load('m', 'x')\nload('m', 'x')")
-  let opts = ResolveOptions::default().with_allow_global_reassign(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign top-level x"))
 }
 
 ///|
 test "resolve: second load with load_binds_globally gives cannot-reassign-global message" {
   let f = parse_or_fail("load('m', 'x')\nload('m', 'x')")
-  let opts = ResolveOptions::default()
+  let opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(false)
     .with_load_binds_globally(true)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign global x"))
 }
 
 ///|
 test "resolve: assignment to load-imported name with load_binds_globally gives cannot-reassign-global message" {
   let f = parse_or_fail("load('m', 'x')\nx = 1")
-  let opts = ResolveOptions::default()
+  let opts = @resolver.ResolveOptions::default()
     .with_allow_global_reassign(false)
     .with_load_binds_globally(true)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "cannot reassign global x"))
 }
 
@@ -427,16 +451,16 @@ test "resolve: assignment to load-imported name with load_binds_globally gives c
 ///|
 test "resolve: accepts recursion when flag is on" {
   let f = parse_or_fail("def f(n):\n  return f(n - 1)")
-  let opts = ResolveOptions::default().with_allow_recursion(true)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_recursion(true)
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(result.is_valid())
 }
 
 ///|
 test "resolve: accepts recursion at resolve time (runtime detection when flag is off)" {
   let f = parse_or_fail("def f(n):\n  return f(n - 1)")
-  let opts = ResolveOptions::default().with_allow_recursion(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_recursion(false)
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(result.is_valid())
 }
 
@@ -445,11 +469,11 @@ test "resolve: accepts recursion at resolve time (runtime detection when flag is
 ///|
 test "resolve: collects global variable names" {
   let f = parse_or_fail("x = 1\ny = 2\nz = 3")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
   assert_eq(result.globals().length(), 3)
@@ -458,11 +482,11 @@ test "resolve: collects global variable names" {
 ///|
 test "resolve: function def adds its name to globals" {
   let f = parse_or_fail("def add(a, b):\n  return a + b")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
   assert_eq(result.globals().length(), 1)
@@ -472,11 +496,11 @@ test "resolve: function def adds its name to globals" {
 ///|
 test "resolve: accepts call to predeclared 'module' function" {
   let f = parse_or_fail("m = module(\"mymod\", x=1)")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     with_predeclared(["module"]),
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -486,11 +510,11 @@ test "resolve: accepts call to predeclared 'module' function" {
 ///|
 test "resolve: index-target object is resolved as a use" {
   let f = parse_or_fail("undef[0] = 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "undefined: undef"))
 }
@@ -498,11 +522,11 @@ test "resolve: index-target object is resolved as a use" {
 ///|
 test "resolve: dot-target object is resolved as a use" {
   let f = parse_or_fail("undef.field = 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "undefined: undef"))
 }
@@ -510,11 +534,11 @@ test "resolve: dot-target object is resolved as a use" {
 ///|
 test "resolve: assignment to a literal is rejected" {
   let f = parse_or_fail("1 = x")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "can't assign to literal"))
 }
@@ -522,11 +546,11 @@ test "resolve: assignment to a literal is rejected" {
 ///|
 test "resolve: assignment to a call is rejected" {
   let f = parse_or_fail("f() = x")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "can't assign to callexpr"))
 }
@@ -534,11 +558,11 @@ test "resolve: assignment to a call is rejected" {
 ///|
 test "resolve: augmented assignment to tuple LHS is rejected" {
   let f = parse_or_fail("a, b += 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(
     has_error(result, "can't use tuple expression in augmented assignment"),
@@ -548,11 +572,11 @@ test "resolve: augmented assignment to tuple LHS is rejected" {
 ///|
 test "resolve: unparenthesized tuple LHS with tuple RHS in augmented assignment is rejected" {
   let f = parse_or_fail("a, b += 1, 2")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(
     has_error(result, "can't use tuple expression in augmented assignment"),
@@ -562,11 +586,11 @@ test "resolve: unparenthesized tuple LHS with tuple RHS in augmented assignment 
 ///|
 test "resolve: augmented assignment to list LHS is rejected" {
   let f = parse_or_fail("[a, b] += 1")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(
     has_error(result, "can't use list expression in augmented assignment"),
@@ -578,27 +602,27 @@ test "resolve: augmented assignment to list LHS is rejected" {
 ///|
 test "resolve: set literal rejected when allow_set is disabled" {
   let f = parse_or_fail("x = {1, 2, 3}")
-  let opts = ResolveOptions::default().with_allow_set(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_set(false)
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "this Starlark dialect does not support sets"))
 }
 
 ///|
 test "resolve: set comprehension rejected when allow_set is disabled" {
   let f = parse_or_fail("x = {e for e in [1, 2]}")
-  let opts = ResolveOptions::default().with_allow_set(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_set(false)
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "this Starlark dialect does not support sets"))
 }
 
 ///|
 test "resolve: set literal allowed by default" {
   let f = parse_or_fail("x = {1, 2, 3}")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -608,11 +632,11 @@ test "resolve: set literal allowed by default" {
 ///|
 test "resolve: load with leading-underscore source name is rejected" {
   let f = parse_or_fail("load(\"m\", x=\"_priv\")")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(
     has_error(result, "names with leading underscores are not exported: _priv"),
@@ -622,11 +646,11 @@ test "resolve: load with leading-underscore source name is rejected" {
 ///|
 test "resolve: load of a bare leading-underscore name is rejected" {
   let f = parse_or_fail("load(\"m\", \"_x\")")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(
     has_error(result, "names with leading underscores are not exported: _x"),
@@ -636,11 +660,11 @@ test "resolve: load of a bare leading-underscore name is rejected" {
 ///|
 test "resolve: load of an exported name with underscore alias is allowed" {
   let f = parse_or_fail("load(\"m\", _local=\"public\")")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -648,9 +672,14 @@ test "resolve: load of an exported name with underscore alias is allowed" {
 // --- parameter ordering rules ---
 
 ///|
-fn resolve_def(src : String) -> ResolvedFile {
+fn resolve_def(src : String) -> @resolver.ResolvedFile {
   let f = parse_or_fail(src)
-  resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+  @resolver.resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    @resolver.ResolveOptions::default(),
+  )
 }
 
 ///|
@@ -688,13 +717,13 @@ test "resolve: parameter after kwargs is rejected" {
 // --- call-argument ordering rules ---
 
 ///|
-fn resolve_call(src : String) -> ResolvedFile {
+fn resolve_call(src : String) -> @resolver.ResolvedFile {
   let f = parse_or_fail(src)
-  resolve(
+  @resolver.resolve(
     f,
     with_predeclared(["f", "a", "b", "x", "y"]),
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
 }
 
@@ -739,11 +768,11 @@ test "resolve: positional argument after *args is rejected" {
 ///|
 test "resolve: break outside loop uses 'break not in a loop'" {
   let f = parse_or_fail("break")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "break not in a loop"))
 }
@@ -751,11 +780,11 @@ test "resolve: break outside loop uses 'break not in a loop'" {
 ///|
 test "resolve: continue outside loop uses 'continue not in a loop'" {
   let f = parse_or_fail("continue")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "continue not in a loop"))
 }
@@ -763,11 +792,11 @@ test "resolve: continue outside loop uses 'continue not in a loop'" {
 ///|
 test "resolve: return outside function uses 'return statement not within a function'" {
   let f = parse_or_fail("return")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "return statement not within a function"))
 }
@@ -775,26 +804,30 @@ test "resolve: return outside function uses 'return statement not within a funct
 ///|
 test "resolve: top-level if uses 'if statement not within a function'" {
   let f = parse_or_fail("if True:\n  x = 1")
-  let opts = ResolveOptions::default().with_allow_top_level_control(false)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "if statement not within a function"))
 }
 
 ///|
 test "resolve: top-level for uses 'for loop not within a function'" {
   let f = parse_or_fail("for x in []:\n  pass")
-  let opts = ResolveOptions::default().with_allow_top_level_control(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "for loop not within a function"))
 }
 
 ///|
 test "resolve: top-level while uses 'while loop not within a function'" {
   let f = parse_or_fail("while True:\n  pass")
-  let opts = ResolveOptions::default()
+  let opts = @resolver.ResolveOptions::default()
     .with_allow_top_level_control(false)
     .with_allow_recursion(true)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "while loop not within a function"))
 }
 
@@ -805,11 +838,11 @@ test "resolve: break inside nested def within loop raises 'break not in a loop'"
   let f = parse_or_fail(
     "def fun1():\n  for a in [1, 2, 3]:\n    def nested():\n      break",
   )
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "break not in a loop"))
 }
@@ -819,11 +852,11 @@ test "resolve: continue inside nested def within loop raises 'continue not in a 
   let f = parse_or_fail(
     "def fun2():\n  for a in [1, 2, 3]:\n    def nested():\n      continue",
   )
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "continue not in a loop"))
 }
@@ -831,11 +864,11 @@ test "resolve: continue inside nested def within loop raises 'continue not in a 
 ///|
 test "resolve: break inside for loop within def is valid" {
   let f = parse_or_fail("def f():\n  for x in []:\n    break")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -845,11 +878,11 @@ test "resolve: break inside for loop within def is valid" {
 ///|
 test "resolve: load inside def raises 'load statement within a function'" {
   let f = parse_or_fail("def f():\n  load(\"m.star\", \"y\")")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "load statement within a function"))
 }
@@ -857,26 +890,30 @@ test "resolve: load inside def raises 'load statement within a function'" {
 ///|
 test "resolve: load inside top-level for raises 'load statement within a loop'" {
   let f = parse_or_fail("for x in []:\n  load(\"m.star\", \"y\")")
-  let opts = ResolveOptions::default().with_allow_top_level_control(true)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    true,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   assert_true(has_error(result, "load statement within a loop"))
 }
 
 ///|
 test "resolve: load inside top-level if raises 'load statement within a conditional'" {
   let f = parse_or_fail("if True:\n  load(\"m.star\", \"y\")")
-  let opts = ResolveOptions::default().with_allow_top_level_control(true)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    true,
+  )
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "load statement within a conditional"))
 }
 
 ///|
 test "resolve: while with allow_while=false raises dialect error" {
   let f = parse_or_fail("while True:\n  pass")
-  let opts = ResolveOptions::default()
+  let opts = @resolver.ResolveOptions::default()
     .with_allow_while(false)
     .with_allow_top_level_control(true)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(
     has_error(result, "this Starlark dialect does not support while loops"),
   )
@@ -885,8 +922,10 @@ test "resolve: while with allow_while=false raises dialect error" {
 ///|
 test "resolve: load inside function inside if gives 'within a function' not 'conditional'" {
   let f = parse_or_fail("if True:\n  def g():\n    load(\"m.star\", \"y\")")
-  let opts = ResolveOptions::default().with_allow_top_level_control(true)
-  let result = resolve(f, no_predeclared, only_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_top_level_control(
+    true,
+  )
+  let result = @resolver.resolve(f, no_predeclared, only_universal, opts)
   assert_true(has_error(result, "load statement within a function"))
 }
 
@@ -898,11 +937,11 @@ test "resolve: conditional expression reports condition error before true-value 
   // The condition `bb` is at col 7; the true-value `aa` is at col 1.
   // starlark-go reports `bb` first (condition before true-value).
   let f = parse_or_fail("aa if bb else cc")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   let errors = result.errors()
   assert_true(errors.length() >= 1)
@@ -936,8 +975,10 @@ test "resolve: *args after **kwargs error anchors at the * operator" {
 test "resolve: cannot reassign declared-at anchors at function name" {
   // `def f(): pass` — def is at col 1, f is at col 5
   let f = parse_or_fail("def f(): pass\nf = 1")
-  let opts = ResolveOptions::default().with_allow_global_reassign(false)
-  let result = resolve(f, no_predeclared, no_universal, opts)
+  let opts = @resolver.ResolveOptions::default().with_allow_global_reassign(
+    false,
+  )
+  let result = @resolver.resolve(f, no_predeclared, no_universal, opts)
   let errors = result.errors()
   assert_true(errors.length() >= 1)
   let msg = errors[0].msg()
@@ -950,11 +991,11 @@ test "resolve: accepts long binary addition chain" {
   let n = 2000
   let src = "x = " + Array::make(n, "1").join("+")
   let f = parse_or_fail(src)
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -964,11 +1005,11 @@ test "resolve: accepts binary chain of 100 terms" {
   let n = 100
   let src = "x = " + Array::make(n, "1").join("+")
   let f = parse_or_fail(src)
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -978,11 +1019,11 @@ test "resolve: accepts long subscript postfix chain" {
   let n = 2000
   let src = "x = a" + "[0]".repeat(n)
   let f = parse_or_fail(src)
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     with_predeclared(["a"]),
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -992,11 +1033,11 @@ test "resolve: accepts long or-chain" {
   let n = 2000
   let src = "x = " + Array::make(n, "True").join(" or ")
   let f = parse_or_fail(src)
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     only_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(result.is_valid())
 }
@@ -1005,7 +1046,12 @@ test "resolve: accepts long or-chain" {
 test "resolve: can't assign to callexpr anchors at leftmost token" {
   // foobar() = 2 — foobar starts at col 1; expr_pos gives col 7 (the '(').
   let f = parse_or_fail("foobar() = 2")
-  let r = resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+  let r = @resolver.resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    @resolver.ResolveOptions::default(),
+  )
   assert_true(error_col(r, "can't assign to callexpr") == Some(1))
 }
 
@@ -1013,7 +1059,12 @@ test "resolve: can't assign to callexpr anchors at leftmost token" {
 test "resolve: can't assign to binaryexpr anchors at leftmost token" {
   // aaa + b = 0 — 'aaa' starts at col 1; expr_pos gives col 5 (the '+').
   let f = parse_or_fail("aaa + b = 0")
-  let r = resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+  let r = @resolver.resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    @resolver.ResolveOptions::default(),
+  )
   assert_true(error_col(r, "can't assign to binaryexpr") == Some(1))
 }
 
@@ -1021,18 +1072,23 @@ test "resolve: can't assign to binaryexpr anchors at leftmost token" {
 test "resolve: can't assign to sliceexpr anchors at leftmost token" {
   // abcdef[1:2] = 0 — 'abcdef' starts at col 1; expr_pos gives col 7 ('[').
   let f = parse_or_fail("abcdef[1:2] = 0")
-  let r = resolve(f, no_predeclared, no_universal, ResolveOptions::default())
+  let r = @resolver.resolve(
+    f,
+    no_predeclared,
+    no_universal,
+    @resolver.ResolveOptions::default(),
+  )
   assert_true(error_col(r, "can't assign to sliceexpr") == Some(1))
 }
 
 ///|
 test "resolve: assigning to a list comprehension reports 'comprehension'" {
   let f = parse_or_fail("[x for x in y] = 2")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "can't assign to comprehension"))
 }
@@ -1040,11 +1096,11 @@ test "resolve: assigning to a list comprehension reports 'comprehension'" {
 ///|
 test "resolve: assigning to a dict comprehension reports 'comprehension'" {
   let f = parse_or_fail("{k: v for k, v in d} = 2")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "can't assign to comprehension"))
 }
@@ -1052,11 +1108,11 @@ test "resolve: assigning to a dict comprehension reports 'comprehension'" {
 ///|
 test "resolve: assigning to a set comprehension reports 'comprehension'" {
   let f = parse_or_fail("{x for x in y} = 2")
-  let result = resolve(
+  let result = @resolver.resolve(
     f,
     no_predeclared,
     no_universal,
-    ResolveOptions::default(),
+    @resolver.ResolveOptions::default(),
   )
   assert_true(has_error(result, "can't assign to comprehension"))
 }

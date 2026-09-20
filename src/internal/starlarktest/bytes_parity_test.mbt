@@ -9,7 +9,7 @@ test "bytes is not directly iterable; use b.elems()" {
     #|    for x in b"abc":
     #|        pass
     #|assert.fails(for_bytes, "bytes value is not iterable")
-  let errs = run_star_string(src)
+  let errs = @starlarktest.run_star_string(src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

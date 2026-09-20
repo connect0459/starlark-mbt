@@ -38,7 +38,7 @@ pub struct Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default()
+///   let opts = @eval.Options::default()
 ///   // Standard features are on.
 ///   inspect(opts.allow_float(), content="true")
 ///   inspect(opts.allow_lambda(), content="true")
@@ -131,7 +131,7 @@ pub fn Options::load_binds_globally(self : Options) -> Bool {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_load_binds_globally(true)
+///   let opts = @eval.Options::default().with_load_binds_globally(true)
 ///   inspect(opts.load_binds_globally(), content="true")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_set(), content="true")
@@ -153,7 +153,7 @@ pub fn Options::with_load_binds_globally(self : Options, v : Bool) -> Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_recursion(true)
+///   let opts = @eval.Options::default().with_allow_recursion(true)
 ///   inspect(opts.allow_recursion(), content="true")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_float(), content="true")
@@ -175,7 +175,7 @@ pub fn Options::with_allow_recursion(self : Options, v : Bool) -> Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_set(false)
+///   let opts = @eval.Options::default().with_allow_set(false)
 ///   inspect(opts.allow_set(), content="false")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_recursion(), content="false")
@@ -197,7 +197,7 @@ pub fn Options::with_allow_set(self : Options, v : Bool) -> Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_global_reassign(true)
+///   let opts = @eval.Options::default().with_allow_global_reassign(true)
 ///   inspect(opts.allow_global_reassign(), content="true")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_float(), content="true")
@@ -219,7 +219,7 @@ pub fn Options::with_allow_global_reassign(self : Options, v : Bool) -> Options 
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_lambda(false)
+///   let opts = @eval.Options::default().with_allow_lambda(false)
 ///   inspect(opts.allow_lambda(), content="false")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_recursion(), content="false")
@@ -241,7 +241,7 @@ pub fn Options::with_allow_lambda(self : Options, v : Bool) -> Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_while(true)
+///   let opts = @eval.Options::default().with_allow_while(true)
 ///   inspect(opts.allow_while(), content="true")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_float(), content="true")
@@ -263,7 +263,7 @@ pub fn Options::with_allow_while(self : Options, v : Bool) -> Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_bytes(false)
+///   let opts = @eval.Options::default().with_allow_bytes(false)
 ///   inspect(opts.allow_bytes(), content="false")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_recursion(), content="false")
@@ -285,7 +285,7 @@ pub fn Options::with_allow_bytes(self : Options, v : Bool) -> Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_float(false)
+///   let opts = @eval.Options::default().with_allow_float(false)
 ///   inspect(opts.allow_float(), content="false")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_lambda(), content="true")
@@ -307,7 +307,7 @@ pub fn Options::with_allow_float(self : Options, v : Bool) -> Options {
 ///
 /// ```mbt check
 /// test {
-///   let opts = Options::default().with_allow_top_level_control(true)
+///   let opts = @eval.Options::default().with_allow_top_level_control(true)
 ///   inspect(opts.allow_top_level_control(), content="true")
 ///   // Other flags are unchanged.
 ///   inspect(opts.allow_float(), content="true")
@@ -1204,11 +1204,21 @@ pub fn compare(
 ///
 /// ```mbt check
 /// test {
-///   let thread = Thread::new("test")
-///   let m = exec_file(thread, "test.star", "x = 1 + 2", Options::default()).unwrap()
+///   let thread = @eval.Thread::new("test")
+///   let m = @eval.exec_file(
+///     thread,
+///     "test.star",
+///     "x = 1 + 2",
+///     @eval.Options::default(),
+///   ).unwrap()
 ///   inspect(m.get("x").unwrap().repr(), content="3")
 ///   // A syntax error yields EvalError.
-///   let err = exec_file(Thread::new("t"), "bad.star", "???", Options::default())
+///   let err = @eval.exec_file(
+///     @eval.Thread::new("t"),
+///     "bad.star",
+///     "???",
+///     @eval.Options::default(),
+///   )
 ///   inspect(err is Err(_), content="true")
 /// }
 /// ```
@@ -1238,22 +1248,22 @@ pub fn exec_file(
 ///
 /// ```mbt check
 /// test {
-///   let thread = Thread::new("test")
-///   let uni = Universe::from_map({ "answer": @value.Value::new_int(42L) })
-///   let m = exec_file_with_universe(
+///   let thread = @eval.Thread::new("test")
+///   let uni = @eval.Universe::from_map({ "answer": @value.Value::new_int(42L) })
+///   let m = @eval.exec_file_with_universe(
 ///     thread,
 ///     "u.star",
 ///     "x = answer * 2",
-///     Options::default(),
+///     @eval.Options::default(),
 ///     uni,
 ///   ).unwrap()
 ///   inspect(m.get("x").unwrap().repr(), content="84")
 ///   // A syntax error yields EvalError.
-///   let err = exec_file_with_universe(
-///     Thread::new("t"),
+///   let err = @eval.exec_file_with_universe(
+///     @eval.Thread::new("t"),
 ///     "bad.star",
 ///     "???",
-///     Options::default(),
+///     @eval.Options::default(),
 ///     uni,
 ///   )
 ///   inspect(err is Err(_), content="true")
@@ -1304,13 +1314,13 @@ pub fn exec_file_with_universe(
 ///
 /// ```mbt check
 /// test {
-///   let thread = Thread::new("test")
-///   let pre = Predeclared::from_map({ "base": @value.Value::new_int(10L) })
-///   let m = exec_file_with_predeclared(
+///   let thread = @eval.Thread::new("test")
+///   let pre = @eval.Predeclared::from_map({ "base": @value.Value::new_int(10L) })
+///   let m = @eval.exec_file_with_predeclared(
 ///     thread,
 ///     "p.star",
 ///     "result = base + 5",
-///     Options::default(),
+///     @eval.Options::default(),
 ///     pre,
 ///   ).unwrap()
 ///   inspect(m.get("result").unwrap().repr(), content="15")
@@ -1367,13 +1377,25 @@ pub fn exec_file_with_predeclared(
 ///
 /// ```mbt check
 /// test {
-///   let thread = Thread::new("test")
+///   let thread = @eval.Thread::new("test")
 ///   let globals = @value.StringDict::new()
 ///   // First chunk: define x.
-///   exec_repl_chunk(thread, "<repl>", "x = 6", globals, Options::default())
+///   @eval.exec_repl_chunk(
+///     thread,
+///     "<repl>",
+///     "x = 6",
+///     globals,
+///     @eval.Options::default(),
+///   )
 ///   |> Result::unwrap
 ///   // Second chunk: x is still visible; bindings accumulate across calls.
-///   exec_repl_chunk(thread, "<repl>", "y = x * 7", globals, Options::default())
+///   @eval.exec_repl_chunk(
+///     thread,
+///     "<repl>",
+///     "y = x * 7",
+///     globals,
+///     @eval.Options::default(),
+///   )
 ///   |> Result::unwrap
 ///   inspect(globals.get("y").unwrap().repr(), content="42")
 /// }
@@ -1426,15 +1448,24 @@ pub fn exec_repl_chunk(
 ///
 /// ```mbt check
 /// test {
-///   let thread = Thread::new("test")
+///   let thread = @eval.Thread::new("test")
 ///   let env = @value.StringDict::new()
 ///   // Evaluate an arithmetic expression.
-///   inspect(eval_expr(thread, "<e>", "2 + 3", env).unwrap().repr(), content="5")
+///   inspect(
+///     @eval.eval_expr(thread, "<e>", "2 + 3", env).unwrap().repr(),
+///     content="5",
+///   )
 ///   // Supply a binding via env.
 ///   env.set("n", @value.Value::new_int(10L))
-///   inspect(eval_expr(thread, "<e>", "n * 2", env).unwrap().repr(), content="20")
+///   inspect(
+///     @eval.eval_expr(thread, "<e>", "n * 2", env).unwrap().repr(),
+///     content="20",
+///   )
 ///   // An undefined name yields EvalError.
-///   inspect(eval_expr(thread, "<e>", "ghost", env) is Err(_), content="true")
+///   inspect(
+///     @eval.eval_expr(thread, "<e>", "ghost", env) is Err(_),
+///     content="true",
+///   )
 /// }
 /// ```
 pub fn eval_expr(

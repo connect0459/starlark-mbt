@@ -3,7 +3,7 @@
 ///|
 test "Program: source_program parses and resolves without executing" {
   let side_effects : Ref[Int] = { val: 0, }
-  let pred = Predeclared::new()
+  let pred = @eval.Predeclared::new()
   pred.set(
     "inc",
     @value.Value::new_builtin("inc", fn(_ctx, _args, _kwargs) {
@@ -12,14 +12,16 @@ test "Program: source_program parses and resolves without executing" {
     }),
   )
   let prog = match
-    source_program("check.star", "x = inc()", Options::default(), fn(name) {
+    @eval.source_program("check.star", "x = inc()", @eval.Options::default(), fn(
+      name,
+    ) {
       name == "inc"
     }) {
     Ok(p) => p
     Err(e) => fail("source_program failed: \{e.to_string()}")
   }
   assert_eq(side_effects.val, 0)
-  let thread = Thread::new("test")
+  let thread = @eval.Thread::new("test")
   match prog.init(thread, pred) {
     Err(e) => fail("init failed: \{e.to_string()}")
     Ok(_) => assert_eq(side_effects.val, 1)
@@ -29,7 +31,9 @@ test "Program: source_program parses and resolves without executing" {
 ///|
 test "Program: repeated exec with different predeclared values" {
   let prog = match
-    source_program("repeat.star", "y = 2 * x", Options::default(), fn(name) {
+    @eval.source_program("repeat.star", "y = 2 * x", @eval.Options::default(), fn(
+      name,
+    ) {
       name == "x"
     }) {
     Ok(p) => p
@@ -38,9 +42,9 @@ test "Program: repeated exec with different predeclared values" {
   assert_eq(prog.filename(), "repeat.star")
   // x=42, expect y=84
   {
-    let pred = Predeclared::new()
+    let pred = @eval.Predeclared::new()
     pred.set("x", @value.Value::Int(42N))
-    match prog.init(Thread::new("test"), pred) {
+    match prog.init(@eval.Thread::new("test"), pred) {
       Err(e) => fail("x=42: \{e.to_string()}")
       Ok(m) =>
         match m.get("y") {
@@ -50,9 +54,9 @@ test "Program: repeated exec with different predeclared values" {
     }
   }
   // x="mur", expect y="murmur"
-  let pred = Predeclared::new()
+  let pred = @eval.Predeclared::new()
   pred.set("x", @value.Value::String(@value.StarlarkString::new("mur")))
-  match prog.init(Thread::new("test"), pred) {
+  match prog.init(@eval.Thread::new("test"), pred) {
     Err(e) => fail("x=mur: \{e.to_string()}")
     Ok(m) =>
       match m.get("y") {
@@ -66,7 +70,11 @@ test "Program: repeated exec with different predeclared values" {
 test "Program: filename for empty and non-empty files" {
   for content in ["", "empty = False"] {
     let prog = match
-      source_program("hello.star", content, Options::default(), fn(_) { false }) {
+      @eval.source_program("hello.star", content, @eval.Options::default(), fn(
+        _,
+      ) {
+        false
+      }) {
       Ok(p) => p
       Err(e) => fail("source_program failed: \{e.to_string()}")
     }
@@ -77,7 +85,11 @@ test "Program: filename for empty and non-empty files" {
 ///|
 test "Program: source_program catches syntax errors before execution" {
   match
-    source_program("bad.star", "def f(:", Options::default(), fn(_) { false }) {
+    @eval.source_program("bad.star", "def f(:", @eval.Options::default(), fn(
+      _,
+    ) {
+      false
+    }) {
     Ok(_) => fail("expected error")
     Err(e) => assert_true(e.to_string().contains("bad.star"))
   }
@@ -86,9 +98,12 @@ test "Program: source_program catches syntax errors before execution" {
 ///|
 test "Program: source_program catches resolve errors before execution" {
   match
-    source_program("bad.star", "y = undefined_var", Options::default(), fn(_) {
-      false
-    }) {
+    @eval.source_program(
+      "bad.star",
+      "y = undefined_var",
+      @eval.Options::default(),
+      fn(_) { false },
+    ) {
     Ok(_) => fail("expected error")
     Err(e) => assert_true(e.to_string().contains("undefined"))
   }
@@ -100,7 +115,9 @@ test "Program: num_loads and load" {
     #|load("a.star", "foo")
     #|load("b.star", "bar")
   let prog = match
-    source_program("test.star", src, Options::default(), fn(_) { false }) {
+    @eval.source_program("test.star", src, @eval.Options::default(), fn(_) {
+      false
+    }) {
     Ok(p) => p
     Err(e) => fail("source_program failed: \{e.to_string()}")
   }
@@ -123,10 +140,10 @@ test "Program: init tolerates a narrower predeclared dict for unreachable names"
     #|    sink = ghost
     #|y = 1
   let prog = match
-    source_program(
+    @eval.source_program(
       "broad.star",
       src,
-      Options::default().with_allow_top_level_control(true),
+      @eval.Options::default().with_allow_top_level_control(true),
       fn(name) { name == "ghost" },
     ) {
     Ok(p) => p
@@ -134,7 +151,7 @@ test "Program: init tolerates a narrower predeclared dict for unreachable names"
   }
   // `ghost` is omitted from the init dictionary; because its only use is on the
   // dead `if False` branch, the run must still succeed.
-  match prog.init(Thread::new("test"), Predeclared::new()) {
+  match prog.init(@eval.Thread::new("test"), @eval.Predeclared::new()) {
     Err(e) => fail("init failed: \{e.to_string()}")
     Ok(m) =>
       match m.get("y") {
@@ -147,12 +164,16 @@ test "Program: init tolerates a narrower predeclared dict for unreachable names"
 ///|
 test "Program: init result is not frozen" {
   let prog = match
-    source_program("mutable.star", "x = 1", Options::default(), fn(_) { false }) {
+    @eval.source_program("mutable.star", "x = 1", @eval.Options::default(), fn(
+      _,
+    ) {
+      false
+    }) {
     Ok(p) => p
     Err(e) => fail("source_program failed: \{e.to_string()}")
   }
-  let thread = Thread::new("test")
-  match prog.init(thread, Predeclared::new()) {
+  let thread = @eval.Thread::new("test")
+  match prog.init(thread, @eval.Predeclared::new()) {
     Err(e) => fail("init failed: \{e.to_string()}")
     Ok(m) => assert_eq(m.is_frozen(), false)
   }
@@ -160,13 +181,15 @@ test "Program: init result is not frozen" {
 
 ///|
 test "parse_file: returns error for invalid Starlark syntax" {
-  assert_true(parse_file("<test>", "!!!invalid!!!") is Err(_))
+  assert_true(@eval.parse_file("<test>", "!!!invalid!!!") is Err(_))
 }
 
 ///|
 test "Program::load: returns empty tuple when index is out of range" {
   let prog = match
-    source_program("<test>", "x = 1", Options::default(), fn(_) { false }) {
+    @eval.source_program("<test>", "x = 1", @eval.Options::default(), fn(_) {
+      false
+    }) {
     Ok(p) => p
     Err(e) => fail(e.to_string())
   }
@@ -178,7 +201,10 @@ test "Program::load: returns empty tuple when index is out of range" {
 
 ///|
 test "Program: resolve error with multiple undefined names reports only the first" {
-  match source_program("<test>", "a + b", Options::default(), fn(_) { false }) {
+  match
+    @eval.source_program("<test>", "a + b", @eval.Options::default(), fn(_) {
+      false
+    }) {
     Ok(_) => fail("expected resolve error")
     Err(e) => {
       let msg = e.to_string()
@@ -195,10 +221,10 @@ test "Program: resolve error with multiple undefined names reports only the firs
 ///|
 test "Program: top-level for in resolve error reports only the first error" {
   match
-    source_program(
+    @eval.source_program(
       "<test>",
       "for x in []:\n  big = big * 10",
-      Options::default(),
+      @eval.Options::default(),
       fn(_) { false },
     ) {
     Ok(_) => fail("expected resolve error")

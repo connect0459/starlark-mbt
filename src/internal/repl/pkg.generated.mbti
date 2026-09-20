@@ -32,6 +32,8 @@ pub enum FeedResult {
   NeedMore
   Invalid(@errors.EvalError)
 }
+pub fn FeedResult::output(Self, &Logger) -> Unit
+pub fn FeedResult::to_string(Self) -> String
 pub impl Show for FeedResult
 
 pub enum ReplOutput {
@@ -39,6 +41,8 @@ pub enum ReplOutput {
   Empty
   EvalError(@errors.EvalError)
 }
+pub fn ReplOutput::output(Self, &Logger) -> Unit
+pub fn ReplOutput::to_string(Self) -> String
 pub impl Show for ReplOutput
 
 pub struct ReplState {

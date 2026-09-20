@@ -1,6 +1,6 @@
 ///|
 test "time module: parse_time accepts two-digit year, full month, and weekday verbs" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -29,7 +29,7 @@ test "time module: parse_time accepts two-digit year, full month, and weekday ve
 
 ///|
 test "time module: parse_time accepts space-padded day and single-digit verbs" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -58,7 +58,7 @@ test "time module: parse_time accepts space-padded day and single-digit verbs" {
 
 ///|
 test "time module: parse_time honors AM and PM around noon and midnight" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -83,7 +83,7 @@ test "time module: parse_time honors AM and PM around noon and midnight" {
 
 ///|
 test "time module: parse_time accepts numeric and abbreviated zone verbs" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -112,7 +112,7 @@ test "time module: parse_time accepts numeric and abbreviated zone verbs" {
 
 ///|
 test "time module: parse_time reads fractional seconds of any width" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -137,7 +137,7 @@ test "time module: parse_time reads fractional seconds of any width" {
 
 ///|
 test "time module: parse_time accepts comma as fractional-second separator" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -162,7 +162,7 @@ test "time module: parse_time accepts comma as fractional-second separator" {
 
 ///|
 test "time module: format renders comma fractional-second separator from layout" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -181,7 +181,7 @@ test "time module: format renders comma fractional-second separator from layout"
 
 ///|
 test "time module: parse_time matches month and weekday names case-insensitively" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -222,7 +222,7 @@ test "time module: parse_time matches month and weekday names case-insensitively
 
 ///|
 test "time module: parse_time applies PM adjustment with 24-hour hour token" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -260,7 +260,7 @@ test "time module: parse_time applies PM adjustment with 24-hour hour token" {
 
 ///|
 test "time module: parse_time rejects values that do not match the layout" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -277,7 +277,7 @@ test "time module: parse_time rejects values that do not match the layout" {
 
 ///|
 test "time module: parse_time reports malformed RFC3339 input" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -302,7 +302,7 @@ test "time module: parse_time reports malformed RFC3339 input" {
 
 ///|
 test "time module: parse_time rejects RFC3339 out-of-range field values" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -324,7 +324,7 @@ test "time module: parse_time rejects RFC3339 out-of-range field values" {
 
 ///|
 test "time module: parse_time rejects RFC3339 trailing garbage after Z" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -339,7 +339,7 @@ test "time module: parse_time rejects RFC3339 trailing garbage after Z" {
 
 ///|
 test "time module: parse_time rejects RFC3339 trailing garbage after numeric timezone" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -354,7 +354,7 @@ test "time module: parse_time rejects RFC3339 trailing garbage after numeric tim
 
 ///|
 test "time module: parse_time still accepts valid RFC3339 without trailing garbage" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -371,7 +371,7 @@ test "time module: parse_time still accepts valid RFC3339 without trailing garba
 
 ///|
 test "time module: parse_time normalizes fractional precision in RFC3339" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -386,7 +386,7 @@ test "time module: parse_time normalizes fractional precision in RFC3339" {
 
 ///|
 test "time module: parse_duration accepts every unit and the micro sign" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -409,7 +409,7 @@ test "time module: parse_duration accepts every unit and the micro sign" {
 
 ///|
 test "time module: parse_duration rejects malformed strings" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -427,7 +427,7 @@ test "time module: parse_duration rejects malformed strings" {
 
 ///|
 test "time module: parse_time and from_timestamp validate argument types" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -455,7 +455,7 @@ test "time module: parse_time and from_timestamp validate argument types" {
 
 ///|
 test "time module: parse_time rejects values missing a digit for each layout verb" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -497,7 +497,7 @@ test "time module: parse_time rejects values missing a digit for each layout ver
 
 ///|
 test "time module: parse_time distinguishes Z UTC marker from numeric zero offset +00:00" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -518,7 +518,7 @@ test "time module: parse_time distinguishes Z UTC marker from numeric zero offse
 
 ///|
 test "time module: parse_time distinguishes Z from numeric zero offset in custom layouts" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -539,7 +539,7 @@ test "time module: parse_time distinguishes Z from numeric zero offset in custom
 
 ///|
 test "time module: duration and time reject incompatible binary operands" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")

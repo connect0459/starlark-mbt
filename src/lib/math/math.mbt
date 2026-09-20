@@ -502,7 +502,7 @@ fn make_rounding(name : String, round : (Double) -> Double) -> @value.Value {
 ///
 /// ```mbt check
 /// test {
-///   let m = math_module()
+///   let m = @math.math_module()
 ///   guard m is @value.Value::Module(mod) else { fail("expected module") }
 ///   inspect(mod.name(), content="math")
 ///   // pi is available as a Float attribute.

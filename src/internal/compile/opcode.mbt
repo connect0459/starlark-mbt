@@ -98,6 +98,9 @@ pub(all) enum Opcode {
 } derive(Eq)
 
 ///|
+pub extend Opcode with Eq::{not_equal, equal}
+
+///|
 /// The lowest opcode byte value that carries a uvarint operand. Opcodes whose
 /// byte value is `>= op_arg_min` are followed by an operand in the stream.
 pub let op_arg_min : Int = 45

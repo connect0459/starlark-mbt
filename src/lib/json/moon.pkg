@@ -1,8 +1,11 @@
 import {
-  "moonbitlang/core/double",
   "moonbitlang/core/string",
   "connect0459/starlark/value",
   "connect0459/starlark/internal/numeric",
   "connect0459/starlark/internal/utf8util",
   "connect0459/starlark/unpack",
 }
+
+import {
+  "moonbitlang/core/double",
+} for "test"

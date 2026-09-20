@@ -107,6 +107,9 @@ pub(all) enum SyntaxErrorKind {
 } derive(Eq)
 
 ///|
+pub extend SyntaxErrorKind with Eq::{not_equal, equal}
+
+///|
 /// Creates a `SyntaxError` at `pos` with message `msg` and kind `Other`.
 ///
 /// Parameters:

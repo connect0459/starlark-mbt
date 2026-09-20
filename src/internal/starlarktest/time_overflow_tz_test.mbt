@@ -1,6 +1,6 @@
 ///|
 test "time: time - time saturates to maxDuration when result overflows Int64" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -17,7 +17,7 @@ test "time: time - time saturates to maxDuration when result overflows Int64" {
 
 ///|
 test "time: time - time saturates to minDuration when result underflows Int64" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -34,7 +34,7 @@ test "time: time - time saturates to minDuration when result underflows Int64" {
 
 ///|
 test "time: time - time within maxDuration range is exact (no saturation)" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -50,7 +50,7 @@ test "time: time - time within maxDuration range is exact (no saturation)" {
 
 ///|
 test "time.parse_duration: rejects integer mantissa that overflows Int64" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -65,7 +65,7 @@ test "time.parse_duration: rejects integer mantissa that overflows Int64" {
 
 ///|
 test "time.parse_duration: rejects overflow from large unit multiplication" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -80,7 +80,7 @@ test "time.parse_duration: rejects overflow from large unit multiplication" {
 
 ///|
 test "time.from_timestamp: rejects sec above Int64 maximum" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -97,7 +97,7 @@ test "time.from_timestamp: rejects sec above Int64 maximum" {
 
 ///|
 test "time.from_timestamp: rejects nsec above Int64 maximum" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -114,7 +114,7 @@ test "time.from_timestamp: rejects nsec above Int64 maximum" {
 
 ///|
 test "time.from_timestamp: Int64 minimum second matches Go normalization" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -129,7 +129,7 @@ test "time.from_timestamp: Int64 minimum second matches Go normalization" {
 
 ///|
 test "time.from_timestamp: Int64 maximum second matches Go normalization" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -144,7 +144,7 @@ test "time.from_timestamp: Int64 maximum second matches Go normalization" {
 
 ///|
 test "time.parse_duration: rejects overflow when accumulating components" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -159,7 +159,7 @@ test "time.parse_duration: rejects overflow when accumulating components" {
 
 ///|
 test "time.parse_duration: accepts maxDuration without error" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -174,7 +174,7 @@ test "time.parse_duration: accepts maxDuration without error" {
 
 ///|
 test "time.time: nanosecond larger than Int32 max is normalized correctly" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -193,7 +193,7 @@ test "time.time: nanosecond larger than Int32 max is normalized correctly" {
 
 ///|
 test "time.time: rejects BigInt kwarg outside signed 64-bit range" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -208,7 +208,7 @@ test "time.time: rejects BigInt kwarg outside signed 64-bit range" {
 
 ///|
 test "time.parse_time: positive offset preserved in wall-clock attributes" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -225,7 +225,7 @@ test "time.parse_time: positive offset preserved in wall-clock attributes" {
 
 ///|
 test "time.parse_time: negative offset preserved in wall-clock attributes" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -242,7 +242,7 @@ test "time.parse_time: negative offset preserved in wall-clock attributes" {
 
 ///|
 test "time.parse_time: UTC instant is correct regardless of offset in string" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -259,7 +259,7 @@ test "time.parse_time: UTC instant is correct regardless of offset in string" {
 
 ///|
 test "time.parse_time: str of time with non-UTC offset includes zone abbreviation" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -275,7 +275,7 @@ test "time.parse_time: str of time with non-UTC offset includes zone abbreviatio
 
 ///|
 test "time.parse_time: Z suffix produces UTC wall-clock attributes" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -291,7 +291,7 @@ test "time.parse_time: Z suffix produces UTC wall-clock attributes" {
 
 ///|
 test "time.parse_time: go-layout with explicit offset preserves wall-clock hour" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")

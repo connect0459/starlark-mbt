@@ -5,7 +5,7 @@ fn run_struct(src : String) -> Array[String] {
     "gensym": @struct.gensym_builtin(),
     "module": @struct.module_builtin(),
   })
-  run_with_predeclared(predeclared, src)
+  @starlarktest.run_with_predeclared(predeclared, src)
 }
 
 ///|

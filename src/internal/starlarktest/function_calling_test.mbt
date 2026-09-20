@@ -69,7 +69,7 @@ let basic_param_src : String =
 
 ///|
 test "parameter passing: basic positional, keyword, *args, **kwargs" {
-  let errs = run_star_string(basic_param_src)
+  let errs = @starlarktest.run_star_string(basic_param_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
@@ -110,7 +110,7 @@ let kwonly_param_src : String =
 
 ///|
 test "parameter passing: keyword-only params after * and *args" {
-  let errs = run_star_string(kwonly_param_src)
+  let errs = @starlarktest.run_star_string(kwonly_param_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
@@ -136,7 +136,7 @@ let required_kwonly_src : String =
 
 ///|
 test "parameter passing: required keyword-only params" {
-  let errs = run_star_string(required_kwonly_src)
+  let errs = @starlarktest.run_star_string(required_kwonly_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
@@ -168,7 +168,7 @@ let mixed_varargs_kwonly_src : String =
 
 ///|
 test "parameter passing: *args with required keyword-only params (function j)" {
-  let errs = run_star_string(mixed_varargs_kwonly_src)
+  let errs = @starlarktest.run_star_string(mixed_varargs_kwonly_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
@@ -187,7 +187,7 @@ let kwargs_non_string_key_src : String =
 
 ///|
 test "**kwargs expansion rejects non-string keys" {
-  let errs = run_star_string(kwargs_non_string_key_src)
+  let errs = @starlarktest.run_star_string(kwargs_non_string_key_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
@@ -206,7 +206,7 @@ let splat_operand_type_src : String =
 
 ///|
 test "splat operand type errors match starlark-go wording" {
-  let errs = run_star_string(splat_operand_type_src)
+  let errs = @starlarktest.run_star_string(splat_operand_type_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }
@@ -221,7 +221,7 @@ let non_callable_src : String =
 
 ///|
 test "calling a non-callable value matches starlark-go wording" {
-  let errs = run_star_string(non_callable_src)
+  let errs = @starlarktest.run_star_string(non_callable_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

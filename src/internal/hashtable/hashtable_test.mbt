@@ -1,8 +1,8 @@
 // Helper to construct a Starlark-typed hashtable in tests
 
 ///|
-fn new_dict() -> Hashtable[@value.Value, @value.Value] {
-  Hashtable::new(
+fn new_dict() -> @hashtable.Hashtable[@value.Value, @value.Value] {
+  @hashtable.Hashtable::new(
     @value.Value::hash,
     fn(a, b) { @value.starlark_equals_depth(a, b, @value.compare_limit) },
     @value.Value::None,

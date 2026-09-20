@@ -24,7 +24,7 @@ test "ExtVal Container: `in` operator works on custom container" {
   })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("my_cont", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -54,7 +54,7 @@ test "ExtVal HasAttrs: dir() returns attr_names for custom value" {
   )
   let predeclared = @eval.Predeclared::new()
   predeclared.set("my_obj_val", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -82,7 +82,7 @@ test "ExtVal HasAttrs: getattr works on custom value" {
   )
   let predeclared = @eval.Predeclared::new()
   predeclared.set("my_obj_val", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -102,7 +102,7 @@ test "ExtVal: type() returns custom type name" {
   })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("cv", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -130,7 +130,7 @@ test "ExtVal binary_fn: + operator dispatches to binary_fn" {
   })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("counter", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -158,7 +158,7 @@ test "ExtVal binary_fn: right-hand dispatch when ExtVal is rhs" {
   })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("counter", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -183,7 +183,7 @@ test "ExtVal unary_fn: - operator dispatches to unary_fn" {
   })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("mynum", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -227,7 +227,7 @@ test "ExtVal compare_fn: < operator dispatches to compare_fn" {
   let n5 = make_num(5N)
   let predeclared = @eval.Predeclared::new()
   predeclared.set("n5", n5)
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -254,7 +254,7 @@ test "ExtVal HasSetField: x.field=v dispatches to set_field_fn" {
     })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("obj", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
@@ -276,7 +276,7 @@ test "ExtVal HasSetField: error from set_field_fn propagates as EvalError" {
   }).with_set_field(fn(name, _val) { Err("read-only field: \{name}") })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("obj", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(predeclared, "obj.x = 1")
+  let errs = @starlarktest.run_with_predeclared(predeclared, "obj.x = 1")
   assert_eq(errs.length(), 1)
   assert_true(errs[0].contains("read-only field: x"))
 }
@@ -288,7 +288,7 @@ test "ExtVal HasSetField: type without set_field_fn raises cannot-assign error" 
   })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("obj", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(predeclared, "obj.x = 1")
+  let errs = @starlarktest.run_with_predeclared(predeclared, "obj.x = 1")
   assert_eq(errs.length(), 1)
   assert_true(errs[0].contains("can't assign to .x field of frozen_obj"))
 }
@@ -309,7 +309,7 @@ test "ExtVal HasSetKey: x[k]=v dispatches to set_key_fn for arbitrary keys" {
     })
   let predeclared = @eval.Predeclared::new()
   predeclared.set("m", @value.Value::ExtVal(cv))
-  let errs = run_with_predeclared(
+  let errs = @starlarktest.run_with_predeclared(
     predeclared,
     (
       #|load("assert.star", "assert")
