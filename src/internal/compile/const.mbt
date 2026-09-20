@@ -17,3 +17,6 @@ pub(all) enum Const {
   CStr(String)
   CBytes(Bytes)
 } derive(Eq)
+
+///|
+pub extend Const with Eq::{not_equal, equal}

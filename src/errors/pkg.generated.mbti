@@ -75,6 +75,8 @@ pub(all) enum SyntaxErrorKind {
   UnterminatedString
   Other
 } derive(Eq)
+pub fn SyntaxErrorKind::equal(Self, Self) -> Bool
+pub fn SyntaxErrorKind::not_equal(Self, Self) -> Bool
 
 // Type aliases
 

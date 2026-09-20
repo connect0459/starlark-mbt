@@ -1,6 +1,6 @@
 ///|
 test "time module: is_valid_timezone recognizes IANA names and rejects unknown ones" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -20,7 +20,7 @@ test "time module: in_location reports stable offsets for zones without daylight
   // Restricted to zones that never observe daylight saving, so the offset is
   // the same year-round and on every backend (the wasm/js timezone table uses
   // fixed offsets while native reads the OS tzdata).
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -49,7 +49,7 @@ test "time module: in_location preserves the instant across every supported regi
   // timestamp, whatever offset that zone carries. This holds on every backend,
   // so it exercises one representative of each region in the timezone table
   // without depending on daylight-saving-sensitive offsets.
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -111,7 +111,7 @@ test "time module: in_location preserves the instant across every supported regi
 
 ///|
 test "time module: in_location supports POSIX Etc/GMT offsets with inverted sign" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -153,7 +153,7 @@ test "time module: in_location supports POSIX Etc/GMT offsets with inverted sign
 
 ///|
 test "time module: in_location and format reject malformed arguments" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -172,7 +172,7 @@ test "time module: in_location and format reject malformed arguments" {
 
 ///|
 test "time module: time constructor builds instants in UTC and named zones" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -190,7 +190,7 @@ test "time module: time constructor builds instants in UTC and named zones" {
 
 ///|
 test "time module: time constructor validates argument types and names" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -214,7 +214,7 @@ test "time module: time constructor validates argument types and names" {
 
 ///|
 test "time module: parse_time interprets values relative to a location" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")

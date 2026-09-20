@@ -2427,7 +2427,7 @@ pub let now_override_key : String = "time.now"
 /// ```mbt check
 /// test {
 ///   // The Unix epoch: 1970-01-01 00:00:00 UTC.
-///   let v = time_value(0L, 0)
+///   let v = @time.time_value(0L, 0)
 ///   inspect(@value.Value::type_name(v), content="time.time")
 /// }
 /// ```
@@ -2875,7 +2875,7 @@ fn make_is_valid_timezone_fn() -> @value.Value {
 ///
 /// ```mbt check
 /// test {
-///   let m = time_module()
+///   let m = @time.time_module()
 ///   guard m is @value.Value::Module(mod) else { fail("expected module") }
 ///   inspect(mod.name(), content="time")
 ///   // Parsing functions are present.

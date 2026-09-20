@@ -39,11 +39,15 @@ pub(all) enum Const {
   CStr(String)
   CBytes(Bytes)
 } derive(Eq)
+pub fn Const::equal(Self, Self) -> Bool
+pub fn Const::not_equal(Self, Self) -> Bool
 
 pub(all) enum FreevarSource {
   FromLocal(Int)
   FromFree(Int)
 } derive(Eq)
+pub fn FreevarSource::equal(Self, Self) -> Bool
+pub fn FreevarSource::not_equal(Self, Self) -> Bool
 
 pub(all) struct Funcode {
   pos : @errors.Position
@@ -70,6 +74,8 @@ pub(all) struct Instr {
   op : Opcode
   arg : Int
 } derive(Eq)
+pub fn Instr::equal(Self, Self) -> Bool
+pub fn Instr::not_equal(Self, Self) -> Bool
 
 pub(all) struct LoadStmt {
   path : String
@@ -152,8 +158,10 @@ pub(all) enum Opcode {
   CallVarKw
   AugApply
 } derive(Eq)
+pub fn Opcode::equal(Self, Self) -> Bool
 pub fn Opcode::from_byte(Byte) -> Self?
 pub fn Opcode::has_arg(Self) -> Bool
+pub fn Opcode::not_equal(Self, Self) -> Bool
 pub fn Opcode::to_byte(Self) -> Byte
 
 pub(all) enum ParamSpec {
@@ -163,12 +171,16 @@ pub(all) enum ParamSpec {
   PStarArgs(String)
   PKwArgs(String)
 } derive(Eq)
+pub fn ParamSpec::equal(Self, Self) -> Bool
+pub fn ParamSpec::not_equal(Self, Self) -> Bool
 
 pub(all) struct PcLine {
   pc : Int
   line : Int
   col : Int
 } derive(Eq)
+pub fn PcLine::equal(Self, Self) -> Bool
+pub fn PcLine::not_equal(Self, Self) -> Bool
 
 // Type aliases
 

@@ -302,6 +302,7 @@ pub(all) enum Value {
   BytesElems(StarlarkBytesElems)
   ExtVal(CustomValue)
 }
+pub fn Value::equal(Self, Self) -> Bool
 pub fn Value::freeze(Self) -> Unit
 pub fn Value::freeze_checked(Self) -> Result[Unit, String]
 pub fn Value::hash(Self) -> Result[UInt, String]
@@ -312,6 +313,7 @@ pub fn Value::new_int(Int64) -> Self
 pub fn Value::new_list(Array[Self]) -> Self
 pub fn Value::new_set() -> Self
 pub fn Value::new_string(String) -> Self
+pub fn Value::not_equal(Self, Self) -> Bool
 pub fn Value::repr(Self) -> String
 pub fn Value::repr_at_depth(Self, Int) -> Result[String, String]
 pub fn Value::repr_checked(Self) -> Result[String, String]

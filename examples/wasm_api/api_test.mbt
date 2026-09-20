@@ -1,17 +1,20 @@
 ///|
 test "exec_script: empty script returns empty globals and output" {
-  assert_eq(exec_script(""), "{\"globals\":{},\"output\":\"\"}")
+  assert_eq(@wasm_api.exec_script(""), "{\"globals\":{},\"output\":\"\"}")
 }
 
 ///|
 test "exec_script: integer global is encoded as bare JSON number" {
-  assert_eq(exec_script("x = 42"), "{\"globals\":{\"x\":42},\"output\":\"\"}")
+  assert_eq(
+    @wasm_api.exec_script("x = 42"),
+    "{\"globals\":{\"x\":42},\"output\":\"\"}",
+  )
 }
 
 ///|
 test "exec_script: list global is encoded as JSON array" {
   assert_eq(
-    exec_script("nums = [1, 2, 3]"),
+    @wasm_api.exec_script("nums = [1, 2, 3]"),
     "{\"globals\":{\"nums\":[1,2,3]},\"output\":\"\"}",
   )
 }
@@ -19,21 +22,21 @@ test "exec_script: list global is encoded as JSON array" {
 ///|
 test "exec_script: print output is captured and appended with newline" {
   assert_eq(
-    exec_script("print(\"hello\")"),
+    @wasm_api.exec_script("print(\"hello\")"),
     "{\"globals\":{},\"output\":\"hello\\n\"}",
   )
 }
 
 ///|
 test "exec_script: syntax error returns JSON error object" {
-  let result = exec_script("x = (")
+  let result = @wasm_api.exec_script("x = (")
   assert_true(result.has_prefix("{\"error\":"))
 }
 
 ///|
 test "exec_script: print of bytes is byte-faithful for ASCII bytes" {
   assert_eq(
-    exec_script("print(b\"\\x41\")"),
+    @wasm_api.exec_script("print(b\"\\x41\")"),
     "{\"globals\":{},\"output\":\"A\\n\"}",
   )
 }
@@ -41,7 +44,7 @@ test "exec_script: print of bytes is byte-faithful for ASCII bytes" {
 ///|
 test "exec_script_with_env: empty env behaves like exec_script" {
   assert_eq(
-    exec_script_with_env("x = 1", "{}"),
+    @wasm_api.exec_script_with_env("x = 1", "{}"),
     "{\"globals\":{\"x\":1},\"output\":\"\"}",
   )
 }
@@ -49,7 +52,7 @@ test "exec_script_with_env: empty env behaves like exec_script" {
 ///|
 test "exec_script_with_env: string constant is readable from script" {
   assert_eq(
-    exec_script_with_env(
+    @wasm_api.exec_script_with_env(
       "result = MY_CONST + \"!\"", "{\"MY_CONST\":\"hello\"}",
     ),
     "{\"globals\":{\"result\":\"hello!\"},\"output\":\"\"}",
@@ -59,7 +62,7 @@ test "exec_script_with_env: string constant is readable from script" {
 ///|
 test "exec_script_with_env: integer constant is readable from script" {
   assert_eq(
-    exec_script_with_env("doubled = BASE * 2", "{\"BASE\":21}"),
+    @wasm_api.exec_script_with_env("doubled = BASE * 2", "{\"BASE\":21}"),
     "{\"globals\":{\"doubled\":42},\"output\":\"\"}",
   )
 }
@@ -67,14 +70,16 @@ test "exec_script_with_env: integer constant is readable from script" {
 ///|
 test "exec_script_with_env: list constant is readable from script" {
   assert_eq(
-    exec_script_with_env("n = len(ITEMS)", "{\"ITEMS\":[1,2,3]}"),
+    @wasm_api.exec_script_with_env("n = len(ITEMS)", "{\"ITEMS\":[1,2,3]}"),
     "{\"globals\":{\"n\":3},\"output\":\"\"}",
   )
 }
 
 ///|
 test "exec_script_with_env: injected names are not in returned globals" {
-  let result = exec_script_with_env("x = 1", "{\"INJECTED\":\"value\"}")
+  let result = @wasm_api.exec_script_with_env(
+    "x = 1", "{\"INJECTED\":\"value\"}",
+  )
   assert_true(result.contains("\"x\":1"))
   assert_false(result.contains("INJECTED"))
 }
@@ -82,34 +87,34 @@ test "exec_script_with_env: injected names are not in returned globals" {
 ///|
 test "exec_script_with_env: print can use injected constant" {
   assert_eq(
-    exec_script_with_env("print(GREETING)", "{\"GREETING\":\"hi\"}"),
+    @wasm_api.exec_script_with_env("print(GREETING)", "{\"GREETING\":\"hi\"}"),
     "{\"globals\":{},\"output\":\"hi\\n\"}",
   )
 }
 
 ///|
 test "exec_script_with_env: invalid JSON env returns error" {
-  let result = exec_script_with_env("x = 1", "not-json")
+  let result = @wasm_api.exec_script_with_env("x = 1", "not-json")
   assert_true(result.has_prefix("{\"error\":"))
 }
 
 ///|
 test "exec_script_with_env: non-object JSON env returns error" {
-  let result = exec_script_with_env("x = 1", "[1,2,3]")
+  let result = @wasm_api.exec_script_with_env("x = 1", "[1,2,3]")
   assert_true(result.has_prefix("{\"error\":"))
 }
 
 ///|
 test "exec_script_with_options: empty options uses default dialect" {
   assert_eq(
-    exec_script_with_options("x = 42", "{}"),
+    @wasm_api.exec_script_with_options("x = 42", "{}"),
     "{\"globals\":{\"x\":42},\"output\":\"\"}",
   )
 }
 
 ///|
 test "exec_script_with_options: allow_top_level_control true permits top-level if" {
-  let result = exec_script_with_options(
+  let result = @wasm_api.exec_script_with_options(
     "if True:\n  x = 1", "{\"allow_top_level_control\": true}",
   )
   assert_true(result.contains("\"x\":1"))
@@ -117,13 +122,13 @@ test "exec_script_with_options: allow_top_level_control true permits top-level i
 
 ///|
 test "exec_script_with_options: allow_top_level_control false (default) forbids top-level if" {
-  let result = exec_script_with_options("if True:\n  x = 1", "{}")
+  let result = @wasm_api.exec_script_with_options("if True:\n  x = 1", "{}")
   assert_true(result.has_prefix("{\"error\":"))
 }
 
 ///|
 test "exec_script_with_options: allow_set false disables set literals" {
-  let result = exec_script_with_options(
+  let result = @wasm_api.exec_script_with_options(
     "s = {1, 2, 3}", "{\"allow_set\": false}",
   )
   assert_true(result.has_prefix("{\"error\":"))
@@ -132,31 +137,35 @@ test "exec_script_with_options: allow_set false disables set literals" {
 ///|
 test "exec_script_with_options: allow_recursion true enables recursive functions" {
   let src = "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\nresult = fact(5)"
-  let result = exec_script_with_options(src, "{\"allow_recursion\": true}")
+  let result = @wasm_api.exec_script_with_options(
+    src, "{\"allow_recursion\": true}",
+  )
   assert_true(result.contains("\"result\":120"))
 }
 
 ///|
 test "exec_script_with_options: allow_recursion false (default) rejects recursive calls" {
   let src = "def fact(n):\n  if n <= 1:\n    return 1\n  return n * fact(n - 1)\nresult = fact(5)"
-  let result = exec_script_with_options(src, "{}")
+  let result = @wasm_api.exec_script_with_options(src, "{}")
   assert_true(result.has_prefix("{\"error\":"))
 }
 
 ///|
 test "exec_script_with_options: invalid JSON options returns error" {
-  let result = exec_script_with_options("x = 1", "not-json")
+  let result = @wasm_api.exec_script_with_options("x = 1", "not-json")
   assert_true(result.has_prefix("{\"error\":"))
 }
 
 ///|
 test "exec_script_with_options: unknown option key returns error" {
-  let result = exec_script_with_options("x = 1", "{\"unknown_flag\": true}")
+  let result = @wasm_api.exec_script_with_options(
+    "x = 1", "{\"unknown_flag\": true}",
+  )
   assert_true(result.has_prefix("{\"error\":"))
 }
 
 ///|
 test "exec_script_with_options: non-boolean option value returns error" {
-  let result = exec_script_with_options("x = 1", "{\"allow_set\": 1}")
+  let result = @wasm_api.exec_script_with_options("x = 1", "{\"allow_set\": 1}")
   assert_true(result.has_prefix("{\"error\":"))
 }

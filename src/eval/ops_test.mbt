@@ -3,9 +3,9 @@
 
 ///|
 fn eval_op(src : String) -> Result[@value.Value, @errors.EvalError] {
-  let t = Thread::new("test")
+  let t = @eval.Thread::new("test")
   let env = @value.StringDict::new()
-  eval_expr(t, "<test>", src, env)
+  @eval.eval_expr(t, "<test>", src, env)
 }
 
 // --- String operators ---
@@ -449,27 +449,33 @@ fn eval_with_env(
   src : String,
   bindings : Array[(String, @value.Value)],
 ) -> Result[@value.Value, @errors.EvalError] {
-  let t = Thread::new("test")
+  let t = @eval.Thread::new("test")
   let env = @value.StringDict::new()
   for pair in bindings {
     let (name, v) = pair
     env.set(name, v)
   }
-  eval_expr(t, "<test>", src, env)
+  @eval.eval_expr(t, "<test>", src, env)
 }
 
 ///|
 fn exec_with_predeclared(
   src : String,
   bindings : Array[(String, @value.Value)],
-) -> Result[Module, @errors.EvalError] {
-  let t = Thread::new("test")
-  let pd = Predeclared::new()
+) -> Result[@eval.Module, @errors.EvalError] {
+  let t = @eval.Thread::new("test")
+  let pd = @eval.Predeclared::new()
   for pair in bindings {
     let (name, v) = pair
     pd.set(name, v)
   }
-  exec_file_with_predeclared(t, "<test>", src, Options::default(), pd)
+  @eval.exec_file_with_predeclared(
+    t,
+    "<test>",
+    src,
+    @eval.Options::default(),
+    pd,
+  )
 }
 
 ///|
@@ -693,10 +699,10 @@ test "eval_expr: int divided by float zero raises an error" {
 
 ///|
 test "eval_expr: real division is rejected when allow_float option is disabled" {
-  let t = Thread::new("test")
-  let opts = Options::default().with_allow_float(false)
+  let t = @eval.Thread::new("test")
+  let opts = @eval.Options::default().with_allow_float(false)
   let env = @value.StringDict::new()
-  let result = eval_expr_with_opts(t, "<test>", "1 / 2", opts, env)
+  let result = @eval.eval_expr_with_opts(t, "<test>", "1 / 2", opts, env)
   assert_true(result is Err(_))
   match result {
     Err(e) => assert_true(e.msg().contains("real division is not allowed"))

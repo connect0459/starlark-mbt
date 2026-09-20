@@ -87,7 +87,7 @@ let iter_freeze_src : String =
 
 ///|
 test "iterator freezing: mutating iterated container raises error" {
-  let errs = run_star_string(iter_freeze_src)
+  let errs = @starlarktest.run_star_string(iter_freeze_src)
   if errs.length() != 0 {
     fail(errs.join("\n"))
   }

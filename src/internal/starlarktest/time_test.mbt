@@ -1,6 +1,6 @@
 ///|
 test "time module: from_timestamp and parse_time basics" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -16,7 +16,7 @@ test "time module: from_timestamp and parse_time basics" {
 
 ///|
 test "time module: from_timestamp with nanoseconds" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -60,7 +60,7 @@ test "time module: now() honors a thread-local clock override" {
 
 ///|
 test "time module: parse_time honors a custom Go layout" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -93,7 +93,7 @@ test "time module: parse_time honors a custom Go layout" {
 
 ///|
 test "time module: time attributes" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -114,7 +114,7 @@ test "time module: time attributes" {
 
 ///|
 test "time module: time - time = duration" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -129,7 +129,7 @@ test "time module: time - time = duration" {
 
 ///|
 test "time module: duration arithmetic" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -147,7 +147,7 @@ test "time module: duration arithmetic" {
 
 ///|
 test "time module: parse_duration errors use the full original string" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -165,7 +165,7 @@ test "time module: parse_duration errors use the full original string" {
 
 ///|
 test "time module: duration attributes" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -185,7 +185,7 @@ test "time module: duration attributes" {
 
 ///|
 test "time module: duration type and str" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -201,7 +201,7 @@ test "time module: duration type and str" {
 
 ///|
 test "time module: duration hash (usable as dict key)" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -219,7 +219,7 @@ test "time module: duration hash (usable as dict key)" {
 
 ///|
 test "time module: duration comparison" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -246,7 +246,7 @@ test "time module: duration comparison" {
 
 ///|
 test "time module: duration binary operations" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -277,7 +277,7 @@ test "time module: duration binary operations" {
 
 ///|
 test "time module: is_valid_timezone" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -293,7 +293,7 @@ test "time module: is_valid_timezone" {
 
 ///|
 test "time module: in_location with US/Eastern" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -309,7 +309,7 @@ test "time module: in_location with US/Eastern" {
 
 ///|
 test "time module: time constructor" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -328,7 +328,7 @@ test "time module: time constructor" {
 
 ///|
 test "time module: time constructor attributes" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -351,7 +351,7 @@ test "time module: time constructor attributes" {
 
 ///|
 test "time module: time truth value" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -366,7 +366,7 @@ test "time module: time truth value" {
 
 ///|
 test "time module: time type and str" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -382,7 +382,7 @@ test "time module: time type and str" {
 
 ///|
 test "time module: time hash (usable as dict key)" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -400,7 +400,7 @@ test "time module: time hash (usable as dict key)" {
 
 ///|
 test "time module: time comparison" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -432,7 +432,7 @@ test "time module: time comparison" {
 
 ///|
 test "time module: time binary operations" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -452,7 +452,7 @@ test "time module: time binary operations" {
 
 ///|
 test "time module: now returns a time.time" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -466,7 +466,7 @@ test "time module: now returns a time.time" {
 
 ///|
 test "time: repr uses bare function name without 'time.' prefix" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -480,7 +480,7 @@ test "time: repr uses bare function name without 'time.' prefix" {
 
 ///|
 test "time.time: unexpected positional arguments (no prefix, plural)" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -494,7 +494,7 @@ test "time.time: unexpected positional arguments (no prefix, plural)" {
 
 ///|
 test "time.parse_duration: accepts existing time.duration value" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -509,7 +509,7 @@ test "time.parse_duration: accepts existing time.duration value" {
 
 ///|
 test "time.from_timestamp: rejects more than 2 positional args" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -523,7 +523,7 @@ test "time.from_timestamp: rejects more than 2 positional args" {
 
 ///|
 test "time.duration: unknown attribute raises unrecognized error" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -538,7 +538,7 @@ test "time.duration: unknown attribute raises unrecognized error" {
 
 ///|
 test "time.parse_duration: type error uses Go format" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -552,7 +552,7 @@ test "time.parse_duration: type error uses Go format" {
 
 ///|
 test "time.parse_duration: string parse error carries parameter prefix" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -568,7 +568,7 @@ test "time.parse_duration: string parse error carries parameter prefix" {
 
 ///|
 test "time.time: out-of-range kwarg error includes parameter name and value" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -593,7 +593,7 @@ test "time.time: out-of-range kwarg error includes parameter name and value" {
 
 ///|
 test "time: duration * BigInt outside int64 range raises out-of-range error" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -607,7 +607,7 @@ test "time: duration * BigInt outside int64 range raises out-of-range error" {
 
 ///|
 test "time: duration / BigInt outside int64 range raises out-of-range error" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -624,7 +624,7 @@ test "time: duration / BigInt outside int64 range raises out-of-range error" {
 
 ///|
 test "time: time + duration does not overflow Int64 for year 2500" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -641,7 +641,7 @@ test "time: time + duration does not overflow Int64 for year 2500" {
 
 ///|
 test "time: time - duration crossing epoch produces valid sub-second result" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -659,7 +659,7 @@ test "time: time - duration crossing epoch produces valid sub-second result" {
 
 ///|
 test "time: duration + time does not overflow Int64 for far-future dates" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -676,7 +676,7 @@ test "time: duration + time does not overflow Int64 for far-future dates" {
 
 ///|
 test "time: from_timestamp normalizes nsec >= 1e9 by carrying into seconds" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -693,7 +693,7 @@ test "time: from_timestamp normalizes nsec >= 1e9 by carrying into seconds" {
 
 ///|
 test "time: from_timestamp normalizes negative nsec by borrowing from seconds" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -709,7 +709,7 @@ test "time: from_timestamp normalizes negative nsec by borrowing from seconds" {
 
 ///|
 test "time.time: normalizes month=13 to next year January" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -723,7 +723,7 @@ test "time.time: normalizes month=13 to next year January" {
 
 ///|
 test "time.time: normalizes month=0 to previous year December" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -737,7 +737,7 @@ test "time.time: normalizes month=0 to previous year December" {
 
 ///|
 test "time module: time + duration preserves timezone" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -754,7 +754,7 @@ test "time module: time + duration preserves timezone" {
 
 ///|
 test "time.time: month=0 with default day=0 produces Go-equivalent normalized date" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")

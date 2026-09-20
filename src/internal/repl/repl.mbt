@@ -16,6 +16,9 @@ pub impl Show for ReplOutput with fn output(self, logger) {
 }
 
 ///|
+pub extend ReplOutput with Show::{to_string, output}
+
+///|
 /// Evaluates a single REPL input string in the given `globals` environment.
 /// A bare expression is evaluated and its repr returned as `Value(_)`;
 /// statements produce `Empty` on success; syntax/eval errors produce

@@ -3,7 +3,7 @@
 
 ///|
 fn scan(src : String) -> String {
-  let sc = Scanner::new("foo.star", src)
+  let sc = @lexer.Scanner::new("foo.star", src)
   let buf = StringBuilder()
   let mut first = true
   while true {
@@ -28,7 +28,7 @@ fn scan(src : String) -> String {
 }
 
 ///|
-fn tok_to_test_string(tok : Token) -> String {
+fn tok_to_test_string(tok : @lexer.Token) -> String {
   match tok {
     EOF => "EOF"
     Newline => "newline"
@@ -605,8 +605,8 @@ test "scan: bytes literal with escape" {
 // sc_tok returns the first non-whitespace token (skipping EOF check)
 
 ///|
-fn sc_tok(src : String) -> Token {
-  let sc = Scanner::new("test.star", src)
+fn sc_tok(src : String) -> @lexer.Token {
+  let sc = @lexer.Scanner::new("test.star", src)
   match sc.next_token() {
     Ok(st) => st.token()
     Err(e) => abort(e.to_string())
@@ -617,7 +617,7 @@ fn sc_tok(src : String) -> Token {
 
 ///|
 test "scan: position of first token" {
-  let sc = Scanner::new("foo.star", "abc")
+  let sc = @lexer.Scanner::new("foo.star", "abc")
   let st = sc.next_token().unwrap()
   assert_eq(st.pos().line(), 1)
   assert_eq(st.pos().col(), 1)
@@ -625,7 +625,7 @@ test "scan: position of first token" {
 
 ///|
 test "scan: position after leading whitespace" {
-  let sc = Scanner::new("foo.star", "  abc")
+  let sc = @lexer.Scanner::new("foo.star", "  abc")
   let st = sc.next_token().unwrap()
   assert_eq(st.pos().line(), 1)
   assert_eq(st.pos().col(), 3)

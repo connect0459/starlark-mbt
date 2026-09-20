@@ -1,13 +1,13 @@
 // Tests for built-in functions and type methods called via exec_file.
 
 ///|
-fn exec_b(src : String) -> Result[Module, @errors.EvalError] {
-  let t = Thread::new("test")
-  exec_file(t, "<test>", src, Options::default())
+fn exec_b(src : String) -> Result[@eval.Module, @errors.EvalError] {
+  let t = @eval.Thread::new("test")
+  @eval.exec_file(t, "<test>", src, @eval.Options::default())
 }
 
 ///|
-fn g(m : Module, name : String) -> @value.Value? {
+fn g(m : @eval.Module, name : String) -> @value.Value? {
   m.get(name)
 }
 
@@ -642,9 +642,14 @@ test "exec_file: set converts list and deduplicates elements" {
 ///|
 test "exec_file: print sends output through Thread print callback" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   match
-    exec_file(t, "<test>", "print(\"hello\", \"world\")", Options::default()) {
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(\"hello\", \"world\")",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(@utf8.decode_lossy(msgs[0][:]), "hello world")
@@ -656,8 +661,9 @@ test "exec_file: print sends output through Thread print callback" {
 ///|
 test "exec_file: print outputs Bytes value as raw bytes, not repr" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
-  match exec_file(t, "<test>", "print(b\"hello\")", Options::default()) {
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    @eval.exec_file(t, "<test>", "print(b\"hello\")", @eval.Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"hello")
@@ -669,8 +675,14 @@ test "exec_file: print outputs Bytes value as raw bytes, not repr" {
 ///|
 test "exec_file: print outputs Bytes with hex escapes as raw bytes" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
-  match exec_file(t, "<test>", "print(b\"\\x61\\x62\")", Options::default()) {
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(b\"\\x61\\x62\")",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"ab")
@@ -684,10 +696,11 @@ test "exec_file: print outputs Bytes with hex escapes as raw bytes" {
 ///|
 test "exec_file: print emits raw bytes for invalid-UTF-8 string slice" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   // "é" encodes as [0xC3, 0xA9]; "é"[0] is [0xC3] — invalid UTF-8 alone.
   // The output must be the raw byte 0xC3, not the U+FFFD replacement (ef bf bd).
-  match exec_file(t, "<test>", "print(\"é\"[0])", Options::default()) {
+  match
+    @eval.exec_file(t, "<test>", "print(\"é\"[0])", @eval.Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xc3")
@@ -699,8 +712,9 @@ test "exec_file: print emits raw bytes for invalid-UTF-8 string slice" {
 ///|
 test "exec_file: print emits raw bytes for invalid-UTF-8 string range slice" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
-  match exec_file(t, "<test>", "print(\"é\"[0:1])", Options::default()) {
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    @eval.exec_file(t, "<test>", "print(\"é\"[0:1])", @eval.Options::default()) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xc3")
@@ -712,9 +726,14 @@ test "exec_file: print emits raw bytes for invalid-UTF-8 string range slice" {
 ///|
 test "exec_file: join emits raw bytes for invalid-UTF-8 string elements" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   match
-    exec_file(t, "<test>", "print(\"\".join([\"é\"[0]]))", Options::default()) {
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(\"\".join([\"é\"[0]]))",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xc3")
@@ -726,11 +745,16 @@ test "exec_file: join emits raw bytes for invalid-UTF-8 string elements" {
 ///|
 test "exec_file: percent-c emits U+FFFD for invalid-UTF-8 single-byte string" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   // go: DecodeRuneInString("\xc3") → (U+FFFD, 1); WriteRune(U+FFFD) = ef bf bd.
   // %c is a rune-formatting verb, not a raw-byte sink.
   match
-    exec_file(t, "<test>", "print(\"%c\" % \"é\"[0])", Options::default()) {
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(\"%c\" % \"é\"[0])",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xef\xbf\xbd")
@@ -742,8 +766,14 @@ test "exec_file: percent-c emits U+FFFD for invalid-UTF-8 single-byte string" {
 ///|
 test "exec_file: percent-c emits correct UTF-8 for valid emoji string" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
-  match exec_file(t, "<test>", "print(\"%c\" % \"😀\")", Options::default()) {
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(\"%c\" % \"😀\")",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xf0\x9f\x98\x80")
@@ -755,9 +785,14 @@ test "exec_file: percent-c emits correct UTF-8 for valid emoji string" {
 ///|
 test "exec_file: percent-s preserves raw bytes of invalid-UTF-8 string" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   match
-    exec_file(t, "<test>", "print(\"%s\" % \"é\"[0])", Options::default()) {
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(\"%s\" % \"é\"[0])",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xc3")
@@ -769,13 +804,13 @@ test "exec_file: percent-s preserves raw bytes of invalid-UTF-8 string" {
 ///|
 test "exec_file: str_format preserves raw bytes of invalid-UTF-8 string" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   match
-    exec_file(
+    @eval.exec_file(
       t,
       "<test>",
       "print(\"{}\".format(\"é\"[0]))",
-      Options::default(),
+      @eval.Options::default(),
     ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
@@ -788,8 +823,14 @@ test "exec_file: str_format preserves raw bytes of invalid-UTF-8 string" {
 ///|
 test "exec_file: str() returns identity for invalid-UTF-8 string" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
-  match exec_file(t, "<test>", "print(str(\"é\"[0]))", Options::default()) {
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  match
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(str(\"é\"[0]))",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xc3")
@@ -801,14 +842,14 @@ test "exec_file: str() returns identity for invalid-UTF-8 string" {
 ///|
 test "exec_file: print with invalid-UTF-8 sep emits raw separator bytes" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   // sep is "é"[0] = [0xC3]; output should be "a\xc3b"
   match
-    exec_file(
+    @eval.exec_file(
       t,
       "<test>",
       "print(\"a\", \"b\", sep=\"é\"[0])",
-      Options::default(),
+      @eval.Options::default(),
     ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
@@ -821,12 +862,17 @@ test "exec_file: print with invalid-UTF-8 sep emits raw separator bytes" {
 ///|
 test "exec_file: str_format emits valid UTF-8 for non-BMP chars in template literal" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   // "😀" = U+1F600 encodes as f0 9f 98 80 in UTF-8. If str_format wrongly
   // encodes the template char-by-char as UTF-16 code units (surrogate halves),
   // it would emit the CESU-8 sequence ed a0 bd ed b8 80 instead.
   match
-    exec_file(t, "<test>", "print(\"😀{}\".format(1))", Options::default()) {
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(\"😀{}\".format(1))",
+      @eval.Options::default(),
+    ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
       assert_eq(msgs[0], b"\xf0\x9f\x98\x801")
@@ -838,15 +884,15 @@ test "exec_file: str_format emits valid UTF-8 for non-BMP chars in template lite
 ///|
 test "exec_file: str_format emits raw bytes for invalid-UTF-8 in template literal" {
   let msgs : Array[Bytes] = []
-  let t = Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
+  let t = @eval.Thread::with_print("test", fn(_, bytes) { msgs.push(bytes) })
   // Template "é"[0] + "{}" has the invalid byte 0xc3 in the literal part.
   // It should be emitted as-is, not replaced with U+FFFD (ef bf bd).
   match
-    exec_file(
+    @eval.exec_file(
       t,
       "<test>",
       "x = \"é\"[0] + \"{}\"\nprint(x.format(1))",
-      Options::default(),
+      @eval.Options::default(),
     ) {
     Ok(_) => {
       assert_eq(msgs.length(), 1)
@@ -1915,12 +1961,12 @@ test "exec_file: function with keyword args collects extra keyword arguments" {
 
 ///|
 test "exec_file: recursion limit prevents infinite recursion" {
-  let t = Thread::new("test")
-  let result = exec_file(
+  let t = @eval.Thread::new("test")
+  let result = @eval.exec_file(
     t,
     "<test>",
     "def f(n):\n  return f(n + 1)\nf(0)",
-    Options::default().with_allow_recursion(true),
+    @eval.Options::default().with_allow_recursion(true),
   )
   assert_true(result is Err(_))
 }
@@ -2208,9 +2254,16 @@ test "exec_file: max with key= returns element with largest key" {
 ///|
 test "exec_file: print with sep= uses custom separator" {
   let captured : Array[Bytes] = []
-  let t = Thread::with_print("<test>", fn(_, bytes) { captured.push(bytes) })
+  let t = @eval.Thread::with_print("<test>", fn(_, bytes) {
+    captured.push(bytes)
+  })
   ignore(
-    exec_file(t, "<test>", "print(1, 2, 3, sep=\"-\")", Options::default()),
+    @eval.exec_file(
+      t,
+      "<test>",
+      "print(1, 2, 3, sep=\"-\")",
+      @eval.Options::default(),
+    ),
   )
   assert_true(
     captured.length() > 0 && @utf8.decode_lossy(captured[0][:]) == "1-2-3",
@@ -2220,8 +2273,12 @@ test "exec_file: print with sep= uses custom separator" {
 ///|
 test "exec_file: print with sep= and no args outputs empty string" {
   let captured : Array[Bytes] = []
-  let t = Thread::with_print("<test>", fn(_, bytes) { captured.push(bytes) })
-  ignore(exec_file(t, "<test>", "print(sep=\",\")", Options::default()))
+  let t = @eval.Thread::with_print("<test>", fn(_, bytes) {
+    captured.push(bytes)
+  })
+  ignore(
+    @eval.exec_file(t, "<test>", "print(sep=\",\")", @eval.Options::default()),
+  )
   assert_true(captured.length() > 0 && captured[0] == b"")
 }
 
@@ -2964,13 +3021,13 @@ test "exec_file: dict.pop on frozen dict with missing key and default raises fro
     d.freeze()
   }
   pre["frozen_d"] = d_val
-  let t = Thread::new("test")
-  let result = exec_file_with_predeclared(
+  let t = @eval.Thread::new("test")
+  let result = @eval.exec_file_with_predeclared(
     t,
     "<test>",
     "v = frozen_d.pop(99, \"x\")",
-    Options::default(),
-    Predeclared::from_map(pre),
+    @eval.Options::default(),
+    @eval.Predeclared::from_map(pre),
   )
   match result {
     Ok(_) => assert_true(false)
@@ -3023,13 +3080,13 @@ test "exec_file: list.clear on frozen list error matches go wording" {
     l.freeze()
   }
   pre["frozen_xs"] = list_val
-  let t = Thread::new("test")
-  let result = exec_file_with_predeclared(
+  let t = @eval.Thread::new("test")
+  let result = @eval.exec_file_with_predeclared(
     t,
     "<test>",
     "frozen_xs.clear()",
-    Options::default(),
-    Predeclared::from_map(pre),
+    @eval.Options::default(),
+    @eval.Predeclared::from_map(pre),
   )
   match result {
     Ok(_) => assert_true(false)

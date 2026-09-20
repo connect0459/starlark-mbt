@@ -8,7 +8,7 @@
 
 ///|
 test "DebugFrame: trace captures param values across nested Starlark frames" {
-  let thread = Thread::new("test")
+  let thread = @eval.Thread::new("test")
   let got : Ref[String] = { val: "", }
   let trace_fn = @value.Value::new_builtin("trace", fn(_ctx, _args, _kwargs) {
     let lines : Array[String] = []
@@ -37,18 +37,18 @@ test "DebugFrame: trace captures param values across nested Starlark frames" {
     got.val = lines.join("\n")
     Ok(@value.Value::None)
   })
-  let pred = Predeclared::new()
+  let pred = @eval.Predeclared::new()
   pred.set("trace", trace_fn)
   let src =
     #|def f(x, y): trace()
     #|def g(z): f(z, z*z)
     #|g(7)
   match
-    exec_file_with_predeclared(
+    @eval.exec_file_with_predeclared(
       thread,
       "foo.star",
       src,
-      Options::default(),
+      @eval.Options::default(),
       pred,
     ) {
     Err(e) => fail("exec failed: \{e.to_string()}")
@@ -61,7 +61,7 @@ test "DebugFrame: trace captures param values across nested Starlark frames" {
 
 ///|
 test "DebugFrame: env builtin builds dict of own locals in calling Starlark frame" {
-  let thread = Thread::new("test")
+  let thread = @eval.Thread::new("test")
   let env_fn = @value.Value::new_builtin("env", fn(_ctx, _args, _kwargs) {
     let depth = thread.call_stack_depth()
     if depth < 1 {
@@ -92,7 +92,7 @@ test "DebugFrame: env builtin builds dict of own locals in calling Starlark fram
     dict.freeze()
     Ok(@value.Value::Dict(dict))
   })
-  let pred = Predeclared::new()
+  let pred = @eval.Predeclared::new()
   pred.set("env", env_fn)
   let src =
     #|e = [None]
@@ -107,11 +107,11 @@ test "DebugFrame: env builtin builds dict of own locals in calling Starlark fram
     #|
     #|f(1)
   match
-    exec_file_with_predeclared(
+    @eval.exec_file_with_predeclared(
       thread,
       "env.star",
       src,
-      Options::default(),
+      @eval.Options::default(),
       pred,
     ) {
     Err(e) => fail("exec failed: \{e.to_string()}")

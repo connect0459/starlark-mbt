@@ -9,6 +9,9 @@ pub impl Eq for Value with fn equal(a, b) -> Bool {
 }
 
 ///|
+pub extend Value with Eq::{not_equal, equal}
+
+///|
 /// Returns the Starlark `str(v)` string representation of `v`. Unlike
 /// `repr`, string values are returned without quotes.
 ///

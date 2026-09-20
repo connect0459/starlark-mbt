@@ -15,7 +15,7 @@ fn val_eq(a : @value.Value?, b : @value.Value?) -> Bool {
 test "unpack_args: required positional args are bound in order" {
   let pos = [@value.Value::Int(1N), @value.Value::Int(2N)]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_args("f", pos, kw, ["a", "b"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a", "b"]) {
     Ok(r) => {
       assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
       assert_true(val_eq(r[1], Some(@value.Value::Int(2N))))
@@ -28,7 +28,7 @@ test "unpack_args: required positional args are bound in order" {
 test "unpack_args: missing required arg returns error with param name" {
   let pos : Array[@value.Value] = []
   let kw : Array[(String, @value.Value)] = []
-  match unpack_args("f", pos, kw, ["a"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a"]) {
     Err(e) =>
       if !(e.contains("missing") && e.contains("a")) {
         fail("expected error mentioning 'a', got: \{e}")
@@ -45,7 +45,7 @@ test "unpack_args: too many positional args returns error mentioning fn name" {
     @value.Value::Int(3N),
   ]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_args("f", pos, kw, ["a", "b"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a", "b"]) {
     Err(e) =>
       if !e.contains("f") {
         fail("expected fn name in error, got: \{e}")
@@ -60,7 +60,7 @@ test "unpack_args: too many positional args returns error mentioning fn name" {
 test "unpack_args: optional param is None when not provided" {
   let pos = [@value.Value::Int(1N)]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_args("f", pos, kw, ["a", "b?"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a", "b?"]) {
     Ok(r) => {
       assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
       assert_true(val_eq(r[1], None))
@@ -73,7 +73,7 @@ test "unpack_args: optional param is None when not provided" {
 test "unpack_args: optional param is bound when provided positionally" {
   let pos = [@value.Value::Int(1N), @value.Value::Int(42N)]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_args("f", pos, kw, ["a", "b?"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a", "b?"]) {
     Ok(r) => {
       assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
       assert_true(val_eq(r[1], Some(@value.Value::Int(42N))))
@@ -88,7 +88,7 @@ test "unpack_args: optional param is bound when provided positionally" {
 test "unpack_args: keyword arg binds to named param" {
   let pos : Array[@value.Value] = []
   let kw = [("a", @value.Value::Int(99N))]
-  match unpack_args("f", pos, kw, ["a"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a"]) {
     Ok(r) => assert_true(val_eq(r[0], Some(@value.Value::Int(99N))))
     Err(e) => fail("expected Ok, got Err: \{e}")
   }
@@ -98,7 +98,7 @@ test "unpack_args: keyword arg binds to named param" {
 test "unpack_args: unexpected keyword arg returns error mentioning the name" {
   let pos : Array[@value.Value] = []
   let kw = [("z", @value.Value::Int(1N))]
-  match unpack_args("f", pos, kw, ["a"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a"]) {
     Err(e) =>
       if !(e.contains("unexpected") && e.contains("\"z\"")) {
         fail("expected error about 'z', got: \{e}")
@@ -111,7 +111,7 @@ test "unpack_args: unexpected keyword arg returns error mentioning the name" {
 test "unpack_args: unexpected keyword close to a param name includes did-you-mean suggestion" {
   let pos : Array[@value.Value] = []
   let kw = [("prefxi", @value.Value::Int(1N))]
-  match unpack_args("f", pos, kw, ["prefix", "indent"]) {
+  match @unpack.unpack_args("f", pos, kw, ["prefix", "indent"]) {
     Err(e) =>
       assert_eq(
         e, "f: unexpected keyword argument \"prefxi\" (did you mean prefix?)",
@@ -124,7 +124,7 @@ test "unpack_args: unexpected keyword close to a param name includes did-you-mea
 test "unpack_args: unexpected keyword far from all params omits suggestion" {
   let pos : Array[@value.Value] = []
   let kw = [("bogus", @value.Value::Int(1N))]
-  match unpack_args("f", pos, kw, ["prefix", "indent"]) {
+  match @unpack.unpack_args("f", pos, kw, ["prefix", "indent"]) {
     Err(e) => assert_eq(e, "f: unexpected keyword argument \"bogus\"")
     Ok(_) => panic()
   }
@@ -134,7 +134,7 @@ test "unpack_args: unexpected keyword far from all params omits suggestion" {
 test "unpack_args: duplicate keyword arg returns error" {
   let pos = [@value.Value::Int(1N)]
   let kw = [("a", @value.Value::Int(2N))]
-  match unpack_args("f", pos, kw, ["a"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a"]) {
     Err(e) =>
       if !(e.contains("multiple") && e.contains("\"a\"")) {
         fail("expected error about duplicate of 'a', got: \{e}")
@@ -149,7 +149,7 @@ test "unpack_args: duplicate keyword arg returns error" {
 test "unpack_args: skip_none param ignores None as if absent" {
   let pos : Array[@value.Value] = []
   let kw = [("a", @value.Value::None)]
-  match unpack_args("f", pos, kw, ["a??"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a??"]) {
     Ok(r) => assert_true(val_eq(r[0], None))
     Err(e) => fail("expected Ok, got Err: \{e}")
   }
@@ -159,7 +159,7 @@ test "unpack_args: skip_none param ignores None as if absent" {
 test "unpack_args: skip_none param binds non-None value normally" {
   let pos = [@value.Value::Int(5N)]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_args("f", pos, kw, ["a??"]) {
+  match @unpack.unpack_args("f", pos, kw, ["a??"]) {
     Ok(r) => assert_true(val_eq(r[0], Some(@value.Value::Int(5N))))
     Err(e) => fail("expected Ok, got Err: \{e}")
   }
@@ -171,7 +171,7 @@ test "unpack_args: skip_none param binds non-None value normally" {
 test "unpack_positional: binds args within range" {
   let pos = [@value.Value::Int(1N), @value.Value::Int(2N)]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_positional("f", pos, kw, 1, 3) {
+  match @unpack.unpack_positional("f", pos, kw, 1, 3) {
     Ok(r) => {
       assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
       assert_true(val_eq(r[1], Some(@value.Value::Int(2N))))
@@ -185,7 +185,7 @@ test "unpack_positional: binds args within range" {
 test "unpack_positional: rejects keyword args" {
   let pos : Array[@value.Value] = []
   let kw = [("x", @value.Value::Int(1N))]
-  match unpack_positional("f", pos, kw, 0, 1) {
+  match @unpack.unpack_positional("f", pos, kw, 0, 1) {
     Err(e) =>
       if !e.contains("keyword") {
         fail("expected keyword error, got: \{e}")
@@ -198,7 +198,7 @@ test "unpack_positional: rejects keyword args" {
 test "unpack_positional: too few args returns error mentioning fn name" {
   let pos : Array[@value.Value] = []
   let kw : Array[(String, @value.Value)] = []
-  match unpack_positional("f", pos, kw, 2, 3) {
+  match @unpack.unpack_positional("f", pos, kw, 2, 3) {
     Err(e) =>
       if !e.contains("f") {
         fail("expected fn name in error, got: \{e}")
@@ -215,7 +215,7 @@ test "unpack_positional: too many args returns error mentioning fn name" {
     @value.Value::Int(3N),
   ]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_positional("f", pos, kw, 1, 2) {
+  match @unpack.unpack_positional("f", pos, kw, 1, 2) {
     Err(e) =>
       if !e.contains("f") {
         fail("expected fn name in error, got: \{e}")
@@ -231,7 +231,7 @@ test "unpack_args: param after optional is implicitly optional (positional)" {
   let pos = [@value.Value::Int(1N), @value.Value::Int(2N)]
   let kw : Array[(String, @value.Value)] = []
   // "z" comes after "y?" — must be implicitly optional
-  match unpack_args("f", pos, kw, ["x", "y?", "z"]) {
+  match @unpack.unpack_args("f", pos, kw, ["x", "y?", "z"]) {
     Ok(r) => {
       assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
       assert_true(val_eq(r[1], Some(@value.Value::Int(2N))))
@@ -245,7 +245,7 @@ test "unpack_args: param after optional is implicitly optional (positional)" {
 test "unpack_args: param after optional is implicitly optional (keyword)" {
   let pos : Array[@value.Value] = []
   let kw = [("x", @value.Value::Int(1N)), ("y", @value.Value::Int(2N))]
-  match unpack_args("unpack", pos, kw, ["x", "y?", "z"]) {
+  match @unpack.unpack_args("unpack", pos, kw, ["x", "y?", "z"]) {
     Ok(r) => {
       assert_true(val_eq(r[0], Some(@value.Value::Int(1N))))
       assert_true(val_eq(r[1], Some(@value.Value::Int(2N))))
@@ -259,7 +259,7 @@ test "unpack_args: param after optional is implicitly optional (keyword)" {
 test "unpack_args: only first arg provided; params after optional are None" {
   let pos = [@value.Value::String(@value.StarlarkString::new("a"))]
   let kw : Array[(String, @value.Value)] = []
-  match unpack_args("unpack", pos, kw, ["a", "b?", "c"]) {
+  match @unpack.unpack_args("unpack", pos, kw, ["a", "b?", "c"]) {
     Ok(r) => {
       assert_true(val_eq(r[1], None))
       assert_true(val_eq(r[2], None))

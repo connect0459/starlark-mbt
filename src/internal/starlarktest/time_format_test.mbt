@@ -1,6 +1,6 @@
 ///|
 test "time module: duration str renders sub-second magnitudes like Go" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -20,7 +20,7 @@ test "time module: duration str renders sub-second magnitudes like Go" {
 
 ///|
 test "time module: duration str renders hours, minutes, and fractions" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -38,7 +38,7 @@ test "time module: duration str renders hours, minutes, and fractions" {
 
 ///|
 test "time module: format renders date, name, and clock verbs" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -64,7 +64,7 @@ test "time module: format renders date, name, and clock verbs" {
 
 ///|
 test "time module: format renders fractional seconds with fixed and trimmed widths" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -87,7 +87,7 @@ test "time module: format renders fractional seconds with fixed and trimmed widt
 
 ///|
 test "time module: format renders numeric timezone offsets" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -110,7 +110,7 @@ test "time module: format renders numeric timezone offsets" {
 
 ///|
 test "time module: format renders hour-only timezone offset with Z07 and -07" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -132,7 +132,7 @@ test "time module: format renders hour-only timezone offset with Z07 and -07" {
 
 ///|
 test "time module: parse_time accepts hour-only timezone with Z07 and -07" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -157,7 +157,7 @@ test "time module: parse_time accepts hour-only timezone with Z07 and -07" {
 
 ///|
 test "time module: parse_time rejects out-of-range hour offset in Z07 and -07" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -178,7 +178,7 @@ test "time module: parse_time rejects out-of-range hour offset in Z07 and -07" {
 
 ///|
 test "time module: format renders zero-padded day-of-year with 002 verb" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -203,7 +203,7 @@ test "time module: format renders zero-padded day-of-year with 002 verb" {
 
 ///|
 test "time module: parse_time reads zero-padded day-of-year with 002 verb" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -228,7 +228,7 @@ test "time module: parse_time reads zero-padded day-of-year with 002 verb" {
 
 ///|
 test "time module: parse_time rejects out-of-range day-of-year with 002 verb" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -253,7 +253,7 @@ test "time module: parse_time rejects out-of-range day-of-year with 002 verb" {
 
 ///|
 test "time module: format renders space-padded day-of-month with _2 verb" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -272,7 +272,7 @@ test "time module: format renders space-padded day-of-month with _2 verb" {
 
 ///|
 test "time module: str renders fractional seconds and zoned offsets" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")

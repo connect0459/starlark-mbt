@@ -12,6 +12,9 @@ pub(all) struct Instr {
 } derive(Eq)
 
 ///|
+pub extend Instr with Eq::{not_equal, equal}
+
+///|
 priv suberror DisasmErr {
   DisasmErr(String)
 }

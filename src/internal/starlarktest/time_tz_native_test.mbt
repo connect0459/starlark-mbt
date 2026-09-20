@@ -1,6 +1,6 @@
 ///|
 test "time module: DST-aware time constructor with EDT offset" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -24,7 +24,7 @@ test "time module: DST-aware time constructor with EDT offset" {
 
 ///|
 test "time module: DST-aware in_location converts UTC to EDT" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -40,7 +40,7 @@ test "time module: DST-aware in_location converts UTC to EDT" {
 
 ///|
 test "time module: in_location shows zone abbreviation for Asia/Tokyo" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -56,7 +56,7 @@ test "time module: in_location shows zone abbreviation for Asia/Tokyo" {
 
 ///|
 test "time module: in_location shows EST abbreviation for US/Eastern at epoch" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -72,7 +72,7 @@ test "time module: in_location shows EST abbreviation for US/Eastern at epoch" {
 
 ///|
 test "time module: from_timestamp preserves unix instant" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -92,7 +92,7 @@ test "time module: time constructor normalizes a spring-forward DST gap in Ameri
   // time_zone_test.mbt because the wasm/js stub timezone table returns a
   // fixed offset regardless of the queried instant and cannot represent DST
   // transitions at all; only the native backend's OS tzdata lookup can.
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -108,7 +108,7 @@ test "time module: time constructor normalizes a spring-forward DST gap in Ameri
 
 ///|
 test "time module: parse_time normalizes a spring-forward DST gap in America/New_York" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -124,7 +124,7 @@ test "time module: parse_time normalizes a spring-forward DST gap in America/New
 
 ///|
 test "time module: time constructor normalizes a spring-forward DST gap in Europe/London" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -140,7 +140,7 @@ test "time module: time constructor normalizes a spring-forward DST gap in Europ
 
 ///|
 test "time module: time constructor keeps the ambiguous DST fall-back reading in America/New_York" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")
@@ -156,7 +156,7 @@ test "time module: time constructor keeps the ambiguous DST fall-back reading in
 
 ///|
 test "time module: now is after a known past date" {
-  let errs = run_star_string(
+  let errs = @starlarktest.run_star_string(
     (
       #|load("assert.star", "assert")
       #|load("time.star", "time")

@@ -16,6 +16,9 @@ pub(all) struct PcLine {
 } derive(Eq)
 
 ///|
+pub extend PcLine with Eq::{not_equal, equal}
+
+///|
 /// The compiled code of a single function (or the implicit module-init
 /// function). The executable body is `code` (opcode bytes); `pclinetab` recovers
 /// source positions for diagnostics. `locals` lists every local slot with
@@ -58,6 +61,9 @@ pub(all) enum FreevarSource {
 } derive(Eq)
 
 ///|
+pub extend FreevarSource with Eq::{not_equal, equal}
+
+///|
 /// An AST-free description of a single function parameter, mirroring the
 /// `@syntax.Param` kinds the binder needs (without the default expression, which
 /// is evaluated at definition time and stored on the function value).
@@ -68,6 +74,9 @@ pub(all) enum ParamSpec {
   PStarArgs(String) // `*args`
   PKwArgs(String) // `**kwargs`
 } derive(Eq)
+
+///|
+pub extend ParamSpec with Eq::{not_equal, equal}
 
 ///|
 /// Recovers the source position for the instruction at bytecode offset `pc`.

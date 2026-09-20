@@ -102,6 +102,9 @@ pub(all) enum Token {
 } derive(Eq)
 
 ///|
+pub extend Token with Eq::{not_equal, equal}
+
+///|
 /// Returns a human-readable description of the token (e.g. `"identifier"`, `"+"`).
 ///
 /// Parameters:

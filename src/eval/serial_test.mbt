@@ -1,5 +1,5 @@
 ///|
-fn compile_feature_program() -> Program raise Error {
+fn compile_feature_program() -> @eval.Program raise Error {
   // A program that exercises the serialization-sensitive corners of the
   // bytecode: boolean constants, closures that capture free variables, and
   // variadic / keyword-only parameter specs.
@@ -22,15 +22,17 @@ fn compile_feature_program() -> Program raise Error {
     #|
     #|kw_result = kwonly(1, b=2)
   match
-    source_program("features.star", src, Options::default(), fn(_) { false }) {
+    @eval.source_program("features.star", src, @eval.Options::default(), fn(_) {
+      false
+    }) {
     Ok(p) => p
     Err(e) => fail("source_program failed: \{e.to_string()}")
   }
 }
 
 ///|
-fn run_module(prog : Program) -> Module raise Error {
-  match prog.init(Thread::new("test"), Predeclared::new()) {
+fn run_module(prog : @eval.Program) -> @eval.Module raise Error {
+  match prog.init(@eval.Thread::new("test"), @eval.Predeclared::new()) {
     Ok(m) => m
     Err(e) => fail("init failed: \{e.to_string()}")
   }
@@ -40,7 +42,7 @@ fn run_module(prog : Program) -> Module raise Error {
 test "serialization: a decoded program re-encodes to identical bytes" {
   let prog = compile_feature_program()
   let bytes = prog.write()
-  let decoded = match compiled_program(bytes) {
+  let decoded = match @eval.compiled_program(bytes) {
     Ok(p) => p
     Err(e) => fail("compiled_program failed: \{e.to_string()}")
   }
@@ -50,7 +52,7 @@ test "serialization: a decoded program re-encodes to identical bytes" {
 ///|
 test "serialization: a decoded program preserves runtime behavior" {
   let original = compile_feature_program()
-  let decoded = match compiled_program(original.write()) {
+  let decoded = match @eval.compiled_program(original.write()) {
     Ok(p) => p
     Err(e) => fail("compiled_program failed: \{e.to_string()}")
   }
@@ -68,7 +70,8 @@ test "serialization: a decoded program preserves runtime behavior" {
 
 ///|
 test "serialization: the closure free variable survives a round trip" {
-  let decoded = match compiled_program(compile_feature_program().write()) {
+  let decoded = match
+    @eval.compiled_program(compile_feature_program().write()) {
     Ok(p) => p
     Err(e) => fail("compiled_program failed: \{e.to_string()}")
   }

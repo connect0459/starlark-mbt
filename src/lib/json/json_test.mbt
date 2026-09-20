@@ -20,7 +20,7 @@ fn list_val(items : Array[@value.Value]) -> @value.Value {
 
 ///|
 fn check_encode(v : @value.Value, expected : String) -> Unit raise Error {
-  match encode_to_json(v) {
+  match @json.encode_to_json(v) {
     Ok(s) => assert_eq(s, expected)
     Err(e) => fail("encode failed: \{e}")
   }
@@ -31,7 +31,7 @@ fn check_encode_err(
   v : @value.Value,
   expected_substr : String,
 ) -> Unit raise Error {
-  match encode_to_json(v) {
+  match @json.encode_to_json(v) {
     Ok(s) => fail("expected encode error, got: \{s}")
     Err(e) =>
       if !e.contains(expected_substr) {
@@ -47,7 +47,7 @@ fn check_indent(
   indent_str : String,
   expected : String,
 ) -> Unit raise Error {
-  match indent_json(input, prefix, indent_str) {
+  match @json.indent_json(input, prefix, indent_str) {
     Ok(s) => assert_eq(s, expected)
     Err(e) => fail("indent failed: \{e}")
   }
@@ -59,7 +59,7 @@ fn assert_decode(
   expected : @value.Value,
   msg : String,
 ) -> Unit raise Error {
-  match decode_from_json(json_str, None) {
+  match @json.decode_from_json(json_str, None) {
     Err(e) => fail("decode \{json_str} failed: \{e}")
     Ok(v) =>
       if !v.starlark_equals(expected) {
@@ -209,7 +209,7 @@ test "encode unrepresentable type returns error" {
 test "encode set with a single element produces a single-element JSON array" {
   let s = @value.StarlarkSet::new()
   s.add(@value.Value::Int(42N)) |> ignore
-  match encode_to_json(@value.Value::Set(s)) {
+  match @json.encode_to_json(@value.Value::Set(s)) {
     Ok(json) => assert_eq(json, "[42]")
     Err(e) => fail("encode set failed: \{e}")
   }
@@ -246,7 +246,7 @@ test "decode float" {
 
 ///|
 test "decode negative zero float" {
-  match decode_from_json("-0.0", None) {
+  match @json.decode_from_json("-0.0", None) {
     Err(e) => fail("decode -0.0 failed: \{e}")
     Ok(v) =>
       match v {
@@ -301,7 +301,7 @@ test "decode array" {
 
 ///|
 test "decode with default on invalid input" {
-  match decode_from_json("{bad json", Some(str_val("fallback"))) {
+  match @json.decode_from_json("{bad json", Some(str_val("fallback"))) {
     Ok(v) =>
       if !v.starlark_equals(str_val("fallback")) {
         fail("expected fallback, got \{v.repr()}")
@@ -312,25 +312,25 @@ test "decode with default on invalid input" {
 
 ///|
 test "decode rejects trailing content" {
-  assert_true(decode_from_json("truefalse", None) is Err(_))
+  assert_true(@json.decode_from_json("truefalse", None) is Err(_))
 }
 
 ///|
 test "decode rejects invalid numbers" {
-  assert_true(decode_from_json("00", None) is Err(_))
-  assert_true(decode_from_json("1.2.3", None) is Err(_))
-  assert_true(decode_from_json("-00", None) is Err(_))
+  assert_true(@json.decode_from_json("00", None) is Err(_))
+  assert_true(@json.decode_from_json("1.2.3", None) is Err(_))
+  assert_true(@json.decode_from_json("-00", None) is Err(_))
 }
 
 ///|
 test "decode invalid number error offset points to end of token" {
   // "00" is 2 chars; token end = offset 2
-  match decode_from_json("00", None) {
+  match @json.decode_from_json("00", None) {
     Err(msg) => assert_true(msg.contains("at offset 2,"))
     Ok(_) => fail("expected error")
   }
   // "-00" is 3 chars; token end = offset 3
-  match decode_from_json("-00", None) {
+  match @json.decode_from_json("-00", None) {
     Err(msg) => assert_true(msg.contains("at offset 3,"))
     Ok(_) => fail("expected error")
   }
@@ -339,12 +339,12 @@ test "decode invalid number error offset points to end of token" {
 ///|
 test "decode unclosed string error offset points to opening quote" {
   // `"abc` — the opening quote is at offset 0
-  match decode_from_json("\"abc", None) {
+  match @json.decode_from_json("\"abc", None) {
     Err(msg) => assert_true(msg.contains("at offset 0,"))
     Ok(_) => fail("expected error")
   }
   // in an array: `["abc` — the opening quote is at offset 1
-  match decode_from_json("[\"abc", None) {
+  match @json.decode_from_json("[\"abc", None) {
     Err(msg) => assert_true(msg.contains("at offset 1,"))
     Ok(_) => fail("expected error")
   }
@@ -352,17 +352,17 @@ test "decode unclosed string error offset points to opening quote" {
 
 ///|
 test "decode rejects truncated unicode escape with fewer than four hex digits" {
-  assert_true(decode_from_json("\"\\u00\"", None) is Err(_))
+  assert_true(@json.decode_from_json("\"\\u00\"", None) is Err(_))
 }
 
 ///|
 test "decode rejects unicode escape containing non-hex characters" {
-  assert_true(decode_from_json("\"\\uGGGG\"", None) is Err(_))
+  assert_true(@json.decode_from_json("\"\\uGGGG\"", None) is Err(_))
 }
 
 ///|
 test "decode: unicode escape with non-hex char reports the bad character" {
-  match decode_from_json("\"\\uXYZ\"", None) {
+  match @json.decode_from_json("\"\\uXYZ\"", None) {
     Err(e) =>
       assert_true(
         e.contains("invalid character 'X' in \\u hexadecimal character escape"),
@@ -373,7 +373,7 @@ test "decode: unicode escape with non-hex char reports the bad character" {
 
 ///|
 test "decode: truncated unicode escape reports the first non-hex character" {
-  match decode_from_json("\"\\u00\"", None) {
+  match @json.decode_from_json("\"\\u00\"", None) {
     Err(e) => assert_true(e.contains("in \\u hexadecimal character escape"))
     Ok(_) => fail("expected error for truncated \\u00")
   }
@@ -411,22 +411,22 @@ test "indent_json empty object and array" {
 
 ///|
 test "indent_json rejects invalid JSON" {
-  assert_true(indent_json("!invalid", "", "\t") is Err(_))
-  assert_true(indent_json("\"unclosed", "", "\t") is Err(_))
-  assert_true(indent_json("[abc]", "", "\t") is Err(_))
-  assert_true(indent_json("[+inf]", "", "\t") is Err(_))
-  assert_true(indent_json("[.5]", "", "\t") is Err(_))
-  assert_true(indent_json("]", "", "\t") is Err(_))
-  assert_true(indent_json("}", "", "\t") is Err(_))
-  assert_true(indent_json("[1]]", "", "\t") is Err(_))
-  assert_true(indent_json("[nullx]", "", "\t") is Err(_))
-  assert_true(indent_json("[truee]", "", "\t") is Err(_))
-  assert_true(indent_json("[1abc]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("!invalid", "", "\t") is Err(_))
+  assert_true(@json.indent_json("\"unclosed", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[abc]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[+inf]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[.5]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("}", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[1]]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[nullx]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[truee]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[1abc]", "", "\t") is Err(_))
 }
 
 ///|
 test "indent_json: token with non-value-start char reports it as go-compatible error" {
-  match indent_json("bad json", "", "\t") {
+  match @json.indent_json("bad json", "", "\t") {
     Err(e) =>
       assert_eq(e, "invalid character 'b' looking for beginning of value")
     Ok(_) => fail("expected error for 'bad json'")
@@ -435,16 +435,16 @@ test "indent_json: token with non-value-start char reports it as go-compatible e
 
 ///|
 test "indent_json: token starting with value-start char is rejected" {
-  assert_true(indent_json("[nan]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[nan]", "", "\t") is Err(_))
 }
 
 ///|
 test "indent_json reports correct message for mismatched closing bracket" {
-  match indent_json("[1}", "", "\t") {
+  match @json.indent_json("[1}", "", "\t") {
     Err(e) => assert_eq(e, "invalid character '}' after array element")
     Ok(_) => fail("expected error")
   }
-  match indent_json("{\"a\":1]", "", "\t") {
+  match @json.indent_json("{\"a\":1]", "", "\t") {
     Err(e) => assert_eq(e, "invalid character ']' after object key:value pair")
     Ok(_) => fail("expected error")
   }
@@ -452,20 +452,20 @@ test "indent_json reports correct message for mismatched closing bracket" {
 
 ///|
 test "indent_json rejects missing value separators" {
-  assert_true(indent_json("123 456", "", "\t") is Err(_))
-  assert_true(indent_json("[1 2 3]", "", "\t") is Err(_))
-  assert_true(indent_json("{\"a\":1 \"b\":2}", "", "\t") is Err(_))
+  assert_true(@json.indent_json("123 456", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[1 2 3]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("{\"a\":1 \"b\":2}", "", "\t") is Err(_))
 }
 
 ///|
 test "indent_json rejects trailing comma" {
-  assert_true(indent_json("[1,2,]", "", "\t") is Err(_))
-  assert_true(indent_json("{\"a\":1,}", "", "\t") is Err(_))
+  assert_true(@json.indent_json("[1,2,]", "", "\t") is Err(_))
+  assert_true(@json.indent_json("{\"a\":1,}", "", "\t") is Err(_))
 }
 
 ///|
 test "indent_json rejects empty input" {
-  assert_true(indent_json("", "", "\t") is Err(_))
+  assert_true(@json.indent_json("", "", "\t") is Err(_))
 }
 
 ///|
@@ -476,9 +476,9 @@ test "indent_json passes through semantically-invalid but syntactically-valid JS
 
 ///|
 test "decode rejects raw control character (RFC 7159 §7 compliance)" {
-  assert_true(decode_from_json("\"a\tb\"", None) is Err(_))
-  assert_true(decode_from_json("\"a\nb\"", None) is Err(_))
-  assert_true(decode_from_json("\"a\rb\"", None) is Err(_))
+  assert_true(@json.decode_from_json("\"a\tb\"", None) is Err(_))
+  assert_true(@json.decode_from_json("\"a\nb\"", None) is Err(_))
+  assert_true(@json.decode_from_json("\"a\rb\"", None) is Err(_))
 }
 
 ///|
@@ -552,9 +552,9 @@ test "encode then decode round-trips values" {
     list_val([int_val(1L), int_val(2L)]),
   ]
   for v in values {
-    match encode_to_json(v) {
+    match @json.encode_to_json(v) {
       Ok(json_str) =>
-        match decode_from_json(json_str, None) {
+        match @json.decode_from_json(json_str, None) {
           Ok(decoded) =>
             if !v.starlark_equals(decoded) {
               fail("round-trip failed for \{v.repr()}: got \{decoded.repr()}")
@@ -607,7 +607,7 @@ test "decode nesting depth limit: moderate nesting (100 levels) succeeds" {
   for _ in 0..<100 {
     buf.write_char(']')
   }
-  match decode_from_json(buf.to_string(), None) {
+  match @json.decode_from_json(buf.to_string(), None) {
     Ok(_) => ()
     Err(e) => fail("100-level decode should succeed: \{e}")
   }
@@ -619,7 +619,7 @@ test "encode nesting depth limit: moderate nesting (100 levels) succeeds" {
   for _ in 0..<100 {
     v = @value.Value::List(@value.StarlarkList::new([v]))
   }
-  match encode_to_json(v) {
+  match @json.encode_to_json(v) {
     Ok(_) => ()
     Err(e) => fail("100-level encode should succeed: \{e}")
   }

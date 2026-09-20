@@ -141,7 +141,7 @@ fn expect_err(
 
 ///|
 test "math_module: constants e and pi" {
-  let m = math_module()
+  let m = @math.math_module()
   match m {
     @value.Value::Module(mod) => {
       match mod.get("e") {
@@ -160,7 +160,7 @@ test "math_module: constants e and pi" {
 
 ///|
 test "math_module: ceil on float returns int" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_int(call1(m, "ceil", fv(1.2)), 2L)
   expect_int(call1(m, "ceil", fv(-1.2)), -1L)
   expect_int(call1(m, "ceil", fv(0.0)), 0L)
@@ -168,14 +168,14 @@ test "math_module: ceil on float returns int" {
 
 ///|
 test "math_module: ceil on int returns int passthrough" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_int(call1(m, "ceil", iv(5L)), 5L)
   expect_int(call1(m, "ceil", iv(-3L)), -3L)
 }
 
 ///|
 test "math_module: ceil on infinity raises error" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(
     call1(m, "ceil", fv(1.0 / 0.0)),
     "cannot convert float infinity to integer",
@@ -188,7 +188,7 @@ test "math_module: ceil on infinity raises error" {
 
 ///|
 test "math_module: ceil on NaN raises error" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(
     call1(m, "ceil", fv(0.0 / 0.0)),
     "cannot convert float NaN to integer",
@@ -208,7 +208,7 @@ fn expect_exact_err(
 
 ///|
 test "math_module: ceil/floor errors carry no name or parameter prefix" {
-  let m = math_module()
+  let m = @math.math_module()
   let s = @value.Value::String(@value.StarlarkString::new("0"))
   expect_exact_err(call1(m, "ceil", s), "got string, want float or int")
   expect_exact_err(call1(m, "floor", s), "got string, want float or int")
@@ -224,7 +224,7 @@ test "math_module: ceil/floor errors carry no name or parameter prefix" {
 
 ///|
 test "math_module: floor on float returns int" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_int(call1(m, "floor", fv(1.9)), 1L)
   expect_int(call1(m, "floor", fv(-1.9)), -2L)
   expect_int(call1(m, "floor", fv(0.0)), 0L)
@@ -232,14 +232,14 @@ test "math_module: floor on float returns int" {
 
 ///|
 test "math_module: floor on int returns int passthrough" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_int(call1(m, "floor", iv(7L)), 7L)
   expect_int(call1(m, "floor", iv(-2L)), -2L)
 }
 
 ///|
 test "math_module: floor on infinity raises error" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(
     call1(m, "floor", fv(1.0 / 0.0)),
     "cannot convert float infinity to integer",
@@ -252,7 +252,7 @@ test "math_module: floor on infinity raises error" {
 
 ///|
 test "math_module: floor on NaN raises error" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(
     call1(m, "floor", fv(0.0 / 0.0)),
     "cannot convert float NaN to integer",
@@ -261,14 +261,14 @@ test "math_module: floor on NaN raises error" {
 
 ///|
 test "math_module: round" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call1(m, "round", fv(1.5)), 2.0)
   expect_float(call1(m, "round", fv(1.4)), 1.0)
 }
 
 ///|
 test "math_module: fabs" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call1(m, "fabs", fv(-3.5)), 3.5)
   expect_float(call1(m, "fabs", fv(3.5)), 3.5)
   expect_float(call1(m, "fabs", iv(-4L)), 4.0)
@@ -276,21 +276,21 @@ test "math_module: fabs" {
 
 ///|
 test "math_module: sqrt" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call1(m, "sqrt", fv(4.0)), 2.0)
   expect_float(call1(m, "sqrt", fv(9.0)), 3.0)
 }
 
 ///|
 test "math_module: pow" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call2(m, "pow", fv(2.0), fv(10.0)), 1024.0)
   expect_float(call2(m, "pow", fv(2.0), fv(0.0)), 1.0)
 }
 
 ///|
 test "math_module: pow(-1, ±inf) equals 1 per IEEE 754 Annex F" {
-  let m = math_module()
+  let m = @math.math_module()
   let inf = @double.infinity
   expect_float(call2(m, "pow", fv(-1.0), fv(inf)), 1.0)
   expect_float(call2(m, "pow", fv(-1.0), fv(-inf)), 1.0)
@@ -298,32 +298,32 @@ test "math_module: pow(-1, ±inf) equals 1 per IEEE 754 Annex F" {
 
 ///|
 test "math_module: sin and cos" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call1(m, "sin", fv(pi)), 0.0)
   expect_float(call1(m, "cos", fv(0.0)), 1.0)
 }
 
 ///|
 test "math_module: log natural" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call1(m, "log", fv(2.718281828459045)), 1.0)
 }
 
 ///|
 test "math_module: log base=1 raises division by zero" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(call2(m, "log", fv(2.0), fv(1.0)), "division by zero")
 }
 
 ///|
 test "math_module: log base=1 error is exactly 'division by zero' without function prefix" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_exact_err(call2(m, "log", fv(2.0), fv(1.0)), "division by zero")
 }
 
 ///|
 test "math_module: log base=0 computes without error" {
-  let m = math_module()
+  let m = @math.math_module()
   // ln(x)/ln(0) = ln(x)/(-inf) = 0.0
   match call2(m, "log", fv(2.0), fv(0.0)) {
     Ok(@value.Value::Float(_)) => ()
@@ -334,21 +334,21 @@ test "math_module: log base=0 computes without error" {
 
 ///|
 test "math_module: degrees and radians" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call1(m, "degrees", fv(pi)), 180.0)
   expect_float(call1(m, "radians", fv(180.0)), pi)
 }
 
 ///|
 test "math_module: gamma(1)==1, gamma(5)==24" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call1(m, "gamma", fv(1.0)), 1.0)
   expect_float(call1(m, "gamma", fv(5.0)), 24.0)
 }
 
 ///|
 test "math_module: type error for non-numeric arg" {
-  let m = math_module()
+  let m = @math.math_module()
   match
     call1(m, "sqrt", @value.Value::String(@value.StarlarkString::new("x"))) {
     Err(msg) => assert_true(msg.contains("want float or int"))
@@ -358,7 +358,7 @@ test "math_module: type error for non-numeric arg" {
 
 ///|
 test "math_module: unary function rejects wrong argument counts and keyword args" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(call_raw(m, "sin", [], []), "got 0 arguments, want 1")
   expect_err(
     call_raw(m, "sin", [fv(1.0), fv(2.0)], []),
@@ -372,7 +372,7 @@ test "math_module: unary function rejects wrong argument counts and keyword args
 
 ///|
 test "math_module: binary function rejects wrong argument counts and keyword args" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(call_raw(m, "pow", [fv(2.0)], []), "got 1 arguments, want 2")
   expect_err(
     call_raw(m, "pow", [fv(2.0), fv(3.0), fv(4.0)], []),
@@ -386,7 +386,7 @@ test "math_module: binary function rejects wrong argument counts and keyword arg
 
 ///|
 test "math_module: log rejects wrong argument counts and keyword args" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(call_raw(m, "log", [], []), "got 0 arguments, want at least 1")
   expect_err(
     call_raw(m, "log", [fv(2.0), fv(10.0), fv(1.0)], []),
@@ -400,14 +400,14 @@ test "math_module: log rejects wrong argument counts and keyword args" {
 
 ///|
 test "math_module: remainder uses round-half-to-even for non-tie cases" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call2(m, "remainder", fv(3.0), fv(5.0)), -2.0)
   expect_float(call2(m, "remainder", fv(3.5), fv(2.0)), -0.5)
 }
 
 ///|
 test "math_module: remainder applies IEEE 754 round-half-to-even on tie" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(call2(m, "remainder", fv(5.0), fv(2.0)), 1.0)
   expect_float(call2(m, "remainder", fv(7.0), fv(2.0)), -1.0)
   expect_float(call2(m, "remainder", fv(-5.0), fv(2.0)), -1.0)
@@ -416,7 +416,7 @@ test "math_module: remainder applies IEEE 754 round-half-to-even on tie" {
 
 ///|
 test "math_module: remainder preserves precision when x >> y (large ratio)" {
-  let m = math_module()
+  let m = @math.math_module()
   // 1e17 mod 3 = 1 exactly; naive x - rint(x/y)*y rounds to 0
   expect_float(call2(m, "remainder", fv(1.0e17), fv(3.0)), 1.0)
   expect_float(call2(m, "remainder", fv(-1.0e17), fv(3.0)), -1.0)
@@ -434,7 +434,7 @@ test "math_module: remainder preserves precision when x >> y (large ratio)" {
 
 ///|
 test "math_module: remainder applies round-half-to-even on tie when y = 2^52" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float(
     call2(m, "remainder", fv(6755399441055744.0), fv(4503599627370496.0)),
     -2251799813685248.0,
@@ -443,7 +443,7 @@ test "math_module: remainder applies round-half-to-even on tie when y = 2^52" {
 
 ///|
 test "math_module: pow(1, nan) and pow(1, ±inf) return 1.0 per IEEE 754" {
-  let m = math_module()
+  let m = @math.math_module()
   let nan = 0.0 / 0.0
   let inf = @double.infinity
   expect_float(call2(m, "pow", fv(1.0), fv(nan)), 1.0)
@@ -453,7 +453,7 @@ test "math_module: pow(1, nan) and pow(1, ±inf) return 1.0 per IEEE 754" {
 
 ///|
 test "math_module: hypot(±inf, nan) returns +inf" {
-  let m = math_module()
+  let m = @math.math_module()
   let nan = 0.0 / 0.0
   let inf = @double.infinity
   match call2(m, "hypot", fv(inf), fv(nan)) {
@@ -475,7 +475,7 @@ test "math_module: hypot(±inf, nan) returns +inf" {
 
 ///|
 test "math_module: gamma(171) returns finite value" {
-  let m = math_module()
+  let m = @math.math_module()
   match call1(m, "gamma", fv(171.0)) {
     Ok(@value.Value::Float(f)) => {
       assert_true(!f.is_inf())
@@ -520,7 +520,7 @@ fn expect_float_within_1_ulp(
 
 ///|
 test "math_module: gamma precision matches go Cephes implementation" {
-  let m = math_module()
+  let m = @math.math_module()
   // Large argument: Stirling path (x > 33). Former Lanczos gave
   // 4.2690680090040405e+304; go gives 4.2690680090047066e+304.
   expect_float_within_1_ulp(
@@ -581,7 +581,7 @@ test "math_module: gamma precision matches go Cephes implementation" {
 
 ///|
 test "math_module: fabs(-0.0) returns positive zero" {
-  let m = math_module()
+  let m = @math.math_module()
   let neg_zero = -0.0
   match call1(m, "fabs", fv(neg_zero)) {
     Ok(@value.Value::Float(f)) => {
@@ -596,7 +596,7 @@ test "math_module: fabs(-0.0) returns positive zero" {
 
 ///|
 test "math_module: sqrt(-0.0) returns negative zero" {
-  let m = math_module()
+  let m = @math.math_module()
   let neg_zero = -0.0
   match call1(m, "sqrt", fv(neg_zero)) {
     Ok(@value.Value::Float(f)) => {
@@ -639,7 +639,7 @@ fn expect_float_relative(
 
 ///|
 test "math_module: cosh is correct for large arguments (22 <= |x| < 710)" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_float_relative(
     "cosh(22)",
     call1(m, "cosh", fv(22.0)),
@@ -669,7 +669,7 @@ test "math_module: cosh is correct for large arguments (22 <= |x| < 710)" {
 
 ///|
 test "math_module: cosh returns correct finite value at x=710 (exp-overflow window)" {
-  let m = math_module()
+  let m = @math.math_module()
   // x = 710 lies in (ln(DBL_MAX), ln(2*DBL_MAX)) ≈ (709.78, 710.48): cosh is
   // finite even though exp(x) overflows. go/CPython: 1.1169973830808557e+308.
   expect_float_relative(
@@ -688,7 +688,7 @@ test "math_module: cosh returns correct finite value at x=710 (exp-overflow wind
 
 ///|
 test "math_module: cosh overflow saturates to +inf" {
-  let m = math_module()
+  let m = @math.math_module()
   match call1(m, "cosh", fv(1000.0)) {
     Ok(@value.Value::Float(f)) =>
       if !(f.is_inf() && f > 0.0) {
@@ -701,7 +701,7 @@ test "math_module: cosh overflow saturates to +inf" {
 
 ///|
 test "math_module: cosh special cases (nan, infinity, small x)" {
-  let m = math_module()
+  let m = @math.math_module()
   // NaN in → NaN out
   match call1(m, "cosh", fv(0.0 / 0.0)) {
     Ok(@value.Value::Float(f)) =>
@@ -732,7 +732,7 @@ test "math_module: cosh special cases (nan, infinity, small x)" {
 
 ///|
 test "math_module: rounding functions reject wrong argument counts and keyword args" {
-  let m = math_module()
+  let m = @math.math_module()
   expect_err(call_raw(m, "ceil", [], []), "got 0 arguments, want 1")
   expect_err(
     call_raw(m, "ceil", [fv(1.0), fv(2.0)], []),

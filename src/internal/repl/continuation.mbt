@@ -21,6 +21,9 @@ pub impl Show for FeedResult with fn output(self, logger) {
 }
 
 ///|
+pub extend FeedResult with Show::{to_string, output}
+
+///|
 /// Accumulates input lines across continuation prompts and decides when a REPL
 /// chunk is complete. Pure and IO-free, so the continuation logic is testable
 /// on every backend independently of the stdin FFI.
