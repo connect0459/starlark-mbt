@@ -3,6 +3,8 @@ name: Publish dry run
 on:
   workflow_dispatch:
 
+run-name: Publish dry run on ${{ github.ref_name }}
+
 permissions:
   contents: read
 
