@@ -203,7 +203,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - `lib/json`: emit `\u007f` for DEL (U+007F) instead of the invalid escape `\x7f`, producing valid JSON output for strings containing the DEL character (#281)
-- `lib/math`: remove `cosh` large-argument workaround; upstream `@math.cosh` is fixed in moonbit core `0.1.20260618` (#278)
+- `lib/math`: remove `cosh` large-argument workaround; upstream `@math.cosh` is fixed in MoonBit core `0.1.20260618` (#278)
 
 ### Changed
 
