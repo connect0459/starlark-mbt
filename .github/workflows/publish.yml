@@ -4,13 +4,8 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to publish (e.g. v0.1.0)'
-        required: true
 
-run-name: Publish ${{ inputs.tag || github.ref_name }}
+run-name: Publish ${{ github.ref_name }}
 
 permissions:
   contents: read
@@ -21,7 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || github.ref }}
           persist-credentials: false
 
       - uses: hustcer/setup-moonbit@87e2bdf5cf20d3b6f5c5f266a8a513f503bb5b76 # v1.25
@@ -37,7 +31,7 @@ jobs:
       - name: Verify tag matches module version
         shell: bash
         run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
+          TAG="${{ github.ref_name }}"
           version="$(awk -F'"' '/^version[[:space:]]*=/{ print $2; exit }' moon.mod)"
           tag="${TAG#v}"
           test "$tag" = "$version"
@@ -59,10 +53,8 @@ jobs:
         env:
           SECRET: ${{ secrets.MOONCAKES_CREDENTIALS }}
 
-  # Creates the GitHub Release from CHANGELOG.md once mooncakes publish has
-  # succeeded. Runs on workflow_dispatch too (so the job graph stays valid
-  # for dry runs), but the release-notes extraction and release creation
-  # steps below are skipped unless triggered by an actual tag push.
+  # Runs only after mooncakes publish has succeeded, so a GitHub Release is
+  # never created for a version that failed to publish.
   create-release:
     needs: publish
     runs-on: ubuntu-latest
@@ -73,14 +65,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - if: github.event_name == 'push'
-        id: changelog
+      - id: changelog
         uses: connect0459/extract-changelog-entry@ff85c8909583ffaa58df10a9f07f70752f860419 # v1.1.0
         with:
           ref-name: ${{ github.ref_name }}
 
-      - if: github.event_name == 'push'
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           name: ${{ github.ref_name }}
           body_path: ${{ steps.changelog.outputs.release-notes-path }}
