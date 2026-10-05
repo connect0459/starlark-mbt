@@ -13,7 +13,7 @@ keywords = [ "starlark", "interpreter" ]
 description = "The Starlark configuration language, implemented in Moonbit"
 
 import {
-  "moonbitlang/x@0.4.50",
+  "moonbitlang/x@0.5.5",
 }
 
 source = "src"
