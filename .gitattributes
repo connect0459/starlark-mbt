@@ -1,0 +1,2 @@
+src/internal/repl/vendor/** linguist-vendored=true
+src/internal/starlarktest/vendor/** linguist-vendored=true
