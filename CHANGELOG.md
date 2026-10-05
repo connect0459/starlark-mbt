@@ -27,6 +27,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-05
+
+### Miscellaneous
+
+- **chore**: add `.moonignore` to keep agent instructions, APM files, and local tooling out of the package published to mooncakes (#425)
+- **chore**: add `.gitattributes` to mark the vendored `isocline` and `starlark-go` sources (#425)
+- **chore**: bump the pinned `moonbitlang/skills` revision in `apm.yml` and regenerate `apm.lock.yaml` (#425)
+- **chore**: bump `moonbitlang/x` from 0.4.50 to 0.5.5 (#429)
+- **ci**: add a manually triggered publish dry run that verifies the mooncakes credentials without publishing, and publish only from version tags (#426, #427)
+- **ci**: add Dependabot for GitHub Actions and pre-commit hooks, bump `markdownlint-cli2`, and drop the full-history checkout now that the repository is public (#428)
+
 ## [0.5.2] - 2026-09-20
 
 ### Fixed
@@ -509,7 +520,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.2...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.3...HEAD>
+[0.5.3]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.2...v0.5.3>
 [0.5.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.1...v0.5.2>
 [0.5.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.0...v0.5.1>
 [0.5.0]: <https://github.com/connect0459/starlark-mbt/compare/v0.4.1...v0.5.0>
