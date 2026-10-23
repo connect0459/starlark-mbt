@@ -37,7 +37,7 @@ fn StarlarkDict::is_same_storage(
 /// Returns the number of key-value entries.
 ///
 /// Returns the count of entries currently stored in the dict.
-pub fn StarlarkDict::length(self : StarlarkDict) -> Int {
+pub fn StarlarkDict::length(self : StarlarkDict) -> Int32 {
   self.ht.length()
 }
 
@@ -266,7 +266,7 @@ pub fn StarlarkSet::new() -> StarlarkSet {
 /// Returns the number of elements.
 ///
 /// Returns the count of elements currently stored in the set.
-pub fn StarlarkSet::length(self : StarlarkSet) -> Int {
+pub fn StarlarkSet::length(self : StarlarkSet) -> Int32 {
   self.ht.length()
 }
 

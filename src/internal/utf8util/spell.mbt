@@ -1,6 +1,6 @@
 ///|
 // ASCII underscore codepoint, skipped during spell-folding.
-let spell_ascii_underscore : Int = 0x5F // '_'
+let spell_ascii_underscore : Int32 = 0x5F // '_'
 
 ///|
 /// Folds a string to a case-insensitive, underscore-stripped sequence of
@@ -12,8 +12,8 @@ let spell_ascii_underscore : Int = 0x5F // '_'
 /// - `s` : The string to fold.
 ///
 /// Returns an `Array[Int]` of folded codepoints.
-pub fn spell_fold_chars(s : String) -> Array[Int] {
-  let arr : Array[Int] = []
+pub fn spell_fold_chars(s : String) -> Array[Int32] {
+  let arr : Array[Int32] = []
   for ch in s {
     let c = ch.to_int()
     if c == spell_ascii_underscore {
@@ -40,7 +40,11 @@ pub fn spell_fold_chars(s : String) -> Array[Int] {
 ///
 /// Returns the edit distance, or a value ≥ `max_dist` if the strings are
 /// farther apart than the bound.
-pub fn spell_levenshtein(x : Array[Int], y : Array[Int], max_dist : Int) -> Int {
+pub fn spell_levenshtein(
+  x : Array[Int32],
+  y : Array[Int32],
+  max_dist : Int32,
+) -> Int32 {
   let (xs, ys) = if x.length() <= y.length() { (x, y) } else { (y, x) }
   let xl = xs.length()
   let yl = ys.length()
@@ -94,7 +98,7 @@ pub fn spell_levenshtein(x : Array[Int], y : Array[Int], max_dist : Int) -> Int 
 pub fn spell_hint(
   x : String,
   candidates : Array[String],
-  prefix? : String = "",
+  prefix~ : String = "",
 ) -> String {
   match spell_nearest(x, candidates) {
     "" => ""

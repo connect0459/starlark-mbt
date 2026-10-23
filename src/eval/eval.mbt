@@ -1,5 +1,5 @@
 ///|
-let default_max_recursion_depth : Int = 100
+let default_max_recursion_depth : Int32 = 100
 
 ///|
 /// Feature-flag set controlling which optional Starlark dialect features are
@@ -595,9 +595,9 @@ pub struct Thread {
   priv mut load_fn : ((Thread, String) -> Result[Module, @errors.EvalError])?
   priv call_stack : Array[@errors.CallFrame]
   priv debug_stack : Array[ActiveCallFrame]
-  priv max_recursion_depth : Int
-  priv mut max_steps : Int?
-  priv mut steps : Int
+  priv max_recursion_depth : Int32
+  priv mut max_steps : Int32?
+  priv mut steps : Int32
   priv mut cancel_reason : String?
   priv mut on_max_steps : ((Thread) -> Unit)?
   priv locals : Map[String, @value.Value]
@@ -697,7 +697,7 @@ pub fn Thread::with_loader(
 ///   is cancelled with an error.
 ///
 /// Returns a new `Thread` with the given step budget.
-pub fn Thread::with_step_budget(name : String, max_steps : Int) -> Thread {
+pub fn Thread::with_step_budget(name : String, max_steps : Int32) -> Thread {
   {
     name,
     print_fn: fn(_, bytes) { default_println_bytes(bytes) },
@@ -779,7 +779,7 @@ pub fn Thread::reset_steps(self : Thread) -> Unit {
 ///
 /// - `self` : The thread to update.
 /// - `max` : The new maximum step count.
-pub fn Thread::set_max_steps(self : Thread, max : Int) -> Unit {
+pub fn Thread::set_max_steps(self : Thread, max : Int32) -> Unit {
   self.max_steps = Some(max)
 }
 
@@ -828,7 +828,7 @@ pub fn Thread::set_on_max_steps(self : Thread, cb : (Thread) -> Unit) -> Unit {
 
 ///|
 /// Returns the current call-stack depth (number of active Starlark frames).
-pub fn Thread::call_stack_depth(self : Thread) -> Int {
+pub fn Thread::call_stack_depth(self : Thread) -> Int32 {
   self.call_stack.length()
 }
 
@@ -844,7 +844,7 @@ pub fn Thread::call_stack_depth(self : Thread) -> Int {
 ///
 /// Returns `Some(frame)` if a Starlark frame exists at that depth, `None`
 /// otherwise.
-pub fn Thread::debug_frame(self : Thread, depth : Int) -> DebugFrame? {
+pub fn Thread::debug_frame(self : Thread, depth : Int32) -> DebugFrame? {
   let idx = self.debug_stack.length() - 1 - depth
   if idx < 0 || idx >= self.debug_stack.length() {
     return None
@@ -868,7 +868,7 @@ pub fn Thread::call_stack(self : Thread) -> @errors.CallStack {
 /// - `n` : Distance from the innermost frame (0 = innermost).
 ///
 /// Returns `Some(frame)` if the index is valid, `None` otherwise.
-pub fn Thread::call_frame(self : Thread, n : Int) -> @errors.CallFrame? {
+pub fn Thread::call_frame(self : Thread, n : Int32) -> @errors.CallFrame? {
   let idx = self.call_stack.length() - 1 - n
   if idx < 0 || idx >= self.call_stack.length() {
     return None
@@ -878,7 +878,7 @@ pub fn Thread::call_frame(self : Thread, n : Int) -> @errors.CallFrame? {
 
 ///|
 /// Returns the total number of evaluation steps executed on this thread.
-pub fn Thread::execution_steps(self : Thread) -> Int {
+pub fn Thread::execution_steps(self : Thread) -> Int32 {
   self.steps
 }
 
@@ -891,13 +891,13 @@ pub fn Thread::name(self : Thread) -> String {
 ///|
 /// Returns the maximum call-stack depth before a recursion-limit error is
 /// raised.
-pub fn Thread::max_recursion_depth(self : Thread) -> Int {
+pub fn Thread::max_recursion_depth(self : Thread) -> Int32 {
   self.max_recursion_depth
 }
 
 ///|
 /// Returns the current step budget, or `None` if no budget was set.
-pub fn Thread::max_steps(self : Thread) -> Int? {
+pub fn Thread::max_steps(self : Thread) -> Int32? {
   self.max_steps
 }
 
@@ -1001,13 +1001,13 @@ pub fn Module::get(self : Module, name : String) -> @value.Value? {
 
 ///|
 /// Returns the number of exported globals in the module.
-pub fn Module::globals_count(self : Module) -> Int {
+pub fn Module::globals_count(self : Module) -> Int32 {
   self.globals.length()
 }
 
 ///|
 /// Returns the number of predeclared bindings injected before execution.
-pub fn Module::predeclared_count(self : Module) -> Int {
+pub fn Module::predeclared_count(self : Module) -> Int32 {
   self.predeclared.length()
 }
 

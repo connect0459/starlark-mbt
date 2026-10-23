@@ -119,7 +119,7 @@ extend SimpleSeq with Sliceable::{slice}
 
 ///|
 struct SimpleInt {
-  val : Int
+  val : Int32
 }
 
 ///|

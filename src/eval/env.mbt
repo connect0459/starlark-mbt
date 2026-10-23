@@ -198,7 +198,7 @@ fn guard_range_alloc(
 fn guard_accum_alloc(
   ctx : EvalContext,
   caller : String,
-  current_len : Int,
+  current_len : Int32,
 ) -> Unit raise EvalErr {
   if current_len >= max_alloc_elems {
     raise EvalErr(
@@ -250,7 +250,7 @@ fn confirmed_absent(result : Result[Bool, String]) -> Bool {
 fn guard_accum_alloc_if_new(
   ctx : EvalContext,
   caller : String,
-  current_len : Int,
+  current_len : Int32,
   is_present : Bool,
 ) -> Unit raise EvalErr {
   if !is_present {

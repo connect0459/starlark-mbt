@@ -16,7 +16,7 @@ pub fn floor_div(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, Strin
 
 pub fn format_float(Double) -> String
 
-pub fn java_string_hash(Bytes) -> Int
+pub fn java_string_hash(Bytes) -> Int32
 
 pub fn starlark_mod(@bigint.BigInt, @bigint.BigInt) -> Result[@bigint.BigInt, String]
 

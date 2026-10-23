@@ -16,7 +16,7 @@ pub using @errors {type EvalError}
 /// directly.
 pub fn exec(
   src : String,
-  filename? : String = "<expr>",
+  filename~ : String = "<expr>",
 ) -> Result[Module, EvalError] {
   let thread = @eval.Thread::new("main")
   @eval.exec_file(thread, filename, src, @eval.Options::default())
@@ -27,7 +27,7 @@ pub fn exec(
 /// dialect options, and an empty environment, returning its value.
 pub fn eval(
   src : String,
-  filename? : String = "<expr>",
+  filename~ : String = "<expr>",
 ) -> Result[Value, EvalError] {
   let thread = @eval.Thread::new("main")
   @eval.eval_expr(thread, filename, src, @value.StringDict::new())

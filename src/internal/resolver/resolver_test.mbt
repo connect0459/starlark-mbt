@@ -40,7 +40,7 @@ fn has_error(result : @resolver.ResolvedFile, substr : String) -> Bool {
 }
 
 ///|
-fn error_col(result : @resolver.ResolvedFile, substr : String) -> Int? {
+fn error_col(result : @resolver.ResolvedFile, substr : String) -> Int32? {
   for e in result.errors() {
     if e.msg().contains(substr) {
       return Some(e.pos().col())

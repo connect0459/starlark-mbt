@@ -1,2 +1,2 @@
 ///|
-let max_alloc_elems : Int = 1_073_741_824
+let max_alloc_elems : Int32 = 1_073_741_824

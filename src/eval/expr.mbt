@@ -6,7 +6,7 @@ fn slice_int_arg(
   ctx : EvalContext,
   v : @value.Value,
   label : String,
-) -> Int? raise EvalErr {
+) -> Int32? raise EvalErr {
   match v {
     @value.Value::None => None
     @value.Value::Int(n) =>
@@ -860,7 +860,7 @@ fn builtin_range(
   kw_args : Array[(String, @value.Value)],
 ) -> @value.Value raise EvalErr {
   check_positional(ctx, "range", pos_args, kw_args, 1, 3)
-  let param = fn(i : Int) -> Int64 raise EvalErr {
+  let param = fn(i : Int32) -> Int64 raise EvalErr {
     match pos_args[i] {
       @value.Value::Int(n) => range_arg_to_int64(ctx, n)
       v =>
@@ -1423,7 +1423,7 @@ fn builtin_sorted(
           call_value(ctx, f, [v], [], @errors.Position::new("<builtin>", 0, 0))
         })
     }
-    let indices : Array[Int] = Array::make(items.length(), 0)
+    let indices : Array[Int32] = Array::make(items.length(), 0)
     for i in 0..<items.length() {
       indices[i] = i
     }
@@ -1469,7 +1469,7 @@ fn sorted_type_error(
   reverse : Bool,
 ) -> @errors.EvalError {
   let n = keys.length()
-  let idx : Array[Int] = Array::make(n, 0)
+  let idx : Array[Int32] = Array::make(n, 0)
   for i in 0..<n {
     idx[i] = i
   }
@@ -2363,7 +2363,7 @@ fn call_str_method(
 fn set_iterate_into(
   ctx : EvalContext,
   arg : @value.Value,
-  arg_idx : Int,
+  arg_idx : Int32,
   method_nm : String,
   result : @value.StarlarkSet,
 ) -> Unit raise EvalErr {
@@ -2723,7 +2723,7 @@ fn call_bytes_method(
 /// Normalizes a possibly-negative `Int64` index against length `n` and clamps
 /// it into the inclusive range `[0, n]`, the valid domain for `list.index`'s
 /// half-open `start`/`end` parameters.
-fn clamp_slice_index_i64(raw : Int64, n : Int) -> Int {
+fn clamp_slice_index_i64(raw : Int64, n : Int32) -> Int32 {
   let n64 = n.to_int64()
   let j = if raw < 0L { raw + n64 } else { raw }
   if j < 0L {
@@ -2786,8 +2786,8 @@ fn check_positional(
   name : String,
   pos_args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
-  min : Int,
-  max : Int,
+  min : Int32,
+  max : Int32,
 ) -> Unit raise EvalErr {
   if kw_args.length() > 0 {
     raise EvalErr(make_eval_error(ctx, "\{name}: unexpected keyword arguments"))
@@ -2829,7 +2829,7 @@ fn arg_as_string(
   ctx : EvalContext,
   name : String,
   pos_args : Array[@value.Value],
-  idx : Int,
+  idx : Int32,
 ) -> @value.StarlarkString raise EvalErr {
   match pos_args[idx] {
     @value.Value::String(s) => s
@@ -2847,7 +2847,7 @@ fn arg_as_string(
 /// Normalizes a method's `count` parameter: negative values become `-1`
 /// (unlimited); non-negative values exceeding int32 are clamped to
 /// `max_int32`.
-fn int64_to_count(n : Int64) -> Int {
+fn int64_to_count(n : Int64) -> Int32 {
   if n < 0L {
     -1
   } else if n > max_int32.to_int64() {
@@ -2864,7 +2864,7 @@ fn arg_as_int64(
   ctx : EvalContext,
   name : String,
   pos_args : Array[@value.Value],
-  idx : Int,
+  idx : Int32,
 ) -> Int64 raise EvalErr {
   match pos_args[idx] {
     @value.Value::Int(n) => {
@@ -2893,11 +2893,11 @@ fn parse_search_index(
   ctx : EvalContext,
   mname : String,
   args : Array[@value.Value],
-  pos : Int,
-  slen : Int,
-  default_val : Int,
+  pos : Int32,
+  slen : Int32,
+  default_val : Int32,
   kind : String,
-) -> Int raise EvalErr {
+) -> Int32 raise EvalErr {
   if args.length() > pos {
     match args[pos] {
       @value.Value::Int(n) => {
@@ -2933,7 +2933,7 @@ fn parse_search_index(
 ///|
 /// Resolves a possibly-negative byte index against `blen` (negatives count
 /// from the end) and clamps the result to `[0, blen]`.
-fn clamp_byte_index(idx : Int, blen : Int) -> Int {
+fn clamp_byte_index(idx : Int32, blen : Int32) -> Int32 {
   if idx < 0 {
     (blen + idx).max(0)
   } else {
@@ -2946,8 +2946,8 @@ fn clamp_byte_index(idx : Int, blen : Int) -> Int {
 /// `StarlarkString`. Returns an empty string when `lo >= hi`.
 fn str_byte_slice(
   s : @value.StarlarkString,
-  lo : Int,
-  hi : Int,
+  lo : Int32,
+  hi : Int32,
 ) -> @value.StarlarkString {
   if lo >= hi {
     return @value.StarlarkString::new("")
@@ -2964,10 +2964,10 @@ fn str_byte_slice(
 /// `hay[lo:hi]`, or `-1` if not found. An empty `needle` returns `lo`.
 fn bytes_index_in(
   hay : @value.StarlarkString,
-  lo : Int,
-  hi : Int,
+  lo : Int32,
+  hi : Int32,
   needle : @value.StarlarkString,
-) -> Int {
+) -> Int32 {
   let nlen = needle.byte_len()
   if nlen == 0 {
     return lo
@@ -2992,10 +2992,10 @@ fn bytes_index_in(
 /// `hay[lo:hi]`, or `-1` if not found. An empty `needle` returns `hi`.
 fn bytes_last_index_in(
   hay : @value.StarlarkString,
-  lo : Int,
-  hi : Int,
+  lo : Int32,
+  hi : Int32,
   needle : @value.StarlarkString,
-) -> Int {
+) -> Int32 {
   let nlen = needle.byte_len()
   if nlen == 0 {
     return hi
@@ -3057,10 +3057,10 @@ fn bytes_has_suffix(
 /// `strings.Count`).
 fn bytes_count_in(
   hay : @value.StarlarkString,
-  lo : Int,
-  hi : Int,
+  lo : Int32,
+  hi : Int32,
   needle : @value.StarlarkString,
-) -> Int {
+) -> Int32 {
   let nlen = needle.byte_len()
   if nlen == 0 {
     let bytes = hay.to_bytes()
@@ -3093,7 +3093,7 @@ fn bytes_count_in(
 ///|
 /// Returns the byte offset of the first occurrence of `sub` in `s`, or `-1`.
 /// An empty `sub` returns 0.
-fn find_substr(s : String, sub : String) -> Int {
+fn find_substr(s : String, sub : String) -> Int32 {
   if sub.length() == 0 {
     return 0
   }
@@ -3198,7 +3198,7 @@ fn is_whitespace(c : Char) -> Bool {
 
 ///|
 /// Applies a per-rune mapping to every codepoint of a string and rebuilds it.
-fn map_string_runes(raw : String, f : (Int) -> Int) -> String {
+fn map_string_runes(raw : String, f : (Int32) -> Int32) -> String {
   let buf = StringBuilder()
   for c in raw {
     buf.write_char(f(c.to_int()).unsafe_to_char())
@@ -3220,7 +3220,7 @@ fn to_value_list(parts : Array[String]) -> @value.Value {
 /// Splits `s` on runs of Unicode whitespace, producing at most `maxsplit+1`
 /// parts when `maxsplit >= 0`. Leading and trailing whitespace is ignored and
 /// consecutive whitespace is collapsed, matching Python's `str.split()`.
-fn split_whitespace(s : String, maxsplit : Int) -> Array[String] {
+fn split_whitespace(s : String, maxsplit : Int32) -> Array[String] {
   let chars = s.to_array()
   let n = chars.length()
   let result : Array[String] = []
@@ -3256,7 +3256,7 @@ fn split_whitespace(s : String, maxsplit : Int) -> Array[String] {
 ///|
 /// Right-to-left variant of `split_whitespace`. Scans from the end of `s`
 /// and reverses the parts so the result is in source order.
-fn rsplit_whitespace(s : String, maxsplit : Int) -> Array[String] {
+fn rsplit_whitespace(s : String, maxsplit : Int32) -> Array[String] {
   let chars = s.to_array()
   let n = chars.length()
   let result : Array[String] = []
@@ -3294,7 +3294,7 @@ fn rsplit_whitespace(s : String, maxsplit : Int) -> Array[String] {
 ///|
 /// Returns the byte offset of the first occurrence of `sub` in `s` at or
 /// after `from`, or `-1`. An empty `sub` returns `from`.
-fn find_substr_from(s : String, sub : String, from : Int) -> Int {
+fn find_substr_from(s : String, sub : String, from : Int32) -> Int32 {
   if sub.length() == 0 {
     return from
   }
@@ -3322,7 +3322,7 @@ fn find_substr_from(s : String, sub : String, from : Int) -> Int {
 /// Splits `s` on the literal separator `sep`, producing at most `maxsplit+1`
 /// parts when `maxsplit >= 0`. Unlike whitespace splitting, empty parts are
 /// preserved.
-fn split_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
+fn split_by_sep(s : String, sep : String, maxsplit : Int32) -> Array[String] {
   let seplen = sep.length()
   let slen = s.length()
   let parts : Array[String] = []
@@ -3353,7 +3353,7 @@ fn split_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
 /// scanning from the end, since a self-overlapping `sep` (e.g. `"XX"`
 /// inside `"XXX"`) picks different split boundaries in each direction.
 /// Delegates to `split_by_sep` when `maxsplit < 0` (unlimited).
-fn rsplit_by_sep(s : String, sep : String, maxsplit : Int) -> Array[String] {
+fn rsplit_by_sep(s : String, sep : String, maxsplit : Int32) -> Array[String] {
   if maxsplit < 0 {
     return split_by_sep(s, sep, -1)
   }
@@ -3452,7 +3452,7 @@ fn str_replace_count(
   s : String,
   old : String,
   new_s : String,
-  count : Int,
+  count : Int32,
 ) -> String {
   if old.length() == 0 {
     let buf = StringBuilder()
@@ -3613,7 +3613,7 @@ fn str_format(
           // A field name made entirely of digits is a positional index only
           // when it fits in a machine int; an overflowing all-digit name
           // falls through to the keyword path (matches Go's decimal()).
-          let index : Int? = if is_digit {
+          let index : Int32? = if is_digit {
             match parse_int_str(name, 10) {
               Ok(n) =>
                 if n.compare_int64(@int64.MAX_VALUE) <= 0 &&
@@ -3695,7 +3695,7 @@ fn str_format(
 /// Parses a signed integer string in the given `base` (2–36, or 0 for
 /// auto-detection). Base 0 detects `0x`/`0o`/`0b` prefixes; rejects bare
 /// leading zeros in base-0 mode. Returns an error string on failure.
-fn parse_int_str(s : String, base : Int) -> Result[BigInt, String] {
+fn parse_int_str(s : String, base : Int32) -> Result[BigInt, String] {
   if s.length() == 0 {
     return Err("invalid literal with base \{base}: \{s}")
   }
@@ -3769,7 +3769,7 @@ fn is_hex_digit(c : UInt16) -> Bool {
 ///|
 /// Returns the numeric value of an ASCII hex digit (0–15). Precondition:
 /// `is_hex_digit(c)`.
-fn hex_digit_val(c : UInt16) -> Int {
+fn hex_digit_val(c : UInt16) -> Int32 {
   let ci = c.to_int()
   if c >= '0' && c <= '9' {
     ci - '0'.to_int()

@@ -1,10 +1,14 @@
 ///|
 #borrow(name, value)
-extern "C" fn ffi_setenv(name : Bytes, value : Bytes, overwrite : Int) -> Int = "setenv"
+extern "C" fn ffi_setenv(
+  name : Bytes,
+  value : Bytes,
+  overwrite : Int32,
+) -> Int32 = "setenv"
 
 ///|
 #borrow(name)
-extern "C" fn ffi_unsetenv(name : Bytes) -> Int = "unsetenv"
+extern "C" fn ffi_unsetenv(name : Bytes) -> Int32 = "unsetenv"
 
 ///|
 extern "C" fn ffi_tzset() = "tzset"

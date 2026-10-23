@@ -49,9 +49,9 @@ pub struct DebugFrame {
   // private fields
 }
 pub fn DebugFrame::callable(Self) -> @value.Value
-pub fn DebugFrame::frame_local(Self, Int) -> (@errors.Binding, @value.Value?)
+pub fn DebugFrame::frame_local(Self, Int32) -> (@errors.Binding, @value.Value?)
 pub fn DebugFrame::local_by_name(Self, String) -> @value.Value?
-pub fn DebugFrame::num_locals(Self) -> Int
+pub fn DebugFrame::num_locals(Self) -> Int32
 pub fn DebugFrame::position(Self) -> @errors.Position
 
 pub struct Module {
@@ -62,10 +62,10 @@ pub fn Module::freeze_checked(Self) -> Result[Unit, String]
 pub fn Module::from_map(Map[String, @value.Value]) -> Self
 pub fn Module::get(Self, String) -> @value.Value?
 pub fn Module::global_names(Self) -> Array[String]
-pub fn Module::globals_count(Self) -> Int
+pub fn Module::globals_count(Self) -> Int32
 pub fn Module::is_frozen(Self) -> Bool
 pub fn Module::new() -> Self
-pub fn Module::predeclared_count(Self) -> Int
+pub fn Module::predeclared_count(Self) -> Int32
 pub fn Module::predeclared_names(Self) -> Array[String]
 
 pub struct Options {
@@ -109,35 +109,35 @@ pub struct Program {
 }
 pub fn Program::filename(Self) -> String
 pub fn Program::init(Self, Thread, Predeclared) -> Result[Module, @errors.EvalError]
-pub fn Program::load(Self, Int) -> (String, @errors.Position)
-pub fn Program::num_loads(Self) -> Int
+pub fn Program::load(Self, Int32) -> (String, @errors.Position)
+pub fn Program::num_loads(Self) -> Int32
 pub fn Program::options(Self) -> Options
 pub fn Program::write(Self) -> Bytes
 
 pub struct Thread {
   // private fields
 }
-pub fn Thread::call_frame(Self, Int) -> @errors.CallFrame?
+pub fn Thread::call_frame(Self, Int32) -> @errors.CallFrame?
 pub fn Thread::call_stack(Self) -> @errors.CallStack
-pub fn Thread::call_stack_depth(Self) -> Int
+pub fn Thread::call_stack_depth(Self) -> Int32
 pub fn Thread::cancel(Self, String) -> Unit
-pub fn Thread::debug_frame(Self, Int) -> DebugFrame?
-pub fn Thread::execution_steps(Self) -> Int
+pub fn Thread::debug_frame(Self, Int32) -> DebugFrame?
+pub fn Thread::execution_steps(Self) -> Int32
 pub fn Thread::get_local(Self, String) -> @value.Value?
-pub fn Thread::max_recursion_depth(Self) -> Int
-pub fn Thread::max_steps(Self) -> Int?
+pub fn Thread::max_recursion_depth(Self) -> Int32
+pub fn Thread::max_steps(Self) -> Int32?
 pub fn Thread::name(Self) -> String
 pub fn Thread::new(String) -> Self
 pub fn Thread::reset_steps(Self) -> Unit
 pub fn Thread::set_loader(Self, (Self, String) -> Result[Module, @errors.EvalError]) -> Unit
 pub fn Thread::set_local(Self, String, @value.Value) -> Unit
-pub fn Thread::set_max_steps(Self, Int) -> Unit
+pub fn Thread::set_max_steps(Self, Int32) -> Unit
 pub fn Thread::set_on_max_steps(Self, (Self) -> Unit) -> Unit
 pub fn Thread::set_print(Self, (Self, Bytes) -> Unit) -> Unit
 pub fn Thread::uncancel(Self) -> Unit
 pub fn Thread::with_loader(String, (Self, String) -> Result[Module, @errors.EvalError]) -> Self
 pub fn Thread::with_print(String, (Self, Bytes) -> Unit) -> Self
-pub fn Thread::with_step_budget(String, Int) -> Self
+pub fn Thread::with_step_budget(String, Int32) -> Self
 
 pub struct Universe {
   // private fields

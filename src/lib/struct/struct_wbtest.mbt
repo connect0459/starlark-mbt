@@ -248,7 +248,7 @@ test "struct: field names are sorted lexicographically not by length" {
 }
 
 ///|
-fn make_nested_tuple_val(depth : Int) -> @value.Value {
+fn make_nested_tuple_val(depth : Int32) -> @value.Value {
   let mut v : @value.Value = @value.Value::Int(1N)
   for _ in 0..<depth {
     v = @value.Value::Tuple([v])
@@ -284,7 +284,7 @@ test "struct: structs with values nesting beyond compare_limit propagate compari
 // --- depth threading across nested ExtVal boundaries (issue #137) ---
 
 ///|
-fn make_nested_struct_val(n : Int) -> @value.Value {
+fn make_nested_struct_val(n : Int32) -> @value.Value {
   let mut v : @value.Value = @value.Value::Int(1N)
   for _ in 0..<n {
     v = make_struct(default_ctor, [("x", v)])

@@ -15,7 +15,7 @@ pub suberror CompileErr {
 }
 
 ///|
-let max_compile_depth : Int = 1000
+let max_compile_depth : Int32 = 1000
 
 // --- program-level compiler state ---
 
@@ -26,10 +26,10 @@ let max_compile_depth : Int = 1000
 priv struct Pcomp {
   constants : Array[Const]
   names : Array[String]
-  name_index : Map[String, Int]
+  name_index : Map[String, Int32]
   functions : Array[Funcode]
   globals : Array[@errors.Binding]
-  global_index : Map[String, Int]
+  global_index : Map[String, Int32]
   loads : Array[@errors.Binding]
   load_stmts : Array[LoadStmt]
   is_predeclared : (String) -> Bool
@@ -37,7 +37,7 @@ priv struct Pcomp {
 }
 
 ///|
-fn Pcomp::add_const(self : Pcomp, c : Const) -> Int {
+fn Pcomp::add_const(self : Pcomp, c : Const) -> Int32 {
   for i, existing in self.constants {
     if existing == c {
       return i
@@ -49,7 +49,7 @@ fn Pcomp::add_const(self : Pcomp, c : Const) -> Int {
 }
 
 ///|
-fn Pcomp::add_name(self : Pcomp, name : String) -> Int {
+fn Pcomp::add_name(self : Pcomp, name : String) -> Int32 {
   match self.name_index.get(name) {
     Some(i) => i
     None => {
@@ -76,7 +76,7 @@ fn Pcomp::add_name(self : Pcomp, name : String) -> Int {
 /// normal instructions store the uvarint operand directly.
 priv struct PInstr {
   op : Opcode
-  arg : Int
+  arg : Int32
   is_jump : Bool
   pos : @errors.Position?
 }
@@ -94,17 +94,17 @@ priv struct Fcomp {
   instrs : Array[PInstr]
   // label id -> index into `instrs` where the label is placed (-1 until placed).
   // A label placed at `instrs.length()` denotes the position just past the end.
-  label_at : Array[Int]
+  label_at : Array[Int32]
   locals : Array[@errors.Binding]
-  local_index : Map[String, Int]
+  local_index : Map[String, Int32]
   // Stack of (continue_label, break_label) for the enclosing loops, so `break`
   // and `continue` jump to the right targets.
-  loop_stack : Array[(Int, Int)]
+  loop_stack : Array[(Int32, Int32)]
   mut pending_pos : @errors.Position?
-  mut cur_stack : Int
-  mut max_stack : Int
-  mut num_params : Int
-  mut num_kwonly_params : Int
+  mut cur_stack : Int32
+  mut max_stack : Int32
+  mut num_params : Int32
+  mut num_kwonly_params : Int32
   mut has_varargs : Bool
   mut has_kwargs : Bool
   // Parameter specs in declaration order (empty for the module-init function).
@@ -114,14 +114,14 @@ priv struct Fcomp {
   parent : Fcomp?
   // Local slot indices captured by a nested function (promoted to cells). Used
   // as a set; the value is always true.
-  cell_set : Map[Int, Bool]
+  cell_set : Map[Int32, Bool]
   // Captured free variables: names, their capture source in the enclosing frame,
   // and a name->index lookup. Parallel arrays.
   freevar_names : Array[String]
   freevar_srcs : Array[FreevarSource]
-  freevar_index : Map[String, Int]
+  freevar_index : Map[String, Int32]
   // Depth counter for compile_expr to catch pathologically deep AST chains.
-  mut expr_depth : Int
+  mut expr_depth : Int32
 }
 
 ///|
@@ -129,7 +129,7 @@ fn Fcomp::new(
   pcomp : Pcomp,
   name : String,
   pos : @errors.Position,
-  parent? : Fcomp? = None,
+  parent~ : Fcomp? = None,
 ) -> Fcomp {
   {
     pcomp,
@@ -160,13 +160,17 @@ fn Fcomp::new(
 
 ///|
 /// Marks local slot `idx` as a cell (captured by a nested function).
-fn Fcomp::mark_cell(self : Fcomp, idx : Int) -> Unit {
+fn Fcomp::mark_cell(self : Fcomp, idx : Int32) -> Unit {
   self.cell_set[idx] = true
 }
 
 ///|
 /// Records a captured free variable `name` with its source, returning its index.
-fn Fcomp::add_freevar(self : Fcomp, name : String, src : FreevarSource) -> Int {
+fn Fcomp::add_freevar(
+  self : Fcomp,
+  name : String,
+  src : FreevarSource,
+) -> Int32 {
   match self.freevar_index.get(name) {
     Some(i) => i
     None => {
@@ -185,7 +189,7 @@ fn Fcomp::add_freevar(self : Fcomp, name : String, src : FreevarSource) -> Int {
 /// not bound in any enclosing function scope — i.e. it is a global/predeclared
 /// name). Threads the capture through every intermediate function and promotes
 /// the originating local to a cell.
-fn Fcomp::resolve_free(self : Fcomp, name : String) -> Int? {
+fn Fcomp::resolve_free(self : Fcomp, name : String) -> Int32? {
   match self.freevar_index.get(name) {
     Some(i) => return Some(i)
     None => ()
@@ -217,7 +221,7 @@ fn Fcomp::set_pos(self : Fcomp, pos : @errors.Position) -> Unit {
 
 ///|
 /// Adjusts the tracked operand-stack height and updates the peak.
-fn Fcomp::stack(self : Fcomp, pop : Int, push : Int) -> Unit {
+fn Fcomp::stack(self : Fcomp, pop : Int32, push : Int32) -> Unit {
   self.cur_stack = self.cur_stack - pop + push
   if self.cur_stack < 0 {
     abort("compile: operand-stack underflow (max_stack would be invalid)")
@@ -231,7 +235,7 @@ fn Fcomp::stack(self : Fcomp, pop : Int, push : Int) -> Unit {
 /// Forces the tracked stack height at a control-flow merge point (where the
 /// linear instruction order does not reflect the real runtime height). The
 /// compiler knows the correct height at each label it places.
-fn Fcomp::set_stack(self : Fcomp, h : Int) -> Unit {
+fn Fcomp::set_stack(self : Fcomp, h : Int32) -> Unit {
   self.cur_stack = h
   if h > self.max_stack {
     self.max_stack = h
@@ -239,7 +243,7 @@ fn Fcomp::set_stack(self : Fcomp, h : Int) -> Unit {
 }
 
 ///|
-fn Fcomp::emit0(self : Fcomp, op : Opcode, pop : Int, push : Int) -> Unit {
+fn Fcomp::emit0(self : Fcomp, op : Opcode, pop : Int32, push : Int32) -> Unit {
   self.instrs.push({ op, arg: 0, is_jump: false, pos: self.pending_pos, })
   self.stack(pop, push)
 }
@@ -248,9 +252,9 @@ fn Fcomp::emit0(self : Fcomp, op : Opcode, pop : Int, push : Int) -> Unit {
 fn Fcomp::emit1(
   self : Fcomp,
   op : Opcode,
-  arg : Int,
-  pop : Int,
-  push : Int,
+  arg : Int32,
+  pop : Int32,
+  push : Int32,
 ) -> Unit {
   self.instrs.push({ op, arg, is_jump: false, pos: self.pending_pos, })
   self.stack(pop, push)
@@ -262,9 +266,9 @@ fn Fcomp::emit1(
 fn Fcomp::emit_jump(
   self : Fcomp,
   op : Opcode,
-  label : Int,
-  pop : Int,
-  push : Int,
+  label : Int32,
+  pop : Int32,
+  push : Int32,
 ) -> Unit {
   self.instrs.push({ op, arg: label, is_jump: true, pos: self.pending_pos, })
   self.stack(pop, push)
@@ -272,7 +276,7 @@ fn Fcomp::emit_jump(
 
 ///|
 /// Allocates a fresh, unplaced jump label.
-fn Fcomp::new_label(self : Fcomp) -> Int {
+fn Fcomp::new_label(self : Fcomp) -> Int32 {
   let id = self.label_at.length()
   self.label_at.push(-1)
   id
@@ -281,12 +285,12 @@ fn Fcomp::new_label(self : Fcomp) -> Int {
 ///|
 /// Places `label` at the current emission point (the next instruction emitted,
 /// or the end of the stream).
-fn Fcomp::place_label(self : Fcomp, label : Int) -> Unit {
+fn Fcomp::place_label(self : Fcomp, label : Int32) -> Unit {
   self.label_at[label] = self.instrs.length()
 }
 
 ///|
-fn write_uvarint(code : Array[Byte], n : Int) -> Unit {
+fn write_uvarint(code : Array[Byte], n : Int32) -> Unit {
   if n < 0 {
     abort("compile: uvarint operand must be non-negative, got \{n}")
   }
@@ -300,7 +304,7 @@ fn write_uvarint(code : Array[Byte], n : Int) -> Unit {
 
 ///|
 /// Returns the number of bytes a non-negative uvarint operand occupies.
-fn uvarint_len(n : Int) -> Int {
+fn uvarint_len(n : Int32) -> Int32 {
   let mut v = n
   let mut count = 1
   while v >= 0x80 {
@@ -336,7 +340,7 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
     }
   }
   let n = self.instrs.length()
-  let opsize : Array[Int] = Array::make(n, 0)
+  let opsize : Array[Int32] = Array::make(n, 0)
   for i in 0..<n {
     let ins = self.instrs[i]
     if ins.is_jump && self.label_at[ins.arg] < 0 {
@@ -350,7 +354,7 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
       uvarint_len(ins.arg)
     }
   }
-  let offsets : Array[Int] = Array::make(n + 1, 0)
+  let offsets : Array[Int32] = Array::make(n + 1, 0)
   let mut changed = true
   while changed {
     changed = false
@@ -423,8 +427,8 @@ fn Fcomp::finish(self : Fcomp) -> Funcode {
 
 ///|
 /// Returns the cell local-slot indices in ascending order.
-fn cell_indices(set : Map[Int, Bool]) -> Array[Int] {
-  let out : Array[Int] = []
+fn cell_indices(set : Map[Int32, Bool]) -> Array[Int32] {
+  let out : Array[Int32] = []
   for idx, _ in set {
     out.push(idx)
   }
@@ -696,7 +700,7 @@ fn Fcomp::compile_comprehension(
   // is bound and recorded once; otherwise the restore loop below would replay
   // duplicate entries and leave the name pointing at a comp-local slot after
   // the comprehension ends.
-  let saved : Array[(String, Int?)] = []
+  let saved : Array[(String, Int32?)] = []
   let bound : Map[String, Unit] = Map([])
   for t in targets {
     let (name, tp) = t
@@ -738,8 +742,8 @@ fn Fcomp::emit_comp_rest(
   self : Fcomp,
   kind : CompKind,
   clauses : Array[@syntax.CompClause],
-  ci : Int,
-  base : Int,
+  ci : Int32,
+  base : Int32,
 ) -> Unit raise CompileErr {
   if ci >= clauses.length() {
     match kind {
@@ -948,7 +952,7 @@ fn Fcomp::compile_or(
   operands.push(cur)
   let n = operands.length()
   let base = self.cur_stack
-  let done_labels : Array[Int] = []
+  let done_labels : Array[Int32] = []
   for _ in 0..<(n - 1) {
     done_labels.push(self.new_label())
   }
@@ -1128,7 +1132,7 @@ fn Fcomp::compile_stmt(self : Fcomp, s : @syntax.Stmt) -> Unit raise CompileErr 
     SLoad(path, bindings, pos) => {
       let exports : Array[String] = []
       let locals : Array[String] = []
-      let slots : Array[Int] = []
+      let slots : Array[Int32] = []
       for b in bindings {
         let (local_name, export_name, _) = b
         let slot = match self.pcomp.global_index.get(local_name) {
@@ -1284,7 +1288,7 @@ fn Fcomp::compile_assign_target(
 ///|
 /// Maps an augmented-assignment operator to its integer code (the `AugApply`
 /// operand). Matches the serialization ordering of `@syntax.AugOp`.
-fn aug_op_code(op : @syntax.AugOp) -> Int {
+fn aug_op_code(op : @syntax.AugOp) -> Int32 {
   match op {
     AugAdd => 0
     AugSub => 1
@@ -1330,7 +1334,7 @@ fn compile_function(
   body : Array[@syntax.Stmt],
   pos : @errors.Position,
   parent~ : Fcomp,
-) -> Int raise CompileErr {
+) -> Int32 raise CompileErr {
   let fc = Fcomp::new(pcomp, name, pos, parent=Some(parent))
   // A leading bare string-literal statement is the function's docstring.
   fc.doc = match body {

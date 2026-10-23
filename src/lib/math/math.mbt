@@ -1,7 +1,7 @@
 ///|
 fn to_float_param(
   name : String,
-  param_idx : Int,
+  param_idx : Int32,
   v : @value.Value,
 ) -> Result[Double, String] {
   match v {

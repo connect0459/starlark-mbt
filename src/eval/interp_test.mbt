@@ -73,7 +73,7 @@ fn assert_vm_result_opts(src : String, opts : @eval.Options) -> Unit raise {
 fn assert_vm_result_load(
   src : String,
   lib_src : String,
-  opts? : @eval.Options = @eval.Options::default(),
+  opts~ : @eval.Options = @eval.Options::default(),
 ) -> Unit raise {
   // Build the loaded library with the VM so its functions are bytecode-backed,
   // matching the program under test.
@@ -111,7 +111,7 @@ fn assert_vm_result_load(
 ///|
 /// Runs `src` through both engines under a step budget and asserts they agree on
 /// the resulting cancellation error.
-fn assert_vm_result_under_budget(src : String, max_steps : Int) -> Unit raise {
+fn assert_vm_result_under_budget(src : String, max_steps : Int32) -> Unit raise {
   let opts = @eval.Options::default()
   let wr = @eval.exec_file(
     @eval.Thread::with_step_budget("w", max_steps),

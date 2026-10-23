@@ -94,31 +94,31 @@ fn int_float_eq(n : BigInt, f : Double) -> Bool {
 }
 
 ///|
-let fnv_offset_basis : UInt = 2166136261U
+let fnv_offset_basis : UInt32 = 2166136261U
 
 ///|
-let fnv_prime : UInt = 16777619U
+let fnv_prime : UInt32 = 16777619U
 
 // Starlark integer hash multiplier: 12582917 * (lo + 3)
 
 ///|
-let int_hash_mult : UInt = 12582917U
+let int_hash_mult : UInt32 = 12582917U
 
 // Sentinel hash for NaN/Inf floats (golden ratio × 10^6)
 
 ///|
-let float_special_hash : UInt = 1618033U
+let float_special_hash : UInt32 = 1618033U
 
 // Starlark tuple hash algorithm constants
 
 ///|
-let tuple_hash_init : UInt = 0x345678U
+let tuple_hash_init : UInt32 = 0x345678U
 
 ///|
-let tuple_hash_prime : UInt = 1000003U
+let tuple_hash_prime : UInt32 = 1000003U
 
 ///|
-let tuple_hash_step_base : UInt = 82520U
+let tuple_hash_step_base : UInt32 = 82520U
 
 // 2^32 — used to extract the low 32 bits of a BigInt magnitude
 
@@ -131,7 +131,7 @@ let bigint_uint32_modulus : BigInt = 4294967296N
 /// Parameters:
 ///
 /// - `bytes` : The byte sequence to hash.
-fn fnv1a(bytes : Bytes) -> UInt {
+fn fnv1a(bytes : Bytes) -> UInt32 {
   let mut h = fnv_offset_basis
   for i in 0..<bytes.length() {
     let b = bytes[i].to_int().reinterpret_as_uint()
@@ -141,7 +141,7 @@ fn fnv1a(bytes : Bytes) -> UInt {
 }
 
 ///|
-fn hash_int(n : Int) -> UInt {
+fn hash_int(n : Int32) -> UInt32 {
   n.reinterpret_as_uint() * fnv_prime
 }
 
@@ -159,13 +159,13 @@ let max_int64_bigint : BigInt = 9223372036854775807N
 /// Parameters:
 ///
 /// - `n` : The integer to hash.
-fn hash_bigint(n : BigInt) -> UInt {
+fn hash_bigint(n : BigInt) -> UInt32 {
   // Integer hash algorithm:
   //   small int (int64 range): lo = big.Word(iSmall) = uint64(iSmall)
   //   big  int (outside int64 range): lo = iBig.Bits()[0] = low word of magnitude
   // uint32(lo+3) reduces to uint32(lo32+3) regardless of the upper 32 bits,
   // so we only need the low 32 bits of the appropriate 64-bit word.
-  let lo : UInt = if n >= min_int64_bigint && n <= max_int64_bigint {
+  let lo : UInt32 = if n >= min_int64_bigint && n <= max_int64_bigint {
     // Two's-complement low 32 bits, matching uint32(uint64(iSmall)).
     n.to_int64().to_int().reinterpret_as_uint()
   } else {
@@ -184,7 +184,7 @@ fn hash_bigint(n : BigInt) -> UInt {
 /// Parameters:
 ///
 /// - `f` : The float value to hash.
-fn hash_float(f : Double) -> UInt {
+fn hash_float(f : Double) -> UInt32 {
   if f.is_nan() || f.is_inf() {
     return float_special_hash
   }
@@ -203,7 +203,7 @@ fn hash_float(f : Double) -> UInt {
 /// - `self` : The value to hash.
 /// - `depth` : Maximum remaining recursion depth; returns `Err` when it
 ///   reaches zero.
-fn Value::hash_depth(self : Value, depth : Int) -> Result[UInt, String] {
+fn Value::hash_depth(self : Value, depth : Int32) -> Result[UInt32, String] {
   match self {
     None => Ok(0U)
     Bool(false) => Ok(0U)
@@ -237,12 +237,12 @@ fn Value::hash_depth(self : Value, depth : Int) -> Result[UInt, String] {
 /// - `t` : The array of tuple elements to hash.
 /// - `depth` : Maximum remaining recursion depth; returns `Err` when it
 ///   reaches zero.
-fn hash_tuple(t : Array[Value], depth : Int) -> Result[UInt, String] {
+fn hash_tuple(t : Array[Value], depth : Int32) -> Result[UInt32, String] {
   if depth < 1 {
     return Err("hash exceeded maximum recursion depth")
   }
-  let mut x : UInt = tuple_hash_init
-  let mut mult : UInt = tuple_hash_prime
+  let mut x : UInt32 = tuple_hash_init
+  let mut mult : UInt32 = tuple_hash_prime
   // Python's tuplehash step: mult += 82520 + len + len per element.
   // The "len + len" form is a direct port of CPython's uint arithmetic.
   let n = (t.length() + t.length()).reinterpret_as_uint()
@@ -269,12 +269,12 @@ fn hash_tuple(t : Array[Value], depth : Int) -> Result[UInt, String] {
 ///
 /// Returns `Ok(hash)` for hashable values, or `Err` with a message like
 /// `"unhashable type: list"` for unhashable types.
-pub fn Value::hash(self : Value) -> Result[UInt, String] {
+pub fn Value::hash(self : Value) -> Result[UInt32, String] {
   self.hash_depth(hash_limit)
 }
 
 ///|
-fn int64_signum(a : Int64, b : Int64) -> Int {
+fn int64_signum(a : Int64, b : Int64) -> Int32 {
   if a < b {
     -1
   } else if a > b {
@@ -285,12 +285,12 @@ fn int64_signum(a : Int64, b : Int64) -> Int {
 }
 
 ///|
-fn bigint_signum(a : BigInt, b : BigInt) -> Int {
+fn bigint_signum(a : BigInt, b : BigInt) -> Int32 {
   a.compare(b)
 }
 
 ///|
-fn float_cmp(x : Double, y : Double) -> Int {
+fn float_cmp(x : Double, y : Double) -> Int32 {
   if x > y {
     1
   } else if x < y {
@@ -310,7 +310,7 @@ fn float_cmp(x : Double, y : Double) -> Int {
 }
 
 ///|
-fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
+fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int32 {
   let len = if a.length() < b.length() { a.length() } else { b.length() }
   for i in 0..<len {
     let ca = a[i].to_int()
@@ -334,7 +334,7 @@ fn bytes_lex_cmp(a : Bytes, b : Bytes) -> Int {
 ///
 /// - `n` : The integer value.
 /// - `f` : The float value to compare against.
-fn int_float_cmp(n : BigInt, f : Double) -> Int {
+fn int_float_cmp(n : BigInt, f : Double) -> Int32 {
   if f != f {
     -1 // NaN > everything in starlark ordering
   } else if f == @double.infinity {
@@ -365,7 +365,7 @@ fn int_float_cmp(n : BigInt, f : Double) -> Int {
 /// over nested `Value`s must accept a `depth : Int` parameter, decrement it
 /// before each recursive call, and return `Err` when `depth < 1`. The named
 /// limit constants here are the shared roots; never recurse without one.
-pub let compare_limit : Int = 10
+pub let compare_limit : Int32 = 10
 
 ///|
 /// Depth cap for `hash` traversal. Set to 200 — a safe ceiling on all four
@@ -374,7 +374,7 @@ pub let compare_limit : Int = 10
 /// `StarlarkDict` and `StarlarkSet` use `dict_key_hash_limit` (not this
 /// constant) for their internal hash function. Use `hash_limit` only for
 /// standalone hash calls outside of a hash-table context.
-pub let hash_limit : Int = 200
+pub let hash_limit : Int32 = 200
 
 ///|
 /// Depth cap for hashing `StarlarkDict` and `StarlarkSet` keys.
@@ -385,12 +385,12 @@ pub let hash_limit : Int = 200
 /// `compare_limit` accepts nesting only up to `compare_limit - 1`. Using this
 /// constant for the hash function keeps both limits in lock-step: a key that
 /// hashes at depth D can always be equality-compared at the same depth.
-pub let dict_key_hash_limit : Int = compare_limit - 1
+pub let dict_key_hash_limit : Int32 = compare_limit - 1
 
 ///|
 /// Depth cap for `freeze` traversal. Set to 200 — a safe ceiling on all four
 /// MoonBit backends. See `compare_limit` for the depth-guard convention.
-pub let freeze_limit : Int = 200
+pub let freeze_limit : Int32 = 200
 
 ///|
 /// Compares `a` and `b` using Starlark's total ordering, returning a negative
@@ -409,8 +409,8 @@ pub let freeze_limit : Int = 200
 pub fn compare_values(
   a : Value,
   b : Value,
-  op? : String = "<",
-) -> Result[Int, String] {
+  op~ : String = "<",
+) -> Result[Int32, String] {
   compare_values_depth(a, b, compare_limit, op~)
 }
 
@@ -432,9 +432,9 @@ pub fn compare_values(
 pub fn compare_values_depth(
   a : Value,
   b : Value,
-  depth : Int,
-  op? : String = "<",
-) -> Result[Int, String] {
+  depth : Int32,
+  op~ : String = "<",
+) -> Result[Int32, String] {
   if depth < 1 {
     return Err("comparison exceeded maximum recursion depth")
   }
@@ -486,7 +486,7 @@ pub fn compare_values_depth(
 pub fn starlark_equals_depth(
   a : Value,
   b : Value,
-  depth : Int,
+  depth : Int32,
 ) -> Result[Bool, String] {
   if depth < 1 {
     return Err("comparison exceeded maximum recursion depth")
@@ -531,7 +531,7 @@ pub fn starlark_equals_depth(
 fn slice_equals_depth(
   a : ArrayView[Value],
   b : ArrayView[Value],
-  depth : Int,
+  depth : Int32,
 ) -> Result[Bool, String] {
   if a.length() != b.length() {
     return Ok(false)
@@ -560,9 +560,9 @@ fn slice_equals_depth(
 fn slice_cmp_depth(
   a : ArrayView[Value],
   b : ArrayView[Value],
-  depth : Int,
-  op? : String = "<",
-) -> Result[Int, String] {
+  depth : Int32,
+  op~ : String = "<",
+) -> Result[Int32, String] {
   let len = if a.length() < b.length() { a.length() } else { b.length() }
   for i in 0..<len {
     match compare_values_depth(a[i], b[i], depth, op~) {
@@ -586,7 +586,7 @@ fn slice_cmp_depth(
 fn dict_equals_depth(
   a : StarlarkDict,
   b : StarlarkDict,
-  depth : Int,
+  depth : Int32,
 ) -> Result[Bool, String] {
   if a.length() != b.length() {
     return Ok(false)
@@ -621,7 +621,7 @@ fn dict_equals_depth(
 fn set_equals_depth(
   a : StarlarkSet,
   b : StarlarkSet,
-  _depth : Int,
+  _depth : Int32,
 ) -> Result[Bool, String] {
   if a.length() != b.length() {
     return Ok(false)
@@ -682,7 +682,7 @@ pub fn Value::freeze_checked(self : Value) -> Result[Unit, String] {
 fn freeze_value_inner(
   v : Value,
   seen_funcs : Array[StarlarkFunction],
-  depth : Int,
+  depth : Int32,
 ) -> Result[Unit, String] {
   // Phase 1: early exits that do not consume the depth budget.
   // Already-frozen containers, the function cycle guard, and scalar / no-op

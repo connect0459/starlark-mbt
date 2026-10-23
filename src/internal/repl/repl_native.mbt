@@ -1,5 +1,5 @@
 ///|
-extern "C" fn isatty_ffi() -> Int = "starlark_repl_isatty"
+extern "C" fn isatty_ffi() -> Int32 = "starlark_repl_isatty"
 
 ///|
 #borrow(prompt)
@@ -13,7 +13,7 @@ extern "C" fn write_stderr_ffi(s : Bytes) = "starlark_repl_write_stderr"
 extern "C" fn setup_interrupt_ffi() = "starlark_repl_setup_interrupt"
 
 ///|
-extern "C" fn interrupted_ffi() -> Int = "starlark_repl_interrupted"
+extern "C" fn interrupted_ffi() -> Int32 = "starlark_repl_interrupted"
 
 ///|
 extern "C" fn init_editor_ffi() = "starlark_repl_init_editor"
@@ -28,7 +28,7 @@ fn init_editor() -> Unit {
 /// Step interval between interrupt polls. The evaluation step counter is reset
 /// every interval, so the REPL imposes no step ceiling and relies on Ctrl-C to
 /// stop a runaway computation, as starlark-go does.
-let poll_interval : Int = 100_000
+let poll_interval : Int32 = 100_000
 
 ///|
 pub fn is_terminal() -> Bool {

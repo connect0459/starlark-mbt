@@ -56,7 +56,7 @@ pub fn DebugFrame::callable(self : DebugFrame) -> @value.Value {
 ///
 /// Returns the total count of named locals, including both function parameters
 /// and variables declared in the function body.
-pub fn DebugFrame::num_locals(self : DebugFrame) -> Int {
+pub fn DebugFrame::num_locals(self : DebugFrame) -> Int32 {
   self.all_local_names.length()
 }
 
@@ -73,7 +73,7 @@ pub fn DebugFrame::num_locals(self : DebugFrame) -> Int {
 /// and the current value of that local, or `None` if it has not been assigned.
 pub fn DebugFrame::frame_local(
   self : DebugFrame,
-  i : Int,
+  i : Int32,
 ) -> (@errors.Binding, @value.Value?) {
   let name = self.all_local_names[i]
   let bind = @errors.Binding::new(name, @errors.Position::new("", 0, 0))

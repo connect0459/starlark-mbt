@@ -291,7 +291,7 @@ test "Thread.execution_steps: returns nonzero after evaluating expressions" {
 
 ///|
 test "Thread.execution_steps: scales linearly with computation size" {
-  let count_steps : (Int) -> Int = fn(n) {
+  let count_steps : (Int32) -> Int32 = fn(n) {
     let thread = @eval.Thread::new("test")
     let steps0 = thread.execution_steps()
     let _ = @eval.exec_file_with_predeclared(

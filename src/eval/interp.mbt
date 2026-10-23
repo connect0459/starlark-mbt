@@ -53,7 +53,7 @@ fn binop_of_opcode(op : @compile.Opcode) -> @syntax.BinaryOp? {
 /// the offset just past it. The compiler guarantees well-formed operands; a
 /// truncated or over-long stream is an internal invariant violation and aborts
 /// with a clear message, mirroring the disassembler's bounded decode.
-fn vm_read_arg(code : Bytes, i : Int) -> (Int, Int) {
+fn vm_read_arg(code : Bytes, i : Int32) -> (Int32, Int32) {
   let mut result = 0
   let mut shift = 0
   let mut pc = i
@@ -79,7 +79,7 @@ fn vm_read_arg(code : Bytes, i : Int) -> (Int, Int) {
 fn unpack_items(
   ctx : EvalContext,
   value : @value.Value,
-  n : Int,
+  n : Int32,
 ) -> Array[@value.Value] raise EvalErr {
   let items : Array[@value.Value] = match value {
     @value.Value::Tuple(t) => t
@@ -212,7 +212,7 @@ fn load_binds_name(prog : @compile.CompiledProgram, name : String) -> Bool {
 ///|
 /// Formats the "accepts N positional arguments (M given)" portion of an
 /// arity-error message, matching the established interpreter's wording.
-fn pos_arg_count_msg(max_pos : Int, given : Int, has_opt : Bool) -> String {
+fn pos_arg_count_msg(max_pos : Int32, given : Int32, has_opt : Bool) -> String {
   let atmost = if has_opt { "at most " } else { "" }
   let arg_word = if max_pos == 1 { "argument" } else { "arguments" }
   "\{atmost}\{max_pos} positional \{arg_word} (\{given} given)"
@@ -220,7 +220,7 @@ fn pos_arg_count_msg(max_pos : Int, given : Int, has_opt : Bool) -> String {
 
 ///|
 /// Decodes an `AugApply` operand back into an augmented-assignment operator.
-fn augop_of_int(code : Int) -> @syntax.AugOp {
+fn augop_of_int(code : Int32) -> @syntax.AugOp {
   match code {
     0 => AugAdd
     1 => AugSub
@@ -240,7 +240,7 @@ fn augop_of_int(code : Int) -> @syntax.AugOp {
 ///|
 /// Pops `n` values off the operand stack and returns them in source order
 /// (bottom-to-top), as produced by `MakeList`/`MakeTuple`.
-fn pop_n(stack : Array[@value.Value], n : Int) -> Array[@value.Value] {
+fn pop_n(stack : Array[@value.Value], n : Int32) -> Array[@value.Value] {
   let out : Array[@value.Value] = Array::make(n, @value.Value::None)
   for i = n - 1; i >= 0; i = i - 1 {
     out[i] = match stack.pop() {
@@ -294,7 +294,7 @@ fn compile_and_run_vm(
   file : @syntax.File,
   filename : String,
   extra_pred : (String) -> Bool,
-  init? : (String) -> @value.Value? = fn(_) { None },
+  init~ : (String) -> @value.Value? = fn(_) { None },
 ) -> Result[(@compile.CompiledProgram, RunModule), @errors.EvalError] {
   // Validate with the same resolver pass the established interpreter uses; resolver errors
   // (messages and positions) match the established interpreter exactly.
@@ -348,8 +348,8 @@ fn run_program_vm(
   ctx : EvalContext,
   prog : @compile.CompiledProgram,
   filename : String,
-  init? : (String) -> @value.Value? = fn(_) { None },
-  frame_name? : String = "<toplevel>",
+  init~ : (String) -> @value.Value? = fn(_) { None },
+  frame_name~ : String = "<toplevel>",
 ) -> Result[RunModule, @errors.EvalError] {
   let vm = VM::{ ctx, active: [], }
   let m = RunModule::{
@@ -499,7 +499,7 @@ fn VM::run_frame(
   name : String,
   locals : Array[LocalSlot],
   freevars : Array[@value.Cell],
-  frame_idx : Int,
+  frame_idx : Int32,
 ) -> @value.Value raise EvalErr {
   let ctx = self.ctx
   let code = fc.code
@@ -522,7 +522,7 @@ fn VM::run_frame(
   // Splat arguments (the `*args` iterable / `**kwargs` mapping) sit above these
   // on the stack and are popped by the caller before this runs.
   fn pop_call_fixed(
-    nargs : Int,
+    nargs : Int32,
   ) -> (@value.Value, Array[@value.Value], Array[(String, @value.Value)]) {
     let npos = nargs >> 8
     let nkw = nargs & 0xff
@@ -1311,7 +1311,7 @@ fn VM::bind_args(
 ///|
 /// Number of leading positional parameters (before any `*`/`*args`), used in
 /// the argument-count error message, computed over the parameter specs.
-fn count_max_positional_spec(params : Array[@compile.ParamSpec]) -> Int {
+fn count_max_positional_spec(params : Array[@compile.ParamSpec]) -> Int32 {
   let mut n = 0
   for p in params {
     match p {

@@ -2,13 +2,13 @@
 // Converts UTF-8 source text into a sequence of ScannedToken values.
 
 ///|
-let tab_width : Int = 8
+let tab_width : Int32 = 8
 
 ///|
-let unicode_surr_lo : Int = 0xD800
+let unicode_surr_lo : Int32 = 0xD800
 
 ///|
-let unicode_surr_hi : Int = 0xE000
+let unicode_surr_hi : Int32 = 0xE000
 
 // Octal/hex escape validation thresholds (starlark-go quote.go semantics).
 // The non-ASCII check (> max_ascii) must precede the invalid-range check
@@ -16,14 +16,14 @@ let unicode_surr_hi : Int = 0xE000
 // non-ASCII string escapes vs. out-of-range byte values.
 
 ///|
-let max_ascii : Int = 127
+let max_ascii : Int32 = 127
 
 ///|
-let max_byte_exclusive : Int = 256
+let max_byte_exclusive : Int32 = 256
 
 ///|
 // ASCII codepoint of '0'; used as the base for digit↔value conversions.
-let ascii_digit_zero : Int = 0x30
+let ascii_digit_zero : Int32 = 0x30
 
 ///|
 /// A token produced by the scanner, paired with its source position.
@@ -62,12 +62,12 @@ pub fn ScannedToken::pos(self : ScannedToken) -> @errors.Position {
 pub struct Scanner {
   priv src : Bytes
   priv filename : String
-  priv mut off : Int
-  priv mut line : Int
-  priv mut col : Int
-  priv mut depth : Int
-  priv mut indent_stack : Array[Int]
-  priv mut dents : Int
+  priv mut off : Int32
+  priv mut line : Int32
+  priv mut col : Int32
+  priv mut depth : Int32
+  priv mut indent_stack : Array[Int32]
+  priv mut dents : Int32
   priv mut line_start : Bool
 }
 
@@ -105,7 +105,7 @@ fn Scanner::peek_byte(self : Scanner) -> Byte {
 }
 
 ///|
-fn Scanner::peek_byte_ahead(self : Scanner, n : Int) -> Byte {
+fn Scanner::peek_byte_ahead(self : Scanner, n : Int32) -> Byte {
   let i = self.off + n
   if i >= self.src.length() {
     b'\x00'
@@ -186,7 +186,7 @@ fn Scanner::unterminated_string_error(
 // Consumes leading spaces and tabs; stops at any other character.
 
 ///|
-fn Scanner::count_indent(self : Scanner) -> Int {
+fn Scanner::count_indent(self : Scanner) -> Int32 {
   // `col` is the tab-expanded indentation width; `src_col` is the number of
   // source columns (runes) consumed so far. A tab advances to the next stop
   // based on the source column, not the expanded width, so the two must be
@@ -1156,8 +1156,8 @@ fn Scanner::read_unicode_escape(
   self : Scanner,
   pos : @errors.Position,
   prefix : String,
-  count : Int,
-) -> Result[Int, @errors.SyntaxError] {
+  count : Int32,
+) -> Result[Int32, @errors.SyntaxError] {
   let slot : Array[Byte] = []
   for _ in 0..<count {
     let b = self.peek_byte()
@@ -1212,7 +1212,7 @@ fn Scanner::read_unicode_escape(
 }
 
 ///|
-fn int_to_octal(n : Int) -> String {
+fn int_to_octal(n : Int32) -> String {
   if n == 0 {
     return "0"
   }
@@ -1231,7 +1231,7 @@ fn int_to_octal(n : Int) -> String {
 }
 
 ///|
-fn int_to_octal3(n : Int) -> String {
+fn int_to_octal3(n : Int32) -> String {
   let d2 = n / 64
   let rem = n % 64
   let d1 = rem / 8
@@ -1240,7 +1240,7 @@ fn int_to_octal3(n : Int) -> String {
 }
 
 ///|
-fn hex_char_upper(n : Int) -> Char {
+fn hex_char_upper(n : Int32) -> Char {
   if n < 10 {
     (b'0'.to_int() + n).unsafe_to_char()
   } else {
@@ -1249,7 +1249,7 @@ fn hex_char_upper(n : Int) -> Char {
 }
 
 ///|
-fn int_to_hex4_upper(n : Int) -> String {
+fn int_to_hex4_upper(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_char(hex_char_upper((n >> 12) & 0xF))
   buf.write_char(hex_char_upper((n >> 8) & 0xF))
@@ -1293,12 +1293,12 @@ fn is_ident_byte(b : Byte) -> Bool {
 }
 
 ///|
-fn is_unicode_letter_rune(cp : Int) -> Bool {
+fn is_unicode_letter_rune(cp : Int32) -> Bool {
   @utf8util.is_letter(cp)
 }
 
 ///|
-fn xdigit_to_int(b : Byte) -> Int {
+fn xdigit_to_int(b : Byte) -> Int32 {
   let n = b.to_int()
   if n >= 0x30 && n <= 0x39 {
     n - ascii_digit_zero
@@ -1316,7 +1316,7 @@ fn xdigit_to_int(b : Byte) -> Int {
 // 0x80 marks each continuation byte; 0x3F extracts the 6-bit payload per byte.
 // Boundaries: 1-byte [0..0x7F], 2-byte [0x80..0x7FF], 3-byte [0x800..0xFFFF],
 //             4-byte [0x10000..0x10FFFF].
-fn append_utf8_codepoint(cp : Int, buf : Array[Byte]) -> Unit {
+fn append_utf8_codepoint(cp : Int32, buf : Array[Byte]) -> Unit {
   if cp < 0x80 {
     buf.push(cp.to_byte())
   } else if cp < 0x800 {
@@ -1365,7 +1365,7 @@ fn parse_int_hex(s : String) -> Result[BigInt, String] {
 }
 
 ///|
-fn parse_int_base(s : String, base : Int) -> Result[BigInt, String] {
+fn parse_int_base(s : String, base : Int32) -> Result[BigInt, String] {
   if s.length() == 0 {
     return Err("empty literal")
   }

@@ -42,11 +42,11 @@ extern "C" fn ffi_get_tz_abbr(
   name_bytes : Bytes,
   unix_time : Int64,
   abbr_out : Bytes,
-) -> Int = "starlark_get_tz_abbr"
+) -> Int32 = "starlark_get_tz_abbr"
 
 ///|
 #borrow(abbr_out)
-extern "C" fn ffi_get_local_tz_at(unix_time : Int64, abbr_out : Bytes) -> Int = "starlark_get_local_tz_at"
+extern "C" fn ffi_get_local_tz_at(unix_time : Int64, abbr_out : Bytes) -> Int32 = "starlark_get_local_tz_at"
 
 ///|
 fn bytes_to_ascii_string(buf : Bytes) -> String {
@@ -70,7 +70,7 @@ fn is_valid_timezone(name : String) -> Bool {
 }
 
 ///|
-fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int, String)? {
+fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int32, String)? {
   if name == "UTC" {
     return Some((0, "UTC"))
   }
@@ -95,7 +95,7 @@ fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int, String)? {
 }
 
 ///|
-fn get_local_tz_at(unix_time : Int64) -> (Int, String)? {
+fn get_local_tz_at(unix_time : Int64) -> (Int32, String)? {
   let abbr_buf = Bytes::make(16, b'\x00')
   let offset = ffi_get_local_tz_at(unix_time, abbr_buf)
   if offset == -2147483648 {

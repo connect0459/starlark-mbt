@@ -3,7 +3,7 @@
 // defined in scanner_test.mbt.
 
 ///|
-fn rep(c : String, n : Int) -> String {
+fn rep(c : String, n : Int32) -> String {
   let b = StringBuilder()
   for _ in 0..<n {
     b.write_string(c)

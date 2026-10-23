@@ -6,9 +6,9 @@
 /// A single decoded instruction: its byte offset, opcode, and operand (0 for
 /// opcodes that take no operand).
 pub(all) struct Instr {
-  pc : Int
+  pc : Int32
   op : Opcode
-  arg : Int
+  arg : Int32
 } derive(Eq)
 
 ///|
@@ -22,7 +22,7 @@ priv suberror DisasmErr {
 ///|
 /// Reads a uvarint from `code` starting at `pc`, returning the decoded value and
 /// the offset just past it.
-fn read_uvarint(code : Bytes, pc : Int) -> (Int, Int) raise DisasmErr {
+fn read_uvarint(code : Bytes, pc : Int32) -> (Int32, Int32) raise DisasmErr {
   let mut result = 0
   let mut shift = 0
   let mut i = pc

@@ -88,7 +88,7 @@ fn format_float_e(f : Double) -> String {
 }
 
 ///|
-fn pad_left_zeros(s : String, width : Int) -> String {
+fn pad_left_zeros(s : String, width : Int32) -> String {
   if s.length() >= width {
     s
   } else {
@@ -156,7 +156,7 @@ fn quote_bytes(bs : Bytes) -> String {
 }
 
 ///|
-fn hex_digit(n : Int) -> Char {
+fn hex_digit(n : Int32) -> Char {
   if n < 10 {
     ('0'.to_int() + n).unsafe_to_char()
   } else {

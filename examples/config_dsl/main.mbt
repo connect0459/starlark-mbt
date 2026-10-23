@@ -13,7 +13,7 @@ fn dict_str(d : @value.StarlarkDict, key : String) -> String {
 }
 
 ///|
-fn dict_int(d : @value.StarlarkDict, key : String) -> Int {
+fn dict_int(d : @value.StarlarkDict, key : String) -> Int32 {
   match d.get(@value.Value::new_string(key)) {
     Ok(Some(v)) =>
       match @value.number_to_int(v) {

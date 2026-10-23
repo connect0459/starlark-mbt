@@ -12,7 +12,7 @@ pub fn all_opcodes() -> Array[Opcode]
 
 pub fn compile(@syntax.File, (String) -> Bool, (String) -> Bool, Bool) -> CompiledProgram raise CompileErr
 
-pub let op_arg_min : Int
+pub let op_arg_min : Int32
 
 // Errors
 pub suberror CompileErr {
@@ -43,8 +43,8 @@ pub fn Const::equal(Self, Self) -> Bool
 pub fn Const::not_equal(Self, Self) -> Bool
 
 pub(all) enum FreevarSource {
-  FromLocal(Int)
-  FromFree(Int)
+  FromLocal(Int32)
+  FromFree(Int32)
 } derive(Eq)
 pub fn FreevarSource::equal(Self, Self) -> Bool
 pub fn FreevarSource::not_equal(Self, Self) -> Bool
@@ -56,23 +56,23 @@ pub(all) struct Funcode {
   code : Bytes
   pclinetab : Array[PcLine]
   locals : Array[@errors.Binding]
-  cells : Array[Int]
+  cells : Array[Int32]
   freevars : Array[@errors.Binding]
-  max_stack : Int
-  num_params : Int
-  num_kwonly_params : Int
+  max_stack : Int32
+  num_params : Int32
+  num_kwonly_params : Int32
   has_varargs : Bool
   has_kwargs : Bool
   params : Array[ParamSpec]
   freevar_sources : Array[FreevarSource]
 }
 pub fn Funcode::disasm(Self) -> Array[Instr]
-pub fn Funcode::position(Self, Int) -> @errors.Position
+pub fn Funcode::position(Self, Int32) -> @errors.Position
 
 pub(all) struct Instr {
-  pc : Int
+  pc : Int32
   op : Opcode
-  arg : Int
+  arg : Int32
 } derive(Eq)
 pub fn Instr::equal(Self, Self) -> Bool
 pub fn Instr::not_equal(Self, Self) -> Bool
@@ -82,7 +82,7 @@ pub(all) struct LoadStmt {
   pos : @errors.Position
   exports : Array[String]
   locals : Array[String]
-  slots : Array[Int]
+  slots : Array[Int32]
 }
 
 pub(all) enum Opcode {
@@ -175,9 +175,9 @@ pub fn ParamSpec::equal(Self, Self) -> Bool
 pub fn ParamSpec::not_equal(Self, Self) -> Bool
 
 pub(all) struct PcLine {
-  pc : Int
-  line : Int
-  col : Int
+  pc : Int32
+  line : Int32
+  col : Int32
 } derive(Eq)
 pub fn PcLine::equal(Self, Self) -> Bool
 pub fn PcLine::not_equal(Self, Self) -> Bool

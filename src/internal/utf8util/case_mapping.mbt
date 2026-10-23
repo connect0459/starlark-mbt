@@ -3,32 +3,32 @@
 // below is the `unicode.CaseRanges` table; lookups follow Go's `unicode.to`.
 
 ///|
-let upper_lower_sentinel : Int = 0x110000
+let upper_lower_sentinel : Int32 = 0x110000
 
 ///|
-let ascii_upper_a : Int = 0x41
+let ascii_upper_a : Int32 = 0x41
 
 ///|
-let ascii_upper_z : Int = 0x5A
+let ascii_upper_z : Int32 = 0x5A
 
 ///|
-let ascii_lower_a : Int = 0x61
+let ascii_lower_a : Int32 = 0x61
 
 ///|
-let ascii_lower_z : Int = 0x7A
+let ascii_lower_z : Int32 = 0x7A
 
 ///|
-let ascii_max : Int = 0x7F
+let ascii_max : Int32 = 0x7F
 
 ///|
-let ascii_case_shift : Int = 32
+let ascii_case_shift : Int32 = 32
 
 // Auto-generated from Go stdlib unicode.CaseRanges. Do not edit by hand.
 // Each tuple: (lo, hi, delta_upper, delta_lower, delta_title).
 // delta == upper_lower_sentinel (0x110000) means alternating Upper/Lower sequence.
 
 ///|
-let case_ranges : Array[(Int, Int, Int, Int, Int)] = [
+let case_ranges : Array[(Int32, Int32, Int32, Int32, Int32)] = [
   (0x41, 0x5A, 0, 32, 0),
   (0x61, 0x7A, -32, 0, -32),
   (0xB5, 0xB5, 743, 0, 743),
@@ -362,7 +362,7 @@ let case_ranges : Array[(Int, Int, Int, Int, Int)] = [
 ///|
 /// Maps a rune via the case-range table. `which`: 0 = upper, 1 = lower, 2 = title.
 /// Returns the rune unchanged when no mapping applies (Go's `unicode.to`).
-fn case_to(which : Int, r : Int) -> Int {
+fn case_to(which : Int32, r : Int32) -> Int32 {
   let mut lo = 0
   let mut hi = case_ranges.length()
   while lo < hi {
@@ -388,7 +388,7 @@ fn case_to(which : Int, r : Int) -> Int {
 
 ///|
 /// Unicode simple uppercase mapping of a single rune (Go `unicode.ToUpper`).
-pub fn to_upper_rune(r : Int) -> Int {
+pub fn to_upper_rune(r : Int32) -> Int32 {
   if r <= ascii_max {
     if r >= ascii_lower_a && r <= ascii_lower_z {
       r - ascii_case_shift
@@ -402,7 +402,7 @@ pub fn to_upper_rune(r : Int) -> Int {
 
 ///|
 /// Unicode simple lowercase mapping of a single rune (Go `unicode.ToLower`).
-pub fn to_lower_rune(r : Int) -> Int {
+pub fn to_lower_rune(r : Int32) -> Int32 {
   if r <= ascii_max {
     if r >= ascii_upper_a && r <= ascii_upper_z {
       r + ascii_case_shift
@@ -416,7 +416,7 @@ pub fn to_lower_rune(r : Int) -> Int {
 
 ///|
 /// Unicode simple titlecase mapping of a single rune (Go `unicode.ToTitle`).
-pub fn to_title_rune(r : Int) -> Int {
+pub fn to_title_rune(r : Int32) -> Int32 {
   if r <= ascii_max {
     if r >= ascii_lower_a && r <= ascii_lower_z {
       r - ascii_case_shift
@@ -434,7 +434,7 @@ pub fn to_title_rune(r : Int) -> Int {
 /// this equals "has a distinct upper or lower form" except for three runes that
 /// fold without a simple case mapping: U+00DF (ß, cased via ẞ) and U+0130/U+0131
 /// (dotted/dotless I, not in any fold orbit).
-pub fn is_cased_rune(r : Int) -> Bool {
+pub fn is_cased_rune(r : Int32) -> Bool {
   if r == 0x00DF {
     true
   } else if r == 0x0130 || r == 0x0131 {
@@ -447,7 +447,7 @@ pub fn is_cased_rune(r : Int) -> Bool {
 ///|
 // Unicode Lu category (uppercase letters), flat [lo, hi] pairs.
 // Generated from Python unicodedata 16.0 = Go's unicode.IsUpper source.
-let lu_flat_ranges : Array[Int] = [
+let lu_flat_ranges : Array[Int32] = [
   0x41, 0x5A, 0xC0, 0xD6, 0xD8, 0xDE, 0x100, 0x100, 0x102, 0x102, 0x104, 0x104, 0x106,
   0x106, 0x108, 0x108, 0x10A, 0x10A, 0x10C, 0x10C, 0x10E, 0x10E, 0x110, 0x110, 0x112,
   0x112, 0x114, 0x114, 0x116, 0x116, 0x118, 0x118, 0x11A, 0x11A, 0x11C, 0x11C, 0x11E,
@@ -575,7 +575,7 @@ let lu_flat_ranges : Array[Int] = [
 ///|
 // Unicode Ll category (lowercase letters), flat [lo, hi] pairs.
 // Generated from Python unicodedata 16.0 = Go's unicode.IsLower source.
-let ll_flat_ranges : Array[Int] = [
+let ll_flat_ranges : Array[Int32] = [
   0x61, 0x7A, 0xB5, 0xB5, 0xDF, 0xF6, 0xF8, 0xFF, 0x101, 0x101, 0x103, 0x103, 0x105,
   0x105, 0x107, 0x107, 0x109, 0x109, 0x10B, 0x10B, 0x10D, 0x10D, 0x10F, 0x10F, 0x111,
   0x111, 0x113, 0x113, 0x115, 0x115, 0x117, 0x117, 0x119, 0x119, 0x11B, 0x11B, 0x11D,
@@ -706,7 +706,7 @@ let ll_flat_ranges : Array[Int] = [
 ///|
 // Unicode Nd category (decimal digit numbers), flat [lo, hi] pairs.
 // Generated from Unicode 15.1 / Go standard library.
-let nd_flat_ranges : Array[Int] = [
+let nd_flat_ranges : Array[Int32] = [
   0x0030, 0x0039, 0x0660, 0x0669, 0x06F0, 0x06F9, 0x07C0, 0x07C9, 0x0966, 0x096F,
   0x09E6, 0x09EF, 0x0A66, 0x0A6F, 0x0AE6, 0x0AEF, 0x0B66, 0x0B6F, 0x0BE6, 0x0BEF,
   0x0C66, 0x0C6F, 0x0CE6, 0x0CEF, 0x0D66, 0x0D6F, 0x0DE6, 0x0DEF, 0x0E50, 0x0E59,
@@ -726,33 +726,33 @@ let nd_flat_ranges : Array[Int] = [
 ///|
 // Unicode Lt category (titlecase letters), flat [lo, hi] pairs.
 // Generated from Python unicodedata 16.0 = Go's unicode.IsTitle source.
-let lt_flat_ranges : Array[Int] = [
+let lt_flat_ranges : Array[Int32] = [
   0x1C5, 0x1C5, 0x1C8, 0x1C8, 0x1CB, 0x1CB, 0x1F2, 0x1F2, 0x1F88, 0x1F8F, 0x1F98,
   0x1F9F, 0x1FA8, 0x1FAF, 0x1FBC, 0x1FBC, 0x1FCC, 0x1FCC, 0x1FFC, 0x1FFC,
 ]
 
 ///|
 /// Reports whether a rune is an uppercase letter (Unicode category Lu).
-pub fn is_upper_letter(r : Int) -> Bool {
+pub fn is_upper_letter(r : Int32) -> Bool {
   in_flat_ranges(lu_flat_ranges, r)
 }
 
 ///|
 /// Reports whether a rune is a lowercase letter (Unicode category Ll).
-pub fn is_lower_letter(r : Int) -> Bool {
+pub fn is_lower_letter(r : Int32) -> Bool {
   in_flat_ranges(ll_flat_ranges, r)
 }
 
 ///|
 /// Reports whether a rune is a titlecase letter (Unicode category Lt).
-pub fn is_title_letter(r : Int) -> Bool {
+pub fn is_title_letter(r : Int32) -> Bool {
   in_flat_ranges(lt_flat_ranges, r)
 }
 
 ///|
 /// Reports whether a rune is a decimal digit (Unicode category Nd).
 /// Matches Go's `unicode.IsDigit`.
-pub fn is_decimal_digit(r : Int) -> Bool {
+pub fn is_decimal_digit(r : Int32) -> Bool {
   in_flat_ranges(nd_flat_ranges, r)
 }
 
@@ -760,7 +760,7 @@ pub fn is_decimal_digit(r : Int) -> Bool {
 // Sorted, non-overlapping [lo, hi] ranges of Unicode letter (L*) code points,
 // generated from the Unicode Character Database (matches Go's unicode.IsLetter,
 // i.e. categories Lu/Ll/Lt/Lm/Lo). Stored as a flat array of 677 pairs.
-let unicode_letter_ranges : Array[Int] = [
+let unicode_letter_ranges : Array[Int32] = [
   0x41, 0x5A, 0x61, 0x7A, 0xAA, 0xAA, 0xB5, 0xB5, 0xBA, 0xBA, 0xC0, 0xD6, 0xD8, 0xF6,
   0xF8, 0x2C1, 0x2C6, 0x2D1, 0x2E0, 0x2E4, 0x2EC, 0x2EC, 0x2EE, 0x2EE, 0x370, 0x374,
   0x376, 0x377, 0x37A, 0x37D, 0x37F, 0x37F, 0x386, 0x386, 0x388, 0x38A, 0x38C, 0x38C,
@@ -903,7 +903,7 @@ let unicode_letter_ranges : Array[Int] = [
 ///|
 /// Binary search over a flat [lo, hi] pair array. Returns true if `r` falls
 /// within any [lo, hi] interval.
-fn in_flat_ranges(ranges : Array[Int], r : Int) -> Bool {
+fn in_flat_ranges(ranges : Array[Int32], r : Int32) -> Bool {
   let n = ranges.length() / 2
   let mut lo = 0
   let mut hi = n
@@ -925,6 +925,6 @@ fn in_flat_ranges(ranges : Array[Int], r : Int) -> Bool {
 ///|
 /// Reports whether a rune is a Unicode letter (categories Lu/Ll/Lt/Lm/Lo).
 /// Matches Go's `unicode.IsLetter`.
-pub fn is_letter(r : Int) -> Bool {
+pub fn is_letter(r : Int32) -> Bool {
   in_flat_ranges(unicode_letter_ranges, r)
 }

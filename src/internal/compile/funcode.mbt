@@ -10,9 +10,9 @@
 /// an arbitrary pc by finding the last entry whose `pc` does not exceed it.
 /// This is the structural equivalent of starlark-go's `pclinetab`.
 pub(all) struct PcLine {
-  pc : Int
-  line : Int
-  col : Int
+  pc : Int32
+  line : Int32
+  col : Int32
 } derive(Eq)
 
 ///|
@@ -33,11 +33,11 @@ pub(all) struct Funcode {
   code : Bytes
   pclinetab : Array[PcLine]
   locals : Array[@errors.Binding]
-  cells : Array[Int]
+  cells : Array[Int32]
   freevars : Array[@errors.Binding]
-  max_stack : Int
-  num_params : Int
-  num_kwonly_params : Int
+  max_stack : Int32
+  num_params : Int32
+  num_kwonly_params : Int32
   has_varargs : Bool
   has_kwargs : Bool
   // Parameter specs in declaration order, AST-free, so the VM can bind call
@@ -56,8 +56,8 @@ pub(all) struct Funcode {
 ///|
 /// Where a closure's captured cell comes from in the enclosing frame.
 pub(all) enum FreevarSource {
-  FromLocal(Int) // the enclosing frame's local-cell slot
-  FromFree(Int) // the enclosing function's own free variable
+  FromLocal(Int32) // the enclosing frame's local-cell slot
+  FromFree(Int32) // the enclosing function's own free variable
 } derive(Eq)
 
 ///|
@@ -86,7 +86,7 @@ pub extend ParamSpec with Eq::{not_equal, equal}
 /// table is empty or `pc` precedes the first entry. The filename is always taken
 /// from the function's definition position (every instruction in a function
 /// belongs to the same source file).
-pub fn Funcode::position(self : Funcode, pc : Int) -> @errors.Position {
+pub fn Funcode::position(self : Funcode, pc : Int32) -> @errors.Position {
   let filename = self.pos.filename()
   let tab = self.pclinetab
   if tab.length() == 0 || pc < tab[0].pc {
@@ -134,5 +134,5 @@ pub(all) struct LoadStmt {
   pos : @errors.Position
   exports : Array[String]
   locals : Array[String]
-  slots : Array[Int]
+  slots : Array[Int32]
 }

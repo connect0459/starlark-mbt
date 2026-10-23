@@ -15,7 +15,7 @@ fn make_dict(entries : Array[(String, @value.Value)]) -> @value.Value {
 }
 
 ///|
-fn int_val(n : Int) -> @value.Value {
+fn int_val(n : Int32) -> @value.Value {
   @value.Value::new_int(n.to_int64())
 }
 
@@ -38,7 +38,7 @@ fn dict_str(d : @value.StarlarkDict, key : String) -> String {
 }
 
 ///|
-fn dict_int(d : @value.StarlarkDict, key : String) -> Int {
+fn dict_int(d : @value.StarlarkDict, key : String) -> Int32 {
   match d.get(@value.Value::new_string(key)) {
     Ok(Some(v)) =>
       match @value.number_to_int(v) {

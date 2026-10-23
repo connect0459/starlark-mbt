@@ -32,7 +32,7 @@ pub trait HasSetField {
 /// name, though this is not yet enforced by the evaluator. Return a negative
 /// int, zero, or positive int to indicate ordering.
 pub trait StarlarkComparable {
-  fn compare_same_type(Self, Value) -> Result[Int, String]
+  fn compare_same_type(Self, Value) -> Result[Int32, String]
 }
 
 ///|
@@ -45,7 +45,7 @@ pub trait Mapping {
   /// Return all keys as an ordered array.
   fn mapping_keys(Self) -> Result[Array[Value], String]
   /// Return the number of entries.
-  fn mapping_len(Self) -> Int
+  fn mapping_len(Self) -> Int32
 }
 
 ///|
@@ -56,9 +56,9 @@ pub trait Indexable {
   /// Return the element at position `i`. `i` is already bounds-checked
   /// (non-negative, less than `indexable_len`); implementations may panic on
   /// out-of-range access.
-  fn indexable_get(Self, Int) -> Result[Value, String]
+  fn indexable_get(Self, Int32) -> Result[Value, String]
   /// Return the number of elements.
-  fn indexable_len(Self) -> Int
+  fn indexable_len(Self) -> Int32
 }
 
 ///|
@@ -94,7 +94,7 @@ pub trait HasUnary {
 /// (`a[i] = v`). The index `i` is already bounds-checked and adjusted for
 /// negative values before this method is called.
 pub trait HasSetIndex: Indexable {
-  fn set_index(Self, Int, Value) -> Result[Unit, String]
+  fn set_index(Self, Int32, Value) -> Result[Unit, String]
 }
 
 ///|
@@ -103,7 +103,7 @@ pub trait HasSetIndex: Indexable {
 /// positive Int if `self > other`. Return `None` if the two values are not
 /// comparable (e.g., different types).
 pub trait TotallyOrdered {
-  fn cmp(Self, Value) -> Int?
+  fn cmp(Self, Value) -> Int32?
 }
 
 ///|
@@ -111,7 +111,7 @@ pub trait TotallyOrdered {
 /// (`a[start:end:step]`). `start`, `end`, and `step` are already normalised
 /// by the evaluator (non-zero step, adjusted for sequence length).
 pub trait Sliceable: Indexable {
-  fn slice(Self, Int, Int, Int) -> Result[Value, String]
+  fn slice(Self, Int32, Int32, Int32) -> Result[Value, String]
 }
 
 ///|
@@ -141,25 +141,25 @@ pub struct CustomValue {
   priv type_name_fn : () -> String
   priv truth_fn : () -> Bool
   priv repr_fn : () -> String
-  priv repr_depth_fn : ((Int) -> Result[String, String])?
-  priv hash_fn : (() -> Result[UInt, String])?
-  priv hash_depth_fn : ((Int) -> Result[UInt, String])?
-  priv equals_fn : ((Value, Int) -> Result[Bool, String])?
+  priv repr_depth_fn : ((Int32) -> Result[String, String])?
+  priv hash_fn : (() -> Result[UInt32, String])?
+  priv hash_depth_fn : ((Int32) -> Result[UInt32, String])?
+  priv equals_fn : ((Value, Int32) -> Result[Bool, String])?
   priv get_attr_fn : ((String) -> Result[Value?, String])?
   priv internal_get_attr_fn : ((String) -> Result[Value?, String])?
   priv attr_names_fn : (() -> Array[String])?
   priv set_field_fn : ((String, Value) -> Result[Unit, String])?
   priv contains_fn : ((Value) -> Result[Bool, String])?
   priv iterate_fn : (() -> Result[StarlarkIterator, String])?
-  priv length_fn : (() -> Int)?
+  priv length_fn : (() -> Int32)?
   priv freeze_fn : (() -> Unit)?
   priv binary_fn : ((String, Value, Bool) -> Result[Value, String]?)?
   priv unary_fn : ((String) -> Result[Value, String]?)?
-  priv compare_fn : ((Value) -> Int?)?
-  priv get_index_fn : ((Int) -> Result[Value, String])?
-  priv set_index_fn : ((Int, Value) -> Result[Unit, String])?
+  priv compare_fn : ((Value) -> Int32?)?
+  priv get_index_fn : ((Int32) -> Result[Value, String])?
+  priv set_index_fn : ((Int32, Value) -> Result[Unit, String])?
   priv set_key_fn : ((Value, Value) -> Result[Unit, String])?
-  priv slice_fn : ((Int, Int, Int) -> Result[Value, String])?
+  priv slice_fn : ((Int32, Int32, Int32) -> Result[Value, String])?
   priv items_fn : (() -> Result[Array[(Value, Value)], String])?
   priv call_fn : ((Array[Value], Array[(String, Value)]) -> Result[
     Value,
@@ -232,7 +232,7 @@ pub fn CustomValue::new(
 /// Returns a new `CustomValue` with the hash callback registered.
 pub fn CustomValue::with_hash(
   self : CustomValue,
-  hash_fn : () -> Result[UInt, String],
+  hash_fn : () -> Result[UInt32, String],
 ) -> CustomValue {
   { ..self, hash_fn: Some(hash_fn), }
 }
@@ -255,7 +255,7 @@ pub fn CustomValue::with_hash(
 /// Returns a new `CustomValue` with the equality callback registered.
 pub fn CustomValue::with_equals(
   self : CustomValue,
-  equals_fn : (Value, Int) -> Result[Bool, String],
+  equals_fn : (Value, Int32) -> Result[Bool, String],
 ) -> CustomValue {
   { ..self, equals_fn: Some(equals_fn), }
 }
@@ -364,7 +364,7 @@ pub fn CustomValue::with_iterate(
 /// Returns a new `CustomValue` with the length callback registered.
 pub fn CustomValue::with_length(
   self : CustomValue,
-  length_fn : () -> Int,
+  length_fn : () -> Int32,
 ) -> CustomValue {
   { ..self, length_fn: Some(length_fn), }
 }
@@ -438,7 +438,7 @@ pub fn CustomValue::with_unary(
 /// Returns a new `CustomValue` with the comparison callback registered.
 pub fn CustomValue::with_compare(
   self : CustomValue,
-  compare_fn : (Value) -> Int?,
+  compare_fn : (Value) -> Int32?,
 ) -> CustomValue {
   { ..self, compare_fn: Some(compare_fn), }
 }
@@ -482,7 +482,7 @@ pub fn CustomValue::get_repr(self : CustomValue) -> String {
 /// - `depth` : Remaining recursion depth passed down from the caller.
 pub fn CustomValue::get_repr_depth(
   self : CustomValue,
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   match self.repr_depth_fn {
     Some(f) => f(depth)
@@ -509,7 +509,7 @@ pub fn CustomValue::get_repr_depth(
 /// Returns a new `CustomValue` with the depth-aware repr registered.
 pub fn CustomValue::with_repr_depth(
   self : CustomValue,
-  repr_depth_fn : (Int) -> Result[String, String],
+  repr_depth_fn : (Int32) -> Result[String, String],
 ) -> CustomValue {
   { ..self, repr_depth_fn: Some(repr_depth_fn), }
 }
@@ -526,8 +526,8 @@ pub fn CustomValue::with_repr_depth(
 /// - `depth` : Remaining recursion depth passed down from the caller.
 pub fn CustomValue::get_hash_depth(
   self : CustomValue,
-  depth : Int,
-) -> Result[UInt, String] {
+  depth : Int32,
+) -> Result[UInt32, String] {
   match self.hash_depth_fn {
     Some(f) => f(depth)
     None =>
@@ -549,7 +549,7 @@ pub fn CustomValue::get_hash_depth(
 ///
 /// Returns `Ok(hash)` if a hash callback was registered, or
 /// `Err("unhashable type: T")` otherwise.
-pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
+pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt32, String] {
   self.get_hash_depth(hash_limit)
 }
 
@@ -573,7 +573,7 @@ pub fn CustomValue::get_hash(self : CustomValue) -> Result[UInt, String] {
 /// Returns a new `CustomValue` with the depth-aware hash registered.
 pub fn CustomValue::with_hash_depth(
   self : CustomValue,
-  hash_depth_fn : (Int) -> Result[UInt, String],
+  hash_depth_fn : (Int32) -> Result[UInt32, String],
 ) -> CustomValue {
   { ..self, hash_depth_fn: Some(hash_depth_fn), }
 }
@@ -595,7 +595,7 @@ pub fn CustomValue::with_hash_depth(
 pub fn CustomValue::get_equals(
   self : CustomValue,
   other : Value,
-  depth : Int,
+  depth : Int32,
 ) -> Result[Bool, String] {
   match self.equals_fn {
     Some(f) => f(other, depth)
@@ -725,7 +725,7 @@ pub fn CustomValue::get_iterate(
 ///
 /// Returns `Ok(n)` if a length callback was registered, or
 /// `Err("len: value of type T has no len")` otherwise.
-pub fn CustomValue::get_length(self : CustomValue) -> Result[Int, String] {
+pub fn CustomValue::get_length(self : CustomValue) -> Result[Int32, String] {
   match self.length_fn {
     Some(f) => Ok(f())
     None => Err("len: value of type \{(self.type_name_fn)()} has no len")
@@ -801,7 +801,7 @@ pub fn CustomValue::get_unary(
 /// Returns `Some(n)` where `n` is negative, zero, or positive to indicate
 /// ordering, or `None` if no callback was registered or the values are not
 /// comparable.
-pub fn CustomValue::get_compare(self : CustomValue, other : Value) -> Int? {
+pub fn CustomValue::get_compare(self : CustomValue, other : Value) -> Int32? {
   match self.compare_fn {
     Some(f) => f(other)
     None => None
@@ -822,7 +822,7 @@ pub fn CustomValue::get_compare(self : CustomValue, other : Value) -> Int? {
 /// registered.
 pub fn CustomValue::with_get_index(
   self : CustomValue,
-  get_index_fn : (Int) -> Result[Value, String],
+  get_index_fn : (Int32) -> Result[Value, String],
 ) -> CustomValue {
   { ..self, get_index_fn: Some(get_index_fn), }
 }
@@ -840,7 +840,7 @@ pub fn CustomValue::with_get_index(
 /// was registered or the callback signals an error.
 pub fn CustomValue::get_index(
   self : CustomValue,
-  i : Int,
+  i : Int32,
 ) -> Result[Value, String] {
   match self.get_index_fn {
     Some(f) => f(i)
@@ -861,7 +861,7 @@ pub fn CustomValue::get_index(
 /// registered.
 pub fn CustomValue::with_set_index(
   self : CustomValue,
-  set_index_fn : (Int, Value) -> Result[Unit, String],
+  set_index_fn : (Int32, Value) -> Result[Unit, String],
 ) -> CustomValue {
   { ..self, set_index_fn: Some(set_index_fn), }
 }
@@ -880,7 +880,7 @@ pub fn CustomValue::with_set_index(
 /// signals an error, or `None` if no callback was registered.
 pub fn CustomValue::do_set_index(
   self : CustomValue,
-  i : Int,
+  i : Int32,
   v : Value,
 ) -> Result[Unit, String]? {
   match self.set_index_fn {
@@ -943,7 +943,7 @@ pub fn CustomValue::do_set_key(
 /// Returns a new `CustomValue` with the slice callback registered.
 pub fn CustomValue::with_slice(
   self : CustomValue,
-  slice_fn : (Int, Int, Int) -> Result[Value, String],
+  slice_fn : (Int32, Int32, Int32) -> Result[Value, String],
 ) -> CustomValue {
   { ..self, slice_fn: Some(slice_fn), }
 }
@@ -963,9 +963,9 @@ pub fn CustomValue::with_slice(
 /// callback signals an error, or `None` if no callback was registered.
 pub fn CustomValue::do_slice(
   self : CustomValue,
-  start : Int,
-  stop : Int,
-  step : Int,
+  start : Int32,
+  stop : Int32,
+  step : Int32,
 ) -> Result[Value, String]? {
   match self.slice_fn {
     Some(f) => Some(f(start, stop, step))

@@ -212,7 +212,7 @@ pub fn Program::options(self : Program) -> Options {
 /// Returns the number of `load(...)` statements in the program.
 ///
 /// Returns the count of top-level `load` statements found in the program.
-pub fn Program::num_loads(self : Program) -> Int {
+pub fn Program::num_loads(self : Program) -> Int32 {
   self.compiled.load_stmts.length()
 }
 
@@ -228,7 +228,7 @@ pub fn Program::num_loads(self : Program) -> Int {
 /// Returns a tuple of the module path string and the source position of that
 /// `load` statement, or an empty string and unknown position if `i` is out of
 /// range.
-pub fn Program::load(self : Program, i : Int) -> (String, @errors.Position) {
+pub fn Program::load(self : Program, i : Int32) -> (String, @errors.Position) {
   if i < 0 || i >= self.compiled.load_stmts.length() {
     return ("", @errors.Position::new("", 0, 0))
   }

@@ -4,7 +4,7 @@
 ///
 /// Returns a negative integer if `a` < `b`, zero if equal, or a positive
 /// integer if `a` > `b`.
-fn str_lex_cmp(a : String, b : String) -> Int {
+fn str_lex_cmp(a : String, b : String) -> Int32 {
   let la = a.length()
   let lb = b.length()
   let mut ia = 0
@@ -47,36 +47,36 @@ fn is_printable_ascii(bytes : Bytes) -> Bool {
 // UTF-16 surrogate-pair decoding bounds (used by JSON `\uXXXX` escapes).
 // A code point above the BMP is encoded as a high surrogate in
 // [0xD800, 0xDBFF] followed by a low surrogate in [0xDC00, 0xDFFF].
-let high_surrogate_lo : Int = 0xD800
+let high_surrogate_lo : Int32 = 0xD800
 
 ///|
-let high_surrogate_hi : Int = 0xDBFF
+let high_surrogate_hi : Int32 = 0xDBFF
 
 ///|
-let low_surrogate_lo : Int = 0xDC00
+let low_surrogate_lo : Int32 = 0xDC00
 
 ///|
-let low_surrogate_hi : Int = 0xDFFF
+let low_surrogate_hi : Int32 = 0xDFFF
 
 ///|
 // First code point of the supplementary planes (U+10000); the base added
 // back when recombining a surrogate pair.
-let supplementary_plane_base : Int = 0x10000
+let supplementary_plane_base : Int32 = 0x10000
 
 ///|
 // Each surrogate half contributes 10 bits, so the high half is scaled by
 // 2^10 = 0x400 when recombining.
-let surrogate_high_scale : Int = 0x400
+let surrogate_high_scale : Int32 = 0x400
 
 ///|
 // U+FFFD REPLACEMENT CHARACTER, substituted for malformed surrogate escapes.
-let json_replacement_rune : Int = 0xFFFD
+let json_replacement_rune : Int32 = 0xFFFD
 
 ///|
 let max_materialise_len : Int64 = 2147483647L
 
 ///|
-let json_max_nesting_depth : Int = 10000
+let json_max_nesting_depth : Int32 = 10000
 
 ///|
 // Quotes a printable-ASCII string the way Go's `strconv.AppendQuote` does:
@@ -209,7 +209,7 @@ fn EncodeState::new() -> EncodeState {
 fn encode_inner(
   v : @value.Value,
   state : EncodeState,
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   match v {
     @value.Value::None => Ok("null")
@@ -311,7 +311,7 @@ fn encode_ext_val_as_object(
   c : @value.CustomValue,
   names : Array[String],
   state : EncodeState,
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   let sorted = names.copy()
   sorted.sort_by(fn(a, b) { str_lex_cmp(a, b) })
@@ -359,7 +359,7 @@ fn encode_sequence(
   items : Iter[@value.Value],
   kind : String,
   state : EncodeState,
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   let buf = StringBuilder()
   buf.write_char('[')
@@ -393,7 +393,7 @@ fn encode_sequence(
 fn encode_dict_val(
   d : @value.StarlarkDict,
   state : EncodeState,
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   let pairs : Array[(String, @value.Value)] = []
   let mut first_err : String? = None
@@ -506,7 +506,7 @@ fn is_hex_digit(c : Char) -> Bool {
 ///
 /// Returns `(value, i+4)` on success or `(-1, i)` if fewer than four
 /// characters remain or a non-hex character is encountered.
-fn parse_hex4_at(chars : Array[Char], i : Int) -> (Int, Int) {
+fn parse_hex4_at(chars : Array[Char], i : Int32) -> (Int32, Int32) {
   if i + 4 > chars.length() {
     return (-1, i)
   }
@@ -542,8 +542,8 @@ fn parse_hex4_at(chars : Array[Char], i : Int) -> (Int, Int) {
 /// or unclosed literal.
 fn parse_json_string(
   chars : Array[Char],
-  start : Int,
-) -> Result[(String, Int), (Int, String)] {
+  start : Int32,
+) -> Result[(String, Int32), (Int32, String)] {
   let len = chars.length()
   let buf = StringBuilder()
   let mut i = start + 1
@@ -658,7 +658,7 @@ fn parse_json_string(
 }
 
 ///|
-fn skip_ws(chars : Array[Char], i : Int) -> Int {
+fn skip_ws(chars : Array[Char], i : Int32) -> Int32 {
   let len = chars.length()
   let mut j = i
   while j < len {
@@ -683,7 +683,7 @@ fn skip_ws(chars : Array[Char], i : Int) -> Int {
 /// - `chars` : The character array to search within.
 /// - `pos` : The starting index in `chars`.
 /// - `prefix` : The string to match.
-fn starts_with_at(chars : Array[Char], pos : Int, prefix : String) -> Bool {
+fn starts_with_at(chars : Array[Char], pos : Int32, prefix : String) -> Bool {
   let pfx = prefix.to_array()
   if pos + pfx.length() > chars.length() {
     return false
@@ -711,9 +711,9 @@ fn starts_with_at(chars : Array[Char], pos : Int, prefix : String) -> Bool {
 /// `Err((offset, message))` on a parse error.
 fn parse_json_value(
   chars : Array[Char],
-  i : Int,
-  depth : Int,
-) -> Result[(@value.Value, Int), (Int, String)] {
+  i : Int32,
+  depth : Int32,
+) -> Result[(@value.Value, Int32), (Int32, String)] {
   let i = skip_ws(chars, i)
   let len = chars.length()
   if i >= len {
@@ -770,9 +770,9 @@ fn parse_json_value(
 /// separator, premature end of input, etc.).
 fn parse_json_array(
   chars : Array[Char],
-  i : Int,
-  depth : Int,
-) -> Result[(@value.Value, Int), (Int, String)] {
+  i : Int32,
+  depth : Int32,
+) -> Result[(@value.Value, Int32), (Int32, String)] {
   let len = chars.length()
   let elems : Array[@value.Value] = []
   let mut j = skip_ws(chars, i + 1)
@@ -822,9 +822,9 @@ fn parse_json_array(
 /// `Err((offset, message))` on a structural error.
 fn parse_json_object(
   chars : Array[Char],
-  i : Int,
-  depth : Int,
-) -> Result[(@value.Value, Int), (Int, String)] {
+  i : Int32,
+  depth : Int32,
+) -> Result[(@value.Value, Int32), (Int32, String)] {
   let len = chars.length()
   let dict = @value.StarlarkDict::new()
   let mut j = skip_ws(chars, i + 1)
@@ -896,8 +896,8 @@ fn parse_json_object(
 /// bare minus).
 fn parse_json_number(
   chars : Array[Char],
-  i : Int,
-) -> Result[(@value.Value, Int), (Int, String)] {
+  i : Int32,
+) -> Result[(@value.Value, Int32), (Int32, String)] {
   let len = chars.length()
   let mut j = i
   let mut is_float = false
@@ -1090,7 +1090,7 @@ fn write_indent_line(
   buf : StringBuilder,
   prefix : String,
   indent_str : String,
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   buf.write_char('\n')
   buf.write_string(prefix)

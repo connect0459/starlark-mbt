@@ -29,10 +29,10 @@ let u_ns_per_minute : UInt64 = 60_000_000_000UL
 let u_ns_per_hour : UInt64 = 3_600_000_000_000UL
 
 ///|
-let secs_per_hour : Int = 3600
+let secs_per_hour : Int32 = 3600
 
 ///|
-let secs_per_minute : Int = 60
+let secs_per_minute : Int32 = 60
 
 ///|
 let secs_per_day : Int64 = 86400L
@@ -77,7 +77,7 @@ fn extract_duration_ns(v : @value.Value) -> Int64? {
 ///
 /// Returns `None` if `v` is not a `time.time` custom value or if required
 /// internal attributes are missing or have unexpected types.
-fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
+fn extract_time_parts(v : @value.Value) -> (Int64, Int32)? {
   match extract_time_all(v) {
     Some((s, n, _, _)) => Some((s, n))
     None => None
@@ -96,7 +96,7 @@ fn extract_time_parts(v : @value.Value) -> (Int64, Int)? {
 ///
 /// Returns `None` if `v` is not a `time.time` custom value or if any required
 /// attribute is absent or has an unexpected type.
-fn extract_time_all(v : @value.Value) -> (Int64, Int, Int, String)? {
+fn extract_time_all(v : @value.Value) -> (Int64, Int32, Int32, String)? {
   match v {
     @value.Value::ExtVal(c) =>
       if c.get_type_name() == "time.time" {
@@ -127,7 +127,7 @@ fn extract_time_all(v : @value.Value) -> (Int64, Int, Int, String)? {
 ///
 /// When `raw_nsec` overflows or underflows the nanosecond range, the excess is
 /// carried into `sec`.
-fn normalize_time_parts(sec : Int64, raw_nsec : Int) -> (Int64, Int) {
+fn normalize_time_parts(sec : Int64, raw_nsec : Int32) -> (Int64, Int32) {
   let nps = ns_per_second.to_int()
   if raw_nsec >= nps {
     (sec + 1L, raw_nsec - nps)
@@ -166,7 +166,7 @@ fn floor_div_int64(a : Int64, b : Int64) -> Int64 {
 ///
 /// Returns `(year, month, day)` where `month` is in `1..=12` and `day` is
 /// in `1..=31`.
-fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int, Int) {
+fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int32, Int32) {
   let z = unix_day + 719468L
   let era = floor_div_int64(z, 146097L)
   let doe = (z - era * 146097L).to_int()
@@ -190,7 +190,7 @@ fn unix_day_to_ymd_i64(unix_day : Int64) -> (Int64, Int, Int) {
 /// - `day` : Day-of-month in `1..=31`.
 ///
 /// Returns the number of days since the Unix epoch (1970-01-01 = 0).
-fn ymd_to_unix_day_i64(year : Int64, month : Int, day : Int) -> Int64 {
+fn ymd_to_unix_day_i64(year : Int64, month : Int32, day : Int32) -> Int64 {
   let y = if month <= 2 { year - 1L } else { year }
   let era = floor_div_int64(y, 400L)
   let yoe = (y - era * 400L).to_int()
@@ -212,8 +212,8 @@ fn ymd_to_unix_day_i64(year : Int64, month : Int, day : Int) -> Int64 {
 /// Returns `(year, month, day, hour, minute, second)` in the given timezone.
 fn decompose_unix_sec(
   sec : Int64,
-  tz_offset : Int,
-) -> (Int64, Int, Int, Int, Int, Int) {
+  tz_offset : Int32,
+) -> (Int64, Int32, Int32, Int32, Int32, Int32) {
   let local_sec = sec + tz_offset.to_int64()
   let unix_to_abs = 9223372028741760000L
   let (unix_day, sec_of_day) = if local_sec >= -unix_to_abs {
@@ -238,7 +238,7 @@ fn decompose_unix_sec(
 
 ///|
 // Unix day 0 (1970-01-01) is Thursday = 4.
-fn weekday_from_unix_day(unix_day : Int64) -> Int {
+fn weekday_from_unix_day(unix_day : Int64) -> Int32 {
   ((unix_day % 7L + 4L + 7L) % 7L).to_int()
 }
 
@@ -248,7 +248,7 @@ fn is_leap_year(year : Int64) -> Bool {
 }
 
 ///|
-fn days_in_month(year : Int64, month : Int) -> Int {
+fn days_in_month(year : Int64, month : Int32) -> Int32 {
   match month {
     1 | 3 | 5 | 7 | 8 | 10 | 12 => 31
     4 | 6 | 9 | 11 => 30
@@ -258,7 +258,7 @@ fn days_in_month(year : Int64, month : Int) -> Int {
 }
 
 ///|
-fn day_of_year(year : Int64, month : Int, day : Int) -> Int {
+fn day_of_year(year : Int64, month : Int32, day : Int32) -> Int32 {
   let mut yday = day
   for m in 1..<month {
     yday += days_in_month(year, m)
@@ -267,7 +267,7 @@ fn day_of_year(year : Int64, month : Int, day : Int) -> Int {
 }
 
 ///|
-fn yday_to_month_day(year : Int64, yday : Int) -> (Int, Int) {
+fn yday_to_month_day(year : Int64, yday : Int32) -> (Int32, Int32) {
   let mut remaining = yday
   let mut month = 1
   while month < 12 {
@@ -319,7 +319,7 @@ fn normalize_to_unix_sec(
   minute : Int64,
   second : Int64,
   nanosecond : Int64,
-) -> (Int64, Int) {
+) -> (Int64, Int32) {
   let carry_s = floor_div_int64(nanosecond, ns_per_second)
   let ns_norm = (nanosecond - carry_s * ns_per_second).to_int()
   let total_sec = hour * secs_per_hour.to_int64() +
@@ -342,19 +342,19 @@ fn normalize_to_unix_sec(
 /// Folds a 64-bit value into a 32-bit hash by XOR-ing its high and low halves,
 /// so both word boundaries contribute to the result (a bare truncation would
 /// drop the high 32 bits entirely).
-fn hash_int64_fold(v : Int64) -> UInt {
+fn hash_int64_fold(v : Int64) -> UInt32 {
   let lo = v.to_int().reinterpret_as_uint()
   let hi = (v >> 32).to_int().reinterpret_as_uint()
   lo ^ hi
 }
 
 ///|
-fn duration_hash(ns : Int64) -> Result[UInt, String] {
+fn duration_hash(ns : Int64) -> Result[UInt32, String] {
   Ok(hash_int64_fold(ns))
 }
 
 ///|
-fn duration_compare(ns : Int64, other : @value.Value) -> Int? {
+fn duration_compare(ns : Int64, other : @value.Value) -> Int32? {
   match extract_duration_ns(other) {
     Some(other_ns) =>
       if ns < other_ns {
@@ -497,7 +497,7 @@ fn duration_binary(
 }
 
 ///|
-fn fmt_frac_digits(frac : Int64, prec : Int) -> String {
+fn fmt_frac_digits(frac : Int64, prec : Int32) -> String {
   let s = frac.to_string()
   let pad_len = prec - s.length()
   let buf = StringBuilder()
@@ -614,7 +614,7 @@ fn make_duration(ns : Int64) -> @value.Value {
 }
 
 ///|
-fn parse_digits_at(chars : Array[Char], i : Int) -> (String, Int) {
+fn parse_digits_at(chars : Array[Char], i : Int32) -> (String, Int32) {
   let buf = StringBuilder()
   let mut j = i
   while j < chars.length() && chars[j] >= '0' && chars[j] <= '9' {
@@ -841,7 +841,7 @@ fn parse_duration_str(s : String) -> Result[Int64, String] {
 }
 
 ///|
-fn write_pad2(buf : StringBuilder, n : Int) -> Unit {
+fn write_pad2(buf : StringBuilder, n : Int32) -> Unit {
   if n < 10 {
     buf.write_char('0')
   }
@@ -851,8 +851,8 @@ fn write_pad2(buf : StringBuilder, n : Int) -> Unit {
 ///|
 fn write_tz_offset(
   buf : StringBuilder,
-  tz_offset : Int,
-  colon? : Bool = false,
+  tz_offset : Int32,
+  colon~ : Bool = false,
 ) -> Unit {
   let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
   if tz_offset >= 0 {
@@ -868,7 +868,7 @@ fn write_tz_offset(
 }
 
 ///|
-fn write_tz_offset_hour_only(buf : StringBuilder, tz_offset : Int) -> Unit {
+fn write_tz_offset_hour_only(buf : StringBuilder, tz_offset : Int32) -> Unit {
   let abs_off = if tz_offset < 0 { -tz_offset } else { tz_offset }
   if tz_offset >= 0 {
     buf.write_char('+')
@@ -881,8 +881,8 @@ fn write_tz_offset_hour_only(buf : StringBuilder, tz_offset : Int) -> Unit {
 ///|
 fn fmt_time_at_zone(
   sec : Int64,
-  nsec : Int,
-  tz_offset : Int,
+  nsec : Int32,
+  tz_offset : Int32,
   tz_name : String,
 ) -> String {
   let (year, month, day, hour, minute, second) = decompose_unix_sec(
@@ -943,12 +943,12 @@ let weekday_abbrev_names : FixedArray[String] = [
 ]
 
 ///|
-fn weekday_index(year : Int64, month : Int, day : Int) -> Int {
+fn weekday_index(year : Int64, month : Int32, day : Int32) -> Int32 {
   weekday_from_unix_day(ymd_to_unix_day_i64(year, month, day))
 }
 
 ///|
-fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
+fn fmt_nsec_frac(nsec : Int32, digits : Int32, trimmed : Bool) -> String {
   let s = nsec.to_string()
   let padded = StringBuilder()
   let pad_len = 9 - s.length()
@@ -1004,13 +1004,13 @@ fn fmt_nsec_frac(nsec : Int, digits : Int, trimmed : Bool) -> String {
 /// Returns the formatted time string.
 fn fmt_go_layout(
   year : Int64,
-  month : Int,
-  day : Int,
-  hour24 : Int,
-  minute : Int,
-  second : Int,
-  nsec : Int,
-  tz_offset : Int,
+  month : Int32,
+  day : Int32,
+  hour24 : Int32,
+  minute : Int32,
+  second : Int32,
+  nsec : Int32,
+  tz_offset : Int32,
   tz_name : String,
   layout : String,
 ) -> String {
@@ -1227,13 +1227,13 @@ fn fmt_go_layout(
 }
 
 ///|
-fn time_hash(sec : Int64, nsec : Int) -> Result[UInt, String] {
+fn time_hash(sec : Int64, nsec : Int32) -> Result[UInt32, String] {
   let unix_nano = sec * ns_per_second + nsec.to_int64()
   Ok(hash_int64_fold(unix_nano))
 }
 
 ///|
-fn time_compare(sec : Int64, nsec : Int, other : @value.Value) -> Int? {
+fn time_compare(sec : Int64, nsec : Int32, other : @value.Value) -> Int32? {
   match extract_time_parts(other) {
     Some((other_sec, other_nsec)) =>
       if sec < other_sec || (sec == other_sec && nsec < other_nsec) {
@@ -1248,7 +1248,7 @@ fn time_compare(sec : Int64, nsec : Int, other : @value.Value) -> Int? {
 }
 
 ///|
-fn time_equals(sec : Int64, nsec : Int, other : @value.Value) -> Bool {
+fn time_equals(sec : Int64, nsec : Int32, other : @value.Value) -> Bool {
   match time_compare(sec, nsec, other) {
     Some(0) => true
     _ => false
@@ -1261,7 +1261,7 @@ fn time_equals(sec : Int64, nsec : Int, other : @value.Value) -> Bool {
 /// A `time.time` is falsy when it equals Go's zero `Time` (January 1, year 1,
 /// 00:00:00 UTC, which corresponds to Unix second -62135596800), and truthy
 /// for every other instant.
-fn time_truth(sec : Int64, nsec : Int) -> Bool {
+fn time_truth(sec : Int64, nsec : Int32) -> Bool {
   // Go's zero Time is January 1, year 1, 00:00:00.000000000 UTC = unix second -62135596800.
   !(sec == -62135596800L && nsec == 0)
 }
@@ -1269,8 +1269,8 @@ fn time_truth(sec : Int64, nsec : Int) -> Bool {
 ///|
 fn time_attr(
   sec : Int64,
-  nsec : Int,
-  tz_offset : Int,
+  nsec : Int32,
+  tz_offset : Int32,
   tz_name : String,
   name : String,
 ) -> Result[@value.Value?, String] {
@@ -1327,8 +1327,8 @@ fn time_attr_names() -> Array[String] {
 ///|
 fn time_binary(
   sec : Int64,
-  nsec : Int,
-  tz_offset : Int,
+  nsec : Int32,
+  tz_offset : Int32,
   tz_name : String,
   op : String,
   rhs : @value.Value,
@@ -1401,8 +1401,8 @@ fn time_binary(
 /// - `tz_name` : Display name for the timezone (e.g. `"UTC"`, `"+09:00"`).
 fn make_time_at_zone(
   sec : Int64,
-  nsec : Int,
-  tz_offset : Int,
+  nsec : Int32,
+  tz_offset : Int32,
   tz_name : String,
 ) -> @value.Value {
   @value.Value::ExtVal(
@@ -1430,12 +1430,12 @@ fn make_time_at_zone(
 ///
 /// - `sec` : Unix timestamp in whole seconds.
 /// - `nsec` : Nanosecond offset within the second (0–999_999_999).
-fn make_time(sec : Int64, nsec : Int) -> @value.Value {
+fn make_time(sec : Int64, nsec : Int32) -> @value.Value {
   make_time_at_zone(sec, nsec, 0, "UTC")
 }
 
 ///|
-fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
+fn make_in_location_method(sec : Int64, nsec : Int32) -> @value.Value {
   @value.Value::new_builtin("in_location", fn(_ctx, pos_args, kw_args) {
     let result = match
       @unpack.unpack_positional("in_location", pos_args, kw_args, 1, 1) {
@@ -1463,8 +1463,8 @@ fn make_in_location_method(sec : Int64, nsec : Int) -> @value.Value {
 ///|
 fn make_format_method(
   sec : Int64,
-  nsec : Int,
-  tz_offset : Int,
+  nsec : Int32,
+  tz_offset : Int32,
   tz_name : String,
 ) -> @value.Value {
   @value.Value::new_builtin("format", fn(_ctx, pos_args, kw_args) {
@@ -1489,7 +1489,7 @@ fn make_format_method(
 }
 
 ///|
-fn hex_lower_digit(n : Int) -> Char {
+fn hex_lower_digit(n : Int32) -> Char {
   if n < 10 {
     ('0'.to_int() + n).unsafe_to_char()
   } else {
@@ -1498,7 +1498,7 @@ fn hex_lower_digit(n : Int) -> Char {
 }
 
 ///|
-fn write_hex_escape(buf : StringBuilder, b : Int) -> Unit {
+fn write_hex_escape(buf : StringBuilder, b : Int32) -> Unit {
   buf.write_char('\\')
   buf.write_char('x')
   buf.write_char(hex_lower_digit(b >> 4))
@@ -1538,7 +1538,7 @@ fn time_quote(s : String) -> String {
 }
 
 ///|
-fn parse_2digits(chars : Array[Char], i : Int) -> (Int, Int)? {
+fn parse_2digits(chars : Array[Char], i : Int32) -> (Int32, Int32)? {
   if i + 1 >= chars.length() {
     return None
   }
@@ -1551,7 +1551,7 @@ fn parse_2digits(chars : Array[Char], i : Int) -> (Int, Int)? {
 }
 
 ///|
-fn tz_name_from_offset(offset_sec : Int) -> String {
+fn tz_name_from_offset(offset_sec : Int32) -> String {
   if offset_sec == 0 {
     "UTC"
   } else {
@@ -1576,7 +1576,7 @@ fn tz_name_from_offset(offset_sec : Int) -> String {
 fn resolve_local_time_at_zone(
   location : String,
   local_sec : Int64,
-) -> (Int64, Int, String)? {
+) -> (Int64, Int32, String)? {
   let (offset_a, _) = match get_tz_abbr_at(location, local_sec) {
     Some(v) => v
     None => return None
@@ -1604,11 +1604,11 @@ fn resolve_local_time_at_zone(
 ///
 /// Returns `Ok((unix_sec, nsec, tz_offset_sec, zone_name))` where `unix_sec`
 /// is already adjusted to UTC, or `Err(message)` on any parse failure.
-fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
+fn parse_rfc3339(s : String) -> Result[(Int64, Int32, Int32, String), String] {
   let chars = s.to_array()
   let len = chars.length()
   let rfc_layout = "2006-01-02T15:04:05Z07:00"
-  fn cp_err(pos : Int, tok : String) -> String {
+  fn cp_err(pos : Int32, tok : String) -> String {
     let buf = StringBuilder()
     for k in pos..<chars.length() {
       buf.write_char(chars[k])
@@ -1779,7 +1779,11 @@ fn parse_rfc3339(s : String) -> Result[(Int64, Int, Int, String), String] {
 ///
 /// Returns `Some((value, next_index))` on success, or `None` if fewer than
 /// `n` digits are available or a non-digit character is encountered.
-fn read_fixed_digits(chars : Array[Char], i : Int, n : Int) -> (Int, Int)? {
+fn read_fixed_digits(
+  chars : Array[Char],
+  i : Int32,
+  n : Int32,
+) -> (Int32, Int32)? {
   let len = chars.length()
   if i + n > len {
     return None
@@ -1810,7 +1814,7 @@ fn read_fixed_digits(chars : Array[Char], i : Int, n : Int) -> (Int, Int)? {
 /// - `i` : Starting index.
 ///
 /// Returns `Some((value, next_index))`, or `None` if no digit is present at `i`.
-fn read_flex_digits(chars : Array[Char], i : Int) -> (Int, Int)? {
+fn read_flex_digits(chars : Array[Char], i : Int32) -> (Int32, Int32)? {
   let len = chars.length()
   if i >= len || chars[i] < '0' || chars[i] > '9' {
     return None
@@ -1853,11 +1857,11 @@ fn ascii_lower(c : Char) -> Char {
 /// matches exactly, or `None` if no candidate matches.
 fn match_name(
   chars : Array[Char],
-  i : Int,
+  i : Int32,
   names : FixedArray[String],
-  start : Int,
-  count : Int,
-) -> (Int, Int)? {
+  start : Int32,
+  count : Int32,
+) -> (Int32, Int32)? {
   for idx in start..<(start + count) {
     let name = names[idx]
     let nchars = name.to_array()
@@ -1900,11 +1904,11 @@ fn match_name(
 /// matches case-insensitively, or `None` if no candidate matches.
 fn match_name_ci(
   chars : Array[Char],
-  i : Int,
+  i : Int32,
   names : FixedArray[String],
-  start : Int,
-  count : Int,
-) -> (Int, Int)? {
+  start : Int32,
+  count : Int32,
+) -> (Int32, Int32)? {
   for idx in start..<(start + count) {
     let name = names[idx]
     let nchars = name.to_array()
@@ -1949,7 +1953,10 @@ fn match_name_ci(
 fn parse_go_layout(
   value : String,
   layout : String,
-) -> Result[(Int, Int, Int, Int, Int, Int, Int, (Int, String)?), String] {
+) -> Result[
+  (Int32, Int32, Int32, Int32, Int32, Int32, Int32, (Int32, String)?),
+  String,
+] {
   let lc = layout.to_array()
   let vc = value.to_array()
   let ln = lc.length()
@@ -1963,12 +1970,15 @@ fn parse_go_layout(
   let mut minute = 0
   let mut second = 0
   let mut nsec = 0
-  let mut parsed_tz : (Int, String)? = None
+  let mut parsed_tz : (Int32, String)? = None
   let mut pm : Bool? = None
   let mut yday = -1
   let err = fn(
     tok : String,
-  ) -> Result[(Int, Int, Int, Int, Int, Int, Int, (Int, String)?), String] {
+  ) -> Result[
+    (Int32, Int32, Int32, Int32, Int32, Int32, Int32, (Int32, String)?),
+    String,
+  ] {
     let buf = StringBuilder()
     for k in vi..<vn {
       buf.write_char(vc[k])
@@ -2398,7 +2408,7 @@ fn parse_time_has_tz_suffix(s : String) -> Bool {
 }
 
 ///|
-fn pow10_int64(n : Int) -> Int64 {
+fn pow10_int64(n : Int32) -> Int64 {
   let mut result = 1L
   for _ in 0..<n {
     result = result * 10L
@@ -2431,7 +2441,7 @@ pub let now_override_key : String = "time.now"
 ///   inspect(@value.Value::type_name(v), content="time.time")
 /// }
 /// ```
-pub fn time_value(sec : Int64, nsec : Int) -> @value.Value {
+pub fn time_value(sec : Int64, nsec : Int32) -> @value.Value {
   make_time(sec, nsec)
 }
 
@@ -2586,9 +2596,9 @@ fn make_parse_time_fn() -> @value.Value {
     // display name for the zone ("UTC" for Z, "+0000" for numeric zero offset).
     let (parsed_sec, nsec, has_tz, tz_off, tz_name) : (
       Int64,
-      Int,
+      Int32,
       Bool,
-      Int,
+      Int32,
       String,
     ) = if fmt == default_parse_time_layout {
       match parse_rfc3339(x) {

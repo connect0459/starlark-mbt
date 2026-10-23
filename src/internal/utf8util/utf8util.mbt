@@ -6,7 +6,7 @@
 /// - `n` : A nibble value in the range 0–15.
 ///
 /// Returns the corresponding lowercase hex character (`'0'`–`'9'` or `'a'`–`'f'`).
-pub fn hex_char(n : Int) -> Char {
+pub fn hex_char(n : Int32) -> Char {
   if n < 10 {
     ('0'.to_int() + n).unsafe_to_char()
   } else {
@@ -21,7 +21,7 @@ pub fn hex_char(n : Int) -> Char {
 ///
 /// - `buf` : The string builder to append to.
 /// - `n` : The integer value whose low 8 bits are formatted.
-pub fn write_hex2(buf : StringBuilder, n : Int) -> Unit {
+pub fn write_hex2(buf : StringBuilder, n : Int32) -> Unit {
   buf.write_char(hex_char((n >> 4) & 0xF))
   buf.write_char(hex_char(n & 0xF))
 }
@@ -33,7 +33,7 @@ pub fn write_hex2(buf : StringBuilder, n : Int) -> Unit {
 ///
 /// - `buf` : The string builder to append to.
 /// - `n` : The integer value whose low 16 bits are formatted.
-pub fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
+pub fn write_hex4(buf : StringBuilder, n : Int32) -> Unit {
   buf.write_char(hex_char((n >> 12) & 0xF))
   buf.write_char(hex_char((n >> 8) & 0xF))
   buf.write_char(hex_char((n >> 4) & 0xF))
@@ -47,7 +47,7 @@ pub fn write_hex4(buf : StringBuilder, n : Int) -> Unit {
 ///
 /// - `buf` : The string builder to append to.
 /// - `n` : The integer value whose full 32 bits are formatted.
-pub fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
+pub fn write_hex8(buf : StringBuilder, n : Int32) -> Unit {
   buf.write_char(hex_char((n >> 28) & 0xF))
   buf.write_char(hex_char((n >> 24) & 0xF))
   buf.write_char(hex_char((n >> 20) & 0xF))
@@ -67,7 +67,7 @@ pub fn write_hex8(buf : StringBuilder, n : Int) -> Unit {
 /// - `pos` : The byte offset at which to start decoding.
 ///
 /// Returns `(rune, byte_width)`. Returns `(-1, 1)` for invalid or truncated sequences.
-pub fn utf8_decode_rune(b : Bytes, pos : Int) -> (Int, Int) {
+pub fn utf8_decode_rune(b : Bytes, pos : Int32) -> (Int32, Int32) {
   // RFC 3629 valid leading byte ranges:
   //   2-byte: 0xC2..0xDF (0xC0/0xC1 are overlong; start bits: 110xxxxx)
   //   3-byte: 0xE0..0xEF (start bits: 1110xxxx)
@@ -181,7 +181,7 @@ pub fn decode_utf8_lossy(b : Bytes) -> String {
 /// - `r` : The Unicode codepoint to test.
 ///
 /// Returns `true` if the codepoint is considered printable, `false` otherwise.
-pub fn is_unicode_printable(r : Int) -> Bool {
+pub fn is_unicode_printable(r : Int32) -> Bool {
   if r < 0x20 || r == 0x7F {
     return false
   }
@@ -245,7 +245,7 @@ pub fn is_unicode_printable(r : Int) -> Bool {
 }
 
 ///|
-pub fn utf16_decode_cp(s : String, i : Int, len : Int) -> (Int, Int) {
+pub fn utf16_decode_cp(s : String, i : Int32, len : Int32) -> (Int32, Int32) {
   let u = s[i].to_int()
   let slen = s.length()
   let bound = if len < slen { len } else { slen }
