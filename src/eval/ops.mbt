@@ -358,23 +358,23 @@ let unicode_max_cp_bigint : BigInt = 0x10FFFFN
 
 ///|
 /// Inclusive lower bound of the Unicode surrogate block (U+D800..U+DFFF).
-let unicode_surr_first : Int = 0xD800
+let unicode_surr_first : Int32 = 0xD800
 
 ///|
 /// Inclusive upper bound of the Unicode surrogate block (U+D800..U+DFFF).
-let unicode_surr_last : Int = 0xDFFF
+let unicode_surr_last : Int32 = 0xDFFF
 
 ///|
 /// Decimal places for `%e`/`%f` printf format, matching C's
 /// `printf("%.6e")`/`printf("%.6f")`.
-let printf_float_precision : Int = 6
+let printf_float_precision : Int32 = 6
 
 ///|
 /// Validates the count for a sequence repeat (`seq * n`). Returns the resolved
 /// element count, treating a non-positive `n` as 0 (empty result); errors when
 /// the count exceeds int32 range or `elem_len * count` would exceed the
 /// allocation cap.
-fn checked_repeat_count(n : BigInt, elem_len : Int) -> Result[Int, String] {
+fn checked_repeat_count(n : BigInt, elem_len : Int32) -> Result[Int32, String] {
   if n <= 0N {
     return Ok(0)
   }
@@ -857,7 +857,7 @@ fn int64_to_octal(n : BigInt) -> String {
   }
   let buf = StringBuilder()
   let mut v = n
-  let digits : Array[Int] = []
+  let digits : Array[Int32] = []
   while v > 0N {
     digits.push((v % 8N).to_int())
     v = v / 8N
@@ -879,7 +879,7 @@ fn int64_to_hex(n : BigInt, upper : Bool) -> String {
   }
   let buf = StringBuilder()
   let mut v = n
-  let digits : Array[Int] = []
+  let digits : Array[Int32] = []
   while v > 0N {
     digits.push((v % 16N).to_int())
     v = v / 16N
@@ -900,7 +900,7 @@ fn int64_to_hex(n : BigInt, upper : Bool) -> String {
 
 ///|
 /// Returns `10^n` as a `BigInt`, used in exact-arithmetic float formatting.
-fn pow10_big(n : Int) -> BigInt {
+fn pow10_big(n : Int32) -> BigInt {
   let mut r = 1N
   for _ in 0..<n {
     r = r * 10N
@@ -911,7 +911,7 @@ fn pow10_big(n : Int) -> BigInt {
 ///|
 /// Left-pads `n.to_string()` with zeros to at least `width` digits. Used to
 /// produce the fixed-width fractional part in `%f` output.
-fn pad_bigint(n : BigInt, width : Int) -> String {
+fn pad_bigint(n : BigInt, width : Int32) -> String {
   let s = n.to_string()
   let pad = width - s.length()
   if pad <= 0 {
@@ -929,7 +929,7 @@ fn pad_bigint(n : BigInt, width : Int) -> String {
 /// Extracts the exact binary representation of a finite, strictly-positive
 /// double as `(mantissa, exponent)` where `value = mantissa × 2^exponent`.
 /// Used by `round_scaled` for lossless decimal conversion.
-fn decompose_double(abs_f : Double) -> (BigInt, Int) {
+fn decompose_double(abs_f : Double) -> (BigInt, Int32) {
   let bits = abs_f.reinterpret_as_uint64()
   // 52 = mantissa bits; 0x7FF = 11-bit biased-exponent mask (bits 52..62)
   let biased = ((bits >> 52) & 0x7FFUL).to_int()
@@ -967,7 +967,7 @@ fn round_half_even_div(num : BigInt, den : BigInt) -> BigInt {
 /// Rounds `abs_f × 10^scale` to the nearest integer using exact big-integer
 /// arithmetic on the true binary value of `abs_f`, avoiding the rounding error
 /// of an intermediate floating-point multiply. `abs_f` must be finite and ≥ 0.
-fn round_scaled(abs_f : Double, scale : Int) -> BigInt {
+fn round_scaled(abs_f : Double, scale : Int32) -> BigInt {
   let (mant, e) = decompose_double(abs_f)
   let mut num = mant
   let mut den = 1N
@@ -1211,7 +1211,7 @@ fn eval_cmp(
   lv : @value.Value,
   rv : @value.Value,
   _pos : @errors.Position,
-  strict_sign : Int,
+  strict_sign : Int32,
   strict : Bool,
 ) -> @value.Value raise EvalErr {
   match (lv, rv) {
@@ -1646,9 +1646,9 @@ fn set_index(
 fn eval_slice(
   ctx : EvalContext,
   obj : @value.Value,
-  lo_opt : Int?,
-  hi_opt : Int?,
-  step_opt : Int?,
+  lo_opt : Int32?,
+  hi_opt : Int32?,
+  step_opt : Int32?,
 ) -> @value.Value raise EvalErr {
   let step = match step_opt {
     None => 1
@@ -1784,11 +1784,11 @@ fn eval_slice(
 /// start/end; out-of-range values are clamped into `[0, len]` (positive step)
 /// or `[-1, len-1]` (negative step).
 fn normalize_slice(
-  lo_opt : Int?,
-  hi_opt : Int?,
-  len : Int,
-  step : Int,
-) -> (Int, Int) {
+  lo_opt : Int32?,
+  hi_opt : Int32?,
+  len : Int32,
+  step : Int32,
+) -> (Int32, Int32) {
   if step > 0 {
     let start = match lo_opt {
       None => 0
@@ -1852,10 +1852,10 @@ fn normalize_slice(
 /// 64-bit variant of `normalize_slice`, used for `range` slices whose length
 /// may exceed `Int` range.
 fn normalize_slice_64(
-  lo_opt : Int?,
-  hi_opt : Int?,
+  lo_opt : Int32?,
+  hi_opt : Int32?,
   len : Int64,
-  step : Int,
+  step : Int32,
 ) -> (Int64, Int64) {
   if step > 0 {
     let start = match lo_opt {

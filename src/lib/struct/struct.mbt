@@ -1,5 +1,5 @@
 ///|
-fn str_lex_cmp(a : String, b : String) -> Int {
+fn str_lex_cmp(a : String, b : String) -> Int32 {
   let la = a.length()
   let lb = b.length()
   let mut ia = 0
@@ -26,7 +26,7 @@ fn str_lex_cmp(a : String, b : String) -> Int {
 }
 
 ///|
-fn parse_uint_str(s : String) -> Int? {
+fn parse_uint_str(s : String) -> Int32? {
   if s.is_empty() {
     return None
   }
@@ -63,7 +63,7 @@ fn struct_repr(
 fn struct_repr_depth(
   ctor : @value.Value,
   entries : Array[(String, @value.Value)],
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   let buf = StringBuilder()
   buf.write_string(ctor_display(ctor))
@@ -89,24 +89,24 @@ fn struct_repr_depth(
 // behaviour and are not derived from a published hash family.
 
 ///|
-let struct_hash_seed : UInt = 8731U
+let struct_hash_seed : UInt32 = 8731U
 
 ///|
-let struct_hash_mult_init : UInt = 9839U
+let struct_hash_mult_init : UInt32 = 9839U
 
 ///|
-let struct_hash_mult_step : UInt = 7349U
+let struct_hash_mult_step : UInt32 = 7349U
 
 ///|
 fn struct_hash_depth(
   entries : Array[(String, @value.Value)],
-  depth : Int,
-) -> Result[UInt, String] {
+  depth : Int32,
+) -> Result[UInt32, String] {
   if depth < 1 {
     return Err("hash exceeded maximum recursion depth")
   }
-  let mut x : UInt = struct_hash_seed
-  let mut m : UInt = struct_hash_mult_init
+  let mut x : UInt32 = struct_hash_seed
+  let mut m : UInt32 = struct_hash_mult_init
   for e in entries {
     match
       @value.Value::hash(@value.Value::String(@value.StarlarkString::new(e.0))) {
@@ -231,7 +231,7 @@ fn struct_equals(
   ctor : @value.Value,
   entries : Array[(String, @value.Value)],
   other : @value.Value,
-  depth : Int,
+  depth : Int32,
 ) -> Result[Bool, String] {
   match other {
     @value.Value::ExtVal(c) if c.get_type_name() == "struct" => {
@@ -423,7 +423,7 @@ fn make_symbol(name : String) -> @value.Value {
 }
 
 ///|
-fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
+fn make_symbol_with_id(name : String, sym_id : Int32) -> @value.Value {
   @value.Value::ExtVal(
     @value.CustomValue::new(fn() { "symbol" }, fn() { true }, fn() { name })
     .with_hash(fn() { Err("unhashable: symbol") })
@@ -458,10 +458,10 @@ fn make_symbol_with_id(name : String, sym_id : Int) -> @value.Value {
 }
 
 ///|
-let symbol_counter : Ref[Int] = { val: 0, }
+let symbol_counter : Ref[Int32] = { val: 0, }
 
 ///|
-fn next_symbol_id() -> Int {
+fn next_symbol_id() -> Int32 {
   symbol_counter.val += 1
   symbol_counter.val
 }

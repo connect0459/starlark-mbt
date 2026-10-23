@@ -12,25 +12,25 @@ pub fn as_float(Value) -> (Double, Bool)
 
 pub fn as_string(Value) -> (String, Bool)
 
-pub fn compare_depth(String, Value, Value, Int) -> Result[Bool, String]
+pub fn compare_depth(String, Value, Value, Int32) -> Result[Bool, String]
 
-pub let compare_limit : Int
+pub let compare_limit : Int32
 
-pub fn compare_values(Value, Value, op? : String) -> Result[Int, String]
+pub fn compare_values(Value, Value, op? : String) -> Result[Int32, String]
 
-pub fn compare_values_depth(Value, Value, Int, op? : String) -> Result[Int, String]
+pub fn compare_values_depth(Value, Value, Int32, op? : String) -> Result[Int32, String]
 
-pub let dict_key_hash_limit : Int
+pub let dict_key_hash_limit : Int32
 
 pub fn equal(Value, Value) -> Result[Bool, String]
 
-pub fn equal_depth(Value, Value, Int) -> Result[Bool, String]
+pub fn equal_depth(Value, Value, Int32) -> Result[Bool, String]
 
-pub let freeze_limit : Int
+pub let freeze_limit : Int32
 
-pub let hash_limit : Int
+pub let hash_limit : Int32
 
-pub fn hash_value_depth(Value, Int) -> Result[UInt, String]
+pub fn hash_value_depth(Value, Int32) -> Result[UInt32, String]
 
 pub fn iterate(Value) -> Result[StarlarkIterator, String]
 
@@ -40,9 +40,9 @@ pub fn length_of(Value) -> Result[Int64, String]
 
 pub fn number_to_int(Value) -> Int64?
 
-pub let repr_limit : Int
+pub let repr_limit : Int32
 
-pub fn starlark_equals_depth(Value, Value, Int) -> Result[Bool, String]
+pub fn starlark_equals_depth(Value, Value, Int32) -> Result[Bool, String]
 
 // Errors
 
@@ -66,24 +66,24 @@ pub struct CustomValue {
 }
 pub fn CustomValue::do_call(Self, Array[Value], Array[(String, Value)]) -> Result[Value, String]?
 pub fn CustomValue::do_freeze(Self) -> Unit
-pub fn CustomValue::do_set_index(Self, Int, Value) -> Result[Unit, String]?
+pub fn CustomValue::do_set_index(Self, Int32, Value) -> Result[Unit, String]?
 pub fn CustomValue::do_set_key(Self, Value, Value) -> Result[Unit, String]?
-pub fn CustomValue::do_slice(Self, Int, Int, Int) -> Result[Value, String]?
+pub fn CustomValue::do_slice(Self, Int32, Int32, Int32) -> Result[Value, String]?
 pub fn CustomValue::get_attr(Self, String) -> Result[Value?, String]
 pub fn CustomValue::get_attr_names(Self) -> Array[String]?
 pub fn CustomValue::get_binary(Self, String, Value, Bool) -> Result[Value, String]?
-pub fn CustomValue::get_compare(Self, Value) -> Int?
+pub fn CustomValue::get_compare(Self, Value) -> Int32?
 pub fn CustomValue::get_contains(Self, Value) -> Result[Bool, String]?
-pub fn CustomValue::get_equals(Self, Value, Int) -> Result[Bool, String]
-pub fn CustomValue::get_hash(Self) -> Result[UInt, String]
-pub fn CustomValue::get_hash_depth(Self, Int) -> Result[UInt, String]
-pub fn CustomValue::get_index(Self, Int) -> Result[Value, String]
+pub fn CustomValue::get_equals(Self, Value, Int32) -> Result[Bool, String]
+pub fn CustomValue::get_hash(Self) -> Result[UInt32, String]
+pub fn CustomValue::get_hash_depth(Self, Int32) -> Result[UInt32, String]
+pub fn CustomValue::get_index(Self, Int32) -> Result[Value, String]
 pub fn CustomValue::get_internal_attr(Self, String) -> Result[Value?, String]
 pub fn CustomValue::get_items(Self) -> Result[Array[(Value, Value)], String]?
 pub fn CustomValue::get_iterate(Self) -> Result[StarlarkIterator, String]
-pub fn CustomValue::get_length(Self) -> Result[Int, String]
+pub fn CustomValue::get_length(Self) -> Result[Int32, String]
 pub fn CustomValue::get_repr(Self) -> String
-pub fn CustomValue::get_repr_depth(Self, Int) -> Result[String, String]
+pub fn CustomValue::get_repr_depth(Self, Int32) -> Result[String, String]
 pub fn CustomValue::get_set_field(Self, String, Value) -> Result[Unit, String]?
 pub fn CustomValue::get_truth(Self) -> Bool
 pub fn CustomValue::get_type_name(Self) -> String
@@ -92,22 +92,22 @@ pub fn CustomValue::new(() -> String, () -> Bool, () -> String) -> Self
 pub fn CustomValue::with_attrs(Self, (String) -> Result[Value?, String], () -> Array[String]) -> Self
 pub fn CustomValue::with_binary(Self, (String, Value, Bool) -> Result[Value, String]?) -> Self
 pub fn CustomValue::with_call(Self, (Array[Value], Array[(String, Value)]) -> Result[Value, String]) -> Self
-pub fn CustomValue::with_compare(Self, (Value) -> Int?) -> Self
+pub fn CustomValue::with_compare(Self, (Value) -> Int32?) -> Self
 pub fn CustomValue::with_contains(Self, (Value) -> Result[Bool, String]) -> Self
-pub fn CustomValue::with_equals(Self, (Value, Int) -> Result[Bool, String]) -> Self
+pub fn CustomValue::with_equals(Self, (Value, Int32) -> Result[Bool, String]) -> Self
 pub fn CustomValue::with_freeze(Self, () -> Unit) -> Self
-pub fn CustomValue::with_get_index(Self, (Int) -> Result[Value, String]) -> Self
-pub fn CustomValue::with_hash(Self, () -> Result[UInt, String]) -> Self
-pub fn CustomValue::with_hash_depth(Self, (Int) -> Result[UInt, String]) -> Self
+pub fn CustomValue::with_get_index(Self, (Int32) -> Result[Value, String]) -> Self
+pub fn CustomValue::with_hash(Self, () -> Result[UInt32, String]) -> Self
+pub fn CustomValue::with_hash_depth(Self, (Int32) -> Result[UInt32, String]) -> Self
 pub fn CustomValue::with_internal_get_attr(Self, (String) -> Result[Value?, String]) -> Self
 pub fn CustomValue::with_items(Self, () -> Result[Array[(Value, Value)], String]) -> Self
 pub fn CustomValue::with_iterate(Self, () -> Result[StarlarkIterator, String]) -> Self
-pub fn CustomValue::with_length(Self, () -> Int) -> Self
-pub fn CustomValue::with_repr_depth(Self, (Int) -> Result[String, String]) -> Self
+pub fn CustomValue::with_length(Self, () -> Int32) -> Self
+pub fn CustomValue::with_repr_depth(Self, (Int32) -> Result[String, String]) -> Self
 pub fn CustomValue::with_set_field(Self, (String, Value) -> Result[Unit, String]) -> Self
-pub fn CustomValue::with_set_index(Self, (Int, Value) -> Result[Unit, String]) -> Self
+pub fn CustomValue::with_set_index(Self, (Int32, Value) -> Result[Unit, String]) -> Self
 pub fn CustomValue::with_set_key(Self, (Value, Value) -> Result[Unit, String]) -> Self
-pub fn CustomValue::with_slice(Self, (Int, Int, Int) -> Result[Value, String]) -> Self
+pub fn CustomValue::with_slice(Self, (Int32, Int32, Int32) -> Result[Value, String]) -> Self
 pub fn CustomValue::with_unary(Self, (String) -> Result[Value, String]?) -> Self
 
 pub struct StarlarkBoundMethod {
@@ -146,7 +146,7 @@ pub fn StarlarkDict::get(Self, Value) -> Result[Value?, String]
 pub fn StarlarkDict::is_frozen(Self) -> Bool
 pub fn StarlarkDict::iter(Self) -> Iter[Value]
 pub fn StarlarkDict::keys(Self) -> Array[Value]
-pub fn StarlarkDict::length(Self) -> Int
+pub fn StarlarkDict::length(Self) -> Int32
 pub fn StarlarkDict::new() -> Self
 pub fn StarlarkDict::pop_entry(Self, Value) -> Result[Value?, String]
 pub fn StarlarkDict::popitem(Self) -> Result[(Value, Value)?, String]
@@ -162,18 +162,18 @@ pub fn StarlarkFunction::compiled_module_slots(Self) -> Array[Value?]
 pub fn StarlarkFunction::defaults(Self) -> Array[Value?]
 pub fn StarlarkFunction::defining_module(Self) -> StarlarkModule?
 pub fn StarlarkFunction::doc(Self) -> String
-pub fn StarlarkFunction::free_var(Self, Int) -> (String, Value)?
+pub fn StarlarkFunction::free_var(Self, Int32) -> (String, Value)?
 pub fn StarlarkFunction::from_compiled(String, @compile.Funcode, @compile.CompiledProgram, Array[Value?], Array[Value?], Array[Cell]) -> Self
 pub fn StarlarkFunction::globals(Self) -> Map[String, Value]
 pub fn StarlarkFunction::has_kwargs(Self) -> Bool
 pub fn StarlarkFunction::has_varargs(Self) -> Bool
 pub fn StarlarkFunction::name(Self) -> String
 pub fn StarlarkFunction::new(String, @errors.Position) -> Self
-pub fn StarlarkFunction::num_free_vars(Self) -> Int
-pub fn StarlarkFunction::num_kwonly_params(Self) -> Int
-pub fn StarlarkFunction::num_params(Self) -> Int
-pub fn StarlarkFunction::param(Self, Int) -> (String, @errors.Position)
-pub fn StarlarkFunction::param_default(Self, Int) -> Value?
+pub fn StarlarkFunction::num_free_vars(Self) -> Int32
+pub fn StarlarkFunction::num_kwonly_params(Self) -> Int32
+pub fn StarlarkFunction::num_params(Self) -> Int32
+pub fn StarlarkFunction::param(Self, Int32) -> (String, @errors.Position)
+pub fn StarlarkFunction::param_default(Self, Int32) -> Value?
 pub fn StarlarkFunction::position(Self) -> @errors.Position
 
 pub struct StarlarkIterator {
@@ -187,26 +187,26 @@ pub struct StarlarkList {
   // private fields
 }
 #alias("_[_]")
-pub fn StarlarkList::at(Self, Int) -> Value
+pub fn StarlarkList::at(Self, Int32) -> Value
 pub fn StarlarkList::check_mutable(Self, String) -> Result[Unit, String]
 pub fn StarlarkList::clear(Self) -> Result[Unit, String]
 pub fn StarlarkList::copy_items(Self) -> Array[Value]
 pub fn StarlarkList::each(Self, (Value) -> Unit) -> Unit
-pub fn StarlarkList::eachi(Self, (Int, Value) -> Unit) -> Unit
+pub fn StarlarkList::eachi(Self, (Int32, Value) -> Unit) -> Unit
 pub fn StarlarkList::freeze(Self) -> Unit
-pub fn StarlarkList::get(Self, Int) -> Value?
-pub fn StarlarkList::insert(Self, Int, Value) -> Result[Unit, String]
+pub fn StarlarkList::get(Self, Int32) -> Value?
+pub fn StarlarkList::insert(Self, Int32, Value) -> Result[Unit, String]
 pub fn StarlarkList::is_empty(Self) -> Bool
 pub fn StarlarkList::is_frozen(Self) -> Bool
 pub fn StarlarkList::iter(Self) -> Iter[Value]
-pub fn StarlarkList::length(Self) -> Int
+pub fn StarlarkList::length(Self) -> Int32
 pub fn StarlarkList::new(Array[Value]) -> Self
 pub fn StarlarkList::pop(Self) -> Result[Value?, String]
-pub fn StarlarkList::pop_at(Self, Int, String) -> Result[Value, String]
+pub fn StarlarkList::pop_at(Self, Int32, String) -> Result[Value, String]
 pub fn StarlarkList::push(Self, Value) -> Result[Unit, String]
 pub fn StarlarkList::reverse(Self) -> Result[Unit, String]
-pub fn StarlarkList::set(Self, Int, Value) -> Result[Unit, String]
-pub fn StarlarkList::sort_by(Self, (Value, Value) -> Int) -> Result[Unit, String]
+pub fn StarlarkList::set(Self, Int32, Value) -> Result[Unit, String]
+pub fn StarlarkList::sort_by(Self, (Value, Value) -> Int32) -> Result[Unit, String]
 
 pub struct StarlarkModule {
   // private fields
@@ -237,7 +237,7 @@ pub fn StarlarkSet::each(Self, (Value) -> Unit) -> Unit
 pub fn StarlarkSet::freeze(Self) -> Unit
 pub fn StarlarkSet::is_frozen(Self) -> Bool
 pub fn StarlarkSet::iter(Self) -> Iter[Value]
-pub fn StarlarkSet::length(Self) -> Int
+pub fn StarlarkSet::length(Self) -> Int32
 pub fn StarlarkSet::new() -> Self
 pub fn StarlarkSet::pop_first(Self) -> Result[Value?, String]
 pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]
@@ -245,8 +245,8 @@ pub fn StarlarkSet::remove(Self, Value) -> Result[Bool, String]
 pub struct StarlarkString {
   // private fields
 }
-pub fn StarlarkString::byte_at(Self, Int) -> Byte
-pub fn StarlarkString::byte_len(Self) -> Int
+pub fn StarlarkString::byte_at(Self, Int32) -> Byte
+pub fn StarlarkString::byte_len(Self) -> Int32
 pub fn StarlarkString::equals(Self, Self) -> Bool
 pub fn StarlarkString::from_bytes(Bytes) -> Self
 pub fn StarlarkString::new(String) -> Self
@@ -305,7 +305,7 @@ pub(all) enum Value {
 pub fn Value::equal(Self, Self) -> Bool
 pub fn Value::freeze(Self) -> Unit
 pub fn Value::freeze_checked(Self) -> Result[Unit, String]
-pub fn Value::hash(Self) -> Result[UInt, String]
+pub fn Value::hash(Self) -> Result[UInt32, String]
 pub fn Value::new_builtin(String, (BuiltinCallCtx, Array[Self], Array[(String, Self)]) -> Result[Self, String]) -> Self
 pub fn Value::new_dict() -> Self
 pub fn Value::new_float(Double) -> Self
@@ -315,7 +315,7 @@ pub fn Value::new_set() -> Self
 pub fn Value::new_string(String) -> Self
 pub fn Value::not_equal(Self, Self) -> Bool
 pub fn Value::repr(Self) -> String
-pub fn Value::repr_at_depth(Self, Int) -> Result[String, String]
+pub fn Value::repr_at_depth(Self, Int32) -> Result[String, String]
 pub fn Value::repr_checked(Self) -> Result[String, String]
 pub fn Value::starlark_equals(Self, Self) -> Bool
 pub fn Value::to_str(Self) -> String
@@ -345,7 +345,7 @@ pub trait HasSetField {
 }
 
 pub trait HasSetIndex : Indexable {
-  fn set_index(Self, Int, Value) -> Result[Unit, String]
+  fn set_index(Self, Int32, Value) -> Result[Unit, String]
 }
 
 pub trait HasUnary {
@@ -353,8 +353,8 @@ pub trait HasUnary {
 }
 
 pub trait Indexable {
-  fn indexable_get(Self, Int) -> Result[Value, String]
-  fn indexable_len(Self) -> Int
+  fn indexable_get(Self, Int32) -> Result[Value, String]
+  fn indexable_len(Self) -> Int32
 }
 
 pub trait IterableMapping : Mapping {
@@ -364,19 +364,19 @@ pub trait IterableMapping : Mapping {
 pub trait Mapping {
   fn mapping_get(Self, Value) -> Result[Value?, String]
   fn mapping_keys(Self) -> Result[Array[Value], String]
-  fn mapping_len(Self) -> Int
+  fn mapping_len(Self) -> Int32
 }
 
 pub trait Sliceable : Indexable {
-  fn slice(Self, Int, Int, Int) -> Result[Value, String]
+  fn slice(Self, Int32, Int32, Int32) -> Result[Value, String]
 }
 
 pub trait StarlarkComparable {
-  fn compare_same_type(Self, Value) -> Result[Int, String]
+  fn compare_same_type(Self, Value) -> Result[Int32, String]
 }
 
 pub trait TotallyOrdered {
-  fn cmp(Self, Value) -> Int?
+  fn cmp(Self, Value) -> Int32?
 }
 
 pub(open) trait Unpacker {

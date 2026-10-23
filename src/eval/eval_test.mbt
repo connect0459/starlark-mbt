@@ -217,7 +217,7 @@ test "Thread::set_on_max_steps callback is invoked when step budget is exceeded"
 
 ///|
 test "Thread::set_on_max_steps callback can extend the step budget" {
-  let call_count : Ref[Int] = { val: 0, }
+  let call_count : Ref[Int32] = { val: 0, }
   let t = @eval.Thread::with_step_budget("test", 10)
   t.set_on_max_steps(fn(th) {
     call_count.val += 1
@@ -266,7 +266,7 @@ test "Thread: with_print routes output to the custom callback" {
 
 ///|
 test "Thread: with_print callback receives Thread with accessible call stack" {
-  let captured_depth : Array[Int] = []
+  let captured_depth : Array[Int32] = []
   let src =
     #|def f():
     #|  print("inside f")

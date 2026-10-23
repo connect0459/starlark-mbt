@@ -15,7 +15,7 @@ fn make_dict(entries : Array[(String, @value.Value)]) -> @value.Value {
 }
 
 ///|
-fn int_val(n : Int) -> @value.Value {
+fn int_val(n : Int32) -> @value.Value {
   @value.Value::new_int(n.to_int64())
 }
 

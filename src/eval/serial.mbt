@@ -25,7 +25,7 @@ const SerialMagic2 : Byte = b'b'
 const SerialMagic3 : Byte = b't'
 
 ///|
-const SerialVersion : Int = 2
+const SerialVersion : Int32 = 2
 
 // --- Encoder ---
 
@@ -45,7 +45,7 @@ fn Encoder::byte(self : Encoder, b : Byte) -> Unit {
 }
 
 ///|
-fn Encoder::tag(self : Encoder, t : Int) -> Unit {
+fn Encoder::tag(self : Encoder, t : Int32) -> Unit {
   self.buf.push(t.to_byte())
 }
 
@@ -55,7 +55,7 @@ fn Encoder::bool(self : Encoder, b : Bool) -> Unit {
 }
 
 ///|
-fn Encoder::uint(self : Encoder, n : Int) -> Unit {
+fn Encoder::uint(self : Encoder, n : Int32) -> Unit {
   let mut v = n
   while v >= 0x80 {
     self.buf.push(((v & 0x7f) | 0x80).to_byte())
@@ -94,7 +94,7 @@ fn Encoder::bytes(self : Encoder, b : Bytes) -> Unit {
 priv struct Decoder {
   data : Bytes
   filename : String
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
@@ -113,7 +113,7 @@ fn Decoder::bool(self : Decoder) -> Bool raise SerialErr {
 }
 
 ///|
-fn Decoder::uint(self : Decoder) -> Int raise SerialErr {
+fn Decoder::uint(self : Decoder) -> Int32 raise SerialErr {
   let mut result = 0
   let mut shift = 0
   for _ in 0..<5 {
@@ -383,7 +383,7 @@ fn Decoder::decode_funcode(self : Decoder) -> @compile.Funcode raise SerialErr {
   for _ in 0..<self.uint() {
     locals.push(self.decode_binding())
   }
-  let cells : Array[Int] = []
+  let cells : Array[Int32] = []
   for _ in 0..<self.uint() {
     cells.push(self.uint())
   }
@@ -455,7 +455,7 @@ fn Decoder::decode_load_stmt(
   for _ in 0..<self.uint() {
     locals.push(self.str())
   }
-  let slots : Array[Int] = []
+  let slots : Array[Int32] = []
   for _ in 0..<self.uint() {
     slots.push(self.uint())
   }

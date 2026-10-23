@@ -46,7 +46,7 @@ pub fn StarlarkString::from_bytes(bytes : Bytes) -> StarlarkString {
 /// Returns the number of UTF-8 bytes in the string (the Starlark `len()`).
 ///
 /// Returns the byte length of the underlying UTF-8 encoding.
-pub fn StarlarkString::byte_len(self : StarlarkString) -> Int {
+pub fn StarlarkString::byte_len(self : StarlarkString) -> Int32 {
   self.bytes.length()
 }
 
@@ -59,7 +59,7 @@ pub fn StarlarkString::byte_len(self : StarlarkString) -> Int {
 /// - `i` : The zero-based UTF-8 byte offset.
 ///
 /// Returns the byte value at offset `i`.
-pub fn StarlarkString::byte_at(self : StarlarkString, i : Int) -> Byte {
+pub fn StarlarkString::byte_at(self : StarlarkString, i : Int32) -> Byte {
   self.bytes[i]
 }
 
@@ -102,7 +102,7 @@ pub fn StarlarkString::raw(self : StarlarkString) -> String {
 pub struct StarlarkList {
   priv mut items : Array[Value]
   priv mut frozen : Bool
-  priv mut itercount : Int
+  priv mut itercount : Int32
 }
 
 ///|
@@ -161,7 +161,7 @@ pub fn StarlarkList::check_mutable(
 /// Returns the number of elements in the list.
 ///
 /// Returns the element count.
-pub fn StarlarkList::length(self : StarlarkList) -> Int {
+pub fn StarlarkList::length(self : StarlarkList) -> Int32 {
   self.items.length()
 }
 
@@ -183,7 +183,7 @@ pub fn StarlarkList::is_empty(self : StarlarkList) -> Bool {
 ///
 /// Returns `Some(value)` at index `i`, or `None` if `i` is out of bounds.
 /// Mirrors `Array::get`; use `list[i]` for direct (aborting) indexed access.
-pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value? {
+pub fn StarlarkList::get(self : StarlarkList, i : Int32) -> Value? {
   self.items.get(i)
 }
 
@@ -191,7 +191,7 @@ pub fn StarlarkList::get(self : StarlarkList, i : Int) -> Value? {
 /// Returns the `Value` at index `i`, aborting if `i` is out of bounds.
 /// Mirrors `Array`'s indexed access; use `get` for a bounds-checked option.
 #alias("_[_]")
-pub fn StarlarkList::at(self : StarlarkList, i : Int) -> Value {
+pub fn StarlarkList::at(self : StarlarkList, i : Int32) -> Value {
   self.items[i]
 }
 
@@ -223,7 +223,7 @@ pub fn StarlarkList::each(self : StarlarkList, f : (Value) -> Unit) -> Unit {
 /// - `f` : A callback receiving the zero-based index and the element value.
 pub fn StarlarkList::eachi(
   self : StarlarkList,
-  f : (Int, Value) -> Unit,
+  f : (Int32, Value) -> Unit,
 ) -> Unit {
   self.items.eachi(f)
 }
@@ -308,7 +308,7 @@ pub fn StarlarkList::pop(self : StarlarkList) -> Result[Value?, String] {
 #internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn StarlarkList::pop_at(
   self : StarlarkList,
-  i : Int,
+  i : Int32,
   verb : String,
 ) -> Result[Value, String] {
   match self.check_mutable(verb) {
@@ -331,7 +331,7 @@ pub fn StarlarkList::pop_at(
 /// iterated.
 pub fn StarlarkList::insert(
   self : StarlarkList,
-  i : Int,
+  i : Int32,
   v : Value,
 ) -> Result[Unit, String] {
   match self.check_mutable("insert into") {
@@ -357,7 +357,7 @@ pub fn StarlarkList::insert(
 /// iterated.
 pub fn StarlarkList::set(
   self : StarlarkList,
-  i : Int,
+  i : Int32,
   v : Value,
 ) -> Result[Unit, String] {
   match self.check_mutable("assign to element of") {
@@ -397,7 +397,7 @@ pub fn StarlarkList::clear(self : StarlarkList) -> Result[Unit, String] {
 /// iterated.
 pub fn StarlarkList::sort_by(
   self : StarlarkList,
-  cmp : (Value, Value) -> Int,
+  cmp : (Value, Value) -> Int32,
 ) -> Result[Unit, String] {
   match self.check_mutable("sort") {
     Err(e) => Err(e)
@@ -765,7 +765,7 @@ pub fn StarlarkFunction::has_kwargs(self : StarlarkFunction) -> Bool {
 ///
 /// Returns the count of parameters that bind to a name (positional, default,
 /// `*args`, and `**kwargs`), excluding bare `ParamStarBare` separators.
-pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
+pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int32 {
   match self.funcode {
     Some(fc) => fc.num_params
     None => 0
@@ -777,7 +777,7 @@ pub fn StarlarkFunction::num_params(self : StarlarkFunction) -> Int {
 ///
 /// Returns the count of `ParamIdent` and `ParamDefault` parameters that
 /// follow a `ParamStarBare` or `ParamStarIdent` separator.
-pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int {
+pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int32 {
   match self.funcode {
     Some(fc) => fc.num_kwonly_params
     None => 0
@@ -796,7 +796,7 @@ pub fn StarlarkFunction::num_kwonly_params(self : StarlarkFunction) -> Int {
 /// Returns a `(name, position)` tuple. Aborts if `i` is out of range.
 pub fn StarlarkFunction::param(
   self : StarlarkFunction,
-  i : Int,
+  i : Int32,
 ) -> (String, @errors.Position) {
   match self.funcode {
     // Named parameters occupy the first `num_params` local slots, in order.
@@ -823,7 +823,7 @@ pub fn StarlarkFunction::param(
 /// is out of range or the parameter has no default.
 pub fn StarlarkFunction::param_default(
   self : StarlarkFunction,
-  i : Int,
+  i : Int32,
 ) -> Value? {
   if i < 0 || i >= self.defaults.length() {
     return None
@@ -835,7 +835,7 @@ pub fn StarlarkFunction::param_default(
 /// Returns the total number of captured free variables across all closure scopes.
 ///
 /// Returns the sum of binding counts across all captured-scope layers.
-pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
+pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int32 {
   match self.funcode {
     Some(fc) => fc.freevars.length()
     None => 0
@@ -853,7 +853,7 @@ pub fn StarlarkFunction::num_free_vars(self : StarlarkFunction) -> Int {
 /// Returns `Some((name, value))` if index `i` exists, or `None` if out of range.
 pub fn StarlarkFunction::free_var(
   self : StarlarkFunction,
-  i : Int,
+  i : Int32,
 ) -> (String, Value)? {
   match self.funcode {
     // Free variables parallel `funcode.freevars`; the captured value lives in
@@ -901,7 +901,7 @@ pub struct BuiltinCallCtx {
 #internal(unsafe, "eval engine only; not part of the public embedding API")
 pub fn BuiltinCallCtx::new(
   call : (Value, Array[Value], Array[(String, Value)]) -> Result[Value, String],
-  get_local? : (String) -> Value? = fn(_) { None },
+  get_local~ : (String) -> Value? = fn(_) { None },
 ) -> BuiltinCallCtx {
   { call, get_local_fn: get_local, }
 }
@@ -1031,7 +1031,7 @@ pub fn StarlarkBuiltinFunc::call_body(
 /// identity comparison (`==`) and hashing of bound methods, since two distinct
 /// bound-method values wrapping the same receiver and name must still compare
 /// unequal.
-let bound_method_id_counter : Ref[Int] = { val: 0, }
+let bound_method_id_counter : Ref[Int32] = { val: 0, }
 
 ///|
 /// A built-in method bound to a specific receiver. Each value is assigned a
@@ -1041,7 +1041,7 @@ let bound_method_id_counter : Ref[Int] = { val: 0, }
 pub struct StarlarkBoundMethod {
   priv recv : Value
   priv method_name : String
-  priv id : Int
+  priv id : Int32
 }
 
 ///|
@@ -1498,15 +1498,15 @@ pub fn Value::truth(v : Value) -> Bool {
 
 ///|
 // First printable ASCII byte (U+0020 SPACE), inclusive lower bound.
-let ascii_space : Int = 0x20
+let ascii_space : Int32 = 0x20
 
 ///|
 // DEL byte (0x7F); not printable — emitted as \x7f in repr, not verbatim.
-let ascii_del : Int = 0x7F
+let ascii_del : Int32 = 0x7F
 
 ///|
 // First byte of a UTF-8 multi-byte sequence (U+0080 and above).
-let utf8_multibyte_lo : Int = 0x80
+let utf8_multibyte_lo : Int32 = 0x80
 
 ///|
 /// Appends a Unicode escape sequence for codepoint `r` to `buf`. Emits
@@ -1518,7 +1518,7 @@ let utf8_multibyte_lo : Int = 0x80
 ///
 /// - `r` : The Unicode codepoint to escape.
 /// - `buf` : The `StringBuilder` to append to.
-fn write_unicode_escape(r : Int, buf : StringBuilder) -> Unit {
+fn write_unicode_escape(r : Int32, buf : StringBuilder) -> Unit {
   if r < 0x10000 {
     buf.write_string("\\u")
     @utf8util.write_hex4(buf, r)
@@ -1633,7 +1633,7 @@ fn repr_bytes_val(b : Bytes) -> String {
 /// Depth cap for `repr` / `str` traversal. Set to 200 — a safe ceiling on all
 /// four MoonBit backends (see #175). See `compare_limit` in `value/traits.mbt`
 /// for the depth-guard convention that all recursive traversal paths follow.
-pub let repr_limit : Int = 200
+pub let repr_limit : Int32 = 200
 
 ///|
 /// Returns the Starlark `repr(v)` string. Detects cyclic list/dict references
@@ -1707,7 +1707,7 @@ fn repr_inner(
   v : Value,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   match v {
     None => Ok("None")
@@ -1774,7 +1774,7 @@ fn repr_inner(
 /// Parameters:
 ///
 /// - `depth` : Remaining recursion depth to allow.
-pub fn Value::repr_at_depth(v : Value, depth : Int) -> Result[String, String] {
+pub fn Value::repr_at_depth(v : Value, depth : Int32) -> Result[String, String] {
   repr_inner(v, [], [], depth)
 }
 
@@ -1796,7 +1796,7 @@ fn repr_dict_inner(
   d : StarlarkDict,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   if seen_dicts.iter().any(fn(sd) { d.is_same_storage(sd) }) {
     return Ok("{...}")
@@ -1842,7 +1842,7 @@ fn repr_set_inner(
   s : StarlarkSet,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   let buf = StringBuilder()
   buf.write_string("set([")
@@ -1868,7 +1868,7 @@ fn repr_list_inner(
   l : StarlarkList,
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   if seen_lists.iter().any(fn(sl) { l.is_same_storage(sl) }) {
     return Ok("[...]")
@@ -1900,7 +1900,7 @@ fn repr_tuple_inner(
   t : Array[Value],
   seen_lists : Array[StarlarkList],
   seen_dicts : Array[StarlarkDict],
-  depth : Int,
+  depth : Int32,
 ) -> Result[String, String] {
   let buf = StringBuilder()
   buf.write_char('(')

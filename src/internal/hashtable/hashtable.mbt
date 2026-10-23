@@ -7,32 +7,32 @@
 // Deleted entries are recycled through a free list (free_head).
 
 ///|
-let empty_idx : Int = -1
+let empty_idx : Int32 = -1
 
 // Hash 0 is reserved as the "deleted entry" marker in the entries array.
 // Any key that actually hashes to 0 is remapped to this sentinel so it
 // can never be confused with a recycled slot.
 
 ///|
-let hash_zero_sentinel : UInt = 1U
+let hash_zero_sentinel : UInt32 = 1U
 
 ///|
-let initial_capacity : Int = 8
+let initial_capacity : Int32 = 8
 
 ///|
-let load_factor_num : Int = 2
+let load_factor_num : Int32 = 2
 
 ///|
-let load_factor_den : Int = 3
+let load_factor_den : Int32 = 3
 
 ///|
 priv struct HEntry[K, V] {
-  mut hash : UInt
+  mut hash : UInt32
   mut key : K
   mut value : V
-  mut slot_next : Int
-  mut ord_next : Int
-  mut ord_prev : Int
+  mut slot_next : Int32
+  mut ord_next : Int32
+  mut ord_prev : Int32
 }
 
 ///|
@@ -41,16 +41,16 @@ priv struct HEntry[K, V] {
 /// insertion order. Deleted entries are recycled through a free list.
 /// Mutation is rejected when the table is frozen or has active iterators.
 pub struct Hashtable[K, V] {
-  priv mut slots : Array[Int]
+  priv mut slots : Array[Int32]
   priv mut entries : Array[HEntry[K, V]]
-  priv mut free_head : Int
-  priv mut head : Int
-  priv mut tail : Int
-  priv mut live_count : Int
-  priv mut itercount : Int
+  priv mut free_head : Int32
+  priv mut head : Int32
+  priv mut tail : Int32
+  priv mut live_count : Int32
+  priv mut itercount : Int32
   priv mut frozen : Bool
   priv mut ever_inserted : Bool
-  priv hash_fn : (K) -> Result[UInt, String]
+  priv hash_fn : (K) -> Result[UInt32, String]
   priv eq_fn : (K, K) -> Result[Bool, String]
   priv zero_key : K
   priv zero_val : V
@@ -74,7 +74,7 @@ pub struct Hashtable[K, V] {
 ///
 /// Returns a new empty `Hashtable`.
 pub fn[K, V] Hashtable::new(
-  hash_fn : (K) -> Result[UInt, String],
+  hash_fn : (K) -> Result[UInt32, String],
   eq_fn : (K, K) -> Result[Bool, String],
   zero_key : K,
   zero_val : V,
@@ -100,7 +100,7 @@ pub fn[K, V] Hashtable::new(
 /// Returns the number of live entries.
 ///
 /// Returns the live entry count as an `Int`.
-pub fn[K, V] Hashtable::length(self : Hashtable[K, V]) -> Int {
+pub fn[K, V] Hashtable::length(self : Hashtable[K, V]) -> Int32 {
   self.live_count
 }
 
@@ -209,7 +209,7 @@ pub fn[K, V] Hashtable::pop_first(
 // so that stored 0U always means "deleted entry" in the entries array.
 
 ///|
-fn normalize_hash(h : UInt) -> UInt {
+fn normalize_hash(h : UInt32) -> UInt32 {
   if h == 0U {
     hash_zero_sentinel
   } else {
@@ -221,12 +221,12 @@ fn normalize_hash(h : UInt) -> UInt {
 // `h & (cap - 1)` is equivalent to `h % cap` only because capacity is always a
 // power of two (starts at `initial_capacity`, doubled by `maybe_grow`), so
 // `cap - 1` is an all-ones bit mask.
-fn slot_of(h : UInt, cap : Int) -> Int {
+fn slot_of(h : UInt32, cap : Int32) -> Int32 {
   (h & (cap - 1).reinterpret_as_uint()).reinterpret_as_int()
 }
 
 ///|
-fn[K, V] Hashtable::alloc_entry(self : Hashtable[K, V]) -> Int {
+fn[K, V] Hashtable::alloc_entry(self : Hashtable[K, V]) -> Int32 {
   if self.free_head != empty_idx {
     let idx = self.free_head
     self.free_head = self.entries[idx].slot_next

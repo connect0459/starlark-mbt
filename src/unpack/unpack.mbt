@@ -180,8 +180,8 @@ pub fn unpack_positional(
   fn_name : String,
   pos_args : Array[@value.Value],
   kw_args : Array[(String, @value.Value)],
-  min : Int,
-  max : Int,
+  min : Int32,
+  max : Int32,
 ) -> Result[Array[@value.Value?], String] {
   if !kw_args.is_empty() {
     return Err("\{fn_name}: unexpected keyword arguments")

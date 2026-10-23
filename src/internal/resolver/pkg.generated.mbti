@@ -49,10 +49,10 @@ pub fn ResolvedFile::locals(Self) -> Array[Binding]
 
 pub(all) enum Scope {
   Undefined
-  Local(Int)
-  Cell(Int)
-  Free(Int)
-  Global(Int)
+  Local(Int32)
+  Cell(Int32)
+  Free(Int32)
+  Global(Int32)
   Predeclared
   Universal
 }

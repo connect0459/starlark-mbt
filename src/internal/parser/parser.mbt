@@ -12,7 +12,7 @@ suberror ParseErr {
 // a comfortable margin for all four backends while still allowing any
 // realistically nested Starlark program.
 // ref: <https://github.com/connect0459/starlark-mbt/issues/174>.
-let max_expr_depth : Int = 80
+let max_expr_depth : Int32 = 80
 
 ///|
 /// Recursive-descent parser state. Wraps a `Scanner` and a one-token
@@ -27,7 +27,7 @@ struct Parser {
   // keyword that terminates the target is not consumed as an `in` comparison
   // operator inside the target expression.
   mut no_in : Bool
-  mut expr_depth : Int
+  mut expr_depth : Int32
 }
 
 ///|

@@ -36,7 +36,7 @@ pub fn eval_input(
   thread : @eval.Thread,
   globals : @value.StringDict,
   input : String,
-  opts? : @eval.Options = @eval.Options::default(),
+  opts~ : @eval.Options = @eval.Options::default(),
 ) -> ReplOutput {
   let file = match @parser.parse_file("<repl>", input) {
     Ok(f) => f
@@ -159,7 +159,7 @@ fn dir_of(path : String) -> String {
 pub fn run(
   thread : @eval.Thread,
   globals : @value.StringDict,
-  opts? : @eval.Options = @eval.Options::default(),
+  opts~ : @eval.Options = @eval.Options::default(),
 ) -> Unit {
   let state = ReplState::new()
   init_editor()

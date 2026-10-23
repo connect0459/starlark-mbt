@@ -8,11 +8,11 @@ import {
 // Values
 pub fn parse_cli_args(Array[String]) -> Result[(String?, String?, @eval.Options), String]
 
-pub fn run_expr(String, @eval.Options) -> Int
+pub fn run_expr(String, @eval.Options) -> Int32
 
-pub fn run_file(String, @eval.Options) -> Int
+pub fn run_file(String, @eval.Options) -> Int32
 
-pub fn run_repl(@eval.Options) -> Int
+pub fn run_repl(@eval.Options) -> Int32
 
 // Errors
 

@@ -860,7 +860,7 @@ test "eval_expr: percent uppercase G format uses uppercase E as exponent marker"
 // --- comparison depth limit: `in` / list.index / list.remove ---
 
 ///|
-fn make_nested_list(depth : Int) -> @value.Value {
+fn make_nested_list(depth : Int32) -> @value.Value {
   let mut v : @value.Value = @value.Value::Int(1N)
   for _ in 0..<depth {
     v = @value.Value::List(@value.StarlarkList::new([v]))
@@ -933,7 +933,7 @@ test "exec_file: in raises comparison depth error on a cyclic dict (issue #78 or
 // --- comparison depth limit: dict/set hashtable ---
 
 ///|
-fn make_nested_tuple(depth : Int) -> @value.Value {
+fn make_nested_tuple(depth : Int32) -> @value.Value {
   let mut v : @value.Value = @value.Value::Int(1N)
   for _ in 0..<depth {
     v = @value.Value::Tuple([v])

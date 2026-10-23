@@ -362,7 +362,7 @@ test "StarlarkList::eachi visits each index-value pair in order" {
     @value.Value::Int(20N),
     @value.Value::Int(30N),
   ])
-  let pairs : Array[(Int, @value.Value)] = []
+  let pairs : Array[(Int32, @value.Value)] = []
   l.eachi(fn(i, v) { pairs.push((i, v)) })
   assert_eq(pairs.length(), 3)
   assert_eq(pairs[0].0, 0)
@@ -570,7 +570,7 @@ test "hash: nesting exactly at depth limit succeeds" {
 
 ///|
 test "hash: ExtVal with with_hash_depth threads depth to callback" {
-  let received_depth : Ref[Int] = { val: -1, }
+  let received_depth : Ref[Int32] = { val: -1, }
   let cv = @value.CustomValue::new(fn() { "T" }, fn() { true }, fn() { "T()" }).with_hash_depth(fn(
       d,
     ) {

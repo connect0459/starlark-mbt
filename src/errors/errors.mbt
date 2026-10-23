@@ -3,8 +3,8 @@
 /// starlark-go's `syntax.Position` convention. Line 0 means unknown.
 pub struct Position {
   priv filename : String
-  priv line : Int
-  priv col : Int
+  priv line : Int32
+  priv col : Int32
 }
 
 ///|
@@ -17,7 +17,7 @@ pub struct Position {
 /// - `col` : The 1-based column number, or 0 for unknown.
 ///
 /// Returns a new `Position` value.
-pub fn Position::new(filename : String, line : Int, col : Int) -> Position {
+pub fn Position::new(filename : String, line : Int32, col : Int32) -> Position {
   { filename, line, col, }
 }
 
@@ -33,7 +33,7 @@ pub fn Position::filename(self : Position) -> String {
 /// Returns the 1-based line number, or 0 if the position is unknown.
 ///
 /// Returns the line number as an `Int`.
-pub fn Position::line(self : Position) -> Int {
+pub fn Position::line(self : Position) -> Int32 {
   self.line
 }
 
@@ -41,7 +41,7 @@ pub fn Position::line(self : Position) -> Int {
 /// Returns the 1-based column number, or 0 if the position is unknown.
 ///
 /// Returns the column number as an `Int`.
-pub fn Position::col(self : Position) -> Int {
+pub fn Position::col(self : Position) -> Int32 {
   self.col
 }
 
@@ -312,7 +312,7 @@ pub fn CallStack::new(frames : Array[CallFrame]) -> CallStack {
 /// Returns the number of frames in the stack.
 ///
 /// Returns the frame count as an `Int`.
-pub fn CallStack::length(self : CallStack) -> Int {
+pub fn CallStack::length(self : CallStack) -> Int32 {
   self.frames.length()
 }
 
@@ -325,7 +325,7 @@ pub fn CallStack::length(self : CallStack) -> Int {
 /// - `i` : The zero-based index of the frame to retrieve.
 ///
 /// Returns `Some(frame)` if `i` is in range, `None` otherwise.
-pub fn CallStack::at(self : CallStack, i : Int) -> CallFrame? {
+pub fn CallStack::at(self : CallStack, i : Int32) -> CallFrame? {
   if i < 0 || i >= self.frames.length() {
     None
   } else {

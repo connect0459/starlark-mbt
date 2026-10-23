@@ -8,10 +8,10 @@
 // implementation, even though this interpreter is AST-walking.
 
 ///|
-let max_call_args : Int = 255
+let max_call_args : Int32 = 255
 
 ///|
-let max_walk_depth : Int = 1000
+let max_walk_depth : Int32 = 1000
 
 ///|
 /// The scope classification of a resolved name binding.
@@ -24,10 +24,10 @@ let max_walk_depth : Int = 1000
 /// emitted.
 pub(all) enum Scope {
   Undefined
-  Local(Int)
-  Cell(Int)
-  Free(Int)
-  Global(Int)
+  Local(Int32)
+  Cell(Int32)
+  Free(Int32)
+  Global(Int32)
   Predeclared
   Universal
 }
@@ -408,15 +408,15 @@ priv struct Resolver {
   // Options
   opts : ResolveOptions
   // Nesting counters
-  mut loops : Int
-  mut in_func : Int
-  mut ifstmts : Int
+  mut loops : Int32
+  mut in_func : Int32
+  mut ifstmts : Int32
   // Name of the innermost function (for recursion detection)
   mut current_fn_name : String
   // Names imported via load statements (always immutable)
   load_names : Map[String, @errors.Position]
   // Depth counter for walk_expr to catch pathologically deep AST chains.
-  mut walk_depth : Int
+  mut walk_depth : Int32
 }
 
 ///|
@@ -568,7 +568,7 @@ fn Resolver::bind_local(
 fn Resolver::bind_lhs(
   self : Resolver,
   lhs : @syntax.Expr,
-  is_augmented? : Bool = false,
+  is_augmented~ : Bool = false,
 ) -> Unit {
   match lhs {
     @syntax.Expr::EIdent(name, pos) => self.bind_name(name, pos)

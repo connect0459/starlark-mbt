@@ -4,7 +4,7 @@
 
 ///|
 priv struct IterCursor {
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|

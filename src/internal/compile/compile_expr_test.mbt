@@ -3,12 +3,12 @@
 // not depend on the parser.
 
 ///|
-fn p(line : Int, col : Int) -> @errors.Position {
+fn p(line : Int32, col : Int32) -> @errors.Position {
   @errors.Position::new("t.star", line, col)
 }
 
 ///|
-fn lit_int(n : Int) -> @syntax.Expr {
+fn lit_int(n : Int32) -> @syntax.Expr {
   @syntax.Expr::ELiteral(
     @syntax.LiteralVal::LitInt(BigInt::from_int(n)),
     p(1, 1),
@@ -21,7 +21,7 @@ fn lit_int(n : Int) -> @syntax.Expr {
 /// compiler rejects the program (tests only build supported programs).
 fn compile_top(
   stmts : Array[@syntax.Stmt],
-  is_pred? : (String) -> Bool = fn(_) { false },
+  is_pred~ : (String) -> Bool = fn(_) { false },
 ) -> @compile.Funcode {
   let file = @syntax.File::new("t.star", stmts)
   let prog = @compile.compile(

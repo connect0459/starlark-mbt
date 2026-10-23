@@ -16,7 +16,7 @@
 ///
 /// Returns `Ok(hash)` on success, or `Err` for unhashable types or when
 /// `depth` is exhausted.
-pub fn hash_value_depth(v : Value, depth : Int) -> Result[UInt, String] {
+pub fn hash_value_depth(v : Value, depth : Int32) -> Result[UInt32, String] {
   v.hash_depth(depth)
 }
 
@@ -47,7 +47,7 @@ pub fn equal(a : Value, b : Value) -> Result[Bool, String] {
 ///
 /// Returns `Ok(true)` if `a == b`, `Ok(false)` if not, or `Err` when `depth`
 /// is exhausted (cyclic structure).
-pub fn equal_depth(a : Value, b : Value, depth : Int) -> Result[Bool, String] {
+pub fn equal_depth(a : Value, b : Value, depth : Int32) -> Result[Bool, String] {
   starlark_equals_depth(a, b, depth)
 }
 
@@ -69,7 +69,7 @@ pub fn compare_depth(
   op : String,
   a : Value,
   b : Value,
-  depth : Int,
+  depth : Int32,
 ) -> Result[Bool, String] {
   match op {
     "==" => starlark_equals_depth(a, b, depth)

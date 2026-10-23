@@ -4,47 +4,47 @@ package "connect0459/starlark/internal/utf8util"
 // Values
 pub fn decode_utf8_lossy(Bytes) -> String
 
-pub fn hex_char(Int) -> Char
+pub fn hex_char(Int32) -> Char
 
-pub fn is_cased_rune(Int) -> Bool
+pub fn is_cased_rune(Int32) -> Bool
 
-pub fn is_decimal_digit(Int) -> Bool
+pub fn is_decimal_digit(Int32) -> Bool
 
-pub fn is_letter(Int) -> Bool
+pub fn is_letter(Int32) -> Bool
 
-pub fn is_lower_letter(Int) -> Bool
+pub fn is_lower_letter(Int32) -> Bool
 
-pub fn is_title_letter(Int) -> Bool
+pub fn is_title_letter(Int32) -> Bool
 
-pub fn is_unicode_printable(Int) -> Bool
+pub fn is_unicode_printable(Int32) -> Bool
 
-pub fn is_upper_letter(Int) -> Bool
+pub fn is_upper_letter(Int32) -> Bool
 
 pub fn is_valid_utf8(Bytes) -> Bool
 
-pub fn spell_fold_chars(String) -> Array[Int]
+pub fn spell_fold_chars(String) -> Array[Int32]
 
 pub fn spell_hint(String, Array[String], prefix? : String) -> String
 
-pub fn spell_levenshtein(Array[Int], Array[Int], Int) -> Int
+pub fn spell_levenshtein(Array[Int32], Array[Int32], Int32) -> Int32
 
 pub fn spell_nearest(String, Array[String]) -> String
 
-pub fn to_lower_rune(Int) -> Int
+pub fn to_lower_rune(Int32) -> Int32
 
-pub fn to_title_rune(Int) -> Int
+pub fn to_title_rune(Int32) -> Int32
 
-pub fn to_upper_rune(Int) -> Int
+pub fn to_upper_rune(Int32) -> Int32
 
-pub fn utf16_decode_cp(String, Int, Int) -> (Int, Int)
+pub fn utf16_decode_cp(String, Int32, Int32) -> (Int32, Int32)
 
-pub fn utf8_decode_rune(Bytes, Int) -> (Int, Int)
+pub fn utf8_decode_rune(Bytes, Int32) -> (Int32, Int32)
 
-pub fn write_hex2(StringBuilder, Int) -> Unit
+pub fn write_hex2(StringBuilder, Int32) -> Unit
 
-pub fn write_hex4(StringBuilder, Int) -> Unit
+pub fn write_hex4(StringBuilder, Int32) -> Unit
 
-pub fn write_hex8(StringBuilder, Int) -> Unit
+pub fn write_hex8(StringBuilder, Int32) -> Unit
 
 // Errors
 

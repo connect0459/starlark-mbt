@@ -105,7 +105,7 @@ pub fn format_float(f : Double) -> String {
 }
 
 ///|
-fn float_find_e(s : String) -> Int {
+fn float_find_e(s : String) -> Int32 {
   let n = s.length()
   let mut i = 0
   while i < n {
@@ -119,7 +119,7 @@ fn float_find_e(s : String) -> Int {
 }
 
 ///|
-fn float_normalize_sci(s : String, e_idx : Int) -> String {
+fn float_normalize_sci(s : String, e_idx : Int32) -> String {
   let mantissa = s[0:e_idx].to_owned()
   let exp_part = s[e_idx + 1:].to_owned()
   let (exp_sign, exp_digits) = if exp_part.has_prefix("+") {
@@ -140,7 +140,7 @@ fn float_normalize_sci(s : String, e_idx : Int) -> String {
 }
 
 ///|
-fn float_count_leading_zeros(frac : String) -> Int {
+fn float_count_leading_zeros(frac : String) -> Int32 {
   let n = frac.length()
   let mut i = 0
   while i < n && frac[i:i + 1] == "0" {
@@ -150,7 +150,7 @@ fn float_count_leading_zeros(frac : String) -> Int {
 }
 
 ///|
-fn float_small_to_sci(sig : String, exp_abs : Int) -> String {
+fn float_small_to_sci(sig : String, exp_abs : Int32) -> String {
   if sig.length() == 0 {
     return "0.0"
   }
@@ -181,7 +181,7 @@ fn float_int_to_str(abs_s : String) -> String {
 }
 
 ///|
-fn float_find_dot(s : String) -> Int {
+fn float_find_dot(s : String) -> Int32 {
   let n = s.length()
   let mut i = 0
   while i < n {
@@ -210,16 +210,16 @@ fn float_large_frac_to_sci(int_part : String, frac_part : String) -> String {
 
 ///|
 // IEEE 754 double-precision bit-layout constants, used by `double_to_bigint`.
-let ieee754_sign_shift : Int = 63
+let ieee754_sign_shift : Int32 = 63
 
 ///|
-let ieee754_mantissa_bits : Int = 52
+let ieee754_mantissa_bits : Int32 = 52
 
 ///|
 let ieee754_exponent_mask : UInt64 = 0x7FFUL
 
 ///|
-let ieee754_exponent_bias : Int = 1023
+let ieee754_exponent_bias : Int32 = 1023
 
 ///|
 let ieee754_mantissa_mask : UInt64 = 0x000FFFFFFFFFFFFFUL
@@ -276,18 +276,18 @@ pub fn bigint_to_finite_double(n : BigInt) -> Result[Double, String] {
 
 ///|
 // Java String.hashCode prime multiplier.
-let java_hash_prime : Int = 31
+let java_hash_prime : Int32 = 31
 
 ///|
 // Unicode replacement character substituted for invalid UTF-8 sequences.
-let unicode_replacement_rune : Int = 0xFFFD
+let unicode_replacement_rune : Int32 = 0xFFFD
 
 ///|
 /// Computes `java.lang.String.hashCode` over the UTF-8 byte sequence `b`,
 /// decoding it as Unicode code points. Used by the `hash()` built-in for
 /// string parity with starlark-go.
-pub fn java_string_hash(b : Bytes) -> Int {
-  let mut h : Int = 0
+pub fn java_string_hash(b : Bytes) -> Int32 {
+  let mut h : Int32 = 0
   let mut pos = 0
   while pos < b.length() {
     let (cp, n) = @utf8util.utf8_decode_rune(b, pos)

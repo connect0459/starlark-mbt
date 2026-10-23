@@ -23,8 +23,8 @@ pub fn CallFrame::pos(Self) -> Position
 pub struct CallStack {
   // private fields
 }
-pub fn CallStack::at(Self, Int) -> CallFrame?
-pub fn CallStack::length(Self) -> Int
+pub fn CallStack::at(Self, Int32) -> CallFrame?
+pub fn CallStack::length(Self) -> Int32
 pub fn CallStack::new(Array[CallFrame]) -> Self
 pub fn CallStack::pop(Self) -> CallFrame?
 pub fn CallStack::to_string(Self) -> String
@@ -44,12 +44,12 @@ pub fn EvalError::with_stack(String, CallStack) -> Self
 pub struct Position {
   // private fields
 }
-pub fn Position::col(Self) -> Int
+pub fn Position::col(Self) -> Int32
 pub fn Position::filename(Self) -> String
 pub fn Position::is_before(Self, Self) -> Bool
 pub fn Position::is_valid(Self) -> Bool
-pub fn Position::line(Self) -> Int
-pub fn Position::new(String, Int, Int) -> Self
+pub fn Position::line(Self) -> Int32
+pub fn Position::new(String, Int32, Int32) -> Self
 pub fn Position::to_string(Self) -> String
 
 pub struct ResolveError {

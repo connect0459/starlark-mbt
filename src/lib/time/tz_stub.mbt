@@ -9,7 +9,7 @@ fn is_valid_timezone(name : String) -> Bool {
 }
 
 ///|
-fn get_tz_offset_at(name : String, _unix_time : Int64) -> Int? {
+fn get_tz_offset_at(name : String, _unix_time : Int64) -> Int32? {
   match name {
     "UTC"
     | "Etc/UTC"
@@ -475,7 +475,7 @@ let iana_sorted : FixedArray[String] = [
 ]
 
 ///|
-fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int, String)? {
+fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int32, String)? {
   match get_tz_offset_at(name, unix_time) {
     Some(offset) => Some((offset, tz_name_from_offset(offset)))
     None => None
@@ -483,6 +483,6 @@ fn get_tz_abbr_at(name : String, unix_time : Int64) -> (Int, String)? {
 }
 
 ///|
-fn get_local_tz_at(_unix_time : Int64) -> (Int, String)? {
+fn get_local_tz_at(_unix_time : Int64) -> (Int32, String)? {
   Some((0, "UTC"))
 }

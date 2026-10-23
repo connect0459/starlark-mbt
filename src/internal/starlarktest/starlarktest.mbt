@@ -227,7 +227,7 @@ fn make_contains_fn(errors : Array[String]) -> @value.Value {
 // Returns the position after the match on success, or -1 on failure.
 
 ///|
-fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
+fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int32) -> Int32 {
   let plen = pc.length()
   let tlen = tc.length()
   let mut pi = 0
@@ -260,7 +260,7 @@ fn try_match_at(pc : Array[Char], tc : Array[Char], ti_start : Int) -> Int {
 // backslash escapes into account (each `\X` pair consumes one text char).
 
 ///|
-fn effective_pattern_length(pc : Array[Char]) -> Int {
+fn effective_pattern_length(pc : Array[Char]) -> Int32 {
   let mut len = 0
   let mut i = 0
   while i < pc.length() {
@@ -279,7 +279,7 @@ fn effective_pattern_length(pc : Array[Char]) -> Int {
 // Returns the position immediately after the match, or None if not found.
 
 ///|
-fn find_mini_pattern(pat : String, text : String, start_pos : Int) -> Int? {
+fn find_mini_pattern(pat : String, text : String, start_pos : Int32) -> Int32? {
   let pc = pat.to_array()
   let tc = text.to_array()
   let plen = pc.length()
@@ -579,7 +579,7 @@ fn parse_chunk_options(src : String) -> @eval.Options {
 }
 
 ///|
-fn levenshtein(a : String, b : String) -> Int {
+fn levenshtein(a : String, b : String) -> Int32 {
   let m = a.length()
   let n = b.length()
   if m == 0 {
@@ -590,7 +590,7 @@ fn levenshtein(a : String, b : String) -> Int {
   }
   let ac = a.to_array()
   let bc = b.to_array()
-  let row : Array[Int] = Array::make(n + 1, 0)
+  let row : Array[Int32] = Array::make(n + 1, 0)
   for j in 0..<(n + 1) {
     row[j] = j
   }
@@ -626,7 +626,7 @@ fn norm_field_name(s : String) -> String {
   for c in s.iter() {
     let code = c.to_int()
     if code >= 'A'.to_int() && code <= 'Z'.to_int() {
-      buf.write_char(Int::unsafe_to_char(code + 32))
+      buf.write_char(Int32::unsafe_to_char(code + 32))
     } else if c != '_' {
       buf.write_char(c)
     }
@@ -708,7 +708,7 @@ fn make_hasfields_fn() -> @value.Value {
 }
 
 ///|
-fn line_of_error(err : @errors.EvalError) -> Int {
+fn line_of_error(err : @errors.EvalError) -> Int32 {
   let stack = err.call_stack()
   let n = stack.length()
   for i in 0..<n {
@@ -727,7 +727,7 @@ fn line_of_error(err : @errors.EvalError) -> Int {
 }
 
 ///|
-fn parse_test_line(msg : String) -> Int {
+fn parse_test_line(msg : String) -> Int32 {
   let prefix = "<test>:"
   if !msg.has_prefix(prefix) {
     return 0
@@ -821,7 +821,7 @@ pub fn run_chunked_string(src : String) -> Array[String] {
   let failures : Array[String] = []
   let chunks = split_chunks(src)
   for chunk in chunks {
-    let want_errs : Map[Int, String] = Map([])
+    let want_errs : Map[Int32, String] = Map([])
     let mut line_num = 1
     for line in chunk.split("\n") {
       match parse_hash_annotation(line.to_owned()) {

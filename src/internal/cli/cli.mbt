@@ -174,7 +174,7 @@ fn make_loader(
 }
 
 ///|
-pub fn run_file(filepath : String, opts : @eval.Options) -> Int {
+pub fn run_file(filepath : String, opts : @eval.Options) -> Int32 {
   let src = @fs.read_file_to_string(filepath) catch {
     @fs.IOError(msg) => {
       println("starlark: \{msg}")
@@ -201,7 +201,7 @@ pub fn run_file(filepath : String, opts : @eval.Options) -> Int {
 /// Uses the CLI universe so that `json`, `math`, and `time` are available
 /// without an explicit `load`.  The filename reported in error messages is
 /// `"cmdline"`.
-pub fn run_expr(expr : String, opts : @eval.Options) -> Int {
+pub fn run_expr(expr : String, opts : @eval.Options) -> Int32 {
   let universe = cli_universe()
   let thread = @eval.Thread::new("exec cmdline")
   match @eval.exec_file_with_universe(thread, "cmdline", expr, opts, universe) {
@@ -214,7 +214,7 @@ pub fn run_expr(expr : String, opts : @eval.Options) -> Int {
 }
 
 ///|
-pub fn run_repl(opts : @eval.Options) -> Int {
+pub fn run_repl(opts : @eval.Options) -> Int32 {
   if !@repl.repl_available() {
     println(
       "starlark: interactive REPL is not available on this build target; rebuild with `--target native`",

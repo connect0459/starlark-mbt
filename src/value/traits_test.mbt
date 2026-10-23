@@ -176,7 +176,7 @@ test "starlark_hash: Bool false hashes to 0, true hashes to 1" {
 
 ///|
 test "starlark_hash: Int hash values ensure equal Int and Float produce the same hash" {
-  let mul : UInt = 12582917U
+  let mul : UInt32 = 12582917U
   assert_true(@value.Value::hash(@value.Value::Int(0N)) == Ok(mul * (0U + 3U)))
   assert_true(@value.Value::hash(@value.Value::Int(1N)) == Ok(mul * (1U + 3U)))
   assert_true(
@@ -209,7 +209,7 @@ test "starlark_hash: large Float equals large Int hash" {
 ///|
 test "starlark_hash: Float NaN and Inf all produce the same fixed hash" {
   // 1618033 is the spec constant for non-finite floats
-  let non_finite_hash : UInt = 1618033U
+  let non_finite_hash : UInt32 = 1618033U
   assert_true(
     @value.Value::hash(@value.Value::Float(@double.not_a_number)) ==
     Ok(non_finite_hash),
@@ -234,7 +234,7 @@ test "starlark_hash: large negative BigInt uses low 32 bits of magnitude" {
   // Test case: -(2^64 - 1) has magnitude 2^64-1 = 0xFFFFFFFF_FFFFFFFF.
   //   magnitude mod 2^32 = 0xFFFFFFFF.
   //   Expected hash = 12582917 * uint32(0xFFFFFFFF + 3) = 12582917 * 2 = 25165834.
-  let mul : UInt = 12582917U
+  let mul : UInt32 = 12582917U
   let n = -18446744073709551615N // -(2^64 - 1)
   assert_true(
     @value.Value::hash(@value.Value::Int(n)) == Ok(mul * (0xFFFFFFFFU + 3U)),
@@ -255,7 +255,7 @@ test "starlark_hash: Bytes hash equals String hash for same bytes" {
 ///|
 test "starlark_hash: empty Tuple has the spec-defined initial hash value" {
   // 0x345678 is the Starlark initial hash accumulator for tuples
-  let tuple_hash_init : UInt = 0x345678U
+  let tuple_hash_init : UInt32 = 0x345678U
   assert_true(
     @value.Value::hash(@value.Value::Tuple([])) == Ok(tuple_hash_init),
   )
@@ -358,7 +358,7 @@ test "compare_values: Float NaN is greater than positive infinity" {
 
 ///|
 test "compare_values: String lexicographic byte ordering" {
-  let cmp = fn(a : String, b : String) -> Result[Int, String] {
+  let cmp = fn(a : String, b : String) -> Result[Int32, String] {
     @value.compare_values(
       @value.Value::String(@value.StarlarkString::new(a)),
       @value.Value::String(@value.StarlarkString::new(b)),
