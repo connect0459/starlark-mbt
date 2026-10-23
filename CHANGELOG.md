@@ -27,6 +27,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-23
+
+### Fixed
+
+#### MoonBit toolchain compatibility
+
+- Apply `moon fmt` as enforced by the current toolchain, which now writes `Int` type annotations as `Int32`; the change is spelling only and leaves behavior untouched
+
 ## [0.5.3] - 2026-10-05
 
 ### Miscellaneous
@@ -520,7 +528,8 @@ Entry functions: `exec_file`, `eval_expr`, `eval_expr_with_opts`, `eval_parsed_e
 
 ---
 
-[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.3...HEAD>
+[Unreleased]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.4...HEAD>
+[0.5.4]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.3...v0.5.4>
 [0.5.3]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.2...v0.5.3>
 [0.5.2]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.1...v0.5.2>
 [0.5.1]: <https://github.com/connect0459/starlark-mbt/compare/v0.5.0...v0.5.1>
