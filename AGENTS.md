@@ -128,7 +128,7 @@ The type vocabulary above mixes two axes: an **impact axis** (`feat`, `fix`, `pe
 ### Footer (optional)
 
 - `BREAKING CHANGE: <description>` for breaking changes
-- `Closes #123` or `Fixes #456` to link issues
+- `Closes <https://github.com/owner/repo/issues/123>` to link issues
 
 ### Branch naming
 
