@@ -98,6 +98,8 @@ tidy(hashtable): name initial_capacity constant
    - Run `moon info` and verify the `.mbti` diff is expected (it is the authoritative formal spec for signatures).
 5. Open a pull request — the CI matrix tests `js`, `wasm`, `wasm-gc`, and `native`.
 
+Do not edit `CHANGELOG.md` in regular pull requests. Changelog entries are written all at once in the Release PR.
+
 ## Code style
 
 - No code comments unless the **why** is genuinely non-obvious.
