@@ -25,6 +25,7 @@ pub fn Scanner::new(String, String) -> Self
 pub fn Scanner::next_token(Self) -> Result[ScannedToken, @errors.SyntaxError]
 pub fn Scanner::position(Self) -> @errors.Position
 
+#derive(Eq)
 pub(all) enum Token {
   Illegal
   EOF
@@ -110,7 +111,7 @@ pub(all) enum Token {
   Try
   With
   Yield
-} derive(Eq)
+}
 pub fn Token::equal(Self, Self) -> Bool
 pub fn Token::go_string(Self) -> String
 pub fn Token::not_equal(Self, Self) -> Bool

@@ -9,11 +9,12 @@
 /// are stored ascending by `pc`; `Funcode::position` recovers the position for
 /// an arbitrary pc by finding the last entry whose `pc` does not exceed it.
 /// This is the structural equivalent of starlark-go's `pclinetab`.
+#derive(Eq)
 pub(all) struct PcLine {
   pc : Int32
   line : Int32
   col : Int32
-} derive(Eq)
+}
 
 ///|
 pub extend PcLine with Eq::{not_equal, equal}
@@ -55,10 +56,11 @@ pub(all) struct Funcode {
 
 ///|
 /// Where a closure's captured cell comes from in the enclosing frame.
+#derive(Eq)
 pub(all) enum FreevarSource {
   FromLocal(Int32) // the enclosing frame's local-cell slot
   FromFree(Int32) // the enclosing function's own free variable
-} derive(Eq)
+}
 
 ///|
 pub extend FreevarSource with Eq::{not_equal, equal}
@@ -67,13 +69,14 @@ pub extend FreevarSource with Eq::{not_equal, equal}
 /// An AST-free description of a single function parameter, mirroring the
 /// `@syntax.Param` kinds the binder needs (without the default expression, which
 /// is evaluated at definition time and stored on the function value).
+#derive(Eq)
 pub(all) enum ParamSpec {
   PRequired(String) // `x`
   POptional(String) // `x = default`
   PStarBare // bare `*` separator (keyword-only marker; no slot)
   PStarArgs(String) // `*args`
   PKwArgs(String) // `**kwargs`
-} derive(Eq)
+}
 
 ///|
 pub extend ParamSpec with Eq::{not_equal, equal}

@@ -9,6 +9,7 @@
 /// values (never runtime `Value`s), keeping `compile` free of any dependency
 /// on the `value` package. The VM materializes each `Const` into a `Value`
 /// when it executes the `Constant` opcode.
+#derive(Eq)
 pub(all) enum Const {
   CNone
   CBool(Bool)
@@ -16,7 +17,7 @@ pub(all) enum Const {
   CFloat(Double)
   CStr(String)
   CBytes(Bytes)
-} derive(Eq)
+}
 
 ///|
 pub extend Const with Eq::{not_equal, equal}

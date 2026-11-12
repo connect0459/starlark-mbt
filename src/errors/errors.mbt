@@ -100,11 +100,12 @@ pub struct SyntaxError {
 /// instead of matching the English message text. `UnexpectedEof` and
 /// `UnterminatedString` mark input that may become valid with more lines (used
 /// by the REPL to request a continuation); every other error is `Other`.
+#derive(Eq)
 pub(all) enum SyntaxErrorKind {
   UnexpectedEof
   UnterminatedString
   Other
-} derive(Eq)
+}
 
 ///|
 pub extend SyntaxErrorKind with Eq::{not_equal, equal}

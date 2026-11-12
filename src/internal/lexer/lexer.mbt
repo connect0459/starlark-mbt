@@ -6,6 +6,7 @@
 /// literal; all other variants are pure tags. The reserved Python keywords
 /// (`As`, `Async`, ..., `Yield`) are recognised by the scanner but rejected
 /// by the parser.
+#derive(Eq)
 pub(all) enum Token {
   Illegal
   EOF
@@ -99,7 +100,7 @@ pub(all) enum Token {
   Try
   With
   Yield
-} derive(Eq)
+}
 
 ///|
 pub extend Token with Eq::{not_equal, equal}
