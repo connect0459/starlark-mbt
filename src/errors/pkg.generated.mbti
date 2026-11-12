@@ -70,11 +70,12 @@ pub fn SyntaxError::pos(Self) -> Position
 pub fn SyntaxError::to_string(Self) -> String
 pub fn SyntaxError::with_kind(Position, String, SyntaxErrorKind) -> Self
 
+#derive(Eq)
 pub(all) enum SyntaxErrorKind {
   UnexpectedEof
   UnterminatedString
   Other
-} derive(Eq)
+}
 pub fn SyntaxErrorKind::equal(Self, Self) -> Bool
 pub fn SyntaxErrorKind::not_equal(Self, Self) -> Bool
 

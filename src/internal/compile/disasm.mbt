@@ -5,11 +5,12 @@
 ///|
 /// A single decoded instruction: its byte offset, opcode, and operand (0 for
 /// opcodes that take no operand).
+#derive(Eq)
 pub(all) struct Instr {
   pc : Int32
   op : Opcode
   arg : Int32
-} derive(Eq)
+}
 
 ///|
 pub extend Instr with Eq::{not_equal, equal}

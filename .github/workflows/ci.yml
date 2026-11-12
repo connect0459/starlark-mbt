@@ -90,6 +90,10 @@ jobs:
         shell: bash
         run: moon update
 
+      - name: Install legacy time zone names
+        shell: bash
+        run: sudo apt-get install --yes --no-install-recommends tzdata-legacy
+
       - name: Test all targets
         shell: bash
         run: moon test --target all

@@ -12,6 +12,7 @@
 /// `op_arg_min` take no operand; those at or above it are followed by a
 /// uvarint-encoded operand in the instruction stream. For the `Call` family
 /// the operand packs `(npositional << 8) | nnamed`.
+#derive(Eq)
 pub(all) enum Opcode {
   // sentinel / stack operations
   Nop
@@ -95,7 +96,7 @@ pub(all) enum Opcode {
   // in starlark-go; this implementation applies the in-place `+=`/`|=` semantics
   // through one opcode rather than dedicated INPLACE_* opcodes.
   AugApply
-} derive(Eq)
+}
 
 ///|
 pub extend Opcode with Eq::{not_equal, equal}

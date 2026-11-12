@@ -31,6 +31,7 @@ pub(all) struct CompiledProgram {
   load_stmts : Array[LoadStmt]
 }
 
+#derive(Eq)
 pub(all) enum Const {
   CNone
   CBool(Bool)
@@ -38,14 +39,15 @@ pub(all) enum Const {
   CFloat(Double)
   CStr(String)
   CBytes(Bytes)
-} derive(Eq)
+}
 pub fn Const::equal(Self, Self) -> Bool
 pub fn Const::not_equal(Self, Self) -> Bool
 
+#derive(Eq)
 pub(all) enum FreevarSource {
   FromLocal(Int32)
   FromFree(Int32)
-} derive(Eq)
+}
 pub fn FreevarSource::equal(Self, Self) -> Bool
 pub fn FreevarSource::not_equal(Self, Self) -> Bool
 
@@ -69,11 +71,12 @@ pub(all) struct Funcode {
 pub fn Funcode::disasm(Self) -> Array[Instr]
 pub fn Funcode::position(Self, Int32) -> @errors.Position
 
+#derive(Eq)
 pub(all) struct Instr {
   pc : Int32
   op : Opcode
   arg : Int32
-} derive(Eq)
+}
 pub fn Instr::equal(Self, Self) -> Bool
 pub fn Instr::not_equal(Self, Self) -> Bool
 
@@ -85,6 +88,7 @@ pub(all) struct LoadStmt {
   slots : Array[Int32]
 }
 
+#derive(Eq)
 pub(all) enum Opcode {
   Nop
   Dup
@@ -157,28 +161,30 @@ pub(all) enum Opcode {
   CallKw
   CallVarKw
   AugApply
-} derive(Eq)
+}
 pub fn Opcode::equal(Self, Self) -> Bool
 pub fn Opcode::from_byte(Byte) -> Self?
 pub fn Opcode::has_arg(Self) -> Bool
 pub fn Opcode::not_equal(Self, Self) -> Bool
 pub fn Opcode::to_byte(Self) -> Byte
 
+#derive(Eq)
 pub(all) enum ParamSpec {
   PRequired(String)
   POptional(String)
   PStarBare
   PStarArgs(String)
   PKwArgs(String)
-} derive(Eq)
+}
 pub fn ParamSpec::equal(Self, Self) -> Bool
 pub fn ParamSpec::not_equal(Self, Self) -> Bool
 
+#derive(Eq)
 pub(all) struct PcLine {
   pc : Int32
   line : Int32
   col : Int32
-} derive(Eq)
+}
 pub fn PcLine::equal(Self, Self) -> Bool
 pub fn PcLine::not_equal(Self, Self) -> Bool
 
