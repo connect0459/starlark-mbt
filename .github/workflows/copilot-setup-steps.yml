@@ -30,7 +30,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: hustcer/setup-moonbit@87e2bdf5cf20d3b6f5c5f266a8a513f503bb5b76 # v1.25
+      - uses: hustcer/setup-moonbit@618b32d610fecdbe9069cefcc01b7bcdb03ede29 # v1.26
         with:
           version: latest
 
