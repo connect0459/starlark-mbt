@@ -257,7 +257,7 @@ fn Decoder::decode_const(self : Decoder) -> @compile.Const raise SerialErr {
   match self.byte().to_int() {
     0 => CNone
     1 => CBool(self.bool())
-    2 => CInt(BigInt::from_string(self.str()))
+    2 => CInt(try! @string.parse_bigint(self.str()))
     3 => CFloat(self.u64().reinterpret_as_double())
     4 => CStr(self.str())
     5 => CBytes(self.bytes())

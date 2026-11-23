@@ -6,4 +6,5 @@ import {
 
 import {
   "connect0459/starlark/unpack",
+  "moonbitlang/core/string",
 } for "test"

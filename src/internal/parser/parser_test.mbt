@@ -131,7 +131,7 @@ test "multiplication has higher precedence than addition" {
       ELiteral(LitInt(1N), _),
       OpAdd,
       EBinary(ELiteral(LitInt(2N), _), OpMul, ELiteral(LitInt(3N), _), _),
-      _
+      _,
     ) => ()
     _ => fail("expected 1 + (2 * 3)")
   }
@@ -202,7 +202,7 @@ test "conditional expression x if c else y" {
       EIdent("True", _),
       ELiteral(LitInt(1N), _),
       ELiteral(LitInt(0N), _),
-      _
+      _,
     ) => ()
     _ => fail("expected conditional expression")
   }
@@ -330,7 +330,7 @@ test "slice with start and end" {
       Some(ELiteral(LitInt(1N), _)),
       Some(ELiteral(LitInt(3N), _)),
       None,
-      _
+      _,
     ) => ()
     _ => fail("expected lst[1:3]")
   }
@@ -473,7 +473,7 @@ test "unparenthesized tuple LHS augmented assignment with tuple RHS parses corre
       ETuple([EIdent("a", _), EIdent("b", _)], _),
       AugAdd,
       ETuple([ELiteral(LitInt(1N), _), ELiteral(LitInt(2N), _)], _),
-      _
+      _,
     ) => ()
     _ => fail("expected SAugAssign with tuple LHS and tuple RHS")
   }
@@ -487,7 +487,7 @@ test "scalar LHS augmented assignment with tuple RHS parses correctly" {
       EIdent("a", _),
       AugAdd,
       ETuple([ELiteral(LitInt(1N), _), ELiteral(LitInt(2N), _)], _),
-      _
+      _,
     ) => ()
     _ => fail("expected SAugAssign with scalar LHS and tuple RHS")
   }
@@ -1397,7 +1397,7 @@ test "ternary arg starting with ident parses as ECond" {
       assert_eq(args.length(), 1)
       match args[0] {
         ArgPos(
-          ECond(EIdent("True", _), EIdent("x", _), ELiteral(LitInt(0N), _), _)
+          ECond(EIdent("True", _), EIdent("x", _), ELiteral(LitInt(0N), _), _),
         ) => ()
         _ => fail("expected ArgPos(ECond(True, x, 0))")
       }
@@ -1662,8 +1662,8 @@ test "ternary arg with method call on ident parses as ECond" {
             EIdent("flag", _),
             ECall(EDot(EIdent("s", _), "upper", _), upper_args, _),
             EIdent("s", _),
-            _
-          )
+            _,
+          ),
         ) => assert_eq(upper_args.length(), 0)
         _ => fail("expected ArgPos(ECond(flag, s.upper(), s))")
       }

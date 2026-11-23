@@ -514,7 +514,9 @@ test "number_to_int truncates Float to Int" {
 
 ///|
 test "number_to_int returns None for Int that overflows Int64" {
-  let big = @value.Value::Int(BigInt::from_string("1208925819614629174706176"))
+  let big = @value.Value::Int(
+    try! @string.parse_bigint("1208925819614629174706176"),
+  )
   assert_true(@value.number_to_int(big) is None)
 }
 
