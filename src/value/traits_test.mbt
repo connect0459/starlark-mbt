@@ -38,7 +38,7 @@ test "to_str: Float returns formatted float same as repr" {
 
 ///|
 test "to_str: Bytes returns b-quoted repr" {
-  assert_eq(@value.Value::Bytes(Bytes::new(0)).to_str(), "b\"\"")
+  assert_eq(@value.Value::Bytes(Bytes::make(0, b'\x00')).to_str(), "b\"\"")
 }
 
 ///|

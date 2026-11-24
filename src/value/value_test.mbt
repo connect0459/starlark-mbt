@@ -82,7 +82,7 @@ test "Value: type_name for String" {
 
 ///|
 test "Value: type_name for Bytes" {
-  assert_eq(@value.Value::Bytes(Bytes::new(0)).type_name(), "bytes")
+  assert_eq(@value.Value::Bytes(Bytes::make(0, b'\x00')).type_name(), "bytes")
 }
 
 ///|
@@ -130,7 +130,7 @@ test "Value: truth for nonempty String is true" {
 
 ///|
 test "Value: truth for empty Bytes is false" {
-  assert_false(@value.Value::Bytes(Bytes::new(0)).truth())
+  assert_false(@value.Value::Bytes(Bytes::make(0, b'\x00')).truth())
 }
 
 ///|
@@ -197,7 +197,7 @@ test "Value: repr for String with escape sequences" {
 
 ///|
 test "Value: repr for empty Bytes" {
-  assert_eq(@value.Value::Bytes(Bytes::new(0)).repr(), "b\"\"")
+  assert_eq(@value.Value::Bytes(Bytes::make(0, b'\x00')).repr(), "b\"\"")
 }
 
 ///|

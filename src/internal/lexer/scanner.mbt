@@ -1347,7 +1347,7 @@ fn parse_int_decimal(s : String) -> Result[BigInt, String] {
       return Err("invalid digit in decimal literal")
     }
   }
-  Ok(BigInt::from_string(s))
+  Ok(try! @string.parse_bigint(s))
 }
 
 ///|
@@ -1361,7 +1361,7 @@ fn parse_int_hex(s : String) -> Result[BigInt, String] {
       return Err("invalid hex digit")
     }
   }
-  Ok(BigInt::from_string(s, radix=16))
+  Ok(try! @string.parse_bigint(s, radix=16))
 }
 
 ///|
@@ -1376,7 +1376,7 @@ fn parse_int_base(s : String, base : Int32) -> Result[BigInt, String] {
       return Err("invalid digit for base \{base}")
     }
   }
-  Ok(BigInt::from_string(s, radix=base))
+  Ok(try! @string.parse_bigint(s, radix=base))
 }
 
 ///|

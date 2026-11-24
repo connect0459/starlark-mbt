@@ -949,7 +949,7 @@ fn parse_json_number(
     if digits.length() == 0 {
       return Err((j, "invalid number: \{num_str}"))
     }
-    let abs_n = BigInt::from_string(digits.to_owned())
+    let abs_n = try! @string.parse_bigint(digits.to_owned())
     let n = if num_str.length() > 0 && num_str[0] == '-' {
       -abs_n
     } else {

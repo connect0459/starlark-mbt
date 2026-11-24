@@ -3756,7 +3756,7 @@ fn parse_int_str(s : String, base : Int32) -> Result[BigInt, String] {
       return Err("invalid literal with base \{base}: \{s}")
     }
   }
-  let result = BigInt::from_string(digits, radix=actual_base)
+  let result = try! @string.parse_bigint(digits, radix=actual_base)
   Ok(if negative { -result } else { result })
 }
 
