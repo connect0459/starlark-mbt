@@ -52,7 +52,7 @@ Sub-packages may be added or split when any file exceeds ~600 LOC.
 - [x] Add `moonbitlang/x` to `moon.mod` imports (required for future BigInt support and other extended utilities). Pinned to `0.4.43`; verified with `moon check`.
 - [x] Create directory skeleton for all `src/internal/*` packages: `errors`, `hashtable`, `value`, `lexer`, `syntax`, `parser`, `resolver`, `eval`, `builtins`, `format`, `unpack`. Each directory needs:
       - a `moon.pkg` file (empty or with import stubs)
-      - a minimal placeholder `.mbt` file so `moon check` recognises the package
+      - a minimal placeholder `.mbt` file so `moon check` recognizes the package
 - [x] Update `src/starlark/moon.pkg` to import each internal package as needed
 - [x] Verify `moon check` passes on the empty skeleton before Phase 0.5 coding begins (confirm no broken imports or missing package declarations)
 - **Decision**: MoonBit `Map[K,V]` is a sorted tree map (NOT insertion-ordered); `src/internal/hashtable/` is required (see package layout note above)
@@ -169,7 +169,7 @@ Reference: `starlark-go/starlark/value_test.go`, `starlark-go/starlark/int_test.
 
 ## Phase 2: Lexer / Scanner ✅
 
-Tokenise Starlark source into a flat token stream.
+Tokenize Starlark source into a flat token stream.
 
 ### Tokens to handle
 
@@ -503,7 +503,7 @@ Port `starlarkjson` so embedders can read/write JSON from Starlark. Other starla
 
 ### General release tasks
 
-- [x] Finalise public API; review `.mbti` diff — Removed `Val` suffix from all `Value` enum constructors (1535 sites) — Added `repr`, `to_str`, `type_name`, `truth`, `starlark_equals` to public facade — Updated `docs/api.md` and `README.mbt.md` to match new constructor names
+- [x] Finalize public API; review `.mbti` diff — Removed `Val` suffix from all `Value` enum constructors (1535 sites) — Added `repr`, `to_str`, `type_name`, `truth`, `starlark_equals` to public facade — Updated `docs/api.md` and `README.mbt.md` to match new constructor names
 - [x] CLI implementation in `src/cmd/` — run `.star` files; `src/main/` renamed to `src/cmd/`
 - [x] Optional REPL — interactive `read → eval → print` loop (public `src/repl/` library)
 - [x] Usage examples as doc tests in `README.mbt.md`; detailed API reference in `docs/api.md`

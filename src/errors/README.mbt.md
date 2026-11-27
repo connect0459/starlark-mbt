@@ -71,7 +71,7 @@ Errors returned from `@eval.exec_file` include source location information. Runt
 | `call_stack()` | `CallStack` | The captured call stack as structured frames |
 | `cause()` | `EvalError?` | The wrapped inner error, if this error chains one |
 
-`backtrace()` always ends the output with `Error: <msg>` (or `Error in <builtin>: <msg>` when the innermost frame is a built-in). This format is intentional — the mbt CLI uses `backtrace()` directly to display errors, so the `Error:` prefix appears in all CLI output. starlark-go omits the prefix and prints the message directly; the difference is a deliberate quality-of-life choice.
+`backtrace()` always ends the output with `Error: <msg>` (or `Error in <builtin>: <msg>` when the innermost frame is a built-in). This format is intentional: the mbt CLI displays errors with `backtrace()` directly, so the `Error:` prefix appears in all CLI output. starlark-go omits the prefix and prints the message directly; the difference is a deliberate usability choice.
 
 ### `SyntaxError` and `ResolveError`
 

@@ -215,7 +215,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Reorganise library packages under `src/` and introduce `moon.work` workspace file; the `examples/` module separation is now visually explicit (#297)
+- Reorganize library packages under `src/` and introduce `moon.work` workspace file; the `examples/` module separation is now visually explicit (#297)
 - Rename private helpers in `lib/time` and `examples/wasm_api` to remove stale prefixes; no public API surface affected (#303, #304)
 
 ### Documentation
@@ -277,7 +277,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `lib/time`: reject space / lowercase separators and sub-4-digit years in `parse_rfc3339` to match starlark-go's strict RFC 3339 parser (#226)
 - `lib/time`: reject out-of-range `hour` / `minute` / `second` fields; add range checks for timezone offset fields; emit field-specific error messages (#250)
-- `time`: remove year-range guard from `parse_time` to accept extreme years, matching starlark-go behaviour (#249)
+- `time`: remove year-range guard from `parse_time` to accept extreme years, matching starlark-go behavior (#249)
 - `time`: align argument error messages with `starlark.UnpackArgs` shape; check unknown keywords before arity; reject more than 3 positional arguments; align unknown-timezone error with Go's `LoadLocation` message; drop the layout segment and quote trailing text in extra-text errors (#251)
 - `time`: distinguish Z UTC marker from numeric `+00:00` offset in `parse_rfc3339` and the go-layout path; correct `decompose_unix_sec` overflow-range boundary; replicate Go `uint64` normalization at `Int64::min` (#253, #254)
 - `time`: apply `time_quote` (matching Go's `time.quote()`) to extra-text in `parse_time` error messages; extend passthrough to include DEL (0x7F) (#258)
@@ -288,7 +288,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - `lexer`, `parser`: reclassify `True` / `False` / `None` as pre-declared identifiers rather than reserved words, matching starlark-go semantics (#167)
-- `eval`: extend `str.isdigit` and `str.isalnum` to recognise Unicode decimal digits (category `Nd`), not just ASCII `0`–`9` (#169)
+- `eval`: extend `str.isdigit` and `str.isalnum` to recognize Unicode decimal digits (category `Nd`), not just ASCII `0`–`9` (#169)
 
 ### Removed
 
@@ -304,7 +304,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Conformance: eval / value
 
-- `eval`: resolver now surfaces only the first error per file to match starlark-go behaviour (#186)
+- `eval`: resolver now surfaces only the first error per file to match starlark-go behavior (#186)
 - `eval`: `float()` now accepts hex-float string literals (e.g. `"0x1.8p+1"`) (#206)
 - `eval`: iteration-lock errors from `list.append` and `dict.update` now carry the expected `append:` / `update:` prefix (#207)
 - `eval`: `str.format` reports the correct error message when `{` appears in the format-spec part of a replacement field (#208)
@@ -364,8 +364,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `parser`: bare tuple rejected as `for`-loop iterable (#128)
 - `cli`, `repl`: no shared load cache or cycle detection — loading the same module twice ran it twice; circular `load` caused infinite recursion (#95)
 - `repl`, `cli`: relative load paths not resolved against the loading script's directory (#97)
-- `time`: `Int64` overflow in `time + duration` arithmetic; `from_timestamp` nanosecond field not normalised to `[0, 999_999_999]` (#99)
-- `time`: out-of-range `time.time()` fields (e.g. month 13) not normalised; RFC 3339 strings with trailing garbage accepted (#108)
+- `time`: `Int64` overflow in `time + duration` arithmetic; `from_timestamp` nanosecond field not normalized to `[0, 999_999_999]` (#99)
+- `time`: out-of-range `time.time()` fields (e.g. month 13) not normalized; RFC 3339 strings with trailing garbage accepted (#108)
 
 #### MEDIUM severity — conformance gaps (#113)
 
@@ -406,7 +406,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- `cmd` package reorganised to `cmd/starlark/` to match starlark-go conventions; run with `moon run cmd/starlark -- <file>` (#64)
+- `cmd` package reorganized to `cmd/starlark/` to match starlark-go conventions; run with `moon run cmd/starlark -- <file>` (#64)
 
 ### Documentation
 

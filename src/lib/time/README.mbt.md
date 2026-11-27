@@ -65,7 +65,7 @@ Note: `duration - time` raises `unsupported binary op`. The Starlark spec does n
 
 ## RFC 3339 parsing behavior
 
-The default `parse_time` format follows RFC 3339. Inputs rejected by Go's `time.Parse(time.RFC3339, …)` are also rejected here (*rejection parity*). Error message wording differs from Go's — mbt uses `cannot parse "…" as "<token>"` throughout, while Go emits `<field> out of range`. Message-format parity is tracked separately.
+The default `parse_time` format follows RFC 3339. Inputs rejected by Go's `time.Parse(time.RFC3339, …)` are also rejected here (*rejection parity*). Error message wording differs from Go's: mbt uses `cannot parse "…" as "<token>"` throughout, while Go emits `<field> out of range`. Message-format parity is tracked separately.
 
 | Input form | Example | Behavior |
 | :--- | :--- | :--- |
