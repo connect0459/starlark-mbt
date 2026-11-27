@@ -729,7 +729,7 @@ fn percent_format(
     match spec {
       's' =>
         match arg {
-          @value.Value::String(sv) => buf.write_bytes(sv.to_bytes()[:])
+          @value.Value::String(sv) => buf.write_bytesview(sv.to_bytes()[:])
           _ =>
             match arg.to_str_checked() {
               Err(e) => return Err(e)

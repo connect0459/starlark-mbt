@@ -68,7 +68,7 @@ fn exec(
   let out_buf = @buffer.Buffer::Buffer()
   let thread = @eval.Thread::new("exec")
   thread.set_print(fn(_, bytes) {
-    out_buf.write_bytes(bytes[:])
+    out_buf.write_bytesview(bytes[:])
     out_buf.write_byte(b'\n')
   })
   match
