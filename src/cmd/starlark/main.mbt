@@ -21,7 +21,7 @@ fn main {
   match @cli.parse_cli_args(args) {
     Err(msg) => {
       println("starlark: \{msg}")
-      @sys.exit(2)
+      @env.exit(2)
     }
     Ok((filepath, expr, opts)) => {
       let exit_code = match (expr, filepath) {
@@ -30,7 +30,7 @@ fn main {
         (None, None) => @cli.run_repl(opts)
       }
       if exit_code != 0 {
-        @sys.exit(exit_code)
+        @env.exit(exit_code)
       }
     }
   }
