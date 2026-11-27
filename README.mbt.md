@@ -50,7 +50,7 @@ import {
 
 ### Quick start
 
-The root `@starlark` package offers zero-ceremony helpers that run with a default thread and the default dialect options:
+The root `@starlark` package offers helpers that run with a default thread and the default dialect options:
 
 ```mbt check
 ///|
@@ -89,14 +89,14 @@ For full usage examples — print capture, expression evaluation, host bindings,
 
 ## Compatibility
 
-This is an **unofficial** MoonBit implementation of Starlark — it is not associated with the Bazel team.
+This is an **unofficial** MoonBit implementation of Starlark and is not affiliated with the Bazel team.
 
-The implementation targets the
+It targets the
 [Starlark specification](https://github.com/bazelbuild/starlark/blob/master/spec.md).
 
 ## Documentation
 
-Each public package has a `README.mbt.md` with a key-types overview, usage examples, and a full API reference. Start with `eval` for the main entry points.
+Each public package has a `README.mbt.md` with an overview of its key types, usage examples, and a full API reference. Start with `eval` for the main entry points.
 
 ## Contributing
 

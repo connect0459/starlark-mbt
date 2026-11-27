@@ -323,7 +323,7 @@ A parsed-and-resolved Starlark program that can be executed multiple times witho
 
 ## Intentional extensions and dialect differences
 
-The following behaviours differ from starlark-go by design.
+These behaviors differ from starlark-go by design.
 
 ### Set literal and set comprehension syntax
 
@@ -333,7 +333,7 @@ The `set()` constructor (e.g., `set([1, 2, 3])`) is spec-standard and is support
 
 ### Recursive-traversal depth guards
 
-mbt enforces explicit depth limits on every recursive traversal path as a safety hardening measure, preventing native stack overflow on deeply-nested input. starlark-go relies on goroutine-stack growth and has no hard cap.
+mbt enforces explicit depth limits on every recursive traversal path as a safety hardening measure, preventing native stack overflow on deeply nested input. starlark-go relies on goroutine-stack growth and has no hard cap.
 
 | Path | Limit | Details |
 | :--- | :--- | :--- |
@@ -345,7 +345,7 @@ Exceeding any limit raises a Starlark runtime or parse error rather than crashin
 
 ### Spell-hint on unexpected keyword argument
 
-When a function call passes an unrecognised keyword argument, the error message includes a spell-hint:
+When a function call passes an unrecognized keyword argument, the error message includes a spell-hint:
 
 ```text
 function f got an unexpected keyword argument "nme" (did you mean name?)
