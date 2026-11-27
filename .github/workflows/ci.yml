@@ -92,7 +92,9 @@ jobs:
 
       - name: Install legacy time zone names
         shell: bash
-        run: sudo apt-get install --yes --no-install-recommends tzdata-legacy
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends tzdata-legacy
 
       - name: Test all targets
         shell: bash
