@@ -298,12 +298,12 @@ fn call_builtin(
       let mut first = true
       for arg in pos_args {
         if !first {
-          buf.write_bytes(sep_bytes[:])
+          buf.write_bytesview(sep_bytes[:])
         }
         first = false
         match arg {
-          @value.Value::String(s) => buf.write_bytes(s.to_bytes()[:])
-          @value.Value::Bytes(b) => buf.write_bytes(b[:])
+          @value.Value::String(s) => buf.write_bytesview(s.to_bytes()[:])
+          @value.Value::Bytes(b) => buf.write_bytesview(b[:])
           _ => buf.write_string_utf8(check(ctx, arg.to_str_checked()))
         }
       }
@@ -2120,10 +2120,10 @@ fn call_str_method(
       let mut first = true
       for part in parts {
         if !first {
-          buf.write_bytes(sep_bytes[:])
+          buf.write_bytesview(sep_bytes[:])
         }
         first = false
-        buf.write_bytes(part[:])
+        buf.write_bytesview(part[:])
       }
       @value.Value::String(@value.StarlarkString::from_bytes(buf.contents()))
     }
@@ -3666,7 +3666,7 @@ fn str_format(
         match conv {
           "s" =>
             match arg {
-              @value.Value::String(sv) => buf.write_bytes(sv.to_bytes()[:])
+              @value.Value::String(sv) => buf.write_bytesview(sv.to_bytes()[:])
               _ => buf.write_string_utf8(check(ctx, arg.to_str_checked()))
             }
           "r" => buf.write_string_utf8(check(ctx, arg.repr_checked()))
